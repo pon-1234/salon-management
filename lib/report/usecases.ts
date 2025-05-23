@@ -1,5 +1,5 @@
 import { DailyReport, StaffDailyReport } from './types';
-import { castMembers } from '@/lib/staff/data';
+import { castMembers } from '@/lib/cast/data';
 import { courses, options } from '@/lib/course-option/data';
 
 export function generateDailyReport(date: string): DailyReport {

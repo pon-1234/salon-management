@@ -1,4 +1,4 @@
-import { Cast } from "@/lib/staff/types"
+import { Cast } from "@/lib/cast/types"
 import { Button } from "@/components/ui/button"
 import { Phone, Mail } from 'lucide-react'
 import Link from "next/link"
@@ -16,7 +16,7 @@ export function StaffListView({ staff }: CastListViewProps) {
           key={member.id}
           className="bg-white rounded-lg shadow p-4 flex items-start gap-4"
         >
-          <Link href={`/staff/manage/${member.id}`} className="shrink-0">
+          <Link href={`/cast/manage/${member.id}`} className="shrink-0">
             <img
               src={member.image}
               alt={member.name}
@@ -27,7 +27,7 @@ export function StaffListView({ staff }: CastListViewProps) {
           <div className="flex-1 min-w-0">
             <div className="space-y-1">
               <Link 
-                href={`/staff/manage/${member.id}`}
+                href={`/cast/manage/${member.id}`}
                 className="text-lg font-medium hover:text-emerald-600"
               >
                 {member.name}

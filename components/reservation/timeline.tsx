@@ -8,9 +8,9 @@ import { ReservationDialog } from "./reservation-dialog"
 import { QuickBookingDialog } from "./quick-booking-dialog"
 import Link from "next/link"
 import { Circle } from 'lucide-react'
-import { Cast, Appointment } from "@/lib/staff"
+import { Cast, Appointment } from "@/lib/cast"
 import { logError } from "@/lib/error-utils"
-import { StaffDialog } from "@/components/staff/staff-dialog"
+import { StaffDialog } from "@/components/cast/cast-dialog"
 import { format } from 'date-fns';
 import { getCourseById } from '@/lib/course-option/utils';
 import { customers as customerList } from "@/lib/customer/data";

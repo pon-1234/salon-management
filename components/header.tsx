@@ -23,8 +23,8 @@ import { useRouter } from 'next/navigation'
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { ReservationDialog } from "./reservation/reservation-dialog"
-import { Cast } from "@/lib/staff/types"
-import { getAllCasts } from "@/lib/staff/data"
+import { Cast } from "@/lib/cast/types"
+import { getAllCasts } from "@/lib/cast/data"
 
 interface Notification {
   id: string;
@@ -157,14 +157,14 @@ export function Header() {
           </Button>
         </Link>
 
-        <Link href="/staff/list">
+        <Link href="/cast/list">
           <Button variant="ghost" className="shrink-0 flex flex-col items-center gap-0.5 h-auto py-2 px-3">
             <Users className="h-5 w-5" />
             <span className="text-xs text-gray-600">キャスト</span>
           </Button>
         </Link>
 
-        <Link href="/staff/weekly-schedule">
+        <Link href="/cast/weekly-schedule">
           <Button variant="ghost" className="shrink-0 flex flex-col items-center gap-0.5 h-auto py-2 px-3">
             <Clock className="h-5 w-5" />
             <span className="text-xs text-gray-600">出勤表</span>
@@ -238,7 +238,7 @@ export function Header() {
                       onSelect={(currentValue) => {
                         setValue(currentValue === value ? "" : currentValue)
                         setOpen(false)
-                        router.push(`/staff/${cast.id}`)
+                        router.push(`/cast/${cast.id}`)
                       }}
                     >
                       {cast.name}

@@ -9,7 +9,7 @@ import { Timeline } from "@/components/reservation/timeline"
 import { ReservationList } from "@/components/reservation/reservation-list"
 import { ViewToggle } from "@/components/reservation/view-toggle"
 import { FilterDialog, FilterOptions } from "@/components/reservation/filter-dialog"
-import { castMembers, Cast, Appointment } from "@/lib/staff/data"
+import { castMembers, Cast, Appointment } from "@/lib/cast/data"
 import { getAllReservations } from "@/lib/reservation/data"
 import { getCourseById } from '@/lib/course-option/utils'
 import { ReservationTable, ReservationData } from "@/components/reservation/reservation-table";

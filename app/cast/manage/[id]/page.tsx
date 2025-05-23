@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { StaffForm } from "@/components/staff/staff-form"
-import { Cast } from "@/lib/staff/types"
+import { StaffForm } from "@/components/cast/cast-form"
+import { Cast } from "@/lib/cast/types"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from 'lucide-react'
-import { getAllCasts } from "@/lib/staff/data"
+import { getAllCasts } from "@/lib/cast/data"
 
 export default function CastManagePage({ params }: { params: { id: string } }) {
   const [cast, setCast] = useState<Cast | null>(null)
@@ -27,7 +27,7 @@ export default function CastManagePage({ params }: { params: { id: string } }) {
   const handleSubmit = async (data: Partial<Cast>) => {
     // In a real application, this would make an API call
     console.log("Submitting cast data:", data)
-    router.push("/staff/list")
+    router.push("/cast/list")
   }
 
   if (!isNewCast && !cast) {

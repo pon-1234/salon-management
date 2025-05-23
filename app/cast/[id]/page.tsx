@@ -1,8 +1,8 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Cast, CastSchedule } from "@/lib/staff"
-import { castMembers, generateCastSchedule } from "@/lib/staff/data"
-import { generateSchedule } from "@/lib/staff/utils"
+import { Cast, CastSchedule } from "@/lib/cast"
+import { castMembers, generateCastSchedule } from "@/lib/cast/data"
+import { generateSchedule } from "@/lib/cast/utils"
 import { options } from "@/lib/course-option/data"
 import { notFound } from "next/navigation"
 import { format } from 'date-fns'

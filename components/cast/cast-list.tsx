@@ -1,4 +1,4 @@
-import { Cast } from "@/lib/staff/types"
+import { Cast } from "@/lib/cast/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
@@ -24,7 +24,7 @@ export function StaffList({ staff }: CastListProps) {
               </Badge>
             </div>
             <div className="p-4">
-              <Link href={`/staff/${member.id}`} className="text-lg font-semibold hover:text-emerald-600">
+              <Link href={`/cast/${member.id}`} className="text-lg font-semibold hover:text-emerald-600">
                 {member.name}
               </Link>
               <p className="text-sm text-gray-500">{member.nameKana}</p>

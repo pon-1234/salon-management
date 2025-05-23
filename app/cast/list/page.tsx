@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { Header } from "@/components/header"
-import { StaffListView } from "@/components/staff/staff-list-view"
-import { Cast } from "@/lib/staff/types"
-import { getAllCasts } from "@/lib/staff/data"
+import { StaffListView } from "@/components/cast/cast-list-view"
+import { Cast } from "@/lib/cast/types"
+import { getAllCasts } from "@/lib/cast/data"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { PlusCircle } from 'lucide-react'
@@ -41,7 +41,7 @@ export default function CastListPage() {
       <main className="container mx-auto py-6 px-4">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">キャスト一覧</h1>
-          <Link href="/staff/manage/new">
+          <Link href="/cast/manage/new">
             <Button className="bg-emerald-600 hover:bg-emerald-700">
               <PlusCircle className="w-4 h-4 mr-2" />
               新規キャスト追加
