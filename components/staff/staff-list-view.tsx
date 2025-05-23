@@ -1,14 +1,14 @@
-import { Staff } from "@/lib/staff/types"
+import { Cast } from "@/lib/staff/types"
 import { Button } from "@/components/ui/button"
 import { Phone, Mail } from 'lucide-react'
 import Link from "next/link"
 import { format } from "date-fns"
 
-interface StaffListViewProps {
-  staff: Staff[]
+interface CastListViewProps {
+  staff: Cast[]
 }
 
-export function StaffListView({ staff }: StaffListViewProps) {
+export function StaffListView({ staff }: CastListViewProps) {
   return (
     <div className="space-y-4">
       {staff.map((member) => (
@@ -33,7 +33,7 @@ export function StaffListView({ staff }: StaffListViewProps) {
                 {member.name}
               </Link>
               <div className="text-gray-600">{member.nameKana}</div>
-              <div className="text-gray-500">{member.email}</div>
+              <div className="text-gray-500">{member.age}歳 | {member.height}cm | {member.type}</div>
               <div className="text-gray-500">入金処理 (今月) (先月)</div>
             </div>
             <div className="flex gap-2 mt-2">
@@ -57,7 +57,7 @@ export function StaffListView({ staff }: StaffListViewProps) {
           </div>
 
           <div className="text-sm text-gray-500 shrink-0">
-            {format(new Date(member.registrationDate || Date.now()), 'yyyy-MM-dd HH:mm:ss')}
+            {member.workStatus === "出勤" ? "出勤中" : "未出勤"}
           </div>
         </div>
       ))}

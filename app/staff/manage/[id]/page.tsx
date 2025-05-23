@@ -3,34 +3,34 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { StaffForm } from "@/components/staff/staff-form"
-import { Staff } from "@/lib/staff/types"
+import { Cast } from "@/lib/staff/types"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from 'lucide-react'
-import { getAllStaff } from "@/lib/staff/data"
+import { getAllCasts } from "@/lib/staff/data"
 
-export default function StaffManagePage({ params }: { params: { id: string } }) {
-  const [staff, setStaff] = useState<Staff | null>(null)
+export default function CastManagePage({ params }: { params: { id: string } }) {
+  const [cast, setCast] = useState<Cast | null>(null)
   const router = useRouter()
-  const isNewStaff = params.id === "new"
+  const isNewCast = params.id === "new"
 
   useEffect(() => {
-    const fetchStaff = async () => {
-      const staffList = getAllStaff()
-      const foundStaff = staffList.find(s => s.id === params.id)
-      setStaff(foundStaff || null);
+    const fetchCast = async () => {
+      const castList = getAllCasts()
+      const foundCast = castList.find(c => c.id === params.id)
+      setCast(foundCast || null);
     }
 
-    fetchStaff()
-  }, [params.id, isNewStaff])
+    fetchCast()
+  }, [params.id, isNewCast])
 
-  const handleSubmit = async (data: Partial<Staff>) => {
+  const handleSubmit = async (data: Partial<Cast>) => {
     // In a real application, this would make an API call
-    console.log("Submitting staff data:", data)
+    console.log("Submitting cast data:", data)
     router.push("/staff/list")
   }
 
-  if (!isNewStaff && !staff) {
+  if (!isNewCast && !cast) {
     return <div>Loading...</div>
   }
 
@@ -49,12 +49,12 @@ export default function StaffManagePage({ params }: { params: { id: string } }) 
             戻る
           </Button>
           <h1 className="text-2xl font-bold">
-            {isNewStaff ? "新規スタッフ登録" : "スタッフ情報編集"}
+            {isNewCast ? "新規キャスト登録" : "キャスト情報編集"}
           </h1>
         </div>
         <div className="max-w-2xl mx-auto">
           <StaffForm
-            staff={staff}
+            staff={cast}
             onSubmit={handleSubmit}
           />
         </div>

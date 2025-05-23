@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import { Header } from "@/components/header"
 import { StaffListView } from "@/components/staff/staff-list-view"
-import { Staff } from "@/lib/staff/types"
-import { getAllStaff } from "@/lib/staff/data"
+import { Cast } from "@/lib/staff/types"
+import { getAllCasts } from "@/lib/staff/data"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { PlusCircle } from 'lucide-react'
@@ -17,23 +17,22 @@ import {
 } from "@/components/ui/select"
 import Link from "next/link"
 
-export default function StaffListPage() {
-  const [staffList, setStaffList] = useState<Staff[]>([])
+export default function CastListPage() {
+  const [castList, setCastList] = useState<Cast[]>([])
   const [workStatus, setWorkStatus] = useState("就業中(公開)")
   const [page, setPage] = useState("1")
   const [phoneSearch, setPhoneSearch] = useState("")
   const [nameSearch, setNameSearch] = useState("")
 
   useEffect(() => {
-    const staff = getAllStaff()
-    setStaffList(staff)
+    const casts = getAllCasts()
+    setCastList(casts)
   }, [])
 
-  const filteredStaff = staffList.filter(staff => {
-    const matchesPhone = staff.phone?.includes(phoneSearch) ?? true
-    const matchesName = staff.name.toLowerCase().includes(nameSearch.toLowerCase()) ||
-                       staff.nameKana.toLowerCase().includes(nameSearch.toLowerCase())
-    return matchesPhone && matchesName
+  const filteredCasts = castList.filter(cast => {
+    const matchesName = cast.name.toLowerCase().includes(nameSearch.toLowerCase()) ||
+                       cast.nameKana.toLowerCase().includes(nameSearch.toLowerCase())
+    return matchesName
   })
 
   return (
@@ -41,11 +40,11 @@ export default function StaffListPage() {
       <Header />
       <main className="container mx-auto py-6 px-4">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">スタッフ一覧</h1>
+          <h1 className="text-2xl font-bold">キャスト一覧</h1>
           <Link href="/staff/manage/new">
             <Button className="bg-emerald-600 hover:bg-emerald-700">
               <PlusCircle className="w-4 h-4 mr-2" />
-              新規スタッフ追加
+              新規キャスト追加
             </Button>
           </Link>
         </div>
@@ -75,14 +74,6 @@ export default function StaffListPage() {
 
           <Input
             type="search"
-            placeholder="TEL検索"
-            value={phoneSearch}
-            onChange={(e) => setPhoneSearch(e.target.value)}
-            className="w-[200px]"
-          />
-
-          <Input
-            type="search"
             placeholder="本名検索"
             value={nameSearch}
             onChange={(e) => setNameSearch(e.target.value)}
@@ -94,7 +85,7 @@ export default function StaffListPage() {
           ※業務連絡を開くと既読になりますのでご注意下さい。
         </div>
 
-        <StaffListView staff={filteredStaff} />
+        <StaffListView staff={filteredCasts} />
       </main>
     </div>
   )

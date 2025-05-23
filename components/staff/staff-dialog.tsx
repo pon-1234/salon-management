@@ -2,29 +2,29 @@
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { Staff, StaffSchedule } from "@/lib/staff/types"
+import { Cast, CastSchedule } from "@/lib/staff/types"
 import { options } from "@/lib/course-option/data"
 import { Button } from "@/components/ui/button"
-import { generateStaffSchedule } from "@/lib/staff/data"
+import { generateCastSchedule } from "@/lib/staff/data"
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { useState, useEffect } from "react"
 
-interface StaffDialogProps {
+interface CastDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  staff: Staff | null
+  staff: Cast | null
   selectedDate: Date
 }
 
-export function StaffDialog({ open, onOpenChange, staff, selectedDate }: StaffDialogProps) {
-  const [schedule, setSchedule] = useState<StaffSchedule[]>([])
+export function StaffDialog({ open, onOpenChange, staff, selectedDate }: CastDialogProps) {
+  const [schedule, setSchedule] = useState<CastSchedule[]>([])
 
   useEffect(() => {
     if (staff) {
       const endDate = new Date(selectedDate)
       endDate.setDate(selectedDate.getDate() + 7)
-      const generatedSchedule = generateStaffSchedule(staff.id, selectedDate, endDate)
+      const generatedSchedule = generateCastSchedule(staff.id, selectedDate, endDate)
       setSchedule(generatedSchedule)
     }
   }, [staff, selectedDate])

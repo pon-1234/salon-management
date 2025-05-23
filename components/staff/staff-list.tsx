@@ -1,13 +1,13 @@
-import { Staff } from "@/lib/staff/types"
+import { Cast } from "@/lib/staff/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 
-interface StaffListProps {
-  staff: Staff[]
+interface CastListProps {
+  staff: Cast[]
 }
 
-export function StaffList({ staff }: StaffListProps) {
+export function StaffList({ staff }: CastListProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {staff.map((member) => (

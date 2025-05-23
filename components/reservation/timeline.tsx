@@ -8,7 +8,7 @@ import { ReservationDialog } from "./reservation-dialog"
 import { QuickBookingDialog } from "./quick-booking-dialog"
 import Link from "next/link"
 import { Circle } from 'lucide-react'
-import { Staff, Appointment } from "@/lib/staff"
+import { Cast, Appointment } from "@/lib/staff"
 import { logError } from "@/lib/error-utils"
 import { StaffDialog } from "@/components/staff/staff-dialog"
 import { format } from 'date-fns';
@@ -22,7 +22,7 @@ function safeMap<T, U>(arr: T[] | undefined | null, callback: (item: T) => U): U
 }
 
 interface TimelineProps {
-  staff: (Staff & { appointments: Appointment[] })[] | undefined;
+  staff: (Cast & { appointments: Appointment[] })[] | undefined;
   selectedDate: Date;
   selectedCustomer: { id: string; name: string } | null;
   setSelectedAppointment: (appointment: any) => void;
@@ -44,7 +44,7 @@ interface TimeSlot {
 export function Timeline({ staff, selectedDate, selectedCustomer, setSelectedAppointment }: TimelineProps) {
   const [selectedAppointment, setSelectedAppointmentState] = useState<Appointment | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null)
-  const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null)
+  const [selectedStaff, setSelectedStaff] = useState<Cast | null>(null)
   const startHour = 9;
   const endHour = 24;
   const totalHours = endHour - startHour;
@@ -100,7 +100,7 @@ export function Timeline({ staff, selectedDate, selectedCustomer, setSelectedApp
     };
   });
 
-  const getAvailableSlots = (staff: Staff): AvailableSlot[] => {
+  const getAvailableSlots = (staff: Cast): AvailableSlot[] => {
     try {
       if (!staff.workStart || !staff.workEnd) return []
 
@@ -151,7 +151,7 @@ export function Timeline({ staff, selectedDate, selectedCustomer, setSelectedApp
     });
   };
 
-  const convertToReservationData = (appointment: Appointment, staff: Staff): ReservationData => {
+  const convertToReservationData = (appointment: Appointment, staff: Cast): ReservationData => {
     const customer = customerList.find(c => c.id === String(appointment.customerId));
     return {
       ...appointment,
