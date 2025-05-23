@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { ScheduleHeader } from "@/components/staff-schedule/schedule-header"
 import { ScheduleGrid } from "@/components/staff-schedule/schedule-grid"
 import { StaffScheduleUseCases } from "@/lib/staff-schedule/usecases"
@@ -13,10 +13,21 @@ export default function WeeklySchedulePage() {
   const [date] = useState(() => new Date())
   const [schedule, setSchedule] = useState<WeeklySchedule | null>(null)
 
-  // In a real application, this would be in a useEffect
-  if (!schedule) {
-    staffScheduleUseCases.getWeeklySchedule({ date, staffFilter: "all" }).then(setSchedule)
-  }
+  useEffect(() => {
+    const fetchSchedule = async () => {
+      try {
+        const weeklySchedule = await staffScheduleUseCases.getWeeklySchedule({ 
+          date, 
+          staffFilter: "all" 
+        })
+        setSchedule(weeklySchedule)
+      } catch (error) {
+        console.error("Failed to fetch schedule:", error)
+      }
+    }
+
+    fetchSchedule()
+  }, [date])
 
   if (!schedule) {
     return <div>Loading...</div>
