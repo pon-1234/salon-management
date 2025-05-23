@@ -9,7 +9,7 @@ import { Timeline } from "@/components/reservation/timeline"
 import { ReservationList } from "@/components/reservation/reservation-list"
 import { ViewToggle } from "@/components/reservation/view-toggle"
 import { FilterDialog, FilterOptions } from "@/components/reservation/filter-dialog"
-import { staffMembers, Staff, Appointment } from "@/lib/staff/data"
+import { castMembers, Cast, Appointment } from "@/lib/staff/data"
 import { getAllReservations } from "@/lib/reservation/data"
 import { getCourseById } from '@/lib/course-option/utils'
 import { ReservationTable, ReservationData } from "@/components/reservation/reservation-table";
@@ -29,7 +29,7 @@ return (
 };
 
 export function ReservationPageContent() {
-const [staffData, setStaffData] = useState<Staff[]>(staffMembers)
+const [castData, setCastData] = useState<Cast[]>(castMembers)
 const [selectedDate, setSelectedDate] = useState<Date>(new Date())
 const [view, setView] = useState<"timeline" | "list">("timeline")
 const [filterDialogOpen, setFilterDialogOpen] = useState(false)
@@ -60,7 +60,7 @@ const fetchData = async () => {
     isSameDay(new Date(reservation.startTime), selectedDate)
   );
 
-  const updatedStaffData = staffMembers.map(member => {
+  const updatedCastData = castMembers.map(member => {
     const appointments = filteredReservations
       .filter(reservation => reservation.staffId === member.id)
       .map(reservation => ({
@@ -72,7 +72,7 @@ const fetchData = async () => {
     return { ...member, appointments };
   });
 
-  setStaffData(updatedStaffData);
+  setCastData(updatedCastData);
 };
 
 useEffect(() => {
@@ -85,7 +85,7 @@ const handleRefresh = () => {
 
 const handleFilterCharacter = (char: string) => {
   if (char === "全") {
-    setStaffData([...staffMembers])
+    setCastData([...castMembers])
     return
   }
 
@@ -114,25 +114,25 @@ const handleFilterCharacter = (char: string) => {
   }
 
   if (char === "その他") {
-    const filtered = staffMembers.filter(st => {
+    const filtered = castMembers.filter(st => {
       const firstChar = st.nameKana.charAt(0)
       const isOther = !Object.values(rowMap).some(row => row.includes(firstChar))
       return isOther
     })
-    setStaffData(filtered)
+    setCastData(filtered)
     return
   }
 
   const targetRow = rowMap[char] || []
-  const filtered = staffMembers.filter(st => {
+  const filtered = castMembers.filter(st => {
     const firstChar = st.nameKana.charAt(0)
     return targetRow.includes(firstChar)
   })
-  setStaffData(filtered)
+  setCastData(filtered)
 }
 
 const handleFilter = (filters: FilterOptions) => {
-  let filtered = [...staffMembers]
+  let filtered = [...castMembers]
 
   // Filter by work status
   if (filters.workStatus !== "すべて") {
@@ -207,7 +207,7 @@ const handleFilter = (filters: FilterOptions) => {
     filtered = filtered.filter(staff => staff.type === filters.type)
   }
 
-  setStaffData(filtered)
+  setCastData(filtered)
 }
 
 const handleFilterDialogOpen = () => {
@@ -228,7 +228,7 @@ const handleCustomerSelection = (customer: Customer | null) => { // Update: Adde
   setSelectedCustomer(customer);
 };
 
-const allAppointments: ReservationData[] = staffData.flatMap(staff =>
+const allAppointments: ReservationData[] = castData.flatMap(staff =>
   staff.appointments.map(appointment => {
     // 2. Fix: Type guard and consistent ID check
     const customer = customerList.find(c => c.id === String(appointment.customerId));
@@ -305,7 +305,7 @@ return (
 
     {view === "timeline" ? (
       <Timeline
-        staff={staffData}
+        staff={castData}
         selectedDate={selectedDate}
         selectedCustomer={selectedCustomer} // Update: Added selectedCustomer prop
         setSelectedAppointment={setSelectedAppointment}

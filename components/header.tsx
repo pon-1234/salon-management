@@ -23,8 +23,8 @@ import { useRouter } from 'next/navigation'
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { ReservationDialog } from "./reservation/reservation-dialog"
-import { Staff } from "@/lib/staff/types"
-import { getAllStaff } from "@/lib/staff/data"
+import { Cast } from "@/lib/staff/types"
+import { getAllCasts } from "@/lib/staff/data"
 
 interface Notification {
   id: string;
@@ -42,7 +42,7 @@ interface Notification {
 }
 
 export function Header() {
-  const [staffList, setStaffList] = useState<Staff[]>([])
+  const [castList, setCastList] = useState<Cast[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [hotelSearchQuery, setHotelSearchQuery] = useState('')
   const [open, setOpen] = useState(false)
@@ -96,8 +96,8 @@ export function Header() {
   const [selectedReservation, setSelectedReservation] = useState<Notification | null>(null);
 
   useEffect(() => {
-    const staff = getAllStaff()
-    setStaffList(staff)
+    const cast = getAllCasts()
+    setCastList(cast)
   }, [])
 
   const handleSearch = (e: React.FormEvent) => {
@@ -160,7 +160,7 @@ export function Header() {
         <Link href="/staff/list">
           <Button variant="ghost" className="shrink-0 flex flex-col items-center gap-0.5 h-auto py-2 px-3">
             <Users className="h-5 w-5" />
-            <span className="text-xs text-gray-600">スタッフ</span>
+            <span className="text-xs text-gray-600">キャスト</span>
           </Button>
         </Link>
 
@@ -220,32 +220,32 @@ export function Header() {
               className="w-[120px] justify-between"
             >
               {value
-                ? staffList.find((staff) => staff.id === value)?.name || "在籍検索"
-                : "在籍検索"}
+                ? castList.find((cast) => cast.id === value)?.name || "キャスト検索"
+                : "キャスト検索"}
               <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-[200px] p-0">
             <Command>
-              <CommandInput placeholder="スタッフを検索..." className="h-9" />
+              <CommandInput placeholder="キャストを検索..." className="h-9" />
               <CommandList>
-                <CommandEmpty>スタッフが見つかりません。</CommandEmpty>
+                <CommandEmpty>キャストが見つかりません。</CommandEmpty>
                 <CommandGroup>
-                  {staffList.map((staff) => (
+                  {castList.map((cast) => (
                     <CommandItem
-                      key={staff.id}
-                      value={staff.id}
+                      key={cast.id}
+                      value={cast.id}
                       onSelect={(currentValue) => {
                         setValue(currentValue === value ? "" : currentValue)
                         setOpen(false)
-                        router.push(`/staff/${staff.id}`)
+                        router.push(`/staff/${cast.id}`)
                       }}
                     >
-                      {staff.name}
+                      {cast.name}
                       <Check
                         className={cn(
                           "ml-auto h-4 w-4",
-                          value === staff.id ? "opacity-100" : "opacity-0"
+                          value === cast.id ? "opacity-100" : "opacity-0"
                         )}
                       />
                     </CommandItem>

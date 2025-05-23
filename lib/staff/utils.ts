@@ -1,15 +1,15 @@
-import { Staff, StaffSchedule } from '../types/staff';
+import { Cast, CastSchedule } from './types';
 
-export function generateSchedule(staff: Staff, startDate: Date, endDate: Date): StaffSchedule[] {
-  const schedule: StaffSchedule[] = [];
+export function generateSchedule(cast: Cast, startDate: Date, endDate: Date): CastSchedule[] {
+  const schedule: CastSchedule[] = [];
   let currentDate = new Date(startDate);
   while (currentDate <= endDate) {
-    if (staff.workStart && staff.workEnd) {
+    if (cast.workStart && cast.workEnd) {
       schedule.push({
-        staffId: staff.id,
+        castId: cast.id,
         date: new Date(currentDate),
-        startTime: new Date(currentDate.setHours(staff.workStart.getHours(), staff.workStart.getMinutes())),
-        endTime: new Date(currentDate.setHours(staff.workEnd.getHours(), staff.workEnd.getMinutes())),
+        startTime: new Date(currentDate.setHours(cast.workStart.getHours(), cast.workStart.getMinutes())),
+        endTime: new Date(currentDate.setHours(cast.workEnd.getHours(), cast.workEnd.getMinutes())),
       });
     }
     currentDate.setDate(currentDate.getDate() + 1);
@@ -17,6 +17,8 @@ export function generateSchedule(staff: Staff, startDate: Date, endDate: Date): 
   return schedule;
 }
 
+// TODO: 以下の関数は必要な型定義を追加後に有効にする
+/*
 export function calculateStaffPerformance(staff: Staff, reservations: Reservation[]): StaffPerformance {
   const totalReservations = reservations.length;
   const totalRevenue = reservations.reduce((sum, reservation) => sum + reservation.price, 0);
@@ -47,3 +49,4 @@ export function getAvailableTimeSlots(staff: Staff, date: Date, existingReservat
 
   return availableSlots;
 }
+*/

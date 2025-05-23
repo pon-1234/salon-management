@@ -1,10 +1,10 @@
-import { Staff, StaffSchedule } from './types';
-import { StaffRepository } from './repository';
+import { Cast, CastSchedule } from './types';
+import { CastRepository } from './repository';
 import { options } from "@/lib/course-option/data"
 
 // This is a mock implementation. In a real application, this would interact with a database or API.
-export class StaffRepositoryImpl implements StaffRepository {
-  private staff: Staff[] = [
+export class CastRepositoryImpl implements CastRepository {
+  private casts: Cast[] = [
     {
       id: "1",
       name: "みるく",
@@ -16,7 +16,7 @@ export class StaffRepositoryImpl implements StaffRepository {
       hip: 98,
       type: "カワイイ系",
       image: "https://rimane.net/images/tyrano-move-image01.jpg",
-      description: "明るく元気な性格で、お客様を楽しませることが得意です。マッサージの技術も高く、リピーターの多いスタッフです。",
+      description: "明るく元気な性格で、お客様を楽しませることが得意です。マッサージの技術も高く、リピーターの多いキャストです。",
       netReservation: true,
       specialDesignationFee: null,
       regularDesignationFee: null,
@@ -24,46 +24,47 @@ export class StaffRepositoryImpl implements StaffRepository {
       courseTypes: ["イベントコース", "基本コース"],
       workStart: new Date(2023, 0, 1, 10, 0),
       workEnd: new Date(2023, 0, 1, 22, 0),
+      appointments: [],
     },
-    // Add more staff members as needed
+    // Add more cast members as needed
   ];
 
-  async getStaff(id: string): Promise<Staff | null> {
-    const staff = this.staff.find(s => s.id === id);
-    return staff || null;
+  async getCast(id: string): Promise<Cast | null> {
+    const cast = this.casts.find(c => c.id === id);
+    return cast || null;
   }
 
-  async getAllStaff(): Promise<Staff[]> {
-    return this.staff;
+  async getAllCasts(): Promise<Cast[]> {
+    return this.casts;
   }
 
-  async createStaff(staff: Omit<Staff, 'id'>): Promise<Staff> {
-    const newStaff = { ...staff, id: (this.staff.length + 1).toString() };
-    this.staff.push(newStaff);
-    return newStaff;
+  async createCast(cast: Omit<Cast, 'id'>): Promise<Cast> {
+    const newCast = { ...cast, id: (this.casts.length + 1).toString() };
+    this.casts.push(newCast);
+    return newCast;
   }
 
-  async updateStaff(id: string, staff: Partial<Staff>): Promise<Staff> {
-    const index = this.staff.findIndex(s => s.id === id);
-    if (index === -1) throw new Error('Staff not found');
-    this.staff[index] = { ...this.staff[index], ...staff };
-    return this.staff[index];
+  async updateCast(id: string, cast: Partial<Cast>): Promise<Cast> {
+    const index = this.casts.findIndex(c => c.id === id);
+    if (index === -1) throw new Error('Cast not found');
+    this.casts[index] = { ...this.casts[index], ...cast };
+    return this.casts[index];
   }
 
-  async deleteStaff(id: string): Promise<void> {
-    const index = this.staff.findIndex(s => s.id === id);
+  async deleteCast(id: string): Promise<void> {
+    const index = this.casts.findIndex(c => c.id === id);
     if (index !== -1) {
-      this.staff.splice(index, 1);
+      this.casts.splice(index, 1);
     }
   }
 
-  async getStaffSchedule(staffId: string, startDate: Date, endDate: Date): Promise<StaffSchedule[]> {
+  async getCastSchedule(castId: string, startDate: Date, endDate: Date): Promise<CastSchedule[]> {
     // This is a mock implementation. In a real application, this would fetch the actual schedule from a database.
-    const schedule: StaffSchedule[] = [];
+    const schedule: CastSchedule[] = [];
     let currentDate = new Date(startDate);
     while (currentDate <= endDate) {
       schedule.push({
-        staffId,
+        castId,
         date: new Date(currentDate),
         startTime: new Date(currentDate.setHours(10, 0, 0, 0)),
         endTime: new Date(currentDate.setHours(22, 0, 0, 0)),
@@ -73,8 +74,8 @@ export class StaffRepositoryImpl implements StaffRepository {
     return schedule;
   }
 
-  async updateStaffSchedule(staffId: string, schedule: StaffSchedule[]): Promise<void> {
+  async updateCastSchedule(castId: string, schedule: CastSchedule[]): Promise<void> {
     // In a real application, this would update the schedule in a database
-    console.log(`Updating schedule for staff ${staffId}`, schedule);
+    console.log(`Updating schedule for cast ${castId}`, schedule);
   }
 }

@@ -1,4 +1,4 @@
-import { Staff, type StaffSchedule, Appointment } from "../types/staff"
+import { Cast, type CastSchedule, Appointment } from "./types"
 
 const createDate = (hours: number, minutes = 0) => {
   const date = new Date()
@@ -6,9 +6,9 @@ const createDate = (hours: number, minutes = 0) => {
   return date
 }
 
-export { Staff, Appointment }
+export type { Cast, Appointment }
 
-export const staffMembers: Staff[] = [
+export const castMembers: Cast[] = [
   {
     id: "1",
     name: "みるく",
@@ -21,7 +21,7 @@ export const staffMembers: Staff[] = [
     type: "カワイイ系",
     image: "https://rimane.net/images/tyrano-move-image01.jpg",
     description:
-      "明るく元気な性格で、お客様を楽しませることが得意です。マッサージの技術も高く、リピーターの多いスタッフです。",
+      "明るく元気な性格で、お客様を楽しませることが得意です。マッサージの技術も高く、リピーターの多いキャストです。",
     netReservation: true,
     specialDesignationFee: null,
     regularDesignationFee: null,
@@ -87,7 +87,7 @@ export const staffMembers: Staff[] = [
     type: "ロリ系",
     image: "https://rimane.net/images/tyrano-move-image01.jpg",
     description:
-      "小柄で可愛らしい外見と、意外な大人の魅力を併せ持つスタッフです。細やかな気配りが得意で、初めてのお客様にも安心して利用いただけます。",
+      "小柄で可愛らしい外見と、意外な大人の魅力を併せ持つキャストです。細やかな気配りが得意で、初めてのお客様にも安心して利用いただけます。",
     netReservation: true,
     specialDesignationFee: null,
     regularDesignationFee: 1000,
@@ -99,32 +99,32 @@ export const staffMembers: Staff[] = [
   },
 ]
 
-export function getAllStaff(): Staff[] {
-  return staffMembers
+export function getAllCasts(): Cast[] {
+  return castMembers
 }
 
-export const generateStaffSchedule = (staffId: string, startDate: Date, endDate: Date): StaffSchedule[] => {
-  const staff = staffMembers.find((staff) => staff.id === staffId)
-  if (!staff) {
+export const generateCastSchedule = (castId: string, startDate: Date, endDate: Date): CastSchedule[] => {
+  const cast = castMembers.find((cast) => cast.id === castId)
+  if (!cast) {
     return []
   }
 
-  const schedule: StaffSchedule[] = []
+  const schedule: CastSchedule[] = []
   const currentDate = new Date(startDate)
 
   while (currentDate <= endDate) {
-    const appointmentsForDay = staff.appointments.filter(
+    const appointmentsForDay = cast.appointments.filter(
       (appointment) => appointment.startTime.toDateString() === currentDate.toDateString(),
     )
 
-    // Use staff.workStart and staff.workEnd for startTime and endTime
+    // Use cast.workStart and cast.workEnd for startTime and endTime
     const startTime = new Date(currentDate)
-    startTime.setHours(staff.workStart?.getHours() || 0, staff.workStart?.getMinutes() || 0, 0, 0)
+    startTime.setHours(cast.workStart?.getHours() || 0, cast.workStart?.getMinutes() || 0, 0, 0)
     const endTime = new Date(currentDate)
-    endTime.setHours(staff.workEnd?.getHours() || 0, staff.workEnd?.getMinutes() || 0, 0, 0)
+    endTime.setHours(cast.workEnd?.getHours() || 0, cast.workEnd?.getMinutes() || 0, 0, 0)
 
     schedule.push({
-      staffId,
+      castId,
       date: new Date(currentDate),
       startTime,
       endTime,

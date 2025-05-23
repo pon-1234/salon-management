@@ -1,11 +1,11 @@
-import { Staff, StaffSchedule } from './types';
+import { Cast, CastSchedule } from './types';
 
-export interface StaffRepository {
-  getStaff(id: string): Promise<Staff | null>;
-  getAllStaff(): Promise<Staff[]>;
-  createStaff(staff: Omit<Staff, 'id'>): Promise<Staff>;
-  updateStaff(id: string, staff: Partial<Staff>): Promise<Staff>;
-  deleteStaff(id: string): Promise<void>;
-  getStaffSchedule(staffId: string, startDate: Date, endDate: Date): Promise<StaffSchedule[]>;
-  updateStaffSchedule(staffId: string, schedule: StaffSchedule[]): Promise<void>;
+export interface CastRepository {
+  getCast(id: string): Promise<Cast | null>;
+  getAllCasts(): Promise<Cast[]>;
+  createCast(cast: Omit<Cast, 'id'>): Promise<Cast>;
+  updateCast(id: string, cast: Partial<Cast>): Promise<Cast>;
+  deleteCast(id: string): Promise<void>;
+  getCastSchedule(castId: string, startDate: Date, endDate: Date): Promise<CastSchedule[]>;
+  updateCastSchedule(castId: string, schedule: CastSchedule[]): Promise<void>;
 }

@@ -1,34 +1,34 @@
-import { Staff, StaffSchedule } from './types';
-import { StaffRepository } from './repository';
+import { Cast, CastSchedule } from './types';
+import { CastRepository } from './repository';
 
-export class StaffUseCases {
-  constructor(private repository: StaffRepository) {}
+export class CastUseCases {
+  constructor(private repository: CastRepository) {}
 
-  async getStaff(id: string): Promise<Staff | null> {
-    return this.repository.getStaff(id);
+  async getCast(id: string): Promise<Cast | null> {
+    return this.repository.getCast(id);
   }
 
-  async getAllStaff(): Promise<Staff[]> {
-    return this.repository.getAllStaff();
+  async getAllCasts(): Promise<Cast[]> {
+    return this.repository.getAllCasts();
   }
 
-  async createStaff(staff: Omit<Staff, 'id'>): Promise<Staff> {
-    return this.repository.createStaff(staff);
+  async createCast(cast: Omit<Cast, 'id'>): Promise<Cast> {
+    return this.repository.createCast(cast);
   }
 
-  async updateStaff(id: string, staff: Partial<Staff>): Promise<Staff> {
-    return this.repository.updateStaff(id, staff);
+  async updateCast(id: string, cast: Partial<Cast>): Promise<Cast> {
+    return this.repository.updateCast(id, cast);
   }
 
-  async deleteStaff(id: string): Promise<void> {
-    return this.repository.deleteStaff(id);
+  async deleteCast(id: string): Promise<void> {
+    return this.repository.deleteCast(id);
   }
 
-  async getStaffSchedule(staffId: string, startDate: Date, endDate: Date): Promise<StaffSchedule[]> {
-    return this.repository.getStaffSchedule(staffId, startDate, endDate);
+  async getCastSchedule(castId: string, startDate: Date, endDate: Date): Promise<CastSchedule[]> {
+    return this.repository.getCastSchedule(castId, startDate, endDate);
   }
 
-  async updateStaffSchedule(staffId: string, schedule: StaffSchedule[]): Promise<void> {
-    return this.repository.updateStaffSchedule(staffId, schedule);
+  async updateCastSchedule(castId: string, schedule: CastSchedule[]): Promise<void> {
+    return this.repository.updateCastSchedule(castId, schedule);
   }
 }

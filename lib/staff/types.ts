@@ -1,4 +1,4 @@
-export interface Staff {
+export interface Cast {
   id: string;
   name: string;
   nameKana: string;
@@ -35,8 +35,8 @@ export interface Appointment { // Appointment型定義を追加
 }
 
 
-export interface StaffSchedule {
-  staffId: string;
+export interface CastSchedule {
+  castId: string;
   date: Date;
   startTime: Date;
   endTime: Date;

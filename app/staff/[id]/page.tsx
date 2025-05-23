@@ -1,35 +1,34 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Staff, StaffSchedule } from "@/lib/staff"
-import { staffMembers, generateStaffSchedule } from "@/lib/staff/data"
+import { Cast, CastSchedule } from "@/lib/staff"
+import { castMembers, generateCastSchedule } from "@/lib/staff/data"
 import { generateSchedule } from "@/lib/staff/utils"
 import { options } from "@/lib/course-option/data"
 import { notFound } from "next/navigation"
-import { StaffMember, Appointment, ScheduleDay } from "@/lib/types/staff";
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 
-function getStaff(id: string): Staff | undefined {
-  return staffMembers.find(staff => staff.id === id);
+function getCast(id: string): Cast | undefined {
+  return castMembers.find(cast => cast.id === id);
 }
 
-function getStaffSchedule(id: string, startDate: Date, endDate: Date): StaffSchedule[] {
-  const staff = getStaff(id);
-  if (!staff) return [];
-  return generateStaffSchedule(id, startDate, endDate);
+function getCastSchedule(id: string, startDate: Date, endDate: Date): CastSchedule[] {
+  const cast = getCast(id);
+  if (!cast) return [];
+  return generateCastSchedule(id, startDate, endDate);
 }
 
-export default async function StaffDetailPage({ params }: { params: { id: string } }) {
-  const staff = getStaff(params.id);
+export default async function CastDetailPage({ params }: { params: { id: string } }) {
+  const cast = getCast(params.id);
 
-  if (!staff) {
+  if (!cast) {
     notFound()
   }
 
   const today = new Date()
   const endDate = new Date(today)
   endDate.setDate(today.getDate() + 7)
-  const schedule = getStaffSchedule(params.id, today, endDate)
+  const schedule = getCastSchedule(params.id, today, endDate)
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -39,30 +38,30 @@ export default async function StaffDetailPage({ params }: { params: { id: string
           <h2 className="text-2xl font-bold">基本情報</h2>
           <div className="relative">
             <img
-              src={staff.image}
-              alt={`${staff.name}の写真`}
+              src={cast.image}
+              alt={`${cast.name}の写真`}
               className="w-full h-[400px] object-cover rounded-lg"
             />
             <Badge className="absolute top-4 left-4 bg-emerald-600">掲載中</Badge>
           </div>
           <div className="space-y-4">
-            <h3 className="text-3xl font-bold">{staff.name}</h3>
+            <h3 className="text-3xl font-bold">{cast.name}</h3>
             <dl className="grid grid-cols-2 gap-4">
               <div>
                 <dt className="text-gray-600">年齢：</dt>
-                <dd>{staff.age}歳</dd>
+                <dd>{cast.age}歳</dd>
               </div>
               <div>
                 <dt className="text-gray-600">スリーサイズ：</dt>
-                <dd>{staff.bust}/{staff.waist}/{staff.hip} ({staff.bust}カップ)</dd>
+                <dd>{cast.bust}/{cast.waist}/{cast.hip} ({cast.bust}カップ)</dd>
               </div>
               <div>
                 <dt className="text-gray-600">身長：</dt>
-                <dd>{staff.height}cm</dd>
+                <dd>{cast.height}cm</dd>
               </div>
               <div>
                 <dt className="text-gray-600">タイプ：</dt>
-                <dd>{staff.type}</dd>
+                <dd>{cast.type}</dd>
               </div>
             </dl>
           </div>
@@ -70,15 +69,15 @@ export default async function StaffDetailPage({ params }: { params: { id: string
           <div className="space-y-4">
             <div className="flex justify-between items-center border-b pb-2">
               <div>ネット予約</div>
-              <div className="text-emerald-600">{staff.netReservation ? "可" : "不可"}</div>
+              <div className="text-emerald-600">{cast.netReservation ? "可" : "不可"}</div>
             </div>
             <div className="flex justify-between items-center border-b pb-2">
               <div>特別指名料</div>
-              <div>{staff.specialDesignationFee ? `${staff.specialDesignationFee.toLocaleString()}円` : "-"}</div>
+              <div>{cast.specialDesignationFee ? `${cast.specialDesignationFee.toLocaleString()}円` : "-"}</div>
             </div>
             <div className="flex justify-between items-center border-b pb-2">
               <div>本指名</div>
-              <div>{staff.regularDesignationFee ? `${staff.regularDesignationFee.toLocaleString()}円` : "-"}</div>
+              <div>{cast.regularDesignationFee ? `${cast.regularDesignationFee.toLocaleString()}円` : "-"}</div>
             </div>
           </div>
 
