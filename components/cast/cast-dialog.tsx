@@ -1,5 +1,6 @@
 "use client"
 
+import React, { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Cast, CastSchedule } from "@/lib/cast/types"
@@ -8,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { generateCastSchedule } from "@/lib/cast/data"
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
-import { useState, useEffect } from "react"
 
 interface CastDialogProps {
   open: boolean
