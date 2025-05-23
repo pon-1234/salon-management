@@ -137,37 +137,37 @@ export function Header() {
     <>
       <div className="flex items-center gap-4 p-4 border-b bg-white fixed top-0 left-0 right-0 z-50 shadow-sm">
         <Link href="/">
-          <Button variant="ghost" size="icon" className="shrink-0">
+          <Button variant="ghost" className="shrink-0 flex flex-col items-center gap-0.5 h-auto py-2 px-3">
             <Home className="h-5 w-5" />
-            <span className="sr-only">ホーム</span>
+            <span className="text-xs text-gray-600">ホーム</span>
           </Button>
         </Link>
 
         <Link href="/reservation">
-          <Button variant="ghost" size="icon" className="shrink-0">
+          <Button variant="ghost" className="shrink-0 flex flex-col items-center gap-0.5 h-auto py-2 px-3">
             <Calendar className="h-5 w-5" />
-            <span className="sr-only">予約カレンダー</span>
+            <span className="text-xs text-gray-600">予約</span>
           </Button>
         </Link>
 
         <Link href="/chat">
-          <Button variant="ghost" size="icon" className="shrink-0">
+          <Button variant="ghost" className="shrink-0 flex flex-col items-center gap-0.5 h-auto py-2 px-3">
             <MessageSquare className="h-5 w-5" />
-            <span className="sr-only">チャット</span>
+            <span className="text-xs text-gray-600">チャット</span>
           </Button>
         </Link>
 
         <Link href="/staff/list">
-          <Button variant="ghost" size="icon" className="shrink-0">
+          <Button variant="ghost" className="shrink-0 flex flex-col items-center gap-0.5 h-auto py-2 px-3">
             <Users className="h-5 w-5" />
-            <span className="sr-only">スタッフ一覧</span>
+            <span className="text-xs text-gray-600">スタッフ</span>
           </Button>
         </Link>
 
         <Link href="/staff/weekly-schedule">
-          <Button variant="ghost" size="icon" className="shrink-0">
-            <Calendar className="h-5 w-5" />
-            <span className="sr-only">週間スケジュール</span>
+          <Button variant="ghost" className="shrink-0 flex flex-col items-center gap-0.5 h-auto py-2 px-3">
+            <Clock className="h-5 w-5" />
+            <span className="text-xs text-gray-600">出勤表</span>
           </Button>
         </Link>
 
@@ -257,9 +257,9 @@ export function Header() {
         </Popover>
 
         <Link href="/analytics/daily-sales">
-          <Button variant="ghost" size="icon" className="shrink-0">
+          <Button variant="ghost" className="shrink-0 flex flex-col items-center gap-0.5 h-auto py-2 px-3">
             <BarChart2 className="h-5 w-5" />
-            <span className="sr-only">集計</span>
+            <span className="text-xs text-gray-600">集計</span>
           </Button>
         </Link>
 
@@ -267,8 +267,9 @@ export function Header() {
 
         <Popover open={notificationOpen} onOpenChange={setNotificationOpen}>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
+            <Button variant="ghost" className="relative flex flex-col items-center gap-0.5 h-auto py-2 px-3">
               <Bell className="h-5 w-5" />
+              <span className="text-xs text-gray-600">通知</span>
               {unreadCount > 0 && (
                 <Badge 
                   className="absolute -top-1 -right-1 px-2 py-1 text-xs bg-red-500 text-white rounded-full"
@@ -276,7 +277,6 @@ export function Header() {
                   {unreadCount}
                 </Badge>
               )}
-              <span className="sr-only">通知</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent 
