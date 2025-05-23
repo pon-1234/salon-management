@@ -1,3 +1,5 @@
+"use client"
+
 import { Home, Search, ChevronDown, Check, BarChart2, Bell, MessageSquare, Calendar, Users, Clock } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import {

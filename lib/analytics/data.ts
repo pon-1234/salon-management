@@ -25,8 +25,8 @@ export function generateMonthlyData(year: number): MonthlyData[] {
     newCustomerCount: Math.floor(Math.random() * 100) + 100,
     repeatCustomerCount: Math.floor(Math.random() * 400) + 600,
     storeSales: 0, // Will be calculated
-    previousYearRatio: (Math.random() * 0.4 + 0.8).toFixed(2),
-    storeSalesRatio: (Math.random() * 0.2 + 0.4).toFixed(2),
+    previousYearRatio: Math.round((Math.random() * 0.4 + 0.8) * 100) / 100,
+    storeSalesRatio: Math.round((Math.random() * 0.2 + 0.4) * 100) / 100,
   })).map(data => {
     data.totalCount = data.tokyoCount + data.kanagawaCount;
     data.totalSales = data.cashSales + data.cardSales;
@@ -202,12 +202,3 @@ export function generateDailyData(year: number, month: number): DailyData[] {
     return day;
   });
 }
-
-export {
-  generateMonthlyData,
-  staffPerformanceData,
-  generateOptionSalesData,
-  generateMarketingChannelData,
-  generateCourseSalesData,
-  generateDailyData,
-};
