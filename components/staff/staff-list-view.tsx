@@ -1,0 +1,66 @@
+import { Staff } from "@/lib/staff/types"
+import { Button } from "@/components/ui/button"
+import { Phone, Mail } from 'lucide-react'
+import Link from "next/link"
+import { format } from "date-fns"
+
+interface StaffListViewProps {
+  staff: Staff[]
+}
+
+export function StaffListView({ staff }: StaffListViewProps) {
+  return (
+    <div className="space-y-4">
+      {staff.map((member) => (
+        <div
+          key={member.id}
+          className="bg-white rounded-lg shadow p-4 flex items-start gap-4"
+        >
+          <Link href={`/staff/manage/${member.id}`} className="shrink-0">
+            <img
+              src={member.image}
+              alt={member.name}
+              className="w-24 h-24 object-cover rounded"
+            />
+          </Link>
+
+          <div className="flex-1 min-w-0">
+            <div className="space-y-1">
+              <Link 
+                href={`/staff/manage/${member.id}`}
+                className="text-lg font-medium hover:text-emerald-600"
+              >
+                {member.name}
+              </Link>
+              <div className="text-gray-600">{member.nameKana}</div>
+              <div className="text-gray-500">{member.email}</div>
+              <div className="text-gray-500">入金処理 (今月) (先月)</div>
+            </div>
+            <div className="flex gap-2 mt-2">
+              <Button 
+                size="sm" 
+                variant="destructive"
+                className="h-8"
+              >
+                <Phone className="w-4 h-4 mr-2" />
+                電話をかける
+              </Button>
+              <Button 
+                size="sm" 
+                variant="secondary"
+                className="h-8"
+              >
+                <Mail className="w-4 h-4 mr-2" />
+                業務連絡
+              </Button>
+            </div>
+          </div>
+
+          <div className="text-sm text-gray-500 shrink-0">
+            {format(new Date(member.registrationDate || Date.now()), 'yyyy-MM-dd HH:mm:ss')}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}

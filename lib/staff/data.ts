@@ -1,0 +1,138 @@
+import { Staff, type StaffSchedule, Appointment } from "../types/staff"
+
+const createDate = (hours: number, minutes = 0) => {
+  const date = new Date()
+  date.setHours(hours, minutes, 0, 0)
+  return date
+}
+
+export { Staff, Appointment }
+
+export const staffMembers: Staff[] = [
+  {
+    id: "1",
+    name: "みるく",
+    nameKana: "みるく",
+    age: 20,
+    height: 160,
+    bust: "G",
+    waist: 62,
+    hip: 98,
+    type: "カワイイ系",
+    image: "https://rimane.net/images/tyrano-move-image01.jpg",
+    description:
+      "明るく元気な性格で、お客様を楽しませることが得意です。マッサージの技術も高く、リピーターの多いスタッフです。",
+    netReservation: true,
+    specialDesignationFee: null,
+    regularDesignationFee: null,
+    workStatus: "出勤",
+    courseTypes: ["イベントコース", "基本コース"],
+    workStart: createDate(10),
+    workEnd: createDate(22),
+    appointments: [],
+  },
+  {
+    id: "2",
+    name: "さくら",
+    nameKana: "さくら",
+    age: 23,
+    height: 158,
+    bust: "E",
+    waist: 58,
+    hip: 86,
+    type: "清楚系",
+    image: "https://rimane.net/images/tyrano-move-image01.jpg",
+    description:
+      "穏やかな性格で、丁寧な接客が好評です。リラックスマッサージが得意で、癒しを求めるお客様に人気があります。",
+    netReservation: true,
+    specialDesignationFee: 2000,
+    regularDesignationFee: 1000,
+    workStatus: "出勤",
+    courseTypes: ["基本コース", "リラックスコース"],
+    workStart: createDate(12),
+    workEnd: createDate(22),
+    appointments: [],
+  },
+  {
+    id: "3",
+    name: "れい",
+    nameKana: "れい",
+    age: 25,
+    height: 165,
+    bust: "F",
+    waist: 60,
+    hip: 88,
+    type: "モデル系",
+    image: "https://rimane.net/images/tyrano-move-image01.jpg",
+    description:
+      "モデル経験もあり、洗練された雰囲気が魅力です。ストレッチと組み合わせたマッサージが特徴で、体の柔軟性向上にも効果的です。",
+    netReservation: true,
+    specialDesignationFee: 3000,
+    regularDesignationFee: 1500,
+    workStatus: "出勤",
+    courseTypes: ["イベントコース", "ストレッチコース"],
+    workStart: createDate(14),
+    workEnd: createDate(24),
+    appointments: [],
+  },
+  {
+    id: "4",
+    name: "ゆき",
+    nameKana: "ゆき",
+    age: 22,
+    height: 155,
+    bust: "D",
+    waist: 56,
+    hip: 84,
+    type: "ロリ系",
+    image: "https://rimane.net/images/tyrano-move-image01.jpg",
+    description:
+      "小柄で可愛らしい外見と、意外な大人の魅力を併せ持つスタッフです。細やかな気配りが得意で、初めてのお客様にも安心して利用いただけます。",
+    netReservation: true,
+    specialDesignationFee: null,
+    regularDesignationFee: 1000,
+    workStatus: "出勤",
+    courseTypes: ["基本コース", "癒しコース"],
+    workStart: createDate(11),
+    workEnd: createDate(21),
+    appointments: [],
+  },
+]
+
+export function getAllStaff(): Staff[] {
+  return staffMembers
+}
+
+export const generateStaffSchedule = (staffId: string, startDate: Date, endDate: Date): StaffSchedule[] => {
+  const staff = staffMembers.find((staff) => staff.id === staffId)
+  if (!staff) {
+    return []
+  }
+
+  const schedule: StaffSchedule[] = []
+  const currentDate = new Date(startDate)
+
+  while (currentDate <= endDate) {
+    const appointmentsForDay = staff.appointments.filter(
+      (appointment) => appointment.startTime.toDateString() === currentDate.toDateString(),
+    )
+
+    // Use staff.workStart and staff.workEnd for startTime and endTime
+    const startTime = new Date(currentDate)
+    startTime.setHours(staff.workStart?.getHours() || 0, staff.workStart?.getMinutes() || 0, 0, 0)
+    const endTime = new Date(currentDate)
+    endTime.setHours(staff.workEnd?.getHours() || 0, staff.workEnd?.getMinutes() || 0, 0, 0)
+
+    schedule.push({
+      staffId,
+      date: new Date(currentDate),
+      startTime,
+      endTime,
+      bookings: appointmentsForDay.length,
+    })
+
+    currentDate.setDate(currentDate.getDate() + 1)
+  }
+
+  return schedule
+}
