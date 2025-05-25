@@ -27,24 +27,6 @@ export function IncomingCallPopup({
   onViewDetails,
   onClose
 }: IncomingCallPopupProps) {
-  const [ringDuration, setRingDuration] = useState(0)
-
-  useEffect(() => {
-    if (isOpen) {
-      const interval = setInterval(() => {
-        setRingDuration(prev => prev + 1)
-      }, 1000)
-      return () => clearInterval(interval)
-    } else {
-      setRingDuration(0)
-    }
-  }, [isOpen])
-
-  const formatRingDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -59,7 +41,6 @@ export function IncomingCallPopup({
               <span className="text-lg font-semibold text-emerald-600">着信中</span>
             </div>
             <div className="text-2xl font-mono font-bold">{phoneNumber}</div>
-            <div className="text-sm text-gray-500">通話時間: {formatRingDuration(ringDuration)}</div>
           </div>
 
           {/* Customer Information */}

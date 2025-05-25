@@ -10,7 +10,7 @@ interface CTIProviderProps {
 }
 
 export function CTIProvider({ children }: CTIProviderProps) {
-  const { incomingCall, answerCall, rejectCall, simulateIncomingCall } = useCTI()
+  const { incomingCall, answerCall, rejectCall, showIncomingCall } = useCTI()
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -18,13 +18,13 @@ export function CTIProvider({ children }: CTIProviderProps) {
   useEffect(() => {
     const tel = searchParams.get('tel')
     if (tel && !incomingCall) {
-      simulateIncomingCall(tel)
-      // URLパラメータをクリア（オプション）
+      showIncomingCall(tel)
+      // URLパラメータをクリア
       const url = new URL(window.location.href)
       url.searchParams.delete('tel')
       window.history.replaceState({}, '', url.toString())
     }
-  }, [searchParams, incomingCall, simulateIncomingCall])
+  }, [searchParams, incomingCall, showIncomingCall])
 
   const handleViewDetails = () => {
     if (incomingCall?.customer) {
