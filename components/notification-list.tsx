@@ -11,14 +11,17 @@ import { cn } from "@/lib/utils"
 interface Notification {
   id: string
   storeName: string
-  type: "reservation" | "message" | "system"
+  type: "reservation" | "message" | "system" | "incoming_call"
   message: string
   details: {
     reservationDate?: string
     reservationTime?: string
-    receivedTime?: string
+    receivedTime: string
     staff?: string
-    customer?: string
+    customer: string
+    phoneNumber?: string
+    callDuration?: string
+    callStatus?: "answered" | "rejected" | "missed"
   }
   read: boolean
 }
@@ -67,29 +70,65 @@ export function NotificationList({
               </div>
               <div className="font-medium mb-2">{notification.message}</div>
               <div className="space-y-1 text-sm text-gray-600">
-                {notification.details.reservationDate && (
-                  <div className="flex justify-between">
-                    <span>ご予約日時：</span>
-                    <span>{notification.details.reservationDate} {notification.details.reservationTime}</span>
-                  </div>
-                )}
-                {notification.details.receivedTime && (
-                  <div className="flex justify-between">
-                    <span>受付日時：</span>
-                    <span>{notification.details.receivedTime}</span>
-                  </div>
-                )}
-                {notification.details.staff && notification.details.customer && (
-                  <div className="flex justify-between">
-                    <span>キャスト：</span>
-                    <span>{notification.details.staff}</span>
-                  </div>
-                )}
-                {notification.details.customer && (
-                  <div className="flex justify-between">
-                    <span>顧客：</span>
-                    <span>{notification.details.customer} 様</span>
-                  </div>
+                {notification.type === "incoming_call" ? (
+                  <>
+                    {notification.details.phoneNumber && (
+                      <div className="flex justify-between">
+                        <span>電話番号：</span>
+                        <span>{notification.details.phoneNumber}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span>着信日時：</span>
+                      <span>{notification.details.receivedTime}</span>
+                    </div>
+                    {notification.details.callStatus && (
+                      <div className="flex justify-between">
+                        <span>対応状況：</span>
+                        <span className={
+                          notification.details.callStatus === "answered" ? "text-green-600" :
+                          notification.details.callStatus === "rejected" ? "text-red-600" :
+                          "text-yellow-600"
+                        }>
+                          {notification.details.callStatus === "answered" ? "応答済み" :
+                           notification.details.callStatus === "rejected" ? "拒否" : "不在着信"}
+                        </span>
+                      </div>
+                    )}
+                    {notification.details.callDuration && (
+                      <div className="flex justify-between">
+                        <span>通話時間：</span>
+                        <span>{notification.details.callDuration}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span>顧客：</span>
+                      <span>{notification.details.customer} 様</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {notification.details.reservationDate && (
+                      <div className="flex justify-between">
+                        <span>ご予約日時：</span>
+                        <span>{notification.details.reservationDate} {notification.details.reservationTime}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span>受付日時：</span>
+                      <span>{notification.details.receivedTime}</span>
+                    </div>
+                    {notification.details.staff && (
+                      <div className="flex justify-between">
+                        <span>キャスト：</span>
+                        <span>{notification.details.staff}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span>顧客：</span>
+                      <span>{notification.details.customer} 様</span>
+                    </div>
+                  </>
                 )}
               </div>
               <div className="flex justify-end mt-2">

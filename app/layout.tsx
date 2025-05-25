@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import '../styles/globals.css'
 import { CTIProvider } from '@/components/cti/cti-provider'
+import { NotificationProvider } from '@/contexts/notification-context'
+import { StoreProvider } from '@/contexts/store-context'
 import { Suspense } from 'react'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -20,11 +22,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Suspense fallback={<div>Loading...</div>}>
-          <CTIProvider>
-            {children}
-          </CTIProvider>
-        </Suspense>
+        <StoreProvider>
+          <NotificationProvider>
+            <Suspense fallback={<div>Loading...</div>}>
+              <CTIProvider>
+                {children}
+              </CTIProvider>
+            </Suspense>
+          </NotificationProvider>
+        </StoreProvider>
       </body>
     </html>
   )

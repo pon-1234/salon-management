@@ -25,21 +25,8 @@ import { Badge } from "@/components/ui/badge"
 import { ReservationDialog } from "./reservation/reservation-dialog"
 import { Cast } from "@/lib/cast/types"
 import { getAllCasts } from "@/lib/cast/data"
-
-interface Notification {
-  id: string;
-  storeName: string;
-  type: "reservation";
-  message: string;
-  details: {
-    reservationDate: string;
-    reservationTime: string;
-    receivedTime: string;
-    staff: string;
-    customer: string;
-  };
-  read: boolean;
-}
+import { useNotifications } from "@/contexts/notification-context"
+import { StoreSelector } from "@/components/store/store-selector"
 
 export function Header() {
   const [castList, setCastList] = useState<Cast[]>([])
@@ -48,52 +35,9 @@ export function Header() {
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState("")
   const [notificationOpen, setNotificationOpen] = useState(false)
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: "1",
-      storeName: "金の玉クラブ池袋～密着零丸マッサージ～",
-      type: "reservation" as const,
-      message: "新しい予約が入りました。",
-      details: {
-        reservationDate: "12/15",
-        reservationTime: "16:00-17:30",
-        receivedTime: "12/09 08:19",
-        staff: "らん",
-        customer: "priv_hon.",
-      },
-      read: false,
-    },
-    {
-      id: "2",
-      storeName: "金の玉クラブ新宿～癒しの手技～",
-      type: "reservation" as const,
-      message: "予約がキャンセルされました。",
-      details: {
-        reservationDate: "12/10",
-        reservationTime: "14:00-15:30",
-        receivedTime: "12/09 10:45",
-        staff: "みく",
-        customer: "tanaka_456",
-      },
-      read: true,
-    },
-    {
-      id: "3",
-      storeName: "金の玉クラブ渋谷～極上の癒し空間～",
-      type: "reservation" as const,
-      message: "予約時間が変更されました。",
-      details: {
-        reservationDate: "12/12",
-        reservationTime: "18:30-20:00",
-        receivedTime: "12/09 15:30",
-        staff: "さくら",
-        customer: "yamada_789",
-      },
-      read: false,
-    },
-  ])
+  const { notifications, markAsRead, removeNotification, unreadCount } = useNotifications()
   const router = useRouter()
-  const [selectedReservation, setSelectedReservation] = useState<Notification | null>(null);
+  const [selectedReservation, setSelectedReservation] = useState<any>(null);
 
   useEffect(() => {
     const cast = getAllCasts()
@@ -115,23 +59,21 @@ export function Header() {
   }
 
   const handleNotificationClick = (id: string) => {
+    markAsRead(id)
     console.log("Notification clicked:", id)
-    // Handle notification click (e.g., navigate to relevant page)
   }
 
   const handleViewDetails = (id: string) => {
     const notification = notifications.find(n => n.id === id);
-    if (notification) {
+    if (notification && notification.type === "reservation") {
       setSelectedReservation(notification);
     }
-    setNotificationOpen(false); // 通知リストを閉じる
+    setNotificationOpen(false);
   };
 
   const handleArchive = useCallback((id: string) => {
-    setNotifications(prevNotifications => prevNotifications.filter(n => n.id !== id));
-  }, []);
-
-  const unreadCount = notifications.filter(n => !n.read).length
+    removeNotification(id);
+  }, [removeNotification]);
 
   return (
     <>
@@ -142,6 +84,9 @@ export function Header() {
             <span className="text-xs text-gray-600">ホーム</span>
           </Button>
         </Link>
+
+        {/* 店舗セレクター */}
+        <StoreSelector />
 
         <Link href="/reservation">
           <Button variant="ghost" className="shrink-0 flex flex-col items-center gap-0.5 h-auto py-2 px-3">
