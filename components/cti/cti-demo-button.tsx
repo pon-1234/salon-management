@@ -8,9 +8,9 @@ export function CTIDemoButton() {
   const { simulateIncomingCall, isConnected } = useCTI()
 
   const testCalls = [
-    { label: "既存顧客（田中花子）", phone: "03-1234-5678" },
-    { label: "VIP顧客（佐藤美咲）", phone: "090-1234-5678" },
-    { label: "新規お客様", phone: "080-9999-9999" }
+    { label: "既存顧客", phone: "03-1234-5678" },
+    { label: "VIP顧客", phone: "090-1234-5678" },
+    { label: "新規", phone: "080-9999-9999" }
   ]
 
   if (!isConnected) {
@@ -36,6 +36,19 @@ export function CTIDemoButton() {
             <Phone className="w-3 h-3 mr-1" />
             {call.label}
           </Button>
+        ))}
+      </div>
+      <div className="text-xs text-gray-500 space-y-1">
+        <div>URLテスト例:</div>
+        {testCalls.map((call) => (
+          <div key={call.phone}>
+            <a 
+              href={`?tel=${call.phone}`}
+              className="text-blue-600 hover:underline"
+            >
+              ?tel={call.phone}
+            </a>
+          </div>
         ))}
       </div>
     </div>

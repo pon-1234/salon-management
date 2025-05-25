@@ -2,15 +2,29 @@
 
 import { useCTI } from "@/hooks/use-cti"
 import { IncomingCallPopup } from "./incoming-call-popup"
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect } from 'react'
 
 interface CTIProviderProps {
   children: React.ReactNode
 }
 
 export function CTIProvider({ children }: CTIProviderProps) {
-  const { incomingCall, answerCall, rejectCall } = useCTI()
+  const { incomingCall, answerCall, rejectCall, simulateIncomingCall } = useCTI()
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // URLパラメータで着信をトリガー
+  useEffect(() => {
+    const tel = searchParams.get('tel')
+    if (tel && !incomingCall) {
+      simulateIncomingCall(tel)
+      // URLパラメータをクリア（オプション）
+      const url = new URL(window.location.href)
+      url.searchParams.delete('tel')
+      window.history.replaceState({}, '', url.toString())
+    }
+  }, [searchParams, incomingCall, simulateIncomingCall])
 
   const handleViewDetails = () => {
     if (incomingCall?.customer) {
