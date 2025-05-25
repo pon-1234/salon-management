@@ -172,11 +172,11 @@ export function Header() {
           </Button>
         </Link>
 
-        {/* お客様ケータイ番号検索フォーム */}
+        {/* 顧客電話番号検索フォーム */}
         <form onSubmit={handleSearch} className="relative max-w-md">
           <Input 
             type="search" 
-            placeholder="お客様ケータイ番号入力" 
+            placeholder="顧客電話番号検索" 
             className="pl-4 pr-10 py-2 bg-gray-50"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -218,7 +218,7 @@ export function Header() {
               variant="outline"
               role="combobox"
               aria-expanded={open}
-              className="w-[120px] justify-between"
+              className="w-[160px] justify-between"
             >
               {value
                 ? castList.find((cast) => cast.id === value)?.name || "キャスト検索"
@@ -226,7 +226,7 @@ export function Header() {
               <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[200px] p-0">
+          <PopoverContent className="w-[240px] p-0">
             <Command>
               <CommandInput placeholder="キャストを検索..." className="h-9" />
               <CommandList>
