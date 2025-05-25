@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge"
 import { ReservationDialog } from "./reservation/reservation-dialog"
 import { Cast } from "@/lib/cast/types"
 import { getAllCasts } from "@/lib/cast/data"
+import { CTIDemoButton } from "./cti/cti-demo-button"
 
 interface Notification {
   id: string;
@@ -264,6 +265,9 @@ export function Header() {
         </Link>
 
         <div className="flex-1" />
+
+        {/* CTI着信デモボタン */}
+        <CTIDemoButton />
 
         <Popover open={notificationOpen} onOpenChange={setNotificationOpen}>
           <PopoverTrigger asChild>
