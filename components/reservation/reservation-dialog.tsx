@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Pencil, MessageSquare, Clock, Users, ArrowRight, MoreHorizontal, Phone, Mail } from 'lucide-react'
 import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ModificationHistoryTable } from "@/components/reservation/modification-history-table"
+import { getModificationHistory, getModificationAlerts } from "@/lib/modification-history/data"
 // 4. Fix: Ensure consistent ReservationData type
 import { ReservationData } from "@/components/reservation/reservation-table";
 
@@ -22,9 +25,12 @@ export function ReservationDialog({
 }: ReservationDialogProps) {
   if (!reservation) return null
 
+  const modificationHistory = getModificationHistory(reservation.id)
+  const modificationAlerts = getModificationAlerts(reservation.id)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl p-0 overflow-y-auto max-h-[90vh] [&>button]:z-10">
+      <DialogContent className="max-w-5xl p-0 overflow-y-auto max-h-[90vh] [&>button]:z-10">
         <DialogTitle className="sr-only">
           予約情報 - {reservation?.customerName}
         </DialogTitle>
@@ -57,7 +63,21 @@ export function ReservationDialog({
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-6">
+          <Tabs defaultValue="details" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="details">予約詳細</TabsTrigger>
+              <TabsTrigger value="history" className="relative">
+                修正履歴
+                {modificationAlerts.length > 0 && (
+                  <Badge variant="destructive" className="ml-2 h-5 w-5 rounded-full p-0 text-xs">
+                    {modificationAlerts.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="details" className="space-y-6 mt-6">
           {/* 店舗名・マッサージ師氏名行 */}
           <div className="flex items-center gap-2">
             <div className="text-gray-600">
@@ -256,6 +276,15 @@ export function ReservationDialog({
               </div>
             </div>
           )}
+            </TabsContent>
+            
+            <TabsContent value="history" className="mt-6">
+              <ModificationHistoryTable 
+                modifications={modificationHistory}
+                alerts={modificationAlerts}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* 下部アクション */}

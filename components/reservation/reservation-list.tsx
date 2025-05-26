@@ -43,13 +43,13 @@ export function ReservationList({ reservations, limit, showViewMore = false, onO
           <TableHeader>
             <TableRow>
               <TableHead className="w-[80px]">NO.</TableHead>
-              <TableHead>お名前</TableHead>
+              <TableHead className="w-[140px]">お名前</TableHead>
               <TableHead>日時指定</TableHead>
               <TableHead>スタッフ</TableHead>
               <TableHead>コース</TableHead>
               <TableHead className="w-[80px]">IN</TableHead>
               <TableHead className="w-[80px]">OUT</TableHead>
-              <TableHead className="w-[80px]">確認</TableHead>
+              <TableHead className="w-[120px]">確認</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

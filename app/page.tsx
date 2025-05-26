@@ -20,6 +20,7 @@ import { format } from "date-fns"
 import { Reservation } from "@/lib/types/reservation"
 import { ReservationDialog } from '@/components/reservation/reservation-dialog';
 import { ReservationData } from '@/components/reservation/reservation-table';
+import { recordModification } from '@/lib/modification-history/data';
 
 export default function HomePage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -69,6 +70,24 @@ export default function HomePage() {
   };
 
   const handleMakeModifiable = (reservationId: string) => {
+    const reservation = reservations.find(r => r.id === reservationId);
+    if (!reservation) return;
+
+    // 修正履歴を記録
+    recordModification(
+      reservationId,
+      "user_current", // 実際のアプリではログインユーザーIDを使用
+      "現在のユーザー", // 実際のアプリではログインユーザー名を使用
+      "status",
+      "ステータス",
+      reservation.status,
+      "modifiable",
+      "確定済み予約を修正可能状態に変更",
+      "192.168.1.100", // 実際のアプリでは実際のIPを取得
+      navigator.userAgent,
+      "current_session"
+    );
+
     setReservations(prev => 
       prev.map(reservation => 
         reservation.id === reservationId 
