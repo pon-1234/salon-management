@@ -17,9 +17,10 @@ interface ReservationListProps {
   limit?: number
   showViewMore?: boolean
   onOpenReservation?: (reservation: Reservation) => void
+  onMakeModifiable?: (reservationId: string) => void
 }
 
-export function ReservationList({ reservations, limit, showViewMore = false, onOpenReservation }: ReservationListProps) {
+export function ReservationList({ reservations, limit, showViewMore = false, onOpenReservation, onMakeModifiable }: ReservationListProps) {
   const displayReservations = limit ? reservations.slice(0, limit) : reservations
 
   const getRankColor = (rank: string) => {
@@ -90,9 +91,28 @@ export function ReservationList({ reservations, limit, showViewMore = false, onO
                 <TableCell>{format(reservation.startTime, 'HH:mm')}</TableCell>
                 <TableCell>{format(reservation.endTime, 'HH:mm')}</TableCell>
                 <TableCell>
-                  <Badge variant={reservation.status === 'confirmed' ? 'default' : 'secondary'}>
-                    {reservation.status === 'confirmed' ? '確定' : '未確定'}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={
+                      reservation.status === 'confirmed' ? 'default' : 
+                      reservation.status === 'modifiable' ? 'outline' : 'secondary'
+                    }>
+                      {reservation.status === 'confirmed' ? '確定' : 
+                       reservation.status === 'modifiable' ? '修正可能' : '未確定'}
+                    </Badge>
+                    {reservation.status === 'confirmed' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 px-2 text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onMakeModifiable?.(reservation.id);
+                        }}
+                      >
+                        修正可能にする
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

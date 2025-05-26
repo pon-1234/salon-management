@@ -18,10 +18,69 @@ import { getAllReservations } from "@/lib/reservation/data"
 import Link from "next/link"
 import { Reservation } from "@/lib/types/reservation"
 import { ReservationDialog } from '@/components/reservation/reservation-dialog';
+import { ReservationData } from '@/components/reservation/reservation-table';
 
 export default function HomePage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
+
+  // 予約データをダイアログ用に変換
+  const convertToReservationData = (reservation: Reservation): ReservationData | null => {
+    if (!reservation) return null;
+    
+    return {
+      id: reservation.id,
+      customerId: reservation.customerId,
+      customerName: `顧客${reservation.customerId}`, // 実際のデータから取得
+      customerType: "通常顧客",
+      phoneNumber: "090-1234-5678", // 実際のデータから取得
+      points: 100,
+      bookingStatus: reservation.status,
+      staffConfirmation: "確認済み",
+      customerConfirmation: "確認済み", 
+      prefecture: "東京都",
+      district: "渋谷区",
+      location: "アパホテル",
+      locationType: "ホテル",
+      specificLocation: "502号室",
+      staff: `スタッフ${reservation.staffId}`,
+      marketingChannel: "WEB",
+      date: format(reservation.startTime, 'yyyy-MM-dd'),
+      time: format(reservation.startTime, 'HH:mm'),
+      inOutTime: `${format(reservation.startTime, 'HH:mm')}-${format(reservation.endTime, 'HH:mm')}`,
+      course: "リラクゼーションコース",
+      freeExtension: "なし",
+      designation: "指名",
+      designationFee: "3,000円",
+      options: {},
+      transportationFee: 0,
+      paymentMethod: "現金",
+      discount: "0円",
+      additionalFee: 0,
+      totalPayment: reservation.price,
+      storeRevenue: Math.floor(reservation.price * 0.6),
+      staffRevenue: Math.floor(reservation.price * 0.4),
+      staffBonusFee: 0,
+      startTime: reservation.startTime,
+      endTime: reservation.endTime,
+      staffImage: "/placeholder-user.jpg"
+    };
+  };
+
+  const handleMakeModifiable = (reservationId: string) => {
+    setReservations(prev => 
+      prev.map(reservation => 
+        reservation.id === reservationId 
+          ? { 
+              ...reservation, 
+              status: 'modifiable' as const,
+              modifiableUntil: new Date(Date.now() + 30 * 60 * 1000), // 30分後まで修正可能
+              lastModified: new Date()
+            }
+          : reservation
+      )
+    );
+  };
 
   useEffect(() => {
     const fetchReservations = async () => {
@@ -229,7 +288,13 @@ export default function HomePage() {
             <CardTitle className="text-lg font-medium">オーダー状況</CardTitle>
           </CardHeader>
           <CardContent>
-            <ReservationList reservations={reservations} limit={3} showViewMore={true} onOpenReservation={setSelectedReservation} />
+            <ReservationList 
+              reservations={reservations} 
+              limit={3} 
+              showViewMore={true} 
+              onOpenReservation={setSelectedReservation}
+              onMakeModifiable={handleMakeModifiable}
+            />
           </CardContent>
         </Card>
 
@@ -284,7 +349,7 @@ export default function HomePage() {
         <ReservationDialog
           open={!!selectedReservation}
           onOpenChange={(open) => !open && setSelectedReservation(null)}
-          reservation={selectedReservation}
+          reservation={selectedReservation ? convertToReservationData(selectedReservation) : null}
         />
       </main>
     </div>

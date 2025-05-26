@@ -24,7 +24,7 @@ export function ReservationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl p-0 overflow-y-auto max-h-[90vh]">
+      <DialogContent className="max-w-3xl p-0 overflow-y-auto max-h-[90vh] [&>button]:z-10">
         <DialogTitle className="sr-only">
           予約情報 - {reservation?.customerName}
         </DialogTitle>
@@ -33,7 +33,7 @@ export function ReservationDialog({
         </DialogDescription>
 
         {/* ヘッダー */}
-        <div className="bg-emerald-600 p-6 text-white">
+        <div className="bg-emerald-600 p-6 text-white sticky top-0 z-10">
           <div className="flex justify-between items-start">
             <div>
               <h2 className="text-2xl font-bold">{reservation?.customerName} 様</h2>
@@ -241,6 +241,21 @@ export function ReservationDialog({
             <Button variant="outline" className="flex-1">完了</Button>
             <Button variant="outline" className="flex-1 text-red-600 hover:text-red-700">キャンセル</Button>
           </div>
+          
+          {/* 修正可能状態でのオーダー修正ボタン */}
+          {reservation?.bookingStatus === 'modifiable' && (
+            <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-orange-800">修正可能状態</p>
+                  <p className="text-xs text-orange-600">30分間オーダーの修正が可能です</p>
+                </div>
+                <Button className="bg-orange-600 hover:bg-orange-700 text-white">
+                  オーダー修正
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 下部アクション */}
