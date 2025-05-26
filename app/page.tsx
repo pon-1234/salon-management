@@ -201,7 +201,7 @@ export default function HomePage() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="mb-8">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg font-medium">売上データ</CardTitle>
