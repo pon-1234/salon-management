@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, Search, ChevronDown, Check, BarChart2, Bell, MessageSquare, Calendar, Users, Clock } from 'lucide-react'
+import { Home, Search, ChevronDown, Check, BarChart2, Bell, MessageSquare, Calendar, Users, Clock, Settings } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import {
   Command,
@@ -205,6 +205,13 @@ export function Header() {
           <Button variant="ghost" className="shrink-0 flex flex-col items-center gap-0.5 h-auto py-2 px-3">
             <BarChart2 className="h-5 w-5" />
             <span className="text-xs text-gray-600">集計</span>
+          </Button>
+        </Link>
+
+        <Link href="/settings">
+          <Button variant="ghost" className="shrink-0 flex flex-col items-center gap-0.5 h-auto py-2 px-3">
+            <Settings className="h-5 w-5" />
+            <span className="text-xs text-gray-600">設定</span>
           </Button>
         </Link>
 

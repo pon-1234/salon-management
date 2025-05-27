@@ -83,19 +83,124 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
               </Badge>
             </div>
           </div>
-          <Button 
-            onClick={handleBooking}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white text-lg px-6 py-3"
-          >
-            この顧客で予約を取る
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleBooking}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              新規予約
+            </Button>
+            <Button variant="outline">
+              顧客情報編集
+            </Button>
+          </div>
         </div>
+
+        {/* 予約情報を最上部に常時表示 */}
+        <Card className={`shadow-sm ${reservations.length > 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-gray-200'}`}>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Calendar className={`w-5 h-5 ${reservations.length > 0 ? 'text-emerald-600' : 'text-gray-500'}`} />
+                現在の予約情報
+                {reservations.length > 0 && (
+                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
+                    {reservations.length}件
+                  </Badge>
+                )}
+              </div>
+              <Button 
+                onClick={handleBooking}
+                variant="outline"
+                size="sm"
+                className="bg-emerald-600 text-white hover:bg-emerald-700 border-emerald-600"
+              >
+                新規予約
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {reservations.length > 0 ? (
+              <div className="space-y-3">
+                {reservations
+                  .sort((a, b) => a.startTime.getTime() - b.startTime.getTime()) // 日時順でソート
+                  .map((reservation) => {
+                    const isToday = new Date(reservation.startTime).toDateString() === new Date().toDateString();
+                    const isTomorrow = new Date(reservation.startTime).toDateString() === new Date(Date.now() + 24 * 60 * 60 * 1000).toDateString();
+                    
+                    return (
+                      <div 
+                        key={reservation.id} 
+                        className={`flex items-center gap-4 p-3 rounded-lg border transition-all ${
+                          isToday 
+                            ? 'bg-orange-50 border-orange-200 shadow-md' 
+                            : isTomorrow
+                            ? 'bg-blue-50 border-blue-200'
+                            : 'bg-white border-emerald-100'
+                        }`}
+                      >
+                        <div className="shrink-0">
+                          <img
+                            src="/placeholder.svg"
+                            alt="Staff"
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-medium">スタッフ名</h3>
+                            <Badge variant={reservation.status === 'confirmed' ? 'default' : 'secondary'}>
+                              {reservation.status === 'confirmed' ? '予約確定' : 
+                               reservation.status === 'modifiable' ? '修正可能' : '仮予約'}
+                            </Badge>
+                            {isToday && (
+                              <Badge variant="destructive" className="text-xs">
+                                本日
+                              </Badge>
+                            )}
+                            {isTomorrow && (
+                              <Badge variant="outline" className="text-xs bg-blue-100 text-blue-700">
+                                明日
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              {reservation.startTime.toLocaleDateString('ja-JP')}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-4 h-4" />
+                              {`${reservation.startTime.toLocaleTimeString('ja-JP', {hour: '2-digit', minute: '2-digit'})} - ${reservation.endTime.toLocaleTimeString('ja-JP', {hour: '2-digit', minute: '2-digit'})}`}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className={`font-medium ${isToday ? 'text-orange-600' : isTomorrow ? 'text-blue-600' : 'text-emerald-600'}`}>
+                            ¥{reservation.price.toLocaleString()}
+                          </div>
+                          <Button variant="link" className={`text-sm p-0 ${isToday ? 'text-orange-600' : isTomorrow ? 'text-blue-600' : 'text-emerald-600'}`}>
+                            予約詳細
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p className="text-lg font-medium mb-2">予約はありません</p>
+                <p className="text-sm">新しい予約を作成してください</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Tabs defaultValue="profile" className="space-y-4">
           <TabsList className="bg-white border">
             <TabsTrigger value="profile" className="data-[state=active]:bg-emerald-50">基本情報</TabsTrigger>
             <TabsTrigger value="history" className="data-[state=active]:bg-emerald-50">利用履歴</TabsTrigger>
-            <TabsTrigger value="reservations" className="data-[state=active]:bg-emerald-50">予約情報</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="space-y-4">
@@ -278,50 +383,6 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
             </Card>
           </TabsContent>
 
-          <TabsContent value="reservations">
-            <Card className="bg-white shadow-sm">
-              <CardHeader>
-                <CardTitle>予約情報</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {reservations.map((reservation) => (
-                    <div key={reservation.id} className="flex items-start gap-4 p-4 border rounded-lg">
-                      <div className="shrink-0">
-                        <img
-                          src="/placeholder.svg"
-                          alt="Staff"
-                          className="w-16 h-16 rounded-full object-cover"
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-medium">スタッフ名</h3>
-                          <Badge>{reservation.status === 'confirmed' ? '予約確定' : '仮予約'}</Badge>
-                        </div>
-                        <div className="text-sm text-gray-500 mt-1">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4" />
-                            {reservation.startTime.toISOString().split('T')[0]}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4" />
-                            {`${reservation.startTime.toLocaleTimeString()} - ${reservation.endTime.toLocaleTimeString()}`}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div className="font-medium">¥{reservation.price.toLocaleString()}</div>
-                        <Button variant="link" className="text-sm p-0">
-                          予約詳細
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
         <div className="mt-6 flex justify-end">
           <Button variant="outline" className="px-6 py-2">
