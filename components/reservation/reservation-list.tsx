@@ -49,7 +49,7 @@ export function ReservationList({ reservations, limit, showViewMore = false, onO
               <TableHead>コース</TableHead>
               <TableHead className="w-[80px]">IN</TableHead>
               <TableHead className="w-[80px]">OUT</TableHead>
-              <TableHead className="w-[120px]">確認</TableHead>
+              <TableHead className="w-[180px]">確認</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -91,11 +91,14 @@ export function ReservationList({ reservations, limit, showViewMore = false, onO
                 <TableCell>{format(reservation.startTime, 'HH:mm')}</TableCell>
                 <TableCell>{format(reservation.endTime, 'HH:mm')}</TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={
-                      reservation.status === 'confirmed' ? 'default' : 
-                      reservation.status === 'modifiable' ? 'outline' : 'secondary'
-                    }>
+                  <div className="flex items-center gap-2 flex-nowrap">
+                    <Badge 
+                      variant={
+                        reservation.status === 'confirmed' ? 'default' : 
+                        reservation.status === 'modifiable' ? 'outline' : 'secondary'
+                      }
+                      className="whitespace-nowrap"
+                    >
                       {reservation.status === 'confirmed' ? '確定' : 
                        reservation.status === 'modifiable' ? '修正可能' : '未確定'}
                     </Badge>
@@ -103,7 +106,7 @@ export function ReservationList({ reservations, limit, showViewMore = false, onO
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-6 px-2 text-xs"
+                        className="h-6 px-2 text-xs whitespace-nowrap"
                         onClick={(e) => {
                           e.stopPropagation();
                           onMakeModifiable?.(reservation.id);
