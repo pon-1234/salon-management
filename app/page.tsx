@@ -117,17 +117,6 @@ export default function HomePage() {
       <main className="p-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">ダッシュボード</h1>
-          <div className="flex items-center gap-4">
-            <Select defaultValue="2024">
-              <SelectTrigger className="w-[100px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="2024">2024年</SelectItem>
-                <SelectItem value="2023">2023年</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -301,7 +290,7 @@ export default function HomePage() {
           <CardContent>
             <ReservationList 
               reservations={reservations} 
-              limit={3} 
+              limit={5} 
               showViewMore={true} 
               onOpenReservation={setSelectedReservation}
               onMakeModifiable={handleMakeModifiable}
