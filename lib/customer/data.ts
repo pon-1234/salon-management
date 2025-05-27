@@ -1,6 +1,6 @@
 import { Customer, type CustomerUsageRecord } from "./types"
 
-export { Customer }
+export type { Customer }
 
 export const customers: Customer[] = [
   {
@@ -15,8 +15,9 @@ export const customers: Customer[] = [
     points: 4900,
     lastVisitDate: new Date(2023, 6, 7),
     notes: "",
+    createdAt: new Date(2023, 5, 1),
+    updatedAt: new Date(2023, 6, 7),
   },
-  // Add more customers as needed
 ]
 
 export async function getCustomerUsageHistory(customerId: string): Promise<CustomerUsageRecord[]> {

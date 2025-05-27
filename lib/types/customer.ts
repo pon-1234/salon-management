@@ -1,5 +1,6 @@
-export interface Customer {
-  id: string;
+import { BaseEntity } from '../shared';
+
+export interface Customer extends BaseEntity {
   name: string;
   nameKana: string;
   phone: string;

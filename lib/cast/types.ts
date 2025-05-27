@@ -1,5 +1,6 @@
-export interface Cast {
-  id: string;
+import { BaseEntity } from '../shared';
+
+export interface Cast extends BaseEntity {
   name: string;
   nameKana: string;
   age: number;
@@ -17,7 +18,7 @@ export interface Cast {
   courseTypes: string[];
   workStart?: Date;
   workEnd?: Date;
-  appointments: Appointment[]; // appointmentsを追加
+  appointments: Appointment[];
 }
 
 export interface Appointment { // Appointment型定義を追加

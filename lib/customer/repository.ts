@@ -1,10 +1,6 @@
+import { Repository } from '../shared';
 import { Customer } from './types';
 
-export interface CustomerRepository {
-  getCustomer(id: string): Promise<Customer | null>;
+export interface CustomerRepository extends Repository<Customer> {
   getCustomerByPhone(phone: string): Promise<Customer | null>;
-  getAllCustomers(): Promise<Customer[]>;
-  createCustomer(customer: Omit<Customer, 'id'>): Promise<Customer>;
-  updateCustomer(id: string, customer: Partial<Customer>): Promise<Customer>;
-  deleteCustomer(id: string): Promise<void>;
 }

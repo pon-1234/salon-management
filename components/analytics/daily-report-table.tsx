@@ -1,50 +1,35 @@
 import { DailyReport } from '@/lib/report/types';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { DataTable, TableColumn, currencyCell, textCell } from '@/components/shared/data-table';
+import { formatCurrency } from '@/lib/shared';
 
 interface DailyReportTableProps {
   report: DailyReport;
 }
 
+const columns: TableColumn[] = [
+  { key: 'staffName', header: 'スタッフ名', cell: (item) => textCell(item.staffName) },
+  { key: 'workingHours', header: '労働時間', cell: (item) => `${item.workingHours}時間` },
+  { key: 'salesAmount', header: '売上', cell: (item) => currencyCell(item.salesAmount) },
+  { key: 'customerCount', header: '客数', cell: (item) => item.customerCount },
+  { key: 'designationCount', header: '指名数', cell: (item) => item.designationCount },
+  { key: 'optionSales', header: 'オプション売上', cell: (item) => currencyCell(item.optionSales) },
+];
+
 export function DailyReportTable({ report }: DailyReportTableProps) {
+  const summary = (
+    <>
+      <p>総売上: ¥{formatCurrency(report.totalSales)}</p>
+      <p>総客数: {report.totalCustomers}</p>
+      <p>総労働時間: {report.totalWorkingHours}時間</p>
+    </>
+  );
+
   return (
-    <div>
-      <h2 className="text-xl font-semibold mb-2">日報: {report.date}</h2>
-      <div className="mb-4">
-        <p>総売上: ¥{report.totalSales.toLocaleString()}</p>
-        <p>総客数: {report.totalCustomers}</p>
-        <p>総労働時間: {report.totalWorkingHours}時間</p>
-      </div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>スタッフ名</TableHead>
-            <TableHead>労働時間</TableHead>
-            <TableHead>売上</TableHead>
-            <TableHead>客数</TableHead>
-            <TableHead>指名数</TableHead>
-            <TableHead>オプション売上</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {report.staffReports.map((staffReport) => (
-            <TableRow key={staffReport.staffId}>
-              <TableCell>{staffReport.staffName}</TableCell>
-              <TableCell>{staffReport.workingHours}時間</TableCell>
-              <TableCell>¥{staffReport.salesAmount.toLocaleString()}</TableCell>
-              <TableCell>{staffReport.customerCount}</TableCell>
-              <TableCell>{staffReport.designationCount}</TableCell>
-              <TableCell>¥{staffReport.optionSales.toLocaleString()}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <DataTable
+      title={`日報: ${report.date}`}
+      summary={summary}
+      data={report.staffReports}
+      columns={columns}
+    />
   );
 }

@@ -1,5 +1,6 @@
-export interface Reservation {
-  id: string;
+import { BaseEntity } from '../shared';
+
+export interface Reservation extends BaseEntity {
   customerId: string;
   staffId: string;
   serviceId: string;
@@ -8,12 +9,11 @@ export interface Reservation {
   status: 'confirmed' | 'pending' | 'cancelled' | 'modifiable';
   price: number;
   notes?: string;
-  modifiableUntil?: Date; // 修正可能期限
-  lastModified?: Date; // 最終修正日時
+  modifiableUntil?: Date;
+  lastModified?: Date;
 }
 
-export interface Service {
-  id: string;
+export interface Service extends BaseEntity {
   name: string;
   duration: number;
   price: number;
