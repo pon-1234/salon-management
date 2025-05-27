@@ -309,54 +309,6 @@ export default function HomePage() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-          {/* 営業関連 */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-medium">営業関連</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-sm">
-                <div className="font-medium mb-2">＜店舗合計＞</div>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <div>1位：2023-07-01（土）39本</div>
-                    <div className="text-emerald-600">￥518,225</div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div>1位：2023-11-24（金）39本</div>
-                    <div className="text-emerald-600">￥464,550</div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div>1位：2024-06-15（土）39本</div>
-                    <div className="text-emerald-600">￥433,675</div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* 女性関連 */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-medium">女性関連</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-sm">
-                <div className="mb-2">オフィシャル写メ日記送信先は以下です。</div>
-                <div className="space-y-1">
-                  <div>金：syame-ike@gold-esthe.com</div>
-                  <div>ポ：syame-ike@bollinger-m.com</div>
-                </div>
-                <div className="mt-4 space-y-1">
-                  <div>■店番号：5600</div>
-                  <div>金の玉クラブ：5600</div>
-                  <div>ポランジェ：5500</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
         <ReservationDialog
           open={!!selectedReservation}
           onOpenChange={(open) => !open && setSelectedReservation(null)}
