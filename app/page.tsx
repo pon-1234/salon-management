@@ -20,7 +20,6 @@ import { format } from "date-fns"
 import { Reservation } from "@/lib/types/reservation"
 import { ReservationDialog } from '@/components/reservation/reservation-dialog';
 import { ReservationData } from '@/components/reservation/reservation-table';
-import { recordModification } from '@/lib/modification-history/data';
 
 export default function HomePage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -69,38 +68,6 @@ export default function HomePage() {
     };
   };
 
-  const handleMakeModifiable = (reservationId: string) => {
-    const reservation = reservations.find(r => r.id === reservationId);
-    if (!reservation) return;
-
-    // 修正履歴を記録
-    recordModification(
-      reservationId,
-      "user_current", // 実際のアプリではログインユーザーIDを使用
-      "現在のユーザー", // 実際のアプリではログインユーザー名を使用
-      "status",
-      "ステータス",
-      reservation.status,
-      "modifiable",
-      "確定済み予約を修正可能状態に変更",
-      "192.168.1.100", // 実際のアプリでは実際のIPを取得
-      navigator.userAgent,
-      "current_session"
-    );
-
-    setReservations(prev => 
-      prev.map(reservation => 
-        reservation.id === reservationId 
-          ? { 
-              ...reservation, 
-              status: 'modifiable' as const,
-              modifiableUntil: new Date(Date.now() + 30 * 60 * 1000), // 30分後まで修正可能
-              lastModified: new Date()
-            }
-          : reservation
-      )
-    );
-  };
 
   useEffect(() => {
     const fetchReservations = async () => {
@@ -127,15 +94,6 @@ export default function HomePage() {
                 <SelectItem value="2023">2023年</SelectItem>
               </SelectContent>
             </Select>
-            <div className="flex gap-2">
-              <Input 
-                placeholder="オーダーNo" 
-                className="w-[200px]"
-              />
-              <Button className="bg-emerald-600 hover:bg-emerald-700">
-                オーダー修正
-              </Button>
-            </div>
           </div>
         </div>
 
@@ -313,7 +271,6 @@ export default function HomePage() {
               limit={3} 
               showViewMore={true} 
               onOpenReservation={setSelectedReservation}
-              onMakeModifiable={handleMakeModifiable}
             />
           </CardContent>
         </Card>

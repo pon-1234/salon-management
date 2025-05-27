@@ -3,11 +3,8 @@
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Pencil, MessageSquare, Clock, Users, ArrowRight, MoreHorizontal, Phone, Mail } from 'lucide-react'
+import { Pencil, MessageSquare, Clock, Users, ArrowRight, MoreHorizontal, Phone } from 'lucide-react'
 import { Separator } from "@/components/ui/separator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ModificationHistoryTable } from "@/components/reservation/modification-history-table"
-import { getModificationHistory, getModificationAlerts } from "@/lib/modification-history/data"
 // 4. Fix: Ensure consistent ReservationData type
 import { ReservationData } from "@/components/reservation/reservation-table";
 
@@ -25,8 +22,6 @@ export function ReservationDialog({
 }: ReservationDialogProps) {
   if (!reservation) return null
 
-  const modificationHistory = getModificationHistory(reservation.id)
-  const modificationAlerts = getModificationAlerts(reservation.id)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -48,10 +43,6 @@ export function ReservationDialog({
                   <Phone className="w-4 h-4 text-black" />
                   <span className="text-sm">{reservation?.phoneNumber}</span>
                 </Badge>
-                <Badge className="bg-white text-black border-none inline-flex items-center gap-1 px-2">
-                  <Mail className="w-4 h-4 text-black" />
-                  <span className="text-sm">{reservation?.email}</span>
-                </Badge>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -63,21 +54,7 @@ export function ReservationDialog({
           </div>
         </div>
 
-        <div className="p-6">
-          <Tabs defaultValue="details" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="details">予約詳細</TabsTrigger>
-              <TabsTrigger value="history" className="relative">
-                修正履歴
-                {modificationAlerts.length > 0 && (
-                  <Badge variant="destructive" className="ml-2 h-5 w-5 rounded-full p-0 text-xs">
-                    {modificationAlerts.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="details" className="space-y-6 mt-6">
+        <div className="p-6 space-y-6">
           {/* 店舗名・マッサージ師氏名行 */}
           <div className="flex items-center gap-2">
             <div className="text-gray-600">
@@ -262,29 +239,6 @@ export function ReservationDialog({
             <Button variant="outline" className="flex-1 text-red-600 hover:text-red-700">キャンセル</Button>
           </div>
           
-          {/* 修正可能状態でのオーダー修正ボタン */}
-          {reservation?.bookingStatus === 'modifiable' && (
-            <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-orange-800">修正可能状態</p>
-                  <p className="text-xs text-orange-600">30分間オーダーの修正が可能です</p>
-                </div>
-                <Button className="bg-orange-600 hover:bg-orange-700 text-white">
-                  オーダー修正
-                </Button>
-              </div>
-            </div>
-          )}
-            </TabsContent>
-            
-            <TabsContent value="history" className="mt-6">
-              <ModificationHistoryTable 
-                modifications={modificationHistory}
-                alerts={modificationAlerts}
-              />
-            </TabsContent>
-          </Tabs>
         </div>
 
         {/* 下部アクション */}
