@@ -20,7 +20,9 @@ import {
   FileText, 
   Mail,
   Settings as SettingsIcon,
-  ChevronRight
+  ChevronRight,
+  Package,
+  BookOpen
 } from 'lucide-react'
 
 interface SettingItem {
@@ -139,6 +141,22 @@ export default function SettingsPage() {
       icon: <Mail className="w-5 h-5" />,
       status: 'available',
       category: 'マーケティング'
+    },
+    {
+      id: 'option-info',
+      title: 'オプション情報',
+      description: 'サービスオプションの管理と料金設定',
+      icon: <Package className="w-5 h-5" />,
+      status: 'available',
+      category: 'サービス管理'
+    },
+    {
+      id: 'course-info',
+      title: 'コース情報',
+      description: 'コース内容と料金の管理',
+      icon: <BookOpen className="w-5 h-5" />,
+      status: 'available',
+      category: 'サービス管理'
     }
   ]
 
@@ -195,6 +213,12 @@ onClick={() => {
                     switch (item.id) {
                       case 'store-info':
                         window.location.href = '/settings/store-info'
+                        break
+                      case 'option-info':
+                        window.location.href = '/settings/option-info'
+                        break
+                      case 'course-info':
+                        window.location.href = '/settings/course-info'
                         break
                       default:
                         console.log(`${item.title}の設定ページは準備中です`)
