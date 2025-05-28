@@ -31,13 +31,10 @@ export const options: Option[] = [
   { id: "healing-knee", name: "癒しの膝枕耳かき", price: 0 },
   { id: "shampoo-spa", name: "密着爽快洗髪スパ", price: 0 },
   { id: "oil-plus", name: "オイル増し増し", price: 0 },
-  { id: "french-kiss", name: "キス（フレンチ）", price: 1000 },
   { id: "pantyhose", name: "パンスト", price: 1000 },
-  { id: "kaiten-denma", name: "亀頭デンマ", price: 1000 },
   { id: "kaishun-plus", name: "回春増し増し", price: 2000 },
-  { id: "zenritu-massage", name: "前立腺マッサージ", price: 2000 },
   { id: "all-nude", name: "オールヌード", price: 3000 },
-  { id: "skin-fella", name: "スキン（ゴム）フェラ", price: 3000 },
+  { id: "skin-fella", name: "スキンフェラ", price: 3000 },
 ];
 
 export function getCourseById(id: string): Course | undefined {

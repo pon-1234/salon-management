@@ -19,7 +19,7 @@ import Link from "next/link"
 import { format } from "date-fns"
 import { Reservation } from "@/lib/types/reservation"
 import { ReservationDialog } from '@/components/reservation/reservation-dialog';
-import { ReservationData } from '@/components/reservation/reservation-table';
+import { ReservationData } from '@/lib/types/reservation';
 import { recordModification } from '@/lib/modification-history/data';
 
 export default function HomePage() {

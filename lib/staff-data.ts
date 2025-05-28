@@ -195,15 +195,8 @@ export const staffMembers: StaffMember[] = [
   },
 ];
 
-export const options: Option[] = [
-  { name: "癒やしの膝枕耳かき", price: 0 },
-  { name: "密着爽快洗髪スパ", price: 0 },
-  { name: "オイル増し増し", price: 0 },
-  { name: "パンスト", price: 1000 },
-  { name: "回春増し増し", price: 2000, note: "※..." },
-  { name: "オールヌード", price: 3000, note: "※..." },
-  { name: "スキンフェラ", price: 3000 },
-];
+// Import options from the centralized location
+export { options } from "./course-option-data";
 
 export function generateSchedule(staff: StaffMember): ScheduleDay[] {
   const today = new Date();

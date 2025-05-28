@@ -16,49 +16,12 @@ import { MoreHorizontal } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { ReservationDialog } from "./reservation-dialog";
+import { ReservationData } from "@/lib/types/reservation";
 
 
 interface ReservationTableProps {
   reservations: ReservationData[];
   onOpenReservation?: (reservation: ReservationData | null) => void;
-}
-
-export interface ReservationData {
-  id: string;
-  customerId: string; // Add customerId field
-  customerName: string;
-  customerType: string;
-  phoneNumber: string;
-  points: number;
-  bookingStatus: string;
-  staffConfirmation: string;
-  customerConfirmation: string;
-  prefecture: string;
-  district: string;
-  location: string;
-  locationType: string;
-  specificLocation: string;
-  staff: string;
-  marketingChannel: string;
-  date: string;
-  time: string;
-  inOutTime: string;
-  course: string;
-  freeExtension: string;
-  designation: string;
-  designationFee: string;
-  options: Record<string, boolean>;
-  transportationFee: number;
-  paymentMethod: string;
-  discount: string;
-  additionalFee: number;
-  totalPayment: number;
-  storeRevenue: number;
-  staffRevenue: number;
-  staffBonusFee: number;
-  startTime: Date;
-  endTime: Date;
-  staffImage: string;
 }
 
 export function ReservationTable({ reservations, onOpenReservation }: ReservationTableProps) {

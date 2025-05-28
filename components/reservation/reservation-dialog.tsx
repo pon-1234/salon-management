@@ -8,8 +8,7 @@ import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ModificationHistoryTable } from "@/components/reservation/modification-history-table"
 import { getModificationHistory, getModificationAlerts } from "@/lib/modification-history/data"
-// 4. Fix: Ensure consistent ReservationData type
-import { ReservationData } from "@/components/reservation/reservation-table";
+import { ReservationData } from "@/lib/types/reservation";
 
 interface ReservationDialogProps {
   open: boolean;
