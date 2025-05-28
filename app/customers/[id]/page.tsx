@@ -83,17 +83,6 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
               </Badge>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button 
-              onClick={handleBooking}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
-            >
-              新規予約
-            </Button>
-            <Button variant="outline">
-              顧客情報編集
-            </Button>
-          </div>
         </div>
 
         {/* 予約情報を最上部に常時表示 */}
@@ -109,14 +98,6 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
                   </Badge>
                 )}
               </div>
-              <Button 
-                onClick={handleBooking}
-                variant="outline"
-                size="sm"
-                className="bg-emerald-600 text-white hover:bg-emerald-700 border-emerald-600"
-              >
-                新規予約
-              </Button>
             </CardTitle>
           </CardHeader>
           <CardContent>

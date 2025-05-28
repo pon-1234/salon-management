@@ -49,9 +49,6 @@ export function ActionButtons({ onRefresh, onFilterCharacter, onFilter, onCustom
         )}
       </div>
       <div className="flex gap-2">
-        <Button onClick={() => setOpenQuickBooking(true)} variant="outline" size="sm">
-          新規予約
-        </Button>
         <Button onClick={() => setOpenFilter(true)} variant="outline" size="sm">
           絞り込み
         </Button>
