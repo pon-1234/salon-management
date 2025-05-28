@@ -66,7 +66,7 @@ export function ReservationDialog({
                 <TabsTrigger value="history" className="relative">
                   修正履歴
                   {modificationAlerts.length > 0 && (
-                    <Badge variant="destructive" className="ml-2 h-5 w-5 rounded-full p-0 text-xs">
+                    <Badge variant="destructive" className="ml-2 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center">
                       {modificationAlerts.length}
                     </Badge>
                   )}
