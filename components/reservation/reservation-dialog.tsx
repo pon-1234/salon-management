@@ -43,7 +43,7 @@ export function ReservationDialog({
             <div>
               <h2 className="text-2xl font-bold">{reservation?.customerName} 様</h2>
               <div className="flex gap-2 mt-2">
-                <Badge className="bg-white text-black border-none inline-flex items-center gap-1 px-2">
+                <Badge className="bg-white text-black border-none inline-flex items-center gap-1 px-2 hover:bg-gray-100">
                   <Phone className="w-4 h-4 text-black" />
                   <span className="text-sm">{reservation?.phoneNumber}</span>
                 </Badge>
