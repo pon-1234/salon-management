@@ -75,10 +75,10 @@ export function ReservationDialog({
               </TabsList>
             
             <TabsContent value="details" className="space-y-6 mt-6">
-          {/* 店舗名・マッサージ師氏名行 */}
+          {/* 店舗名・キャスト氏名行 */}
           <div className="flex items-center gap-2">
             <div className="text-gray-600">
-              店舗名 / {reservation?.staff ?? "マッサージ師未定"}
+              店舗名 / {reservation?.staff ?? "キャスト未定"}
             </div>
             <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200">
               通常顧客
@@ -125,7 +125,7 @@ export function ReservationDialog({
                       <div>2023/12/25(月)</div>
                       <div className="text-sm text-gray-500">10:30-13:30</div>
                     </div>
-                    <div className="col-span-2">マッサージ師の氏名</div>
+                    <div className="col-span-2">キャストの氏名</div>
                   </div>
                 </div>
               </div>
@@ -188,7 +188,7 @@ export function ReservationDialog({
                 <div className="space-y-3">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <div className="font-medium">マッサージ師</div>
+                      <div className="font-medium">キャスト</div>
                       <div className="text-sm text-gray-500">{reservation?.staff}</div>
                     </div>
                     <div className="font-medium">指名料 3,000円</div>
@@ -293,7 +293,7 @@ export function ReservationDialog({
           </Button>
           <Button variant="ghost" className="flex items-center justify-center gap-2 p-6 hover:bg-gray-50 border-l border-r">
             <Users className="w-4 h-4" />
-            マッサージ師の変更
+            キャストの変更
           </Button>
           <Button variant="ghost" className="flex items-center justify-center gap-2 p-6 hover:bg-gray-50">
             <ArrowRight className="w-4 h-4" />
