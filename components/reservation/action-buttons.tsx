@@ -2,18 +2,16 @@ import { Button } from "@/components/ui/button"
 import { RefreshCw, Filter, UserPlus, UserMinus } from 'lucide-react'
 import { useState } from "react"
 import { QuickBookingDialog } from "./quick-booking-dialog"
-import { FilterDialog, FilterOptions } from "./filter-dialog"
-import { cn } from "@/lib/utils"
+import { FilterDialog } from "./filter-dialog"
 
 interface ActionButtonsProps {
   onRefresh: () => void;
-  onFilterCharacter: (char: string) => void;
   onFilter: () => void;
   onCustomerSelect: (customer: { id: string; name: string } | null) => void;
   selectedCustomer: { id: string; name: string } | null;
 }
 
-export function ActionButtons({ onRefresh, onFilterCharacter, onFilter, onCustomerSelect, selectedCustomer }: ActionButtonsProps) {
+export function ActionButtons({ onRefresh, onFilter, onCustomerSelect, selectedCustomer }: ActionButtonsProps) {
   const [openQuickBooking, setOpenQuickBooking] = useState(false)
   const [openFilter, setOpenFilter] = useState(false)
 
@@ -49,12 +47,15 @@ export function ActionButtons({ onRefresh, onFilterCharacter, onFilter, onCustom
         )}
       </div>
       <div className="flex gap-2">
+        <Button onClick={() => setOpenQuickBooking(true)} variant="outline" size="sm">
+          新規予約
+        </Button>
         <Button onClick={() => setOpenFilter(true)} variant="outline" size="sm">
           絞り込み
         </Button>
       </div>
-      <QuickBookingDialog open={openQuickBooking} onClose={() => setOpenQuickBooking(false)} />
-      <FilterDialog open={openFilter} onClose={() => setOpenFilter(false)} />
+      <QuickBookingDialog open={openQuickBooking} onOpenChange={setOpenQuickBooking} selectedCustomer={null} />
+      <FilterDialog open={openFilter} onOpenChange={setOpenFilter} onApplyFilters={() => {}} />
     </div>
   )
 }

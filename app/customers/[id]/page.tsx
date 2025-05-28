@@ -83,6 +83,12 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
               </Badge>
             </div>
           </div>
+          <Button 
+            onClick={handleBooking}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+          >
+            新規予約
+          </Button>
         </div>
 
         {/* 予約情報を最上部に常時表示 */}
