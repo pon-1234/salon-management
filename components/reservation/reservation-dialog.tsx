@@ -30,7 +30,7 @@ export function ReservationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] p-0 overflow-hidden flex flex-col [&>button]:z-10">
+      <DialogContent className="max-w-5xl max-h-[90vh] p-0 overflow-hidden flex flex-col [&>button]:z-50 [&>button]:top-4 [&>button]:right-4 [&>button]:bg-white [&>button]:shadow-lg [&>button]:hover:bg-gray-50 [&>button]:border [&>button]:border-gray-200">
         <DialogTitle className="sr-only">
           予約情報 - {reservation?.customerName}
         </DialogTitle>
@@ -40,7 +40,7 @@ export function ReservationDialog({
 
         {/* ヘッダー */}
         <div className="bg-emerald-600 p-6 text-white sticky top-0 z-10">
-          <div className="flex justify-between items-start">
+          <div className="flex justify-between items-start pr-12">
             <div>
               <h2 className="text-2xl font-bold">{reservation?.customerName} 様</h2>
               <div className="flex gap-2 mt-2">
