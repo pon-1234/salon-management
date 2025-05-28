@@ -123,7 +123,7 @@ export default function SettingsPage() {
       title: 'ホテル情報',
       description: 'ホテル情報とマッピング設定',
       icon: <Building className="w-5 h-5" />,
-      status: 'coming-soon',
+      status: 'available',
       category: '地域設定'
     },
     {
@@ -219,6 +219,9 @@ onClick={() => {
                         break
                       case 'course-info':
                         window.location.href = '/settings/course-info'
+                        break
+                      case 'hotel-info':
+                        window.location.href = '/settings/hotel-info'
                         break
                       default:
                         console.log(`${item.title}の設定ページは準備中です`)

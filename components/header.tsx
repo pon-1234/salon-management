@@ -31,7 +31,6 @@ import { StoreSelector } from "@/components/store/store-selector"
 export function Header() {
   const [castList, setCastList] = useState<Cast[]>([])
   const [searchQuery, setSearchQuery] = useState('')
-  const [hotelSearchQuery, setHotelSearchQuery] = useState('')
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState("")
   const [notificationOpen, setNotificationOpen] = useState(false)
@@ -51,12 +50,6 @@ export function Header() {
     }
   }
 
-  const handleHotelSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (hotelSearchQuery.trim()) {
-      router.push(`/hotel-search?query=${encodeURIComponent(hotelSearchQuery)}`)
-    }
-  }
 
   const handleNotificationClick = (id: string) => {
     markAsRead(id)
@@ -136,25 +129,6 @@ export function Header() {
           </Button>
         </form>
 
-        {/* ホテル名検索フォーム追加 */}
-        <form onSubmit={handleHotelSearch} className="relative max-w-md">
-          <Input 
-            type="search" 
-            placeholder="ホテル名入力..." 
-            className="pl-4 pr-10 py-2 bg-gray-50"
-            value={hotelSearchQuery}
-            onChange={(e) => setHotelSearchQuery(e.target.value)}
-          />
-          <Button 
-            type="submit"
-            variant="ghost" 
-            size="icon" 
-            className="absolute right-0 top-0 h-full"
-          >
-            <Search className="h-4 w-4" />
-            <span className="sr-only">検索</span>
-          </Button>
-        </form>
 
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
