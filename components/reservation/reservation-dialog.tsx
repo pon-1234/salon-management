@@ -30,7 +30,7 @@ export function ReservationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl p-0 overflow-y-auto max-h-[90vh] [&>button]:z-10">
+      <DialogContent className="max-w-5xl max-h-[90vh] p-0 overflow-hidden flex flex-col [&>button]:z-10">
         <DialogTitle className="sr-only">
           予約情報 - {reservation?.customerName}
         </DialogTitle>
@@ -59,19 +59,20 @@ export function ReservationDialog({
           </div>
         </div>
 
-        <div className="p-6">
-          <Tabs defaultValue="details" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="details">予約詳細</TabsTrigger>
-              <TabsTrigger value="history" className="relative">
-                修正履歴
-                {modificationAlerts.length > 0 && (
-                  <Badge variant="destructive" className="ml-2 h-5 w-5 rounded-full p-0 text-xs">
-                    {modificationAlerts.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-            </TabsList>
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-6">
+            <Tabs defaultValue="details" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="details">予約詳細</TabsTrigger>
+                <TabsTrigger value="history" className="relative">
+                  修正履歴
+                  {modificationAlerts.length > 0 && (
+                    <Badge variant="destructive" className="ml-2 h-5 w-5 rounded-full p-0 text-xs">
+                      {modificationAlerts.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              </TabsList>
             
             <TabsContent value="details" className="space-y-6 mt-6">
           {/* 店舗名・マッサージ師氏名行 */}
@@ -87,7 +88,7 @@ export function ReservationDialog({
 
           <div className="grid md:grid-cols-2 gap-6">
             {/* 左カラム */}
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* お客様からの連絡事項 */}
               <div>
                 <div className="flex justify-between items-center mb-4">
@@ -131,7 +132,7 @@ export function ReservationDialog({
             </div>
 
             {/* 右カラム */}
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* 日時 */}
               <div>
                 <div className="flex justify-between items-center mb-4">
@@ -184,65 +185,65 @@ export function ReservationDialog({
                     <Pencil className="w-4 h-4" />
                   </Button>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <div>
-                      <div>マッサージ師</div>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="font-medium">マッサージ師</div>
                       <div className="text-sm text-gray-500">{reservation?.staff}</div>
                     </div>
-                    <div>指名料 3,000円</div>
+                    <div className="font-medium">指名料 3,000円</div>
                   </div>
                   <Separator />
-                  <div className="flex justify-between">
-                    <div>
-                      <div>コース</div>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="font-medium">コース</div>
                       <div className="text-sm text-gray-500">イベントコース（税込）130分</div>
                     </div>
-                    <div>10,000円</div>
+                    <div className="font-medium">10,000円</div>
                   </div>
                   <Separator />
-                  <div className="flex justify-between">
-                    <div>
-                      <div>オプション</div>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="font-medium">オプション</div>
                       <div className="text-sm text-gray-500">ネックトリートメント</div>
                     </div>
-                    <div>1,000円</div>
+                    <div className="font-medium">1,000円</div>
                   </div>
                   <Separator />
-                  <div className="flex justify-between">
-                    <div>
-                      <div>オプション</div>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="font-medium">オプション</div>
                       <div className="text-sm text-gray-500">ホットストーン</div>
                     </div>
-                    <div>2,000円</div>
+                    <div className="font-medium">2,000円</div>
                   </div>
                   <Separator />
-                  <div className="flex justify-between">
-                    <div>
-                      <div>延長</div>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="font-medium">延長</div>
                       <div className="text-sm text-gray-500">無し</div>
                     </div>
-                    <div>0円</div>
+                    <div className="font-medium">0円</div>
                   </div>
                   <Separator />
-                  <div className="flex justify-between">
-                    <div>
-                      <div>交通費</div>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="font-medium">交通費</div>
                       <div className="text-sm text-gray-500">東京駅</div>
                     </div>
-                    <div>0円</div>
+                    <div className="font-medium">0円</div>
                   </div>
                   <Separator />
-                  <div className="flex justify-between">
-                    <div>
-                      <div>料金調整</div>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="font-medium">料金調整</div>
                       <div className="text-sm text-gray-500">調整コメント</div>
                     </div>
-                    <div>0円</div>
+                    <div className="font-medium">0円</div>
                   </div>
                   <div className="mt-4 border-2 border-emerald-600 rounded p-3 flex justify-between items-center">
                     <span className="font-bold">総額</span>
-                    <span className="text-2xl font-bold text-emerald-600">16,000円</span>
+                    <span className="text-xl font-bold text-emerald-600">16,000円</span>
                   </div>
                 </div>
               </div>
@@ -280,11 +281,12 @@ export function ReservationDialog({
                 alerts={modificationAlerts}
               />
             </TabsContent>
-          </Tabs>
+            </Tabs>
+          </div>
         </div>
 
         {/* 下部アクション */}
-        <div className="grid grid-cols-3 border-t">
+        <div className="grid grid-cols-3 border-t shrink-0">
           <Button variant="ghost" className="flex items-center justify-center gap-2 p-6 hover:bg-gray-50">
             <Clock className="w-4 h-4" />
             予約時間の変更
