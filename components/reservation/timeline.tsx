@@ -13,7 +13,7 @@ import { logError } from "@/lib/error-utils"
 import { StaffDialog } from "@/components/cast/cast-dialog"
 import { format } from 'date-fns';
 import { getCourseById } from '@/lib/course-option/utils';
-import { customers as customerList } from "@/lib/customer/data";
+import { customers as customerList, Customer } from "@/lib/customer/data";
 import { ReservationData } from "@/components/reservation/reservation-table";
 
 // safeMapを安全に実装（undefinedやnullでも空配列を返す）
@@ -24,7 +24,7 @@ function safeMap<T, U>(arr: T[] | undefined | null, callback: (item: T) => U): U
 interface TimelineProps {
   staff: (Cast & { appointments: Appointment[] })[] | undefined;
   selectedDate: Date;
-  selectedCustomer: { id: string; name: string } | null;
+  selectedCustomer: Customer | null;
   setSelectedAppointment: (appointment: any) => void;
 }
 
@@ -98,6 +98,12 @@ export function Timeline({ staff, selectedDate, selectedCustomer, setSelectedApp
       workStart: member.workStart && new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), member.workStart.getHours(), member.workStart.getMinutes()),
       workEnd: member.workEnd && new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), member.workEnd.getHours(), member.workEnd.getMinutes()),
     };
+  }).filter(member => {
+    // Filter out NG casts if a customer is selected
+    if (selectedCustomer && selectedCustomer.ngCastIds) {
+      return !selectedCustomer.ngCastIds.includes(member.id);
+    }
+    return true;
   });
 
   const getAvailableSlots = (staff: Cast): AvailableSlot[] => {

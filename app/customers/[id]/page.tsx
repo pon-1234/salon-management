@@ -29,11 +29,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import { MessageSquare, Crown, Calendar, Clock, Phone, Mail, Edit3, Save, X, TrendingUp, TrendingDown, Minus, RefreshCw } from 'lucide-react'
+import { MessageSquare, Crown, Calendar, Clock, Phone, Mail, Edit3, Save, X, TrendingUp, TrendingDown, Minus, RefreshCw, UserX, Plus, Trash2 } from 'lucide-react'
 import { Customer, CustomerUsageRecord, CustomerPointHistory } from "@/lib/customer/types"
 import { Reservation } from "@/lib/types/reservation"
+import { Cast } from "@/lib/cast/types"
 import { getCustomerUsageHistory, getCustomerPointHistory } from "@/lib/customer/data"
 import { getReservationsByCustomerId } from "@/lib/reservation/data"
+import { getAllCasts } from "@/lib/cast/data"
 
 const formSchema = z.object({
   name: z.string().min(1, '名前は必須です'),
@@ -58,6 +60,7 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
   const [usageHistory, setUsageHistory] = useState<CustomerUsageRecord[]>([])
   const [pointHistory, setPointHistory] = useState<CustomerPointHistory[]>([])
   const [reservations, setReservations] = useState<Reservation[]>([])
+  const [availableCasts, setAvailableCasts] = useState<Cast[]>([])
   const [isEditing, setIsEditing] = useState(false)
   const [pointsInputEnabled, setPointsInputEnabled] = useState(false)
   const router = useRouter()
@@ -109,6 +112,7 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
       lastLoginDate: new Date(2023, 9, 9, 22, 57, 24),
       lastVisitDate: new Date(2023, 6, 7),
       notes: '',
+      ngCastIds: ['2', '4'],
     }
 
     setCustomer(mockCustomer)
@@ -136,6 +140,9 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
 
     // Fetch customer reservations
     getReservationsByCustomerId(params.id).then(setReservations)
+    
+    // Fetch available casts
+    setAvailableCasts(getAllCasts())
   }, [params.id, form])
 
   const handleBooking = () => {
@@ -325,6 +332,7 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
       <Tabs defaultValue="profile" className="space-y-6">
         <TabsList className="bg-white border">
           <TabsTrigger value="profile" className="data-[state=active]:bg-emerald-50">基本情報</TabsTrigger>
+          <TabsTrigger value="ng-cast" className="data-[state=active]:bg-emerald-50">NGキャスト</TabsTrigger>
           <TabsTrigger value="history" className="data-[state=active]:bg-emerald-50">利用履歴</TabsTrigger>
           <TabsTrigger value="points" className="data-[state=active]:bg-emerald-50">ポイント履歴</TabsTrigger>
         </TabsList>
@@ -629,6 +637,103 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
               </Card>
             </form>
           </Form>
+        </TabsContent>
+
+        <TabsContent value="ng-cast">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <UserX className="w-5 h-5" />
+                NGキャスト管理
+              </CardTitle>
+              <CardDescription>この顧客がNGとしているキャストの管理</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* 現在のNGキャスト一覧 */}
+              <div className="space-y-3">
+                <h3 className="font-medium text-sm text-gray-700">現在のNGキャスト</h3>
+                {customer?.ngCastIds && customer.ngCastIds.length > 0 ? (
+                  <div className="space-y-2">
+                    {customer.ngCastIds.map((castId) => {
+                      const cast = availableCasts.find(c => c.id === castId)
+                      if (!cast) return null
+                      return (
+                        <div key={castId} className="flex items-center justify-between p-3 border rounded-lg bg-red-50 border-red-200">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={cast.image || "/placeholder.svg"}
+                              alt={cast.name}
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                            <div>
+                              <h4 className="font-medium">{cast.name}</h4>
+                              <p className="text-sm text-gray-600">{cast.type}</p>
+                            </div>
+                          </div>
+                          {isEditing && (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => {
+                                const updatedNgCastIds = customer.ngCastIds?.filter(id => id !== castId) || []
+                                setCustomer({...customer, ngCastIds: updatedNgCastIds})
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <UserX className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                    <p className="text-lg font-medium mb-2">NGキャストはありません</p>
+                    <p className="text-sm">必要に応じてNGキャストを追加してください</p>
+                  </div>
+                )}
+              </div>
+
+              {/* NGキャスト追加 */}
+              {isEditing && (
+                <div className="space-y-3 pt-4 border-t">
+                  <h3 className="font-medium text-sm text-gray-700">NGキャストを追加</h3>
+                  <div className="grid gap-2">
+                    {availableCasts
+                      .filter(cast => !customer?.ngCastIds?.includes(cast.id))
+                      .map((cast) => (
+                        <div key={cast.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={cast.image || "/placeholder.svg"}
+                              alt={cast.name}
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                            <div>
+                              <h4 className="font-medium">{cast.name}</h4>
+                              <p className="text-sm text-gray-600">{cast.type}</p>
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              const updatedNgCastIds = [...(customer?.ngCastIds || []), cast.id]
+                              setCustomer({...customer!, ngCastIds: updatedNgCastIds})
+                            }}
+                          >
+                            <Plus className="w-4 h-4 mr-1" />
+                            NGに追加
+                          </Button>
+                        </div>
+                      ))
+                    }
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="history">

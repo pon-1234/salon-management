@@ -15,6 +15,7 @@ export interface Customer extends BaseEntity {
   lastLoginDate?: Date;
   lastVisitDate?: Date;
   notes?: string;
+  ngCastIds?: string[];
 }
 
 export interface CustomerUsageRecord {

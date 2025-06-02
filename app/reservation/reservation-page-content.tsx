@@ -60,7 +60,7 @@ const fetchData = async () => {
     isSameDay(new Date(reservation.startTime), selectedDate)
   );
 
-  const updatedCastData = castMembers.map(member => {
+  let updatedCastData = castMembers.map(member => {
     const appointments = filteredReservations
       .filter(reservation => reservation.staffId === member.id)
       .map(reservation => ({
@@ -72,20 +72,34 @@ const fetchData = async () => {
     return { ...member, appointments };
   });
 
+  // Filter out NG casts if a customer is selected
+  if (selectedCustomer && selectedCustomer.ngCastIds) {
+    updatedCastData = updatedCastData.filter(member => 
+      !selectedCustomer.ngCastIds!.includes(member.id)
+    );
+  }
+
   setCastData(updatedCastData);
 };
 
 useEffect(() => {
   fetchData();
-}, [selectedDate]);
+}, [selectedDate, selectedCustomer]);
 
 const handleRefresh = () => {
   fetchData();
 };
 
 const handleFilterCharacter = (char: string) => {
+  let filtered = [...castMembers]
+
+  // First apply NG cast filtering if customer is selected
+  if (selectedCustomer && selectedCustomer.ngCastIds) {
+    filtered = filtered.filter(staff => !selectedCustomer.ngCastIds!.includes(staff.id))
+  }
+
   if (char === "全") {
-    setCastData([...castMembers])
+    setCastData(filtered)
     return
   }
 
@@ -114,7 +128,7 @@ const handleFilterCharacter = (char: string) => {
   }
 
   if (char === "その他") {
-    const filtered = castMembers.filter(st => {
+    filtered = filtered.filter(st => {
       const firstChar = st.nameKana.charAt(0)
       const isOther = !Object.values(rowMap).some(row => row.includes(firstChar))
       return isOther
@@ -124,7 +138,7 @@ const handleFilterCharacter = (char: string) => {
   }
 
   const targetRow = rowMap[char] || []
-  const filtered = castMembers.filter(st => {
+  filtered = filtered.filter(st => {
     const firstChar = st.nameKana.charAt(0)
     return targetRow.includes(firstChar)
   })
@@ -133,6 +147,11 @@ const handleFilterCharacter = (char: string) => {
 
 const handleFilter = (filters: FilterOptions) => {
   let filtered = [...castMembers]
+
+  // Filter out NG casts if a customer is selected
+  if (selectedCustomer && selectedCustomer.ngCastIds) {
+    filtered = filtered.filter(staff => !selectedCustomer.ngCastIds!.includes(staff.id))
+  }
 
   // Filter by work status
   if (filters.workStatus !== "すべて") {
