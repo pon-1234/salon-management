@@ -73,9 +73,10 @@ const fetchData = async () => {
   });
 
   // Filter out NG casts if a customer is selected
-  if (selectedCustomer && selectedCustomer.ngCastIds) {
+  if (selectedCustomer) {
+    const ngCastIds = selectedCustomer.ngCasts?.map(ng => ng.castId) || selectedCustomer.ngCastIds || [];
     updatedCastData = updatedCastData.filter(member => 
-      !selectedCustomer.ngCastIds!.includes(member.id)
+      !ngCastIds.includes(member.id)
     );
   }
 
@@ -94,8 +95,9 @@ const handleFilterCharacter = (char: string) => {
   let filtered = [...castMembers]
 
   // First apply NG cast filtering if customer is selected
-  if (selectedCustomer && selectedCustomer.ngCastIds) {
-    filtered = filtered.filter(staff => !selectedCustomer.ngCastIds!.includes(staff.id))
+  if (selectedCustomer) {
+    const ngCastIds = selectedCustomer.ngCasts?.map(ng => ng.castId) || selectedCustomer.ngCastIds || [];
+    filtered = filtered.filter(staff => !ngCastIds.includes(staff.id))
   }
 
   if (char === "全") {
@@ -149,8 +151,9 @@ const handleFilter = (filters: FilterOptions) => {
   let filtered = [...castMembers]
 
   // Filter out NG casts if a customer is selected
-  if (selectedCustomer && selectedCustomer.ngCastIds) {
-    filtered = filtered.filter(staff => !selectedCustomer.ngCastIds!.includes(staff.id))
+  if (selectedCustomer) {
+    const ngCastIds = selectedCustomer.ngCasts?.map(ng => ng.castId) || selectedCustomer.ngCastIds || [];
+    filtered = filtered.filter(staff => !ngCastIds.includes(staff.id))
   }
 
   // Filter by work status

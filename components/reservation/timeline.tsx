@@ -100,8 +100,10 @@ export function Timeline({ staff, selectedDate, selectedCustomer, setSelectedApp
     };
   }).filter(member => {
     // Filter out NG casts if a customer is selected
-    if (selectedCustomer && selectedCustomer.ngCastIds) {
-      return !selectedCustomer.ngCastIds.includes(member.id);
+    if (selectedCustomer) {
+      // Check both ngCasts and ngCastIds for backward compatibility
+      const ngCastIds = selectedCustomer.ngCasts?.map(ng => ng.castId) || selectedCustomer.ngCastIds || [];
+      return !ngCastIds.includes(member.id);
     }
     return true;
   });

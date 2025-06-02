@@ -1,5 +1,11 @@
 import { BaseEntity } from '../shared';
 
+export interface NgCastEntry {
+  castId: string;
+  notes?: string;
+  addedDate: Date;
+}
+
 export interface Customer extends BaseEntity {
   name: string;
   nameKana?: string;
@@ -16,6 +22,7 @@ export interface Customer extends BaseEntity {
   lastVisitDate?: Date;
   notes?: string;
   ngCastIds?: string[];
+  ngCasts?: NgCastEntry[];
 }
 
 export interface CustomerUsageRecord {

@@ -29,13 +29,14 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import { MessageSquare, Crown, Calendar, Clock, Phone, Mail, Edit3, Save, X, TrendingUp, TrendingDown, Minus, RefreshCw, UserX, Plus, Trash2 } from 'lucide-react'
-import { Customer, CustomerUsageRecord, CustomerPointHistory } from "@/lib/customer/types"
+import { MessageSquare, Crown, Calendar, Clock, Phone, Mail, Edit3, Save, X, TrendingUp, TrendingDown, Minus, RefreshCw, UserX, Plus, Trash2, FileText, Edit, Calendar as CalendarIcon } from 'lucide-react'
+import { Customer, CustomerUsageRecord, CustomerPointHistory, NgCastEntry } from "@/lib/customer/types"
 import { Reservation } from "@/lib/types/reservation"
 import { Cast } from "@/lib/cast/types"
 import { getCustomerUsageHistory, getCustomerPointHistory } from "@/lib/customer/data"
 import { getReservationsByCustomerId } from "@/lib/reservation/data"
 import { getAllCasts } from "@/lib/cast/data"
+import { NgCastDialog } from "@/components/customer/ng-cast-dialog"
 
 const formSchema = z.object({
   name: z.string().min(1, '名前は必須です'),
@@ -63,6 +64,8 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
   const [availableCasts, setAvailableCasts] = useState<Cast[]>([])
   const [isEditing, setIsEditing] = useState(false)
   const [pointsInputEnabled, setPointsInputEnabled] = useState(false)
+  const [ngCastDialogOpen, setNgCastDialogOpen] = useState(false)
+  const [editingNgCast, setEditingNgCast] = useState<NgCastEntry | null>(null)
   const router = useRouter()
 
   const form = useForm<FormData>({
@@ -113,6 +116,18 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
       lastVisitDate: new Date(2023, 6, 7),
       notes: '',
       ngCastIds: ['2', '4'],
+      ngCasts: [
+        {
+          castId: '2',
+          notes: '接客態度に問題があった',
+          addedDate: new Date(2023, 8, 15)
+        },
+        {
+          castId: '4',
+          notes: 'お客様との相性が合わなかった',
+          addedDate: new Date(2023, 9, 2)
+        }
+      ],
     }
 
     setCustomer(mockCustomer)
@@ -173,6 +188,56 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
         pointsAmount: 0,
       })
     }
+  }
+
+  const handleAddNgCast = () => {
+    setEditingNgCast(null)
+    setNgCastDialogOpen(true)
+  }
+
+  const handleEditNgCast = (ngCast: NgCastEntry) => {
+    setEditingNgCast(ngCast)
+    setNgCastDialogOpen(true)
+  }
+
+  const handleSaveNgCast = (ngCast: NgCastEntry) => {
+    if (!customer) return
+
+    let updatedNgCasts = [...(customer.ngCasts || [])]
+    let updatedNgCastIds = [...(customer.ngCastIds || [])]
+
+    if (editingNgCast) {
+      // Editing existing NG cast
+      const index = updatedNgCasts.findIndex(ng => ng.castId === editingNgCast.castId)
+      if (index >= 0) {
+        updatedNgCasts[index] = ngCast
+      }
+    } else {
+      // Adding new NG cast
+      updatedNgCasts.push(ngCast)
+      if (!updatedNgCastIds.includes(ngCast.castId)) {
+        updatedNgCastIds.push(ngCast.castId)
+      }
+    }
+
+    setCustomer({
+      ...customer,
+      ngCasts: updatedNgCasts,
+      ngCastIds: updatedNgCastIds
+    })
+  }
+
+  const handleRemoveNgCast = (castId: string) => {
+    if (!customer) return
+
+    const updatedNgCasts = customer.ngCasts?.filter(ng => ng.castId !== castId) || []
+    const updatedNgCastIds = customer.ngCastIds?.filter(id => id !== castId) || []
+
+    setCustomer({
+      ...customer,
+      ngCasts: updatedNgCasts,
+      ngCastIds: updatedNgCastIds
+    })
   }
 
   if (!customer) {
@@ -649,87 +714,91 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
               <CardDescription>この顧客がNGとしているキャストの管理</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* ヘッダーアクション */}
+              <div className="flex justify-between items-center">
+                <h3 className="font-medium text-sm text-gray-700">
+                  現在のNGキャスト ({customer?.ngCasts?.length || 0}件)
+                </h3>
+                <Button
+                  size="sm"
+                  onClick={handleAddNgCast}
+                  className="bg-red-600 hover:bg-red-700"
+                  disabled={!isEditing}
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  NGキャスト追加
+                </Button>
+              </div>
+
               {/* 現在のNGキャスト一覧 */}
-              <div className="space-y-3">
-                <h3 className="font-medium text-sm text-gray-700">現在のNGキャスト</h3>
-                {customer?.ngCastIds && customer.ngCastIds.length > 0 ? (
-                  <div className="space-y-2">
-                    {customer.ngCastIds.map((castId) => {
-                      const cast = availableCasts.find(c => c.id === castId)
-                      if (!cast) return null
-                      return (
-                        <div key={castId} className="flex items-center justify-between p-3 border rounded-lg bg-red-50 border-red-200">
-                          <div className="flex items-center gap-3">
+              {customer?.ngCasts && customer.ngCasts.length > 0 ? (
+                <div className="space-y-3">
+                  {customer.ngCasts.map((ngCast) => {
+                    const cast = availableCasts.find(c => c.id === ngCast.castId)
+                    if (!cast) return null
+                    return (
+                      <div key={ngCast.castId} className="p-4 border rounded-lg bg-red-50 border-red-200">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3 flex-1">
                             <img
                               src={cast.image || "/placeholder.svg"}
                               alt={cast.name}
-                              className="w-12 h-12 rounded-full object-cover"
+                              className="w-12 h-12 rounded-full object-cover shrink-0"
                             />
-                            <div>
-                              <h4 className="font-medium">{cast.name}</h4>
-                              <p className="text-sm text-gray-600">{cast.type}</p>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-medium">{cast.name}</h4>
+                                <span className="text-sm text-gray-600">({cast.type})</span>
+                              </div>
+                              {ngCast.notes && (
+                                <div className="flex items-start gap-1 mb-2">
+                                  <FileText className="w-4 h-4 text-gray-500 mt-0.5 shrink-0" />
+                                  <p className="text-sm text-gray-700 break-words">{ngCast.notes}</p>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-1 text-xs text-gray-500">
+                                <CalendarIcon className="w-3 h-3" />
+                                追加日: {ngCast.addedDate.toLocaleDateString('ja-JP')}
+                              </div>
                             </div>
                           </div>
                           {isEditing && (
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => {
-                                const updatedNgCastIds = customer.ngCastIds?.filter(id => id !== castId) || []
-                                setCustomer({...customer, ngCastIds: updatedNgCastIds})
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <div className="flex gap-2 shrink-0 ml-3">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditNgCast(ngCast)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleRemoveNgCast(ngCast.castId)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
                           )}
                         </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <UserX className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                    <p className="text-lg font-medium mb-2">NGキャストはありません</p>
-                    <p className="text-sm">必要に応じてNGキャストを追加してください</p>
-                  </div>
-                )}
-              </div>
-
-              {/* NGキャスト追加 */}
-              {isEditing && (
-                <div className="space-y-3 pt-4 border-t">
-                  <h3 className="font-medium text-sm text-gray-700">NGキャストを追加</h3>
-                  <div className="grid gap-2">
-                    {availableCasts
-                      .filter(cast => !customer?.ngCastIds?.includes(cast.id))
-                      .map((cast) => (
-                        <div key={cast.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
-                          <div className="flex items-center gap-3">
-                            <img
-                              src={cast.image || "/placeholder.svg"}
-                              alt={cast.name}
-                              className="w-12 h-12 rounded-full object-cover"
-                            />
-                            <div>
-                              <h4 className="font-medium">{cast.name}</h4>
-                              <p className="text-sm text-gray-600">{cast.type}</p>
-                            </div>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              const updatedNgCastIds = [...(customer?.ngCastIds || []), cast.id]
-                              setCustomer({...customer!, ngCastIds: updatedNgCastIds})
-                            }}
-                          >
-                            <Plus className="w-4 h-4 mr-1" />
-                            NGに追加
-                          </Button>
-                        </div>
-                      ))
-                    }
-                  </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <UserX className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                  <p className="text-lg font-medium mb-2">NGキャストはありません</p>
+                  <p className="text-sm">必要に応じてNGキャストを追加してください</p>
+                  {isEditing && (
+                    <Button
+                      className="mt-4 bg-red-600 hover:bg-red-700"
+                      onClick={handleAddNgCast}
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      NGキャスト追加
+                    </Button>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -876,6 +945,16 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* NGキャストダイアログ */}
+      <NgCastDialog
+        open={ngCastDialogOpen}
+        onOpenChange={setNgCastDialogOpen}
+        availableCasts={availableCasts}
+        existingNgCasts={customer?.ngCasts || []}
+        editingNgCast={editingNgCast}
+        onSave={handleSaveNgCast}
+      />
     </div>
   )
 }
