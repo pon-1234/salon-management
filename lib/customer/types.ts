@@ -25,3 +25,13 @@ export interface CustomerUsageRecord {
   amount: number;
   status: 'completed' | 'cancelled';
 }
+
+export interface CustomerPointHistory {
+  id: string;
+  date: Date;
+  type: 'earned' | 'used' | 'expired' | 'adjusted';
+  amount: number;
+  description: string;
+  relatedService?: string;
+  balance: number;
+}

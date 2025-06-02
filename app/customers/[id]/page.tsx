@@ -29,10 +29,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import { MessageSquare, Crown, Calendar, Clock, Phone, Mail, Edit3, Save, X } from 'lucide-react'
-import { Customer, CustomerUsageRecord } from "@/lib/customer/types"
+import { MessageSquare, Crown, Calendar, Clock, Phone, Mail, Edit3, Save, X, TrendingUp, TrendingDown, Minus, RefreshCw } from 'lucide-react'
+import { Customer, CustomerUsageRecord, CustomerPointHistory } from "@/lib/customer/types"
 import { Reservation } from "@/lib/types/reservation"
-import { getCustomerUsageHistory } from "@/lib/customer/data"
+import { getCustomerUsageHistory, getCustomerPointHistory } from "@/lib/customer/data"
 import { getReservationsByCustomerId } from "@/lib/reservation/data"
 
 const formSchema = z.object({
@@ -56,6 +56,7 @@ type FormData = z.infer<typeof formSchema>
 export default function CustomerProfile({ params }: { params: { id: string } }) {
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [usageHistory, setUsageHistory] = useState<CustomerUsageRecord[]>([])
+  const [pointHistory, setPointHistory] = useState<CustomerPointHistory[]>([])
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [isEditing, setIsEditing] = useState(false)
   const [pointsInputEnabled, setPointsInputEnabled] = useState(false)
@@ -129,6 +130,9 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
 
     // Fetch customer usage history
     getCustomerUsageHistory(params.id).then(setUsageHistory)
+
+    // Fetch customer point history
+    getCustomerPointHistory(params.id).then(setPointHistory)
 
     // Fetch customer reservations
     getReservationsByCustomerId(params.id).then(setReservations)
@@ -322,6 +326,7 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
         <TabsList className="bg-white border">
           <TabsTrigger value="profile" className="data-[state=active]:bg-emerald-50">基本情報</TabsTrigger>
           <TabsTrigger value="history" className="data-[state=active]:bg-emerald-50">利用履歴</TabsTrigger>
+          <TabsTrigger value="points" className="data-[state=active]:bg-emerald-50">ポイント履歴</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="space-y-6">
@@ -669,6 +674,98 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
                     </div>
                   </div>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="points">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">ポイント履歴</CardTitle>
+              <CardDescription>ポイントの獲得・利用・期限切れの記録</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {pointHistory.map((record) => {
+                  const getIcon = () => {
+                    switch (record.type) {
+                      case 'earned':
+                        return <TrendingUp className="w-4 h-4 text-emerald-600" />
+                      case 'used':
+                        return <TrendingDown className="w-4 h-4 text-red-600" />
+                      case 'expired':
+                        return <Minus className="w-4 h-4 text-gray-500" />
+                      case 'adjusted':
+                        return <RefreshCw className="w-4 h-4 text-blue-600" />
+                      default:
+                        return <Minus className="w-4 h-4 text-gray-500" />
+                    }
+                  }
+
+                  const getTypeLabel = () => {
+                    switch (record.type) {
+                      case 'earned':
+                        return '獲得'
+                      case 'used':
+                        return '利用'
+                      case 'expired':
+                        return '期限切れ'
+                      case 'adjusted':
+                        return '調整'
+                      default:
+                        return record.type
+                    }
+                  }
+
+                  const getAmountColor = () => {
+                    switch (record.type) {
+                      case 'earned':
+                      case 'adjusted':
+                        return record.amount > 0 ? 'text-emerald-600' : 'text-red-600'
+                      case 'used':
+                      case 'expired':
+                        return 'text-red-600'
+                      default:
+                        return 'text-gray-600'
+                    }
+                  }
+
+                  return (
+                    <div key={record.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                      <div className="shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-gray-100">
+                        {getIcon()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={record.type === 'earned' ? 'default' : record.type === 'used' ? 'destructive' : 'secondary'}>
+                            {getTypeLabel()}
+                          </Badge>
+                          <h3 className="font-medium text-sm">{record.description}</h3>
+                        </div>
+                        <div className="text-sm text-gray-500 mt-1 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4" />
+                            {record.date.toLocaleDateString('ja-JP')} {record.date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                          {record.relatedService && (
+                            <div className="text-xs text-gray-400">
+                              関連サービス: {record.relatedService}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className={`font-medium text-lg ${getAmountColor()}`}>
+                          {record.amount > 0 ? '+' : ''}{record.amount.toLocaleString()}pt
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          残高: {record.balance.toLocaleString()}pt
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </CardContent>
           </Card>
