@@ -723,7 +723,6 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
                   size="sm"
                   onClick={handleAddNgCast}
                   className="bg-red-600 hover:bg-red-700"
-                  disabled={!isEditing}
                 >
                   <Plus className="w-4 h-4 mr-1" />
                   NGキャスト追加
@@ -790,15 +789,13 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
                   <UserX className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                   <p className="text-lg font-medium mb-2">NGキャストはありません</p>
                   <p className="text-sm">必要に応じてNGキャストを追加してください</p>
-                  {isEditing && (
-                    <Button
-                      className="mt-4 bg-red-600 hover:bg-red-700"
-                      onClick={handleAddNgCast}
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      NGキャスト追加
-                    </Button>
-                  )}
+                  <Button
+                    className="mt-4 bg-red-600 hover:bg-red-700"
+                    onClick={handleAddNgCast}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    NGキャスト追加
+                  </Button>
                 </div>
               )}
             </CardContent>
