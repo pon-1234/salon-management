@@ -14,7 +14,7 @@ interface CastListViewProps {
 export function StaffListView({ staff, view = "grid" }: CastListViewProps) {
   if (view === "grid") {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {staff.map((member) => (
           <Card key={member.id} className="overflow-hidden">
             <CardContent className="p-0">
