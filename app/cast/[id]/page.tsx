@@ -4,6 +4,7 @@ import { Cast, CastSchedule } from "@/lib/cast"
 import { castMembers, generateCastSchedule } from "@/lib/cast/data"
 import { generateSchedule } from "@/lib/cast/utils"
 import { options } from "@/lib/course-option/data"
+import { StaffProfile } from "@/components/cast/cast-profile"
 import { notFound } from "next/navigation"
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
@@ -33,54 +34,10 @@ export default async function CastDetailPage({ params }: { params: { id: string 
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="grid md:grid-cols-2 gap-8">
-        {/* 基本情報 */}
+        {/* 基本情報・プロフィール */}
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold">基本情報</h2>
-          <div className="relative">
-            <img
-              src={cast.image}
-              alt={`${cast.name}の写真`}
-              className="w-full h-[400px] object-cover rounded-lg"
-            />
-            <Badge className="absolute top-4 left-4 bg-emerald-600">掲載中</Badge>
-          </div>
-          <div className="space-y-4">
-            <h3 className="text-3xl font-bold">{cast.name}</h3>
-            <dl className="grid grid-cols-2 gap-4">
-              <div>
-                <dt className="text-gray-600">年齢：</dt>
-                <dd>{cast.age}歳</dd>
-              </div>
-              <div>
-                <dt className="text-gray-600">スリーサイズ：</dt>
-                <dd>{cast.bust}/{cast.waist}/{cast.hip} ({cast.bust}カップ)</dd>
-              </div>
-              <div>
-                <dt className="text-gray-600">身長：</dt>
-                <dd>{cast.height}cm</dd>
-              </div>
-              <div>
-                <dt className="text-gray-600">タイプ：</dt>
-                <dd>{cast.type}</dd>
-              </div>
-            </dl>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex justify-between items-center border-b pb-2">
-              <div>ネット予約</div>
-              <div className="text-emerald-600">{cast.netReservation ? "可" : "不可"}</div>
-            </div>
-            <div className="flex justify-between items-center border-b pb-2">
-              <div>特別指名料</div>
-              <div>{cast.specialDesignationFee ? `${cast.specialDesignationFee.toLocaleString()}円` : "-"}</div>
-            </div>
-            <div className="flex justify-between items-center border-b pb-2">
-              <div>本指名</div>
-              <div>{cast.regularDesignationFee ? `${cast.regularDesignationFee.toLocaleString()}円` : "-"}</div>
-            </div>
-          </div>
-
+          <StaffProfile staff={cast} />
+          
           <div className="space-y-4">
             <h4 className="font-bold flex items-center gap-2">
               利用可能なオプション

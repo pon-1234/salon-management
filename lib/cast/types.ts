@@ -19,6 +19,39 @@ export interface Cast extends BaseEntity {
   workStart?: Date;
   workEnd?: Date;
   appointments: Appointment[];
+  
+  // 公開プロフィール情報
+  publicProfile?: PublicProfile;
+}
+
+export interface PublicProfile {
+  // スタイル
+  bustCup: string; // E cup
+  bodyType: string[]; // スレンダー、普通、グラマー等
+  personality: string[]; // 正統派セラピスト、清楚なお姉さん等
+  
+  // 可能プレイ
+  availableServices: string[];
+  
+  // 検索用
+  smoking: "吸わない" | "吸う" | "電子タバコ";
+  massageQualification: boolean;
+  qualificationDetails: string[];
+  homeVisit: "NG" | "OK";
+  tattoo: "なし" | "ある";
+  bloodType: "A" | "B" | "O" | "AB" | "秘密";
+  birthplace: string;
+  foreignerOk: "NG" | "OK";
+  
+  // 個人情報
+  hobbies: string;
+  charmPoint: string;
+  personalityOneWord: string;
+  favoriteType: string;
+  favoriteFood: string;
+  specialTechnique: string;
+  shopMessage: string;
+  customerMessage: string;
 }
 
 export interface Appointment { // Appointment型定義を追加
