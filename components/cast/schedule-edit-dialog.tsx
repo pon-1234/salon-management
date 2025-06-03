@@ -90,14 +90,14 @@ export function ScheduleEditDialog({ castName, onSave }: ScheduleEditDialogProps
   ]
 
   const statusOptions = [
-    { value: "0", label: "--------", color: "#000000" },
-    { value: "1", label: "休日", color: "#FF0000" },
-    { value: "2", label: "本日終了", color: "#FF0000" },
-    { value: "3", label: "出勤予定", color: "#000000" },
-    { value: "4", label: "出勤中", color: "#0000ff" },
-    { value: "5", label: "御予約完売", color: "#663399" },
-    { value: "6", label: "隠れ出勤", color: "#000000" },
-    { value: "9", label: "リクエスト出勤", color: "#000000" },
+    { value: "0", label: "--------", className: "text-muted-foreground" },
+    { value: "1", label: "休日", className: "text-red-500" },
+    { value: "2", label: "本日終了", className: "text-red-500" },
+    { value: "3", label: "出勤予定", className: "text-foreground" },
+    { value: "4", label: "出勤中", className: "text-blue-500" },
+    { value: "5", label: "御予約完売", className: "text-purple-600" },
+    { value: "6", label: "隠れ出勤", className: "text-foreground" },
+    { value: "9", label: "リクエスト出勤", className: "text-foreground" },
   ]
 
   const workFlagOptions = [
@@ -194,7 +194,7 @@ export function ScheduleEditDialog({ castName, onSave }: ScheduleEditDialogProps
                     </SelectTrigger>
                     <SelectContent>
                       {statusOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value} style={{color: option.color}}>
+                        <SelectItem key={option.value} value={option.value} className={option.className}>
                           {option.label}
                         </SelectItem>
                       ))}
@@ -225,30 +225,27 @@ export function ScheduleEditDialog({ castName, onSave }: ScheduleEditDialogProps
                 {/* テキストフィールド */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <Label className="text-sm font-medium whitespace-nowrap">■女性関連</Label>
+                    <Label className="text-sm font-medium whitespace-nowrap text-muted-foreground">■女性関連</Label>
                     <Input
                       value={data.womenRelated}
                       onChange={(e) => handleScheduleChange(day, "womenRelated", e.target.value)}
-                      className="flex-1"
-                      style={{color: "blue"}}
+                      className="flex-1 text-blue-600"
                     />
                   </div>
                   <div className="flex items-center gap-2">
-                    <Label className="text-sm font-medium whitespace-nowrap">■店舗関連</Label>
+                    <Label className="text-sm font-medium whitespace-nowrap text-muted-foreground">■店舗関連</Label>
                     <Input
                       value={data.storeRelated}
                       onChange={(e) => handleScheduleChange(day, "storeRelated", e.target.value)}
-                      className="flex-1"
-                      style={{color: "blue"}}
+                      className="flex-1 text-blue-600"
                     />
                   </div>
                   <div className="flex items-center gap-2">
-                    <Label className="text-sm font-medium whitespace-nowrap">■備考</Label>
+                    <Label className="text-sm font-medium whitespace-nowrap text-muted-foreground">■備考</Label>
                     <Input
                       value={data.notes}
                       onChange={(e) => handleScheduleChange(day, "notes", e.target.value)}
-                      className="flex-1"
-                      style={{color: "green"}}
+                      className="flex-1 text-green-600"
                     />
                   </div>
                 </div>
