@@ -49,8 +49,8 @@ export function ScheduleEditDialog({ castName, onSave }: ScheduleEditDialogProps
     "05(木)": { startHour: "15", startMinute: "00", endHour: "29", endMinute: "00", status: "3", workFlag: "0", additionalData: "0", womenRelated: "", storeRelated: "", notes: "" },
     "06(金)": { startHour: "13", startMinute: "00", endHour: "29", endMinute: "00", status: "3", workFlag: "0", additionalData: "0", womenRelated: "", storeRelated: "", notes: "" },
     "07(土)": { startHour: "13", startMinute: "00", endHour: "23", endMinute: "30", status: "3", workFlag: "0", additionalData: "0", womenRelated: "", storeRelated: "", notes: "" },
-    "08(日)": { startHour: "", startMinute: "00", endHour: "", endMinute: "00", status: "1", workFlag: "0", additionalData: "0", womenRelated: "", storeRelated: "", notes: "" },
-    "09(月)": { startHour: "", startMinute: "00", endHour: "", endMinute: "00", status: "0", workFlag: "0", additionalData: "0", womenRelated: "", storeRelated: "", notes: "" },
+    "08(日)": { startHour: "none", startMinute: "00", endHour: "none", endMinute: "00", status: "1", workFlag: "0", additionalData: "0", womenRelated: "", storeRelated: "", notes: "" },
+    "09(月)": { startHour: "none", startMinute: "00", endHour: "none", endMinute: "00", status: "0", workFlag: "0", additionalData: "0", womenRelated: "", storeRelated: "", notes: "" },
   })
 
   const handleScheduleChange = (day: string, field: string, value: any) => {
@@ -64,7 +64,7 @@ export function ScheduleEditDialog({ castName, onSave }: ScheduleEditDialogProps
   }
 
   const hourOptions = [
-    { value: "", label: "---" },
+    { value: "none", label: "---" },
     ...Array.from({ length: 18 }, (_, i) => ({ value: String(i + 7).padStart(2, '0'), label: String(i + 7).padStart(2, '0') })),
     { value: "25", label: "深1" },
     { value: "26", label: "深2" },
