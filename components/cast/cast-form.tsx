@@ -44,11 +44,8 @@ export function StaffForm({ staff, onSubmit }: CastFormProps) {
     password: "",
     birthDate: "",
     registrationDate: new Date().toISOString().split('T')[0],
-    points: "0",
     blogId: "",
     twitterId: "",
-    emailPreference: "可",
-    showOnWebsite: "無し",
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -99,27 +96,15 @@ export function StaffForm({ staff, onSubmit }: CastFormProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="phone">TEL</Label>
-              <Input
-                id="phone"
-                name="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={handleInputChange}
-              />
-              <Button variant="secondary" className="w-full">
-                電話をかける
-              </Button>
-            </div>
-            <div className="space-y-2">
-              <Label>生電話番号</Label>
-              <Input
-                name="personalPhone"
-                placeholder="生電話NGの場合は空白に"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="phone">TEL</Label>
+            <Input
+              id="phone"
+              name="phone"
+              type="tel"
+              value={formData.phone}
+              onChange={handleInputChange}
+            />
           </div>
 
           <div className="space-y-2">
@@ -142,92 +127,27 @@ export function StaffForm({ staff, onSubmit }: CastFormProps) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">メール</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleInputChange}
-              />
-              <Button variant="secondary" className="w-full">
-                ログインメールを送る
-              </Button>
-            </div>
-            <div className="space-y-2">
-              <Label>メールのやり取り</Label>
-              <Select
-                name="emailPreference"
-                value={formData.emailPreference}
-                onValueChange={(value) => handleInputChange({ target: { name: "emailPreference", value } } as any)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="可">可</SelectItem>
-                  <SelectItem value="不可">不可</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">メール</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleInputChange}
+            />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>HPリピート率表示</Label>
-              <Select
-                name="showOnWebsite"
-                value={formData.showOnWebsite}
-                onValueChange={(value) => handleInputChange({ target: { name: "showOnWebsite", value } } as any)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="無し">無し</SelectItem>
-                  <SelectItem value="有り">有り</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">パスワード</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                value={formData.password}
-                onChange={handleInputChange}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">パスワード</Label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              value={formData.password}
+              onChange={handleInputChange}
+            />
           </div>
-        </CardContent>
-      </Card>
-
-      {/* ポイント情報 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>ポイント情報</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="points">ポイント</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="points"
-                  name="points"
-                  type="number"
-                  value={formData.points}
-                  onChange={handleInputChange}
-                />
-                <span>pt</span>
-              </div>
-            </div>
-          </div>
-
-          <Separator />
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -254,6 +174,7 @@ export function StaffForm({ staff, onSubmit }: CastFormProps) {
           </div>
         </CardContent>
       </Card>
+
 
       {/* プロフィール情報 */}
       <Card>
