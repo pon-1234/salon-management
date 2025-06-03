@@ -37,8 +37,9 @@ export function StaffForm({ staff, onSubmit }: CastFormProps) {
     netReservation: staff?.netReservation ?? true,
     specialDesignationFee: staff?.specialDesignationFee || "",
     regularDesignationFee: staff?.regularDesignationFee || "",
+    panelDesignationRank: staff?.panelDesignationRank || 0,
+    regularDesignationRank: staff?.regularDesignationRank || 0,
     workStatus: staff?.workStatus || "出勤",
-    courseTypes: staff?.courseTypes || ["基本コース"],
     phone: "",
     email: "",
     password: "",
@@ -217,22 +218,29 @@ export function StaffForm({ staff, onSubmit }: CastFormProps) {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>コースタイプ</Label>
-            <Select
-              name="courseTypes"
-              value={formData.courseTypes[0]}
-              onValueChange={(value) => handleInputChange({ target: { name: "courseTypes", value: [value] } } as any)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="基本コース">基本コース</SelectItem>
-                <SelectItem value="イベントコース">イベントコース</SelectItem>
-                <SelectItem value="プレミアムコース">プレミアムコース</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="panelDesignationRank">パネル指名ランク</Label>
+              <Input
+                id="panelDesignationRank"
+                name="panelDesignationRank"
+                type="number"
+                min="0"
+                value={formData.panelDesignationRank}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="regularDesignationRank">本指名ランク</Label>
+              <Input
+                id="regularDesignationRank"
+                name="regularDesignationRank"
+                type="number"
+                min="0"
+                value={formData.regularDesignationRank}
+                onChange={handleInputChange}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>

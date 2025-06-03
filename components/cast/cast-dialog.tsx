@@ -83,6 +83,14 @@ export function StaffDialog({ open, onOpenChange, staff, selectedDate }: CastDia
                   <div>本指名</div>
                   <div>{staff.regularDesignationFee ? `${staff.regularDesignationFee.toLocaleString()}円` : "-"}</div>
                 </div>
+                <div className="flex justify-between items-center border-b pb-2">
+                  <div>パネル指名ランク</div>
+                  <div>{staff.panelDesignationRank}</div>
+                </div>
+                <div className="flex justify-between items-center border-b pb-2">
+                  <div>本指名ランク</div>
+                  <div>{staff.regularDesignationRank}</div>
+                </div>
               </div>
             </div>
 

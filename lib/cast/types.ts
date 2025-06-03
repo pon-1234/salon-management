@@ -14,8 +14,9 @@ export interface Cast extends BaseEntity {
   netReservation: boolean;
   specialDesignationFee: number | null;
   regularDesignationFee: number | null;
+  panelDesignationRank: number;
+  regularDesignationRank: number;
   workStatus: "出勤" | "未出勤";
-  courseTypes: string[];
   workStart?: Date;
   workEnd?: Date;
   appointments: Appointment[];

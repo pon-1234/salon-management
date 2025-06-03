@@ -161,10 +161,7 @@ const handleFilter = (filters: FilterOptions) => {
     filtered = filtered.filter(staff => staff.workStatus === filters.workStatus)
   }
 
-  // Filter by course type
-  if (filters.courseType !== "すべて") {
-    filtered = filtered.filter(staff => staff.courseTypes.includes(filters.courseType))
-  }
+  // Course type filter removed as courseTypes field is no longer used
 
   // Filter by name
   if (filters.name) {
