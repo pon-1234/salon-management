@@ -30,6 +30,30 @@ export const castMembers: Cast[] = [
     workStart: createDate(10),
     workEnd: createDate(22),
     appointments: [],
+    createdAt: new Date('2023-01-01'),
+    updatedAt: new Date('2023-01-01'),
+    publicProfile: {
+      bustCup: "G",
+      bodyType: ["スレンダー", "普通"],
+      personality: ["正統派セラピスト", "清楚なお姉さん"],
+      availableServices: ["睾丸マッサージ", "オイルマッサージ", "全身マッサージ", "密着フェザータッチ"],
+      smoking: "吸わない",
+      massageQualification: true,
+      qualificationDetails: ["メンズエステ経験者", "アロマリンパドレナージュ"],
+      homeVisit: "NG",
+      tattoo: "なし",
+      bloodType: "A",
+      birthplace: "関東地方",
+      foreignerOk: "OK",
+      hobbies: "料理",
+      charmPoint: "目♡",
+      personalityOneWord: "明るい",
+      favoriteType: "紳士な人♡",
+      favoriteFood: "ぷりん",
+      specialTechnique: "超密着マッサージ",
+      shopMessage: "とっても人懐っこく、とっても明るいキレ可愛いセラピストさん。穏やかな表情と優しそうな雰囲気ながら、プレイに入ると小悪魔系に責め立ててくれる、天性の素質を兼ね備えた女性です。",
+      customerMessage: "初めまして♡ みるくと申します✨✨ 名前の通り愛をたくさんお届けできたらなぁと思ってます♪"
+    }
   },
   {
     id: "2",
@@ -52,6 +76,8 @@ export const castMembers: Cast[] = [
     workStart: createDate(12),
     workEnd: createDate(22),
     appointments: [],
+    createdAt: new Date('2023-01-01'),
+    updatedAt: new Date('2023-01-01'),
   },
   {
     id: "3",
@@ -74,6 +100,8 @@ export const castMembers: Cast[] = [
     workStart: createDate(14),
     workEnd: createDate(24),
     appointments: [],
+    createdAt: new Date('2023-01-01'),
+    updatedAt: new Date('2023-01-01'),
   },
   {
     id: "4",
@@ -96,6 +124,8 @@ export const castMembers: Cast[] = [
     workStart: createDate(11),
     workEnd: createDate(21),
     appointments: [],
+    createdAt: new Date('2023-01-01'),
+    updatedAt: new Date('2023-01-01'),
   },
 ]
 
