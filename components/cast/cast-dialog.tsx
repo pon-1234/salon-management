@@ -45,7 +45,7 @@ export function StaffDialog({ open, onOpenChange, staff, selectedDate }: CastDia
                 <img
                   src={staff.image}
                   alt={`${staff.name}の写真`}
-                  className="w-full h-[300px] object-cover rounded-lg"
+                  className="w-full aspect-[7/10] object-cover rounded-lg"
                 />
                 <Badge className="absolute top-4 left-4 bg-emerald-600">掲載中</Badge>
               </div>

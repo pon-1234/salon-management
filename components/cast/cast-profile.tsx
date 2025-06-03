@@ -19,11 +19,11 @@ export function StaffProfile({ staff }: CastProfileProps) {
           <CardTitle>基本情報</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="relative">
+          <div className="relative max-w-sm mx-auto">
             <img
               src={staff.image}
               alt={`${staff.name}の写真`}
-              className="w-full h-[400px] object-cover rounded-lg"
+              className="w-full aspect-[7/10] object-cover rounded-lg"
             />
             <Badge className="absolute top-4 left-4 bg-emerald-600">掲載中</Badge>
           </div>

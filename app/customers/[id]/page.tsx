@@ -742,7 +742,7 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
                             <img
                               src={cast.image || "/placeholder.svg"}
                               alt={cast.name}
-                              className="w-12 h-12 rounded-full object-cover shrink-0"
+                              className="w-10 aspect-[7/10] rounded object-cover shrink-0"
                             />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">

@@ -17,7 +17,7 @@ export function StaffList({ staff }: CastListProps) {
               <img
                 src={member.image}
                 alt={member.name}
-                className="w-full h-48 object-cover"
+                className="w-full aspect-[7/10] object-cover"
               />
               <Badge className="absolute top-2 right-2 bg-emerald-600">
                 {member.workStatus}

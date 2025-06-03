@@ -220,7 +220,7 @@ export function Timeline({ staff, selectedDate, selectedCustomer, setSelectedApp
                   <img 
                     src={member.image}
                     alt={`${member.name}の写真`} 
-                    className="max-h-12 max-w-12 object-contain"
+                    className="w-8 aspect-[7/10] object-cover rounded"
                   />
                 )}
                 <div className="ml-2 flex flex-col justify-center">

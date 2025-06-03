@@ -138,7 +138,7 @@ export function NgCastDialog({
                             <img
                               src={cast.image || "/placeholder.svg"}
                               alt={cast.name}
-                              className="w-8 h-8 rounded-full object-cover"
+                              className="w-8 aspect-[7/10] rounded object-cover"
                             />
                             <div>
                               <div className="font-medium">{cast.name}</div>

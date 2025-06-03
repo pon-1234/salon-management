@@ -22,7 +22,7 @@ export function StaffListView({ staff, view = "grid" }: CastListViewProps) {
                 <img
                   src={member.image}
                   alt={member.name}
-                  className="w-full h-48 object-cover"
+                  className="w-full aspect-[7/10] object-cover"
                 />
                 <Badge className="absolute top-2 right-2 bg-emerald-600">
                   {member.workStatus}
@@ -57,7 +57,7 @@ export function StaffListView({ staff, view = "grid" }: CastListViewProps) {
             <img
               src={member.image}
               alt={member.name}
-              className="w-24 h-24 object-cover rounded"
+              className="w-20 aspect-[7/10] object-cover rounded"
             />
           </Link>
 
