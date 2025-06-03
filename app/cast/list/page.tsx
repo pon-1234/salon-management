@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Header } from "@/components/header"
-import { StaffListView } from "@/components/cast/cast-list-view"
+import { CastListView } from "@/components/cast/cast-list-view"
 import { Cast } from "@/lib/cast/types"
 import { getAllCasts } from "@/lib/cast/data"
 import { CastListActionButtons } from "@/components/cast/cast-list-action-buttons"
@@ -102,7 +102,7 @@ export default function CastListPage() {
       />
 
       <main className="p-4">
-        <StaffListView staff={filteredCasts} view={view} />
+        <CastListView casts={filteredCasts} view={view} />
       </main>
     </div>
   )

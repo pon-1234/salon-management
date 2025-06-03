@@ -4,7 +4,7 @@ import { Cast, CastSchedule } from "@/lib/cast"
 import { castMembers, generateCastSchedule } from "@/lib/cast/data"
 import { generateSchedule } from "@/lib/cast/utils"
 import { options } from "@/lib/course-option/data"
-import { StaffProfile } from "@/components/cast/cast-profile"
+import { CastProfile } from "@/components/cast/cast-profile"
 import { notFound } from "next/navigation"
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
@@ -36,7 +36,7 @@ export default async function CastDetailPage({ params }: { params: { id: string 
       <div className="grid md:grid-cols-2 gap-8">
         {/* 基本情報・プロフィール */}
         <div className="space-y-6">
-          <StaffProfile staff={cast} />
+          <CastProfile cast={cast} />
           
           <div className="space-y-4">
             <h4 className="font-bold flex items-center gap-2">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { StaffForm } from "@/components/cast/cast-form"
+import { CastForm } from "@/components/cast/cast-form"
 import { Cast } from "@/lib/cast/types"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, Clock, CalendarDays, User, FileText, Settings } from 'lucide-react'
 import { getAllCasts } from "@/lib/cast/data"
 import { ScheduleEditDialog } from "@/components/cast/schedule-edit-dialog"
-import { StaffProfile } from "@/components/cast/cast-profile"
+import { CastProfile } from "@/components/cast/cast-profile"
 import { PublicProfileForm } from "@/components/cast/public-profile-form"
 
 export default function CastManagePage({ params }: { params: { id: string } }) {
@@ -90,8 +90,8 @@ export default function CastManagePage({ params }: { params: { id: string } }) {
 
         <div className="max-w-6xl mx-auto">
           {isNewCast ? (
-            <StaffForm
-              staff={null}
+            <CastForm
+              cast={null}
               onSubmit={handleSubmit}
             />
           ) : (
@@ -112,8 +112,8 @@ export default function CastManagePage({ params }: { params: { id: string } }) {
               </TabsList>
 
               <TabsContent value="basic" className="space-y-6">
-                <StaffForm
-                  staff={cast}
+                <CastForm
+                  cast={cast}
                   onSubmit={handleSubmit}
                 />
               </TabsContent>
@@ -127,7 +127,7 @@ export default function CastManagePage({ params }: { params: { id: string } }) {
                     </TabsList>
                     
                     <TabsContent value="view">
-                      <StaffProfile staff={cast} />
+                      <CastProfile cast={cast} />
                     </TabsContent>
                     
                     <TabsContent value="edit">

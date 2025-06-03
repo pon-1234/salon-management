@@ -18,28 +18,28 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 
 interface CastFormProps {
-  staff?: Cast | null
+  cast?: Cast | null
   onSubmit: (data: Partial<Cast>) => void
 }
 
-export function StaffForm({ staff, onSubmit }: CastFormProps) {
+export function CastForm({ cast, onSubmit }: CastFormProps) {
   const [formData, setFormData] = useState({
-    name: staff?.name || "",
-    nameKana: staff?.nameKana || "",
-    age: staff?.age || "",
-    height: staff?.height || "",
-    bust: staff?.bust || "",
-    waist: staff?.waist || "",
-    hip: staff?.hip || "",
-    type: staff?.type || "カワイイ系",
-    image: staff?.image || "",
-    description: staff?.description || "",
-    netReservation: staff?.netReservation ?? true,
-    specialDesignationFee: staff?.specialDesignationFee || "",
-    regularDesignationFee: staff?.regularDesignationFee || "",
-    panelDesignationRank: staff?.panelDesignationRank || 0,
-    regularDesignationRank: staff?.regularDesignationRank || 0,
-    workStatus: staff?.workStatus || "出勤",
+    name: cast?.name || "",
+    nameKana: cast?.nameKana || "",
+    age: cast?.age || "",
+    height: cast?.height || "",
+    bust: cast?.bust || "",
+    waist: cast?.waist || "",
+    hip: cast?.hip || "",
+    type: cast?.type || "カワイイ系",
+    image: cast?.image || "",
+    description: cast?.description || "",
+    netReservation: cast?.netReservation ?? true,
+    specialDesignationFee: cast?.specialDesignationFee || "",
+    regularDesignationFee: cast?.regularDesignationFee || "",
+    panelDesignationRank: cast?.panelDesignationRank || 0,
+    regularDesignationRank: cast?.regularDesignationRank || 0,
+    workStatus: cast?.workStatus || "出勤",
     phone: "",
     email: "",
     password: "",

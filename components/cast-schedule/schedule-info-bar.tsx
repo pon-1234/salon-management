@@ -2,17 +2,17 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { InfoIcon } from 'lucide-react'
 
 interface ScheduleInfoBarProps {
-  totalStaff: number;
-  workingStaff: number;
+  totalCast: number;
+  workingCast: number;
   averageWorkingHours: number;
-  averageWorkingStaff: number;
+  averageWorkingCast: number;
 }
 
 export function ScheduleInfoBar({ 
-  totalStaff, 
-  workingStaff, 
+  totalCast, 
+  workingCast, 
   averageWorkingHours, 
-  averageWorkingStaff 
+  averageWorkingCast 
 }: ScheduleInfoBarProps) {
   return (
     <Alert className="bg-blue-50 border-blue-200 text-blue-800">
@@ -23,7 +23,7 @@ export function ScheduleInfoBar({
         </div>
         <div className="flex items-center gap-4 text-sm">
           <div>
-            現在（在籍数：<span className="font-medium">{totalStaff}名</span>）
+            現在（在籍数：<span className="font-medium">{totalCast}名</span>）
           </div>
           <div className="text-red-500 font-medium">
             （休職中14名）
@@ -32,7 +32,7 @@ export function ScheduleInfoBar({
             出勤者平均 <span className="font-medium">{averageWorkingHours}%</span>
           </div>
           <div>
-            出勤者平均 <span className="font-medium">{averageWorkingStaff}名</span>
+            出勤者平均 <span className="font-medium">{averageWorkingCast}名</span>
           </div>
         </div>
       </AlertDescription>

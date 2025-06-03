@@ -7,15 +7,15 @@ import Link from "next/link"
 import { format } from "date-fns"
 
 interface CastListViewProps {
-  staff: Cast[]
+  casts: Cast[]
   view?: "grid" | "list"
 }
 
-export function StaffListView({ staff, view = "grid" }: CastListViewProps) {
+export function CastListView({ casts, view = "grid" }: CastListViewProps) {
   if (view === "grid") {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        {staff.map((member) => (
+        {casts.map((member) => (
           <Card key={member.id} className="overflow-hidden">
             <CardContent className="p-0">
               <div className="relative">
@@ -48,7 +48,7 @@ export function StaffListView({ staff, view = "grid" }: CastListViewProps) {
 
   return (
     <div className="space-y-4">
-      {staff.map((member) => (
+      {casts.map((member) => (
         <div
           key={member.id}
           className="bg-white rounded-lg shadow p-4 flex items-start gap-4"

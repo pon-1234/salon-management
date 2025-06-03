@@ -1,12 +1,12 @@
 import React from "react"
 import { Button } from "@/components/ui/button"
-import { StaffScheduleEntry, StaffScheduleStatus } from "@/lib/staff-schedule/types"
-import { getWeekDates, formatScheduleDate, formatDisplayDate, formatDayOfWeek } from "@/lib/staff-schedule/utils"
+import { CastScheduleEntry, CastScheduleStatus } from "@/lib/cast-schedule/types"
+import { getWeekDates, formatScheduleDate, formatDisplayDate, formatDayOfWeek } from "@/lib/cast-schedule/utils"
 import { Phone, MessageSquare } from 'lucide-react'
 
 interface ScheduleGridProps {
   startDate: Date
-  entries: StaffScheduleEntry[]
+  entries: CastScheduleEntry[]
 }
 
 export function ScheduleGrid({ startDate, entries }: ScheduleGridProps) {

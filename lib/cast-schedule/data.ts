@@ -1,9 +1,9 @@
-import { StaffScheduleEntry, WeeklySchedule } from './types';
+import { CastScheduleEntry, WeeklySchedule } from './types';
 
 export function generateMockWeeklySchedule(startDate: Date): WeeklySchedule {
-  const mockEntries: StaffScheduleEntry[] = [
+  const mockEntries: CastScheduleEntry[] = [
     {
-      staffId: "1",
+      castId: "1",
       name: "あい",
       nameKana: "あい",
       age: 27,
@@ -21,7 +21,7 @@ export function generateMockWeeklySchedule(startDate: Date): WeeklySchedule {
       }
     },
     {
-      staffId: "2",
+      castId: "2",
       name: "あやみ",
       nameKana: "あやみ",
       age: 27,
@@ -39,7 +39,7 @@ export function generateMockWeeklySchedule(startDate: Date): WeeklySchedule {
       }
     },
     {
-      staffId: "3",
+      castId: "3",
       name: "いずみ",
       nameKana: "いずみ",
       age: 32,
@@ -71,10 +71,10 @@ export function generateMockWeeklySchedule(startDate: Date): WeeklySchedule {
     endDate: new Date(startDate.getTime() + 6 * 24 * 60 * 60 * 1000),
     entries: mockEntries,
     stats: {
-      totalStaff: 32,
-      workingStaff: 14,
+      totalCast: 32,
+      workingCast: 14,
       averageWorkingHours: 23.9,
-      averageWorkingStaff: 11,
+      averageWorkingCast: 11,
     }
   };
 }

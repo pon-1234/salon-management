@@ -1,14 +1,14 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { ScheduleGrid } from "@/components/staff-schedule/schedule-grid"
-import { StaffScheduleUseCases } from "@/lib/staff-schedule/usecases"
-import { WeeklySchedule } from "@/lib/staff-schedule/types"
+import { ScheduleGrid } from "@/components/cast-schedule/schedule-grid"
+import { CastScheduleUseCases } from "@/lib/cast-schedule/usecases"
+import { WeeklySchedule } from "@/lib/cast-schedule/types"
 import { Header } from "@/components/header"
-import { ScheduleInfoBar } from "@/components/staff-schedule/schedule-info-bar"
-import { ScheduleActionButtons } from "@/components/staff-schedule/schedule-action-buttons"
+import { ScheduleInfoBar } from "@/components/cast-schedule/schedule-info-bar"
+import { ScheduleActionButtons } from "@/components/cast-schedule/schedule-action-buttons"
 
-const staffScheduleUseCases = new StaffScheduleUseCases()
+const castScheduleUseCases = new CastScheduleUseCases()
 
 export default function WeeklySchedulePage() {
   const [date] = useState(() => new Date())
@@ -17,9 +17,9 @@ export default function WeeklySchedulePage() {
   useEffect(() => {
     const fetchSchedule = async () => {
       try {
-        const weeklySchedule = await staffScheduleUseCases.getWeeklySchedule({ 
+        const weeklySchedule = await castScheduleUseCases.getWeeklySchedule({ 
           date, 
-          staffFilter: "all" 
+          castFilter: "all" 
         })
         setSchedule(weeklySchedule)
       } catch (error) {
@@ -37,9 +37,9 @@ export default function WeeklySchedulePage() {
   const handleRefresh = () => {
     const fetchSchedule = async () => {
       try {
-        const weeklySchedule = await staffScheduleUseCases.getWeeklySchedule({ 
+        const weeklySchedule = await castScheduleUseCases.getWeeklySchedule({ 
           date, 
-          staffFilter: "all" 
+          castFilter: "all" 
         })
         setSchedule(weeklySchedule)
       } catch (error) {
@@ -61,10 +61,10 @@ export default function WeeklySchedulePage() {
     <div className="min-h-screen bg-white">
       <Header />
       <ScheduleInfoBar 
-        totalStaff={schedule.stats.totalStaff}
-        workingStaff={schedule.stats.workingStaff}
+        totalCast={schedule.stats.totalCast}
+        workingCast={schedule.stats.workingCast}
         averageWorkingHours={schedule.stats.averageWorkingHours}
-        averageWorkingStaff={schedule.stats.averageWorkingStaff}
+        averageWorkingCast={schedule.stats.averageWorkingCast}
       />
       <ScheduleActionButtons
         onRefresh={handleRefresh}

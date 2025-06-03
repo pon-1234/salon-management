@@ -196,7 +196,7 @@ export const staffMembers: StaffMember[] = [
 ];
 
 // Import options from the centralized location
-export { options } from "./course-option-data";
+export { options } from "./course-option/data";
 
 export function generateSchedule(staff: StaffMember): ScheduleDay[] {
   const today = new Date();

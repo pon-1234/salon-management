@@ -1,12 +1,12 @@
-export interface StaffScheduleStatus {
+export interface CastScheduleStatus {
   type: "休日" | "出勤予定" | "未入力";
   startTime?: string;
   endTime?: string;
   note?: string;
 }
 
-export interface StaffScheduleEntry {
-  staffId: string;
+export interface CastScheduleEntry {
+  castId: string;
   name: string;
   nameKana: string;
   age: number;
@@ -14,23 +14,23 @@ export interface StaffScheduleEntry {
   hasPhone: boolean;
   hasBusinessContact: boolean;
   schedule: {
-    [date: string]: StaffScheduleStatus;
+    [date: string]: CastScheduleStatus;
   };
 }
 
 export interface WeeklySchedule {
   startDate: Date;
   endDate: Date;
-  entries: StaffScheduleEntry[];
+  entries: CastScheduleEntry[];
   stats: {
-    totalStaff: number;
-    workingStaff: number;
+    totalCast: number;
+    workingCast: number;
     averageWorkingHours: number;
-    averageWorkingStaff: number;
+    averageWorkingCast: number;
   };
 }
 
 export interface ScheduleFilters {
   date: Date;
-  staffFilter: string;
+  castFilter: string;
 }
