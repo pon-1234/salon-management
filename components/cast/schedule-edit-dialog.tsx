@@ -222,30 +222,33 @@ export function ScheduleEditDialog({ castName, onSave }: ScheduleEditDialogProps
                   </Select>
                 </div>
 
-                {/* テキストフィールド */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Label className="text-sm font-medium whitespace-nowrap text-muted-foreground">■女性関連</Label>
+                {/* 追加情報 */}
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground mb-2 block">女性関連</Label>
                     <Input
                       value={data.womenRelated}
                       onChange={(e) => handleScheduleChange(day, "womenRelated", e.target.value)}
-                      className="flex-1 text-blue-600"
+                      className="w-full text-blue-600"
+                      placeholder="女性関連の情報を入力..."
                     />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Label className="text-sm font-medium whitespace-nowrap text-muted-foreground">■店舗関連</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground mb-2 block">店舗関連</Label>
                     <Input
                       value={data.storeRelated}
                       onChange={(e) => handleScheduleChange(day, "storeRelated", e.target.value)}
-                      className="flex-1 text-blue-600"
+                      className="w-full text-blue-600"
+                      placeholder="店舗関連の情報を入力..."
                     />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Label className="text-sm font-medium whitespace-nowrap text-muted-foreground">■備考</Label>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground mb-2 block">備考</Label>
                     <Input
                       value={data.notes}
                       onChange={(e) => handleScheduleChange(day, "notes", e.target.value)}
-                      className="flex-1 text-green-600"
+                      className="w-full text-green-600"
+                      placeholder="備考を入力..."
                     />
                   </div>
                 </div>
