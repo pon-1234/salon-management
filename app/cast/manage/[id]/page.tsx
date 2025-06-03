@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Clock, CalendarDays } from 'lucide-react'
 import { getAllCasts } from "@/lib/cast/data"
+import { ScheduleEditDialog } from "@/components/cast/schedule-edit-dialog"
 
 export default function CastManagePage({ params }: { params: { id: string } }) {
   const [cast, setCast] = useState<Cast | null>(null)
@@ -60,10 +61,19 @@ export default function CastManagePage({ params }: { params: { id: string } }) {
               {/* 出勤情報 */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Clock className="w-5 h-5" />
-                    出勤情報
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Clock className="w-5 h-5" />
+                      出勤情報
+                    </CardTitle>
+                    <ScheduleEditDialog 
+                      castName={cast?.name || "キャスト"}
+                      onSave={(schedule) => {
+                        console.log("スケジュール更新:", schedule)
+                        // 実際のアプリではAPI呼び出しを行う
+                      }}
+                    />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2 text-sm">
