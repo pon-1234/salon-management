@@ -37,11 +37,15 @@ export default function CastManagePage({ params }: { params: { id: string } }) {
     router.push("/cast/list")
   }
 
-  const handlePublicProfileSubmit = async (publicProfile: any) => {
+  const handlePublicProfileSubmit = async (data: any) => {
     // In a real application, this would make an API call
-    console.log("Submitting public profile data:", publicProfile)
+    console.log("Submitting public profile data:", data)
     if (cast) {
-      setCast({ ...cast, publicProfile })
+      setCast({ 
+        ...cast, 
+        ...data.basicInfo,
+        publicProfile: data.publicProfile 
+      })
     }
   }
 

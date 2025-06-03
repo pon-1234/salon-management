@@ -20,7 +20,7 @@ import { Save, X } from "lucide-react"
 
 interface PublicProfileFormProps {
   cast: Cast
-  onSubmit: (data: PublicProfile) => void
+  onSubmit: (data: { publicProfile: PublicProfile, basicInfo: Partial<Cast> }) => void
   onCancel?: () => void
   isEditing?: boolean
   setIsEditing?: (editing: boolean) => void
@@ -50,9 +50,17 @@ export function PublicProfileForm({ cast, onSubmit, onCancel, isEditing = false,
     customerMessage: cast?.publicProfile?.customerMessage || "",
   })
 
+  const [basicInfo, setBasicInfo] = useState({
+    height: cast?.height || 0,
+    bust: cast?.bust || "",
+    waist: cast?.waist || 0,
+    type: cast?.type || "",
+    description: cast?.description || "",
+  })
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(publicProfile)
+    onSubmit({ publicProfile, basicInfo })
     if (setIsEditing) setIsEditing(false)
   }
 
@@ -80,12 +88,23 @@ export function PublicProfileForm({ cast, onSubmit, onCancel, isEditing = false,
       shopMessage: cast?.publicProfile?.shopMessage || "",
       customerMessage: cast?.publicProfile?.customerMessage || "",
     })
+    setBasicInfo({
+      height: cast?.height || 0,
+      bust: cast?.bust || "",
+      waist: cast?.waist || 0,
+      type: cast?.type || "",
+      description: cast?.description || "",
+    })
     if (setIsEditing) setIsEditing(false)
     if (onCancel) onCancel()
   }
 
   const handleChange = (field: keyof PublicProfile, value: any) => {
     setPublicProfile(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleBasicInfoChange = (field: string, value: any) => {
+    setBasicInfo(prev => ({ ...prev, [field]: value }))
   }
 
   const handleArrayToggle = (field: keyof PublicProfile, value: string) => {
@@ -112,22 +131,75 @@ export function PublicProfileForm({ cast, onSubmit, onCancel, isEditing = false,
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* スタイル情報 */}
+        {/* 基本スタイル情報 */}
         <Card>
           <CardHeader>
-            <CardTitle>スタイル情報</CardTitle>
+            <CardTitle>基本スタイル情報</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="bustCup">カップサイズ</Label>
+                <Label htmlFor="height">身長</Label>
+                <Input
+                  id="height"
+                  type="number"
+                  value={basicInfo.height || ""}
+                  onChange={(e) => handleBasicInfoChange("height", Number(e.target.value))}
+                  placeholder="160"
+                  disabled={!isEditing}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bust">バスト</Label>
+                <Input
+                  id="bust"
+                  value={basicInfo.bust || ""}
+                  onChange={(e) => handleBasicInfoChange("bust", e.target.value)}
+                  placeholder="84"
+                  disabled={!isEditing}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bustCup">カップ</Label>
                 <Input
                   id="bustCup"
                   value={publicProfile.bustCup}
                   onChange={(e) => handleChange("bustCup", e.target.value)}
-                  placeholder="E"
+                  placeholder="G"
                   disabled={!isEditing}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="waist">ウエスト</Label>
+                <Input
+                  id="waist"
+                  type="number"
+                  value={basicInfo.waist || ""}
+                  onChange={(e) => handleBasicInfoChange("waist", Number(e.target.value))}
+                  placeholder="62"
+                  disabled={!isEditing}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="type">タイプ</Label>
+                <Select
+                  value={basicInfo.type || ""}
+                  onValueChange={(value) => handleBasicInfoChange("type", value)}
+                  disabled={!isEditing}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="カワイイ系">カワイイ系</SelectItem>
+                    <SelectItem value="キレイ系">キレイ系</SelectItem>
+                    <SelectItem value="セクシー系">セクシー系</SelectItem>
+                    <SelectItem value="お姉さん系">お姉さん系</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="birthplace">出身地</Label>
@@ -140,6 +212,27 @@ export function PublicProfileForm({ cast, onSubmit, onCancel, isEditing = false,
                 />
               </div>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">プロフィール文</Label>
+              <Textarea
+                id="description"
+                value={basicInfo.description || ""}
+                onChange={(e) => handleBasicInfoChange("description", e.target.value)}
+                placeholder="明るく元気な性格で、お客様を楽しませることが得意です。マッサージの技術も高く、リピーターの多いキャストです。"
+                className="min-h-[100px]"
+                disabled={!isEditing}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 詳細スタイル情報 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>詳細スタイル情報</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
 
             <div className="space-y-2">
               <Label>体型</Label>
