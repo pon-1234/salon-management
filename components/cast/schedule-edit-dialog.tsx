@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { format, addDays, startOfWeek } from "date-fns"
+import { ja } from "date-fns/locale"
 import {
   Dialog,
   DialogContent,
@@ -9,7 +11,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -19,243 +20,252 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Edit, Save, X } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import { Calendar, Edit, Save, X, Clock, User } from "lucide-react"
 
-interface ScheduleData {
-  [key: string]: {
-    startHour: string
-    startMinute: string
-    endHour: string
-    endMinute: string
-    status: string
-    workFlag: string
-    additionalData: string
-    womenRelated: string
-    storeRelated: string
-    notes: string
-  }
+export type WorkStatus = "休日" | "出勤予定" | "未入力" | "出勤中" | "早退" | "遅刻"
+
+export interface DaySchedule {
+  date: string // yyyy-mm-dd format
+  status: WorkStatus
+  startTime?: string // HH:mm format
+  endTime?: string // HH:mm format
+  note?: string
+  isAvailableForBooking?: boolean
+}
+
+export interface WeeklySchedule {
+  [date: string]: DaySchedule
 }
 
 interface ScheduleEditDialogProps {
   castName: string
-  onSave: (schedule: ScheduleData) => void
+  initialSchedule?: WeeklySchedule
+  startDate?: Date
+  onSave: (schedule: WeeklySchedule) => void
 }
 
-export function ScheduleEditDialog({ castName, onSave }: ScheduleEditDialogProps) {
+export function ScheduleEditDialog({ 
+  castName, 
+  initialSchedule = {},
+  startDate = new Date(),
+  onSave 
+}: ScheduleEditDialogProps) {
   const [open, setOpen] = useState(false)
-  const [schedule, setSchedule] = useState<ScheduleData>({
-    "03(火)": { startHour: "20", startMinute: "00", endHour: "29", endMinute: "00", status: "3", workFlag: "0", additionalData: "0", womenRelated: "", storeRelated: "", notes: "※実出勤（22:00〜5:00）" },
-    "04(水)": { startHour: "13", startMinute: "00", endHour: "23", endMinute: "30", status: "3", workFlag: "0", additionalData: "0", womenRelated: "", storeRelated: "", notes: "" },
-    "05(木)": { startHour: "15", startMinute: "00", endHour: "29", endMinute: "00", status: "3", workFlag: "0", additionalData: "0", womenRelated: "", storeRelated: "", notes: "" },
-    "06(金)": { startHour: "13", startMinute: "00", endHour: "29", endMinute: "00", status: "3", workFlag: "0", additionalData: "0", womenRelated: "", storeRelated: "", notes: "" },
-    "07(土)": { startHour: "13", startMinute: "00", endHour: "23", endMinute: "30", status: "3", workFlag: "0", additionalData: "0", womenRelated: "", storeRelated: "", notes: "" },
-    "08(日)": { startHour: "none", startMinute: "00", endHour: "none", endMinute: "00", status: "1", workFlag: "0", additionalData: "0", womenRelated: "", storeRelated: "", notes: "" },
-    "09(月)": { startHour: "none", startMinute: "00", endHour: "none", endMinute: "00", status: "0", workFlag: "0", additionalData: "0", womenRelated: "", storeRelated: "", notes: "" },
+  const [schedule, setSchedule] = useState<WeeklySchedule>(initialSchedule)
+  
+  // Generate 7 days starting from the given start date
+  const weekStart = startOfWeek(startDate, { weekStartsOn: 1 }) // Monday start
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+
+  const statusOptions: { value: WorkStatus; label: string; color: string }[] = [
+    { value: "未入力", label: "未入力", color: "bg-gray-100 text-gray-600" },
+    { value: "出勤予定", label: "出勤予定", color: "bg-green-100 text-green-700" },
+    { value: "出勤中", label: "出勤中", color: "bg-blue-100 text-blue-700" },
+    { value: "休日", label: "休日", color: "bg-red-100 text-red-700" },
+    { value: "早退", label: "早退", color: "bg-yellow-100 text-yellow-700" },
+    { value: "遅刻", label: "遅刻", color: "bg-orange-100 text-orange-700" },
+  ]
+
+  const timeOptions = Array.from({ length: 48 }, (_, i) => {
+    const hour = Math.floor(i / 2)
+    const minute = i % 2 === 0 ? "00" : "30"
+    return `${hour.toString().padStart(2, '0')}:${minute}`
   })
 
-  const handleScheduleChange = (day: string, field: string, value: any) => {
+  const handleScheduleChange = (dateKey: string, field: keyof DaySchedule, value: any) => {
     setSchedule(prev => ({
       ...prev,
-      [day]: {
-        ...prev[day],
-        [field]: value
+      [dateKey]: {
+        ...prev[dateKey],
+        date: dateKey,
+        [field]: value,
+        // Reset times when status changes to 休日
+        ...(field === 'status' && value === '休日' && {
+          startTime: undefined,
+          endTime: undefined,
+          isAvailableForBooking: false
+        })
       }
     }))
   }
 
-  const hourOptions = [
-    { value: "none", label: "---" },
-    ...Array.from({ length: 18 }, (_, i) => ({ value: String(i + 7).padStart(2, '0'), label: String(i + 7).padStart(2, '0') })),
-    { value: "25", label: "深1" },
-    { value: "26", label: "深2" },
-    { value: "27", label: "深3" },
-    { value: "28", label: "深4" },
-    { value: "29", label: "深5" },
-    { value: "30", label: "深6" },
-  ]
-
-  const minuteOptions = [
-    { value: "00", label: "00" },
-    { value: "05", label: "05" },
-    { value: "10", label: "10" },
-    { value: "15", label: "15" },
-    { value: "20", label: "20" },
-    { value: "25", label: "25" },
-    { value: "30", label: "30" },
-    { value: "35", label: "35" },
-    { value: "40", label: "40" },
-    { value: "45", label: "45" },
-    { value: "50", label: "50" },
-    { value: "55", label: "55" },
-  ]
-
-  const statusOptions = [
-    { value: "0", label: "--------", className: "text-muted-foreground" },
-    { value: "1", label: "休日", className: "text-red-500" },
-    { value: "2", label: "本日終了", className: "text-red-500" },
-    { value: "3", label: "出勤予定", className: "text-foreground" },
-    { value: "4", label: "出勤中", className: "text-blue-500" },
-    { value: "5", label: "御予約完売", className: "text-purple-600" },
-    { value: "6", label: "隠れ出勤", className: "text-foreground" },
-    { value: "9", label: "リクエスト出勤", className: "text-foreground" },
-  ]
-
-  const workFlagOptions = [
-    { value: "0", label: "--------" },
-    { value: "1", label: "受付" },
-    { value: "2", label: "終了" },
-  ]
-
-  const additionalDataOptions = [
-    { value: "0", label: "--------" },
-    { value: "1", label: "当日欠席" },
-    { value: "2", label: "ボウズ終了" },
-    { value: "3", label: "生休" },
-  ]
-
   const handleSave = () => {
-    onSave(schedule)
+    // Validate schedule before saving
+    const validatedSchedule: WeeklySchedule = {}
+    
+    for (const [dateKey, daySchedule] of Object.entries(schedule)) {
+      if (daySchedule.status === "出勤予定" || daySchedule.status === "出勤中") {
+        if (!daySchedule.startTime || !daySchedule.endTime) {
+          alert(`${format(new Date(dateKey), 'M月d日(E)', { locale: ja })} の時間を入力してください`)
+          return
+        }
+        
+        if (daySchedule.startTime >= daySchedule.endTime) {
+          alert(`${format(new Date(dateKey), 'M月d日(E)', { locale: ja })} の終了時間は開始時間より後にしてください`)
+          return
+        }
+      }
+      
+      validatedSchedule[dateKey] = daySchedule
+    }
+    
+    onSave(validatedSchedule)
     setOpen(false)
   }
 
+  const getDaySchedule = (dateKey: string): DaySchedule => {
+    return schedule[dateKey] || {
+      date: dateKey,
+      status: "未入力",
+      isAvailableForBooking: false
+    }
+  }
+
+  const getStatusColor = (status: WorkStatus) => {
+    return statusOptions.find(opt => opt.value === status)?.color || "bg-gray-100 text-gray-600"
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Edit className="w-4 h-4 mr-2" />
-          編集
+          スケジュール編集
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{castName} 出勤スケジュール編集</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <User className="w-5 h-5" />
+            {castName} - 週間スケジュール編集
+          </DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            {format(weekStart, 'yyyy年M月d日', { locale: ja })} 〜 {format(addDays(weekStart, 6), 'M月d日', { locale: ja })}
+          </p>
         </DialogHeader>
         
         <div className="space-y-4">
-          {Object.entries(schedule).map(([day, data]) => (
-            <Card key={day}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">{day}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* 時間設定 */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Select value={data.startHour} onValueChange={(value) => handleScheduleChange(day, "startHour", value)}>
-                    <SelectTrigger className="w-20">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {hourOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <span>：</span>
-                  <Select value={data.startMinute} onValueChange={(value) => handleScheduleChange(day, "startMinute", value)}>
-                    <SelectTrigger className="w-20">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {minuteOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <span>〜</span>
-                  <Select value={data.endHour} onValueChange={(value) => handleScheduleChange(day, "endHour", value)}>
-                    <SelectTrigger className="w-20">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {hourOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <span>：</span>
-                  <Select value={data.endMinute} onValueChange={(value) => handleScheduleChange(day, "endMinute", value)}>
-                    <SelectTrigger className="w-20">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {minuteOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+          {weekDays.map((date) => {
+            const dateKey = format(date, 'yyyy-MM-dd')
+            const daySchedule = getDaySchedule(dateKey)
+            const isWorkDay = daySchedule.status === "出勤予定" || daySchedule.status === "出勤中"
+            
+            return (
+              <Card key={dateKey} className="border-l-4 border-l-blue-500">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Calendar className="w-5 h-5" />
+                      {format(date, 'M月d日(E)', { locale: ja })}
+                      <Badge className={getStatusColor(daySchedule.status)}>
+                        {daySchedule.status}
+                      </Badge>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* ステータス選択 */}
+                  <div>
+                    <Label className="text-sm font-medium mb-2 block">勤務状況</Label>
+                    <Select 
+                      value={daySchedule.status} 
+                      onValueChange={(value: WorkStatus) => handleScheduleChange(dateKey, "status", value)}
+                    >
+                      <SelectTrigger className="w-48">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statusOptions.map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            <div className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full ${option.color.split(' ')[0]}`} />
+                              {option.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                {/* 状態設定 */}
-                <div className="flex gap-2 flex-wrap">
-                  <Select value={data.status} onValueChange={(value) => handleScheduleChange(day, "status", value)}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statusOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value} className={option.className}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={data.workFlag} onValueChange={(value) => handleScheduleChange(day, "workFlag", value)}>
-                    <SelectTrigger className="w-24">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {workFlagOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={data.additionalData} onValueChange={(value) => handleScheduleChange(day, "additionalData", value)}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {additionalDataOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                  {/* 時間設定（出勤日のみ） */}
+                  {isWorkDay && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium mb-2 block flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          開始時間
+                        </Label>
+                        <Select 
+                          value={daySchedule.startTime || ""} 
+                          onValueChange={(value) => handleScheduleChange(dateKey, "startTime", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="開始時間を選択" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {timeOptions.map(time => (
+                              <SelectItem key={time} value={time}>{time}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium mb-2 block flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          終了時間
+                        </Label>
+                        <Select 
+                          value={daySchedule.endTime || ""} 
+                          onValueChange={(value) => handleScheduleChange(dateKey, "endTime", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="終了時間を選択" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {timeOptions.map(time => (
+                              <SelectItem key={time} value={time}>{time}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
 
-                {/* 追加情報 */}
-                <div className="space-y-4">
+                  {/* 予約受付可否（出勤日のみ） */}
+                  {isWorkDay && (
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">予約受付</Label>
+                      <Select 
+                        value={daySchedule.isAvailableForBooking ? "available" : "unavailable"} 
+                        onValueChange={(value) => handleScheduleChange(dateKey, "isAvailableForBooking", value === "available")}
+                      >
+                        <SelectTrigger className="w-48">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="available">受付可能</SelectItem>
+                          <SelectItem value="unavailable">受付停止</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* 備考 */}
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground mb-2 block">女性関連</Label>
-                    <Input
-                      value={data.womenRelated}
-                      onChange={(e) => handleScheduleChange(day, "womenRelated", e.target.value)}
-                      className="w-full text-blue-600"
-                      placeholder="女性関連の情報を入力..."
+                    <Label className="text-sm font-medium mb-2 block">備考</Label>
+                    <Textarea
+                      value={daySchedule.note || ""}
+                      onChange={(e) => handleScheduleChange(dateKey, "note", e.target.value)}
+                      placeholder="特記事項があれば入力してください..."
+                      className="min-h-[60px]"
                     />
                   </div>
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground mb-2 block">店舗関連</Label>
-                    <Input
-                      value={data.storeRelated}
-                      onChange={(e) => handleScheduleChange(day, "storeRelated", e.target.value)}
-                      className="w-full text-blue-600"
-                      placeholder="店舗関連の情報を入力..."
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground mb-2 block">備考</Label>
-                    <Input
-                      value={data.notes}
-                      onChange={(e) => handleScheduleChange(day, "notes", e.target.value)}
-                      className="w-full text-green-600"
-                      placeholder="備考を入力..."
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-          
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
 
         <div className="flex justify-end gap-4 pt-4 border-t">
