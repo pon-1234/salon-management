@@ -1,3 +1,5 @@
+"use client"
+
 import { Badge } from "@/components/ui/badge"
 import { Cast } from "@/lib/cast/types"
 import { calculateAge } from "@/lib/customer/utils"
