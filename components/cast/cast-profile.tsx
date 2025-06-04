@@ -3,6 +3,9 @@ import { Cast } from "@/lib/cast/types"
 import { calculateAge } from "@/lib/customer/utils"
 import { Separator } from "@/components/ui/separator"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState } from "react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 interface CastProfileProps {
   cast: Cast
@@ -10,6 +13,16 @@ interface CastProfileProps {
 
 export function CastProfile({ cast }: CastProfileProps) {
   const age = cast.age;
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const images = cast.images && cast.images.length > 0 ? cast.images : [cast.image];
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
 
   return (
     <div className="space-y-6">
@@ -21,12 +34,65 @@ export function CastProfile({ cast }: CastProfileProps) {
         <CardContent className="space-y-4">
           <div className="relative max-w-sm mx-auto">
             <img
-              src={cast.image}
-              alt={`${cast.name}の写真`}
+              src={images[currentImageIndex]}
+              alt={`${cast.name}の写真 ${currentImageIndex + 1}`}
               className="w-full aspect-[7/10] object-cover rounded-lg"
             />
             <Badge className="absolute top-4 left-4 bg-emerald-600">掲載中</Badge>
+            
+            {images.length > 1 && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white"
+                  onClick={prevImage}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white"
+                  onClick={nextImage}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
+                  {images.map((_, index) => (
+                    <button
+                      key={index}
+                      className={`w-2 h-2 rounded-full ${
+                        index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                      }`}
+                      onClick={() => setCurrentImageIndex(index)}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
+          
+          {/* 画像ギャラリー */}
+          {images.length > 1 && (
+            <div className="flex flex-wrap gap-2 justify-center">
+              {images.map((image, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentImageIndex(index)}
+                  className={`relative ${
+                    index === currentImageIndex ? 'ring-2 ring-emerald-500' : ''
+                  }`}
+                >
+                  <img
+                    src={image}
+                    alt={`${cast.name} 画像 ${index + 1}`}
+                    className="w-16 h-20 object-cover rounded border"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
           <div className="space-y-4">
             <h3 className="text-3xl font-bold">{cast.name}</h3>
             <dl className="grid grid-cols-2 gap-4">

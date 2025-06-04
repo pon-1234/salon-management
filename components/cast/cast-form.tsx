@@ -18,6 +18,7 @@ import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
+import { X, Plus } from "lucide-react"
 
 interface CastFormProps {
   cast?: Cast | null
@@ -35,6 +36,7 @@ export function CastForm({ cast, onSubmit }: CastFormProps) {
     hip: cast?.hip || "",
     type: cast?.type || "カワイイ系",
     image: cast?.image || "",
+    images: cast?.images || [],
     description: cast?.description || "",
     netReservation: cast?.netReservation ?? true,
     specialDesignationFee: cast?.specialDesignationFee || "",
@@ -75,6 +77,30 @@ export function CastForm({ cast, onSubmit }: CastFormProps) {
       availableOptions: checked 
         ? [...prev.availableOptions, optionId]
         : prev.availableOptions.filter(id => id !== optionId)
+    }))
+  }
+
+  const handleImageChange = (index: number, url: string) => {
+    setFormData(prev => {
+      const newImages = [...prev.images]
+      newImages[index] = url
+      return { ...prev, images: newImages }
+    })
+  }
+
+  const addImage = () => {
+    if (formData.images.length < 10) {
+      setFormData(prev => ({
+        ...prev,
+        images: [...prev.images, ""]
+      }))
+    }
+  }
+
+  const removeImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
     }))
   }
 
@@ -254,6 +280,60 @@ export function CastForm({ cast, onSubmit }: CastFormProps) {
               />
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* プロフィール画像 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>プロフィール画像（最大10枚）</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            {formData.images.map((image, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <Label className="min-w-[60px]">画像{index + 1}</Label>
+                <Input
+                  type="url"
+                  value={image}
+                  onChange={(e) => handleImageChange(index, e.target.value)}
+                  placeholder="画像URLを入力"
+                  className="flex-1"
+                />
+                {image && (
+                  <img 
+                    src={image} 
+                    alt={`プレビュー ${index + 1}`}
+                    className="w-16 h-16 object-cover rounded border"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => removeImage(index)}
+                  className="px-2"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+          
+          {formData.images.length < 10 && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={addImage}
+              className="w-full"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              画像を追加 ({formData.images.length}/10)
+            </Button>
+          )}
         </CardContent>
       </Card>
 

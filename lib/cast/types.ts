@@ -9,7 +9,8 @@ export interface Cast extends BaseEntity {
   waist: number;
   hip: number;
   type: string;
-  image: string;
+  image: string; // メイン画像（後方互換性のため残す）
+  images: string[]; // プロフィール画像（最大10枚）
   description: string;
   netReservation: boolean;
   specialDesignationFee: number | null;

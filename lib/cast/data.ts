@@ -20,6 +20,12 @@ export const castMembers: Cast[] = [
     hip: 98,
     type: "カワイイ系",
     image: "https://rimane.net/images/tyrano-move-image01.jpg",
+    images: [
+      "https://rimane.net/images/tyrano-move-image01.jpg",
+      "https://rimane.net/images/tyrano-move-image02.jpg",
+      "https://rimane.net/images/tyrano-move-image03.jpg",
+      "https://rimane.net/images/tyrano-move-image04.jpg"
+    ],
     description:
       "明るく元気な性格で、お客様を楽しませることが得意です。マッサージの技術も高く、リピーターの多いキャストです。",
     netReservation: true,
@@ -68,6 +74,11 @@ export const castMembers: Cast[] = [
     hip: 86,
     type: "清楚系",
     image: "https://rimane.net/images/tyrano-move-image01.jpg",
+    images: [
+      "https://rimane.net/images/tyrano-move-image01.jpg",
+      "https://rimane.net/images/tyrano-move-image05.jpg",
+      "https://rimane.net/images/tyrano-move-image06.jpg"
+    ],
     description:
       "穏やかな性格で、丁寧な接客が好評です。リラックスマッサージが得意で、癒しを求めるお客様に人気があります。",
     netReservation: true,
@@ -94,6 +105,14 @@ export const castMembers: Cast[] = [
     hip: 88,
     type: "モデル系",
     image: "https://rimane.net/images/tyrano-move-image01.jpg",
+    images: [
+      "https://rimane.net/images/tyrano-move-image01.jpg",
+      "https://rimane.net/images/tyrano-move-image07.jpg",
+      "https://rimane.net/images/tyrano-move-image08.jpg",
+      "https://rimane.net/images/tyrano-move-image09.jpg",
+      "https://rimane.net/images/tyrano-move-image10.jpg",
+      "https://rimane.net/images/tyrano-move-image11.jpg"
+    ],
     description:
       "モデル経験もあり、洗練された雰囲気が魅力です。ストレッチと組み合わせたマッサージが特徴で、体の柔軟性向上にも効果的です。",
     netReservation: true,
@@ -120,6 +139,10 @@ export const castMembers: Cast[] = [
     hip: 84,
     type: "ロリ系",
     image: "https://rimane.net/images/tyrano-move-image01.jpg",
+    images: [
+      "https://rimane.net/images/tyrano-move-image01.jpg",
+      "https://rimane.net/images/tyrano-move-image12.jpg"
+    ],
     description:
       "小柄で可愛らしい外見と、意外な大人の魅力を併せ持つキャストです。細やかな気配りが得意で、初めてのお客様にも安心して利用いただけます。",
     netReservation: true,
