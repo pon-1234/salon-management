@@ -2,6 +2,7 @@
 
 import React, { useState } from "react"
 import { Cast } from "@/lib/cast/types"
+import { options } from "@/lib/course-option/data"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -16,6 +17,7 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface CastFormProps {
   cast?: Cast | null
@@ -40,6 +42,7 @@ export function CastForm({ cast, onSubmit }: CastFormProps) {
     panelDesignationRank: cast?.panelDesignationRank || 0,
     regularDesignationRank: cast?.regularDesignationRank || 0,
     workStatus: cast?.workStatus || "出勤",
+    availableOptions: cast?.availableOptions || [],
     phone: "",
     email: "",
     password: "",
@@ -64,6 +67,15 @@ export function CastForm({ cast, onSubmit }: CastFormProps) {
 
   const handleSwitchChange = (name: string, checked: boolean) => {
     setFormData(prev => ({ ...prev, [name]: checked }))
+  }
+
+  const handleOptionChange = (optionId: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      availableOptions: checked 
+        ? [...prev.availableOptions, optionId]
+        : prev.availableOptions.filter(id => id !== optionId)
+    }))
   }
 
 
@@ -245,6 +257,31 @@ export function CastForm({ cast, onSubmit }: CastFormProps) {
         </CardContent>
       </Card>
 
+      {/* 可能オプション */}
+      <Card>
+        <CardHeader>
+          <CardTitle>可能オプション</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            {options.map((option) => (
+              <div key={option.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={option.id}
+                  checked={formData.availableOptions.includes(option.id)}
+                  onCheckedChange={(checked) => handleOptionChange(option.id, !!checked)}
+                />
+                <Label htmlFor={option.id} className="text-sm">
+                  {option.name}
+                  <span className="ml-2 text-gray-500">
+                    {option.price === 0 ? "0円" : `${option.price.toLocaleString()}円`}
+                  </span>
+                </Label>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="flex justify-end gap-4">
         <Button type="button" variant="outline">

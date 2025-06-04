@@ -17,17 +17,16 @@ import {
 import { format } from "date-fns"
 import { ja } from 'date-fns/locale'
 import { Phone } from 'lucide-react'
-import { Customer } from "@/lib/customer/types";
+import { Customer } from "@/lib/customer/types"
+import { Cast } from "@/lib/cast/types"
+import { options } from "@/lib/course-option/data"
 
 interface QuickBookingDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  selectedStaff?: {
-    id: string
-    name: string
-  }
+  selectedStaff?: Cast
   selectedTime?: Date
-  selectedCustomer: Customer | null  // 追加
+  selectedCustomer: Customer | null
 }
 
 export function QuickBookingDialog({
@@ -35,8 +34,12 @@ export function QuickBookingDialog({
   onOpenChange,
   selectedStaff,
   selectedTime,
-  selectedCustomer  // 追加
+  selectedCustomer
 }: QuickBookingDialogProps) {
+  // Get available options for the selected staff
+  const availableOptions = selectedStaff?.availableOptions 
+    ? options.filter(option => selectedStaff.availableOptions.includes(option.id))
+    : options
   const [bookingDetails, setBookingDetails] = useState({
     customerName: selectedCustomer?.name || "",  // 更新
     customerType: selectedCustomer?.memberType === 'vip' ? "VIPメンバー" : "通常会員",  // 更新
@@ -366,16 +369,19 @@ export function QuickBookingDialog({
             <div>
               <Label className="text-emerald-700">オプション選択</Label>
               <div className="space-y-2">
-                {Object.entries(bookingDetails.options).map(([option, checked]) => (
-                  <div key={option} className="flex items-center">
+                {availableOptions.map((option) => (
+                  <div key={option.id} className="flex items-center">
                     <Checkbox
-                      id={option}
-                      checked={checked}
-                      onCheckedChange={(checked) => handleCheckboxChange(option, checked as boolean)}
+                      id={option.id}
+                      checked={bookingDetails.options[option.name] || false}
+                      onCheckedChange={(checked) => handleCheckboxChange(option.name, checked as boolean)}
                       className="border-emerald-300 text-emerald-600 focus:ring-emerald-500"
                     />
-                    <Label htmlFor={option} className="ml-2 text-emerald-700">
-                      {option}
+                    <Label htmlFor={option.id} className="ml-2 text-emerald-700">
+                      {option.name}
+                      <span className="ml-2 text-gray-500">
+                        {option.price === 0 ? "0円" : `${option.price.toLocaleString()}円`}
+                      </span>
                     </Label>
                   </div>
                 ))}
