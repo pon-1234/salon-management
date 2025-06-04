@@ -18,7 +18,8 @@ import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
-import { X, Plus } from "lucide-react"
+import { Plus } from "lucide-react"
+import { ImageUpload } from "@/components/ui/image-upload"
 
 interface CastFormProps {
   cast?: Cast | null
@@ -291,35 +292,13 @@ export function CastForm({ cast, onSubmit }: CastFormProps) {
         <CardContent className="space-y-4">
           <div className="space-y-3">
             {formData.images.map((image, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <Label className="min-w-[60px]">画像{index + 1}</Label>
-                <Input
-                  type="url"
-                  value={image}
-                  onChange={(e) => handleImageChange(index, e.target.value)}
-                  placeholder="画像URLを入力"
-                  className="flex-1"
-                />
-                {image && (
-                  <img 
-                    src={image} 
-                    alt={`プレビュー ${index + 1}`}
-                    className="w-16 h-16 object-cover rounded border"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none'
-                    }}
-                  />
-                )}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => removeImage(index)}
-                  className="px-2"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
+              <ImageUpload
+                key={index}
+                value={image}
+                onChange={(url) => handleImageChange(index, url)}
+                onRemove={() => removeImage(index)}
+                index={index}
+              />
             ))}
           </div>
           
