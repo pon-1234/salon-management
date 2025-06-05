@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, Clock, CalendarDays, User, FileText, Settings, DollarSign, CreditCard, Calculator } from 'lucide-react'
+import { ArrowLeft, Clock, CalendarDays, User, FileText, Settings, DollarSign, CreditCard, Calculator, BarChart3 } from 'lucide-react'
 import { getAllCasts } from "@/lib/cast/data"
 import { ScheduleEditDialog } from "@/components/cast/schedule-edit-dialog"
 import { CastProfile } from "@/components/cast/cast-profile"
@@ -17,6 +17,7 @@ import { PublicProfileForm } from "@/components/cast/public-profile-form"
 import { SalesManagementTab } from "@/components/cast/sales-management-tab"
 import { PaymentHistoryTab } from "@/components/cast/payment-history-tab"
 import { SettlementStatusTab } from "@/components/cast/settlement-status-tab"
+import { WorkPerformanceTab } from "@/components/cast/work-performance-tab"
 
 export default function CastManagePage({ params }: { params: { id: string } }) {
   const [cast, setCast] = useState<Cast | null>(null)
@@ -123,6 +124,10 @@ export default function CastManagePage({ params }: { params: { id: string } }) {
                 <TabsTrigger value="settlement" className="data-[state=active]:bg-emerald-50">
                   <Calculator className="w-4 h-4 mr-2" />
                   精算状況
+                </TabsTrigger>
+                <TabsTrigger value="performance" className="data-[state=active]:bg-emerald-50">
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  就業成績
                 </TabsTrigger>
               </TabsList>
 
@@ -258,6 +263,12 @@ export default function CastManagePage({ params }: { params: { id: string } }) {
               <TabsContent value="settlement" className="space-y-6">
                 {cast && (
                   <SettlementStatusTab castId={cast.id} castName={cast.name} />
+                )}
+              </TabsContent>
+
+              <TabsContent value="performance" className="space-y-6">
+                {cast && (
+                  <WorkPerformanceTab castId={cast.id} castName={cast.name} />
                 )}
               </TabsContent>
             </Tabs>
