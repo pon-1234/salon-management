@@ -10,24 +10,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { StaffPerformanceTable } from "@/components/analytics/staff-performance-table"
+import { CastPerformanceTable } from "@/components/analytics/cast-performance-table"
 import { AnalyticsUseCases } from "@/lib/analytics/usecases"
 import { AnalyticsRepositoryImpl } from "@/lib/analytics/repository"
 
 const analyticsRepository = new AnalyticsRepositoryImpl()
 const analyticsUseCases = new AnalyticsUseCases(analyticsRepository)
 
-export default function StaffPerformancePage() {
+export default function CastPerformancePage() {
   const [selectedYear, setSelectedYear] = useState(2024)
   const [selectedMonth, setSelectedMonth] = useState(12)
   const [displayType, setDisplayType] = useState("全て表示")
-  const [selectedStaff, setSelectedStaff] = useState("")
+  const [selectedCast, setSelectedCast] = useState("")
 
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i)
   const months = Array.from({ length: 12 }, (_, i) => i + 1)
   const displayTypes = ["全て表示", "出勤のみ", "休みのみ"]
-  const staffList = ["----------", "きょうか", "れいな", "はるひ"]
+  const castList = ["----------", "きょうか", "れいな", "はるひ"]
 
   const handlePrint = () => {
     window.print()
@@ -37,7 +37,7 @@ export default function StaffPerformancePage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold">スタッフ実績</h1>
+          <h1 className="text-2xl font-bold">キャスト実績</h1>
           <div className="flex gap-2">
             <Select
               value={selectedYear.toString()}
@@ -85,16 +85,16 @@ export default function StaffPerformancePage() {
               </SelectContent>
             </Select>
             <Select
-              value={selectedStaff}
-              onValueChange={setSelectedStaff}
+              value={selectedCast}
+              onValueChange={setSelectedCast}
             >
               <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="担当者：" />
+                <SelectValue placeholder="キャスト：" />
               </SelectTrigger>
               <SelectContent>
-                {staffList.map((staff) => (
-                  <SelectItem key={staff} value={staff}>
-                    {staff}
+                {castList.map((cast) => (
+                  <SelectItem key={cast} value={cast}>
+                    {cast}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -107,12 +107,23 @@ export default function StaffPerformancePage() {
         </Button>
       </div>
 
-      <div className="text-sm text-red-500">
-        時給保証は未払いも含めて全て表示しています
+      <div className="flex items-center justify-between text-sm">
+        <div className="text-red-500">
+          ※ 厚生費は未払いも含めて全て表示しています
+        </div>
+        <div className="text-gray-600">
+          最終更新: {new Date().toLocaleDateString('ja-JP', { 
+            year: 'numeric', 
+            month: 'numeric', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}
+        </div>
       </div>
 
       <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
-        <StaffPerformanceTable analyticsUseCases={analyticsUseCases} />
+        <CastPerformanceTable analyticsUseCases={analyticsUseCases} />
       </div>
     </div>
   )

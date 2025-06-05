@@ -48,8 +48,8 @@ const navigation = [
     icon: Clock,
   },
   {
-    name: "スタッフ実績",
-    href: "/analytics/staff-performance",
+    name: "キャスト実績",
+    href: "/analytics/cast-performance",
     icon: Users,
   },
   {
