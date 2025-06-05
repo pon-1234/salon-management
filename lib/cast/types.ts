@@ -79,3 +79,45 @@ export interface CastSchedule {
   endTime: Date;
   bookings?: number; // 予約数
 }
+
+// 売上・入金管理用の型定義
+export interface SalesRecord {
+  id: string;
+  castId: string;
+  date: Date;
+  serviceName: string;
+  customerName: string;
+  serviceAmount: number; // サービス料金
+  designationFee: number; // 指名料
+  optionFees: number; // オプション料金
+  totalAmount: number; // 合計金額
+  castShare: number; // キャスト取り分
+  shopShare: number; // 店舗取り分
+  paymentStatus: "未精算" | "精算済み";
+  location: string; // 施術場所
+  notes?: string; // 備考
+}
+
+export interface PaymentRecord {
+  id: string;
+  castId: string;
+  date: Date;
+  paymentType: "現金精算" | "振込" | "その他";
+  amount: number;
+  salesRecordIds: string[]; // 対象の売上記録ID
+  notes?: string;
+  handledBy: string; // 処理者
+}
+
+export interface SettlementSummary {
+  castId: string;
+  period: {
+    from: Date;
+    to: Date;
+  };
+  totalSales: number; // 総売上
+  totalCastShare: number; // キャスト取り分総額
+  totalPaid: number; // 支払済み総額
+  pendingAmount: number; // 未精算額
+  recordCount: number; // 売上件数
+}

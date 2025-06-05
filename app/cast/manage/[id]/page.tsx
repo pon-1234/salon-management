@@ -9,11 +9,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, Clock, CalendarDays, User, FileText, Settings } from 'lucide-react'
+import { ArrowLeft, Clock, CalendarDays, User, FileText, Settings, DollarSign, CreditCard, Calculator } from 'lucide-react'
 import { getAllCasts } from "@/lib/cast/data"
 import { ScheduleEditDialog } from "@/components/cast/schedule-edit-dialog"
 import { CastProfile } from "@/components/cast/cast-profile"
 import { PublicProfileForm } from "@/components/cast/public-profile-form"
+import { SalesManagementTab } from "@/components/cast/sales-management-tab"
+import { PaymentHistoryTab } from "@/components/cast/payment-history-tab"
+import { SettlementStatusTab } from "@/components/cast/settlement-status-tab"
 
 export default function CastManagePage({ params }: { params: { id: string } }) {
   const [cast, setCast] = useState<Cast | null>(null)
@@ -108,6 +111,18 @@ export default function CastManagePage({ params }: { params: { id: string } }) {
                 <TabsTrigger value="schedule" className="data-[state=active]:bg-emerald-50">
                   <Clock className="w-4 h-4 mr-2" />
                   スケジュール・予約
+                </TabsTrigger>
+                <TabsTrigger value="sales" className="data-[state=active]:bg-emerald-50">
+                  <DollarSign className="w-4 h-4 mr-2" />
+                  売上管理
+                </TabsTrigger>
+                <TabsTrigger value="payment" className="data-[state=active]:bg-emerald-50">
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  入金履歴
+                </TabsTrigger>
+                <TabsTrigger value="settlement" className="data-[state=active]:bg-emerald-50">
+                  <Calculator className="w-4 h-4 mr-2" />
+                  精算状況
                 </TabsTrigger>
               </TabsList>
 
@@ -226,6 +241,24 @@ export default function CastManagePage({ params }: { params: { id: string } }) {
                     </CardContent>
                   </Card>
                 </div>
+              </TabsContent>
+
+              <TabsContent value="sales" className="space-y-6">
+                {cast && (
+                  <SalesManagementTab castId={cast.id} castName={cast.name} />
+                )}
+              </TabsContent>
+
+              <TabsContent value="payment" className="space-y-6">
+                {cast && (
+                  <PaymentHistoryTab castId={cast.id} castName={cast.name} />
+                )}
+              </TabsContent>
+
+              <TabsContent value="settlement" className="space-y-6">
+                {cast && (
+                  <SettlementStatusTab castId={cast.id} castName={cast.name} />
+                )}
               </TabsContent>
             </Tabs>
           )}
