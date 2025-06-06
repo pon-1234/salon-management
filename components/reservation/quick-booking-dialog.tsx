@@ -160,9 +160,9 @@ export function QuickBookingDialog({
           <div
             className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
               step === currentStep
-                ? 'bg-emerald-600 text-white'
+                ? 'bg-gray-900 text-white'
                 : step < currentStep
-                ? 'bg-emerald-100 text-emerald-600'
+                ? 'bg-gray-100 text-gray-900'
                 : 'bg-gray-200 text-gray-500'
             }`}
           >
@@ -171,7 +171,7 @@ export function QuickBookingDialog({
           {step < 3 && (
             <div
               className={`w-12 h-1 mx-2 ${
-                step < currentStep ? 'bg-emerald-600' : 'bg-gray-200'
+                step < currentStep ? 'bg-gray-900' : 'bg-gray-200'
               }`}
             />
           )}
@@ -188,9 +188,9 @@ export function QuickBookingDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col bg-white border border-gray-200">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center text-emerald-600">簡単受付</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-center">簡単受付</DialogTitle>
           <StepIndicator />
           <div className="text-center">
             <h3 className="text-lg font-semibold text-gray-800">{stepTitles[currentStep - 1]}</h3>
@@ -201,28 +201,28 @@ export function QuickBookingDialog({
           {currentStep === 1 && (
             <div className="space-y-6">
               {/* Customer Information Card */}
-              <Card className="border-emerald-200">
+              <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center text-emerald-700">
+                  <CardTitle className="flex items-center">
                     <User className="mr-2 h-5 w-5" />
                     お客様情報
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="bg-emerald-50 p-4 rounded-lg">
+                  <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex justify-between items-center">
                       <div>
-                        <h3 className="text-lg font-semibold text-emerald-700">{bookingDetails.customerName}</h3>
-                        <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 mt-1">
+                        <h3 className="text-lg font-semibold">{bookingDetails.customerName}</h3>
+                        <Badge variant="secondary" className="mt-1">
                           {bookingDetails.customerType}
                         </Badge>
                       </div>
                       <div className="text-right">
-                        <div className="flex items-center text-emerald-600">
+                        <div className="flex items-center">
                           <Phone className="h-4 w-4 mr-1" />
                           <span className="font-semibold">{bookingDetails.phoneNumber}</span>
                         </div>
-                        <div className="text-sm text-emerald-600 mt-1">
+                        <div className="text-sm text-gray-600 mt-1">
                           現在 {bookingDetails.points}pt
                         </div>
                       </div>
@@ -232,9 +232,9 @@ export function QuickBookingDialog({
               </Card>
 
               {/* Service Selection Card */}
-              <Card className="border-emerald-200">
+              <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center text-emerald-700">
+                  <CardTitle className="flex items-center">
                     <Calendar className="mr-2 h-5 w-5" />
                     サービス詳細
                   </CardTitle>
@@ -242,41 +242,41 @@ export function QuickBookingDialog({
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-emerald-700">日付</Label>
+                      <Label>日付</Label>
                       <Input 
                         type="date" 
                         value={bookingDetails.date} 
                         readOnly 
-                        className="bg-emerald-50 border-emerald-200"
+                        className="bg-gray-50"
                       />
                     </div>
                     <div>
-                      <Label className="text-emerald-700">時間</Label>
+                      <Label>時間</Label>
                       <Input 
                         type="time" 
                         value={bookingDetails.time} 
                         readOnly 
-                        className="bg-emerald-50 border-emerald-200"
+                        className="bg-gray-50"
                       />
                     </div>
                   </div>
                   
                   <div>
-                    <Label className="text-emerald-700">担当キャスト</Label>
+                    <Label>担当キャスト</Label>
                     <Input 
                       value={bookingDetails.staff} 
                       readOnly 
-                      className="bg-emerald-50 border-emerald-200"
+                      className="bg-gray-50"
                     />
                   </div>
 
                   <div>
-                    <Label className="text-emerald-700">コース選択</Label>
+                    <Label>コース選択</Label>
                     <Select 
                       value={bookingDetails.course} 
                       onValueChange={(value) => handleInputChange({ target: { name: "course", value } } as any)}
                     >
-                      <SelectTrigger className="border-emerald-200">
+                      <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -290,9 +290,9 @@ export function QuickBookingDialog({
               </Card>
 
               {/* Booking Status */}
-              <Card className="border-emerald-200">
+              <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center text-emerald-700">
+                  <CardTitle className="flex items-center">
                     <Clock className="mr-2 h-5 w-5" />
                     予約ステータス
                   </CardTitle>
@@ -300,7 +300,7 @@ export function QuickBookingDialog({
                 <CardContent>
                   <div className="space-y-3">
                     <div>
-                      <Label className="text-emerald-700 text-sm">予約レベル</Label>
+                      <Label className="text-sm">予約レベル</Label>
                       <div className="flex flex-wrap gap-2 mt-2">
                         {["仮予約", "ネット予約", "事前予約", "当日予約", "確定済"].map((status) => (
                           <Button
@@ -309,11 +309,6 @@ export function QuickBookingDialog({
                             size="sm"
                             onClick={() => handleInputChange({ target: { name: "bookingStatus", value: status } } as any)}
                             variant={bookingDetails.bookingStatus === status ? "default" : "outline"}
-                            className={
-                              bookingDetails.bookingStatus === status
-                                ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                                : "border-emerald-300 text-emerald-600 hover:bg-emerald-50"
-                            }
                           >
                             {status}
                           </Button>
@@ -329,9 +324,9 @@ export function QuickBookingDialog({
           {currentStep === 2 && (
             <div className="space-y-6">
               {/* Location Details */}
-              <Card className="border-emerald-200">
+              <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center text-emerald-700">
+                  <CardTitle className="flex items-center">
                     <MapPin className="mr-2 h-5 w-5" />
                     場所詳細
                   </CardTitle>
@@ -339,12 +334,12 @@ export function QuickBookingDialog({
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-emerald-700">都道府県</Label>
+                      <Label>都道府県</Label>
                       <Select 
                         value={bookingDetails.prefecture} 
                         onValueChange={(value) => handleInputChange({ target: { name: "prefecture", value } } as any)}
                       >
-                        <SelectTrigger className="border-emerald-200">
+                        <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -355,12 +350,12 @@ export function QuickBookingDialog({
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-emerald-700">地区</Label>
+                      <Label>地区</Label>
                       <Select 
                         value={bookingDetails.district} 
                         onValueChange={(value) => handleInputChange({ target: { name: "district", value } } as any)}
                       >
-                        <SelectTrigger className="border-emerald-200">
+                        <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -373,22 +368,21 @@ export function QuickBookingDialog({
                   </div>
                   
                   <div>
-                    <Label className="text-emerald-700">詳細場所</Label>
+                    <Label>詳細場所</Label>
                     <Textarea 
                       value={bookingDetails.specificLocation} 
                       onChange={handleInputChange}
                       name="specificLocation"
                       placeholder="例: グランドホテル 605号室"
-                      className="border-emerald-200"
                     />
                   </div>
                 </CardContent>
               </Card>
 
               {/* Options */}
-              <Card className="border-emerald-200">
+              <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center text-emerald-700">
+                  <CardTitle className="flex items-center">
                     <Users className="mr-2 h-5 w-5" />
                     オプション・追加サービス
                   </CardTitle>
@@ -396,19 +390,18 @@ export function QuickBookingDialog({
                 <CardContent>
                   <div className="space-y-3">
                     {availableOptions.map((option) => (
-                      <div key={option.id} className="flex items-center justify-between p-3 border border-emerald-100 rounded-lg">
+                      <div key={option.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center">
                           <Checkbox
                             id={option.id}
                             checked={bookingDetails.options[option.name] || false}
                             onCheckedChange={(checked) => handleCheckboxChange(option.name, checked as boolean)}
-                            className="border-emerald-300"
                           />
-                          <Label htmlFor={option.id} className="ml-3 text-emerald-700 font-medium">
+                          <Label htmlFor={option.id} className="ml-3 font-medium">
                             {option.name}
                           </Label>
                         </div>
-                        <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
+                        <Badge variant="secondary">
                           {option.price === 0 ? "無料" : `+${option.price.toLocaleString()}円`}
                         </Badge>
                       </div>
@@ -418,9 +411,9 @@ export function QuickBookingDialog({
               </Card>
 
               {/* Payment Method */}
-              <Card className="border-emerald-200">
+              <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center text-emerald-700">
+                  <CardTitle className="flex items-center">
                     <CreditCard className="mr-2 h-5 w-5" />
                     お支払い方法
                   </CardTitle>
@@ -430,7 +423,7 @@ export function QuickBookingDialog({
                     value={bookingDetails.paymentMethod} 
                     onValueChange={(value) => handleInputChange({ target: { name: "paymentMethod", value } } as any)}
                   >
-                    <SelectTrigger className="border-emerald-200">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -447,9 +440,9 @@ export function QuickBookingDialog({
           {currentStep === 3 && (
             <div className="space-y-6">
               {/* Booking Summary */}
-              <Card className="border-emerald-200">
+              <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center text-emerald-700">
+                  <CardTitle className="flex items-center">
                     <Check className="mr-2 h-5 w-5" />
                     予約内容確認
                   </CardTitle>
@@ -489,9 +482,9 @@ export function QuickBookingDialog({
               </Card>
 
               {/* Price Breakdown */}
-              <Card className="border-emerald-200">
+              <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-emerald-700">料金内訳</CardTitle>
+                  <CardTitle>料金内訳</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2 text-sm">
@@ -510,7 +503,7 @@ export function QuickBookingDialog({
                     <hr className="my-2" />
                     <div className="flex justify-between font-bold text-lg">
                       <span>合計</span>
-                      <span className="text-emerald-600">{totalPrice.toLocaleString()}円</span>
+                      <span className="font-bold">{totalPrice.toLocaleString()}円</span>
                     </div>
                   </div>
                 </CardContent>
@@ -520,31 +513,24 @@ export function QuickBookingDialog({
         </div>
 
         {/* Action Buttons */}
-        <div className="border-t border-gray-200 pt-4 px-6 pb-6">
+        <div className="border-t pt-4 px-6 pb-6">
           <div className="flex justify-between">
             <Button
               onClick={prevStep}
               disabled={currentStep === 1}
               variant="outline"
-              className="border-emerald-300 text-emerald-600 hover:bg-emerald-50"
             >
               <ChevronLeft className="mr-1 h-4 w-4" />
               戻る
             </Button>
             
             {currentStep < totalSteps ? (
-              <Button
-                onClick={nextStep}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              >
+              <Button onClick={nextStep}>
                 次へ
                 <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
             ) : (
-              <Button
-                onClick={handleSubmit}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              >
+              <Button onClick={handleSubmit}>
                 <Check className="mr-1 h-4 w-4" />
                 予約を確定
               </Button>
