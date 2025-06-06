@@ -37,6 +37,8 @@ import { getCustomerUsageHistory, getCustomerPointHistory } from "@/lib/customer
 import { getReservationsByCustomerId } from "@/lib/reservation/data"
 import { getAllCasts } from "@/lib/cast/data"
 import { NgCastDialog } from "@/components/customer/ng-cast-dialog"
+import { ReservationDialog } from "@/components/reservation/reservation-dialog"
+import { ReservationData } from "@/lib/types/reservation"
 
 const formSchema = z.object({
   name: z.string().min(1, '名前は必須です'),
@@ -66,6 +68,7 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
   const [pointsInputEnabled, setPointsInputEnabled] = useState(false)
   const [ngCastDialogOpen, setNgCastDialogOpen] = useState(false)
   const [editingNgCast, setEditingNgCast] = useState<NgCastEntry | null>(null)
+  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
   const router = useRouter()
 
   const form = useForm<FormData>({
@@ -240,6 +243,49 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
     })
   }
 
+  // 予約データをダイアログ用に変換
+  const convertToReservationData = (reservation: Reservation): ReservationData | null => {
+    if (!reservation) return null;
+    
+    return {
+      id: reservation.id,
+      customerId: reservation.customerId,
+      customerName: customer?.name || `顧客${reservation.customerId}`,
+      customerType: customer?.memberType === 'vip' ? 'VIPメンバー' : '通常顧客',
+      phoneNumber: customer?.phone || "090-1234-5678",
+      points: customer?.points || 100,
+      bookingStatus: reservation.status,
+      staffConfirmation: "確認済み",
+      customerConfirmation: "確認済み", 
+      prefecture: "東京都",
+      district: "渋谷区",
+      location: "アパホテル",
+      locationType: "ホテル",
+      specificLocation: "502号室",
+      staff: `スタッフ${reservation.staffId}`,
+      marketingChannel: "WEB",
+      date: format(reservation.startTime, 'yyyy-MM-dd'),
+      time: format(reservation.startTime, 'HH:mm'),
+      inOutTime: `${format(reservation.startTime, 'HH:mm')}-${format(reservation.endTime, 'HH:mm')}`,
+      course: `サービス${reservation.serviceId}`,
+      freeExtension: "なし",
+      designation: "指名",
+      designationFee: "3,000円",
+      options: {},
+      transportationFee: 0,
+      paymentMethod: "現金",
+      discount: "0円",
+      additionalFee: 0,
+      totalPayment: reservation.price,
+      storeRevenue: Math.floor(reservation.price * 0.6),
+      staffRevenue: Math.floor(reservation.price * 0.4),
+      staffBonusFee: 0,
+      startTime: reservation.startTime,
+      endTime: reservation.endTime,
+      staffImage: "/placeholder-user.jpg"
+    };
+  };
+
   if (!customer) {
     return <div className="flex items-center justify-center h-64">Loading...</div>
   }
@@ -376,7 +422,11 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
                         <div className={`font-medium ${isToday ? 'text-orange-600' : isTomorrow ? 'text-blue-600' : 'text-emerald-600'}`}>
                           ¥{reservation.price.toLocaleString()}
                         </div>
-                        <Button variant="link" className={`text-sm p-0 ${isToday ? 'text-orange-600' : isTomorrow ? 'text-blue-600' : 'text-emerald-600'}`}>
+                        <Button 
+                          variant="link" 
+                          className={`text-sm p-0 ${isToday ? 'text-orange-600' : isTomorrow ? 'text-blue-600' : 'text-emerald-600'}`}
+                          onClick={() => setSelectedReservation(reservation)}
+                        >
                           予約詳細
                         </Button>
                       </div>
@@ -839,7 +889,19 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
                     </div>
                     <div className="text-right shrink-0">
                       <div className="font-medium text-lg">¥{record.amount.toLocaleString()}</div>
-                      <Button variant="link" className="text-sm p-0 text-emerald-600">
+                      <Button 
+                        variant="link" 
+                        className="text-sm p-0 text-emerald-600"
+                        onClick={() => {
+                          // 利用履歴から対応する予約を探す（簡易実装）
+                          const relatedReservation = reservations.find(r => 
+                            r.startTime.toDateString() === record.date.toDateString()
+                          );
+                          if (relatedReservation) {
+                            setSelectedReservation(relatedReservation);
+                          }
+                        }}
+                      >
                         詳細を見る
                       </Button>
                     </div>
@@ -951,6 +1013,13 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
         existingNgCasts={customer?.ngCasts || []}
         editingNgCast={editingNgCast}
         onSave={handleSaveNgCast}
+      />
+
+      {/* 予約詳細ダイアログ */}
+      <ReservationDialog
+        open={!!selectedReservation}
+        onOpenChange={(open) => !open && setSelectedReservation(null)}
+        reservation={selectedReservation ? convertToReservationData(selectedReservation) : null}
       />
     </div>
   )

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -13,6 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar, DollarSign, MapPin, User, Plus, Edit } from 'lucide-react'
 import { SalesRecord } from "@/lib/cast/types"
 import { getSalesRecordsByCast } from "@/lib/cast/sales-data"
+import { getAllReservations } from "@/lib/reservation/data"
+import { Reservation, ReservationData } from "@/lib/types/reservation"
+import { ReservationDialog } from "@/components/reservation/reservation-dialog"
 import { format } from "date-fns"
 import { ja } from "date-fns/locale"
 
@@ -23,8 +26,10 @@ interface SalesManagementTabProps {
 
 export function SalesManagementTab({ castId, castName }: SalesManagementTabProps) {
   const [salesRecords, setSalesRecords] = useState<SalesRecord[]>(getSalesRecordsByCast(castId))
+  const [reservations, setReservations] = useState<Reservation[]>([])
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState<SalesRecord | null>(null)
+  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
 
   const handleAddSales = (newRecord: Partial<SalesRecord>) => {
     const record: SalesRecord = {
@@ -58,6 +63,59 @@ export function SalesManagementTab({ castId, castName }: SalesManagementTabProps
     .reduce((sum, record) => sum + record.castShare, 0)
 
   const totalSales = salesRecords.reduce((sum, record) => sum + record.totalAmount, 0)
+
+  // 予約データをダイアログ用に変換
+  const convertToReservationData = (reservation: Reservation): ReservationData | null => {
+    if (!reservation) return null;
+    
+    return {
+      id: reservation.id,
+      customerId: reservation.customerId,
+      customerName: reservation.customerName || `顧客${reservation.customerId}`,
+      customerType: "通常顧客",
+      phoneNumber: "090-1234-5678",
+      points: 100,
+      bookingStatus: reservation.status,
+      staffConfirmation: "確認済み",
+      customerConfirmation: "確認済み", 
+      prefecture: "東京都",
+      district: "渋谷区",
+      location: reservation.location || "アパホテル",
+      locationType: "ホテル",
+      specificLocation: "502号室",
+      staff: reservation.staffName || castName,
+      marketingChannel: "WEB",
+      date: format(reservation.startTime, 'yyyy-MM-dd'),
+      time: format(reservation.startTime, 'HH:mm'),
+      inOutTime: `${format(reservation.startTime, 'HH:mm')}-${format(reservation.endTime, 'HH:mm')}`,
+      course: reservation.courseName || "リラクゼーションコース",
+      freeExtension: "なし",
+      designation: "指名",
+      designationFee: "3,000円",
+      options: {},
+      transportationFee: 0,
+      paymentMethod: "現金",
+      discount: "0円",
+      additionalFee: 0,
+      totalPayment: reservation.price,
+      storeRevenue: Math.floor(reservation.price * 0.6),
+      staffRevenue: Math.floor(reservation.price * 0.4),
+      staffBonusFee: 0,
+      startTime: reservation.startTime,
+      endTime: reservation.endTime,
+      staffImage: "/placeholder-user.jpg"
+    };
+  };
+
+  // 予約データを初期化
+  React.useEffect(() => {
+    const fetchReservations = async () => {
+      const allReservations = await getAllReservations()
+      const castReservations = allReservations.filter(r => r.staffId === castId)
+      setReservations(castReservations)
+    }
+    fetchReservations()
+  }, [castId])
 
   return (
     <div className="space-y-6">
@@ -202,6 +260,91 @@ export function SalesManagementTab({ castId, castName }: SalesManagementTabProps
           </Table>
         </CardContent>
       </Card>
+
+      {/* 予約状況 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>予約状況</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {reservations.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>日時</TableHead>
+                  <TableHead>顧客名</TableHead>
+                  <TableHead>コース</TableHead>
+                  <TableHead>場所</TableHead>
+                  <TableHead>金額</TableHead>
+                  <TableHead>状態</TableHead>
+                  <TableHead>操作</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {reservations
+                  .sort((a, b) => b.startTime.getTime() - a.startTime.getTime())
+                  .map((reservation) => (
+                    <TableRow key={reservation.id}>
+                      <TableCell>
+                        <div className="text-sm">
+                          <div>{format(reservation.startTime, "M/d(E)", { locale: ja })}</div>
+                          <div className="text-gray-500">{format(reservation.startTime, "HH:mm")}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium">顧客{reservation.customerId}</TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <div>サービス{reservation.serviceId}</div>
+                          <div className="text-gray-500">{Math.floor((reservation.endTime.getTime() - reservation.startTime.getTime()) / 60000)}分</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center text-sm">
+                          <MapPin className="w-3 h-3 mr-1 text-gray-400" />
+                          施術場所
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium">¥{reservation.price.toLocaleString()}</TableCell>
+                      <TableCell>
+                        <Badge variant={
+                          reservation.status === 'confirmed' ? 'default' :
+                          reservation.status === 'pending' ? 'secondary' :
+                          reservation.status === 'modifiable' ? 'outline' : 'destructive'
+                        }>
+                          {reservation.status === 'confirmed' ? '確定' :
+                           reservation.status === 'pending' ? '仮予約' :
+                           reservation.status === 'modifiable' ? '修正可能' : 'キャンセル'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setSelectedReservation(reservation)}
+                        >
+                          詳細
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+              <p className="text-lg font-medium mb-2">予約はありません</p>
+              <p className="text-sm">現在、このキャストの予約はありません</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* 予約詳細ダイアログ */}
+      <ReservationDialog
+        open={!!selectedReservation}
+        onOpenChange={(open) => !open && setSelectedReservation(null)}
+        reservation={selectedReservation ? convertToReservationData(selectedReservation) : null}
+      />
     </div>
   )
 }
