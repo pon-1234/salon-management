@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Cast } from "@/lib/cast/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,6 +21,10 @@ import {
   DollarSign
 } from 'lucide-react'
 import { ScheduleEditDialog } from "@/components/cast/schedule-edit-dialog"
+import { ReservationDialog } from "@/components/reservation/reservation-dialog"
+import { ReservationData, Reservation } from "@/lib/types/reservation"
+import { getAllReservations } from "@/lib/reservation/data"
+import { format } from "date-fns"
 
 interface CastDashboardProps {
   cast: Cast
@@ -29,6 +33,8 @@ interface CastDashboardProps {
 
 export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
   const [isEditing, setIsEditing] = useState(false)
+  const [reservations, setReservations] = useState<Reservation[]>([])
+  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
   const [formData, setFormData] = useState({
     name: cast.name,
     nameKana: cast.nameKana,
@@ -49,6 +55,59 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
     onUpdate(formData)
     setIsEditing(false)
   }
+
+  // 予約データを取得
+  useEffect(() => {
+    const fetchReservations = async () => {
+      const allReservations = await getAllReservations()
+      const castReservations = allReservations.filter(r => r.staffId === cast.id)
+      setReservations(castReservations)
+    }
+    fetchReservations()
+  }, [cast.id])
+
+  // 予約データをダイアログ用に変換
+  const convertToReservationData = (reservation: Reservation): ReservationData | null => {
+    if (!reservation) return null;
+    
+    return {
+      id: reservation.id,
+      customerId: reservation.customerId,
+      customerName: `顧客${reservation.customerId}`,
+      customerType: "通常顧客",
+      phoneNumber: "090-1234-5678",
+      points: 100,
+      bookingStatus: reservation.status,
+      staffConfirmation: "確認済み",
+      customerConfirmation: "確認済み", 
+      prefecture: "東京都",
+      district: "渋谷区",
+      location: "アパホテル",
+      locationType: "ホテル",
+      specificLocation: "502号室",
+      staff: cast.name,
+      marketingChannel: "WEB",
+      date: format(reservation.startTime, 'yyyy-MM-dd'),
+      time: format(reservation.startTime, 'HH:mm'),
+      inOutTime: `${format(reservation.startTime, 'HH:mm')}-${format(reservation.endTime, 'HH:mm')}`,
+      course: `サービス${reservation.serviceId}`,
+      freeExtension: "なし",
+      designation: "指名",
+      designationFee: "3,000円",
+      options: {},
+      transportationFee: 0,
+      paymentMethod: "現金",
+      discount: "0円",
+      additionalFee: 0,
+      totalPayment: reservation.price,
+      storeRevenue: Math.floor(reservation.price * 0.6),
+      staffRevenue: Math.floor(reservation.price * 0.4),
+      staffBonusFee: 0,
+      startTime: reservation.startTime,
+      endTime: reservation.endTime,
+      staffImage: "/placeholder-user.jpg"
+    };
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-6">
@@ -262,57 +321,64 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {/* 今日の予約 */}
-              <div className="border rounded-lg p-3 bg-emerald-50 border-emerald-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge className="bg-emerald-600">今日</Badge>
-                  <span className="font-medium">タナカ 様</span>
-                  <Badge variant="outline" className="text-xs">おすすめ指名</Badge>
+              {reservations.length > 0 ? (
+                reservations
+                  .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
+                  .slice(0, 3)
+                  .map((reservation) => {
+                    const today = new Date()
+                    const tomorrow = new Date(today)
+                    tomorrow.setDate(tomorrow.getDate() + 1)
+                    
+                    const isToday = reservation.startTime.toDateString() === today.toDateString()
+                    const isTomorrow = reservation.startTime.toDateString() === tomorrow.toDateString()
+                    
+                    return (
+                      <div 
+                        key={reservation.id}
+                        className={`border rounded-lg p-3 cursor-pointer transition-all hover:shadow-md ${
+                          isToday 
+                            ? 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100' 
+                            : isTomorrow
+                            ? 'bg-blue-50 border-blue-200 hover:bg-blue-100'
+                            : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                        }`}
+                        onClick={() => setSelectedReservation(reservation)}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge className={isToday ? "bg-emerald-600" : isTomorrow ? "bg-blue-600" : ""} variant={!isToday && !isTomorrow ? "outline" : "default"}>
+                            {isToday ? "今日" : isTomorrow ? "明日" : format(reservation.startTime, 'M/d')}
+                          </Badge>
+                          <span className="font-medium">顧客{reservation.customerId}</span>
+                          <Badge variant="outline" className="text-xs">
+                            {reservation.status === 'confirmed' ? '確定' : 
+                             reservation.status === 'pending' ? '仮予約' : '修正可能'}
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-gray-700 space-y-1">
+                          <div className="font-medium">
+                            {format(reservation.startTime, 'HH:mm')} - {format(reservation.endTime, 'HH:mm')}
+                          </div>
+                          <div>サービス{reservation.serviceId}</div>
+                          <div className={`font-semibold ${isToday ? 'text-emerald-700' : isTomorrow ? 'text-blue-700' : ''}`}>
+                            {reservation.price.toLocaleString()}円
+                          </div>
+                        </div>
+                        <div className="flex gap-1 mt-2">
+                          <Badge variant={reservation.status === 'confirmed' ? "secondary" : "destructive"} className="text-xs">
+                            {reservation.status === 'confirmed' ? '確認済み' : '要確認'}
+                          </Badge>
+                        </div>
+                      </div>
+                    )
+                  })
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <CalendarDays className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                  <p className="text-lg font-medium mb-2">予約はありません</p>
+                  <p className="text-sm">現在、予約はありません</p>
                 </div>
-                <div className="text-sm text-gray-700 space-y-1">
-                  <div className="font-medium">17:30 - 19:20</div>
-                  <div>イベント110分</div>
-                  <div className="font-semibold text-emerald-700">15,000円</div>
-                </div>
-                <div className="flex gap-1 mt-2">
-                  <Badge variant="destructive" className="text-xs">メール未送信</Badge>
-                  <Badge variant="destructive" className="text-xs">女性未確認</Badge>
-                </div>
-              </div>
-
-              {/* 明日の予約 */}
-              <div className="border rounded-lg p-3 bg-blue-50 border-blue-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="secondary">明日</Badge>
-                  <span className="font-medium">サトウ 様</span>
-                  <Badge variant="outline" className="text-xs">本指名</Badge>
-                </div>
-                <div className="text-sm text-gray-700 space-y-1">
-                  <div className="font-medium">20:00 - 22:00</div>
-                  <div>基本120分</div>
-                  <div className="font-semibold text-blue-700">18,000円</div>
-                </div>
-                <div className="flex gap-1 mt-2">
-                  <Badge variant="secondary" className="text-xs">確認済み</Badge>
-                </div>
-              </div>
-
-              {/* 週末の予約 */}
-              <div className="border rounded-lg p-3 bg-gray-50 border-gray-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="outline">土曜日</Badge>
-                  <span className="font-medium">ヤマダ 様</span>
-                  <Badge variant="outline" className="text-xs">新規</Badge>
-                </div>
-                <div className="text-sm text-gray-700 space-y-1">
-                  <div className="font-medium">15:30 - 17:00</div>
-                  <div>基本90分</div>
-                  <div className="font-semibold">12,000円</div>
-                </div>
-                <div className="flex gap-1 mt-2">
-                  <Badge className="bg-orange-500 text-xs">要確認</Badge>
-                </div>
-              </div>
+              )}
             </div>
             
             <div className="mt-4 pt-3 border-t">
@@ -323,6 +389,13 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* 予約詳細ダイアログ */}
+      <ReservationDialog
+        open={!!selectedReservation}
+        onOpenChange={(open) => !open && setSelectedReservation(null)}
+        reservation={selectedReservation ? convertToReservationData(selectedReservation) : null}
+      />
     </div>
   )
 }
