@@ -6,21 +6,57 @@ export const customers: Customer[] = [
     name: "priv_hon.",
     lastMessage: "お世話になります。承知しました。当日はよろしくお願い...",
     lastMessageTime: "0:02",
-    hasUnread: true
+    hasUnread: true,
+    unreadCount: 3,
+    isOnline: true,
+    avatar: "/placeholder-user.jpg",
+    memberType: "vip"
   },
   {
     id: "2",
     name: "折原省吾",
     lastMessage: "予約がキャンセルされました 12/13 16:00～ 110分",
     lastMessageTime: "12/9",
-    hasUnread: false
+    hasUnread: false,
+    unreadCount: 0,
+    isOnline: false,
+    avatar: "/placeholder-user.jpg",
+    lastSeen: "2時間前",
+    memberType: "regular"
   },
   {
     id: "3",
     name: "石原",
     lastMessage: "この度はご利用頂きありがとうございました。よろしければ口...",
     lastMessageTime: "12/9",
-    hasUnread: false
+    hasUnread: true,
+    unreadCount: 1,
+    isOnline: false,
+    avatar: "/placeholder-user.jpg",
+    lastSeen: "5時間前",
+    memberType: "regular"
+  },
+  {
+    id: "4",
+    name: "山田花子",
+    lastMessage: "今度もお世話になります。また連絡します。",
+    lastMessageTime: "12/8",
+    hasUnread: false,
+    unreadCount: 0,
+    isOnline: true,
+    avatar: "/placeholder-user.jpg",
+    memberType: "vip"
+  },
+  {
+    id: "5",
+    name: "田中太郎",
+    lastMessage: "ありがとうございました。とても良かったです。",
+    lastMessageTime: "12/7",
+    hasUnread: true,
+    unreadCount: 2,
+    isOnline: false,
+    lastSeen: "1日前",
+    memberType: "regular"
   }
 ];
 

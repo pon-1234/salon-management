@@ -21,4 +21,9 @@ export interface Customer {
   lastMessage: string;
   lastMessageTime: string;
   hasUnread: boolean;
+  unreadCount: number;
+  isOnline: boolean;
+  avatar?: string;
+  lastSeen?: string;
+  memberType: "regular" | "vip";
 }
