@@ -11,7 +11,7 @@ import { ScheduleActionButtons } from "@/components/cast-schedule/schedule-actio
 const castScheduleUseCases = new CastScheduleUseCases()
 
 export default function WeeklySchedulePage() {
-  const [date] = useState(() => new Date())
+  const [date, setDate] = useState(() => new Date())
   const [schedule, setSchedule] = useState<WeeklySchedule | null>(null)
 
   useEffect(() => {
@@ -71,7 +71,7 @@ export default function WeeklySchedulePage() {
         onFilter={handleFilter}
         onFilterCharacter={handleFilterCharacter}
         date={date}
-        onDateChange={() => {}}
+        onDateChange={setDate}
       />
       <ScheduleGrid
         startDate={schedule.startDate}

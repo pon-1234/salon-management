@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { CastScheduleEntry, CastScheduleStatus } from "@/lib/cast-schedule/types"
 import { getWeekDates, formatScheduleDate, formatDisplayDate, formatDayOfWeek } from "@/lib/cast-schedule/utils"
 import { Phone, MessageSquare, Clock, Calendar, Edit3 } from 'lucide-react'
+import { ScheduleEditDialog, WeeklyScheduleEdit } from "./schedule-edit-dialog"
 
 interface ScheduleGridProps {
   startDate: Date
@@ -14,16 +15,34 @@ interface ScheduleGridProps {
 
 export function ScheduleGrid({ startDate, entries }: ScheduleGridProps) {
   const dates = getWeekDates(startDate)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [selectedCast, setSelectedCast] = useState<CastScheduleEntry | null>(null)
 
-  const renderScheduleCell = (status: CastScheduleStatus | undefined, date: Date) => {
+  const handleCellClick = (entry: CastScheduleEntry) => {
+    setSelectedCast(entry)
+    setEditDialogOpen(true)
+  }
+
+  const handleSaveSchedule = (castId: string, schedule: WeeklyScheduleEdit) => {
+    // Here you would normally save to the backend
+    console.log('Saving schedule for cast:', castId, schedule)
+    // For now, just close the dialog
+    setEditDialogOpen(false)
+    setSelectedCast(null)
+  }
+
+  const renderScheduleCell = (status: CastScheduleStatus | undefined, date: Date, entry: CastScheduleEntry) => {
     const isToday = new Date().toDateString() === date.toDateString()
     const isWeekend = date.getDay() === 0 || date.getDay() === 6
 
     if (!status) {
       return (
-        <div className={`group relative p-3 h-20 border rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
-          isToday ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-        }`}>
+        <div 
+          className={`group relative p-3 h-20 border rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
+            isToday ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+          }`}
+          onClick={() => handleCellClick(entry)}
+        >
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <div className="text-gray-400 text-sm">未設定</div>
@@ -36,9 +55,12 @@ export function ScheduleGrid({ startDate, entries }: ScheduleGridProps) {
 
     if (status.type === "休日") {
       return (
-        <div className={`group relative p-3 h-20 border rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
-          isToday ? 'bg-red-50 border-red-300' : 'bg-red-50 border-red-200 hover:border-red-300'
-        }`}>
+        <div 
+          className={`group relative p-3 h-20 border rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
+            isToday ? 'bg-red-50 border-red-300' : 'bg-red-50 border-red-200 hover:border-red-300'
+          }`}
+          onClick={() => handleCellClick(entry)}
+        >
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <Badge className="bg-red-500 hover:bg-red-600 text-white text-xs">
@@ -53,9 +75,12 @@ export function ScheduleGrid({ startDate, entries }: ScheduleGridProps) {
 
     if (status.type === "出勤予定") {
       return (
-        <div className={`group relative p-3 h-20 border rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
-          isToday ? 'bg-emerald-50 border-emerald-300' : 'bg-emerald-50 border-emerald-200 hover:border-emerald-300'
-        }`}>
+        <div 
+          className={`group relative p-3 h-20 border rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
+            isToday ? 'bg-emerald-50 border-emerald-300' : 'bg-emerald-50 border-emerald-200 hover:border-emerald-300'
+          }`}
+          onClick={() => handleCellClick(entry)}
+        >
           <div className="space-y-1">
             <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs">
               出勤予定
@@ -78,9 +103,12 @@ export function ScheduleGrid({ startDate, entries }: ScheduleGridProps) {
     }
 
     return (
-      <div className={`group relative p-3 h-20 border rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
-        isToday ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-      }`}>
+      <div 
+        className={`group relative p-3 h-20 border rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
+          isToday ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+        }`}
+        onClick={() => handleCellClick(entry)}
+      >
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
             <div className="text-gray-400 text-sm">未入力</div>
@@ -167,7 +195,7 @@ export function ScheduleGrid({ startDate, entries }: ScheduleGridProps) {
                     const status = entry.schedule[scheduleDate]
                     return (
                       <div key={`${entry.castId}-${scheduleDate}`}>
-                        {renderScheduleCell(status, date)}
+                        {renderScheduleCell(status, date, entry)}
                       </div>
                     )
                   })}
@@ -176,6 +204,19 @@ export function ScheduleGrid({ startDate, entries }: ScheduleGridProps) {
             </Card>
           ))}
         </div>
+
+        {/* Schedule Edit Dialog */}
+        {selectedCast && (
+          <ScheduleEditDialog
+            open={editDialogOpen}
+            onOpenChange={setEditDialogOpen}
+            castName={selectedCast.name}
+            castId={selectedCast.castId}
+            initialSchedule={selectedCast.schedule}
+            startDate={startDate}
+            onSave={handleSaveSchedule}
+          />
+        )}
       </div>
     </div>
   )
