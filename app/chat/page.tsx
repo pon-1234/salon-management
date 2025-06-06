@@ -14,7 +14,7 @@ export default function ChatPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Header />
-      <div className="flex h-[calc(100vh-73px)] max-w-7xl mx-auto">
+      <div className="flex h-[calc(100vh-73px)]">
         {/* Customer List - Hidden on mobile when customer selected */}
         <div className={`${
           selectedCustomer ? 'hidden md:block' : 'block'
