@@ -58,7 +58,7 @@ export default function WeeklySchedulePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <Header />
       <ScheduleInfoBar 
         totalCast={schedule.stats.totalCast}
@@ -73,12 +73,10 @@ export default function WeeklySchedulePage() {
         date={date}
         onDateChange={() => {}}
       />
-      <main className="p-4">
-        <ScheduleGrid
-          startDate={schedule.startDate}
-          entries={schedule.entries}
-        />
-      </main>
+      <ScheduleGrid
+        startDate={schedule.startDate}
+        entries={schedule.entries}
+      />
     </div>
   )
 }
