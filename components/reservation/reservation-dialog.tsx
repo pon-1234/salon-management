@@ -102,6 +102,8 @@ export function ReservationDialog({
                 <div className="space-y-2 text-sm text-gray-600">
                   <p>連絡希望時間：指定なし</p>
                   <p>ご要望：電話はタイミング的に出れない場合（出れなかった場合は折り返します）</p>
+                  <p>連絡手段：{reservation?.phoneNumber ? "電話" : ""} / メール / LINE</p>
+                  <p>アレルギー・注意事項：特になし</p>
                 </div>
               </div>
 
@@ -252,14 +254,59 @@ export function ReservationDialog({
                   </div>
                 </div>
               </div>
+
+              {/* 支払い状況 */}
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold">支払い状況</h3>
+                  <Button variant="ghost" size="icon" className="text-emerald-600">
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">支払い方法</span>
+                    <span>{reservation?.paymentMethod || "現金"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">支払い状況</span>
+                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">未払い</Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">領収書</span>
+                    <span className="text-blue-600 cursor-pointer hover:underline">発行済み</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 確認状況 */}
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold">確認状況</h3>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">キャスト確認</span>
+                    <Badge variant="secondary" className="bg-green-100 text-green-700">確認済み</Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">顧客確認</span>
+                    <Badge variant="secondary" className="bg-green-100 text-green-700">確認済み</Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">最終確認日時</span>
+                    <span className="text-sm">2023/12/20 14:30</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* ステータスボタン */}
           <div className="flex gap-2">
             <Button variant="outline" className="flex-1">仮予約</Button>
-            <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white">確定</Button>
             <Button variant="outline" className="flex-1">事前確認</Button>
+            <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white">確定</Button>
             <Button variant="outline" className="flex-1">完了</Button>
             <Button variant="outline" className="flex-1 text-red-600 hover:text-red-700">キャンセル</Button>
           </div>
