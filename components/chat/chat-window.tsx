@@ -121,14 +121,25 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
                       {message.content}
                       
                       {/* Message tail */}
-                      {!message.isReservationInfo && (
-                        <div
-                          className={`absolute top-2 w-0 h-0 ${
-                            isStaff
-                              ? "right-[-6px] border-l-[6px] border-l-emerald-500 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent"
-                              : "left-[-6px] border-r-[6px] border-r-white border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent"
-                          }`}
-                        />
+                      {!message.isReservationInfo && showAvatar && (
+                        <>
+                          {isStaff ? (
+                            <div
+                              className="absolute top-3 right-[-8px] w-0 h-0 border-l-[8px] border-l-emerald-500 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent"
+                            />
+                          ) : (
+                            <>
+                              {/* Main arrow */}
+                              <div
+                                className="absolute top-3 left-[-8px] w-0 h-0 border-r-[8px] border-r-white border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent"
+                              />
+                              {/* Border arrow for outline effect */}
+                              <div
+                                className="absolute top-3 left-[-9px] w-0 h-0 border-r-[9px] border-r-gray-200 border-t-[9px] border-t-transparent border-b-[9px] border-b-transparent"
+                              />
+                            </>
+                          )}
+                        </>
                       )}
                     </div>
                     
