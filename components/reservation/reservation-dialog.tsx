@@ -1,7 +1,6 @@
 "use client"
 
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Pencil, MessageSquare, Clock, Users, ArrowRight, MoreHorizontal, Phone } from 'lucide-react'
@@ -50,12 +49,7 @@ export function ReservationDialog({
                 </Badge>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Link href={`/reservation/${reservation?.id}`}>
-                <Button variant="outline" className="bg-white text-emerald-600 hover:bg-gray-100">
-                  詳細ページで開く
-                </Button>
-              </Link>
+            <div className="flex items-center">
               <Button className="bg-white text-emerald-600 hover:bg-gray-100">
                 <MessageSquare className="w-4 h-4 mr-2" />
                 この顧客に「チャットする」
