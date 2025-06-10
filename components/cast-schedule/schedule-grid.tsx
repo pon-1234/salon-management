@@ -121,12 +121,12 @@ export function ScheduleGrid({ startDate, entries }: ScheduleGridProps) {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto p-4">
+      <div className="max-w-full mx-auto p-4 overflow-x-auto">
         {/* Week Header */}
         <Card className="mb-6 bg-white shadow-sm">
           <CardContent className="p-4">
-            <div className="grid grid-cols-8 gap-4">
-              <div className="flex items-center justify-center">
+            <div className="grid grid-cols-8 gap-4 min-w-[1000px]">
+              <div className="flex items-center justify-center min-w-[180px]">
                 <span className="text-sm font-medium text-gray-600">キャスト</span>
               </div>
               {dates.map((date) => {
@@ -158,29 +158,29 @@ export function ScheduleGrid({ startDate, entries }: ScheduleGridProps) {
           {entries.map((entry) => (
             <Card key={entry.castId} className="bg-white shadow-sm hover:shadow-md transition-shadow duration-200">
               <CardContent className="p-4">
-                <div className="grid grid-cols-8 gap-4 items-center">
+                <div className="grid grid-cols-8 gap-4 items-center min-w-[1000px]">
                   {/* Cast Info */}
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-[180px]">
                     <Avatar className="h-12 w-12">
                       <AvatarImage src={entry.image} alt={entry.name} />
                       <AvatarFallback className="bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-medium">
                         {entry.name[0]}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <div className="font-medium text-gray-900">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 truncate">
                         {entry.name}
                         <span className="text-gray-500 text-sm ml-1">({entry.age})</span>
                       </div>
-                      <div className="flex gap-1 mt-1">
+                      <div className="flex gap-1 mt-1 flex-wrap">
                         {entry.hasPhone && (
-                          <Button size="sm" variant="outline" className="h-6 px-2 text-xs">
+                          <Button size="sm" variant="outline" className="h-6 px-2 text-xs shrink-0">
                             <Phone className="w-3 h-3 mr-1" />
                             電話
                           </Button>
                         )}
                         {entry.hasBusinessContact && (
-                          <Button size="sm" variant="outline" className="h-6 px-2 text-xs">
+                          <Button size="sm" variant="outline" className="h-6 px-2 text-xs shrink-0">
                             <MessageSquare className="w-3 h-3 mr-1" />
                             連絡
                           </Button>
