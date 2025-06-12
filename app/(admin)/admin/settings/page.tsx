@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { Header } from "@/components/header"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -167,9 +166,7 @@ export default function SettingsPage() {
     : settingsItems
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <main className="p-8">
+    <div className="p-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center gap-3 mb-6">
             <SettingsIcon className="w-8 h-8 text-gray-700" />
@@ -310,7 +307,6 @@ onClick={() => {
             </Card>
           </div>
         </div>
-      </main>
     </div>
   )
 }

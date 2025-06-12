@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Header } from "@/components/header"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { BarChart, Users, Calendar, DollarSign, MessageSquare, UserCheck, UserPlus, Clock } from 'lucide-react'
 import { Button } from "@/components/ui/button"
@@ -112,9 +111,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <main className="p-8">
+    <div className="p-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">ダッシュボード</h1>
         </div>
@@ -303,7 +300,6 @@ export default function HomePage() {
           onOpenChange={(open) => !open && setSelectedReservation(null)}
           reservation={selectedReservation ? convertToReservationData(selectedReservation) : null}
         />
-      </main>
     </div>
   )
 }

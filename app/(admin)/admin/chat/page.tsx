@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { Header } from "@/components/header"
 import { ChatWindow } from "@/components/chat/chat-window"
 import { CustomerList } from "@/components/chat/customer-list"
 import { CustomerHeader } from "@/components/chat/customer-header"
@@ -12,9 +11,7 @@ export default function ChatPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <Header />
-      <div className="flex h-[calc(100vh-73px)]">
+    <div className="flex h-full">
         {/* Customer List - Hidden on mobile when customer selected */}
         <div className={`${
           selectedCustomer ? 'hidden md:block' : 'block'
@@ -32,7 +29,6 @@ export default function ChatPage() {
           <CustomerHeader customer={selectedCustomer || undefined} />
           <ChatWindow customerId={selectedCustomer?.id} />
         </div>
-      </div>
     </div>
   )
 }
