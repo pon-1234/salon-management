@@ -34,7 +34,7 @@ export function CustomerSearchContent() {
   const handleAddNewCustomer = () => {
     // 新規顧客追加ページへ遷移し、電話番号を渡す
     if (query) {
-      router.push(`/customers/new?phone=${encodeURIComponent(query)}`)
+      router.push(`/dashboard/customers/new?phone=${encodeURIComponent(query)}`)
     }
   }
 
@@ -62,7 +62,7 @@ export function CustomerSearchContent() {
                   <h2 className="text-lg font-semibold">{customer.name}</h2>
                   <p className="text-sm text-gray-500">{customer.phone}</p>
                 </div>
-                <Link href={`/customers/${customer.id}`}>
+                <Link href={`/dashboard/customers/${customer.id}`}>
                   <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">詳細を見る</Button>
                 </Link>
               </CardContent>

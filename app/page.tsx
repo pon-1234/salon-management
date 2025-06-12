@@ -85,7 +85,7 @@ export default function HomePage() {
                 </CardHeader>
                 <CardContent>
                   <Button variant="outline" className="w-full" asChild>
-                    <Link href={`/cast/${i}`}>
+                    <Link href={`/dashboard/cast/${i}`}>
                       詳細を見る
                     </Link>
                   </Button>
@@ -95,7 +95,7 @@ export default function HomePage() {
           </div>
           <div className="text-center mt-8">
             <Button variant="outline" asChild>
-              <Link href="/cast">
+              <Link href="/dashboard/cast">
                 すべてのキャストを見る
               </Link>
             </Button>

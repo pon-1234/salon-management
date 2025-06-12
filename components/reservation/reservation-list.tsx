@@ -124,7 +124,7 @@ export function ReservationList({ reservations, limit, showViewMore = false, onO
       </div>
       {showViewMore && reservations.length > (limit || 0) && (
         <div className="flex justify-center mt-4">
-          <Link href="/reservation-list">
+          <Link href="/dashboard/reservation-list">
             <Button variant="default" className="bg-emerald-600 hover:bg-emerald-700 text-white">
               もっと見る
             </Button>

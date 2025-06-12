@@ -111,7 +111,7 @@ export default function HotelInfoPage() {
         <div className="max-w-6xl mx-auto">
           {/* ヘッダー */}
           <div className="flex items-center gap-4 mb-6">
-            <Link href="/settings">
+            <Link href="/dashboard/settings">
               <Button variant="ghost" size="icon">
                 <ArrowLeft className="w-5 h-5" />
               </Button>
@@ -286,7 +286,7 @@ export default function HotelInfoPage() {
 
             {/* 保存ボタン */}
             <div className="flex justify-end gap-4">
-              <Link href="/settings">
+              <Link href="/dashboard/settings">
                 <Button variant="outline">戻る</Button>
               </Link>
               <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700">

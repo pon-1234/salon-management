@@ -5,15 +5,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // 管理画面へのアクセス制御
-  if (pathname.startsWith('/analytics') || 
-      pathname.startsWith('/cast/manage') ||
-      pathname.startsWith('/cast/list') ||
-      pathname.startsWith('/cast/weekly-schedule') ||
-      pathname.startsWith('/chat') ||
-      pathname.startsWith('/customer-search') ||
-      pathname.startsWith('/customers') ||
-      pathname.startsWith('/reservation-list') ||
-      pathname.startsWith('/settings')) {
+  if (pathname.startsWith('/dashboard')) {
     
     // ここで認証チェックを行う
     // 現在はモックなので、常に通過させる

@@ -165,7 +165,7 @@ export default function OptionInfoPage() {
           {/* ヘッダー */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <Link href="/settings">
+              <Link href="/dashboard/settings">
                 <Button variant="ghost" size="icon">
                   <ArrowLeft className="w-5 h-5" />
                 </Button>

@@ -46,7 +46,7 @@ export function Header() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchQuery.trim()) {
-      router.push(`/customer-search?query=${encodeURIComponent(searchQuery)}`)
+      router.push(`/dashboard/customer-search?query=${encodeURIComponent(searchQuery)}`)
     }
   }
 
@@ -71,7 +71,7 @@ export function Header() {
   return (
     <>
       <div className="flex items-center gap-4 p-4 border-b bg-white fixed top-0 left-0 right-0 z-50 shadow-sm">
-        <Link href="/">
+        <Link href="/dashboard">
           <Button variant="ghost" className="shrink-0 flex flex-col items-center gap-0.5 h-auto py-2 px-3">
             <Home className="h-5 w-5" />
             <span className="text-xs text-gray-600">ホーム</span>
@@ -81,28 +81,28 @@ export function Header() {
         {/* 店舗セレクター */}
         <StoreSelector />
 
-        <Link href="/reservation">
+        <Link href="/dashboard/reservation">
           <Button variant="ghost" className="shrink-0 flex flex-col items-center gap-0.5 h-auto py-2 px-3">
             <Calendar className="h-5 w-5" />
             <span className="text-xs text-gray-600">予約</span>
           </Button>
         </Link>
 
-        <Link href="/chat">
+        <Link href="/dashboard/chat">
           <Button variant="ghost" className="shrink-0 flex flex-col items-center gap-0.5 h-auto py-2 px-3">
             <MessageSquare className="h-5 w-5" />
             <span className="text-xs text-gray-600">チャット</span>
           </Button>
         </Link>
 
-        <Link href="/cast/list">
+        <Link href="/dashboard/cast/list">
           <Button variant="ghost" className="shrink-0 flex flex-col items-center gap-0.5 h-auto py-2 px-3">
             <Users className="h-5 w-5" />
             <span className="text-xs text-gray-600">キャスト</span>
           </Button>
         </Link>
 
-        <Link href="/cast/weekly-schedule">
+        <Link href="/dashboard/cast/weekly-schedule">
           <Button variant="ghost" className="shrink-0 flex flex-col items-center gap-0.5 h-auto py-2 px-3">
             <Clock className="h-5 w-5" />
             <span className="text-xs text-gray-600">出勤表</span>
@@ -157,7 +157,7 @@ export function Header() {
                       onSelect={(currentValue) => {
                         setValue(currentValue === value ? "" : currentValue)
                         setOpen(false)
-                        router.push(`/cast/${cast.id}`)
+                        router.push(`/dashboard/cast/${cast.id}`)
                       }}
                     >
                       {cast.name}
@@ -175,14 +175,14 @@ export function Header() {
           </PopoverContent>
         </Popover>
 
-        <Link href="/analytics/daily-sales">
+        <Link href="/dashboard/analytics/daily-sales">
           <Button variant="ghost" className="shrink-0 flex flex-col items-center gap-0.5 h-auto py-2 px-3">
             <BarChart2 className="h-5 w-5" />
             <span className="text-xs text-gray-600">集計</span>
           </Button>
         </Link>
 
-        <Link href="/settings">
+        <Link href="/dashboard/settings">
           <Button variant="ghost" className="shrink-0 flex flex-col items-center gap-0.5 h-auto py-2 px-3">
             <Settings className="h-5 w-5" />
             <span className="text-xs text-gray-600">設定</span>

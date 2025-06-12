@@ -56,7 +56,7 @@ export function NewCustomerContent() {
   const onSubmit = (data: FormData) => {
     console.log('Form submitted:', data)
     // 登録後は顧客詳細ページにリダイレクト（詳細情報は後で編集可能）
-    router.push('/customers/1')
+    router.push('/dashboard/customers/1')
   }
 
   return (
