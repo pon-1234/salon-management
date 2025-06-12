@@ -118,3 +118,19 @@ export function useNotifications() {
   }
   return context
 }
+
+export function useNotification() {
+  const context = useContext(NotificationContext)
+  if (context === undefined) {
+    throw new Error('useNotification must be used within a NotificationProvider')
+  }
+  
+  return {
+    hasNewNotifications: context.unreadCount > 0,
+    notifications: context.notifications,
+    unreadCount: context.unreadCount,
+    addNotification: context.addNotification,
+    markAsRead: context.markAsRead,
+    removeNotification: context.removeNotification
+  }
+}
