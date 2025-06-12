@@ -11,19 +11,21 @@ function AdminLayoutContent({ children }: { children: ReactNode }) {
   const { hasNewNotifications } = useNotification()
 
   return (
-    <div className="h-screen w-full flex flex-col">
+    <>
       <Header />
-      <main className="flex-1 overflow-auto pt-[83px]">
-        <div
-          className={cn(
-            'min-h-full w-full',
-            hasNewNotifications && 'has-notifications'
-          )}
-        >
-          {children}
-        </div>
-      </main>
-    </div>
+      <div className="pt-[83px] h-screen w-full">
+        <main className="h-full overflow-auto">
+          <div
+            className={cn(
+              'min-h-full w-full',
+              hasNewNotifications && 'has-notifications'
+            )}
+          >
+            {children}
+          </div>
+        </main>
+      </div>
+    </>
   )
 }
 

@@ -225,7 +225,6 @@ export function Header() {
           reservation={selectedReservation}
         />
       </div>
-      <div className="h-[83px]"></div> {/* ヘッダーの高さ分のスペーサー */}
     </>
   )
 }
