@@ -28,7 +28,7 @@ export function CTIProvider({ children }: CTIProviderProps) {
 
   const handleViewDetails = () => {
     if (incomingCall?.customer) {
-      router.push(`/dashboard/customers/${incomingCall.customer.id}`)
+      router.push(`/admin/customers/${incomingCall.customer.id}`)
     }
   }
 

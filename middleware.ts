@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // 管理画面へのアクセス制御
-  if (pathname.startsWith('/dashboard')) {
+  if (pathname.startsWith('/admin')) {
     
     // ここで認証チェックを行う
     // 現在はモックなので、常に通過させる

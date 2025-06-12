@@ -44,7 +44,7 @@ export function CastListActionButtons({
             フィルター
           </Button>
         </div>
-        <Link href="/dashboard/cast/manage/new">
+        <Link href="/admin/cast/manage/new">
           <Button className="bg-emerald-600 hover:bg-emerald-700">
             <PlusCircle className="w-4 h-4 mr-2" />
             新規キャスト追加

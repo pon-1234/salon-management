@@ -38,7 +38,7 @@ export default function CastManagePage({ params }: { params: { id: string } }) {
   const handleSubmit = async (data: Partial<Cast>) => {
     // In a real application, this would make an API call
     console.log("Submitting cast data:", data)
-    router.push("/dashboard/cast/list")
+    router.push("/admin/cast/list")
   }
 
   const handlePublicProfileSubmit = async (data: any) => {

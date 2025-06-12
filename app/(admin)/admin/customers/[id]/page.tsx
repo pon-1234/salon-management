@@ -165,7 +165,7 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
   }, [params.id, form])
 
   const handleBooking = () => {
-    router.push(`/dashboard/reservation?customerId=${params.id}`)
+    router.push(`/admin/reservation?customerId=${params.id}`)
   }
 
   const handleSave = (data: FormData) => {
@@ -477,7 +477,7 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
                             <Button 
                               type="button"
                               className="shrink-0 bg-blue-500 hover:bg-blue-600"
-                              onClick={() => router.push('/dashboard/chat')}
+                              onClick={() => router.push('/admin/chat')}
                             >
                               <MessageSquare className="w-4 h-4 mr-2" />
                               メッセージ
