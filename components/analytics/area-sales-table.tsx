@@ -9,18 +9,37 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { AreaSalesReport } from "@/lib/types/area-sales"
+import { AreaSalesData } from "@/lib/types/area-sales"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle } from 'lucide-react'
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
 interface AreaSalesTableProps {
-  data: AreaSalesReport;
+  data: AreaSalesData[];
 }
 
 export function AreaSalesTable({ data }: AreaSalesTableProps) {
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
+
+  // Null/array check
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    return (
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>データがありません</AlertTitle>
+        <AlertDescription>
+          表示するデータがありません。
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  // Calculate totals
+  const totalMonthlySales = Array.from({ length: 12 }, (_, i) => 
+    data.reduce((sum, area) => sum + (area.monthlySales[i] || 0), 0)
+  );
+  const grandTotal = totalMonthlySales.reduce((sum, sales) => sum + sales, 0);
 
   return (
     <div className="overflow-x-auto">
@@ -38,7 +57,7 @@ export function AreaSalesTable({ data }: AreaSalesTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.areas.map((area) => (
+            {data.map((area) => (
               <TableRow key={area.area}>
                 <TableCell className={cn(
                   area.isSubtotal && "font-medium text-emerald-700"
@@ -53,7 +72,7 @@ export function AreaSalesTable({ data }: AreaSalesTableProps) {
                       area.isSubtotal ? "text-emerald-700" : "text-blue-600"
                     )}
                   >
-                    {sales}
+                    {sales.toLocaleString()}
                   </TableCell>
                 ))}
                 <TableCell 
@@ -68,13 +87,13 @@ export function AreaSalesTable({ data }: AreaSalesTableProps) {
             ))}
             <TableRow className="font-bold">
               <TableCell>TOTAL</TableCell>
-              {data.total.monthlySales.map((sales, index) => (
+              {totalMonthlySales.map((sales, index) => (
                 <TableCell key={index} className="text-right text-blue-600">
-                  {sales}
+                  {sales.toLocaleString()}
                 </TableCell>
               ))}
               <TableCell className="text-right text-blue-600 bg-gray-50">
-                {data.total.total.toLocaleString()}
+                {grandTotal.toLocaleString()}
               </TableCell>
             </TableRow>
           </TableBody>

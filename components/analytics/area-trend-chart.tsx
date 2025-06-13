@@ -9,6 +9,15 @@ interface AreaTrendChartProps {
 }
 
 export function AreaTrendChart({ data, year }: AreaTrendChartProps) {
+  // Null/array check
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-[350px] text-gray-500">
+        データがありません
+      </div>
+    );
+  }
+
   // 月別データを変換
   const months = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"]
   

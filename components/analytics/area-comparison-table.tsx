@@ -19,6 +19,15 @@ interface AreaComparisonTableProps {
 }
 
 export function AreaComparisonTable({ data, year }: AreaComparisonTableProps) {
+  // Null/array check
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64 text-gray-500">
+        データがありません
+      </div>
+    );
+  }
+
   // ダミーの前年データ（実際にはAPIから取得）
   const previousYearData = data.map(area => ({
     area: area.area,

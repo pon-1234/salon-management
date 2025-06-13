@@ -29,21 +29,30 @@ export default function AreaSalesPage() {
 
   const data = generateAreaSalesData(selectedYear)
 
-  // ダミーデータ（実際にはdataから計算）
+  // Calculate KPI data from actual data
+  const totalSales = data && Array.isArray(data) && data.length > 0 
+    ? data.reduce((sum, area) => sum + area.total, 0)
+    : 0;
+  
+  const topArea = data && Array.isArray(data) && data.length > 0
+    ? data.reduce((max, area) => area.total > max.total ? area : max, data[0])
+    : null;
+
   const kpiData = {
-    totalSales: 102518400,
-    previousYearSales: 94673200,
+    totalSales: totalSales,
+    previousYearSales: Math.floor(totalSales * 0.92), // Simulated previous year
     totalCustomers: 10704,
     previousYearCustomers: 10123,
-    topArea: "東京都",
-    topAreaPercentage: 58.5,
-    averagePerArea: 25629600,
-    activeAreas: 4,
+    topArea: topArea?.area || "---",
+    topAreaPercentage: topArea && totalSales > 0 ? ((topArea.total / totalSales) * 100).toFixed(1) : "0",
+    averagePerArea: data && data.length > 0 ? Math.floor(totalSales / data.length) : 0,
+    activeAreas: data ? data.length : 0,
     growthLeader: "神奈川県",
     growthLeaderRate: 18.5
   }
 
   const calculateGrowthRate = (current: number, previous: number) => {
+    if (previous === 0) return "0.0";
     return ((current - previous) / previous * 100).toFixed(1)
   }
 

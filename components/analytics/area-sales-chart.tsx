@@ -11,8 +11,17 @@ interface AreaSalesChartProps {
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6']
 
 export function AreaSalesChart({ data, year }: AreaSalesChartProps) {
+  // Null/array check
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-[350px] text-gray-500">
+        データがありません
+      </div>
+    );
+  }
+
   // エリアごとの年間売上を計算
-  const chartData = data.map((area, index) => ({
+  const chartData = data.map((area) => ({
     name: area.area,
     value: area.total,
     percentage: ((area.total / data.reduce((sum, a) => sum + a.total, 0)) * 100).toFixed(1)
@@ -48,7 +57,7 @@ export function AreaSalesChart({ data, year }: AreaSalesChartProps) {
           fill="#8884d8"
           dataKey="value"
         >
-          {chartData.map((entry, index) => (
+          {chartData.map((_, index) => (
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>
