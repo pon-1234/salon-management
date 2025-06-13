@@ -29,7 +29,7 @@ export function CastListView({ casts, view = "grid" }: CastListViewProps) {
                 </Badge>
               </div>
               <div className="p-4">
-                <Link href={`/cast/manage/${member.id}`} className="text-lg font-semibold hover:text-emerald-600">
+                <Link href={`/admin/cast/manage/${member.id}`} className="text-lg font-semibold hover:text-emerald-600">
                   {member.name}
                 </Link>
                 <p className="text-sm text-gray-500">{member.nameKana}</p>
@@ -53,7 +53,7 @@ export function CastListView({ casts, view = "grid" }: CastListViewProps) {
           key={member.id}
           className="bg-white rounded-lg shadow p-4 flex items-start gap-4"
         >
-          <Link href={`/cast/manage/${member.id}`} className="shrink-0">
+          <Link href={`/admin/cast/manage/${member.id}`} className="shrink-0">
             <img
               src={member.image}
               alt={member.name}
@@ -64,7 +64,7 @@ export function CastListView({ casts, view = "grid" }: CastListViewProps) {
           <div className="flex-1 min-w-0">
             <div className="space-y-1">
               <Link 
-                href={`/cast/manage/${member.id}`}
+                href={`/admin/cast/manage/${member.id}`}
                 className="text-lg font-medium hover:text-emerald-600"
               >
                 {member.name}
