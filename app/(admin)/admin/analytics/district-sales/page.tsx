@@ -1,8 +1,10 @@
 "use client"
 
 import { useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { Printer } from 'lucide-react'
+import { Printer, TrendingUp, MapPin, DollarSign, Users } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -10,7 +12,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { DistrictSalesChart } from "@/components/analytics/district-sales-chart"
 import { DistrictSalesTable } from "@/components/analytics/district-sales-table"
+import { DistrictHeatmapTable } from "@/components/analytics/district-heatmap-table"
+import { DistrictPerformanceTable } from "@/components/analytics/district-performance-table"
 import { generateDistrictSalesData } from "@/lib/district-sales/data"
 
 export default function DistrictSalesPage() {
@@ -27,11 +32,28 @@ export default function DistrictSalesPage() {
 
   const data = generateDistrictSalesData(selectedYear, selectedArea)
 
+  // ダミーデータ（実際にはuseCasesから取得）
+  const kpiData = {
+    totalSales: 48567800,
+    previousYearSales: 43234500,
+    totalCustomers: 5234,
+    previousYearCustomers: 4867,
+    topDistrict: selectedArea === "東京都" ? "渋谷区" : "横浜市",
+    topDistrictPercentage: 28.5,
+    averageSpending: 9284,
+    activeDistricts: 15
+  }
+
+  const calculateGrowthRate = (current: number, previous: number) => {
+    return ((current - previous) / previous * 100).toFixed(1)
+  }
+
   return (
-    <div className="space-y-4 w-full">
+    <div className="space-y-6">
+      {/* ヘッダー */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold">売上げ集計（区別）</h1>
+          <h1 className="text-3xl font-bold">地区別売上分析</h1>
           <div className="flex gap-2">
             <Select
               value={selectedYear.toString()}
@@ -70,9 +92,104 @@ export default function DistrictSalesPage() {
           印刷する
         </Button>
       </div>
-      <div className="overflow-x-auto">
-        <DistrictSalesTable data={data} />
+
+      {/* KPIカード */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">エリア売上高</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">¥{kpiData.totalSales.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <TrendingUp className="h-3 w-3 text-green-600" />
+              <span className="text-green-600">
+                {calculateGrowthRate(kpiData.totalSales, kpiData.previousYearSales)}%
+              </span>
+              前年比
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">エリア来客数</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{kpiData.totalCustomers.toLocaleString()}人</div>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <TrendingUp className="h-3 w-3 text-green-600" />
+              <span className="text-green-600">
+                {calculateGrowthRate(kpiData.totalCustomers, kpiData.previousYearCustomers)}%
+              </span>
+              前年比
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">トップ地区</CardTitle>
+            <MapPin className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg font-bold">{kpiData.topDistrict}</div>
+            <p className="text-xs text-muted-foreground">
+              エリア全体の{kpiData.topDistrictPercentage}%
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">平均客単価</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">¥{kpiData.averageSpending.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">
+              稼働地区: {kpiData.activeDistricts}区
+            </p>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* 地区別売上グラフ */}
+      <Card>
+        <CardHeader>
+          <CardTitle>地区別売上構成</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DistrictSalesChart area={selectedArea} year={selectedYear} data={data} />
+        </CardContent>
+      </Card>
+
+      {/* 詳細データテーブル */}
+      <Card>
+        <CardHeader>
+          <CardTitle>詳細データ</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="monthly" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="monthly">月別推移</TabsTrigger>
+              <TabsTrigger value="heatmap">ヒートマップ</TabsTrigger>
+              <TabsTrigger value="performance">パフォーマンス</TabsTrigger>
+            </TabsList>
+            <TabsContent value="monthly" className="mt-4">
+              <DistrictSalesTable data={data} />
+            </TabsContent>
+            <TabsContent value="heatmap" className="mt-4">
+              <DistrictHeatmapTable area={selectedArea} year={selectedYear} />
+            </TabsContent>
+            <TabsContent value="performance" className="mt-4">
+              <DistrictPerformanceTable area={selectedArea} year={selectedYear} />
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   )
 }
