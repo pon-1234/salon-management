@@ -1,4 +1,4 @@
-import { Customer } from '../types/customer';
+import { Customer } from './types';
 
 export function calculateAge(birthDate: Date): number {
   const today = new Date();

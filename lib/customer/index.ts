@@ -1,4 +1,4 @@
 export * from './data';
 export * from './utils';
 export * from './repository';
-export * from '../types/customer';
+export * from './types';
