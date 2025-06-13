@@ -4,11 +4,6 @@ import type { NextRequest } from 'next/server'
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // ルートパス / にアクセスした場合、/admin/dashboard にリダイレクト
-  if (pathname === '/') {
-    return NextResponse.redirect(new URL('/admin/dashboard', request.url))
-  }
-
   // /admin にアクセスした場合、/admin/dashboard にリダイレクト
   if (pathname === '/admin') {
     return NextResponse.redirect(new URL('/admin/dashboard', request.url))
