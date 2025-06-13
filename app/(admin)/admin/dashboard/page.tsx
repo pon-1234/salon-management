@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils"
 import { ReservationDialog } from '@/components/reservation/reservation-dialog'
 import { ReservationData } from '@/lib/types/reservation'
 import { recordModification } from '@/lib/modification-history/data'
+import { CustomerSelectionDialog } from '@/components/customer/customer-selection-dialog'
 import {
   AreaChart,
   Area,
@@ -177,6 +178,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month'>('today')
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
+  const [showCustomerSelection, setShowCustomerSelection] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -556,7 +558,10 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <CardContent className="p-6">
-            <Link href="/admin/reservations/new" className="flex items-center justify-between">
+            <div 
+              onClick={() => setShowCustomerSelection(true)}
+              className="flex items-center justify-between cursor-pointer"
+            >
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-blue-100 rounded-lg">
                   <Calendar className="w-6 h-6 text-blue-600" />
@@ -567,7 +572,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <ArrowUpRight className="w-5 h-5 text-muted-foreground" />
-            </Link>
+            </div>
           </CardContent>
         </Card>
 
@@ -658,6 +663,11 @@ export default function DashboardPage() {
         onOpenChange={(open) => !open && setSelectedReservation(null)}
         reservation={selectedReservation ? convertToReservationData(selectedReservation) : null}
         onMakeModifiable={handleMakeModifiable}
+      />
+
+      <CustomerSelectionDialog
+        open={showCustomerSelection}
+        onOpenChange={setShowCustomerSelection}
       />
     </div>
   )
