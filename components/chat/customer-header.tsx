@@ -1,8 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { UserCircle, Archive, Phone, Video, MoreVertical, Crown } from 'lucide-react'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { UserCircle, Phone, Crown } from 'lucide-react'
 import Link from "next/link"
 import { Customer } from "@/lib/types/chat"
 
@@ -63,34 +62,12 @@ export function CustomerHeader({ customer }: CustomerHeaderProps) {
           <Phone className="h-4 w-4" />
         </Button>
         
-        <Button variant="ghost" size="sm" className="text-gray-600 hover:text-emerald-600 hover:bg-emerald-50">
-          <Video className="h-4 w-4" />
-        </Button>
-        
         <Link href={`/customers/${customer.id}`}>
           <Button variant="ghost" size="sm" className="text-gray-600 hover:text-emerald-600 hover:bg-emerald-50">
             <UserCircle className="h-4 w-4 mr-2" />
             詳細
           </Button>
         </Link>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-700">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem className="text-gray-600">
-              <Archive className="h-4 w-4 mr-2" />
-              メッセージを削除
-            </DropdownMenuItem>
-            <DropdownMenuItem className="text-gray-600">
-              <UserCircle className="h-4 w-4 mr-2" />
-              プロフィールを表示
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
     </div>
   )
