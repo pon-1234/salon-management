@@ -166,22 +166,22 @@ export default function DailySalesPage() {
   // 仮の前日比データ
   const kpiData = salesData ? {
     totalSales: {
-      value: `¥${salesData.summary.storeSales.toLocaleString()}`,
+      value: `¥${salesData.totals.sales.total.toLocaleString()}`,
       change: 12.5,
       trend: 'up' as const
     },
     customerCount: {
-      value: salesData.details.length,
+      value: salesData.totals.totalTransactions,
       change: -5.2,
       trend: 'down' as const
     },
     averageSpend: {
-      value: `¥${Math.floor(salesData.summary.storeSales / salesData.details.length).toLocaleString()}`,
+      value: `¥${Math.floor(salesData.totals.sales.total / Math.max(salesData.totals.totalTransactions, 1)).toLocaleString()}`,
       change: 8.3,
       trend: 'up' as const
     },
     profitMargin: {
-      value: '68.5%',
+      value: `${Math.round((salesData.totals.staffSales / Math.max(salesData.totals.sales.total, 1)) * 100)}%`,
       change: 2.1,
       trend: 'up' as const
     }
