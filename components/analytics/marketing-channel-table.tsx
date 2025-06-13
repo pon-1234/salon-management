@@ -45,15 +45,17 @@ export function MarketingChannelTable({ year, analyticsUseCases }: MarketingChan
   const months = Array.from({ length: 12 }, (_, i) => i + 1)
 
   // Calculate totals
-  const totals = data.reduce(
+  const totals = data.length > 0 ? data.reduce(
     (acc, curr) => {
-      curr.monthlySales.forEach((sale, index) => {
-        acc[index] = (acc[index] || 0) + sale
-      })
+      if (curr.monthlySales && Array.isArray(curr.monthlySales)) {
+        curr.monthlySales.forEach((sale, index) => {
+          acc[index] = (acc[index] || 0) + sale
+        })
+      }
       return acc
     },
     [] as number[]
-  )
+  ) : []
 
   if (isLoading) {
     return <TableSkeleton />
@@ -105,7 +107,7 @@ export function MarketingChannelTable({ year, analyticsUseCases }: MarketingChan
               </TableCell>
             ))}
             <TableCell className="text-right text-blue-600">
-              {data.reduce((acc, curr) => acc + curr.total, 0)}
+              {data.length > 0 ? data.reduce((acc, curr) => acc + (curr.total || 0), 0) : 0}
             </TableCell>
           </TableRow>
         </TableBody>

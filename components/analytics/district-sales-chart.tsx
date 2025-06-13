@@ -11,11 +11,15 @@ interface DistrictSalesChartProps {
 
 export function DistrictSalesChart({ area, year, data }: DistrictSalesChartProps) {
   // 地区ごとの合計を計算
-  const districtTotals = data.reduce((acc, item) => {
-    const total = item.monthlySales.reduce((sum, sales) => sum + sales, 0)
-    acc[item.district] = total
-    return acc
-  }, {} as Record<string, number>)
+  const districtTotals = data && Array.isArray(data) && data.length > 0 
+    ? data.reduce((acc, item) => {
+        if (item.monthlySales && Array.isArray(item.monthlySales)) {
+          const total = item.monthlySales.reduce((sum, sales) => sum + sales, 0)
+          acc[item.district] = total
+        }
+        return acc
+      }, {} as Record<string, number>)
+    : {}
 
   // グラフ用データに変換
   const chartData = Object.entries(districtTotals)

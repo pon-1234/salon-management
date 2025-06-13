@@ -31,42 +31,54 @@ export function MonthlySalesTable({ year, month, analyticsUseCases }: MonthlySal
   }, [year, month, analyticsUseCases])
 
   // 合計を計算
-  const totals = data.reduce(
-    (acc, curr) => ({
-      customerCount: acc.customerCount + curr.customerCount,
-      directSales: acc.directSales + curr.directSales,
-      cardSales: acc.cardSales + curr.cardSales,
-      totalSales: acc.totalSales + curr.totalSales,
-      cashSales: acc.cashSales + curr.cashSales,
-      newCustomers: acc.newCustomers + curr.newCustomers,
-      repeaters: acc.repeaters + curr.repeaters,
-      discounts: acc.discounts + curr.discounts,
-      pointUsage: acc.pointUsage + curr.pointUsage,
-    }),
-    {
-      customerCount: 0,
-      directSales: 0,
-      cardSales: 0,
-      totalSales: 0,
-      cashSales: 0,
-      newCustomers: 0,
-      repeaters: 0,
-      discounts: 0,
-      pointUsage: 0,
-    }
-  )
+  const totals = data && Array.isArray(data) && data.length > 0 
+    ? data.reduce(
+        (acc, curr) => ({
+          customerCount: acc.customerCount + curr.customerCount,
+          directSales: acc.directSales + curr.directSales,
+          cardSales: acc.cardSales + curr.cardSales,
+          totalSales: acc.totalSales + curr.totalSales,
+          cashSales: acc.cashSales + curr.cashSales,
+          newCustomers: acc.newCustomers + curr.newCustomers,
+          repeaters: acc.repeaters + curr.repeaters,
+          discounts: acc.discounts + curr.discounts,
+          pointUsage: acc.pointUsage + curr.pointUsage,
+        }),
+        {
+          customerCount: 0,
+          directSales: 0,
+          cardSales: 0,
+          totalSales: 0,
+          cashSales: 0,
+          newCustomers: 0,
+          repeaters: 0,
+          discounts: 0,
+          pointUsage: 0,
+        }
+      )
+    : {
+        customerCount: 0,
+        directSales: 0,
+        cardSales: 0,
+        totalSales: 0,
+        cashSales: 0,
+        newCustomers: 0,
+        repeaters: 0,
+        discounts: 0,
+        pointUsage: 0,
+      }
 
   // 日平均を計算
   const averages = {
-    customerCount: totals.customerCount / data.length,
-    directSales: totals.directSales / data.length,
-    cardSales: totals.cardSales / data.length,
-    totalSales: totals.totalSales / data.length,
-    cashSales: totals.cashSales / data.length,
-    newCustomers: totals.newCustomers / data.length,
-    repeaters: totals.repeaters / data.length,
-    discounts: totals.discounts / data.length,
-    pointUsage: totals.pointUsage / data.length,
+    customerCount: data.length > 0 ? totals.customerCount / data.length : 0,
+    directSales: data.length > 0 ? totals.directSales / data.length : 0,
+    cardSales: data.length > 0 ? totals.cardSales / data.length : 0,
+    totalSales: data.length > 0 ? totals.totalSales / data.length : 0,
+    cashSales: data.length > 0 ? totals.cashSales / data.length : 0,
+    newCustomers: data.length > 0 ? totals.newCustomers / data.length : 0,
+    repeaters: data.length > 0 ? totals.repeaters / data.length : 0,
+    discounts: data.length > 0 ? totals.discounts / data.length : 0,
+    pointUsage: data.length > 0 ? totals.pointUsage / data.length : 0,
   }
 
   return (

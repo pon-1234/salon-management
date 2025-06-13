@@ -154,13 +154,13 @@ export function MarketingROITable({ year, analyticsUseCases }: MarketingROITable
           <TableRow className="font-bold bg-gray-50">
             <TableCell>合計</TableCell>
             <TableCell className="text-right">
-              ¥{data.reduce((sum, item) => sum + item.cost, 0).toLocaleString()}
+              ¥{data.length > 0 ? data.reduce((sum, item) => sum + item.cost, 0).toLocaleString() : '0'}
             </TableCell>
             <TableCell className="text-right">
-              {data.reduce((sum, item) => sum + item.customers, 0).toLocaleString()}人
+              {data.length > 0 ? data.reduce((sum, item) => sum + item.customers, 0).toLocaleString() : '0'}人
             </TableCell>
             <TableCell className="text-right">
-              ¥{data.reduce((sum, item) => sum + item.revenue, 0).toLocaleString()}
+              ¥{data.length > 0 ? data.reduce((sum, item) => sum + item.revenue, 0).toLocaleString() : '0'}
             </TableCell>
             <TableCell className="text-right">-</TableCell>
             <TableCell className="text-right">-</TableCell>
