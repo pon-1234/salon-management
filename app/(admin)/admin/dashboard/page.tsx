@@ -34,6 +34,9 @@ import { ja } from "date-fns/locale"
 import { Reservation } from "@/lib/types/reservation"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { ReservationDialog } from '@/components/reservation/reservation-dialog'
+import { ReservationData } from '@/lib/types/reservation'
+import { recordModification } from '@/lib/modification-history/data'
 import {
   AreaChart,
   Area,
@@ -173,6 +176,7 @@ export default function DashboardPage() {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month'>('today')
+  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -189,6 +193,82 @@ export default function DashboardPage() {
 
     fetchData()
   }, [])
+
+  // 予約データをダイアログ用に変換
+  const convertToReservationData = (reservation: Reservation): ReservationData | null => {
+    if (!reservation) return null;
+    
+    return {
+      id: reservation.id,
+      customerId: reservation.customerId,
+      customerName: `顧客${reservation.customerId}`, // 実際のデータから取得
+      customerType: "通常顧客",
+      phoneNumber: "090-1234-5678", // 実際のデータから取得
+      points: 100,
+      bookingStatus: reservation.status,
+      staffConfirmation: "確認済み",
+      customerConfirmation: "確認済み", 
+      prefecture: "東京都",
+      district: "渋谷区",
+      location: "アパホテル",
+      locationType: "ホテル",
+      specificLocation: "502号室",
+      staff: `スタッフ${reservation.staffId}`,
+      marketingChannel: "WEB",
+      date: format(reservation.startTime, 'yyyy-MM-dd'),
+      time: format(reservation.startTime, 'HH:mm'),
+      inOutTime: `${format(reservation.startTime, 'HH:mm')}-${format(reservation.endTime, 'HH:mm')}`,
+      course: "リラクゼーションコース",
+      freeExtension: "なし",
+      designation: "指名",
+      designationFee: "3,000円",
+      options: {},
+      transportationFee: 0,
+      paymentMethod: "現金",
+      discount: "0円",
+      additionalFee: 0,
+      totalPayment: reservation.price,
+      storeRevenue: Math.floor(reservation.price * 0.6),
+      staffRevenue: Math.floor(reservation.price * 0.4),
+      staffBonusFee: 0,
+      startTime: reservation.startTime,
+      endTime: reservation.endTime,
+      staffImage: "/placeholder-user.jpg"
+    };
+  };
+
+  const handleMakeModifiable = (reservationId: string) => {
+    const reservation = reservations.find(r => r.id === reservationId);
+    if (!reservation) return;
+
+    // 修正履歴を記録
+    recordModification(
+      reservationId,
+      "user_current", // 実際のアプリではログインユーザーIDを使用
+      "現在のユーザー", // 実際のアプリではログインユーザー名を使用
+      "status",
+      "ステータス",
+      reservation.status,
+      "modifiable",
+      "確定済み予約を修正可能状態に変更",
+      "192.168.1.100", // 実際のアプリでは実際のIPを取得
+      navigator.userAgent,
+      "current_session"
+    );
+
+    setReservations(prev => 
+      prev.map(reservation => 
+        reservation.id === reservationId 
+          ? { 
+              ...reservation, 
+              status: 'modifiable' as const,
+              modifiableUntil: new Date(Date.now() + 30 * 60 * 1000), // 30分後まで修正可能
+              lastModified: new Date()
+            }
+          : reservation
+      )
+    );
+  };
 
   // 期間に基づくデータフィルタリング
   const getFilteredData = () => {
@@ -546,7 +626,11 @@ export default function DashboardPage() {
         <CardContent>
           <div className="space-y-4">
             {reservations.slice(0, 5).map((reservation) => (
-              <div key={reservation.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+              <div 
+                key={reservation.id} 
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                onClick={() => setSelectedReservation(reservation)}
+              >
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400" />
                   <div>
@@ -568,6 +652,13 @@ export default function DashboardPage() {
           </div>
         </CardContent>
       </Card>
+
+      <ReservationDialog
+        open={!!selectedReservation}
+        onOpenChange={(open) => !open && setSelectedReservation(null)}
+        reservation={selectedReservation ? convertToReservationData(selectedReservation) : null}
+        onMakeModifiable={handleMakeModifiable}
+      />
     </div>
   )
 }
