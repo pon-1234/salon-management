@@ -38,7 +38,6 @@ import { ReservationDialog } from '@/components/reservation/reservation-dialog'
 import { ReservationData } from '@/lib/types/reservation'
 import { recordModification } from '@/lib/modification-history/data'
 import { CustomerSelectionDialog } from '@/components/customer/customer-selection-dialog'
-import { ScrollLink } from '@/components/ui/scroll-link'
 import {
   AreaChart,
   Area,
@@ -579,7 +578,7 @@ export default function DashboardPage() {
 
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <CardContent className="p-6">
-            <ScrollLink href="/admin/analytics/daily-sales" className="flex items-center justify-between">
+            <Link href="/admin/analytics/daily-sales" className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-purple-100 rounded-lg">
                   <BarChart3 className="w-6 h-6 text-purple-600" />
@@ -590,13 +589,13 @@ export default function DashboardPage() {
                 </div>
               </div>
               <ArrowUpRight className="w-5 h-5 text-muted-foreground" />
-            </ScrollLink>
+            </Link>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <CardContent className="p-6">
-            <ScrollLink href="/admin/cast/list" className="flex items-center justify-between">
+            <Link href="/admin/cast/list" className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-green-100 rounded-lg">
                   <Users className="w-6 h-6 text-green-600" />
@@ -607,7 +606,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <ArrowUpRight className="w-5 h-5 text-muted-foreground" />
-            </ScrollLink>
+            </Link>
           </CardContent>
         </Card>
       </div>
@@ -623,10 +622,10 @@ export default function DashboardPage() {
             <CardDescription>直近の予約状況</CardDescription>
           </div>
           <Button variant="outline" size="sm" asChild>
-            <ScrollLink href="/admin/reservation-list">
+            <Link href="/admin/reservation-list">
               すべて見る
               <ArrowUpRight className="w-4 h-4 ml-1" />
-            </ScrollLink>
+            </Link>
           </Button>
         </CardHeader>
         <CardContent>

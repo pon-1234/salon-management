@@ -6,20 +6,18 @@ import { cn } from '@/lib/utils'
 import { useNotification } from '@/contexts/notification-context'
 import { CTIProvider } from '@/components/cti/cti-provider'
 import { NotificationProvider } from '@/contexts/notification-context'
-import { ScrollToTop } from '@/components/providers/scroll-to-top'
 
 function AdminLayoutContent({ children }: { children: ReactNode }) {
   const { hasNewNotifications } = useNotification()
 
   return (
     <>
-      <ScrollToTop />
       <Header />
-      <div className="pt-[83px] h-screen w-full">
-        <main className="h-full overflow-auto">
+      <div className="pt-[83px] min-h-screen w-full">
+        <main>
           <div
             className={cn(
-              'min-h-full w-full',
+              'w-full',
               hasNewNotifications && 'has-notifications'
             )}
           >
