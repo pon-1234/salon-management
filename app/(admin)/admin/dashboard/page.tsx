@@ -578,7 +578,7 @@ export default function DashboardPage() {
 
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <CardContent className="p-6">
-            <Link href="/admin/analytics" className="flex items-center justify-between">
+            <Link href="/admin/analytics/summary" className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-purple-100 rounded-lg">
                   <BarChart3 className="w-6 h-6 text-purple-600" />
@@ -595,7 +595,7 @@ export default function DashboardPage() {
 
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <CardContent className="p-6">
-            <Link href="/admin/cast" className="flex items-center justify-between">
+            <Link href="/admin/casts" className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-green-100 rounded-lg">
                   <Users className="w-6 h-6 text-green-600" />
@@ -622,7 +622,7 @@ export default function DashboardPage() {
             <CardDescription>直近の予約状況</CardDescription>
           </div>
           <Button variant="outline" size="sm" asChild>
-            <Link href="/admin/reservations">
+            <Link href="/admin/reservation-list">
               すべて見る
               <ArrowUpRight className="w-4 h-4 ml-1" />
             </Link>
