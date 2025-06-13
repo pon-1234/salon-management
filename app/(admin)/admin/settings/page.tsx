@@ -209,16 +209,16 @@ onClick={() => {
                     // 利用可能な設定項目のナビゲーション
                     switch (item.id) {
                       case 'store-info':
-                        window.location.href = '/settings/store-info'
+                        window.location.href = '/admin/settings/store-info'
                         break
                       case 'option-info':
-                        window.location.href = '/settings/option-info'
+                        window.location.href = '/admin/settings/option-info'
                         break
                       case 'course-info':
-                        window.location.href = '/settings/course-info'
+                        window.location.href = '/admin/settings/course-info'
                         break
                       case 'hotel-info':
-                        window.location.href = '/settings/hotel-info'
+                        window.location.href = '/admin/settings/hotel-info'
                         break
                       default:
                         console.log(`${item.title}の設定ページは準備中です`)
