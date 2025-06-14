@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Header } from "@/components/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, BookOpen, Plus, Edit, Trash2, Clock, DollarSign } from 'lucide-react'
+import { ArrowLeft, BookOpen, Plus, Edit, Trash2, Clock, DollarSign, RefreshCw } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -23,7 +23,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import {
   Select,
@@ -33,109 +32,89 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import Link from "next/link"
-
-interface CourseItem {
-  id: string
-  name: string
-  description: string
-  duration: number
-  price: number
-  isActive: boolean
-  category: string
-  displayOrder: number
-  features: string[]
-  targetAudience: string
-  minAge?: number
-  maxAge?: number
-}
+import { getPricingUseCases, CoursePrice, CourseDuration } from "@/lib/pricing"
+import { useToast } from "@/hooks/use-toast"
 
 export default function CourseInfoPage() {
-  const [courses, setCourses] = useState<CourseItem[]>([
-    {
-      id: '1',
-      name: '基本リラクゼーションコース',
-      description: '全身をゆっくりとほぐすベーシックなコースです',
-      duration: 60,
-      price: 13000,
-      isActive: true,
-      category: 'ベーシック',
-      displayOrder: 1,
-      features: ['全身マッサージ', 'アロマ', 'リフレッシュ'],
-      targetAudience: 'マッサージ初心者の方におすすめ',
-      minAge: 18,
-      maxAge: 70
-    },
-    {
-      id: '2',
-      name: 'プレミアムコース',
-      description: 'ワンランク上の贅沢な時間をお過ごしいただけます',
-      duration: 90,
-      price: 18000,
-      isActive: true,
-      category: 'プレミアム',
-      displayOrder: 2,
-      features: ['全身マッサージ', 'ホットストーン', 'フェイシャルケア', 'アロマ'],
-      targetAudience: '特別な時間をお求めの方に',
-      minAge: 20,
-      maxAge: 65
-    },
-    {
-      id: '3',
-      name: 'ショートリフレッシュコース',
-      description: '短時間で疲れをリフレッシュ',
-      duration: 45,
-      price: 9000,
-      isActive: true,
-      category: 'ベーシック',
-      displayOrder: 3,
-      features: ['部分マッサージ', 'ストレッチ'],
-      targetAudience: '時間がない方におすすめ',
-      minAge: 18,
-      maxAge: 80
-    },
-    {
-      id: '4',
-      name: 'ロングリラクゼーションコース',
-      description: 'じっくりと時間をかけた究極のリラクゼーション',
-      duration: 120,
-      price: 24000,
-      isActive: false,
-      category: 'プレミアム',
-      displayOrder: 4,
-      features: ['全身マッサージ', 'ホットストーン', 'フェイシャルケア', 'ネックケア', 'フットケア'],
-      targetAudience: '最高の癒しをお求めの方に',
-      minAge: 25,
-      maxAge: 60
-    }
-  ])
-
+  const [courses, setCourses] = useState<CoursePrice[]>([])
+  const [loading, setLoading] = useState(true)
+  const [syncing, setSyncing] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingCourse, setEditingCourse] = useState<CourseItem | null>(null)
+  const [editingCourse, setEditingCourse] = useState<CoursePrice | null>(null)
+  const { toast } = useToast()
+  
+  const pricingUseCases = getPricingUseCases()
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    duration: 60,
-    price: 0,
-    isActive: true,
-    category: '',
-    displayOrder: 0,
+    durations: [] as CourseDuration[],
     features: [] as string[],
+    category: 'standard' as 'standard' | 'premium' | 'vip',
+    displayOrder: 0,
+    isActive: true,
+    isPopular: false,
     targetAudience: '',
     minAge: 18,
     maxAge: 70
   })
+
+  const [durationForm, setDurationForm] = useState({
+    time: 60,
+    price: 0
+  })
+
+  useEffect(() => {
+    loadCourses()
+  }, [])
+
+  const loadCourses = async () => {
+    try {
+      setLoading(true)
+      const data = await pricingUseCases.getCourses()
+      setCourses(data)
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: "コース情報の読み込みに失敗しました",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSync = async () => {
+    try {
+      setSyncing(true)
+      // In a real app, this would sync with all stores
+      await pricingUseCases.syncPricing('1') // Default store ID
+      toast({
+        title: "同期完了",
+        description: "料金情報が全店舗に同期されました",
+      })
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: "同期に失敗しました",
+        variant: "destructive",
+      })
+    } finally {
+      setSyncing(false)
+    }
+  }
 
   const handleAddCourse = () => {
     setEditingCourse(null)
     setFormData({
       name: '',
       description: '',
-      duration: 60,
-      price: 0,
-      isActive: true,
-      category: '',
-      displayOrder: courses.length + 1,
+      durations: [],
       features: [],
+      category: 'standard',
+      displayOrder: courses.length + 1,
+      isActive: true,
+      isPopular: false,
       targetAudience: '',
       minAge: 18,
       maxAge: 70
@@ -143,55 +122,104 @@ export default function CourseInfoPage() {
     setDialogOpen(true)
   }
 
-  const handleEditCourse = (course: CourseItem) => {
+  const handleEditCourse = (course: CoursePrice) => {
     setEditingCourse(course)
     setFormData({
       name: course.name,
       description: course.description,
-      duration: course.duration,
-      price: course.price,
-      isActive: course.isActive,
+      durations: [...course.durations],
+      features: [...course.features],
       category: course.category,
       displayOrder: course.displayOrder,
-      features: [...course.features],
-      targetAudience: course.targetAudience,
+      isActive: course.isActive,
+      isPopular: course.isPopular || false,
+      targetAudience: course.targetAudience || '',
       minAge: course.minAge || 18,
       maxAge: course.maxAge || 70
     })
     setDialogOpen(true)
   }
 
-  const handleSaveCourse = () => {
-    if (editingCourse) {
-      // 編集
-      setCourses(prev => prev.map(course => 
-        course.id === editingCourse.id 
-          ? { ...course, ...formData }
-          : course
-      ))
-    } else {
-      // 新規追加
-      const newCourse: CourseItem = {
-        id: Date.now().toString(),
-        ...formData
+  const handleSaveCourse = async () => {
+    try {
+      if (editingCourse) {
+        // Update existing course
+        const updated = await pricingUseCases.updateCourse(editingCourse.id, formData)
+        setCourses(prev => prev.map(course => 
+          course.id === editingCourse.id ? updated : course
+        ))
+        toast({
+          title: "更新完了",
+          description: "コース情報が更新されました",
+        })
+      } else {
+        // Create new course
+        const newCourse = await pricingUseCases.createCourse(formData)
+        setCourses(prev => [...prev, newCourse])
+        toast({
+          title: "追加完了",
+          description: "新しいコースが追加されました",
+        })
       }
-      setCourses(prev => [...prev, newCourse])
+      setDialogOpen(false)
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: "保存に失敗しました",
+        variant: "destructive",
+      })
     }
-    setDialogOpen(false)
   }
 
-  const handleDeleteCourse = (id: string) => {
+  const handleDeleteCourse = async (id: string) => {
     if (confirm('このコースを削除しますか？')) {
-      setCourses(prev => prev.filter(course => course.id !== id))
+      try {
+        await pricingUseCases.deleteCourse(id)
+        setCourses(prev => prev.filter(course => course.id !== id))
+        toast({
+          title: "削除完了",
+          description: "コースが削除されました",
+        })
+      } catch (error) {
+        toast({
+          title: "エラー",
+          description: "削除に失敗しました",
+          variant: "destructive",
+        })
+      }
     }
   }
 
-  const handleToggleActive = (id: string) => {
-    setCourses(prev => prev.map(course => 
-      course.id === id 
-        ? { ...course, isActive: !course.isActive }
-        : course
-    ))
+  const handleToggleActive = async (id: string) => {
+    try {
+      const updated = await pricingUseCases.toggleCourseStatus(id)
+      setCourses(prev => prev.map(course => 
+        course.id === id ? updated : course
+      ))
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: "ステータスの更新に失敗しました",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const addDuration = () => {
+    if (durationForm.time > 0 && durationForm.price > 0) {
+      setFormData(prev => ({
+        ...prev,
+        durations: [...prev.durations, { ...durationForm }].sort((a, b) => a.time - b.time)
+      }))
+      setDurationForm({ time: 60, price: 0 })
+    }
+  }
+
+  const removeDuration = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      durations: prev.durations.filter((_, i) => i !== index)
+    }))
   }
 
   const addFeature = (feature: string) => {
@@ -210,14 +238,23 @@ export default function CourseInfoPage() {
     }))
   }
 
-  const categories = [...new Set(courses.map(course => course.category))]
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
+          <p className="mt-4">読み込み中...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="p-8">
         <div className="max-w-6xl mx-auto">
-          {/* ヘッダー */}
+          {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
               <Link href="/admin/settings">
@@ -228,13 +265,23 @@ export default function CourseInfoPage() {
               <BookOpen className="w-8 h-8 text-emerald-600" />
               <h1 className="text-3xl font-bold text-gray-900">コース情報設定</h1>
             </div>
-            <Button onClick={handleAddCourse} className="bg-emerald-600 hover:bg-emerald-700">
-              <Plus className="w-4 h-4 mr-2" />
-              新規コース追加
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleSync} 
+                variant="outline"
+                disabled={syncing}
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+                全店舗に同期
+              </Button>
+              <Button onClick={handleAddCourse} className="bg-emerald-600 hover:bg-emerald-700">
+                <Plus className="w-4 h-4 mr-2" />
+                新規コース追加
+              </Button>
+            </div>
           </div>
 
-          {/* 統計カード */}
+          {/* Statistics */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <Card>
               <CardContent className="p-4">
@@ -253,22 +300,22 @@ export default function CourseInfoPage() {
             <Card>
               <CardContent className="p-4">
                 <div className="text-2xl font-bold text-orange-600">
-                  {Math.round(courses.reduce((sum, course) => sum + course.duration, 0) / courses.length || 0)}分
+                  {courses.filter(course => course.category === 'premium').length}
                 </div>
-                <p className="text-sm text-gray-600">平均時間</p>
+                <p className="text-sm text-gray-600">プレミアムコース</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
                 <div className="text-2xl font-bold text-purple-600">
-                  ¥{Math.round(courses.reduce((sum, course) => sum + course.price, 0) / courses.length || 0).toLocaleString()}
+                  {courses.filter(course => course.isPopular).length}
                 </div>
-                <p className="text-sm text-gray-600">平均価格</p>
+                <p className="text-sm text-gray-600">人気コース</p>
               </CardContent>
             </Card>
           </div>
 
-          {/* コース一覧テーブル */}
+          {/* Courses Table */}
           <Card>
             <CardHeader>
               <CardTitle>コース一覧</CardTitle>
@@ -280,7 +327,6 @@ export default function CourseInfoPage() {
                     <TableHead>表示順</TableHead>
                     <TableHead>コース名</TableHead>
                     <TableHead>カテゴリー</TableHead>
-                    <TableHead>時間</TableHead>
                     <TableHead>料金</TableHead>
                     <TableHead>対象年齢</TableHead>
                     <TableHead>ステータス</TableHead>
@@ -295,7 +341,12 @@ export default function CourseInfoPage() {
                       <TableCell>{course.displayOrder}</TableCell>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{course.name}</div>
+                          <div className="font-medium flex items-center gap-2">
+                            {course.name}
+                            {course.isPopular && (
+                              <Badge className="bg-purple-600">人気</Badge>
+                            )}
+                          </div>
                           <div className="text-sm text-gray-500">{course.description}</div>
                           <div className="flex gap-1 mt-1">
                             {course.features.slice(0, 3).map((feature, index) => (
@@ -312,18 +363,20 @@ export default function CourseInfoPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{course.category}</Badge>
+                        <Badge variant="outline">
+                          {course.category === 'standard' && 'スタンダード'}
+                          {course.category === 'premium' && 'プレミアム'}
+                          {course.category === 'vip' && 'VIP'}
+                        </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-4 h-4 text-gray-400" />
-                          {course.duration}分
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="w-4 h-4 text-gray-400" />
-                          ¥{course.price.toLocaleString()}
+                        <div className="space-y-1">
+                          {course.durations.map((duration, index) => (
+                            <div key={index} className="flex items-center gap-2 text-sm">
+                              <Clock className="w-3 h-3 text-gray-400" />
+                              {duration.time}分: ¥{duration.price.toLocaleString()}
+                            </div>
+                          ))}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -369,7 +422,7 @@ export default function CourseInfoPage() {
             </CardContent>
           </Card>
 
-          {/* コース追加・編集ダイアログ */}
+          {/* Course Add/Edit Dialog */}
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
@@ -395,35 +448,69 @@ export default function CourseInfoPage() {
                     rows={3}
                   />
                 </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="duration">時間（分）</Label>
-                    <Input
-                      id="duration"
-                      type="number"
-                      value={formData.duration}
-                      onChange={(e) => setFormData(prev => ({ ...prev, duration: parseInt(e.target.value) || 0 }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="price">料金（円）</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      value={formData.price}
-                      onChange={(e) => setFormData(prev => ({ ...prev, price: parseInt(e.target.value) || 0 }))}
-                    />
-                  </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="category">カテゴリー</Label>
+                    <Select 
+                      value={formData.category} 
+                      onValueChange={(value: 'standard' | 'premium' | 'vip') => 
+                        setFormData(prev => ({ ...prev, category: value }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="standard">スタンダード</SelectItem>
+                        <SelectItem value="premium">プレミアム</SelectItem>
+                        <SelectItem value="vip">VIP</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="displayOrder">表示順</Label>
                     <Input
-                      id="category"
-                      value={formData.category}
-                      onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                      id="displayOrder"
+                      type="number"
+                      value={formData.displayOrder}
+                      onChange={(e) => setFormData(prev => ({ ...prev, displayOrder: parseInt(e.target.value) || 0 }))}
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>時間と料金</Label>
+                  <div className="flex gap-2 mb-2">
+                    <Input
+                      type="number"
+                      placeholder="時間（分）"
+                      value={durationForm.time}
+                      onChange={(e) => setDurationForm(prev => ({ ...prev, time: parseInt(e.target.value) || 0 }))}
+                    />
+                    <Input
+                      type="number"
+                      placeholder="料金（円）"
+                      value={durationForm.price}
+                      onChange={(e) => setDurationForm(prev => ({ ...prev, price: parseInt(e.target.value) || 0 }))}
+                    />
+                    <Button type="button" onClick={addDuration}>追加</Button>
+                  </div>
+                  <div className="space-y-2">
+                    {formData.durations.map((duration, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <span>{duration.time}分: ¥{duration.price.toLocaleString()}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeDuration(index)}
+                        >
+                          削除
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="minAge">最低年齢</Label>
                     <Input
@@ -440,15 +527,6 @@ export default function CourseInfoPage() {
                       type="number"
                       value={formData.maxAge}
                       onChange={(e) => setFormData(prev => ({ ...prev, maxAge: parseInt(e.target.value) || 70 }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="displayOrder">表示順</Label>
-                    <Input
-                      id="displayOrder"
-                      type="number"
-                      value={formData.displayOrder}
-                      onChange={(e) => setFormData(prev => ({ ...prev, displayOrder: parseInt(e.target.value) || 0 }))}
                     />
                   </div>
                 </div>
@@ -483,13 +561,23 @@ export default function CourseInfoPage() {
                     ))}
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="isActive"
-                    checked={formData.isActive}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
-                  />
-                  <Label htmlFor="isActive">有効にする</Label>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="isActive"
+                      checked={formData.isActive}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
+                    />
+                    <Label htmlFor="isActive">有効にする</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="isPopular"
+                      checked={formData.isPopular}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isPopular: checked }))}
+                    />
+                    <Label htmlFor="isPopular">人気コースとして表示</Label>
+                  </div>
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => setDialogOpen(false)}>

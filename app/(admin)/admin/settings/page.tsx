@@ -21,7 +21,8 @@ import {
   Settings as SettingsIcon,
   ChevronRight,
   Package,
-  BookOpen
+  BookOpen,
+  Receipt
 } from 'lucide-react'
 
 interface SettingItem {
@@ -156,6 +157,14 @@ export default function SettingsPage() {
       icon: <BookOpen className="w-5 h-5" />,
       status: 'available',
       category: 'サービス管理'
+    },
+    {
+      id: 'additional-fees',
+      title: '追加料金設定',
+      description: '指名料、交通費、深夜料金などの追加料金を管理',
+      icon: <Receipt className="w-5 h-5" />,
+      status: 'available',
+      category: 'サービス管理'
     }
   ]
 
@@ -219,6 +228,9 @@ onClick={() => {
                         break
                       case 'hotel-info':
                         window.location.href = '/admin/settings/hotel-info'
+                        break
+                      case 'additional-fees':
+                        window.location.href = '/admin/settings/additional-fees'
                         break
                       default:
                         console.log(`${item.title}の設定ページは準備中です`)

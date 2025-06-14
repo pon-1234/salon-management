@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Header } from "@/components/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Package, Plus, Edit, Trash2, Eye } from 'lucide-react'
+import { ArrowLeft, Package, Plus, Edit, Trash2, RefreshCw, Clock } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -23,76 +23,78 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import Link from "next/link"
-
-interface OptionItem {
-  id: string
-  name: string
-  description: string
-  price: number
-  duration: number
-  isActive: boolean
-  category: string
-  displayOrder: number
-}
+import { getPricingUseCases, OptionPrice } from "@/lib/pricing"
+import { useToast } from "@/hooks/use-toast"
 
 export default function OptionInfoPage() {
-  const [options, setOptions] = useState<OptionItem[]>([
-    {
-      id: '1',
-      name: 'ホットストーン',
-      description: '温めた石を使用したリラクゼーション',
-      price: 2000,
-      duration: 0,
-      isActive: true,
-      category: 'リラクゼーション',
-      displayOrder: 1
-    },
-    {
-      id: '2',
-      name: 'アロマトリートメント',
-      description: 'お好みの香りでリラックス',
-      price: 1500,
-      duration: 10,
-      isActive: true,
-      category: 'リラクゼーション',
-      displayOrder: 2
-    },
-    {
-      id: '3',
-      name: 'ネックトリートメント',
-      description: '首・肩の集中ケア',
-      price: 1000,
-      duration: 15,
-      isActive: true,
-      category: 'ボディケア',
-      displayOrder: 3
-    },
-    {
-      id: '4',
-      name: '延長（30分）',
-      description: 'コース時間の延長',
-      price: 8000,
-      duration: 30,
-      isActive: true,
-      category: '延長',
-      displayOrder: 4
-    }
-  ])
-
+  const [options, setOptions] = useState<OptionPrice[]>([])
+  const [loading, setLoading] = useState(true)
+  const [syncing, setSyncing] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingOption, setEditingOption] = useState<OptionItem | null>(null)
+  const [editingOption, setEditingOption] = useState<OptionPrice | null>(null)
+  const { toast } = useToast()
+  
+  const pricingUseCases = getPricingUseCases()
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     price: 0,
     duration: 0,
+    category: 'special' as 'relaxation' | 'body-care' | 'extension' | 'special',
+    displayOrder: 0,
     isActive: true,
-    category: '',
-    displayOrder: 0
+    note: ''
   })
+
+  useEffect(() => {
+    loadOptions()
+  }, [])
+
+  const loadOptions = async () => {
+    try {
+      setLoading(true)
+      const data = await pricingUseCases.getOptions()
+      setOptions(data)
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: "オプション情報の読み込みに失敗しました",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSync = async () => {
+    try {
+      setSyncing(true)
+      // In a real app, this would sync with all stores
+      await pricingUseCases.syncPricing('1') // Default store ID
+      toast({
+        title: "同期完了",
+        description: "料金情報が全店舗に同期されました",
+      })
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: "同期に失敗しました",
+        variant: "destructive",
+      })
+    } finally {
+      setSyncing(false)
+    }
+  }
 
   const handleAddOption = () => {
     setEditingOption(null)
@@ -101,68 +103,134 @@ export default function OptionInfoPage() {
       description: '',
       price: 0,
       duration: 0,
+      category: 'special',
+      displayOrder: options.length + 1,
       isActive: true,
-      category: '',
-      displayOrder: options.length + 1
+      note: ''
     })
     setDialogOpen(true)
   }
 
-  const handleEditOption = (option: OptionItem) => {
+  const handleEditOption = (option: OptionPrice) => {
     setEditingOption(option)
     setFormData({
       name: option.name,
-      description: option.description,
+      description: option.description || '',
       price: option.price,
-      duration: option.duration,
-      isActive: option.isActive,
+      duration: option.duration || 0,
       category: option.category,
-      displayOrder: option.displayOrder
+      displayOrder: option.displayOrder,
+      isActive: option.isActive,
+      note: option.note || ''
     })
     setDialogOpen(true)
   }
 
-  const handleSaveOption = () => {
-    if (editingOption) {
-      // 編集
-      setOptions(prev => prev.map(opt => 
-        opt.id === editingOption.id 
-          ? { ...opt, ...formData }
-          : opt
-      ))
-    } else {
-      // 新規追加
-      const newOption: OptionItem = {
-        id: Date.now().toString(),
-        ...formData
+  const handleSaveOption = async () => {
+    try {
+      const dataToSave = {
+        ...formData,
+        description: formData.description || undefined,
+        duration: formData.duration || undefined,
+        note: formData.note || undefined
       }
-      setOptions(prev => [...prev, newOption])
+
+      if (editingOption) {
+        // Update existing option
+        const updated = await pricingUseCases.updateOption(editingOption.id, dataToSave)
+        setOptions(prev => prev.map(option => 
+          option.id === editingOption.id ? updated : option
+        ))
+        toast({
+          title: "更新完了",
+          description: "オプション情報が更新されました",
+        })
+      } else {
+        // Create new option
+        const newOption = await pricingUseCases.createOption(dataToSave)
+        setOptions(prev => [...prev, newOption])
+        toast({
+          title: "追加完了",
+          description: "新しいオプションが追加されました",
+        })
+      }
+      setDialogOpen(false)
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: "保存に失敗しました",
+        variant: "destructive",
+      })
     }
-    setDialogOpen(false)
   }
 
-  const handleDeleteOption = (id: string) => {
+  const handleDeleteOption = async (id: string) => {
     if (confirm('このオプションを削除しますか？')) {
-      setOptions(prev => prev.filter(opt => opt.id !== id))
+      try {
+        await pricingUseCases.deleteOption(id)
+        setOptions(prev => prev.filter(option => option.id !== id))
+        toast({
+          title: "削除完了",
+          description: "オプションが削除されました",
+        })
+      } catch (error) {
+        toast({
+          title: "エラー",
+          description: "削除に失敗しました",
+          variant: "destructive",
+        })
+      }
     }
   }
 
-  const handleToggleActive = (id: string) => {
-    setOptions(prev => prev.map(opt => 
-      opt.id === id 
-        ? { ...opt, isActive: !opt.isActive }
-        : opt
-    ))
+  const handleToggleActive = async (id: string) => {
+    try {
+      const updated = await pricingUseCases.toggleOptionStatus(id)
+      setOptions(prev => prev.map(option => 
+        option.id === id ? updated : option
+      ))
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: "ステータスの更新に失敗しました",
+        variant: "destructive",
+      })
+    }
   }
 
-  const categories = [...new Set(options.map(opt => opt.category))]
+  // Group options by category for statistics
+  const optionsByCategory = options.reduce((acc, option) => {
+    acc[option.category] = (acc[option.category] || 0) + 1
+    return acc
+  }, {} as Record<string, number>)
+
+  const getCategoryLabel = (category: string) => {
+    switch (category) {
+      case 'special': return '特別オプション'
+      case 'relaxation': return 'リラクゼーション'
+      case 'body-care': return 'ボディケア'
+      case 'extension': return '延長'
+      default: return category
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
+          <p className="mt-4">読み込み中...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="p-8">
         <div className="max-w-6xl mx-auto">
-          {/* ヘッダー */}
+          {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
               <Link href="/admin/settings">
@@ -173,13 +241,23 @@ export default function OptionInfoPage() {
               <Package className="w-8 h-8 text-emerald-600" />
               <h1 className="text-3xl font-bold text-gray-900">オプション情報設定</h1>
             </div>
-            <Button onClick={handleAddOption} className="bg-emerald-600 hover:bg-emerald-700">
-              <Plus className="w-4 h-4 mr-2" />
-              新規オプション追加
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleSync} 
+                variant="outline"
+                disabled={syncing}
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+                全店舗に同期
+              </Button>
+              <Button onClick={handleAddOption} className="bg-emerald-600 hover:bg-emerald-700">
+                <Plus className="w-4 h-4 mr-2" />
+                新規オプション追加
+              </Button>
+            </div>
           </div>
 
-          {/* 統計カード */}
+          {/* Statistics */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <Card>
               <CardContent className="p-4">
@@ -198,7 +276,7 @@ export default function OptionInfoPage() {
             <Card>
               <CardContent className="p-4">
                 <div className="text-2xl font-bold text-orange-600">
-                  {categories.length}
+                  {Object.keys(optionsByCategory).length}
                 </div>
                 <p className="text-sm text-gray-600">カテゴリー数</p>
               </CardContent>
@@ -213,7 +291,7 @@ export default function OptionInfoPage() {
             </Card>
           </div>
 
-          {/* オプション一覧テーブル */}
+          {/* Options Table */}
           <Card>
             <CardHeader>
               <CardTitle>オプション一覧</CardTitle>
@@ -240,15 +318,27 @@ export default function OptionInfoPage() {
                       <TableCell>
                         <div>
                           <div className="font-medium">{option.name}</div>
-                          <div className="text-sm text-gray-500">{option.description}</div>
+                          {option.description && (
+                            <div className="text-sm text-gray-500">{option.description}</div>
+                          )}
+                          {option.note && (
+                            <div className="text-xs text-gray-400 mt-1">{option.note}</div>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{option.category}</Badge>
+                        <Badge variant="outline">{getCategoryLabel(option.category)}</Badge>
                       </TableCell>
                       <TableCell>¥{option.price.toLocaleString()}</TableCell>
                       <TableCell>
-                        {option.duration > 0 ? `${option.duration}分` : '-'}
+                        {option.duration ? (
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-gray-400" />
+                            {option.duration}分
+                          </div>
+                        ) : (
+                          '-'
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -287,7 +377,7 @@ export default function OptionInfoPage() {
             </CardContent>
           </Card>
 
-          {/* オプション追加・編集ダイアログ */}
+          {/* Option Add/Edit Dialog */}
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogContent className="max-w-md">
               <DialogHeader>
@@ -330,17 +420,29 @@ export default function OptionInfoPage() {
                       type="number"
                       value={formData.duration}
                       onChange={(e) => setFormData(prev => ({ ...prev, duration: parseInt(e.target.value) || 0 }))}
+                      placeholder="追加時間がない場合は0"
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="category">カテゴリー</Label>
-                    <Input
-                      id="category"
-                      value={formData.category}
-                      onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                    />
+                    <Select 
+                      value={formData.category} 
+                      onValueChange={(value: 'relaxation' | 'body-care' | 'extension' | 'special') => 
+                        setFormData(prev => ({ ...prev, category: value }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="special">特別オプション</SelectItem>
+                        <SelectItem value="relaxation">リラクゼーション</SelectItem>
+                        <SelectItem value="body-care">ボディケア</SelectItem>
+                        <SelectItem value="extension">延長</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="displayOrder">表示順</Label>
@@ -351,6 +453,15 @@ export default function OptionInfoPage() {
                       onChange={(e) => setFormData(prev => ({ ...prev, displayOrder: parseInt(e.target.value) || 0 }))}
                     />
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="note">備考</Label>
+                  <Input
+                    id="note"
+                    value={formData.note}
+                    onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
+                    placeholder="注意事項など"
+                  />
                 </div>
                 <div className="flex items-center space-x-2">
                   <Switch
