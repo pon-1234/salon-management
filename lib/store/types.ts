@@ -38,3 +38,9 @@ export interface StoreWithStats extends Store {
     averageRating: number
   }
 }
+
+export interface StoreConfig {
+  currentStore: Store
+  availableStores: Store[]
+  isSuperAdmin: boolean
+}

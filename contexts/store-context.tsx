@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { Store, StoreConfig } from '@/lib/store/types'
-import { getStoreBySubdomain, getAllStores } from '@/lib/store/data'
+import { getStoreBySlug, getActiveStores } from '@/lib/store/data'
 
 interface StoreContextType extends StoreConfig {
   switchStore: (storeCode: string) => void
@@ -43,8 +43,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      const currentStore = getStoreBySubdomain(storeCode)
-      const availableStores = getAllStores()
+      const currentStore = getStoreBySlug(storeCode)
+      const availableStores = getActiveStores()
 
       if (currentStore) {
         setConfig({
@@ -71,7 +71,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const switchStore = (storeCode: string) => {
-    const newStore = getStoreBySubdomain(storeCode)
+    const newStore = getStoreBySlug(storeCode)
     if (newStore && config) {
       setConfig({
         ...config,
