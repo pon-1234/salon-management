@@ -247,6 +247,94 @@ export default async function PricingPage({
             </Card>
           </div>
         </section>
+
+        {/* Terms and Conditions */}
+        <section className="py-12">
+          <div className="max-w-4xl mx-auto px-4 space-y-8">
+            {/* Payment Method */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">クレジットカード決済</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <p className="font-medium">『ご予約完了後、安心の決済代行会社にて決済して頂きます。』</p>
+                <p className="text-sm text-gray-600">※各種クレジットカード対応可能です。</p>
+                <p className="text-sm text-gray-600">※個人情報取扱は決済代行サービス会社が管理し、当社で取得・管理する事は一切ありません。</p>
+              </CardContent>
+            </Card>
+
+            {/* Change/Cancel Policy */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">チェンジ・キャンセルについて</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>ご返金・ご予約のキャンセル・女性変更につきましては、ホテル入室前であれば可能です。</p>
+                <p className="text-red-600 font-medium mt-2">ホテル入室後のキャンセルやチェンジは、プレイ開始前であっても一切受付出来ませんので、ご了承下さいませ。</p>
+              </CardContent>
+            </Card>
+
+            {/* Service Exclusions */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">サービスに含まれない内容</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <p className="text-red-600">×本番行為</p>
+                  <p className="text-red-600">×女性を責める行為</p>
+                  <p className="text-red-600">×生フェラ・生スマタ</p>
+                  <p className="text-red-600">※その他女性が嫌がる行為</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Prohibited Items */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl text-red-600">禁止事項</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Section 1 */}
+                <div>
+                  <h4 className="font-bold mb-3">【1】下記に該当、もしくは疑わしい方の利用を禁止いたします。</h4>
+                  <ol className="list-decimal list-inside space-y-2 ml-4">
+                    <li>本番要求</li>
+                    <li>盗聴盗撮行為</li>
+                    <li>窃盗行為</li>
+                    <li>薬物（大麻・覚醒剤・シンナー等）を所持、もしくは使用されている方</li>
+                  </ol>
+                  <p className="text-red-600 font-medium mt-3">万一発見した場合、犯罪行為として所轄警察署に通報させていただきます。</p>
+                </div>
+
+                {/* Section 2 */}
+                <div>
+                  <h4 className="font-bold mb-3">【2】下記禁止事項に該当した場合サービスを中止し、女性は退出いたします。</h4>
+                  <p className="text-sm text-gray-600 mb-3">また下記以外にも当店に相応しくないと判断した場合には、即刻サービスを中止し女性は退出いたします。</p>
+                  <ol className="list-decimal list-inside space-y-2 ml-4">
+                    <li>サービスにないSM・変態行為等の過剰なサービスの要求</li>
+                    <li>スカウト等の引き抜き行為</li>
+                    <li>サービスに不適当な部屋・状況での利用
+                      <p className="text-sm text-gray-600 mt-1 ml-4">（女性がお部屋にうかがいましたら、サービスの前に一緒にシャワーをお使いいただき、うがいも行ってください。）</p>
+                    </li>
+                    <li>つめが伸びている、不潔である等衛生上好ましくない方</li>
+                    <li>第三者がいる、またはプレイ途中にいらっしゃった場合</li>
+                    <li>暴力団関係者、またはそれに準ずる方</li>
+                    <li>泥酔状態の方</li>
+                    <li>性病・その他の伝染病に感染している方、または疑わしき方</li>
+                    <li>女性に対する暴言・暴力等があった場合</li>
+                    <li>頻繁にご予約をキャンセルされた方</li>
+                    <li>店を通さずに会おうとした、または会った方</li>
+                  </ol>
+                </div>
+
+                <div className="border-t pt-4">
+                  <p className="text-center font-medium">上記項目をご理解いただいた上で当店をご利用いただきますようお願い申し上げます。</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
         
         <StoreFooter store={store} />
       </main>
