@@ -49,7 +49,13 @@ export default async function PricingPage({
         <section className="py-12">
           <div className="max-w-7xl mx-auto px-4">
             <h2 className="text-3xl font-bold text-center mb-12">コース料金</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className={`grid grid-cols-1 gap-8 ${
+              courses.length === 2 
+                ? 'md:grid-cols-2 max-w-5xl mx-auto' 
+                : courses.length >= 3 
+                ? 'md:grid-cols-3' 
+                : ''
+            }`}>
               {courses.map((course) => (
                 <Card key={course.id} className={course.isPopular ? 'border-purple-500 shadow-xl relative' : ''}>
                   {course.isPopular && (
@@ -58,7 +64,7 @@ export default async function PricingPage({
                     </Badge>
                   )}
                   <CardHeader>
-                    <CardTitle className="text-2xl text-center">
+                    <CardTitle className="text-xl lg:text-2xl text-center">
                       {course.name}
                     </CardTitle>
                     {course.description && (
@@ -70,27 +76,69 @@ export default async function PricingPage({
                   <CardContent className="space-y-6">
                     <div className="space-y-2">
                       {course.durations.map((duration) => (
-                        <div key={duration.time} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                          <span className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-gray-500" />
-                            {duration.time}分
-                          </span>
-                          <span className="font-bold text-lg">¥{duration.price.toLocaleString()}</span>
+                        <div key={duration.time} className="p-3 bg-gray-50 rounded-lg">
+                          <div className="flex justify-between items-center">
+                            <span className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-gray-500" />
+                              {duration.time}分
+                              {duration.label && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {duration.label}
+                                </Badge>
+                              )}
+                            </span>
+                            <div className="text-right">
+                              {duration.originalPrice && (
+                                <span className="text-sm text-gray-400 line-through block">
+                                  ¥{duration.originalPrice.toLocaleString()}
+                                </span>
+                              )}
+                              <span className="font-bold text-lg text-red-600">
+                                ¥{duration.price.toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
                     <div className="space-y-2">
                       {course.features.map((feature) => (
                         <div key={feature} className="flex items-start gap-2">
-                          <Check className="h-5 w-5 text-green-500 mt-0.5" />
+                          <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
                           <span className="text-sm">{feature}</span>
                         </div>
                       ))}
                     </div>
+                    {course.notes && course.notes.length > 0 && (
+                      <div className="pt-3 border-t space-y-1">
+                        {course.notes.map((note, index) => (
+                          <p key={index} className="text-xs text-gray-600">※ {note}</p>
+                        ))}
+                      </div>
+                    )}
+                    {course.recommendedDuration && (
+                      <div className="bg-yellow-50 p-3 rounded-lg">
+                        <p className="text-sm text-yellow-800 font-medium text-center">
+                          おすすめ: {course.recommendedDuration}分コース
+                        </p>
+                      </div>
+                    )}
                     {course.targetAudience && (
-                      <p className="text-sm text-gray-600 pt-2 border-t">
+                      <p className="text-sm text-gray-600 text-center font-medium">
                         {course.targetAudience}
                       </p>
+                    )}
+                    {course.pointUsage && (
+                      <div className="bg-blue-50 p-3 rounded-lg">
+                        <p className="text-xs font-semibold text-blue-800 mb-2">ポイント利用可能</p>
+                        <div className="space-y-1">
+                          {Object.entries(course.pointUsage).map(([duration, points]) => (
+                            <p key={duration} className="text-xs text-blue-700">
+                              {duration}分: {points.toLocaleString()}pt
+                            </p>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -114,7 +162,12 @@ export default async function PricingPage({
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {categoryOptions.map((option) => (
-                    <Card key={option.id}>
+                    <Card key={option.id} className={option.isPopular ? 'border-purple-500 shadow-lg relative' : ''}>
+                      {option.isPopular && option.note && (
+                        <Badge className="absolute -top-2 -right-2 bg-red-500">
+                          {option.note}
+                        </Badge>
+                      )}
                       <CardContent className="p-6">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
@@ -129,13 +182,12 @@ export default async function PricingPage({
                               </p>
                             )}
                           </div>
-                          <span className="text-xl font-bold text-purple-600 ml-4">
-                            ¥{option.price.toLocaleString()}
+                          <span className={`text-xl font-bold ml-4 ${
+                            option.price === 0 ? 'text-green-600' : 'text-purple-600'
+                          }`}>
+                            {option.price === 0 ? '無料' : `¥${option.price.toLocaleString()}`}
                           </span>
                         </div>
-                        {option.note && (
-                          <p className="text-xs text-gray-500 mt-2">{option.note}</p>
-                        )}
                       </CardContent>
                     </Card>
                   ))}
