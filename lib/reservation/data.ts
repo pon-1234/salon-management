@@ -1,16 +1,21 @@
 import { Reservation, Service } from '../types/reservation';
 
 export const services: Service[] = [
-  { id: "60min", name: "60分コース", duration: 60, price: 13000 },
-  { id: "90min", name: "90分コース", duration: 90, price: 18000 },
-  { id: "120min", name: "120分コース", duration: 120, price: 22000 },
-  { id: "150min", name: "150分コース", duration: 150, price: 26000 },
-  { id: "180min", name: "180分コース", duration: 180, price: 30000 },
-  { id: "event70", name: "イベントコース", duration: 70, price: 15000 },
-  { id: "event110", name: "スペシャルイベントコース", duration: 110, price: 21000 },
-  { id: "80min", name: "ランチタイムコース", duration: 80, price: 16000 },
-  { id: "100min", name: "アフタヌーンコース", duration: 100, price: 19000 },
-  { id: "extension30", name: "延長コース", duration: 30, price: 5000 },
+  // キャンペーンコース
+  { id: "campaign70", name: "70分お試しフリー限定", duration: 70, price: 13000 },
+  { id: "campaign90", name: "90分コース", duration: 90, price: 19000 },
+  { id: "campaign110", name: "110分人気No.2コース", duration: 110, price: 25000 },
+  { id: "campaign130", name: "130分人気No.1コース", duration: 130, price: 30000 },
+  { id: "campaign160", name: "160分コース", duration: 160, price: 36000 },
+  { id: "campaign190", name: "190分コース", duration: 190, price: 42000 },
+  // 密着睾丸コース
+  { id: "60min", name: "60分お試しフリー限定", duration: 60, price: 16000 },
+  { id: "80min", name: "80分コース", duration: 80, price: 21000 },
+  { id: "100min", name: "100分コース", duration: 100, price: 26000 },
+  { id: "120min", name: "120分オススメコース", duration: 120, price: 32000 },
+  { id: "150min", name: "150分コース", duration: 150, price: 39000 },
+  { id: "180min", name: "180分コース", duration: 180, price: 46000 },
+  { id: "extension30", name: "延長30分", duration: 30, price: 8000 },
 ];
 
 let reservations: Reservation[] = [

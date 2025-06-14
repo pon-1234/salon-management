@@ -6,10 +6,13 @@ export interface CoursePrice extends BaseEntity {
   description: string;
   durations: CourseDuration[];
   features: string[];
-  category: 'standard' | 'premium' | 'vip';
+  notes?: string[];
+  pointUsage?: Record<string, number>;
+  category: 'standard' | 'premium' | 'vip' | 'campaign';
   displayOrder: number;
   isActive: boolean;
   isPopular?: boolean;
+  recommendedDuration?: number;
   targetAudience?: string;
   minAge?: number;
   maxAge?: number;
@@ -18,6 +21,8 @@ export interface CoursePrice extends BaseEntity {
 export interface CourseDuration {
   time: number; // in minutes
   price: number; // in yen
+  originalPrice?: number; // original price before discount
+  label?: string; // label like "人気No.1" or "お試しフリー限定"
 }
 
 // Option pricing model
