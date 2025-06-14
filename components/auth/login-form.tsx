@@ -37,8 +37,7 @@ export function LoginForm({ store }: LoginFormProps) {
 
     // Mock validation
     if (email === 'test@example.com' && password === 'password') {
-      alert('ログインに成功しました！')
-      router.push(`/${store.slug}`)
+      router.push(`/${store.slug}/mypage`)
     } else {
       setError('メールアドレスまたはパスワードが正しくありません')
       setLoading(false)
