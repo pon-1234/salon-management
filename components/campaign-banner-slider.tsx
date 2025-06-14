@@ -61,8 +61,8 @@ export function CampaignBannerSlider({
   const currentBanner = banners[currentIndex]
 
   return (
-    <section className="relative w-full bg-gray-100">
-      <div className="relative max-w-7xl mx-auto">
+    <section className="relative w-full bg-gray-50 py-4">
+      <div className="relative max-w-7xl mx-auto px-4">
         {/* Banner Container */}
         <div 
           className="relative overflow-hidden"
@@ -81,7 +81,7 @@ export function CampaignBannerSlider({
           )}
 
           {/* Banner Image */}
-          <div className="relative aspect-[4/1] md:aspect-[8/1]">
+          <div className="relative aspect-[7/3] max-w-[700px] mx-auto">
             {currentBanner.link ? (
               <Link 
                 href={currentBanner.link}
@@ -100,7 +100,7 @@ export function CampaignBannerSlider({
                   <img
                     src={currentBanner.imageUrl}
                     alt={currentBanner.title}
-                    className="w-full h-full object-cover cursor-pointer"
+                    className="w-full h-full object-cover cursor-pointer rounded-lg shadow-lg"
                   />
                 </picture>
               </Link>
@@ -117,7 +117,7 @@ export function CampaignBannerSlider({
                 <img
                   src={currentBanner.imageUrl}
                   alt={currentBanner.title}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover rounded-lg shadow-lg"
                 />
               </picture>
             )}
