@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Calendar } from '@/components/ui/calendar'
@@ -10,6 +10,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { Clock, User } from 'lucide-react'
+import { getCourses } from '@/lib/course-option/data'
+import { Course } from '@/lib/types/course-option'
 
 export default function BookingPage() {
   const [date, setDate] = useState<Date | undefined>(new Date())
@@ -17,6 +19,9 @@ export default function BookingPage() {
   const [selectedCourse, setSelectedCourse] = useState<string>('')
   const [selectedTime, setSelectedTime] = useState<string>('')
 
+  const [courses, setCourses] = useState<Course[]>([])
+  const [loading, setLoading] = useState(true)
+  
   const casts = [
     { id: '1', name: 'キャスト A', available: true },
     { id: '2', name: 'キャスト B', available: true },
@@ -24,11 +29,19 @@ export default function BookingPage() {
     { id: '4', name: 'キャスト D', available: true },
   ]
 
-  const courses = [
-    { id: '1', name: 'スタンダードコース', duration: 60, price: 8000 },
-    { id: '2', name: 'プレミアムコース', duration: 90, price: 12000 },
-    { id: '3', name: 'VIPコース', duration: 120, price: 18000 },
-  ]
+  useEffect(() => {
+    const loadCourses = async () => {
+      try {
+        const fetchedCourses = await getCourses()
+        setCourses(fetchedCourses)
+      } catch (error) {
+        console.error('Failed to load courses:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadCourses()
+  }, [])
 
   const timeSlots = [
     '10:00', '11:00', '12:00', '13:00', '14:00', '15:00',
@@ -106,20 +119,29 @@ export default function BookingPage() {
             <CardContent>
               <RadioGroup value={selectedCourse} onValueChange={setSelectedCourse}>
                 <div className="space-y-3">
-                  {courses.map((course) => (
-                    <div key={course.id} className="flex items-center space-x-2">
-                      <RadioGroupItem value={course.id} id={`course-${course.id}`} />
-                      <Label htmlFor={`course-${course.id}`} className="flex-1 cursor-pointer">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <div className="font-medium">{course.name}</div>
-                            <div className="text-sm text-gray-500">{course.duration}分</div>
-                          </div>
-                          <div className="font-semibold">¥{course.price.toLocaleString()}</div>
-                        </div>
-                      </Label>
+                  {loading ? (
+                    <div className="text-center py-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                      <p className="mt-2 text-sm text-gray-500">コース情報を読み込み中...</p>
                     </div>
-                  ))}
+                  ) : courses.length === 0 ? (
+                    <p className="text-gray-500">利用可能なコースがありません</p>
+                  ) : (
+                    courses.map((course) => (
+                      <div key={course.id} className="flex items-center space-x-2">
+                        <RadioGroupItem value={course.id} id={`course-${course.id}`} />
+                        <Label htmlFor={`course-${course.id}`} className="flex-1 cursor-pointer">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <div className="font-medium">{course.name}</div>
+                              <div className="text-sm text-gray-500">{course.duration}分</div>
+                            </div>
+                            <div className="font-semibold">¥{course.price.toLocaleString()}</div>
+                          </div>
+                        </Label>
+                      </div>
+                    ))
+                  )}
                 </div>
               </RadioGroup>
             </CardContent>

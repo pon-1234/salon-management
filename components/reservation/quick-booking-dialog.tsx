@@ -21,7 +21,7 @@ import { ja } from 'date-fns/locale'
 import { Phone, Clock, User, MapPin, CreditCard, ChevronRight, ChevronLeft, Check, Calendar, Users } from 'lucide-react'
 import { Customer } from "@/lib/customer/types"
 import { Cast } from "@/lib/cast/types"
-import { options } from "@/lib/course-option/data"
+import { usePricing } from "@/hooks/use-pricing"
 
 interface QuickBookingDialogProps {
   open: boolean
@@ -41,6 +41,9 @@ export function QuickBookingDialog({
   const [currentStep, setCurrentStep] = useState(1)
   const totalSteps = 3
 
+  // Get pricing data from centralized system
+  const { courses, options, loading: pricingLoading } = usePricing()
+  
   // Get available options for the selected staff
   const availableOptions = selectedStaff?.availableOptions 
     ? options.filter(option => selectedStaff.availableOptions.includes(option.id))
@@ -280,9 +283,17 @@ export function QuickBookingDialog({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="イベント70分 16,000円">イベント70分 16,000円</SelectItem>
-                        <SelectItem value="スタンダード60分 14,000円">スタンダード60分 14,000円</SelectItem>
-                        <SelectItem value="ロング90分 20,000円">ロング90分 20,000円</SelectItem>
+                        {pricingLoading ? (
+                          <div className="py-2 px-4 text-sm text-gray-500">読み込み中...</div>
+                        ) : courses.length === 0 ? (
+                          <div className="py-2 px-4 text-sm text-gray-500">利用可能なコースがありません</div>
+                        ) : (
+                          courses.map((course) => (
+                            <SelectItem key={course.id} value={`${course.name} ${course.price.toLocaleString()}円`}>
+                              {course.name} {course.duration}分 {course.price.toLocaleString()}円
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>

@@ -1,30 +1,115 @@
 import { Course, Option } from '../types/course-option';
+import { getPricingUseCases } from '../pricing';
+import { convertAllCoursePricesToCourses, convertAllOptionPricesToOptions } from '../pricing/adapters';
 
-export const courses: Course[] = [
-  { id: "60min", name: "60分", duration: 60, price: 13000 },
-  { id: "80min", name: "80分", duration: 80, price: 16000 },
-  { id: "100min", name: "100分", duration: 100, price: 19000 },
-  { id: "120min", name: "120分", duration: 120, price: 22000 },
-  { id: "150min", name: "150分", duration: 150, price: 26000 },
-  { id: "180min", name: "180分", duration: 180, price: 30000 },
-  { id: "event70", name: "イベント70分", duration: 70, price: 15000 },
-  { id: "event90", name: "イベント90分", duration: 90, price: 18000 },
-  { id: "event110", name: "イベント110分", duration: 110, price: 21000 },
-  { id: "event130", name: "イベント130分", duration: 130, price: 24000 },
-  { id: "event160", name: "イベント160分", duration: 160, price: 28000 },
-  { id: "event190", name: "イベント190分", duration: 190, price: 32000 },
-  { id: "extension30", name: "延長30分", duration: 30, price: 5000 },
-];
+// Cache for courses and options to avoid fetching on every import
+let cachedCourses: Course[] | null = null;
+let cachedOptions: Option[] | null = null;
+let lastFetchTime: number = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-export const options: Option[] = [
-  { id: "healing-knee", name: "癒しの膝枕耳かき", price: 0 },
-  { id: "shampoo-spa", name: "��着爽快洗髪スパ", price: 0 },
-  { id: "oil-plus", name: "オイル増し増し", price: 0 },
-  { id: "french-kiss", name: "キス（フレンチ）", price: 1000 },
-  { id: "pantyhose", name: "パンスト", price: 1000 },
-  { id: "kaiten-denma", name: "亀頭デンマ", price: 1000 },
-  { id: "kaishun-plus", name: "回春増し増し", price: 2000, note: "※..." },
-  { id: "zenritu-massage", name: "前立腺マッサージ", price: 2000 },
-  { id: "all-nude", name: "オールヌード", price: 3000, note: "※..." },
-  { id: "skin-fella", name: "スキン（ゴム）フェラ", price: 3000 },
-];
+/**
+ * Get courses from the centralized pricing system
+ * Uses caching to avoid excessive API calls
+ */
+export async function getCourses(): Promise<Course[]> {
+  const now = Date.now();
+  
+  // Return cached data if it's still fresh
+  if (cachedCourses && (now - lastFetchTime) < CACHE_DURATION) {
+    return cachedCourses;
+  }
+  
+  try {
+    const pricingUseCases = getPricingUseCases();
+    const coursePrices = await pricingUseCases.getCourses();
+    cachedCourses = convertAllCoursePricesToCourses(coursePrices);
+    lastFetchTime = now;
+    return cachedCourses;
+  } catch (error) {
+    console.error('Failed to fetch courses from pricing system:', error);
+    // Return fallback data if pricing system fails
+    return getFallbackCourses();
+  }
+}
+
+/**
+ * Get options from the centralized pricing system
+ * Uses caching to avoid excessive API calls
+ */
+export async function getOptions(): Promise<Option[]> {
+  const now = Date.now();
+  
+  // Return cached data if it's still fresh
+  if (cachedOptions && (now - lastFetchTime) < CACHE_DURATION) {
+    return cachedOptions;
+  }
+  
+  try {
+    const pricingUseCases = getPricingUseCases();
+    const optionPrices = await pricingUseCases.getOptions();
+    cachedOptions = convertAllOptionPricesToOptions(optionPrices);
+    lastFetchTime = now;
+    return cachedOptions;
+  } catch (error) {
+    console.error('Failed to fetch options from pricing system:', error);
+    // Return fallback data if pricing system fails
+    return getFallbackOptions();
+  }
+}
+
+/**
+ * Clear the cache to force a refresh
+ */
+export function clearPricingCache(): void {
+  cachedCourses = null;
+  cachedOptions = null;
+  lastFetchTime = 0;
+}
+
+/**
+ * Legacy exports for backward compatibility
+ * These will be populated on first access
+ */
+export let courses: Course[] = [];
+export let options: Option[] = [];
+
+// Initialize with fallback data for immediate availability
+courses = getFallbackCourses();
+options = getFallbackOptions();
+
+// Asynchronously update with real data
+(async () => {
+  courses = await getCourses();
+  options = await getOptions();
+})();
+
+/**
+ * Fallback data in case the pricing system is unavailable
+ */
+function getFallbackCourses(): Course[] {
+  return [
+    { id: "1-60min", name: "スタンダードコース 60分", duration: 60, price: 12000 },
+    { id: "1-90min", name: "スタンダードコース 90分", duration: 90, price: 18000 },
+    { id: "1-120min", name: "スタンダードコース 120分", duration: 120, price: 24000 },
+    { id: "2-90min", name: "プレミアムコース 90分", duration: 90, price: 25000 },
+    { id: "2-120min", name: "プレミアムコース 120分", duration: 120, price: 32000 },
+    { id: "2-150min", name: "プレミアムコース 150分", duration: 150, price: 40000 },
+    { id: "3-120min", name: "VIPコース 120分", duration: 120, price: 45000 },
+    { id: "3-150min", name: "VIPコース 150分", duration: 150, price: 55000 },
+    { id: "3-180min", name: "VIPコース 180分", duration: 180, price: 65000 },
+    { id: "extension30", name: "延長30分", duration: 30, price: 8000 },
+  ];
+}
+
+function getFallbackOptions(): Option[] {
+  return [
+    { id: "1", name: "オールヌード", price: 3000 },
+    { id: "2", name: "ローション追加", price: 2000 },
+    { id: "3", name: "コスプレ", price: 2000 },
+    { id: "4", name: "延長30分", price: 8000 },
+    { id: "5", name: "ホットストーン", price: 2000 },
+    { id: "6", name: "アロマトリートメント", price: 1500 },
+    { id: "7", name: "ネックトリートメント", price: 1000 },
+  ];
+}
