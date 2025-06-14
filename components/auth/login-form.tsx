@@ -37,21 +37,15 @@ export function LoginForm({ store }: LoginFormProps) {
       const email = formData.get('email') as string
       const password = formData.get('password') as string
 
-      // Debug log
-      console.log('Login attempt:', { email, password })
-
       // Mock validation
       if (email === 'test@example.com' && password === 'password') {
-        console.log('Login successful, redirecting to:', `/${store.slug}/mypage`)
         // Success - redirect to mypage
         window.location.href = `/${store.slug}/mypage`
       } else {
-        console.log('Login failed - invalid credentials')
         setError('メールアドレスまたはパスワードが正しくありません')
         setLoading(false)
       }
     } catch (error) {
-      console.error('Login error:', error)
       setError('ログイン中にエラーが発生しました')
       setLoading(false)
     }

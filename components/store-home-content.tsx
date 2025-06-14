@@ -144,7 +144,7 @@ export function StoreHomeContent({ store }: StoreHomeContentProps) {
           banners={campaignBanners}
           autoPlayInterval={5000}
           showDots={true}
-          dismissible={true}
+          dismissible={false}
         />
 
         {/* Main Message */}
