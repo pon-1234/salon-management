@@ -13,3 +13,8 @@ export interface AreaSalesReport {
     total: number;
   };
 }
+
+export interface TransportationFee {
+  area: string;
+  fee: number;
+}
