@@ -21,9 +21,7 @@ const navigationItems = [
   { name: '出勤一覧', href: '/schedule' },
   { name: '入店情報', href: '/recruitment' },
   { name: 'ランキング', href: '/ranking' },
-  { name: 'ブログ', href: '/blog' },
   { name: 'クチコミ', href: '/reviews' },
-  { name: 'コラム', href: '/column' },
 ]
 
 export function StoreNavigation() {
