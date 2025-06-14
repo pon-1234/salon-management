@@ -164,6 +164,10 @@ export function getAllCasts(): Cast[] {
   return castMembers
 }
 
+export function getCastById(id: string): Cast | undefined {
+  return castMembers.find(cast => cast.id === id)
+}
+
 export const generateCastSchedule = (castId: string, startDate: Date, endDate: Date): CastSchedule[] => {
   const cast = castMembers.find((cast) => cast.id === castId)
   if (!cast) {
