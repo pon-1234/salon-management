@@ -71,48 +71,21 @@ export function RegisterForm({ store }: RegisterFormProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Name */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="lastName">姓</Label>
+          {/* Nickname */}
+          <div className="space-y-2">
+            <Label htmlFor="nickname">ニックネーム</Label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                id="lastName"
-                placeholder="山田"
+                id="nickname"
+                placeholder="お好きなニックネーム"
+                className="pl-10"
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="firstName">名</Label>
-              <Input
-                id="firstName"
-                placeholder="太郎"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Name Kana */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="lastNameKana">姓（カナ）</Label>
-              <Input
-                id="lastNameKana"
-                placeholder="ヤマダ"
-                pattern="[ァ-ヶー]+"
-                title="カタカナで入力してください"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="firstNameKana">名（カナ）</Label>
-              <Input
-                id="firstNameKana"
-                placeholder="タロウ"
-                pattern="[ァ-ヶー]+"
-                title="カタカナで入力してください"
-                required
-              />
-            </div>
+            <p className="text-xs text-gray-500">
+              サイト内で表示される名前です
+            </p>
           </div>
 
           {/* Email */}
