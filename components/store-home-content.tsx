@@ -7,12 +7,38 @@ import { Badge } from '@/components/ui/badge'
 import { Star, Heart, TrendingUp, MessageSquare, Phone } from 'lucide-react'
 import { Store } from '@/lib/store/types'
 import { StoreNavigation } from './store-navigation'
+import { CampaignBannerSlider, BannerItem } from './campaign-banner-slider'
 
 interface StoreHomeContentProps {
   store: Store
 }
 
 export function StoreHomeContent({ store }: StoreHomeContentProps) {
+  // Mock banner data - in production, this would come from a CMS or database
+  const campaignBanners: BannerItem[] = [
+    {
+      id: '1',
+      imageUrl: '/images/banners/campaign-1.jpg',
+      mobileImageUrl: '/images/banners/campaign-1-mobile.jpg',
+      title: '新規限定！初回30%OFF',
+      link: `/${store.slug}/pricing`,
+    },
+    {
+      id: '2',
+      imageUrl: '/images/banners/campaign-2.jpg',
+      mobileImageUrl: '/images/banners/campaign-2-mobile.jpg',
+      title: '平日限定！延長無料キャンペーン',
+      link: `/${store.slug}/pricing`,
+    },
+    {
+      id: '3',
+      imageUrl: '/images/banners/campaign-3.jpg',
+      mobileImageUrl: '/images/banners/campaign-3-mobile.jpg',
+      title: '新人キャスト入店記念イベント',
+      link: `/${store.slug}/cast`,
+    },
+  ]
+
   return (
     <>
       <StoreNavigation />
@@ -111,6 +137,14 @@ export function StoreHomeContent({ store }: StoreHomeContentProps) {
             </div>
           </div>
         </section>
+
+        {/* Campaign Banner Slider */}
+        <CampaignBannerSlider 
+          banners={campaignBanners}
+          autoPlayInterval={5000}
+          showDots={true}
+          dismissible={true}
+        />
 
         {/* Main Message */}
         <section className="py-12 bg-gray-50">
