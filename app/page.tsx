@@ -36,6 +36,13 @@ export default function HomePage() {
     return <AgeVerification onVerify={handleVerification} />
   }
 
+  // デフォルトは池袋店にリダイレクト
+  useEffect(() => {
+    if (isVerified) {
+      window.location.href = '/ikebukuro'
+    }
+  }, [isVerified])
+
   return (
     <div className="space-y-12">
       {/* Hero Section */}
