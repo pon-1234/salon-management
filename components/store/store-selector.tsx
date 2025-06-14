@@ -47,7 +47,7 @@ export function StoreSelector() {
         </DialogHeader>
         <div className="space-y-4">
           <Select
-            value={currentStore.code}
+            value={currentStore.slug}
             onValueChange={(value) => {
               switchStore(value)
               setOpen(false)
@@ -58,7 +58,7 @@ export function StoreSelector() {
             </SelectTrigger>
             <SelectContent>
               {availableStores.map((store) => (
-                <SelectItem key={store.id} value={store.code}>
+                <SelectItem key={store.id} value={store.slug}>
                   <div className="flex items-center gap-3">
                     <div
                       className="w-3 h-3 rounded-full"
@@ -76,7 +76,7 @@ export function StoreSelector() {
           
           <div className="text-xs text-gray-500 space-y-2">
             <div>現在の店舗: <span className="font-medium">{currentStore.name}</span></div>
-            <div>営業時間: {currentStore.settings.workingHours.start} - {currentStore.settings.workingHours.end}</div>
+            <div>営業時間: 平日 {currentStore.openingHours.weekday.open} - {currentStore.openingHours.weekday.close}</div>
             <div>電話番号: {currentStore.phone}</div>
           </div>
         </div>
