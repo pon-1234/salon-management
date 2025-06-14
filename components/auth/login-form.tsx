@@ -31,8 +31,9 @@ export function LoginForm({ store }: LoginFormProps) {
       // Simulate login delay
       await new Promise(resolve => setTimeout(resolve, 1000))
 
-      // In real app, this would make an API call
-      const formData = new FormData(e.currentTarget)
+      // Get form element and create FormData
+      const form = e.target as HTMLFormElement
+      const formData = new FormData(form)
       const email = formData.get('email') as string
       const password = formData.get('password') as string
 
