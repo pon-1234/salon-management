@@ -27,19 +27,31 @@ export function LoginForm({ store }: LoginFormProps) {
     setError('')
     setLoading(true)
 
-    // Simulate login
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    try {
+      // Simulate login delay
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
-    // In real app, this would make an API call
-    const formData = new FormData(e.currentTarget)
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
+      // In real app, this would make an API call
+      const formData = new FormData(e.currentTarget)
+      const email = formData.get('email') as string
+      const password = formData.get('password') as string
 
-    // Mock validation
-    if (email === 'test@example.com' && password === 'password') {
-      router.push(`/${store.slug}/mypage`)
-    } else {
-      setError('メールアドレスまたはパスワードが正しくありません')
+      // Debug log
+      console.log('Login attempt:', { email, password })
+
+      // Mock validation
+      if (email === 'test@example.com' && password === 'password') {
+        console.log('Login successful, redirecting to:', `/${store.slug}/mypage`)
+        // Success - redirect to mypage
+        window.location.href = `/${store.slug}/mypage`
+      } else {
+        console.log('Login failed - invalid credentials')
+        setError('メールアドレスまたはパスワードが正しくありません')
+        setLoading(false)
+      }
+    } catch (error) {
+      console.error('Login error:', error)
+      setError('ログイン中にエラーが発生しました')
       setLoading(false)
     }
   }
