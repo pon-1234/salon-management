@@ -57,13 +57,17 @@ export function StoreNavigation() {
 
           {/* Right Actions */}
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" className="hidden sm:flex">
-              <User className="h-4 w-4 mr-2" />
-              会員登録
+            <Button variant="ghost" size="sm" className="hidden sm:flex" asChild>
+              <Link href={`/${store.slug}/register`}>
+                <User className="h-4 w-4 mr-2" />
+                会員登録
+              </Link>
             </Button>
-            <Button variant="ghost" size="sm" className="hidden sm:flex">
-              <LogIn className="h-4 w-4 mr-2" />
-              ログイン
+            <Button variant="ghost" size="sm" className="hidden sm:flex" asChild>
+              <Link href={`/${store.slug}/login`}>
+                <LogIn className="h-4 w-4 mr-2" />
+                ログイン
+              </Link>
             </Button>
             
             <div className="flex flex-col items-end">

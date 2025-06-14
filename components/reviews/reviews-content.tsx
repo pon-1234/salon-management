@@ -7,6 +7,7 @@ import { ReviewCard } from './review-card'
 import { ReviewStats } from './review-stats'
 import { ReviewFilters } from './review-filters'
 import { StoreNavigation } from '../store-navigation'
+import { StoreFooter } from '../store-footer'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Search } from 'lucide-react'
@@ -146,6 +147,8 @@ export function ReviewsContent({ store }: ReviewsContentProps) {
             </div>
           </div>
         </div>
+        
+        <StoreFooter store={store} />
       </main>
     </>
   )

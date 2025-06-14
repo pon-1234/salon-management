@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Star, Heart, TrendingUp, MessageSquare, Phone } from 'lucide-react'
 import { Store } from '@/lib/store/types'
 import { StoreNavigation } from './store-navigation'
+import { StoreFooter } from './store-footer'
 import { CampaignBannerSlider, BannerItem } from './campaign-banner-slider'
 
 interface StoreHomeContentProps {
@@ -323,21 +324,7 @@ export function StoreHomeContent({ store }: StoreHomeContentProps) {
           </div>
         </section>
 
-        {/* Footer */}
-        <footer className="bg-gray-900 text-white py-12">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="text-center space-y-4">
-              <h3 className="text-2xl font-bold">{store.displayName}</h3>
-              <p className="text-lg">{store.phone}</p>
-              <p>{store.openingHours.weekday.open}～翌{store.openingHours.weekday.close.split(':')[0]}:00</p>
-              <div className="flex justify-center gap-6 mt-6">
-                <Link href="/privacy" className="hover:underline">プライバシーポリシー</Link>
-                <Link href="/terms" className="hover:underline">ご利用規約</Link>
-                <Link href="/recruitment" className="hover:underline">求人情報</Link>
-              </div>
-            </div>
-          </div>
-        </footer>
+        <StoreFooter store={store} />
       </main>
     </>
   )

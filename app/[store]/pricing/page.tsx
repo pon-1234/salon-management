@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getStoreBySlug } from '@/lib/store/data'
 import { StoreNavigation } from '@/components/store-navigation'
+import { StoreFooter } from '@/components/store-footer'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Check, Star, Clock } from 'lucide-react'
@@ -246,6 +247,8 @@ export default async function PricingPage({
             </Card>
           </div>
         </section>
+        
+        <StoreFooter store={store} />
       </main>
     </>
   )

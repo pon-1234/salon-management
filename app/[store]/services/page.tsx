@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getStoreBySlug } from '@/lib/store/data'
 import { StoreNavigation } from '@/components/store-navigation'
+import { StoreFooter } from '@/components/store-footer'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Sparkles, Heart, Star, Shield } from 'lucide-react'
@@ -182,6 +183,8 @@ export default async function ServicesPage({
             </div>
           </div>
         </section>
+        
+        <StoreFooter store={store} />
       </main>
     </>
   )
