@@ -36,12 +36,6 @@ export default function HomePage() {
     return <AgeVerification onVerify={handleVerification} />
   }
 
-  // デフォルトは池袋店にリダイレクト
-  useEffect(() => {
-    if (isVerified) {
-      window.location.href = '/ikebukuro'
-    }
-  }, [isVerified])
 
   return (
     <div className="space-y-12">
@@ -55,11 +49,23 @@ export default function HomePage() {
             <p className="text-xl md:text-2xl mb-8 text-purple-100">
               プロフェッショナルなキャストと上質な空間でお待ちしています
             </p>
-            <Button size="lg" variant="secondary" asChild>
-              <Link href="/booking">
-                今すぐ予約する
-              </Link>
-            </Button>
+            <div className="flex gap-4 justify-center">
+              <Button size="lg" variant="secondary" asChild>
+                <Link href="/ikebukuro">
+                  池袋店を見る
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/shinjuku">
+                  新宿店を見る
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/shibuya">
+                  渋谷店を見る
+                </Link>
+              </Button>
+            </div>
           </div>
         </div>
       </section>
@@ -124,7 +130,7 @@ export default function HomePage() {
                 </CardHeader>
                 <CardContent>
                   <Button variant="outline" className="w-full" asChild>
-                    <Link href={`/admin/cast/${i}`}>
+                    <Link href={`/ikebukuro/cast/${i}`}>
                       詳細を見る
                     </Link>
                   </Button>
@@ -134,7 +140,7 @@ export default function HomePage() {
           </div>
           <div className="text-center mt-8">
             <Button variant="outline" asChild>
-              <Link href="/admin/cast">
+              <Link href="/ikebukuro/cast">
                 すべてのキャストを見る
               </Link>
             </Button>

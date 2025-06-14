@@ -2,14 +2,15 @@ import { notFound } from 'next/navigation'
 import { getStoreBySlug } from '@/lib/store/data'
 import { StoreProvider } from '@/components/store-provider'
 
-export default function StoreLayout({
+export default async function StoreLayout({
   children,
   params,
 }: {
   children: React.ReactNode
-  params: { store: string }
+  params: Promise<{ store: string }>
 }) {
-  const store = getStoreBySlug(params.store)
+  const { store: storeSlug } = await params
+  const store = getStoreBySlug(storeSlug)
 
   if (!store) {
     notFound()
