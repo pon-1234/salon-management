@@ -61,7 +61,7 @@ const navigation = [
 
 export function AnalyticsLayout() {
   return (
-    <nav className="w-64 bg-gray-100 overflow-y-auto flex-shrink-0 border-r">
+    <nav className="w-64 bg-gray-100 flex-shrink-0 border-r sticky top-[83px] h-[calc(100vh-83px)] overflow-y-auto">
       <ul className="space-y-2 p-4">
         {navigation.map((item) => (
           <li key={item.name}>

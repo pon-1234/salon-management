@@ -578,7 +578,10 @@ export default function DashboardPage() {
 
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <CardContent className="p-6">
-            <Link href="/admin/analytics/daily-sales" className="flex items-center justify-between">
+            <Link 
+              href="/admin/analytics/daily-sales" 
+              className="flex items-center justify-between"
+            >
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-purple-100 rounded-lg">
                   <BarChart3 className="w-6 h-6 text-purple-600" />

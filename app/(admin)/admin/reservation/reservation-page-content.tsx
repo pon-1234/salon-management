@@ -49,6 +49,11 @@ useEffect(() => {
   }
 }, [customerId]);
 
+// ページ遷移時にスクロール位置をリセット
+useEffect(() => {
+  window.scrollTo(0, 0);
+}, []);
+
 
 const fetchData = async () => {
   const allReservations = await getAllReservations();
