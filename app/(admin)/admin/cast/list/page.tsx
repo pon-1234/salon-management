@@ -16,6 +16,11 @@ export default function CastListPage() {
   const [nameSearch, setNameSearch] = useState("")
 
   useEffect(() => {
+    // ページ遷移時にスクロール位置をリセット
+    window.scrollTo(0, 0)
+  }, [])
+
+  useEffect(() => {
     const casts = getAllCasts()
     setCastList(casts)
   }, [])
