@@ -1,13 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { ReservationDialog } from "./reservation-dialog"
 import { QuickBookingDialog } from "./quick-booking-dialog"
-import Link from "next/link"
-import { Circle } from 'lucide-react'
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Calendar, Clock, MapPin, User, AlertCircle } from 'lucide-react'
 import { Cast, Appointment } from "@/lib/cast"
 import { logError } from "@/lib/error-utils"
 import { StaffDialog } from "@/components/cast/cast-dialog"
@@ -45,22 +47,33 @@ export function Timeline({ staff, selectedDate, selectedCustomer, setSelectedApp
   const [selectedAppointment, setSelectedAppointmentState] = useState<Appointment | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null)
   const [selectedStaff, setSelectedStaff] = useState<Cast | null>(null)
+  const [viewMode, setViewMode] = useState<'day' | 'week'>('day')
+  const [zoomLevel, setZoomLevel] = useState(1)
+  
   const startHour = 9;
   const endHour = 24;
   const totalHours = endHour - startHour;
   const SLOT_DURATION = 30; // 30分単位
+  const HOUR_WIDTH = 120 * zoomLevel; // ズームに応じた幅
 
   // staffが存在しない場合、早期return
   if (!staff || staff.length === 0) {
-    return <div>スタッフ情報を読み込んでいます...</div>
+    return (
+      <div className="flex items-center justify-center h-64 text-gray-500">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+          <p>スタッフ情報を読み込んでいます...</p>
+        </div>
+      </div>
+    )
   }
 
   const getTimeBlockStyle = (startTime: Date, endTime: Date) => {
     const start = startTime.getHours() + startTime.getMinutes() / 60;
     const end = endTime.getHours() + endTime.getMinutes() / 60;
-    const left = ((start - startHour) / totalHours) * 100;
-    const width = ((end - start) / totalHours) * 100;
-    return { left: `${left}%`, width: `${width}%` };
+    const left = (start - startHour) * HOUR_WIDTH;
+    const width = (end - start) * HOUR_WIDTH;
+    return { left: `${left}px`, width: `${width}px` };
   };
 
   const isSameDay = (date1: Date, date2: Date) => {
@@ -202,190 +215,268 @@ export function Timeline({ staff, selectedDate, selectedCustomer, setSelectedApp
     };
   };
 
+  // 現在時刻の位置を計算
+  const currentTime = new Date();
+  const currentTimePosition = useMemo(() => {
+    if (!isSameDay(currentTime, selectedDate)) return null;
+    const hours = currentTime.getHours() + currentTime.getMinutes() / 60;
+    if (hours < startHour || hours > endHour) return null;
+    return (hours - startHour) * HOUR_WIDTH;
+  }, [currentTime, selectedDate]);
+
   return (
-    <div className="relative border-t">
-      <ScrollArea className="w-full overflow-auto">
-        <div className="flex">
-          <div className="sticky left-0 z-10 bg-white border-r">
-            <div className="w-[200px] h-12 border-b flex items-center px-4 font-bold">
-              スタッフ名
-            </div>
-            {safeMap(filteredStaff, (member) => (
-              <button
-                key={member.id}
-                className="w-[200px] h-20 border-b px-4 flex items-center group hover:opacity-75 transition-opacity"
-                onClick={() => setSelectedStaff(member)}
-              >
-                {member.image && (
-                  <img 
-                    src={member.image}
-                    alt={`${member.name}の写真`} 
-                    className="w-8 aspect-[7/10] object-cover rounded"
-                  />
-                )}
-                <div className="ml-2 flex flex-col justify-center">
-                  <div className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">
-                    {member.name}
-                  </div>
-                  {member.workStart && member.workEnd ? (
-                    <div className="text-sm text-gray-500 whitespace-nowrap">
-                      {member.workStart.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                      {" - "}
-                      {member.workEnd.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                    </div>
-                  ) : (
-                    <div className="text-sm text-gray-500">休み</div>
-                  )}
-                </div>
-              </button>
-            ))}
+    <TooltipProvider>
+      <div className="relative bg-gray-50">
+        {/* コントロールバー */}
+        <div className="bg-white border-b px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button
+              variant={zoomLevel === 0.75 ? "default" : "outline"}
+              size="sm"
+              onClick={() => setZoomLevel(0.75)}
+            >
+              75%
+            </Button>
+            <Button
+              variant={zoomLevel === 1 ? "default" : "outline"}
+              size="sm"
+              onClick={() => setZoomLevel(1)}
+            >
+              100%
+            </Button>
+            <Button
+              variant={zoomLevel === 1.25 ? "default" : "outline"}
+              size="sm"
+              onClick={() => setZoomLevel(1.25)}
+            >
+              125%
+            </Button>
           </div>
-
-          <div className="flex-grow relative">
-            <div className="flex h-12">
-              {Array.from({ length: totalHours + 1 }).map((_, index) => (
-                <div key={index} className="w-[100px] border-b border-r flex items-center justify-center">
-                  {`${index + startHour}:00`}
-                </div>
-              ))}
-            </div>
-
-            {safeMap(filteredStaff, (member) => (
-              <div key={member.id} className="flex h-20 border-b relative bg-gray-100">
-                {safeMap(member.appointments, (appointment) => (
-                  <div
-                    key={appointment.id}
-                    className={cn(
-                      "absolute top-0 m-1 p-2 rounded cursor-pointer transition-colors z-0",
-                      appointment.status === "provisional"
-                        ? "bg-orange-100 border border-orange-200 hover:bg-orange-200"
-                        : "bg-emerald-50 border border-emerald-200 hover:bg-emerald-100"
-                    )}
-                    style={{
-                      ...getTimeBlockStyle(appointment.startTime, appointment.endTime),
-                      height: "calc(100% - 8px)",
-                    }}
-                    onClick={() => setSelectedAppointmentState(convertToReservationData(appointment, member))}
-                  >
-                    <div className="flex flex-col justify-between h-full overflow-hidden">
-                      <div>
-                        <div className="font-medium text-xs truncate">{appointment.customerName}</div>
-                        <div className="text-xs text-gray-500 truncate">
-                          {appointment.startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                          -
-                          {appointment.endTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-end">
-                        <div className="text-xs text-gray-500 truncate">
-                          受付：{appointment.reservationTime}
-                        </div>
-                        {appointment.status === "provisional" ? (
-                          <span className="inline-flex items-center justify-center bg-orange-600 text-white text-xs px-1 py-0 h-6 rounded-md">
-                            仮予約
-                          </span>
-                        ) : (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            className={cn(
-                              "bg-emerald-600 text-white text-xs px-1 py-0 h-6"
-                            )}
-                          >
-                            確定
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                {safeMap(getAvailableSlots(member), (slot, index) => {
-                  const timeSlots = generateTimeSlots(slot.startTime, slot.endTime);
-                  const slotStyle = getTimeBlockStyle(slot.startTime, slot.endTime);
-                  
-                  return (
-                    <div
-                      key={`${member.id}-${index}`}
-                      className={cn(
-                        "absolute top-0 rounded",
-                        "bg-emerald-100 transition-colors",
-                        "flex items-stretch z-0"
-                      )}
-                      style={{
-                        ...slotStyle,
-                        height: "calc(100% - 2px)",
-                        marginTop: "1px",
-                        marginBottom: "1px",
-                      }}
-                    >
-                      {safeMap(timeSlots, (timeSlot, timeIndex) => (
-                        <button
-                          key={timeIndex}
-                          className={cn(
-                            "relative flex flex-col items-center justify-center", 
-                            "transition-colors",
-                            selectedCustomer
-                              ? "hover:bg-emerald-200"
-                              : "opacity-50 cursor-not-allowed"
-                          )}
-                          style={{ 
-                            width: `${100 / timeSlots.length}%`,
-                            height: '100%'
-                          }}
-                          onClick={() => handleTimeSlotClick(slot, timeSlot.time)}
-                          disabled={!selectedCustomer}
-                          title={selectedCustomer ? undefined : "顧客を選択すると利用できます"}
-                        >
-                          <Circle className={cn(
-                            "w-6 h-6 stroke-[3] absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2",
-                            selectedCustomer ? "text-white" : "text-gray-300"
-                          )} />
-                          {timeSlot.isStart && (
-                            <div className="absolute top-1 left-1 text-xs text-emerald-700 text-left whitespace-nowrap">
-                              {timeSlot.time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}-
-                              <br />
-                              {slot.duration}分
-                            </div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  );
-                })}
-
-                {Array.from({ length: totalHours }).map((_, index) => (
-                  <div key={index} className="w-[100px] border-r" />
-                ))}
-              </div>
-            ))}
+          <div className="text-sm text-gray-600">
+            {format(selectedDate, 'yyyy年MM月dd日(E)')}
           </div>
         </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
 
-      <ReservationDialog
-        open={!!selectedAppointment}
-        onOpenChange={(open) => !open && setSelectedAppointmentState(null)}
-        reservation={selectedAppointment as ReservationData}
-      />
+        <ScrollArea className="w-full">
+          <div className="flex" style={{ minWidth: `${totalHours * HOUR_WIDTH + 240}px` }}>
+            {/* スタッフ列 */}
+            <div className="sticky left-0 z-20 bg-white border-r shadow-sm" style={{ width: '240px' }}>
+              <div className="h-16 border-b flex items-center px-4 bg-gray-50">
+                <User className="w-4 h-4 mr-2 text-gray-600" />
+                <span className="font-medium">スタッフ</span>
+              </div>
+              {safeMap(filteredStaff, (member) => (
+                <button
+                  key={member.id}
+                  className="w-full h-24 border-b px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors"
+                  onClick={() => setSelectedStaff(member)}
+                >
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={member.image} alt={member.name} />
+                    <AvatarFallback>{member.name.slice(0, 2)}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 text-left">
+                    <div className="font-medium">{member.name}</div>
+                    {member.workStart && member.workEnd ? (
+                      <div className="flex items-center gap-1 text-xs text-gray-600">
+                        <Clock className="w-3 h-3" />
+                        {member.workStart.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        {" - "}
+                        {member.workEnd.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      </div>
+                    ) : (
+                      <Badge variant="secondary" className="text-xs">休み</Badge>
+                    )}
+                    <div className="flex items-center gap-1 mt-1">
+                      <div className="text-xs text-gray-500">
+                        予約 {member.appointments?.length || 0}件
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
 
-      <QuickBookingDialog
-        open={!!selectedSlot}
-        onOpenChange={(open) => !open && setSelectedSlot(null)}
-        selectedStaff={{
-          id: selectedSlot?.staffId || "",
-          name: selectedSlot?.staffName || ""
-        }}
-        selectedTime={selectedSlot?.startTime}
-        selectedCustomer={selectedCustomer} // 追加
-      />
-      <StaffDialog
-        open={!!selectedStaff}
-        onOpenChange={(open) => !open && setSelectedStaff(null)}
-        staff={selectedStaff}
-        selectedDate={selectedDate}
-      />
-    </div>
+            {/* タイムグリッド */}
+            <div className="flex-1 relative">
+              {/* 時間ヘッダー */}
+              <div className="flex h-16 bg-gray-50 border-b sticky top-0 z-10">
+                {Array.from({ length: totalHours }).map((_, index) => (
+                  <div 
+                    key={index} 
+                    className="border-r flex flex-col items-center justify-center"
+                    style={{ width: `${HOUR_WIDTH}px` }}
+                  >
+                    <div className="font-medium">{index + startHour}:00</div>
+                    <div className="text-xs text-gray-500">
+                      {index + startHour < 12 ? '午前' : '午後'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* スタッフ別タイムライン */}
+              {safeMap(filteredStaff, (member) => (
+                <div key={member.id} className="relative h-24 border-b bg-white">
+                  {/* 勤務時間の背景 */}
+                  {member.workStart && member.workEnd && (
+                    <div
+                      className="absolute top-0 h-full bg-blue-50 opacity-30"
+                      style={getTimeBlockStyle(member.workStart, member.workEnd)}
+                    />
+                  )}
+
+                  {/* 予約ブロック */}
+                  {safeMap(member.appointments, (appointment) => (
+                    <Tooltip key={appointment.id}>
+                      <TooltipTrigger asChild>
+                        <div
+                          className={cn(
+                            "absolute top-2 rounded-lg shadow-sm cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5",
+                            "flex flex-col p-3",
+                            appointment.status === "provisional"
+                              ? "bg-orange-100 border-2 border-orange-300"
+                              : "bg-white border-2 border-emerald-400"
+                          )}
+                          style={{
+                            ...getTimeBlockStyle(appointment.startTime, appointment.endTime),
+                            height: "calc(100% - 16px)",
+                          }}
+                          onClick={() => setSelectedAppointmentState(convertToReservationData(appointment, member))}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <Badge 
+                              variant={appointment.status === "provisional" ? "secondary" : "default"}
+                              className={cn(
+                                "text-xs px-1.5 py-0",
+                                appointment.status === "provisional" 
+                                  ? "bg-orange-500 text-white" 
+                                  : "bg-emerald-600 text-white"
+                              )}
+                            >
+                              {appointment.status === "provisional" ? "仮予約" : "確定"}
+                            </Badge>
+                            <span className="text-xs text-gray-600">
+                              {Math.round((appointment.endTime.getTime() - appointment.startTime.getTime()) / 60000)}分
+                            </span>
+                          </div>
+                          <div className="font-medium text-sm mb-1 truncate">
+                            {appointment.customerName}
+                          </div>
+                          <div className="flex items-center gap-1 text-xs text-gray-600">
+                            <Clock className="w-3 h-3" />
+                            {appointment.startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            -
+                            {appointment.endTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          </div>
+                          {appointment.serviceId && (
+                            <div className="text-xs text-gray-500 mt-1 truncate">
+                              {getCourseById(appointment.serviceId)?.name || ""}
+                            </div>
+                          )}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <div className="space-y-1">
+                          <p className="font-medium">{appointment.customerName}</p>
+                          <p className="text-sm">コース: {getCourseById(appointment.serviceId)?.name || "N/A"}</p>
+                          <p className="text-sm">料金: ¥{appointment.price.toLocaleString()}</p>
+                          <p className="text-sm">受付: {appointment.reservationTime}</p>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  ))}
+
+                  {/* 利用可能スロット */}
+                  {selectedCustomer && safeMap(getAvailableSlots(member), (slot, index) => {
+                    if (slot.duration < 30) return null; // 30分未満は表示しない
+                    
+                    return (
+                      <Tooltip key={`${member.id}-${index}`}>
+                        <TooltipTrigger asChild>
+                          <button
+                            className={cn(
+                              "absolute top-2 rounded-lg border-2 border-dashed border-gray-300",
+                              "hover:border-emerald-500 hover:bg-emerald-50 transition-all",
+                              "flex items-center justify-center group"
+                            )}
+                            style={{
+                              ...getTimeBlockStyle(slot.startTime, slot.endTime),
+                              height: "calc(100% - 16px)",
+                            }}
+                            onClick={() => handleTimeSlotClick(slot, slot.startTime)}
+                          >
+                            <div className="text-center">
+                              <div className="text-xs text-gray-500 group-hover:text-emerald-700">
+                                {slot.startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                              </div>
+                              <div className="text-sm font-medium text-gray-600 group-hover:text-emerald-700">
+                                {slot.duration}分可
+                              </div>
+                            </div>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>クリックして予約を作成</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+
+                  {/* 時間グリッド線 */}
+                  {Array.from({ length: totalHours }).map((_, index) => (
+                    <div 
+                      key={index} 
+                      className="absolute top-0 h-full border-r border-gray-200"
+                      style={{ left: `${index * HOUR_WIDTH}px` }}
+                    />
+                  ))}
+                </div>
+              ))}
+
+              {/* 現在時刻ライン */}
+              {currentTimePosition !== null && (
+                <div
+                  className="absolute top-0 h-full w-0.5 bg-red-500 z-30 pointer-events-none"
+                  style={{ left: `${currentTimePosition}px` }}
+                >
+                  <div className="absolute -top-2 -left-1 w-3 h-3 bg-red-500 rounded-full" />
+                  <div className="absolute -top-6 -left-8 text-xs text-red-600 font-medium bg-white px-1 rounded">
+                    {currentTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      </div>
+
+        <ReservationDialog
+          open={!!selectedAppointment}
+          onOpenChange={(open) => !open && setSelectedAppointmentState(null)}
+          reservation={selectedAppointment as ReservationData}
+        />
+
+        <QuickBookingDialog
+          open={!!selectedSlot}
+          onOpenChange={(open) => !open && setSelectedSlot(null)}
+          selectedStaff={{
+            id: selectedSlot?.staffId || "",
+            name: selectedSlot?.staffName || ""
+          }}
+          selectedTime={selectedSlot?.startTime}
+          selectedCustomer={selectedCustomer}
+        />
+        
+        <StaffDialog
+          open={!!selectedStaff}
+          onOpenChange={(open) => !open && setSelectedStaff(null)}
+          staff={selectedStaff}
+          selectedDate={selectedDate}
+        />
+      </div>
+    </TooltipProvider>
   )
 }
