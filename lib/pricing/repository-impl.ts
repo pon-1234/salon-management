@@ -18,90 +18,126 @@ export class PricingRepositoryImpl implements PricingRepository {
 
   // Course pricing methods
   async getCourses(storeId?: string): Promise<CoursePrice[]> {
-    const allCourses = Array.from(this.courses.values())
-    return allCourses
-      .filter((course) => course.isActive)
-      .sort((a, b) => a.displayOrder - b.displayOrder)
+    const response = await fetch('/api/course')
+    if (!response.ok) {
+      throw new Error(`Failed to fetch courses: ${response.statusText}`)
+    }
+    const courses = await response.json()
+    return courses
+      .filter((course: any) => course.isActive !== false)
+      .sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
   }
 
   async getCourseById(id: string): Promise<CoursePrice | null> {
-    return this.courses.get(id) || null
+    const response = await fetch(`/api/course?id=${id}`)
+    if (response.status === 404) {
+      return null
+    }
+    if (!response.ok) {
+      throw new Error(`Failed to fetch course: ${response.statusText}`)
+    }
+    return response.json()
   }
 
   async createCourse(
     course: Omit<CoursePrice, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<CoursePrice> {
-    const newCourse: CoursePrice = {
-      ...course,
-      id: Date.now().toString(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    const response = await fetch('/api/course', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(course),
+    })
+    if (!response.ok) {
+      throw new Error(`Failed to create course: ${response.statusText}`)
     }
-    this.courses.set(newCourse.id, newCourse)
-    return newCourse
+    return response.json()
   }
 
   async updateCourse(id: string, course: Partial<CoursePrice>): Promise<CoursePrice> {
-    const existing = await this.getCourseById(id)
-    if (!existing) {
-      throw new Error(`Course with id ${id} not found`)
+    const response = await fetch('/api/course', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ id, ...course }),
+    })
+    if (!response.ok) {
+      throw new Error(`Failed to update course: ${response.statusText}`)
     }
-    const updated = {
-      ...existing,
-      ...course,
-      id,
-      updatedAt: new Date(),
-    }
-    this.courses.set(id, updated)
-    return updated
+    return response.json()
   }
 
   async deleteCourse(id: string): Promise<void> {
-    this.courses.delete(id)
+    const response = await fetch(`/api/course?id=${id}`, {
+      method: 'DELETE',
+    })
+    if (!response.ok) {
+      throw new Error(`Failed to delete course: ${response.statusText}`)
+    }
   }
 
   // Option pricing methods
   async getOptions(storeId?: string): Promise<OptionPrice[]> {
-    const allOptions = Array.from(this.options.values())
-    return allOptions
-      .filter((option) => option.isActive)
-      .sort((a, b) => a.displayOrder - b.displayOrder)
+    const response = await fetch('/api/option')
+    if (!response.ok) {
+      throw new Error(`Failed to fetch options: ${response.statusText}`)
+    }
+    const options = await response.json()
+    return options
+      .filter((option: any) => option.isActive !== false)
+      .sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
   }
 
   async getOptionById(id: string): Promise<OptionPrice | null> {
-    return this.options.get(id) || null
+    const response = await fetch(`/api/option?id=${id}`)
+    if (response.status === 404) {
+      return null
+    }
+    if (!response.ok) {
+      throw new Error(`Failed to fetch option: ${response.statusText}`)
+    }
+    return response.json()
   }
 
   async createOption(
     option: Omit<OptionPrice, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<OptionPrice> {
-    const newOption: OptionPrice = {
-      ...option,
-      id: Date.now().toString(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    const response = await fetch('/api/option', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(option),
+    })
+    if (!response.ok) {
+      throw new Error(`Failed to create option: ${response.statusText}`)
     }
-    this.options.set(newOption.id, newOption)
-    return newOption
+    return response.json()
   }
 
   async updateOption(id: string, option: Partial<OptionPrice>): Promise<OptionPrice> {
-    const existing = await this.getOptionById(id)
-    if (!existing) {
-      throw new Error(`Option with id ${id} not found`)
+    const response = await fetch('/api/option', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ id, ...option }),
+    })
+    if (!response.ok) {
+      throw new Error(`Failed to update option: ${response.statusText}`)
     }
-    const updated = {
-      ...existing,
-      ...option,
-      id,
-      updatedAt: new Date(),
-    }
-    this.options.set(id, updated)
-    return updated
+    return response.json()
   }
 
   async deleteOption(id: string): Promise<void> {
-    this.options.delete(id)
+    const response = await fetch(`/api/option?id=${id}`, {
+      method: 'DELETE',
+    })
+    if (!response.ok) {
+      throw new Error(`Failed to delete option: ${response.statusText}`)
+    }
   }
 
   // Additional fees methods
