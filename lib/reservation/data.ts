@@ -2,20 +2,111 @@ import { Reservation, Service } from '../types/reservation'
 
 export const services: Service[] = [
   // キャンペーンコース
-  { id: 'campaign70', name: '70分お試しフリー限定', duration: 70, price: 13000 },
-  { id: 'campaign90', name: '90分コース', duration: 90, price: 19000 },
-  { id: 'campaign110', name: '110分人気No.2コース', duration: 110, price: 25000 },
-  { id: 'campaign130', name: '130分人気No.1コース', duration: 130, price: 30000 },
-  { id: 'campaign160', name: '160分コース', duration: 160, price: 36000 },
-  { id: 'campaign190', name: '190分コース', duration: 190, price: 42000 },
+  {
+    id: 'campaign70',
+    name: '70分お試しフリー限定',
+    duration: 70,
+    price: 13000,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'campaign90',
+    name: '90分コース',
+    duration: 90,
+    price: 19000,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'campaign110',
+    name: '110分人気No.2コース',
+    duration: 110,
+    price: 25000,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'campaign130',
+    name: '130分人気No.1コース',
+    duration: 130,
+    price: 30000,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'campaign160',
+    name: '160分コース',
+    duration: 160,
+    price: 36000,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'campaign190',
+    name: '190分コース',
+    duration: 190,
+    price: 42000,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
   // 密着睾丸コース
-  { id: '60min', name: '60分お試しフリー限定', duration: 60, price: 16000 },
-  { id: '80min', name: '80分コース', duration: 80, price: 21000 },
-  { id: '100min', name: '100分コース', duration: 100, price: 26000 },
-  { id: '120min', name: '120分オススメコース', duration: 120, price: 32000 },
-  { id: '150min', name: '150分コース', duration: 150, price: 39000 },
-  { id: '180min', name: '180分コース', duration: 180, price: 46000 },
-  { id: 'extension30', name: '延長30分', duration: 30, price: 8000 },
+  {
+    id: '60min',
+    name: '60分お試しフリー限定',
+    duration: 60,
+    price: 16000,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: '80min',
+    name: '80分コース',
+    duration: 80,
+    price: 21000,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: '100min',
+    name: '100分コース',
+    duration: 100,
+    price: 26000,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: '120min',
+    name: '120分オススメコース',
+    duration: 120,
+    price: 32000,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: '150min',
+    name: '150分コース',
+    duration: 150,
+    price: 39000,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: '180min',
+    name: '180分コース',
+    duration: 180,
+    price: 46000,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'extension30',
+    name: '延長30分',
+    duration: 30,
+    price: 8000,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
 ]
 
 let reservations: Reservation[] = [
@@ -28,13 +119,8 @@ let reservations: Reservation[] = [
     endTime: new Date(2024, 11, 15, 15, 0),
     status: 'confirmed',
     price: 13000,
-    customerName: '山田太郎',
-    staffName: 'みるく',
-    staffRank: 'ゴールド',
-    courseName: '基本コース',
-    duration: 60,
-    location: '池袋（北口・西口）',
-    isNewDesignation: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: '2',
@@ -45,14 +131,9 @@ let reservations: Reservation[] = [
     endTime: new Date(2024, 11, 15, 17, 30),
     status: 'pending',
     price: 18000,
-    customerName: '鈴木花子',
-    staffName: 'さくら',
-    staffRank: 'シルバー',
-    courseName: 'リラックスコース',
-    duration: 90,
-    location: '池袋（東口）ホテルA 302号室',
-    isNewDesignation: true,
     notes: '初めてのご利用です。丁寧な対応をお願いします。',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: '3',
@@ -63,13 +144,8 @@ let reservations: Reservation[] = [
     endTime: new Date(2024, 11, 16, 12, 0),
     status: 'confirmed',
     price: 22000,
-    customerName: '佐藤次郎',
-    staffName: 'れい',
-    staffRank: 'ブロンズ',
-    courseName: 'プレミアムコース',
-    duration: 120,
-    location: '池袋（北口・西口）ホテルB 505号室',
-    isNewDesignation: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: '4',
@@ -80,13 +156,8 @@ let reservations: Reservation[] = [
     endTime: new Date(2024, 11, 16, 16, 30),
     status: 'confirmed',
     price: 26000,
-    customerName: '高橋美咲',
-    staffName: 'ゆき',
-    staffRank: 'ゴールド',
-    courseName: 'VIPコース',
-    duration: 150,
-    location: '池袋（南口）ホテルC 701号室',
-    isNewDesignation: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: '5',
@@ -97,13 +168,8 @@ let reservations: Reservation[] = [
     endTime: new Date(2024, 11, 17, 19, 10),
     status: 'pending',
     price: 15000,
-    customerName: '渡辺健太',
-    staffName: 'みるく',
-    staffRank: 'ゴールド',
-    courseName: 'イベントコース',
-    duration: 70,
-    location: '池袋（北口・西口）',
-    isNewDesignation: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: '6',
@@ -114,13 +180,8 @@ let reservations: Reservation[] = [
     endTime: new Date(2024, 11, 17, 21, 50),
     status: 'confirmed',
     price: 21000,
-    customerName: '木村雅子',
-    staffName: 'さくら',
-    staffRank: 'シルバー',
-    courseName: 'スペシャルイベントコース',
-    duration: 110,
-    location: '池袋（東口）ホテルD 203号室',
-    isNewDesignation: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: '7',
@@ -131,13 +192,8 @@ let reservations: Reservation[] = [
     endTime: new Date(2024, 11, 18, 13, 20),
     status: 'confirmed',
     price: 16000,
-    customerName: '中村俊介',
-    staffName: 'れい',
-    staffRank: 'ブロンズ',
-    courseName: 'ランチタイムコース',
-    duration: 80,
-    location: '池袋（北口・西口）ホテルE 404号室',
-    isNewDesignation: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: '8',
@@ -148,14 +204,9 @@ let reservations: Reservation[] = [
     endTime: new Date(2024, 11, 18, 16, 40),
     status: 'pending',
     price: 19000,
-    customerName: '小林恵美',
-    staffName: 'ゆき',
-    staffRank: 'ゴールド',
-    courseName: 'アフタヌーンコース',
-    duration: 100,
-    location: '池袋（南口）',
-    isNewDesignation: true,
     notes: 'アロマオイルマッサージをリクエスト',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: '9',
@@ -166,13 +217,8 @@ let reservations: Reservation[] = [
     endTime: new Date(2024, 11, 19, 22, 0),
     status: 'confirmed',
     price: 30000,
-    customerName: '田中誠',
-    staffName: 'みるく',
-    staffRank: 'ゴールド',
-    courseName: 'ロングコース',
-    duration: 180,
-    location: '池袋（北口・西口）ホテルF 801号室',
-    isNewDesignation: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: '10',
@@ -183,13 +229,8 @@ let reservations: Reservation[] = [
     endTime: new Date(2024, 11, 19, 23, 0),
     status: 'confirmed',
     price: 5000,
-    customerName: '山本裕子',
-    staffName: 'さくら',
-    staffRank: 'シルバー',
-    courseName: '延長コース',
-    duration: 30,
-    location: '池袋（東口）ホテルG 605号室',
-    isNewDesignation: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
 ]
 
@@ -214,17 +255,22 @@ export async function getAllReservations(): Promise<Reservation[]> {
   })
 }
 
-export function addReservation(newReservation: Reservation): void {
-  reservations.push(newReservation)
-}
-
-export function updateReservation(updatedReservation: Reservation): void {
-  const index = reservations.findIndex((r) => r.id === updatedReservation.id)
+export function updateReservation(id: string, updates: Partial<Reservation>): void {
+  const index = reservations.findIndex((r) => r.id === id)
   if (index !== -1) {
-    reservations[index] = updatedReservation
+    reservations[index] = { ...reservations[index], ...updates, updatedAt: new Date() }
   }
 }
 
-export function deleteReservation(id: string): void {
-  reservations = reservations.filter((r) => r.id !== id)
+export function addReservation(
+  reservation: Omit<Reservation, 'id' | 'createdAt' | 'updatedAt'>
+): Reservation {
+  const newReservation: Reservation = {
+    ...reservation,
+    id: (reservations.length + 1).toString(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }
+  reservations.push(newReservation)
+  return newReservation
 }

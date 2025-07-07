@@ -51,10 +51,6 @@ export default function OptionInfoPage() {
     note: '',
   })
 
-  useEffect(() => {
-    loadOptions()
-  }, [loadOptions])
-
   const loadOptions = useCallback(async () => {
     try {
       setLoading(true)
@@ -70,6 +66,10 @@ export default function OptionInfoPage() {
       setLoading(false)
     }
   }, [pricingUseCases, toast])
+
+  useEffect(() => {
+    loadOptions()
+  }, [loadOptions])
 
   const handleSync = async () => {
     try {

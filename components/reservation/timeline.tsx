@@ -15,10 +15,10 @@ import { StaffDialog } from '@/components/cast/cast-dialog'
 import { format } from 'date-fns'
 import { getCourseById } from '@/lib/course-option/utils'
 import { customers as customerList, Customer } from '@/lib/customer/data'
-import { ReservationData } from '@/components/reservation/reservation-table'
+import { ReservationData } from '@/lib/types/reservation'
 
 // safeMapを安全に実装（undefinedやnullでも空配列を返す）
-function safeMap<T, U>(arr: T[] | undefined | null, callback: (item: T) => U): U[] {
+function safeMap<T, U>(arr: T[] | undefined | null, callback: (item: T, index: number) => U): U[] {
   return Array.isArray(arr) ? arr.map(callback) : []
 }
 
@@ -374,9 +374,7 @@ export function Timeline({
                       ...getTimeBlockStyle(appointment.startTime, appointment.endTime),
                       height: 'calc(100% - 16px)',
                     }}
-                    onClick={() =>
-                      setSelectedAppointmentState(convertToReservationData(appointment, member))
-                    }
+                    onClick={() => setSelectedAppointmentState(appointment)}
                   >
                     <div className="mb-1 flex items-center justify-between">
                       <Badge
@@ -485,16 +483,28 @@ export function Timeline({
       <ReservationDialog
         open={!!selectedAppointment}
         onOpenChange={(open) => !open && setSelectedAppointmentState(null)}
-        reservation={selectedAppointment as ReservationData}
+        reservation={
+          selectedAppointment
+            ? convertToReservationData(
+                selectedAppointment,
+                filteredStaff.find((s) => s.appointments.includes(selectedAppointment)) ||
+                  filteredStaff[0]
+              )
+            : null
+        }
       />
 
       <QuickBookingDialog
         open={!!selectedSlot}
         onOpenChange={(open) => !open && setSelectedSlot(null)}
-        selectedStaff={{
-          id: selectedSlot?.staffId || '',
-          name: selectedSlot?.staffName || '',
-        }}
+        selectedStaff={
+          selectedSlot
+            ? ({
+                id: selectedSlot.staffId,
+                name: selectedSlot.staffName,
+              } as any)
+            : null
+        }
         selectedTime={selectedSlot?.startTime}
         selectedCustomer={selectedCustomer}
       />

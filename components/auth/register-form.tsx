@@ -157,10 +157,8 @@ export function RegisterForm({ store }: RegisterFormProps) {
                   </Select>
                 </div>
                 <Calendar
-                  mode="single"
-                  selected={birthDate}
-                  onSelect={setBirthDate}
-                  locale={ja}
+                  selectedDay={birthDate}
+                  onSelectedDayChange={setBirthDate}
                   disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
                 />
               </PopoverContent>

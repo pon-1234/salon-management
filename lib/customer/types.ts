@@ -23,6 +23,9 @@ export interface Customer extends BaseEntity {
   notes?: string
   ngCastIds?: string[]
   ngCasts?: NgCastEntry[]
+  image?: string
+  visitCount?: number
+  lastVisit?: Date
 }
 
 export interface CustomerUsageRecord {

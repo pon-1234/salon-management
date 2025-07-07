@@ -30,6 +30,34 @@ interface CastPerformanceTableProps {
   analyticsUseCases: AnalyticsUseCases
 }
 
+interface TotalsAccumulator {
+  workingCasts: number
+  totalHours: number
+  cashTransactions: {
+    count: number
+    amount: number
+  }
+  cardTransactions: {
+    count: number
+    amount: number
+  }
+  totalTransactions: number
+  newCustomers: {
+    free: number
+    paid: number
+  }
+  designations: {
+    regular: number
+    total: number
+    rate: number
+  }
+  discount: number
+  totalAmount: number
+  castFee: number
+  castRevenue: number
+  storeRevenue: number
+}
+
 export function CastPerformanceTable({ analyticsUseCases }: CastPerformanceTableProps) {
   const [data, setData] = useState<StaffPerformanceData[]>([])
 
@@ -41,7 +69,7 @@ export function CastPerformanceTable({ analyticsUseCases }: CastPerformanceTable
     fetchData()
   }, [analyticsUseCases])
 
-  const totals = data.reduce(
+  const totals = data.reduce<TotalsAccumulator>(
     (acc, curr) => ({
       workingCasts: acc.workingCasts + 1,
       totalHours: acc.totalHours + parseInt(curr.workDays.split('/')[1]),
@@ -61,6 +89,7 @@ export function CastPerformanceTable({ analyticsUseCases }: CastPerformanceTable
       designations: {
         regular: acc.designations.regular + curr.designations.regular,
         total: acc.designations.total + curr.designations.total,
+        rate: 0, // Will be calculated after reduce
       },
       discount: acc.discount + curr.discount,
       totalAmount: acc.totalAmount + curr.totalAmount,
@@ -75,7 +104,7 @@ export function CastPerformanceTable({ analyticsUseCases }: CastPerformanceTable
       cardTransactions: { count: 0, amount: 0 },
       totalTransactions: 0,
       newCustomers: { free: 0, paid: 0 },
-      designations: { regular: 0, total: 0 },
+      designations: { regular: 0, total: 0, rate: 0 },
       discount: 0,
       totalAmount: 0,
       castFee: 0,

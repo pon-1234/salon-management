@@ -78,10 +78,8 @@ export default function BookingPage() {
             </CardHeader>
             <CardContent>
               <Calendar
-                mode="single"
-                selected={date}
-                onSelect={setDate}
-                locale={ja}
+                selectedDay={date}
+                onSelectedDayChange={setDate}
                 className="rounded-md border"
                 disabled={(date) => date < new Date()}
               />

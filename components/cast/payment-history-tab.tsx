@@ -301,7 +301,9 @@ function PaymentRecordForm({ onSubmit, salesRecords, initialData }: PaymentRecor
           <Label htmlFor="paymentType">支払方法</Label>
           <Select
             value={formData.paymentType}
-            onValueChange={(value) => setFormData({ ...formData, paymentType: value })}
+            onValueChange={(value) =>
+              setFormData({ ...formData, paymentType: value as '現金精算' | '振込' | 'その他' })
+            }
           >
             <SelectTrigger>
               <SelectValue />

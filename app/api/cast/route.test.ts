@@ -37,7 +37,6 @@ describe('Cast API endpoints', () => {
         bust: 'B',
         waist: 58,
         hip: 85,
-        isActive: true,
         workStart: '10:00',
         workEnd: '22:00',
         specialDesignationFee: 2000,

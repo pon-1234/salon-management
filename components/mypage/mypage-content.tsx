@@ -36,7 +36,7 @@ export function MyPageContent({ store }: MyPageContentProps) {
           <div>
             <h1 className="mb-2 text-2xl font-bold">{user.nickname}さんのマイページ</h1>
             <p className="text-gray-600">
-              会員ランク: {user.memberType === 'vip' ? 'VIP会員' : '通常会員'}
+              会員ランク: {user.memberType === 'regular' ? '通常会員' : 'VIP会員'}
             </p>
           </div>
           <div className="text-right">

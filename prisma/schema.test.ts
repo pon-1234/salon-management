@@ -3,7 +3,7 @@
  * @related_to   Prisma schema validation
  * @known_issues Not available
  */
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 

@@ -89,7 +89,8 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>
 
-export default function CustomerProfile({ params }: { params: { id: string } }) {
+export default function CustomerProfile({ params }: { params: Promise<{ id: string }> }) {
+  const [id, setId] = useState<string>('')
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [usageHistory, setUsageHistory] = useState<CustomerUsageRecord[]>([])
   const [pointHistory, setPointHistory] = useState<CustomerPointHistory[]>([])
@@ -132,13 +133,20 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
   const age = birthDate ? calculateAge(birthDate) : null
 
   useEffect(() => {
+    params.then(({ id: paramId }) => {
+      setId(paramId)
+    })
+  }, [params])
+
+  useEffect(() => {
+    if (!id) return
     const fetchCustomerData = async () => {
       // Instantiate repository and use cases
       const customerRepository = new CustomerRepositoryImpl()
       const customerUseCases = new CustomerUseCases(customerRepository)
 
       // Fetch main customer data
-      const fetchedCustomer = await customerUseCases.getById(params.id)
+      const fetchedCustomer = await customerUseCases.getById(id)
 
       if (fetchedCustomer) {
         setCustomer(fetchedCustomer as Customer)
@@ -163,10 +171,10 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
     }
 
     fetchCustomerData()
-  }, [params.id, form])
+  }, [id, form])
 
   const handleBooking = () => {
-    router.push(`/admin/reservation?customerId=${params.id}`)
+    router.push(`/admin/reservation?customerId=${id}`)
   }
 
   const handleSave = async (data: FormData) => {
@@ -176,7 +184,7 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
     const customerUseCases = new CustomerUseCases(customerRepository)
 
     try {
-      const updatedCustomer = await customerUseCases.update(params.id, {
+      const updatedCustomer = await customerUseCases.update(id, {
         name: data.name,
         nameKana: (data as any).nameKana, // Assuming nameKana is part of the form, though not in schema
         phone: data.phone,

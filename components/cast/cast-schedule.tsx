@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button'
-import { StaffSchedule as Schedule } from '@/lib/staff/types'
+import { CastSchedule as Schedule } from '@/lib/cast/types'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 

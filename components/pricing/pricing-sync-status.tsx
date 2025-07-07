@@ -23,10 +23,6 @@ export function PricingSyncStatusCard({ storeId, storeName }: PricingSyncStatusC
 
   const pricingUseCases = getPricingUseCases()
 
-  useEffect(() => {
-    loadSyncStatus()
-  }, [storeId, loadSyncStatus])
-
   const loadSyncStatus = useCallback(async () => {
     try {
       setLoading(true)
@@ -42,6 +38,10 @@ export function PricingSyncStatusCard({ storeId, storeName }: PricingSyncStatusC
       setLoading(false)
     }
   }, [pricingUseCases, storeId, toast])
+
+  useEffect(() => {
+    loadSyncStatus()
+  }, [loadSyncStatus])
 
   const handleSync = async () => {
     try {

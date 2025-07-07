@@ -13,7 +13,7 @@ export function ErrorExample() {
       throw new Error('クライアントサイドでエラーが発生しました')
     } catch (err) {
       if (err instanceof Error) {
-        logError(err, {
+        logError(err, 'ErrorExample handleClick error', {
           context: {
             component: 'ErrorExample',
             action: 'handleClick',

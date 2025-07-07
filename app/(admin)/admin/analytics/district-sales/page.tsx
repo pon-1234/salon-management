@@ -160,7 +160,7 @@ export default function DistrictSalesPage() {
           <CardTitle>地区別売上構成</CardTitle>
         </CardHeader>
         <CardContent>
-          <DistrictSalesChart area={selectedArea} year={selectedYear} data={data} />
+          <DistrictSalesChart area={selectedArea} year={selectedYear} data={data.districts} />
         </CardContent>
       </Card>
 

@@ -59,10 +59,6 @@ export default function CourseInfoPage() {
     price: 0,
   })
 
-  useEffect(() => {
-    loadCourses()
-  }, [loadCourses])
-
   const loadCourses = useCallback(async () => {
     try {
       setLoading(true)
@@ -78,6 +74,10 @@ export default function CourseInfoPage() {
       setLoading(false)
     }
   }, [pricingUseCases, toast])
+
+  useEffect(() => {
+    loadCourses()
+  }, [loadCourses])
 
   const handleSync = async () => {
     try {
@@ -124,7 +124,7 @@ export default function CourseInfoPage() {
       description: course.description,
       durations: [...course.durations],
       features: [...course.features],
-      category: course.category,
+      category: course.category === 'campaign' ? 'standard' : course.category,
       displayOrder: course.displayOrder,
       isActive: course.isActive,
       isPopular: course.isPopular || false,

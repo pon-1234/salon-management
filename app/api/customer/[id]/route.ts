@@ -8,9 +8,9 @@ interface Params {
 }
 
 // GET a single customer by ID
-export async function GET(request: Request, context: { params: Params }) {
+export async function GET(request: Request, context: { params: Promise<Params> }) {
   try {
-    const { id } = context.params
+    const { id } = await context.params
     const customer = await prisma.customer.findUnique({
       where: { id },
     })
@@ -25,9 +25,9 @@ export async function GET(request: Request, context: { params: Params }) {
 }
 
 // UPDATE a customer
-export async function PUT(request: Request, context: { params: Params }) {
+export async function PUT(request: Request, context: { params: Promise<Params> }) {
   try {
-    const { id } = context.params
+    const { id } = await context.params
     const data = await request.json()
     const updatedCustomer = await prisma.customer.update({
       where: { id },
@@ -45,9 +45,9 @@ export async function PUT(request: Request, context: { params: Params }) {
 }
 
 // DELETE a customer
-export async function DELETE(request: Request, context: { params: Params }) {
+export async function DELETE(request: Request, context: { params: Promise<Params> }) {
   try {
-    const { id } = context.params
+    const { id } = await context.params
     await prisma.customer.delete({
       where: { id },
     })

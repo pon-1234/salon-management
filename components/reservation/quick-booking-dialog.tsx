@@ -83,7 +83,7 @@ export function QuickBookingDialog({
     designationFee: '0円',
     options: {
       回春増し増し: true,
-    },
+    } as Record<string, boolean>,
     transportationFee: 0,
     paymentMethod: '現金',
     discount: 'お店イベント 3,000円',

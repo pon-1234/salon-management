@@ -6,7 +6,10 @@ import { DayPicker } from 'react-day-picker'
 import { ja } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 
-export type CalendarProps = React.ComponentProps<typeof DayPicker> & {
+export type CalendarProps = Omit<
+  React.ComponentProps<typeof DayPicker>,
+  'mode' | 'selected' | 'onSelect'
+> & {
   selectedDay?: Date | undefined
   onSelectedDayChange?: (day?: Date) => void
 }
@@ -19,6 +22,9 @@ function Calendar({
   onSelectedDayChange,
   ...props
 }: CalendarProps) {
+  // Remove mode, selected, and onSelect from props to avoid conflicts
+  const { mode: _, selected: __, onSelect: ___, ...restProps } = props as any
+
   return (
     <DayPicker
       mode="single"
@@ -63,10 +69,10 @@ function Calendar({
         disabled: 'text-muted-foreground opacity-50',
       }}
       components={{
-        IconLeft: () => <ChevronLeft className="h-4 w-4" />,
-        IconRight: () => <ChevronRight className="h-4 w-4" />,
+        PreviousMonthButton: () => <ChevronLeft className="h-4 w-4" />,
+        NextMonthButton: () => <ChevronRight className="h-4 w-4" />,
       }}
-      {...props}
+      {...restProps}
     />
   )
 }

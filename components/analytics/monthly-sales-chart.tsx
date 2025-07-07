@@ -32,7 +32,7 @@ export function MonthlySalesChart({ year, month, analyticsUseCases }: MonthlySal
   }, [year, month, analyticsUseCases])
 
   const chartData = data.map((item) => ({
-    date: parseInt(item.date),
+    date: item.date,
     売上高: item.totalSales,
     来客数: item.customerCount * 1000, // スケール調整のため1000倍
     客単価: item.totalSales / item.customerCount || 0,

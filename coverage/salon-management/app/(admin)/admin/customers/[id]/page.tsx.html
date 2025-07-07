@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/1113</span>
+                <span class='fraction'>0/1121</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/1113</span>
+                <span class='fraction'>0/1121</span>
             </div>
         
             
@@ -1176,7 +1176,23 @@
 <a name='L1111'></a><a href='#L1111'>1111</a>
 <a name='L1112'></a><a href='#L1112'>1112</a>
 <a name='L1113'></a><a href='#L1113'>1113</a>
-<a name='L1114'></a><a href='#L1114'>1114</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L1114'></a><a href='#L1114'>1114</a>
+<a name='L1115'></a><a href='#L1115'>1115</a>
+<a name='L1116'></a><a href='#L1116'>1116</a>
+<a name='L1117'></a><a href='#L1117'>1117</a>
+<a name='L1118'></a><a href='#L1118'>1118</a>
+<a name='L1119'></a><a href='#L1119'>1119</a>
+<a name='L1120'></a><a href='#L1120'>1120</a>
+<a name='L1121'></a><a href='#L1121'>1121</a>
+<a name='L1122'></a><a href='#L1122'>1122</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -2380,7 +2396,8 @@
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >type FormData = z.infer&lt;typeof formSchema&gt;</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >export default function CustomerProfile({ params }: { params: { id: string } }) {</span>
+<span class="cstat-no" title="statement not covered" >export default function CustomerProfile({ params }: { params: Promise&lt;{ id: string }&gt; }) {</span>
+<span class="cstat-no" title="statement not covered" >  const [id, setId] = useState&lt;string&gt;('')</span>
 <span class="cstat-no" title="statement not covered" >  const [customer, setCustomer] = useState&lt;Customer | null&gt;(null)</span>
 <span class="cstat-no" title="statement not covered" >  const [usageHistory, setUsageHistory] = useState&lt;CustomerUsageRecord[]&gt;([])</span>
 <span class="cstat-no" title="statement not covered" >  const [pointHistory, setPointHistory] = useState&lt;CustomerPointHistory[]&gt;([])</span>
@@ -2423,13 +2440,20 @@
 <span class="cstat-no" title="statement not covered" >  const age = birthDate ? calculateAge(birthDate) : null</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  useEffect(() =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    params.then(({ id: paramId }) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >      setId(paramId)</span>
+<span class="cstat-no" title="statement not covered" >    })</span>
+<span class="cstat-no" title="statement not covered" >  }, [params])</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  useEffect(() =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    if (!id) return</span>
 <span class="cstat-no" title="statement not covered" >    const fetchCustomerData = async () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      // Instantiate repository and use cases</span>
 <span class="cstat-no" title="statement not covered" >      const customerRepository = new CustomerRepositoryImpl()</span>
 <span class="cstat-no" title="statement not covered" >      const customerUseCases = new CustomerUseCases(customerRepository)</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >      // Fetch main customer data</span>
-<span class="cstat-no" title="statement not covered" >      const fetchedCustomer = await customerUseCases.getById(params.id)</span>
+<span class="cstat-no" title="statement not covered" >      const fetchedCustomer = await customerUseCases.getById(id)</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >      if (fetchedCustomer) {</span>
 <span class="cstat-no" title="statement not covered" >        setCustomer(fetchedCustomer as Customer)</span>
@@ -2454,10 +2478,10 @@
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >    fetchCustomerData()</span>
-<span class="cstat-no" title="statement not covered" >  }, [params.id, form])</span>
+<span class="cstat-no" title="statement not covered" >  }, [id, form])</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  const handleBooking = () =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    router.push(`/admin/reservation?customerId=${params.id}`)</span>
+<span class="cstat-no" title="statement not covered" >    router.push(`/admin/reservation?customerId=${id}`)</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  const handleSave = async (data: FormData) =&gt; {</span>
@@ -2467,7 +2491,7 @@
 <span class="cstat-no" title="statement not covered" >    const customerUseCases = new CustomerUseCases(customerRepository)</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
-<span class="cstat-no" title="statement not covered" >      const updatedCustomer = await customerUseCases.update(params.id, {</span>
+<span class="cstat-no" title="statement not covered" >      const updatedCustomer = await customerUseCases.update(id, {</span>
 <span class="cstat-no" title="statement not covered" >        name: data.name,</span>
 <span class="cstat-no" title="statement not covered" >        nameKana: (data as any).nameKana, // Assuming nameKana is part of the form, though not in schema</span>
 <span class="cstat-no" title="statement not covered" >        phone: data.phone,</span>
@@ -3409,7 +3433,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T05:33:18.371Z
+                at 2025-07-07T07:27:46.507Z
             </div>
         <script src="../../../../../../prettify.js"></script>
         <script>

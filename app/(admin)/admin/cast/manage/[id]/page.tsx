@@ -27,21 +27,29 @@ import { PaymentHistoryTab } from '@/components/cast/payment-history-tab'
 import { SettlementStatusTab } from '@/components/cast/settlement-status-tab'
 import { WorkPerformanceTab } from '@/components/cast/work-performance-tab'
 
-export default function CastManagePage({ params }: { params: { id: string } }) {
+export default function CastManagePage({ params }: { params: Promise<{ id: string }> }) {
   const [cast, setCast] = useState<Cast | null>(null)
   const [isEditingProfile, setIsEditingProfile] = useState(false)
+  const [id, setId] = useState<string>('')
   const router = useRouter()
-  const isNewCast = params.id === 'new'
+  const isNewCast = id === 'new'
 
   useEffect(() => {
+    params.then(({ id: paramId }) => {
+      setId(paramId)
+    })
+  }, [params])
+
+  useEffect(() => {
+    if (!id) return
     const fetchCast = async () => {
       const castList = getAllCasts()
-      const foundCast = castList.find((c) => c.id === params.id)
+      const foundCast = castList.find((c) => c.id === id)
       setCast(foundCast || null)
     }
 
     fetchCast()
-  }, [params.id, isNewCast])
+  }, [id, isNewCast])
 
   const handleSubmit = async (data: Partial<Cast>) => {
     // In a real application, this would make an API call

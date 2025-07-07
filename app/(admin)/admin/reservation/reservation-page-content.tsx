@@ -12,7 +12,8 @@ import { FilterDialog, FilterOptions } from '@/components/reservation/filter-dia
 import { castMembers, Cast, Appointment } from '@/lib/cast/data'
 import { getAllReservations } from '@/lib/reservation/data'
 import { getCourseById } from '@/lib/course-option/utils'
-import { ReservationTable, ReservationData } from '@/components/reservation/reservation-table'
+import { ReservationTable } from '@/components/reservation/reservation-table'
+import { ReservationData } from '@/lib/types/reservation'
 import { format } from 'date-fns'
 import { customers as customerList, Customer } from '@/lib/customer/data' // Import customer data
 import { ReservationDialog } from '@/components/reservation/reservation-dialog'
@@ -64,13 +65,26 @@ export function ReservationPageContent() {
     )
 
     let updatedCastData = castMembers.map((member) => {
-      const appointments = filteredReservations
+      const appointments: Appointment[] = filteredReservations
         .filter((reservation) => reservation.staffId === member.id)
-        .map((reservation) => ({
-          ...reservation,
-          startTime: new Date(reservation.startTime),
-          endTime: new Date(reservation.endTime),
-        }))
+        .map((reservation) => {
+          const customer = customerList.find((c) => c.id === reservation.customerId)
+          const course = getCourseById(reservation.serviceId)
+
+          return {
+            id: reservation.id,
+            serviceName: course?.name || 'Unknown Service',
+            startTime: new Date(reservation.startTime),
+            endTime: new Date(reservation.endTime),
+            customerName: customer?.name || `顧客${reservation.customerId}`,
+            customerPhone: customer?.phone || '090-0000-0000',
+            customerEmail: customer?.email || 'customer@example.com',
+            reservationTime: format(new Date(reservation.startTime), 'HH:mm'),
+            status: reservation.status === 'confirmed' ? 'confirmed' : 'provisional',
+            location: '東京エリア',
+            price: reservation.price,
+          } as Appointment
+        })
 
       return { ...member, appointments }
     })
@@ -247,27 +261,30 @@ export function ReservationPageContent() {
     handleFilterDialogClose()
   }
 
-  const handleCustomerSelection = (customer: Customer | null) => {
-    // Update: Added Customer | null type
-    setSelectedCustomer(customer)
+  const handleCustomerSelection = (customer: { id: string; name: string } | null) => {
+    // If we need the full customer data, find it from the customer list
+    if (customer) {
+      const fullCustomer = customerList.find((c) => c.id === customer.id)
+      setSelectedCustomer(fullCustomer || null)
+    } else {
+      setSelectedCustomer(null)
+    }
   }
 
   const allAppointments: ReservationData[] = castData.flatMap((staff) =>
     staff.appointments.map((appointment) => {
-      // 2. Fix: Type guard and consistent ID check
-      const customer = customerList.find((c) => c.id === String(appointment.customerId))
-
-      // 3. Fix: Log customer data for debugging
-      console.log('Customer found:', customer)
+      // Find the original reservation to get all the data we need
+      // Note: getAllReservations is async, but we don't have access to it here
+      // We'll use the data we already have from the appointment
+      const customer = customerList.find((c) => c.name === appointment.customerName)
 
       return {
-        ...appointment,
-        id: appointment.id.toString(),
-        // 2. Fix: Provide fallback for customerName
-        customerName: customer?.name || '顧客が見つかりません',
+        id: appointment.id,
+        customerId: customer?.id || 'unknown',
+        customerName: appointment.customerName,
         customerType: 'regular',
         // 2. Fix: Use optional chaining for customer details
-        phoneNumber: customer?.phone || '',
+        phoneNumber: appointment.customerPhone || customer?.phone || '',
         email: customer?.email || '',
         points: customer?.points || 0,
         bookingStatus: appointment.status === 'confirmed' ? '確定済' : '仮予約',
@@ -283,7 +300,7 @@ export function ReservationPageContent() {
         date: format(appointment.startTime, 'yyyy-MM-dd'), // format appointment.startTime
         time: format(appointment.startTime, 'HH:mm'), // format appointment.startTime
         inOutTime: `${format(new Date(appointment.startTime), 'HH:mm')} - ${format(new Date(appointment.endTime), 'HH:mm')}`,
-        course: getCourseById(appointment.serviceId)?.name || 'N/A',
+        course: appointment.serviceName || 'N/A',
         freeExtension: '0',
         designation: 'N/A',
         designationFee: '0円',
@@ -299,7 +316,6 @@ export function ReservationPageContent() {
         startTime: new Date(appointment.startTime),
         endTime: new Date(appointment.endTime),
         staffImage: staff.image,
-        customerId: String(appointment.customerId), // Ensure customerId is always a string
       }
     })
   )
@@ -315,7 +331,6 @@ export function ReservationPageContent() {
       <ViewToggle view={view} onViewChange={setView} />
       <ActionButtons
         onRefresh={handleRefresh}
-        onFilterCharacter={handleFilterCharacter}
         onFilter={handleFilterDialogOpen}
         onCustomerSelect={handleCustomerSelection} // Update: Added handleCustomerSelection prop
         selectedCustomer={selectedCustomer} // Update: Added selectedCustomer prop
@@ -323,8 +338,8 @@ export function ReservationPageContent() {
 
       <FilterDialog
         open={filterDialogOpen}
-        onClose={handleFilterDialogClose}
-        onApply={handleFilterDialogApply}
+        onOpenChange={setFilterDialogOpen}
+        onApplyFilters={handleFilterDialogApply}
       />
 
       {view === 'timeline' ? (

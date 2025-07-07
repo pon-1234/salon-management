@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { MapPin, Users, CreditCard } from 'lucide-react'
-import { CourseOption } from '@/lib/course-option/types'
+import { Option as CourseOption } from '@/lib/types/course-option'
 
 interface StepDetailsProps {
   bookingDetails: any

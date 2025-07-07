@@ -14,7 +14,8 @@ import {
 } from '@/components/ui/select'
 import { getAllReservations } from '@/lib/reservation/data'
 import { ReservationDialog } from '@/components/reservation/reservation-dialog'
-import { Reservation } from '@/lib/types/reservation'
+import { Reservation, ReservationData } from '@/lib/types/reservation'
+import { format } from 'date-fns'
 
 export default function ReservationListPage() {
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
@@ -28,6 +29,49 @@ export default function ReservationListPage() {
 
     fetchReservations()
   }, [])
+
+  // 予約データをダイアログ用に変換
+  const convertToReservationData = (reservation: Reservation): ReservationData | null => {
+    if (!reservation) return null
+
+    return {
+      id: reservation.id,
+      customerId: reservation.customerId,
+      customerName: `顧客${reservation.customerId}`,
+      customerType: '通常顧客',
+      phoneNumber: '090-1234-5678',
+      points: 100,
+      bookingStatus: reservation.status,
+      staffConfirmation: '確認済み',
+      customerConfirmation: '確認済み',
+      prefecture: '東京都',
+      district: '渋谷区',
+      location: 'アパホテル',
+      locationType: 'ホテル',
+      specificLocation: '502号室',
+      staff: `スタッフ${reservation.staffId}`,
+      marketingChannel: 'WEB',
+      date: format(reservation.startTime, 'yyyy-MM-dd'),
+      time: format(reservation.startTime, 'HH:mm'),
+      inOutTime: `${format(reservation.startTime, 'HH:mm')}-${format(reservation.endTime, 'HH:mm')}`,
+      course: 'リラクゼーションコース',
+      freeExtension: 'なし',
+      designation: '指名',
+      designationFee: '3,000円',
+      options: {},
+      transportationFee: 0,
+      paymentMethod: '現金',
+      discount: '0円',
+      additionalFee: 0,
+      totalPayment: reservation.price,
+      storeRevenue: Math.floor(reservation.price * 0.6),
+      staffRevenue: Math.floor(reservation.price * 0.4),
+      staffBonusFee: 0,
+      startTime: reservation.startTime,
+      endTime: reservation.endTime,
+      staffImage: '/placeholder-user.jpg',
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -53,12 +97,20 @@ export default function ReservationListPage() {
           </div>
         </div>
 
-        <ReservationList reservations={reservations} onOpenReservation={setSelectedReservation} />
+        <ReservationList
+          reservations={reservations
+            .map((r) => convertToReservationData(r))
+            .filter((r): r is ReservationData => r !== null)}
+          onOpenReservation={(reservationData) => {
+            const reservation = reservations.find((r) => r.id === reservationData.id)
+            if (reservation) setSelectedReservation(reservation)
+          }}
+        />
       </main>
       <ReservationDialog
         open={!!selectedReservation}
         onOpenChange={(open) => !open && setSelectedReservation(null)}
-        reservation={selectedReservation}
+        reservation={selectedReservation ? convertToReservationData(selectedReservation) : null}
       />
     </div>
   )

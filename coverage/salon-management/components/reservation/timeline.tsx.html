@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/403</span>
+                <span class='fraction'>0/412</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/403</span>
+                <span class='fraction'>0/412</span>
             </div>
         
             
@@ -573,7 +573,17 @@
 <a name='L508'></a><a href='#L508'>508</a>
 <a name='L509'></a><a href='#L509'>509</a>
 <a name='L510'></a><a href='#L510'>510</a>
-<a name='L511'></a><a href='#L511'>511</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L511'></a><a href='#L511'>511</a>
+<a name='L512'></a><a href='#L512'>512</a>
+<a name='L513'></a><a href='#L513'>513</a>
+<a name='L514'></a><a href='#L514'>514</a>
+<a name='L515'></a><a href='#L515'>515</a>
+<a name='L516'></a><a href='#L516'>516</a>
+<a name='L517'></a><a href='#L517'>517</a>
+<a name='L518'></a><a href='#L518'>518</a>
+<a name='L519'></a><a href='#L519'>519</a>
+<a name='L520'></a><a href='#L520'>520</a>
+<a name='L521'></a><a href='#L521'>521</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -950,9 +960,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1057,11 +1065,19 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1070,6 +1086,10 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1100,10 +1120,10 @@ import { StaffDialog } from '@/components/cast/cast-dialog'
 import { format } from 'date-fns'
 import { getCourseById } from '@/lib/course-option/utils'
 import { customers as customerList, Customer } from '@/lib/customer/data'
-import { ReservationData } from '@/components/reservation/reservation-table'
+import { ReservationData } from '@/lib/types/reservation'
 &nbsp;
 // safeMapを安全に実装（undefinedやnullでも空配列を返す）
-<span class="cstat-no" title="statement not covered" >function safeMap&lt;T, U&gt;(arr: T[] | undefined | null, callback: (item: T) =&gt; U): U[] {</span>
+<span class="cstat-no" title="statement not covered" >function safeMap&lt;T, U&gt;(arr: T[] | undefined | null, callback: (item: T, index: number) =&gt; U): U[] {</span>
 <span class="cstat-no" title="statement not covered" >  return Array.isArray(arr) ? arr.map(callback) : []</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
@@ -1459,9 +1479,7 @@ interface TimeSlot {
 <span class="cstat-no" title="statement not covered" >                      ...getTimeBlockStyle(appointment.startTime, appointment.endTime),</span>
 <span class="cstat-no" title="statement not covered" >                      height: 'calc(100% - 16px)',</span>
 <span class="cstat-no" title="statement not covered" >                    }}</span>
-<span class="cstat-no" title="statement not covered" >                    onClick={() =&gt;</span>
-<span class="cstat-no" title="statement not covered" >                      setSelectedAppointmentState(convertToReservationData(appointment, member))</span>
-                    }
+<span class="cstat-no" title="statement not covered" >                    onClick={() =&gt; setSelectedAppointmentState(appointment)}</span>
                   &gt;
 <span class="cstat-no" title="statement not covered" >                    &lt;div className="mb-1 flex items-center justify-between"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;Badge</span>
@@ -1570,16 +1588,28 @@ interface TimeSlot {
 <span class="cstat-no" title="statement not covered" >      &lt;ReservationDialog</span>
 <span class="cstat-no" title="statement not covered" >        open={!!selectedAppointment}</span>
 <span class="cstat-no" title="statement not covered" >        onOpenChange={(open) =&gt; !open &amp;&amp; setSelectedAppointmentState(null)}</span>
-<span class="cstat-no" title="statement not covered" >        reservation={selectedAppointment as ReservationData}</span>
+<span class="cstat-no" title="statement not covered" >        reservation={</span>
+<span class="cstat-no" title="statement not covered" >          selectedAppointment</span>
+<span class="cstat-no" title="statement not covered" >            ? convertToReservationData(</span>
+<span class="cstat-no" title="statement not covered" >                selectedAppointment,</span>
+<span class="cstat-no" title="statement not covered" >                filteredStaff.find((s) =&gt; s.appointments.includes(selectedAppointment)) ||</span>
+<span class="cstat-no" title="statement not covered" >                  filteredStaff[0]</span>
+<span class="cstat-no" title="statement not covered" >              )</span>
+<span class="cstat-no" title="statement not covered" >            : null</span>
+        }
 <span class="cstat-no" title="statement not covered" >      /&gt;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >      &lt;QuickBookingDialog</span>
 <span class="cstat-no" title="statement not covered" >        open={!!selectedSlot}</span>
 <span class="cstat-no" title="statement not covered" >        onOpenChange={(open) =&gt; !open &amp;&amp; setSelectedSlot(null)}</span>
-<span class="cstat-no" title="statement not covered" >        selectedStaff={{</span>
-<span class="cstat-no" title="statement not covered" >          id: selectedSlot?.staffId || '',</span>
-<span class="cstat-no" title="statement not covered" >          name: selectedSlot?.staffName || '',</span>
-<span class="cstat-no" title="statement not covered" >        }}</span>
+<span class="cstat-no" title="statement not covered" >        selectedStaff={</span>
+<span class="cstat-no" title="statement not covered" >          selectedSlot</span>
+<span class="cstat-no" title="statement not covered" >            ? ({</span>
+<span class="cstat-no" title="statement not covered" >                id: selectedSlot.staffId,</span>
+<span class="cstat-no" title="statement not covered" >                name: selectedSlot.staffName,</span>
+<span class="cstat-no" title="statement not covered" >              } as any)</span>
+<span class="cstat-no" title="statement not covered" >            : null</span>
+        }
 <span class="cstat-no" title="statement not covered" >        selectedTime={selectedSlot?.startTime}</span>
 <span class="cstat-no" title="statement not covered" >        selectedCustomer={selectedCustomer}</span>
 <span class="cstat-no" title="statement not covered" >      /&gt;</span>
@@ -1600,7 +1630,7 @@ interface TimeSlot {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T05:33:18.371Z
+                at 2025-07-07T07:27:46.507Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

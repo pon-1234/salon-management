@@ -57,7 +57,21 @@ export function CastForm({ cast, onSubmit }: CastFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formData)
+    onSubmit({
+      ...formData,
+      age: typeof formData.age === 'string' ? parseInt(formData.age, 10) || 0 : formData.age,
+      height:
+        typeof formData.height === 'string' ? parseInt(formData.height, 10) || 0 : formData.height,
+      waist:
+        typeof formData.waist === 'string' ? parseInt(formData.waist, 10) || 0 : formData.waist,
+      hip: typeof formData.hip === 'string' ? parseInt(formData.hip, 10) || 0 : formData.hip,
+      specialDesignationFee: formData.specialDesignationFee
+        ? parseInt(formData.specialDesignationFee as string, 10) || null
+        : null,
+      regularDesignationFee: formData.regularDesignationFee
+        ? parseInt(formData.regularDesignationFee as string, 10) || null
+        : null,
+    })
   }
 
   const handleInputChange = (

@@ -8,11 +8,11 @@ export abstract class MockRepository<T extends BaseEntity> implements Repository
     this.items = [...initialData]
   }
 
-  async findAll(): Promise<T[]> {
+  async getAll(): Promise<T[]> {
     return [...this.items]
   }
 
-  async findById(id: string): Promise<T | null> {
+  async getById(id: string): Promise<T | null> {
     return this.items.find((item) => item.id === id) || null
   }
 

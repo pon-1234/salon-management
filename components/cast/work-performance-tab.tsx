@@ -68,7 +68,7 @@ export function WorkPerformanceTab({ castId, castName }: WorkPerformanceTabProps
       {/* 期間選択タブ */}
       <Tabs
         value={selectedPeriod}
-        onValueChange={(value: 'week' | 'month') => setSelectedPeriod(value)}
+        onValueChange={(value) => setSelectedPeriod(value as 'week' | 'month')}
         className="space-y-6"
       >
         <TabsList>

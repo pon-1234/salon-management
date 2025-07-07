@@ -19,6 +19,7 @@ export interface ReservationData {
   customerName: string
   customerType: string
   phoneNumber: string
+  email?: string
   points: number
   bookingStatus: string
   staffConfirmation: string

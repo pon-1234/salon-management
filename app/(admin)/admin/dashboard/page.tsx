@@ -433,8 +433,8 @@ export default function DashboardPage() {
       color: colors.danger,
     },
     {
-      name: '完了',
-      value: reservations.filter((r) => r.status === 'completed').length,
+      name: '修正可能',
+      value: reservations.filter((r) => r.status === 'modifiable').length,
       color: colors.info,
     },
   ]
@@ -726,7 +726,6 @@ export default function DashboardPage() {
         open={!!selectedReservation}
         onOpenChange={(open) => !open && setSelectedReservation(null)}
         reservation={selectedReservation ? convertToReservationData(selectedReservation) : null}
-        onMakeModifiable={handleMakeModifiable}
       />
 
       <CustomerSelectionDialog

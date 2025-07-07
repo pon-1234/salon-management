@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/194</span>
+                <span class='fraction'>0/202</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/194</span>
+                <span class='fraction'>0/202</span>
             </div>
         
             
@@ -257,7 +257,23 @@
 <a name='L192'></a><a href='#L192'>192</a>
 <a name='L193'></a><a href='#L193'>193</a>
 <a name='L194'></a><a href='#L194'>194</a>
-<a name='L195'></a><a href='#L195'>195</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L195'></a><a href='#L195'>195</a>
+<a name='L196'></a><a href='#L196'>196</a>
+<a name='L197'></a><a href='#L197'>197</a>
+<a name='L198'></a><a href='#L198'>198</a>
+<a name='L199'></a><a href='#L199'>199</a>
+<a name='L200'></a><a href='#L200'>200</a>
+<a name='L201'></a><a href='#L201'>201</a>
+<a name='L202'></a><a href='#L202'>202</a>
+<a name='L203'></a><a href='#L203'>203</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -480,21 +496,29 @@
 <span class="cstat-no" title="statement not covered" >import { SettlementStatusTab } from '@/components/cast/settlement-status-tab'</span>
 <span class="cstat-no" title="statement not covered" >import { WorkPerformanceTab } from '@/components/cast/work-performance-tab'</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >export default function CastManagePage({ params }: { params: { id: string } }) {</span>
+<span class="cstat-no" title="statement not covered" >export default function CastManagePage({ params }: { params: Promise&lt;{ id: string }&gt; }) {</span>
 <span class="cstat-no" title="statement not covered" >  const [cast, setCast] = useState&lt;Cast | null&gt;(null)</span>
 <span class="cstat-no" title="statement not covered" >  const [isEditingProfile, setIsEditingProfile] = useState(false)</span>
+<span class="cstat-no" title="statement not covered" >  const [id, setId] = useState&lt;string&gt;('')</span>
 <span class="cstat-no" title="statement not covered" >  const router = useRouter()</span>
-<span class="cstat-no" title="statement not covered" >  const isNewCast = params.id === 'new'</span>
+<span class="cstat-no" title="statement not covered" >  const isNewCast = id === 'new'</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  useEffect(() =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    params.then(({ id: paramId }) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >      setId(paramId)</span>
+<span class="cstat-no" title="statement not covered" >    })</span>
+<span class="cstat-no" title="statement not covered" >  }, [params])</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  useEffect(() =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    if (!id) return</span>
 <span class="cstat-no" title="statement not covered" >    const fetchCast = async () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      const castList = getAllCasts()</span>
-<span class="cstat-no" title="statement not covered" >      const foundCast = castList.find((c) =&gt; c.id === params.id)</span>
+<span class="cstat-no" title="statement not covered" >      const foundCast = castList.find((c) =&gt; c.id === id)</span>
 <span class="cstat-no" title="statement not covered" >      setCast(foundCast || null)</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >    fetchCast()</span>
-<span class="cstat-no" title="statement not covered" >  }, [params.id, isNewCast])</span>
+<span class="cstat-no" title="statement not covered" >  }, [id, isNewCast])</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  const handleSubmit = async (data: Partial&lt;Cast&gt;) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    // In a real application, this would make an API call</span>
@@ -652,7 +676,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T05:33:18.371Z
+                at 2025-07-07T07:27:46.507Z
             </div>
         <script src="../../../../../../../prettify.js"></script>
         <script>

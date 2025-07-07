@@ -18,13 +18,13 @@ const generateCastData = (index: number): Omit<Cast, 'id' | 'createdAt' | 'updat
   specialDesignationFee: Math.random() > 0.7 ? 3000 + Math.floor(Math.random() * 7000) : null,
   regularDesignationFee: Math.random() > 0.5 ? 1000 + Math.floor(Math.random() * 4000) : null,
   workStatus: Math.random() > 0.3 ? '出勤' : '未出勤',
-  courseTypes: ['イベントコース', '基本コース', 'プレミアムコース'].slice(
-    0,
-    1 + Math.floor(Math.random() * 2)
-  ),
   workStart: new Date(2023, 0, 1, 10, 0),
   workEnd: new Date(2023, 0, 1, 22, 0),
   appointments: [],
+  availableOptions: [],
+  images: [],
+  panelDesignationRank: Math.floor(Math.random() * 5) + 1,
+  regularDesignationRank: Math.floor(Math.random() * 5) + 1,
 })
 
 export class CastRepositoryImpl extends MockRepository<Cast> implements CastRepository {

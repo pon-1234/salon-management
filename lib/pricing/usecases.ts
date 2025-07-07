@@ -1,6 +1,13 @@
 import { PricingRepository } from './repository'
 import { getPricingRepository } from './repository-impl'
-import { CoursePrice, OptionPrice, AdditionalFee, StorePricing, PricingSyncStatus } from './types'
+import {
+  CoursePrice,
+  OptionPrice,
+  AdditionalFee,
+  StorePricing,
+  PricingSyncStatus,
+  CourseDuration,
+} from './types'
 
 export class PricingUseCases {
   constructor(private repository: PricingRepository = getPricingRepository()) {}

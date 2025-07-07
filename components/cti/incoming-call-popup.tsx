@@ -49,7 +49,7 @@ export function IncomingCallPopup({
                 <div className="flex items-start gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={customer.image || '/placeholder-user.jpg'}
+                    src="/placeholder-user.jpg"
                     alt={customer.name}
                     className="h-16 w-16 rounded-full object-cover"
                   />
@@ -74,12 +74,14 @@ export function IncomingCallPopup({
                     <div className="space-y-1 text-sm">
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4" />
-                        <span>来店回数: {customer.visitCount || 0}回</span>
+                        <span>来店回数: 0回</span>
                       </div>
-                      {customer.lastVisit && (
+                      {customer.lastVisitDate && (
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4" />
-                          <span>前回来店: {customer.lastVisit}</span>
+                          <span>
+                            前回来店: {new Date(customer.lastVisitDate).toLocaleDateString('ja-JP')}
+                          </span>
                         </div>
                       )}
                     </div>

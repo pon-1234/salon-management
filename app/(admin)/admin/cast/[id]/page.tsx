@@ -19,8 +19,9 @@ function getCastSchedule(id: string, startDate: Date, endDate: Date): CastSchedu
   return generateCastSchedule(id, startDate, endDate)
 }
 
-export default async function CastDetailPage({ params }: { params: { id: string } }) {
-  const cast = getCast(params.id)
+export default async function CastDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const cast = getCast(id)
 
   if (!cast) {
     notFound()
@@ -29,7 +30,7 @@ export default async function CastDetailPage({ params }: { params: { id: string 
   const today = new Date()
   const endDate = new Date(today)
   endDate.setDate(today.getDate() + 7)
-  const schedule = getCastSchedule(params.id, today, endDate)
+  const schedule = getCastSchedule(id, today, endDate)
 
   return (
     <div className="container mx-auto px-4 py-8">

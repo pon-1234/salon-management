@@ -5,6 +5,7 @@ import {
   StaffPerformanceData,
   CourseSalesData,
   OptionSalesData,
+  MarketingChannelData,
 } from '../types/analytics'
 import {
   generateMonthlyData,
@@ -12,6 +13,7 @@ import {
   staffPerformanceData,
   generateCourseSalesData,
   generateOptionSalesData,
+  generateMarketingChannelData,
 } from './data'
 
 export class AnalyticsRepositoryImpl implements AnalyticsRepository {
@@ -33,5 +35,9 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
   async getOptionSalesData(year: number): Promise<OptionSalesData[]> {
     return generateOptionSalesData(year)
+  }
+
+  async getMarketingChannelData(year: number): Promise<MarketingChannelData[]> {
+    return generateMarketingChannelData(year)
   }
 }

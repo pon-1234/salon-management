@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/285</span>
+                <span class='fraction'>0/299</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/285</span>
+                <span class='fraction'>0/299</span>
             </div>
         
             
@@ -404,7 +404,21 @@
 <a name='L339'></a><a href='#L339'>339</a>
 <a name='L340'></a><a href='#L340'>340</a>
 <a name='L341'></a><a href='#L341'>341</a>
-<a name='L342'></a><a href='#L342'>342</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L342'></a><a href='#L342'>342</a>
+<a name='L343'></a><a href='#L343'>343</a>
+<a name='L344'></a><a href='#L344'>344</a>
+<a name='L345'></a><a href='#L345'>345</a>
+<a name='L346'></a><a href='#L346'>346</a>
+<a name='L347'></a><a href='#L347'>347</a>
+<a name='L348'></a><a href='#L348'>348</a>
+<a name='L349'></a><a href='#L349'>349</a>
+<a name='L350'></a><a href='#L350'>350</a>
+<a name='L351'></a><a href='#L351'>351</a>
+<a name='L352'></a><a href='#L352'>352</a>
+<a name='L353'></a><a href='#L353'>353</a>
+<a name='L354'></a><a href='#L354'>354</a>
+<a name='L355'></a><a href='#L355'>355</a>
+<a name='L356'></a><a href='#L356'>356</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -461,6 +475,20 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -804,7 +832,21 @@ interface CastFormProps {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const handleSubmit = (e: React.FormEvent) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    e.preventDefault()</span>
-<span class="cstat-no" title="statement not covered" >    onSubmit(formData)</span>
+<span class="cstat-no" title="statement not covered" >    onSubmit({</span>
+<span class="cstat-no" title="statement not covered" >      ...formData,</span>
+<span class="cstat-no" title="statement not covered" >      age: typeof formData.age === 'string' ? parseInt(formData.age, 10) || 0 : formData.age,</span>
+<span class="cstat-no" title="statement not covered" >      height:</span>
+<span class="cstat-no" title="statement not covered" >        typeof formData.height === 'string' ? parseInt(formData.height, 10) || 0 : formData.height,</span>
+<span class="cstat-no" title="statement not covered" >      waist:</span>
+<span class="cstat-no" title="statement not covered" >        typeof formData.waist === 'string' ? parseInt(formData.waist, 10) || 0 : formData.waist,</span>
+<span class="cstat-no" title="statement not covered" >      hip: typeof formData.hip === 'string' ? parseInt(formData.hip, 10) || 0 : formData.hip,</span>
+<span class="cstat-no" title="statement not covered" >      specialDesignationFee: formData.specialDesignationFee</span>
+<span class="cstat-no" title="statement not covered" >        ? parseInt(formData.specialDesignationFee as string, 10) || null</span>
+<span class="cstat-no" title="statement not covered" >        : null,</span>
+<span class="cstat-no" title="statement not covered" >      regularDesignationFee: formData.regularDesignationFee</span>
+<span class="cstat-no" title="statement not covered" >        ? parseInt(formData.regularDesignationFee as string, 10) || null</span>
+<span class="cstat-no" title="statement not covered" >        : null,</span>
+<span class="cstat-no" title="statement not covered" >    })</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const handleInputChange = (</span>
@@ -1093,7 +1135,7 @@ interface CastFormProps {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T05:33:18.371Z
+                at 2025-07-07T07:27:46.507Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

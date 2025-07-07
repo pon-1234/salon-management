@@ -24,7 +24,10 @@ export default async function SchedulePage({ params }: { params: Promise<{ store
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
 
   // Mock schedule data
-  const scheduleData = {
+  const scheduleData: Record<
+    string,
+    Array<{ castId: string; name: string; time: string; status: string }>
+  > = {
     '2024-06-08': [
       { castId: '1', name: 'ことね', time: '10:00-19:00', status: 'available' },
       { castId: '2', name: 'ののか', time: '12:00-21:00', status: 'available' },
@@ -92,7 +95,7 @@ export default async function SchedulePage({ params }: { params: Promise<{ store
             </h2>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {getTodaySchedule().map((schedule) => (
+              {getTodaySchedule().map((schedule: any) => (
                 <Card key={schedule.castId} className="transition-shadow hover:shadow-lg">
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4">

@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/114</span>
+                <span class='fraction'>0/107</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/114</span>
+                <span class='fraction'>0/107</span>
             </div>
         
             
@@ -202,14 +202,7 @@
 <a name='L137'></a><a href='#L137'>137</a>
 <a name='L138'></a><a href='#L138'>138</a>
 <a name='L139'></a><a href='#L139'>139</a>
-<a name='L140'></a><a href='#L140'>140</a>
-<a name='L141'></a><a href='#L141'>141</a>
-<a name='L142'></a><a href='#L142'>142</a>
-<a name='L143'></a><a href='#L143'>143</a>
-<a name='L144'></a><a href='#L144'>144</a>
-<a name='L145'></a><a href='#L145'>145</a>
-<a name='L146'></a><a href='#L146'>146</a>
-<a name='L147'></a><a href='#L147'>147</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L140'></a><a href='#L140'>140</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -311,16 +304,9 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -367,13 +353,13 @@ import {
 } from '@/components/ui/table'
 import Link from 'next/link'
 import { format } from 'date-fns'
-import { Reservation } from '@/lib/types/reservation'
+import { ReservationData } from '@/lib/types/reservation'
 &nbsp;
 interface ReservationListProps {
-  reservations: Reservation[]
+  reservations: ReservationData[]
   limit?: number
   showViewMore?: boolean
-  onOpenReservation?: (reservation: Reservation) =&gt; void
+  onOpenReservation?: (reservation: ReservationData) =&gt; void
   onMakeModifiable?: (reservationId: string) =&gt; void
 }
 &nbsp;
@@ -427,7 +413,7 @@ interface ReservationListProps {
 <span class="cstat-no" title="statement not covered" >                &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div&gt;{reservation.customerName} 様&lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  {reservation.isNewDesignation &amp;&amp; (</span>
+<span class="cstat-no" title="statement not covered" >                  {reservation.designation === 'new' &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;div className="mt-1 text-sm text-gray-500"&gt;[新規指名]&lt;/div&gt;</span>
                   )}
 <span class="cstat-no" title="statement not covered" >                  &lt;div className="mt-1 text-sm text-gray-500"&gt;{reservation.location}&lt;/div&gt;</span>
@@ -442,34 +428,27 @@ interface ReservationListProps {
 <span class="cstat-no" title="statement not covered" >                &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div className="flex items-center gap-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;span&gt;{reservation.staffName}&lt;/span&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;Badge className={getRankColor(reservation.staffRank)}&gt;</span>
-<span class="cstat-no" title="statement not covered" >                      {reservation.staffRank}</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;/Badge&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;span&gt;{reservation.staff}&lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;TableCell&gt;{`${reservation.courseName}${reservation.duration}分`}&lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;TableCell&gt;{`${reservation.course}`}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;TableCell&gt;{format(reservation.startTime, 'HH:mm')}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;TableCell&gt;{format(reservation.endTime, 'HH:mm')}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div className="flex flex-nowrap items-center gap-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;Badge</span>
 <span class="cstat-no" title="statement not covered" >                      variant={</span>
-<span class="cstat-no" title="statement not covered" >                        reservation.status === 'confirmed'</span>
+<span class="cstat-no" title="statement not covered" >                        reservation.bookingStatus === '確定'</span>
 <span class="cstat-no" title="statement not covered" >                          ? 'default'</span>
-<span class="cstat-no" title="statement not covered" >                          : reservation.status === 'modifiable'</span>
+<span class="cstat-no" title="statement not covered" >                          : reservation.bookingStatus === '修正可能'</span>
 <span class="cstat-no" title="statement not covered" >                            ? 'outline'</span>
 <span class="cstat-no" title="statement not covered" >                            : 'secondary'</span>
                       }
 <span class="cstat-no" title="statement not covered" >                      className="whitespace-nowrap"</span>
                     &gt;
-<span class="cstat-no" title="statement not covered" >                      {reservation.status === 'confirmed'</span>
-<span class="cstat-no" title="statement not covered" >                        ? '確定'</span>
-<span class="cstat-no" title="statement not covered" >                        : reservation.status === 'modifiable'</span>
-<span class="cstat-no" title="statement not covered" >                          ? '修正可能'</span>
-<span class="cstat-no" title="statement not covered" >                          : '未確定'}</span>
+<span class="cstat-no" title="statement not covered" >                      {reservation.bookingStatus}</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;/Badge&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    {reservation.status === 'confirmed' &amp;&amp; (</span>
+<span class="cstat-no" title="statement not covered" >                    {reservation.bookingStatus === '確定' &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;Button</span>
 <span class="cstat-no" title="statement not covered" >                        size="sm"</span>
 <span class="cstat-no" title="statement not covered" >                        variant="outline"</span>
@@ -508,7 +487,7 @@ interface ReservationListProps {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T05:33:18.371Z
+                at 2025-07-07T07:27:46.507Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 
 export default function Error({ error, reset }: { error: Error; reset: () => void }) {
   useEffect(() => {
-    logError(error, {
+    logError(error, 'GlobalErrorBoundary error', {
       context: {
         component: 'GlobalErrorBoundary',
       },

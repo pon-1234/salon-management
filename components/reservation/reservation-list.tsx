@@ -10,13 +10,13 @@ import {
 } from '@/components/ui/table'
 import Link from 'next/link'
 import { format } from 'date-fns'
-import { Reservation } from '@/lib/types/reservation'
+import { ReservationData } from '@/lib/types/reservation'
 
 interface ReservationListProps {
-  reservations: Reservation[]
+  reservations: ReservationData[]
   limit?: number
   showViewMore?: boolean
-  onOpenReservation?: (reservation: Reservation) => void
+  onOpenReservation?: (reservation: ReservationData) => void
   onMakeModifiable?: (reservationId: string) => void
 }
 
@@ -70,7 +70,7 @@ export function ReservationList({
                 </TableCell>
                 <TableCell>
                   <div>{reservation.customerName} 様</div>
-                  {reservation.isNewDesignation && (
+                  {reservation.designation === 'new' && (
                     <div className="mt-1 text-sm text-gray-500">[新規指名]</div>
                   )}
                   <div className="mt-1 text-sm text-gray-500">{reservation.location}</div>
@@ -85,34 +85,27 @@ export function ReservationList({
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <span>{reservation.staffName}</span>
-                    <Badge className={getRankColor(reservation.staffRank)}>
-                      {reservation.staffRank}
-                    </Badge>
+                    <span>{reservation.staff}</span>
                   </div>
                 </TableCell>
-                <TableCell>{`${reservation.courseName}${reservation.duration}分`}</TableCell>
+                <TableCell>{`${reservation.course}`}</TableCell>
                 <TableCell>{format(reservation.startTime, 'HH:mm')}</TableCell>
                 <TableCell>{format(reservation.endTime, 'HH:mm')}</TableCell>
                 <TableCell>
                   <div className="flex flex-nowrap items-center gap-2">
                     <Badge
                       variant={
-                        reservation.status === 'confirmed'
+                        reservation.bookingStatus === '確定'
                           ? 'default'
-                          : reservation.status === 'modifiable'
+                          : reservation.bookingStatus === '修正可能'
                             ? 'outline'
                             : 'secondary'
                       }
                       className="whitespace-nowrap"
                     >
-                      {reservation.status === 'confirmed'
-                        ? '確定'
-                        : reservation.status === 'modifiable'
-                          ? '修正可能'
-                          : '未確定'}
+                      {reservation.bookingStatus}
                     </Badge>
-                    {reservation.status === 'confirmed' && (
+                    {reservation.bookingStatus === '確定' && (
                       <Button
                         size="sm"
                         variant="outline"

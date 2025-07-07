@@ -60,6 +60,9 @@ export interface PublicProfile {
 export interface Appointment {
   // Appointment型定義を追加
   id: string
+  customerId: string
+  serviceId: string
+  staffId: string
   serviceName: string
   startTime: Date
   endTime: Date

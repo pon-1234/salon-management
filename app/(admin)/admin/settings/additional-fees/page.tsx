@@ -111,8 +111,8 @@ export default function AdditionalFeesPage() {
       name: fee.name,
       type: fee.type,
       value: isRange ? 0 : (fee.value as number),
-      minValue: isRange ? fee.value.min : 0,
-      maxValue: isRange ? fee.value.max : 0,
+      minValue: isRange ? (fee.value as { min: number; max: number }).min : 0,
+      maxValue: isRange ? (fee.value as { min: number; max: number }).max : 0,
       description: fee.description || '',
       displayOrder: fee.displayOrder,
       isActive: fee.isActive,
@@ -215,7 +215,8 @@ export default function AdditionalFeesPage() {
     } else if (fee.type === 'percentage') {
       return `${fee.value}%`
     } else if (fee.type === 'range' && typeof fee.value === 'object') {
-      return `¥${fee.value.min.toLocaleString()}〜¥${fee.value.max.toLocaleString()}`
+      const rangeValue = fee.value as { min: number; max: number }
+      return `¥${rangeValue.min.toLocaleString()}〜¥${rangeValue.max.toLocaleString()}`
     }
     return '-'
   }

@@ -66,11 +66,9 @@ export function DateNavigation({ selectedDate, onSelectDate }: DateNavigationPro
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0">
             <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={handleCalendarSelect}
+              selectedDay={selectedDate}
+              onSelectedDayChange={handleCalendarSelect}
               initialFocus
-              locale={ja}
             />
           </PopoverContent>
         </Popover>
