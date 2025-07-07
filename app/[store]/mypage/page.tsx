@@ -1,3 +1,11 @@
+/**
+ * @design_doc   Customer MyPage with session management and access control
+ * @related_to   NextAuth.js configuration, customer authentication
+ * @known_issues None currently
+ */
+import { redirect } from 'next/navigation'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth/config'
 import { notFound } from 'next/navigation'
 import { getStoreBySlug } from '@/lib/store/data'
 import { MyPageContent } from '@/components/mypage/mypage-content'
@@ -12,8 +20,17 @@ export default async function MyPage({ params }: { params: Promise<{ store: stri
     notFound()
   }
 
-  // In a real app, you would check authentication here
-  // and redirect to login if not authenticated
+  // Check authentication
+  const session = await getServerSession(authOptions)
+  
+  if (!session) {
+    redirect(`/${storeSlug}/login?callbackUrl=${encodeURIComponent(`/${storeSlug}/mypage`)}`)
+  }
+
+  // Ensure user is a customer (not admin)
+  if (session.user.role !== 'customer') {
+    redirect(`/${storeSlug}/login?callbackUrl=${encodeURIComponent(`/${storeSlug}/mypage`)}`)
+  }
 
   return (
     <>
@@ -21,9 +38,9 @@ export default async function MyPage({ params }: { params: Promise<{ store: stri
 
       <main className="min-h-screen bg-gray-50">
         <MyPageContent store={store} />
-
-        <StoreFooter store={store} />
       </main>
+
+      <StoreFooter store={store} />
     </>
   )
 }

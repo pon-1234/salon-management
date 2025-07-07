@@ -11,6 +11,7 @@ const mockCustomerRepository: CustomerRepository = {
   update: vi.fn(),
   delete: vi.fn(),
   getCustomerByPhone: vi.fn(),
+  findByEmail: vi.fn(),
 }
 
 describe('CustomerUseCases', () => {

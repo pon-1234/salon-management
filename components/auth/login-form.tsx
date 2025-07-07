@@ -1,7 +1,16 @@
+/**
+ * @design_doc   Customer login form component with NextAuth.js integration
+ * @related_to   NextAuth.js configuration, customer authentication
+ * @known_issues None currently
+ */
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { signIn, useSession } from 'next-auth/react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import Link from 'next/link'
 import { Store } from '@/lib/store/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,44 +19,62 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Mail, Lock, AlertCircle } from 'lucide-react'
+import { Mail, Lock, AlertCircle, Loader2 } from 'lucide-react'
+
+const loginSchema = z.object({
+  email: z.string().email('正しいメールアドレスを入力してください').min(1, 'メールアドレスを入力してください'),
+  password: z.string().min(1, 'パスワードを入力してください'),
+})
+
+type LoginFormData = z.infer<typeof loginSchema>
 
 interface LoginFormProps {
   store: Store
 }
 
 export function LoginForm({ store }: LoginFormProps) {
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [rememberMe, setRememberMe] = useState(false)
+  const searchParams = useSearchParams()
+  const { data: session, status } = useSession()
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+  })
+
+  // Redirect if already authenticated
+  if (status === 'authenticated' && session?.user?.role === 'customer') {
+    router.push(`/${store.slug}/mypage`)
+    return null
+  }
+
+  const onSubmit = async (data: LoginFormData) => {
+    setIsLoading(true)
+    setError(null)
 
     try {
-      // Simulate login delay
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const result = await signIn('customer-credentials', {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      })
 
-      // Get form element and create FormData
-      const form = e.target as HTMLFormElement
-      const formData = new FormData(form)
-      const email = formData.get('email') as string
-      const password = formData.get('password') as string
-
-      // Mock validation
-      if (email === 'test@example.com' && password === 'password') {
-        // Success - redirect to mypage
-        window.location.href = `/${store.slug}/mypage`
-      } else {
+      if (result?.error) {
         setError('メールアドレスまたはパスワードが正しくありません')
-        setLoading(false)
+      } else {
+        // Redirect to callback URL or default mypage
+        const callbackUrl = searchParams.get('callbackUrl') || `/${store.slug}/mypage`
+        router.push(callbackUrl)
       }
-    } catch (error) {
+    } catch (err) {
       setError('ログイン中にエラーが発生しました')
-      setLoading(false)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -65,9 +92,9 @@ export function LoginForm({ store }: LoginFormProps) {
           <p className="text-sm text-blue-800">
             <strong>デモ用ログイン情報:</strong>
             <br />
-            メール: test@example.com
+            メール: customer@example.com
             <br />
-            パスワード: password
+            パスワード: customer123
           </p>
         </div>
 
@@ -78,7 +105,7 @@ export function LoginForm({ store }: LoginFormProps) {
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {/* Email */}
           <div className="space-y-2">
             <Label htmlFor="email">メールアドレス</Label>
@@ -86,13 +113,16 @@ export function LoginForm({ store }: LoginFormProps) {
               <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
               <Input
                 id="email"
-                name="email"
                 type="email"
                 placeholder="example@email.com"
                 className="pl-10"
-                required
+                {...register('email')}
+                disabled={isLoading}
               />
             </div>
+            {errors.email && (
+              <p className="text-sm text-red-600">{errors.email.message}</p>
+            )}
           </div>
 
           {/* Password */}
@@ -102,27 +132,20 @@ export function LoginForm({ store }: LoginFormProps) {
               <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
               <Input
                 id="password"
-                name="password"
                 type="password"
                 placeholder="パスワード"
                 className="pl-10"
-                required
+                {...register('password')}
+                disabled={isLoading}
               />
             </div>
+            {errors.password && (
+              <p className="text-sm text-red-600">{errors.password.message}</p>
+            )}
           </div>
 
-          {/* Remember Me & Forgot Password */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="remember"
-                checked={rememberMe}
-                onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-              />
-              <Label htmlFor="remember" className="cursor-pointer text-sm font-normal">
-                ログイン状態を保持する
-              </Label>
-            </div>
+          {/* Forgot Password */}
+          <div className="flex justify-end">
             <Link
               href={`/${store.slug}/forgot-password`}
               className="text-sm text-blue-600 hover:underline"
@@ -132,8 +155,9 @@ export function LoginForm({ store }: LoginFormProps) {
           </div>
 
           {/* Submit Button */}
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'ログイン中...' : 'ログイン'}
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            ログイン
           </Button>
         </form>
 

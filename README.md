@@ -7,8 +7,14 @@ _Automatically synced with your [v0.dev](https://v0.dev) deployments_
 
 ## Overview
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
+A comprehensive salon management application built with Next.js 15, featuring customer management, reservation system, and admin dashboard.
+
+## Features
+
+- 👥 **Customer Management**: Registration, profiles, and authentication
+- 📅 **Reservation System**: Online booking and management
+- 👨‍💼 **Admin Dashboard**: Business analytics and management tools
+- 🔐 **Secure Authentication**: Role-based access control
 
 ## Deployment
 
@@ -21,6 +27,31 @@ Your project is live at:
 Continue building your app on:
 
 **[https://v0.dev/chat/projects/JiGB52cRsTX](https://v0.dev/chat/projects/JiGB52cRsTX)**
+
+## Demo
+
+Try the live demo with these credentials:
+
+### Admin Access
+- **URL**: `/admin/login`
+- **Email**: `admin@example.com`
+- **Password**: `admin123`
+
+### Customer Access
+- **URL**: `/[store]/login` (e.g., `/store1/login`)
+- **Email**: `customer@example.com`
+- **Password**: `customer123`
+
+## Quick Start
+
+```bash
+npm install
+npm run dev
+```
+
+## Development
+
+For detailed development information, see [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md)
 
 ## How It Works
 
