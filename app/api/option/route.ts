@@ -20,18 +20,18 @@ export async function GET(request: NextRequest) {
               reservation: {
                 include: {
                   customer: true,
-                  cast: true
-                }
-              }
-            }
-          }
-        }
+                  cast: true,
+                },
+              },
+            },
+          },
+        },
       })
-      
+
       if (!option) {
         return NextResponse.json({ error: 'Option not found' }, { status: 404 })
       }
-      
+
       return NextResponse.json(option)
     }
 
@@ -42,17 +42,17 @@ export async function GET(request: NextRequest) {
             reservation: {
               include: {
                 customer: true,
-                cast: true
-              }
-            }
-          }
-        }
+                cast: true,
+              },
+            },
+          },
+        },
       },
       orderBy: {
-        price: 'asc'
-      }
+        price: 'asc',
+      },
     })
-    
+
     return NextResponse.json(options)
   } catch (error) {
     console.error('Error fetching option data:', error)
@@ -70,8 +70,8 @@ export async function POST(request: NextRequest) {
         price: data.price,
       },
       include: {
-        reservations: true
-      }
+        reservations: true,
+      },
     })
 
     return NextResponse.json(newOption, { status: 201 })
@@ -102,18 +102,18 @@ export async function PUT(request: NextRequest) {
             reservation: {
               include: {
                 customer: true,
-                cast: true
-              }
-            }
-          }
-        }
-      }
+                cast: true,
+              },
+            },
+          },
+        },
+      },
     })
 
     return NextResponse.json(updatedOption)
   } catch (error) {
     console.error('Error updating option:', error)
-    if (error.code === 'P2025') {
+    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
       return NextResponse.json({ error: 'Option not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -130,13 +130,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     await db.optionPrice.delete({
-      where: { id }
+      where: { id },
     })
 
     return new NextResponse(null, { status: 204 })
   } catch (error) {
     console.error('Error deleting option:', error)
-    if (error.code === 'P2025') {
+    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
       return NextResponse.json({ error: 'Option not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

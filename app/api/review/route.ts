@@ -18,20 +18,20 @@ export async function GET(request: NextRequest) {
         where: { id },
         include: {
           customer: true,
-          cast: true
-        }
+          cast: true,
+        },
       })
-      
+
       if (!review) {
         return NextResponse.json({ error: 'Review not found' }, { status: 404 })
       }
-      
+
       return NextResponse.json(review)
     }
 
     // Build filters for querying reviews
     const where: any = {}
-    
+
     if (castId) where.castId = castId
     if (customerId) where.customerId = customerId
 
@@ -39,13 +39,13 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         customer: true,
-        cast: true
+        cast: true,
       },
       orderBy: {
-        createdAt: 'desc'
-      }
+        createdAt: 'desc',
+      },
     })
-    
+
     return NextResponse.json(reviews)
   } catch (error) {
     console.error('Error fetching review data:', error)
@@ -66,8 +66,8 @@ export async function POST(request: NextRequest) {
       },
       include: {
         customer: true,
-        cast: true
-      }
+        cast: true,
+      },
     })
 
     return NextResponse.json(newReview, { status: 201 })
@@ -94,14 +94,14 @@ export async function PUT(request: NextRequest) {
       },
       include: {
         customer: true,
-        cast: true
-      }
+        cast: true,
+      },
     })
 
     return NextResponse.json(updatedReview)
   } catch (error) {
     console.error('Error updating review:', error)
-    if (error.code === 'P2025') {
+    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
       return NextResponse.json({ error: 'Review not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -118,13 +118,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     await db.review.delete({
-      where: { id }
+      where: { id },
     })
 
     return new NextResponse(null, { status: 204 })
   } catch (error) {
     console.error('Error deleting review:', error)
-    if (error.code === 'P2025') {
+    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
       return NextResponse.json({ error: 'Review not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

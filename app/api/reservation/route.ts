@@ -24,28 +24,28 @@ export async function GET(request: NextRequest) {
           course: true,
           options: {
             include: {
-              option: true
-            }
-          }
-        }
+              option: true,
+            },
+          },
+        },
       })
-      
+
       if (!reservation) {
         return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
       }
-      
+
       return NextResponse.json(reservation)
     }
 
     // Build filters for querying reservations
     const where: any = {}
-    
+
     if (castId) where.castId = castId
     if (customerId) where.customerId = customerId
     if (startDate && endDate) {
       where.startTime = {
         gte: new Date(startDate),
-        lte: new Date(endDate)
+        lte: new Date(endDate),
       }
     }
 
@@ -57,15 +57,15 @@ export async function GET(request: NextRequest) {
         course: true,
         options: {
           include: {
-            option: true
-          }
-        }
+            option: true,
+          },
+        },
       },
       orderBy: {
-        startTime: 'asc'
-      }
+        startTime: 'asc',
+      },
     })
-    
+
     return NextResponse.json(reservations)
   } catch (error) {
     console.error('Error fetching reservation data:', error)
@@ -85,11 +85,13 @@ export async function POST(request: NextRequest) {
         startTime: new Date(data.startTime),
         endTime: new Date(data.endTime),
         status: data.status || 'pending',
-        options: data.options ? {
-          create: data.options.map((optionId: string) => ({
-            optionId
-          }))
-        } : undefined
+        options: data.options
+          ? {
+              create: data.options.map((optionId: string) => ({
+                optionId,
+              })),
+            }
+          : undefined,
       },
       include: {
         customer: true,
@@ -97,10 +99,10 @@ export async function POST(request: NextRequest) {
         course: true,
         options: {
           include: {
-            option: true
-          }
-        }
-      }
+            option: true,
+          },
+        },
+      },
     })
 
     return NextResponse.json(newReservation, { status: 201 })
@@ -123,7 +125,7 @@ export async function PUT(request: NextRequest) {
     const updatedReservation = await db.$transaction(async (tx) => {
       // Delete existing options
       await tx.reservationOption.deleteMany({
-        where: { reservationId: id }
+        where: { reservationId: id },
       })
 
       // Update reservation
@@ -136,11 +138,13 @@ export async function PUT(request: NextRequest) {
           startTime: updates.startTime ? new Date(updates.startTime) : undefined,
           endTime: updates.endTime ? new Date(updates.endTime) : undefined,
           status: updates.status,
-          options: options ? {
-            create: options.map((optionId: string) => ({
-              optionId
-            }))
-          } : undefined
+          options: options
+            ? {
+                create: options.map((optionId: string) => ({
+                  optionId,
+                })),
+              }
+            : undefined,
         },
         include: {
           customer: true,
@@ -148,17 +152,17 @@ export async function PUT(request: NextRequest) {
           course: true,
           options: {
             include: {
-              option: true
-            }
-          }
-        }
+              option: true,
+            },
+          },
+        },
       })
     })
 
     return NextResponse.json(updatedReservation)
   } catch (error) {
     console.error('Error updating reservation:', error)
-    if (error.code === 'P2025') {
+    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
       return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -175,13 +179,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     await db.reservation.delete({
-      where: { id }
+      where: { id },
     })
 
     return new NextResponse(null, { status: 204 })
   } catch (error) {
     console.error('Error deleting reservation:', error)
-    if (error.code === 'P2025') {
+    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
       return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

@@ -9,7 +9,7 @@ import { CastRepository } from './repository'
 export class CastRepositoryImpl implements CastRepository {
   private baseUrl = '/api'
 
-  async findAll(): Promise<Cast[]> {
+  async getAll(): Promise<Cast[]> {
     const response = await fetch(`${this.baseUrl}/cast`)
     if (!response.ok) {
       throw new Error(`Failed to fetch casts: ${response.statusText}`)
@@ -17,7 +17,7 @@ export class CastRepositoryImpl implements CastRepository {
     return response.json()
   }
 
-  async findById(id: string): Promise<Cast | null> {
+  async getById(id: string): Promise<Cast | null> {
     const response = await fetch(`${this.baseUrl}/cast?id=${id}`)
     if (response.status === 404) {
       return null
@@ -56,13 +56,14 @@ export class CastRepositoryImpl implements CastRepository {
     return response.json()
   }
 
-  async delete(id: string): Promise<void> {
+  async delete(id: string): Promise<boolean> {
     const response = await fetch(`${this.baseUrl}/cast?id=${id}`, {
       method: 'DELETE',
     })
     if (!response.ok) {
       throw new Error(`Failed to delete cast: ${response.statusText}`)
     }
+    return true
   }
 
   async getCastSchedule(castId: string, startDate: Date, endDate: Date): Promise<CastSchedule[]> {
@@ -71,7 +72,7 @@ export class CastRepositoryImpl implements CastRepository {
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
     })
-    
+
     const response = await fetch(`${this.baseUrl}/cast-schedule?${params}`)
     if (!response.ok) {
       throw new Error(`Failed to fetch cast schedule: ${response.statusText}`)
@@ -82,16 +83,15 @@ export class CastRepositoryImpl implements CastRepository {
   async updateCastSchedule(castId: string, schedule: CastSchedule[]): Promise<void> {
     // First, get existing schedules to update/create/delete
     const existingSchedules = await this.getCastSchedule(
-      castId, 
-      new Date(Math.min(...schedule.map(s => s.date.getTime()))),
-      new Date(Math.max(...schedule.map(s => s.date.getTime())))
+      castId,
+      new Date(Math.min(...schedule.map((s) => s.date.getTime()))),
+      new Date(Math.max(...schedule.map((s) => s.date.getTime())))
     )
 
     // Update each schedule item
     for (const item of schedule) {
-      const existing = existingSchedules.find(s => 
-        s.castId === item.castId && 
-        s.date.toDateString() === item.date.toDateString()
+      const existing = existingSchedules.find(
+        (s) => s.castId === item.castId && s.date.toDateString() === item.date.toDateString()
       )
 
       if (existing) {

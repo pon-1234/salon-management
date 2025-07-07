@@ -22,18 +22,18 @@ export async function GET(request: NextRequest) {
               course: true,
               options: {
                 include: {
-                  option: true
-                }
-              }
-            }
-          }
-        }
+                  option: true,
+                },
+              },
+            },
+          },
+        },
       })
-      
+
       if (!cast) {
         return NextResponse.json({ error: 'Cast not found' }, { status: 404 })
       }
-      
+
       return NextResponse.json(cast)
     }
 
@@ -43,12 +43,12 @@ export async function GET(request: NextRequest) {
         reservations: {
           include: {
             customer: true,
-            course: true
-          }
-        }
-      }
+            course: true,
+          },
+        },
+      },
     })
-    
+
     return NextResponse.json(casts)
   } catch (error) {
     console.error('Error fetching cast data:', error)
@@ -84,10 +84,10 @@ export async function POST(request: NextRequest) {
         reservations: {
           include: {
             customer: true,
-            course: true
-          }
-        }
-      }
+            course: true,
+          },
+        },
+      },
     })
 
     return NextResponse.json(newCast, { status: 201 })
@@ -131,16 +131,16 @@ export async function PUT(request: NextRequest) {
         reservations: {
           include: {
             customer: true,
-            course: true
-          }
-        }
-      }
+            course: true,
+          },
+        },
+      },
     })
 
     return NextResponse.json(updatedCast)
   } catch (error) {
     console.error('Error updating cast:', error)
-    if (error.code === 'P2025') {
+    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
       return NextResponse.json({ error: 'Cast not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -157,13 +157,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     await db.cast.delete({
-      where: { id }
+      where: { id },
     })
 
     return new NextResponse(null, { status: 204 })
   } catch (error) {
     console.error('Error deleting cast:', error)
-    if (error.code === 'P2025') {
+    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
       return NextResponse.json({ error: 'Cast not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

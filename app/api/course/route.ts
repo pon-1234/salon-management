@@ -18,16 +18,16 @@ export async function GET(request: NextRequest) {
           reservations: {
             include: {
               customer: true,
-              cast: true
-            }
-          }
-        }
+              cast: true,
+            },
+          },
+        },
       })
-      
+
       if (!course) {
         return NextResponse.json({ error: 'Course not found' }, { status: 404 })
       }
-      
+
       return NextResponse.json(course)
     }
 
@@ -36,15 +36,15 @@ export async function GET(request: NextRequest) {
         reservations: {
           include: {
             customer: true,
-            cast: true
-          }
-        }
+            cast: true,
+          },
+        },
       },
       orderBy: {
-        price: 'asc'
-      }
+        price: 'asc',
+      },
     })
-    
+
     return NextResponse.json(courses)
   } catch (error) {
     console.error('Error fetching course data:', error)
@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
         description: data.description || '',
       },
       include: {
-        reservations: true
-      }
+        reservations: true,
+      },
     })
 
     return NextResponse.json(newCourse, { status: 201 })
@@ -96,16 +96,16 @@ export async function PUT(request: NextRequest) {
         reservations: {
           include: {
             customer: true,
-            cast: true
-          }
-        }
-      }
+            cast: true,
+          },
+        },
+      },
     })
 
     return NextResponse.json(updatedCourse)
   } catch (error) {
     console.error('Error updating course:', error)
-    if (error.code === 'P2025') {
+    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
       return NextResponse.json({ error: 'Course not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -122,13 +122,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     await db.coursePrice.delete({
-      where: { id }
+      where: { id },
     })
 
     return new NextResponse(null, { status: 204 })
   } catch (error) {
     console.error('Error deleting course:', error)
-    if (error.code === 'P2025') {
+    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
       return NextResponse.json({ error: 'Course not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

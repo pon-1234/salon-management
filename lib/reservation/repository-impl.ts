@@ -9,7 +9,7 @@ import { Reservation, Service } from '../types/reservation'
 export class ReservationRepositoryImpl implements ReservationRepository {
   private baseUrl = '/api'
 
-  async findAll(): Promise<Reservation[]> {
+  async getAll(): Promise<Reservation[]> {
     const response = await fetch(`${this.baseUrl}/reservation`)
     if (!response.ok) {
       throw new Error(`Failed to fetch reservations: ${response.statusText}`)
@@ -17,7 +17,7 @@ export class ReservationRepositoryImpl implements ReservationRepository {
     return response.json()
   }
 
-  async findById(id: string): Promise<Reservation | null> {
+  async getById(id: string): Promise<Reservation | null> {
     const response = await fetch(`${this.baseUrl}/reservation?id=${id}`)
     if (response.status === 404) {
       return null
@@ -56,13 +56,14 @@ export class ReservationRepositoryImpl implements ReservationRepository {
     return response.json()
   }
 
-  async delete(id: string): Promise<void> {
+  async delete(id: string): Promise<boolean> {
     const response = await fetch(`${this.baseUrl}/reservation?id=${id}`, {
       method: 'DELETE',
     })
     if (!response.ok) {
       throw new Error(`Failed to delete reservation: ${response.statusText}`)
     }
+    return true
   }
 
   async getReservationsByCustomer(customerId: string): Promise<Reservation[]> {
@@ -73,13 +74,17 @@ export class ReservationRepositoryImpl implements ReservationRepository {
     return response.json()
   }
 
-  async getReservationsByStaff(staffId: string, startDate: Date, endDate: Date): Promise<Reservation[]> {
+  async getReservationsByStaff(
+    staffId: string,
+    startDate: Date,
+    endDate: Date
+  ): Promise<Reservation[]> {
     const params = new URLSearchParams({
       castId: staffId,
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
     })
-    
+
     const response = await fetch(`${this.baseUrl}/reservation?${params}`)
     if (!response.ok) {
       throw new Error(`Failed to fetch staff reservations: ${response.statusText}`)
@@ -98,10 +103,7 @@ export class ReservationRepositoryImpl implements ReservationRepository {
       throw new Error('Failed to fetch services')
     }
 
-    const [courses, options] = await Promise.all([
-      coursesResponse.json(),
-      optionsResponse.json(),
-    ])
+    const [courses, options] = await Promise.all([coursesResponse.json(), optionsResponse.json()])
 
     // Transform courses and options into Service format
     const services: Service[] = [

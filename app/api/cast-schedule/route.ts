@@ -19,41 +19,38 @@ export async function GET(request: NextRequest) {
       const schedule = await db.castSchedule.findUnique({
         where: { id },
         include: {
-          cast: true
-        }
+          cast: true,
+        },
       })
-      
+
       if (!schedule) {
         return NextResponse.json({ error: 'Schedule not found' }, { status: 404 })
       }
-      
+
       return NextResponse.json(schedule)
     }
 
     // Build filters for querying schedules
     const where: any = {}
-    
+
     if (castId) where.castId = castId
     if (date) {
       where.date = new Date(date)
     } else if (startDate && endDate) {
       where.date = {
         gte: new Date(startDate),
-        lte: new Date(endDate)
+        lte: new Date(endDate),
       }
     }
 
     const schedules = await db.castSchedule.findMany({
       where,
       include: {
-        cast: true
+        cast: true,
       },
-      orderBy: [
-        { date: 'asc' },
-        { startTime: 'asc' }
-      ]
+      orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     })
-    
+
     return NextResponse.json(schedules)
   } catch (error) {
     console.error('Error fetching cast schedule data:', error)
@@ -74,8 +71,8 @@ export async function POST(request: NextRequest) {
         isAvailable: data.isAvailable ?? true,
       },
       include: {
-        cast: true
-      }
+        cast: true,
+      },
     })
 
     return NextResponse.json(newSchedule, { status: 201 })
@@ -103,14 +100,14 @@ export async function PUT(request: NextRequest) {
         isAvailable: updates.isAvailable,
       },
       include: {
-        cast: true
-      }
+        cast: true,
+      },
     })
 
     return NextResponse.json(updatedSchedule)
   } catch (error) {
     console.error('Error updating cast schedule:', error)
-    if (error.code === 'P2025') {
+    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
       return NextResponse.json({ error: 'Schedule not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -127,13 +124,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     await db.castSchedule.delete({
-      where: { id }
+      where: { id },
     })
 
     return new NextResponse(null, { status: 204 })
   } catch (error) {
     console.error('Error deleting cast schedule:', error)
-    if (error.code === 'P2025') {
+    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
       return NextResponse.json({ error: 'Schedule not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
         include: {
           ngCasts: {
             include: {
-              cast: true
-            }
+              cast: true,
+            },
           },
           reservations: {
             include: {
@@ -26,23 +26,23 @@ export async function GET(request: NextRequest) {
               course: true,
               options: {
                 include: {
-                  option: true
-                }
-              }
-            }
+                  option: true,
+                },
+              },
+            },
           },
           reviews: {
             include: {
-              cast: true
-            }
-          }
-        }
+              cast: true,
+            },
+          },
+        },
       })
-      
+
       if (!customer) {
         return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
       }
-      
+
       return NextResponse.json(customer)
     }
 
@@ -50,23 +50,23 @@ export async function GET(request: NextRequest) {
       include: {
         ngCasts: {
           include: {
-            cast: true
-          }
+            cast: true,
+          },
         },
         reservations: {
           include: {
             cast: true,
-            course: true
-          }
+            course: true,
+          },
         },
         reviews: {
           include: {
-            cast: true
-          }
-        }
-      }
+            cast: true,
+          },
+        },
+      },
     })
-    
+
     return NextResponse.json(customers)
   } catch (error) {
     console.error('Error fetching customer data:', error)
@@ -92,21 +92,21 @@ export async function POST(request: NextRequest) {
       include: {
         ngCasts: {
           include: {
-            cast: true
-          }
+            cast: true,
+          },
         },
         reservations: {
           include: {
             cast: true,
-            course: true
-          }
+            course: true,
+          },
         },
         reviews: {
           include: {
-            cast: true
-          }
-        }
-      }
+            cast: true,
+          },
+        },
+      },
     })
 
     return NextResponse.json(newCustomer, { status: 201 })
@@ -139,27 +139,27 @@ export async function PUT(request: NextRequest) {
       include: {
         ngCasts: {
           include: {
-            cast: true
-          }
+            cast: true,
+          },
         },
         reservations: {
           include: {
             cast: true,
-            course: true
-          }
+            course: true,
+          },
         },
         reviews: {
           include: {
-            cast: true
-          }
-        }
-      }
+            cast: true,
+          },
+        },
+      },
     })
 
     return NextResponse.json(updatedCustomer)
   } catch (error) {
     console.error('Error updating customer:', error)
-    if (error.code === 'P2025') {
+    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -176,13 +176,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     await db.customer.delete({
-      where: { id }
+      where: { id },
     })
 
     return new NextResponse(null, { status: 204 })
   } catch (error) {
     console.error('Error deleting customer:', error)
-    if (error.code === 'P2025') {
+    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

@@ -2,7 +2,7 @@ import '@testing-library/jest-dom'
 import { vi } from 'vitest'
 
 // Set up test environment variables
-process.env.DATABASE_URL = "postgresql://test:test@localhost:5432/salon_test?schema=public"
+process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/salon_test?schema=public'
 
 // Mock the database module
 vi.mock('./lib/db', () => ({
@@ -59,14 +59,16 @@ vi.mock('./lib/db', () => ({
     reservationOption: {
       deleteMany: vi.fn(() => Promise.resolve()),
     },
-    $transaction: vi.fn((fn) => fn({
-      reservationOption: {
-        deleteMany: vi.fn(() => Promise.resolve()),
-      },
-      reservation: {
-        update: vi.fn(() => Promise.resolve({ id: 'test-id' })),
-      },
-    })),
+    $transaction: vi.fn((fn) =>
+      fn({
+        reservationOption: {
+          deleteMany: vi.fn(() => Promise.resolve()),
+        },
+        reservation: {
+          update: vi.fn(() => Promise.resolve({ id: 'test-id' })),
+        },
+      })
+    ),
   },
 }))
 
