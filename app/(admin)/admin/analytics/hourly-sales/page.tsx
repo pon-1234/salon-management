@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
+import { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
 import { Printer, Clock, Users, TrendingUp, Activity } from 'lucide-react'
 import {
   Select,
@@ -11,12 +11,12 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { HourlySalesChart } from "@/components/analytics/hourly-sales-chart"
-import { HourlySalesTable } from "@/components/analytics/hourly-sales-table"
-import { HourlyHeatmap } from "@/components/analytics/hourly-heatmap"
-import { PeakTimeAnalysis } from "@/components/analytics/peak-time-analysis"
-import { generateHourlySalesData } from "@/lib/hourly-sales/data"
+} from '@/components/ui/select'
+import { HourlySalesChart } from '@/components/analytics/hourly-sales-chart'
+import { HourlySalesTable } from '@/components/analytics/hourly-sales-table'
+import { HourlyHeatmap } from '@/components/analytics/hourly-heatmap'
+import { PeakTimeAnalysis } from '@/components/analytics/peak-time-analysis'
+import { generateHourlySalesData } from '@/lib/hourly-sales/data'
 
 export default function HourlySalesPage() {
   const [year, setYear] = useState(2024)
@@ -33,18 +33,18 @@ export default function HourlySalesPage() {
 
   // ダミーデータ（実際にはsalesDataから計算）
   const kpiData = {
-    peakHour: "19:00-20:00",
+    peakHour: '19:00-20:00',
     peakCustomers: 245,
     averagePerHour: 28,
     busyHours: 8,
     totalCustomers: salesData.grandTotal,
     previousMonthTotal: 9876,
     efficiency: 78.5,
-    previousEfficiency: 72.3
+    previousEfficiency: 72.3,
   }
 
   const calculateGrowthRate = (current: number, previous: number) => {
-    return ((current - previous) / previous * 100).toFixed(1)
+    return (((current - previous) / previous) * 100).toFixed(1)
   }
 
   return (
@@ -54,10 +54,7 @@ export default function HourlySalesPage() {
         <div className="flex items-center gap-4">
           <h1 className="text-3xl font-bold">時間別売上分析</h1>
           <div className="flex gap-2">
-            <Select
-              value={year.toString()}
-              onValueChange={(value) => setYear(parseInt(value))}
-            >
+            <Select value={year.toString()} onValueChange={(value) => setYear(parseInt(value))}>
               <SelectTrigger className="w-[100px]">
                 <SelectValue />
               </SelectTrigger>
@@ -69,10 +66,7 @@ export default function HourlySalesPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Select
-              value={month.toString()}
-              onValueChange={(value) => setMonth(parseInt(value))}
-            >
+            <Select value={month.toString()} onValueChange={(value) => setMonth(parseInt(value))}>
               <SelectTrigger className="w-[80px]">
                 <SelectValue />
               </SelectTrigger>
@@ -86,14 +80,17 @@ export default function HourlySalesPage() {
             </Select>
           </div>
         </div>
-        <Button onClick={handlePrint} className="print:hidden bg-emerald-600 hover:bg-emerald-700 text-white">
+        <Button
+          onClick={handlePrint}
+          className="bg-emerald-600 text-white hover:bg-emerald-700 print:hidden"
+        >
           <Printer className="mr-2 h-4 w-4" />
           印刷する
         </Button>
       </div>
 
       {/* KPIカード */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">ピーク時間帯</CardTitle>
@@ -101,9 +98,7 @@ export default function HourlySalesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{kpiData.peakHour}</div>
-            <p className="text-xs text-muted-foreground">
-              最大{kpiData.peakCustomers}人
-            </p>
+            <p className="text-xs text-muted-foreground">最大{kpiData.peakCustomers}人</p>
           </CardContent>
         </Card>
 
@@ -114,7 +109,7 @@ export default function HourlySalesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{kpiData.totalCustomers.toLocaleString()}人</div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
               <TrendingUp className="h-3 w-3 text-green-600" />
               <span className="text-green-600">
                 {calculateGrowthRate(kpiData.totalCustomers, kpiData.previousMonthTotal)}%
@@ -131,9 +126,7 @@ export default function HourlySalesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{kpiData.averagePerHour}人/時</div>
-            <p className="text-xs text-muted-foreground">
-              混雑時間: {kpiData.busyHours}時間
-            </p>
+            <p className="text-xs text-muted-foreground">混雑時間: {kpiData.busyHours}時間</p>
           </CardContent>
         </Card>
 

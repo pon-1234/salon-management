@@ -1,7 +1,7 @@
-"use client"
+'use client'
 
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { AreaSalesData } from "@/lib/types/area-sales"
+import { AreaSalesData } from '@/lib/types/area-sales'
 
 interface AreaSalesChartProps {
   data: AreaSalesData[]
@@ -14,23 +14,23 @@ export function AreaSalesChart({ data, year }: AreaSalesChartProps) {
   // Null/array check
   if (!data || !Array.isArray(data) || data.length === 0) {
     return (
-      <div className="flex items-center justify-center h-[350px] text-gray-500">
+      <div className="flex h-[350px] items-center justify-center text-gray-500">
         データがありません
       </div>
-    );
+    )
   }
 
   // エリアごとの年間売上を計算
   const chartData = data.map((area) => ({
     name: area.area,
     value: area.total,
-    percentage: ((area.total / data.reduce((sum, a) => sum + a.total, 0)) * 100).toFixed(1)
+    percentage: ((area.total / data.reduce((sum, a) => sum + a.total, 0)) * 100).toFixed(1),
   }))
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-2 border rounded shadow-lg">
+        <div className="rounded border bg-white p-2 shadow-lg">
           <p className="font-semibold">{payload[0].name}</p>
           <p className="text-sm">売上: ¥{payload[0].value.toLocaleString()}</p>
           <p className="text-sm">構成比: {payload[0].payload.percentage}%</p>
@@ -62,8 +62,8 @@ export function AreaSalesChart({ data, year }: AreaSalesChartProps) {
           ))}
         </Pie>
         <Tooltip content={<CustomTooltip />} />
-        <Legend 
-          verticalAlign="bottom" 
+        <Legend
+          verticalAlign="bottom"
           height={36}
           formatter={(value: string) => <span style={{ fontSize: 14 }}>{value}</span>}
         />

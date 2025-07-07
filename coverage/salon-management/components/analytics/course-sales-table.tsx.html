@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/75</span>
+                <span class='fraction'>0/71</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/75</span>
+                <span class='fraction'>0/71</span>
             </div>
         
             
@@ -167,10 +167,7 @@
 <a name='L102'></a><a href='#L102'>102</a>
 <a name='L103'></a><a href='#L103'>103</a>
 <a name='L104'></a><a href='#L104'>104</a>
-<a name='L105'></a><a href='#L105'>105</a>
-<a name='L106'></a><a href='#L106'>106</a>
-<a name='L107'></a><a href='#L107'>107</a>
-<a name='L108'></a><a href='#L108'>108</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L105'></a><a href='#L105'>105</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -258,10 +255,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -277,9 +270,10 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -287,10 +281,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { cn } from "@/lib/utils"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
-import { CourseSalesData } from "@/lib/types/analytics"
+} from '@/components/ui/table'
+import { cn } from '@/lib/utils'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
+import { CourseSalesData } from '@/lib/types/analytics'
 &nbsp;
 interface CourseSalesTableProps {
   year: number
@@ -346,32 +340,28 @@ interface CourseSalesTableProps {
 <span class="cstat-no" title="statement not covered" >          {data.map((course) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >            const total = calculateTotal(course.sales)</span>
 <span class="cstat-no" title="statement not covered" >            const revenue = calculateRevenue(course)</span>
-            
+&nbsp;
 <span class="cstat-no" title="statement not covered" >            return (</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableRow key={course.id}&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;TableCell className="font-medium"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  {course.name}</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;span className="text-xs text-gray-500 ml-2"&gt;({course.duration}分)&lt;/span&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;span className="ml-2 text-xs text-gray-500"&gt;({course.duration}分)&lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  ¥{course.price.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >                &lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;TableCell className="text-right"&gt;¥{course.price.toLocaleString()}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                {dates.map((date, index) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;TableCell key={index} className="text-center"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    {course.sales[index] || "-"}</span>
+<span class="cstat-no" title="statement not covered" >                    {course.sales[index] || '-'}</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                ))}</span>
 <span class="cstat-no" title="statement not covered" >                &lt;TableCell className="text-center text-gray-400"&gt;...&lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;TableCell className="text-right font-medium"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  {total}</span>
-<span class="cstat-no" title="statement not covered" >                &lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;TableCell className="text-right font-medium"&gt;{total}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;TableCell className="text-right font-medium text-green-600"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  ¥{revenue.toLocaleString()}</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/TableRow&gt;</span>
             )
 <span class="cstat-no" title="statement not covered" >          })}</span>
-<span class="cstat-no" title="statement not covered" >          &lt;TableRow className="font-bold bg-gray-50"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;TableRow className="bg-gray-50 font-bold"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell colSpan={dates.length + 3}&gt;合計&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              {data.reduce((sum, course) =&gt; sum + calculateTotal(course.sales), 0)}</span>
@@ -384,14 +374,15 @@ interface CourseSalesTableProps {
 <span class="cstat-no" title="statement not covered" >      &lt;/Table&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

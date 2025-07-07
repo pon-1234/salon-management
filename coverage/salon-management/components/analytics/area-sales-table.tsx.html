@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/74</span>
+                <span class='fraction'>0/71</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/74</span>
+                <span class='fraction'>0/71</span>
             </div>
         
             
@@ -163,11 +163,7 @@
 <a name='L98'></a><a href='#L98'>98</a>
 <a name='L99'></a><a href='#L99'>99</a>
 <a name='L100'></a><a href='#L100'>100</a>
-<a name='L101'></a><a href='#L101'>101</a>
-<a name='L102'></a><a href='#L102'>102</a>
-<a name='L103'></a><a href='#L103'>103</a>
-<a name='L104'></a><a href='#L104'>104</a>
-<a name='L105'></a><a href='#L105'>105</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L101'></a><a href='#L101'>101</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -198,8 +194,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -210,8 +204,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -271,9 +263,9 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -281,19 +273,19 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { AreaSalesData } from "@/lib/types/area-sales"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+} from '@/components/ui/table'
+import { AreaSalesData } from '@/lib/types/area-sales'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
-import { Skeleton } from "@/components/ui/skeleton"
-import { cn } from "@/lib/utils"
+import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 &nbsp;
 interface AreaSalesTableProps {
-  data: AreaSalesData[];
+  data: AreaSalesData[]
 }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export function AreaSalesTable({ data }: AreaSalesTableProps) {</span>
-<span class="cstat-no" title="statement not covered" >  const months = Array.from({ length: 12 }, (_, i) =&gt; i + 1);</span>
+<span class="cstat-no" title="statement not covered" >  const months = Array.from({ length: 12 }, (_, i) =&gt; i + 1)</span>
 &nbsp;
   // Null/array check
 <span class="cstat-no" title="statement not covered" >  if (!data || !Array.isArray(data) || data.length === 0) {</span>
@@ -301,57 +293,53 @@ interface AreaSalesTableProps {
 <span class="cstat-no" title="statement not covered" >      &lt;Alert&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;AlertCircle className="h-4 w-4" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;AlertTitle&gt;データがありません&lt;/AlertTitle&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;AlertDescription&gt;</span>
-          表示するデータがありません。
-<span class="cstat-no" title="statement not covered" >        &lt;/AlertDescription&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;AlertDescription&gt;表示するデータがありません。&lt;/AlertDescription&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/Alert&gt;</span>
-    );
+    )
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
   // Calculate totals
-<span class="cstat-no" title="statement not covered" >  const totalMonthlySales = Array.from({ length: 12 }, (_, i) =&gt; </span>
+<span class="cstat-no" title="statement not covered" >  const totalMonthlySales = Array.from({ length: 12 }, (_, i) =&gt;</span>
 <span class="cstat-no" title="statement not covered" >    data.reduce((sum, area) =&gt; sum + (area.monthlySales[i] || 0), 0)</span>
-<span class="cstat-no" title="statement not covered" >  );</span>
-<span class="cstat-no" title="statement not covered" >  const grandTotal = totalMonthlySales.reduce((sum, sales) =&gt; sum + sales, 0);</span>
+<span class="cstat-no" title="statement not covered" >  )</span>
+<span class="cstat-no" title="statement not covered" >  const grandTotal = totalMonthlySales.reduce((sum, sales) =&gt; sum + sales, 0)</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;div className="overflow-x-auto"&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;div className="rounded-lg border bg-white print:border-none min-w-max"&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;div className="min-w-max rounded-lg border bg-white print:border-none"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;Table&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;TableHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableRow&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableHead className="w-[200px]"&gt;エリア&lt;/TableHead&gt;</span>
 <span class="cstat-no" title="statement not covered" >              {months.map((month) =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >                &lt;TableHead key={month} className="text-right whitespace-nowrap"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;TableHead key={month} className="whitespace-nowrap text-right"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  {`${month.toString().padStart(2, '0')}月`}</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/TableHead&gt;</span>
 <span class="cstat-no" title="statement not covered" >              ))}</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableHead className="text-right bg-gray-100"&gt;TOTAL&lt;/TableHead&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableHead className="bg-gray-100 text-right"&gt;TOTAL&lt;/TableHead&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TableRow&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/TableHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;TableBody&gt;</span>
 <span class="cstat-no" title="statement not covered" >            {data.map((area) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableRow key={area.area}&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;TableCell className={cn(</span>
-<span class="cstat-no" title="statement not covered" >                  area.isSubtotal &amp;&amp; "font-medium text-emerald-700"</span>
-<span class="cstat-no" title="statement not covered" >                )}&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;TableCell className={cn(area.isSubtotal &amp;&amp; 'font-medium text-emerald-700')}&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  {area.area}</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                {area.monthlySales.map((sales, index) =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;TableCell </span>
-<span class="cstat-no" title="statement not covered" >                    key={index} </span>
+<span class="cstat-no" title="statement not covered" >                  &lt;TableCell</span>
+<span class="cstat-no" title="statement not covered" >                    key={index}</span>
 <span class="cstat-no" title="statement not covered" >                    className={cn(</span>
-<span class="cstat-no" title="statement not covered" >                      "text-right",</span>
-<span class="cstat-no" title="statement not covered" >                      area.isSubtotal ? "text-emerald-700" : "text-blue-600"</span>
+<span class="cstat-no" title="statement not covered" >                      'text-right',</span>
+<span class="cstat-no" title="statement not covered" >                      area.isSubtotal ? 'text-emerald-700' : 'text-blue-600'</span>
 <span class="cstat-no" title="statement not covered" >                    )}</span>
                   &gt;
 <span class="cstat-no" title="statement not covered" >                    {sales.toLocaleString()}</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                ))}</span>
-<span class="cstat-no" title="statement not covered" >                &lt;TableCell </span>
+<span class="cstat-no" title="statement not covered" >                &lt;TableCell</span>
 <span class="cstat-no" title="statement not covered" >                  className={cn(</span>
-<span class="cstat-no" title="statement not covered" >                    "text-right font-medium bg-gray-50",</span>
-<span class="cstat-no" title="statement not covered" >                    area.isSubtotal ? "text-emerald-700" : "text-blue-600"</span>
+<span class="cstat-no" title="statement not covered" >                    'bg-gray-50 text-right font-medium',</span>
+<span class="cstat-no" title="statement not covered" >                    area.isSubtotal ? 'text-emerald-700' : 'text-blue-600'</span>
 <span class="cstat-no" title="statement not covered" >                  )}</span>
                 &gt;
 <span class="cstat-no" title="statement not covered" >                  {area.total.toLocaleString()}</span>
@@ -365,7 +353,7 @@ interface AreaSalesTableProps {
 <span class="cstat-no" title="statement not covered" >                  {sales.toLocaleString()}</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              ))}</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right text-blue-600 bg-gray-50"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="bg-gray-50 text-right text-blue-600"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                {grandTotal.toLocaleString()}</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TableRow&gt;</span>
@@ -382,7 +370,7 @@ interface AreaSalesTableProps {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

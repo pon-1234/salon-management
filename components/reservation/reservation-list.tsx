@@ -1,5 +1,5 @@
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Table,
   TableBody,
@@ -7,10 +7,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import Link from "next/link"
-import { format } from "date-fns"
-import { Reservation } from "@/lib/types/reservation"
+} from '@/components/ui/table'
+import Link from 'next/link'
+import { format } from 'date-fns'
+import { Reservation } from '@/lib/types/reservation'
 
 interface ReservationListProps {
   reservations: Reservation[]
@@ -20,19 +20,25 @@ interface ReservationListProps {
   onMakeModifiable?: (reservationId: string) => void
 }
 
-export function ReservationList({ reservations, limit, showViewMore = false, onOpenReservation, onMakeModifiable }: ReservationListProps) {
+export function ReservationList({
+  reservations,
+  limit,
+  showViewMore = false,
+  onOpenReservation,
+  onMakeModifiable,
+}: ReservationListProps) {
   const displayReservations = limit ? reservations.slice(0, limit) : reservations
 
   const getRankColor = (rank: string) => {
     switch (rank) {
-      case "ゴールド":
-        return "bg-gray-600 text-white"
-      case "シルバー":
-        return "bg-gray-400 text-white"
-      case "ブロンズ":
-        return "bg-orange-400 text-white"
+      case 'ゴールド':
+        return 'bg-gray-600 text-white'
+      case 'シルバー':
+        return 'bg-gray-400 text-white'
+      case 'ブロンズ':
+        return 'bg-orange-400 text-white'
       default:
-        return "bg-gray-100"
+        return 'bg-gray-100'
     }
   }
 
@@ -54,28 +60,28 @@ export function ReservationList({ reservations, limit, showViewMore = false, onO
           </TableHeader>
           <TableBody>
             {displayReservations.map((reservation) => (
-              <TableRow key={reservation.id} onClick={() => onOpenReservation && onOpenReservation(reservation)} className="cursor-pointer hover:bg-gray-50">
+              <TableRow
+                key={reservation.id}
+                onClick={() => onOpenReservation && onOpenReservation(reservation)}
+                className="cursor-pointer hover:bg-gray-50"
+              >
                 <TableCell>
-                  <div className="bg-red-50 text-center rounded p-1 w-20">
-                    {reservation.id}
-                  </div>
+                  <div className="w-20 rounded bg-red-50 p-1 text-center">{reservation.id}</div>
                 </TableCell>
                 <TableCell>
                   <div>{reservation.customerName} 様</div>
                   {reservation.isNewDesignation && (
-                    <div className="text-sm text-gray-500 mt-1">
-                      [新規指名]
-                    </div>
+                    <div className="mt-1 text-sm text-gray-500">[新規指名]</div>
                   )}
-                  <div className="text-sm text-gray-500 mt-1">
-                    {reservation.location}
-                  </div>
+                  <div className="mt-1 text-sm text-gray-500">{reservation.location}</div>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <span>{format(reservation.startTime, 'yyyy-MM-dd')}</span>
                   </div>
-                  <div className="text-sm text-gray-500">{format(reservation.startTime, 'HH:mm')}</div>
+                  <div className="text-sm text-gray-500">
+                    {format(reservation.startTime, 'HH:mm')}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
@@ -85,31 +91,35 @@ export function ReservationList({ reservations, limit, showViewMore = false, onO
                     </Badge>
                   </div>
                 </TableCell>
-                <TableCell>
-                  {`${reservation.courseName}${reservation.duration}分`}
-                </TableCell>
+                <TableCell>{`${reservation.courseName}${reservation.duration}分`}</TableCell>
                 <TableCell>{format(reservation.startTime, 'HH:mm')}</TableCell>
                 <TableCell>{format(reservation.endTime, 'HH:mm')}</TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2 flex-nowrap">
-                    <Badge 
+                  <div className="flex flex-nowrap items-center gap-2">
+                    <Badge
                       variant={
-                        reservation.status === 'confirmed' ? 'default' : 
-                        reservation.status === 'modifiable' ? 'outline' : 'secondary'
+                        reservation.status === 'confirmed'
+                          ? 'default'
+                          : reservation.status === 'modifiable'
+                            ? 'outline'
+                            : 'secondary'
                       }
                       className="whitespace-nowrap"
                     >
-                      {reservation.status === 'confirmed' ? '確定' : 
-                       reservation.status === 'modifiable' ? '修正可能' : '未確定'}
+                      {reservation.status === 'confirmed'
+                        ? '確定'
+                        : reservation.status === 'modifiable'
+                          ? '修正可能'
+                          : '未確定'}
                     </Badge>
                     {reservation.status === 'confirmed' && (
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-6 px-2 text-xs whitespace-nowrap"
+                        className="h-6 whitespace-nowrap px-2 text-xs"
                         onClick={(e) => {
-                          e.stopPropagation();
-                          onMakeModifiable?.(reservation.id);
+                          e.stopPropagation()
+                          onMakeModifiable?.(reservation.id)
                         }}
                       >
                         修正可能にする
@@ -123,9 +133,9 @@ export function ReservationList({ reservations, limit, showViewMore = false, onO
         </Table>
       </div>
       {showViewMore && reservations.length > (limit || 0) && (
-        <div className="flex justify-center mt-4">
+        <div className="mt-4 flex justify-center">
           <Link href="/admin/reservation-list">
-            <Button variant="default" className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            <Button variant="default" className="bg-emerald-600 text-white hover:bg-emerald-700">
               もっと見る
             </Button>
           </Link>

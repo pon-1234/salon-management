@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/41</span>
+                <span class='fraction'>0/39</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/41</span>
+                <span class='fraction'>0/39</span>
             </div>
         
             
@@ -125,7 +125,14 @@
 <a name='L60'></a><a href='#L60'>60</a>
 <a name='L61'></a><a href='#L61'>61</a>
 <a name='L62'></a><a href='#L62'>62</a>
-<a name='L63'></a><a href='#L63'>63</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -142,6 +149,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -172,9 +188,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -187,11 +200,21 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useEffect, useState } from "react"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
+import { useEffect, useState } from 'react'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 &nbsp;
 interface OptionSalesChartProps {
   year: number
@@ -210,12 +233,12 @@ interface OptionData {
 <span class="cstat-no" title="statement not covered" >  useEffect(() =&gt; {</span>
     // ダミーデータ（実際にはuseCasesから取得）
 <span class="cstat-no" title="statement not covered" >    const dummyData: OptionData[] = [</span>
-<span class="cstat-no" title="statement not covered" >      { name: "アロマオイル", sales: 678900, count: 234 },</span>
-<span class="cstat-no" title="statement not covered" >      { name: "ホットストーン", sales: 456700, count: 98 },</span>
-<span class="cstat-no" title="statement not covered" >      { name: "ヘッドマッサージ", sales: 345600, count: 156 },</span>
-<span class="cstat-no" title="statement not covered" >      { name: "フットケア", sales: 234500, count: 87 },</span>
-<span class="cstat-no" title="statement not covered" >      { name: "ハンドケア", sales: 198700, count: 112 },</span>
-<span class="cstat-no" title="statement not covered" >      { name: "その他", sales: 220100, count: 78 }</span>
+<span class="cstat-no" title="statement not covered" >      { name: 'アロマオイル', sales: 678900, count: 234 },</span>
+<span class="cstat-no" title="statement not covered" >      { name: 'ホットストーン', sales: 456700, count: 98 },</span>
+<span class="cstat-no" title="statement not covered" >      { name: 'ヘッドマッサージ', sales: 345600, count: 156 },</span>
+<span class="cstat-no" title="statement not covered" >      { name: 'フットケア', sales: 234500, count: 87 },</span>
+<span class="cstat-no" title="statement not covered" >      { name: 'ハンドケア', sales: 198700, count: 112 },</span>
+<span class="cstat-no" title="statement not covered" >      { name: 'その他', sales: 220100, count: 78 },</span>
 <span class="cstat-no" title="statement not covered" >    ]</span>
 <span class="cstat-no" title="statement not covered" >    setData(dummyData)</span>
 <span class="cstat-no" title="statement not covered" >  }, [year, analyticsUseCases])</span>
@@ -231,14 +254,11 @@ interface OptionData {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;ResponsiveContainer width="100%" height={300}&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;BarChart</span>
-<span class="cstat-no" title="statement not covered" >        data={data}</span>
-<span class="cstat-no" title="statement not covered" >        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}</span>
-      &gt;
+<span class="cstat-no" title="statement not covered" >      &lt;BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;CartesianGrid strokeDasharray="3 3" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;XAxis dataKey="name" angle={-45} textAnchor="end" height={80} /&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;YAxis tickFormatter={formatYAxis} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;Tooltip </span>
+<span class="cstat-no" title="statement not covered" >        &lt;Tooltip</span>
 <span class="cstat-no" title="statement not covered" >          formatter={(value: number, name: string) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >            if (name === '売上額') return [`¥${value.toLocaleString()}`, name]</span>
 <span class="cstat-no" title="statement not covered" >            return [value, name]</span>
@@ -249,14 +269,15 @@ interface OptionData {
 <span class="cstat-no" title="statement not covered" >      &lt;/BarChart&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/ResponsiveContainer&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

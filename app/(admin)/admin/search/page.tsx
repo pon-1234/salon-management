@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { Suspense } from 'react'
 import { SearchContent } from './search-content'

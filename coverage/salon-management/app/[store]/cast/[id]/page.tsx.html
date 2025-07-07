@@ -100,7 +100,8 @@
 <a name='L35'></a><a href='#L35'>35</a>
 <a name='L36'></a><a href='#L36'>36</a>
 <a name='L37'></a><a href='#L37'>37</a>
-<a name='L38'></a><a href='#L38'>38</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -137,17 +138,18 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { notFound } from 'next/navigation'</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { notFound } from 'next/navigation'</span></span></span>
 <span class="cstat-no" title="statement not covered" >import { getStoreBySlug } from '@/lib/store/data'</span>
 <span class="cstat-no" title="statement not covered" >import { getCastById } from '@/lib/cast/data'</span>
 <span class="cstat-no" title="statement not covered" >import { CastDetailContent } from '@/components/cast/cast-detail-content'</span>
 <span class="cstat-no" title="statement not covered" >import { StoreNavigation } from '@/components/store-navigation'</span>
 <span class="cstat-no" title="statement not covered" >import { StoreFooter } from '@/components/store-footer'</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >export default async function CastDetailPage({ </span>
-<span class="cstat-no" title="statement not covered" >  params </span>
-<span class="cstat-no" title="statement not covered" >}: { </span>
-<span class="cstat-no" title="statement not covered" >  params: Promise&lt;{ store: string; id: string }&gt; </span>
+<span class="cstat-no" title="statement not covered" >export default async function CastDetailPage({</span>
+<span class="cstat-no" title="statement not covered" >  params,</span>
+<span class="cstat-no" title="statement not covered" >}: {</span>
+<span class="cstat-no" title="statement not covered" >  params: Promise&lt;{ store: string; id: string }&gt;</span>
 <span class="cstat-no" title="statement not covered" >}) {</span>
 <span class="cstat-no" title="statement not covered" >  const { store: storeSlug, id } = await params</span>
 <span class="cstat-no" title="statement not covered" >  const store = getStoreBySlug(storeSlug)</span>
@@ -158,7 +160,7 @@
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  // Get cast data</span>
 <span class="cstat-no" title="statement not covered" >  const cast = getCastById(id)</span>
-<span class="cstat-no" title="statement not covered" >  </span>
+<span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  if (!cast) {</span>
 <span class="cstat-no" title="statement not covered" >    notFound()</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
@@ -166,22 +168,23 @@
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;StoreNavigation /&gt;</span>
-<span class="cstat-no" title="statement not covered" >      </span>
+<span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >      &lt;main className="min-h-screen bg-gray-50"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;CastDetailContent cast={cast} store={store} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >        </span>
+<span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >        &lt;StoreFooter store={store} /&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/main&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/&gt;</span>
 <span class="cstat-no" title="statement not covered" >  )</span>
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../../../prettify.js"></script>
         <script>

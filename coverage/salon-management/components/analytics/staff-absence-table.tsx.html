@@ -278,7 +278,8 @@
 <a name='L213'></a><a href='#L213'>213</a>
 <a name='L214'></a><a href='#L214'>214</a>
 <a name='L215'></a><a href='#L215'>215</a>
-<a name='L216'></a><a href='#L216'>216</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L216'></a><a href='#L216'>216</a>
+<a name='L217'></a><a href='#L217'>217</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -493,9 +494,10 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -503,8 +505,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
 import { AlertCircle, CheckCircle, XCircle } from 'lucide-react'
 &nbsp;
 interface StaffAbsenceTableProps {
@@ -516,10 +518,10 @@ interface AbsenceRecord {
   id: string
   date: string
   staffName: string
-  type: "計画休暇" | "病欠" | "当日欠勤" | "遅刻" | "早退"
+  type: '計画休暇' | '病欠' | '当日欠勤' | '遅刻' | '早退'
   reason: string
   notified: boolean
-  impact: "低" | "中" | "高"
+  impact: '低' | '中' | '高'
   substitute?: string
 }
 &nbsp;
@@ -530,87 +532,87 @@ interface AbsenceRecord {
     // ダミーデータ（実際にはAPIから取得）
 <span class="cstat-no" title="statement not covered" >    const dummyData: AbsenceRecord[] = [</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "1",</span>
+<span class="cstat-no" title="statement not covered" >        id: '1',</span>
 <span class="cstat-no" title="statement not covered" >        date: `${year}/${month}/3`,</span>
-<span class="cstat-no" title="statement not covered" >        staffName: "みお",</span>
-<span class="cstat-no" title="statement not covered" >        type: "計画休暇",</span>
-<span class="cstat-no" title="statement not covered" >        reason: "私用のため",</span>
+<span class="cstat-no" title="statement not covered" >        staffName: 'みお',</span>
+<span class="cstat-no" title="statement not covered" >        type: '計画休暇',</span>
+<span class="cstat-no" title="statement not covered" >        reason: '私用のため',</span>
 <span class="cstat-no" title="statement not covered" >        notified: true,</span>
-<span class="cstat-no" title="statement not covered" >        impact: "低",</span>
-<span class="cstat-no" title="statement not covered" >        substitute: "しほ"</span>
+<span class="cstat-no" title="statement not covered" >        impact: '低',</span>
+<span class="cstat-no" title="statement not covered" >        substitute: 'しほ',</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "2",</span>
+<span class="cstat-no" title="statement not covered" >        id: '2',</span>
 <span class="cstat-no" title="statement not covered" >        date: `${year}/${month}/5`,</span>
-<span class="cstat-no" title="statement not covered" >        staffName: "みるく",</span>
-<span class="cstat-no" title="statement not covered" >        type: "当日欠勤",</span>
-<span class="cstat-no" title="statement not covered" >        reason: "体調不良",</span>
+<span class="cstat-no" title="statement not covered" >        staffName: 'みるく',</span>
+<span class="cstat-no" title="statement not covered" >        type: '当日欠勤',</span>
+<span class="cstat-no" title="statement not covered" >        reason: '体調不良',</span>
 <span class="cstat-no" title="statement not covered" >        notified: false,</span>
-<span class="cstat-no" title="statement not covered" >        impact: "高"</span>
+<span class="cstat-no" title="statement not covered" >        impact: '高',</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "3",</span>
+<span class="cstat-no" title="statement not covered" >        id: '3',</span>
 <span class="cstat-no" title="statement not covered" >        date: `${year}/${month}/8`,</span>
-<span class="cstat-no" title="statement not covered" >        staffName: "しほ",</span>
-<span class="cstat-no" title="statement not covered" >        type: "病欠",</span>
-<span class="cstat-no" title="statement not covered" >        reason: "インフルエンザ",</span>
+<span class="cstat-no" title="statement not covered" >        staffName: 'しほ',</span>
+<span class="cstat-no" title="statement not covered" >        type: '病欠',</span>
+<span class="cstat-no" title="statement not covered" >        reason: 'インフルエンザ',</span>
 <span class="cstat-no" title="statement not covered" >        notified: true,</span>
-<span class="cstat-no" title="statement not covered" >        impact: "中",</span>
-<span class="cstat-no" title="statement not covered" >        substitute: "みなみ"</span>
+<span class="cstat-no" title="statement not covered" >        impact: '中',</span>
+<span class="cstat-no" title="statement not covered" >        substitute: 'みなみ',</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "4",</span>
+<span class="cstat-no" title="statement not covered" >        id: '4',</span>
 <span class="cstat-no" title="statement not covered" >        date: `${year}/${month}/12`,</span>
-<span class="cstat-no" title="statement not covered" >        staffName: "ななみ",</span>
-<span class="cstat-no" title="statement not covered" >        type: "遅刻",</span>
-<span class="cstat-no" title="statement not covered" >        reason: "電車遅延",</span>
+<span class="cstat-no" title="statement not covered" >        staffName: 'ななみ',</span>
+<span class="cstat-no" title="statement not covered" >        type: '遅刻',</span>
+<span class="cstat-no" title="statement not covered" >        reason: '電車遅延',</span>
 <span class="cstat-no" title="statement not covered" >        notified: true,</span>
-<span class="cstat-no" title="statement not covered" >        impact: "低"</span>
+<span class="cstat-no" title="statement not covered" >        impact: '低',</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "5",</span>
+<span class="cstat-no" title="statement not covered" >        id: '5',</span>
 <span class="cstat-no" title="statement not covered" >        date: `${year}/${month}/15`,</span>
-<span class="cstat-no" title="statement not covered" >        staffName: "きょうか",</span>
-<span class="cstat-no" title="statement not covered" >        type: "早退",</span>
-<span class="cstat-no" title="statement not covered" >        reason: "家族の急病",</span>
+<span class="cstat-no" title="statement not covered" >        staffName: 'きょうか',</span>
+<span class="cstat-no" title="statement not covered" >        type: '早退',</span>
+<span class="cstat-no" title="statement not covered" >        reason: '家族の急病',</span>
 <span class="cstat-no" title="statement not covered" >        notified: true,</span>
-<span class="cstat-no" title="statement not covered" >        impact: "中",</span>
-<span class="cstat-no" title="statement not covered" >        substitute: "れいな"</span>
+<span class="cstat-no" title="statement not covered" >        impact: '中',</span>
+<span class="cstat-no" title="statement not covered" >        substitute: 'れいな',</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "6",</span>
+<span class="cstat-no" title="statement not covered" >        id: '6',</span>
 <span class="cstat-no" title="statement not covered" >        date: `${year}/${month}/20`,</span>
-<span class="cstat-no" title="statement not covered" >        staffName: "みお",</span>
-<span class="cstat-no" title="statement not covered" >        type: "計画休暇",</span>
-<span class="cstat-no" title="statement not covered" >        reason: "有給休暇",</span>
+<span class="cstat-no" title="statement not covered" >        staffName: 'みお',</span>
+<span class="cstat-no" title="statement not covered" >        type: '計画休暇',</span>
+<span class="cstat-no" title="statement not covered" >        reason: '有給休暇',</span>
 <span class="cstat-no" title="statement not covered" >        notified: true,</span>
-<span class="cstat-no" title="statement not covered" >        impact: "低",</span>
-<span class="cstat-no" title="statement not covered" >        substitute: "みるく"</span>
+<span class="cstat-no" title="statement not covered" >        impact: '低',</span>
+<span class="cstat-no" title="statement not covered" >        substitute: 'みるく',</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "7",</span>
+<span class="cstat-no" title="statement not covered" >        id: '7',</span>
 <span class="cstat-no" title="statement not covered" >        date: `${year}/${month}/25`,</span>
-<span class="cstat-no" title="statement not covered" >        staffName: "しのん",</span>
-<span class="cstat-no" title="statement not covered" >        type: "当日欠勤",</span>
-<span class="cstat-no" title="statement not covered" >        reason: "急な体調不良",</span>
+<span class="cstat-no" title="statement not covered" >        staffName: 'しのん',</span>
+<span class="cstat-no" title="statement not covered" >        type: '当日欠勤',</span>
+<span class="cstat-no" title="statement not covered" >        reason: '急な体調不良',</span>
 <span class="cstat-no" title="statement not covered" >        notified: false,</span>
-<span class="cstat-no" title="statement not covered" >        impact: "高"</span>
-<span class="cstat-no" title="statement not covered" >      }</span>
+<span class="cstat-no" title="statement not covered" >        impact: '高',</span>
+<span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >    ]</span>
 <span class="cstat-no" title="statement not covered" >    setData(dummyData)</span>
 <span class="cstat-no" title="statement not covered" >  }, [year, month])</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const getTypeBadge = (type: string) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    switch (type) {</span>
-<span class="cstat-no" title="statement not covered" >      case "計画休暇":</span>
+<span class="cstat-no" title="statement not covered" >      case '計画休暇':</span>
 <span class="cstat-no" title="statement not covered" >        return &lt;Badge className="bg-blue-500"&gt;計画休暇&lt;/Badge&gt;</span>
-<span class="cstat-no" title="statement not covered" >      case "病欠":</span>
+<span class="cstat-no" title="statement not covered" >      case '病欠':</span>
 <span class="cstat-no" title="statement not covered" >        return &lt;Badge className="bg-orange-500"&gt;病欠&lt;/Badge&gt;</span>
-<span class="cstat-no" title="statement not covered" >      case "当日欠勤":</span>
+<span class="cstat-no" title="statement not covered" >      case '当日欠勤':</span>
 <span class="cstat-no" title="statement not covered" >        return &lt;Badge className="bg-red-500"&gt;当日欠勤&lt;/Badge&gt;</span>
-<span class="cstat-no" title="statement not covered" >      case "遅刻":</span>
+<span class="cstat-no" title="statement not covered" >      case '遅刻':</span>
 <span class="cstat-no" title="statement not covered" >        return &lt;Badge className="bg-yellow-500"&gt;遅刻&lt;/Badge&gt;</span>
-<span class="cstat-no" title="statement not covered" >      case "早退":</span>
+<span class="cstat-no" title="statement not covered" >      case '早退':</span>
 <span class="cstat-no" title="statement not covered" >        return &lt;Badge className="bg-purple-500"&gt;早退&lt;/Badge&gt;</span>
 <span class="cstat-no" title="statement not covered" >      default:</span>
 <span class="cstat-no" title="statement not covered" >        return &lt;Badge variant="secondary"&gt;{type}&lt;/Badge&gt;</span>
@@ -619,11 +621,11 @@ interface AbsenceRecord {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const getImpactIcon = (impact: string) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    switch (impact) {</span>
-<span class="cstat-no" title="statement not covered" >      case "低":</span>
+<span class="cstat-no" title="statement not covered" >      case '低':</span>
 <span class="cstat-no" title="statement not covered" >        return &lt;CheckCircle className="h-4 w-4 text-green-600" /&gt;</span>
-<span class="cstat-no" title="statement not covered" >      case "中":</span>
+<span class="cstat-no" title="statement not covered" >      case '中':</span>
 <span class="cstat-no" title="statement not covered" >        return &lt;AlertCircle className="h-4 w-4 text-yellow-600" /&gt;</span>
-<span class="cstat-no" title="statement not covered" >      case "高":</span>
+<span class="cstat-no" title="statement not covered" >      case '高':</span>
 <span class="cstat-no" title="statement not covered" >        return &lt;XCircle className="h-4 w-4 text-red-600" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >      default:</span>
 <span class="cstat-no" title="statement not covered" >        return null</span>
@@ -633,19 +635,19 @@ interface AbsenceRecord {
   // 集計データ
 <span class="cstat-no" title="statement not covered" >  const summary = {</span>
 <span class="cstat-no" title="statement not covered" >    total: data.length,</span>
-<span class="cstat-no" title="statement not covered" >    planned: data.filter(d =&gt; d.type === "計画休暇").length,</span>
-<span class="cstat-no" title="statement not covered" >    unplanned: data.filter(d =&gt; d.type === "当日欠勤").length,</span>
-<span class="cstat-no" title="statement not covered" >    sick: data.filter(d =&gt; d.type === "病欠").length,</span>
-<span class="cstat-no" title="statement not covered" >    late: data.filter(d =&gt; d.type === "遅刻").length,</span>
-<span class="cstat-no" title="statement not covered" >    early: data.filter(d =&gt; d.type === "早退").length,</span>
-<span class="cstat-no" title="statement not covered" >    notifiedRate: (data.filter(d =&gt; d.notified).length / data.length * 100).toFixed(1),</span>
-<span class="cstat-no" title="statement not covered" >    substituteRate: (data.filter(d =&gt; d.substitute).length / data.length * 100).toFixed(1)</span>
+<span class="cstat-no" title="statement not covered" >    planned: data.filter((d) =&gt; d.type === '計画休暇').length,</span>
+<span class="cstat-no" title="statement not covered" >    unplanned: data.filter((d) =&gt; d.type === '当日欠勤').length,</span>
+<span class="cstat-no" title="statement not covered" >    sick: data.filter((d) =&gt; d.type === '病欠').length,</span>
+<span class="cstat-no" title="statement not covered" >    late: data.filter((d) =&gt; d.type === '遅刻').length,</span>
+<span class="cstat-no" title="statement not covered" >    early: data.filter((d) =&gt; d.type === '早退').length,</span>
+<span class="cstat-no" title="statement not covered" >    notifiedRate: ((data.filter((d) =&gt; d.notified).length / data.length) * 100).toFixed(1),</span>
+<span class="cstat-no" title="statement not covered" >    substituteRate: ((data.filter((d) =&gt; d.substitute).length / data.length) * 100).toFixed(1),</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;div className="space-y-4"&gt;</span>
       {/* 集計カード */}
-<span class="cstat-no" title="statement not covered" >      &lt;div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;div className="mb-4 grid grid-cols-2 gap-4 md:grid-cols-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div className="rounded-lg border p-4 text-center"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div className="text-2xl font-bold"&gt;{summary.total}&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div className="text-sm text-gray-600"&gt;総欠勤数&lt;/div&gt;</span>
@@ -687,9 +689,9 @@ interface AbsenceRecord {
 <span class="cstat-no" title="statement not covered" >                &lt;TableCell&gt;{record.reason}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;TableCell className="text-center"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  {record.notified ? (</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;CheckCircle className="h-4 w-4 text-green-600 mx-auto" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;CheckCircle className="mx-auto h-4 w-4 text-green-600" /&gt;</span>
                   ) : (
-<span class="cstat-no" title="statement not covered" >                    &lt;XCircle className="h-4 w-4 text-red-600 mx-auto" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;XCircle className="mx-auto h-4 w-4 text-red-600" /&gt;</span>
                   )}
 <span class="cstat-no" title="statement not covered" >                &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;TableCell&gt;</span>
@@ -708,14 +710,15 @@ interface AbsenceRecord {
 <span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/171</span>
+                <span class='fraction'>0/173</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/171</span>
+                <span class='fraction'>0/173</span>
             </div>
         
             
@@ -269,7 +269,11 @@
 <a name='L204'></a><a href='#L204'>204</a>
 <a name='L205'></a><a href='#L205'>205</a>
 <a name='L206'></a><a href='#L206'>206</a>
-<a name='L207'></a><a href='#L207'>207</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L207'></a><a href='#L207'>207</a>
+<a name='L208'></a><a href='#L208'>208</a>
+<a name='L209'></a><a href='#L209'>209</a>
+<a name='L210'></a><a href='#L210'>210</a>
+<a name='L211'></a><a href='#L211'>211</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -458,6 +462,9 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -475,7 +482,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
 import { Store } from '@/lib/store/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -582,10 +590,10 @@ interface PointHistoryProps {
 <span class="cstat-no" title="statement not covered" >          &lt;CardTitle&gt;ポイント残高&lt;/CardTitle&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;CardContent&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="text-center mb-6"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;p className="text-4xl font-bold text-purple-600 mb-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="mb-6 text-center"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;p className="mb-2 text-4xl font-bold text-purple-600"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              {user.points.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >              &lt;span className="text-lg ml-1"&gt;pt&lt;/span&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;span className="ml-1 text-lg"&gt;pt&lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;p className="text-sm text-gray-500"&gt;現在の保有ポイント&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
@@ -607,24 +615,24 @@ interface PointHistoryProps {
       {/* Point Rules */}
 <span class="cstat-no" title="statement not covered" >      &lt;Card&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;CardContent className="p-6"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;h3 className="font-semibold mb-4"&gt;ポイントについて&lt;/h3&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;h3 className="mb-4 font-semibold"&gt;ポイントについて&lt;/h3&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div className="space-y-3 text-sm"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="flex items-start gap-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;div className="w-1 h-1 bg-gray-400 rounded-full mt-2" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;div className="mt-2 h-1 w-1 rounded-full bg-gray-400" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;p className="font-medium"&gt;獲得ルール&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;p className="text-gray-600"&gt;ご利用金額の1%をポイント還元&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="flex items-start gap-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;div className="w-1 h-1 bg-gray-400 rounded-full mt-2" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;div className="mt-2 h-1 w-1 rounded-full bg-gray-400" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;p className="font-medium"&gt;利用方法&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;p className="text-gray-600"&gt;1ポイント = 1円として次回予約時に利用可能&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="flex items-start gap-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;div className="w-1 h-1 bg-gray-400 rounded-full mt-2" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;div className="mt-2 h-1 w-1 rounded-full bg-gray-400" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;p className="font-medium"&gt;有効期限&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;p className="text-gray-600"&gt;最後の獲得日から1年間&lt;/p&gt;</span>
@@ -644,28 +652,31 @@ interface PointHistoryProps {
 <span class="cstat-no" title="statement not covered" >            {pointHistory.map((history) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div</span>
 <span class="cstat-no" title="statement not covered" >                key={history.id}</span>
-<span class="cstat-no" title="statement not covered" >                className="flex items-start justify-between py-3 border-b last:border-0"</span>
+<span class="cstat-no" title="statement not covered" >                className="flex items-start justify-between border-b py-3 last:border-0"</span>
               &gt;
 <span class="cstat-no" title="statement not covered" >                &lt;div className="flex items-start gap-3"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div className="mt-1"&gt;{getTypeIcon(history.type)}&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;div className="flex items-center gap-2 mb-1"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;div className="mb-1 flex items-center gap-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;span className="font-medium"&gt;{history.description}&lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      {getTypeBadge(history.type)}</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;p className="text-sm text-gray-600"&gt;{history.details}&lt;/p&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;p className="text-xs text-gray-500 mt-1"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;p className="mt-1 text-xs text-gray-500"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      {format(history.date, 'yyyy年MM月dd日 HH:mm', { locale: ja })}</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;div className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;p className={`font-bold ${</span>
-<span class="cstat-no" title="statement not covered" >                    history.amount &gt; 0 ? 'text-green-600' : 'text-red-600'</span>
-<span class="cstat-no" title="statement not covered" >                  }`}&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    {history.amount &gt; 0 ? '+' : ''}{history.amount.toLocaleString()}pt</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;p</span>
+<span class="cstat-no" title="statement not covered" >                    className={`font-bold ${</span>
+<span class="cstat-no" title="statement not covered" >                      history.amount &gt; 0 ? 'text-green-600' : 'text-red-600'</span>
+<span class="cstat-no" title="statement not covered" >                    }`}</span>
+                  &gt;
+<span class="cstat-no" title="statement not covered" >                    {history.amount &gt; 0 ? '+' : ''}</span>
+<span class="cstat-no" title="statement not covered" >                    {history.amount.toLocaleString()}pt</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/p&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;p className="text-xs text-gray-500 mt-1"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;p className="mt-1 text-xs text-gray-500"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    残高: {history.balance.toLocaleString()}pt</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
@@ -674,21 +685,22 @@ interface PointHistoryProps {
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 &nbsp;
           {/* Load More */}
-<span class="cstat-no" title="statement not covered" >          &lt;Button variant="outline" className="w-full mt-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;Button variant="outline" className="mt-4 w-full"&gt;</span>
             もっと見る
 <span class="cstat-no" title="statement not covered" >          &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/CardContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/Card&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

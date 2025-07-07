@@ -18,7 +18,14 @@ export default async function StoreLayout({
 
   return (
     <StoreProvider store={store}>
-      <div style={{ '--primary-color': store.theme?.primaryColor, '--secondary-color': store.theme?.secondaryColor } as React.CSSProperties}>
+      <div
+        style={
+          {
+            '--primary-color': store.theme?.primaryColor,
+            '--secondary-color': store.theme?.secondaryColor,
+          } as React.CSSProperties
+        }
+      >
         {children}
       </div>
     </StoreProvider>

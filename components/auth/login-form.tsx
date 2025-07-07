@@ -29,7 +29,7 @@ export function LoginForm({ store }: LoginFormProps) {
 
     try {
       // Simulate login delay
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await new Promise((resolve) => setTimeout(resolve, 1000))
 
       // Get form element and create FormData
       const form = e.target as HTMLFormElement
@@ -54,17 +54,19 @@ export function LoginForm({ store }: LoginFormProps) {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="text-2xl text-center">ログイン</CardTitle>
+        <CardTitle className="text-center text-2xl">ログイン</CardTitle>
         <CardDescription className="text-center">
           会員の方はこちらからログインしてください
         </CardDescription>
       </CardHeader>
       <CardContent>
         {/* Demo Credentials */}
-        <div className="bg-blue-50 p-4 rounded-lg mb-6">
+        <div className="mb-6 rounded-lg bg-blue-50 p-4">
           <p className="text-sm text-blue-800">
-            <strong>デモ用ログイン情報:</strong><br />
-            メール: test@example.com<br />
+            <strong>デモ用ログイン情報:</strong>
+            <br />
+            メール: test@example.com
+            <br />
             パスワード: password
           </p>
         </div>
@@ -81,7 +83,7 @@ export function LoginForm({ store }: LoginFormProps) {
           <div className="space-y-2">
             <Label htmlFor="email">メールアドレス</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
               <Input
                 id="email"
                 name="email"
@@ -97,7 +99,7 @@ export function LoginForm({ store }: LoginFormProps) {
           <div className="space-y-2">
             <Label htmlFor="password">パスワード</Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
               <Input
                 id="password"
                 name="password"
@@ -117,10 +119,7 @@ export function LoginForm({ store }: LoginFormProps) {
                 checked={rememberMe}
                 onCheckedChange={(checked) => setRememberMe(checked as boolean)}
               />
-              <Label
-                htmlFor="remember"
-                className="text-sm font-normal cursor-pointer"
-              >
+              <Label htmlFor="remember" className="cursor-pointer text-sm font-normal">
                 ログイン状態を保持する
               </Label>
             </div>
@@ -133,11 +132,7 @@ export function LoginForm({ store }: LoginFormProps) {
           </div>
 
           {/* Submit Button */}
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={loading}
-          >
+          <Button type="submit" className="w-full" disabled={loading}>
             {loading ? 'ログイン中...' : 'ログイン'}
           </Button>
         </form>
@@ -178,10 +173,7 @@ export function LoginForm({ store }: LoginFormProps) {
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             アカウントをお持ちでない方は
-            <Link
-              href={`/${store.slug}/register`}
-              className="text-blue-600 hover:underline ml-1"
-            >
+            <Link href={`/${store.slug}/register`} className="ml-1 text-blue-600 hover:underline">
               新規会員登録
             </Link>
           </p>
@@ -189,10 +181,7 @@ export function LoginForm({ store }: LoginFormProps) {
 
         {/* Guest Link */}
         <div className="mt-3 text-center">
-          <Link
-            href={`/${store.slug}`}
-            className="text-sm text-gray-500 hover:underline"
-          >
+          <Link href={`/${store.slug}`} className="text-sm text-gray-500 hover:underline">
             会員登録せずに続ける
           </Link>
         </div>
@@ -205,7 +194,7 @@ export function LoginForm({ store }: LoginFormProps) {
 function LineIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2C6.48 2 2 6.28 2 11.53c0 2.36.91 4.51 2.41 6.19.17.19.18.49.06.7l-.67 1.51c-.14.31.2.64.52.5l1.63-.7c.21-.09.45-.04.62.11 1.35.91 2.97 1.46 4.73 1.46 5.52 0 10-4.28 10-9.53C22 6.28 17.52 2 12 2zm-5.5 9.5c0 .28-.22.5-.5.5s-.5-.22-.5-.5v-3c0-.28.22-.5.5-.5s.5.22.5.5v3zm2.5.5c-.28 0-.5-.22-.5-.5v-3c0-.28.22-.5.5-.5s.5.22.5.5v3c0 .28-.22.5-.5.5zm3.5-.5c0 .19-.11.36-.28.44-.06.03-.12.04-.18.04-.12 0-.24-.04-.33-.13l-1.5-1.5c-.09-.09-.14-.21-.14-.35V8.5c0-.28.22-.5.5-.5s.5.22.5.5v1.29l1.15 1.15c.12.12.17.29.13.46-.02.08-.06.15-.12.21l-.23.23v.66c0 .28-.22.5-.5.5zm3.5 0c0 .28-.22.5-.5.5h-1.5c-.28 0-.5-.22-.5-.5v-3c0-.28.22-.5.5-.5h1.5c.28 0 .5.22.5.5s-.22.5-.5.5H15v.5h1c.28 0 .5.22.5.5s-.22.5-.5.5h-1v.5h1c.28 0 .5.22.5.5z"/>
+      <path d="M12 2C6.48 2 2 6.28 2 11.53c0 2.36.91 4.51 2.41 6.19.17.19.18.49.06.7l-.67 1.51c-.14.31.2.64.52.5l1.63-.7c.21-.09.45-.04.62.11 1.35.91 2.97 1.46 4.73 1.46 5.52 0 10-4.28 10-9.53C22 6.28 17.52 2 12 2zm-5.5 9.5c0 .28-.22.5-.5.5s-.5-.22-.5-.5v-3c0-.28.22-.5.5-.5s.5.22.5.5v3zm2.5.5c-.28 0-.5-.22-.5-.5v-3c0-.28.22-.5.5-.5s.5.22.5.5v3c0 .28-.22.5-.5.5zm3.5-.5c0 .19-.11.36-.28.44-.06.03-.12.04-.18.04-.12 0-.24-.04-.33-.13l-1.5-1.5c-.09-.09-.14-.21-.14-.35V8.5c0-.28.22-.5.5-.5s.5.22.5.5v1.29l1.15 1.15c.12.12.17.29.13.46-.02.08-.06.15-.12.21l-.23.23v.66c0 .28-.22.5-.5.5zm3.5 0c0 .28-.22.5-.5.5h-1.5c-.28 0-.5-.22-.5-.5v-3c0-.28.22-.5.5-.5h1.5c.28 0 .5.22.5.5s-.22.5-.5.5H15v.5h1c.28 0 .5.22.5.5s-.22.5-.5.5h-1v.5h1c.28 0 .5.22.5.5z" />
     </svg>
   )
 }

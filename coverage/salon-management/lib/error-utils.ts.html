@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/56</span>
+                <span class='fraction'>0/53</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/56</span>
+                <span class='fraction'>0/53</span>
             </div>
         
             
@@ -136,10 +136,7 @@
 <a name='L71'></a><a href='#L71'>71</a>
 <a name='L72'></a><a href='#L72'>72</a>
 <a name='L73'></a><a href='#L73'>73</a>
-<a name='L74'></a><a href='#L74'>74</a>
-<a name='L75'></a><a href='#L75'>75</a>
-<a name='L76'></a><a href='#L76'>76</a>
-<a name='L77'></a><a href='#L77'>77</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L74'></a><a href='#L74'>74</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -205,9 +202,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -218,11 +212,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// エラーオブジェクトから詳細情報を抽出する関数
 <span class="cstat-no" title="statement not covered" >export function getErrorDetails(error: unknown): string {</span>
 <span class="cstat-no" title="statement not covered" >  if (error instanceof Error) {</span>
-<span class="cstat-no" title="statement not covered" >    let details = `${error.name}: ${error.message}`;</span>
+<span class="cstat-no" title="statement not covered" >    let details = `${error.name}: ${error.message}`</span>
 &nbsp;
     // error.cause が存在する場合は追加で表示 (Node.js v16.9+ や一部ブラウザでサポート)
 <span class="cstat-no" title="statement not covered" >    if (error.cause) {</span>
-<span class="cstat-no" title="statement not covered" >      details += `\nCause: ${getErrorDetails(error.cause)}`; // 再帰的に cause の詳細を取得</span>
+<span class="cstat-no" title="statement not covered" >      details += `\nCause: ${getErrorDetails(error.cause)}` // 再帰的に cause の詳細を取得</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 &nbsp;
     // エラーオブジェクトのプロパティを全て表示
@@ -231,40 +225,40 @@
 <span class="cstat-no" title="statement not covered" >        if (key !== 'name' &amp;&amp; key !== 'message' &amp;&amp; key !== 'stack' &amp;&amp; key !== 'cause') {</span>
 <span class="cstat-no" title="statement not covered" >          try {</span>
             // プロパティの値を安全に文字列化
-<span class="cstat-no" title="statement not covered" >            const value = JSON.stringify(error[key as keyof typeof error], null, 2);</span>
-<span class="cstat-no" title="statement not covered" >            details += `\n${key}: ${value}`;</span>
+<span class="cstat-no" title="statement not covered" >            const value = JSON.stringify(error[key as keyof typeof error], null, 2)</span>
+<span class="cstat-no" title="statement not covered" >            details += `\n${key}: ${value}`</span>
 <span class="cstat-no" title="statement not covered" >          } catch (stringifyError) {</span>
             // 文字列化に失敗した場合
-<span class="cstat-no" title="statement not covered" >            details += `\n${key}: (Error during stringify: ${stringifyError})`;</span>
+<span class="cstat-no" title="statement not covered" >            details += `\n${key}: (Error during stringify: ${stringifyError})`</span>
 <span class="cstat-no" title="statement not covered" >          }</span>
 <span class="cstat-no" title="statement not covered" >        }</span>
 <span class="cstat-no" title="statement not covered" >      }</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    details += `\nStack: ${error.stack || '(no stack trace available)'}`;</span>
-<span class="cstat-no" title="statement not covered" >    return details;</span>
+<span class="cstat-no" title="statement not covered" >    details += `\nStack: ${error.stack || '(no stack trace available)'}`</span>
+<span class="cstat-no" title="statement not covered" >    return details</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
   // Error オブジェクトでない場合、オブジェクトの内容を文字列化
 <span class="cstat-no" title="statement not covered" >  try {</span>
 <span class="cstat-no" title="statement not covered" >    return typeof error === 'object' &amp;&amp; error !== null</span>
 <span class="cstat-no" title="statement not covered" >      ? JSON.stringify(error, null, 2)</span>
-<span class="cstat-no" title="statement not covered" >      : String(error);</span>
+<span class="cstat-no" title="statement not covered" >      : String(error)</span>
 <span class="cstat-no" title="statement not covered" >  } catch (stringifyError) {</span>
-<span class="cstat-no" title="statement not covered" >    return `Error during stringify: ${stringifyError}`;</span>
+<span class="cstat-no" title="statement not covered" >    return `Error during stringify: ${stringifyError}`</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
 // エラーをコンソールに詳細にログ出力する関数 (改良版)
 <span class="cstat-no" title="statement not covered" >export function logError(error: unknown, context?: string): void {</span>
-<span class="cstat-no" title="statement not covered" >  const errorDetails = getErrorDetails(error);</span>
-<span class="cstat-no" title="statement not covered" >  const fullMessage = `Error${context ? ` in ${context}` : ''}:\n\n${errorDetails}`;</span>
+<span class="cstat-no" title="statement not covered" >  const errorDetails = getErrorDetails(error)</span>
+<span class="cstat-no" title="statement not covered" >  const fullMessage = `Error${context ? ` in ${context}` : ''}:\n\n${errorDetails}`</span>
 &nbsp;
   // エラーメッセージを複数行に分割して出力
-<span class="cstat-no" title="statement not covered" >  fullMessage.split('\n').forEach(line =&gt; console.error(line));</span>
+<span class="cstat-no" title="statement not covered" >  fullMessage.split('\n').forEach((line) =&gt; console.error(line))</span>
 &nbsp;
   // エラーオブジェクトをオリジナルのままコンソールに表示
-<span class="cstat-no" title="statement not covered" >  console.dir(error, { depth: null });</span>
+<span class="cstat-no" title="statement not covered" >  console.dir(error, { depth: null })</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
 // 非同期関数のエラーをハンドリングするラッパー関数
@@ -273,23 +267,20 @@
 <span class="cstat-no" title="statement not covered" >  context?: string</span>
 <span class="cstat-no" title="statement not covered" >): Promise&lt;T | null&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  try {</span>
-<span class="cstat-no" title="statement not covered" >    return await asyncFn();</span>
+<span class="cstat-no" title="statement not covered" >    return await asyncFn()</span>
 <span class="cstat-no" title="statement not covered" >  } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >    logError(error, context);</span>
-<span class="cstat-no" title="statement not covered" >    return null;</span>
+<span class="cstat-no" title="statement not covered" >    logError(error, context)</span>
+<span class="cstat-no" title="statement not covered" >    return null</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
 // 配列やオブジェクトの安全なマッピング関数
-<span class="cstat-no" title="statement not covered" >export function safeMap&lt;T, U&gt;(</span>
-<span class="cstat-no" title="statement not covered" >  array: T[] | undefined | null,</span>
-<span class="cstat-no" title="statement not covered" >  mapFn: (item: T) =&gt; U</span>
-<span class="cstat-no" title="statement not covered" >): U[] {</span>
+<span class="cstat-no" title="statement not covered" >export function safeMap&lt;T, U&gt;(array: T[] | undefined | null, mapFn: (item: T) =&gt; U): U[] {</span>
 <span class="cstat-no" title="statement not covered" >  if (!array || !Array.isArray(array)) {</span>
-<span class="cstat-no" title="statement not covered" >    console.warn('Attempted to map over non-array:', array);</span>
-<span class="cstat-no" title="statement not covered" >    return [];</span>
+<span class="cstat-no" title="statement not covered" >    console.warn('Attempted to map over non-array:', array)</span>
+<span class="cstat-no" title="statement not covered" >    return []</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
-<span class="cstat-no" title="statement not covered" >  return array.map(mapFn);</span>
+<span class="cstat-no" title="statement not covered" >  return array.map(mapFn)</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;</pre></td></tr></table></pre>
 
@@ -298,7 +289,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

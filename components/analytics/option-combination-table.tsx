@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -8,9 +8,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 
 interface OptionCombinationTableProps {
   year: number
@@ -34,50 +34,50 @@ export function OptionCombinationTable({ year, analyticsUseCases }: OptionCombin
     // ダミーデータ（実際にはuseCasesから取得）
     const dummyData: CombinationData[] = [
       {
-        id: "1",
-        courseName: "リラクゼーション90分",
-        optionName: "アロマオイル",
+        id: '1',
+        courseName: 'リラクゼーション90分',
+        optionName: 'アロマオイル',
         count: 89,
         revenue: 267000,
         attachRate: 50.0,
-        averageSpending: 15000
+        averageSpending: 15000,
       },
       {
-        id: "2",
-        courseName: "リラクゼーション90分",
-        optionName: "ホットストーン",
+        id: '2',
+        courseName: 'リラクゼーション90分',
+        optionName: 'ホットストーン',
         count: 56,
         revenue: 280000,
         attachRate: 31.5,
-        averageSpending: 17000
+        averageSpending: 17000,
       },
       {
-        id: "3",
-        courseName: "ボディケア60分",
-        optionName: "ヘッドマッサージ",
+        id: '3',
+        courseName: 'ボディケア60分',
+        optionName: 'ヘッドマッサージ',
         count: 78,
         revenue: 156000,
         attachRate: 50.0,
-        averageSpending: 10000
+        averageSpending: 10000,
       },
       {
-        id: "4",
-        courseName: "フェイシャル45分",
-        optionName: "ハンドケア",
+        id: '4',
+        courseName: 'フェイシャル45分',
+        optionName: 'ハンドケア',
         count: 45,
         revenue: 90000,
         attachRate: 33.6,
-        averageSpending: 8500
+        averageSpending: 8500,
       },
       {
-        id: "5",
-        courseName: "アロマトリートメント",
-        optionName: "フットケア",
+        id: '5',
+        courseName: 'アロマトリートメント',
+        optionName: 'フットケア',
         count: 34,
         revenue: 102000,
         attachRate: 34.7,
-        averageSpending: 12500
-      }
+        averageSpending: 12500,
+      },
     ]
     setData(dummyData)
   }, [year, analyticsUseCases])
@@ -108,16 +108,10 @@ export function OptionCombinationTable({ year, analyticsUseCases }: OptionCombin
               <TableCell className="font-medium">{item.courseName}</TableCell>
               <TableCell>{item.optionName}</TableCell>
               <TableCell className="text-right">{item.count}件</TableCell>
-              <TableCell className="text-right">
-                ¥{item.revenue.toLocaleString()}
-              </TableCell>
+              <TableCell className="text-right">¥{item.revenue.toLocaleString()}</TableCell>
               <TableCell className="text-right">{item.attachRate}%</TableCell>
-              <TableCell className="text-right">
-                ¥{item.averageSpending.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-center">
-                {getAttachRateBadge(item.attachRate)}
-              </TableCell>
+              <TableCell className="text-right">¥{item.averageSpending.toLocaleString()}</TableCell>
+              <TableCell className="text-center">{getAttachRateBadge(item.attachRate)}</TableCell>
             </TableRow>
           ))}
         </TableBody>

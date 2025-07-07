@@ -321,9 +321,9 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -331,12 +331,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
-import { MarketingChannelData } from "@/lib/types/analytics"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+} from '@/components/ui/table'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
+import { MarketingChannelData } from '@/lib/types/analytics'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
-import { Skeleton } from "@/components/ui/skeleton"
+import { Skeleton } from '@/components/ui/skeleton'
 &nbsp;
 interface MarketingChannelTableProps {
   year: number
@@ -356,7 +356,7 @@ interface MarketingChannelTableProps {
 <span class="cstat-no" title="statement not covered" >        const result = await analyticsUseCases.getMarketingChannelReport(year)</span>
 <span class="cstat-no" title="statement not covered" >        setData(result)</span>
 <span class="cstat-no" title="statement not covered" >      } catch (err) {</span>
-<span class="cstat-no" title="statement not covered" >        setError("データの取得中にエラーが発生しました。")</span>
+<span class="cstat-no" title="statement not covered" >        setError('データの取得中にエラーが発生しました。')</span>
 <span class="cstat-no" title="statement not covered" >        console.error(err)</span>
 <span class="cstat-no" title="statement not covered" >      } finally {</span>
 <span class="cstat-no" title="statement not covered" >        setIsLoading(false)</span>
@@ -368,17 +368,17 @@ interface MarketingChannelTableProps {
 <span class="cstat-no" title="statement not covered" >  const months = Array.from({ length: 12 }, (_, i) =&gt; i + 1)</span>
 &nbsp;
   // Calculate totals
-<span class="cstat-no" title="statement not covered" >  const totals = data.length &gt; 0 ? data.reduce(</span>
-<span class="cstat-no" title="statement not covered" >    (acc, curr) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >      if (curr.monthlySales &amp;&amp; Array.isArray(curr.monthlySales)) {</span>
-<span class="cstat-no" title="statement not covered" >        curr.monthlySales.forEach((sale, index) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >          acc[index] = (acc[index] || 0) + sale</span>
-<span class="cstat-no" title="statement not covered" >        })</span>
-<span class="cstat-no" title="statement not covered" >      }</span>
-<span class="cstat-no" title="statement not covered" >      return acc</span>
-<span class="cstat-no" title="statement not covered" >    },</span>
-<span class="cstat-no" title="statement not covered" >    [] as number[]</span>
-<span class="cstat-no" title="statement not covered" >  ) : []</span>
+<span class="cstat-no" title="statement not covered" >  const totals =</span>
+<span class="cstat-no" title="statement not covered" >    data.length &gt; 0</span>
+<span class="cstat-no" title="statement not covered" >      ? data.reduce((acc, curr) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >          if (curr.monthlySales &amp;&amp; Array.isArray(curr.monthlySales)) {</span>
+<span class="cstat-no" title="statement not covered" >            curr.monthlySales.forEach((sale, index) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >              acc[index] = (acc[index] || 0) + sale</span>
+<span class="cstat-no" title="statement not covered" >            })</span>
+<span class="cstat-no" title="statement not covered" >          }</span>
+<span class="cstat-no" title="statement not covered" >          return acc</span>
+<span class="cstat-no" title="statement not covered" >        }, [] as number[])</span>
+<span class="cstat-no" title="statement not covered" >      : []</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  if (isLoading) {</span>
 <span class="cstat-no" title="statement not covered" >    return &lt;TableSkeleton /&gt;</span>
@@ -401,11 +401,11 @@ interface MarketingChannelTableProps {
 <span class="cstat-no" title="statement not covered" >          &lt;TableRow&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableHead className="w-[200px]"&gt;営業媒体&lt;/TableHead&gt;</span>
 <span class="cstat-no" title="statement not covered" >            {months.map((month) =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableHead key={month} className="text-right whitespace-nowrap"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableHead key={month} className="whitespace-nowrap text-right"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                {`${month.toString().padStart(2, '0')}月`}</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/TableHead&gt;</span>
 <span class="cstat-no" title="statement not covered" >            ))}</span>
-<span class="cstat-no" title="statement not covered" >            &lt;TableHead className="text-right bg-gray-100"&gt;TOTAL&lt;/TableHead&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;TableHead className="bg-gray-100 text-right"&gt;TOTAL&lt;/TableHead&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/TableRow&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/TableHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;TableBody&gt;</span>
@@ -414,15 +414,15 @@ interface MarketingChannelTableProps {
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell&gt;{channel.channel}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              {channel.monthlySales.map((sales, index) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >                &lt;TableCell key={index} className="text-right text-blue-600"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  {sales || "-"}</span>
+<span class="cstat-no" title="statement not covered" >                  {sales || '-'}</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              ))}</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right font-medium text-blue-600 bg-gray-50"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="bg-gray-50 text-right font-medium text-blue-600"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                {channel.total}</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TableRow&gt;</span>
 <span class="cstat-no" title="statement not covered" >          ))}</span>
-<span class="cstat-no" title="statement not covered" >          &lt;TableRow className="font-bold bg-gray-50"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;TableRow className="bg-gray-50 font-bold"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell&gt;TOTAL&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            {totals.map((total, index) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell key={index} className="text-right text-blue-600"&gt;</span>
@@ -457,7 +457,7 @@ interface MarketingChannelTableProps {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import { format } from "date-fns";
-import { ja } from "date-fns/locale";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { format } from 'date-fns'
+import { ja } from 'date-fns/locale'
+import { Badge } from '@/components/ui/badge'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Table,
   TableBody,
@@ -11,13 +11,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { ModificationHistory, ModificationAlert } from "@/lib/types/modification-history";
-import { AlertTriangle, Info } from "lucide-react";
+} from '@/components/ui/table'
+import { ModificationHistory, ModificationAlert } from '@/lib/types/modification-history'
+import { AlertTriangle, Info } from 'lucide-react'
 
 interface ModificationHistoryTableProps {
-  modifications: ModificationHistory[];
-  alerts: ModificationAlert[];
+  modifications: ModificationHistory[]
+  alerts: ModificationAlert[]
 }
 
 export function ModificationHistoryTable({ modifications, alerts }: ModificationHistoryTableProps) {
@@ -83,5 +83,5 @@ export function ModificationHistoryTable({ modifications, alerts }: Modification
         </Table>
       </div>
     </div>
-  );
+  )
 }

@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/111</span>
+                <span class='fraction'>0/101</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/111</span>
+                <span class='fraction'>0/101</span>
             </div>
         
             
@@ -220,16 +220,7 @@
 <a name='L155'></a><a href='#L155'>155</a>
 <a name='L156'></a><a href='#L156'>156</a>
 <a name='L157'></a><a href='#L157'>157</a>
-<a name='L158'></a><a href='#L158'>158</a>
-<a name='L159'></a><a href='#L159'>159</a>
-<a name='L160'></a><a href='#L160'>160</a>
-<a name='L161'></a><a href='#L161'>161</a>
-<a name='L162'></a><a href='#L162'>162</a>
-<a name='L163'></a><a href='#L163'>163</a>
-<a name='L164'></a><a href='#L164'>164</a>
-<a name='L165'></a><a href='#L165'>165</a>
-<a name='L166'></a><a href='#L166'>166</a>
-<a name='L167'></a><a href='#L167'>167</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L158'></a><a href='#L158'>158</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -273,8 +264,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -323,9 +312,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -338,9 +324,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -389,13 +372,12 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
@@ -418,11 +400,11 @@ interface CampaignBannerSliderProps {
   dismissible?: boolean
 }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export function CampaignBannerSlider({ </span>
-<span class="cstat-no" title="statement not covered" >  banners, </span>
+<span class="cstat-no" title="statement not covered" >export function CampaignBannerSlider({</span>
+<span class="cstat-no" title="statement not covered" >  banners,</span>
 <span class="cstat-no" title="statement not covered" >  autoPlayInterval = 5000,</span>
 <span class="cstat-no" title="statement not covered" >  showDots = true,</span>
-<span class="cstat-no" title="statement not covered" >  dismissible = true</span>
+<span class="cstat-no" title="statement not covered" >  dismissible = true,</span>
 <span class="cstat-no" title="statement not covered" >}: CampaignBannerSliderProps) {</span>
 <span class="cstat-no" title="statement not covered" >  const [currentIndex, setCurrentIndex] = useState(0)</span>
 <span class="cstat-no" title="statement not covered" >  const [isVisible, setIsVisible] = useState(true)</span>
@@ -440,9 +422,7 @@ interface CampaignBannerSliderProps {
 <span class="cstat-no" title="statement not covered" >  }, [currentIndex, isPaused, banners.length, autoPlayInterval])</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const goToPrevious = () =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    setCurrentIndex((prevIndex) =&gt; </span>
-<span class="cstat-no" title="statement not covered" >      prevIndex === 0 ? banners.length - 1 : prevIndex - 1</span>
-<span class="cstat-no" title="statement not covered" >    )</span>
+<span class="cstat-no" title="statement not covered" >    setCurrentIndex((prevIndex) =&gt; (prevIndex === 0 ? banners.length - 1 : prevIndex - 1))</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const goToNext = () =&gt; {</span>
@@ -459,9 +439,9 @@ interface CampaignBannerSliderProps {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;section className="relative w-full bg-gray-50 py-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;div className="relative max-w-7xl mx-auto px-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;div className="relative mx-auto max-w-7xl px-4"&gt;</span>
         {/* Banner Container */}
-<span class="cstat-no" title="statement not covered" >        &lt;div </span>
+<span class="cstat-no" title="statement not covered" >        &lt;div</span>
 <span class="cstat-no" title="statement not covered" >          className="relative overflow-hidden"</span>
 <span class="cstat-no" title="statement not covered" >          onMouseEnter={() =&gt; setIsPaused(true)}</span>
 <span class="cstat-no" title="statement not covered" >          onMouseLeave={() =&gt; setIsPaused(false)}</span>
@@ -470,7 +450,7 @@ interface CampaignBannerSliderProps {
 <span class="cstat-no" title="statement not covered" >          {dismissible &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >            &lt;button</span>
 <span class="cstat-no" title="statement not covered" >              onClick={() =&gt; setIsVisible(false)}</span>
-<span class="cstat-no" title="statement not covered" >              className="absolute top-4 right-4 z-20 p-2 bg-black/50 backdrop-blur-sm rounded-full hover:bg-black/70 transition-colors"</span>
+<span class="cstat-no" title="statement not covered" >              className="absolute right-4 top-4 z-20 rounded-full bg-black/50 p-2 backdrop-blur-sm transition-colors hover:bg-black/70"</span>
 <span class="cstat-no" title="statement not covered" >              aria-label="Close banner"</span>
             &gt;
 <span class="cstat-no" title="statement not covered" >              &lt;X className="h-4 w-4 text-white" /&gt;</span>
@@ -478,9 +458,9 @@ interface CampaignBannerSliderProps {
           )}
 &nbsp;
           {/* Banner Image */}
-<span class="cstat-no" title="statement not covered" >          &lt;div className="relative aspect-[7/3] max-w-[700px] mx-auto"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="relative mx-auto aspect-[7/3] max-w-[700px]"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            {currentBanner.link ? (</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Link </span>
+<span class="cstat-no" title="statement not covered" >              &lt;Link</span>
 <span class="cstat-no" title="statement not covered" >                href={currentBanner.link}</span>
 <span class="cstat-no" title="statement not covered" >                target={currentBanner.external ? '_blank' : undefined}</span>
 <span class="cstat-no" title="statement not covered" >                rel={currentBanner.external ? 'noopener noreferrer' : undefined}</span>
@@ -488,16 +468,13 @@ interface CampaignBannerSliderProps {
 <span class="cstat-no" title="statement not covered" >                &lt;picture&gt;</span>
                   {/* Mobile Image */}
 <span class="cstat-no" title="statement not covered" >                  {currentBanner.mobileImageUrl &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;source </span>
-<span class="cstat-no" title="statement not covered" >                      media="(max-width: 768px)" </span>
-<span class="cstat-no" title="statement not covered" >                      srcSet={currentBanner.mobileImageUrl}</span>
-<span class="cstat-no" title="statement not covered" >                    /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;source media="(max-width: 768px)" srcSet={currentBanner.mobileImageUrl} /&gt;</span>
                   )}
                   {/* Desktop Image */}
 <span class="cstat-no" title="statement not covered" >                  &lt;img</span>
 <span class="cstat-no" title="statement not covered" >                    src={currentBanner.imageUrl}</span>
 <span class="cstat-no" title="statement not covered" >                    alt={currentBanner.title}</span>
-<span class="cstat-no" title="statement not covered" >                    className="w-full h-full object-cover cursor-pointer rounded-lg shadow-lg"</span>
+<span class="cstat-no" title="statement not covered" >                    className="h-full w-full cursor-pointer rounded-lg object-cover shadow-lg"</span>
 <span class="cstat-no" title="statement not covered" >                  /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/picture&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/Link&gt;</span>
@@ -505,16 +482,13 @@ interface CampaignBannerSliderProps {
 <span class="cstat-no" title="statement not covered" >              &lt;picture&gt;</span>
                 {/* Mobile Image */}
 <span class="cstat-no" title="statement not covered" >                {currentBanner.mobileImageUrl &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;source </span>
-<span class="cstat-no" title="statement not covered" >                    media="(max-width: 768px)" </span>
-<span class="cstat-no" title="statement not covered" >                    srcSet={currentBanner.mobileImageUrl}</span>
-<span class="cstat-no" title="statement not covered" >                  /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;source media="(max-width: 768px)" srcSet={currentBanner.mobileImageUrl} /&gt;</span>
                 )}
                 {/* Desktop Image */}
 <span class="cstat-no" title="statement not covered" >                &lt;img</span>
 <span class="cstat-no" title="statement not covered" >                  src={currentBanner.imageUrl}</span>
 <span class="cstat-no" title="statement not covered" >                  alt={currentBanner.title}</span>
-<span class="cstat-no" title="statement not covered" >                  className="w-full h-full object-cover rounded-lg shadow-lg"</span>
+<span class="cstat-no" title="statement not covered" >                  className="h-full w-full rounded-lg object-cover shadow-lg"</span>
 <span class="cstat-no" title="statement not covered" >                /&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/picture&gt;</span>
             )}
@@ -525,14 +499,14 @@ interface CampaignBannerSliderProps {
 <span class="cstat-no" title="statement not covered" >            &lt;&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;button</span>
 <span class="cstat-no" title="statement not covered" >                onClick={goToPrevious}</span>
-<span class="cstat-no" title="statement not covered" >                className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 backdrop-blur-sm rounded-full hover:bg-black/70 transition-colors"</span>
+<span class="cstat-no" title="statement not covered" >                className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 backdrop-blur-sm transition-colors hover:bg-black/70"</span>
 <span class="cstat-no" title="statement not covered" >                aria-label="Previous banner"</span>
               &gt;
 <span class="cstat-no" title="statement not covered" >                &lt;ChevronLeft className="h-5 w-5 text-white" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/button&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;button</span>
 <span class="cstat-no" title="statement not covered" >                onClick={goToNext}</span>
-<span class="cstat-no" title="statement not covered" >                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 backdrop-blur-sm rounded-full hover:bg-black/70 transition-colors"</span>
+<span class="cstat-no" title="statement not covered" >                className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 backdrop-blur-sm transition-colors hover:bg-black/70"</span>
 <span class="cstat-no" title="statement not covered" >                aria-label="Next banner"</span>
               &gt;
 <span class="cstat-no" title="statement not covered" >                &lt;ChevronRight className="h-5 w-5 text-white" /&gt;</span>
@@ -543,15 +517,13 @@ interface CampaignBannerSliderProps {
 &nbsp;
         {/* Dots Indicator - Only show if more than one banner */}
 <span class="cstat-no" title="statement not covered" >        {showDots &amp;&amp; banners.length &gt; 1 &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            {banners.map((_, index) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >              &lt;button</span>
 <span class="cstat-no" title="statement not covered" >                key={index}</span>
 <span class="cstat-no" title="statement not covered" >                onClick={() =&gt; goToSlide(index)}</span>
-<span class="cstat-no" title="statement not covered" >                className={`w-2 h-2 rounded-full transition-all ${</span>
-<span class="cstat-no" title="statement not covered" >                  index === currentIndex </span>
-<span class="cstat-no" title="statement not covered" >                    ? 'w-8 bg-white' </span>
-<span class="cstat-no" title="statement not covered" >                    : 'bg-white/50 hover:bg-white/70'</span>
+<span class="cstat-no" title="statement not covered" >                className={`h-2 w-2 rounded-full transition-all ${</span>
+<span class="cstat-no" title="statement not covered" >                  index === currentIndex ? 'w-8 bg-white' : 'bg-white/50 hover:bg-white/70'</span>
 <span class="cstat-no" title="statement not covered" >                }`}</span>
 <span class="cstat-no" title="statement not covered" >                aria-label={`Go to slide ${index + 1}`}</span>
 <span class="cstat-no" title="statement not covered" >              /&gt;</span>
@@ -561,14 +533,15 @@ interface CampaignBannerSliderProps {
 <span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/section&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

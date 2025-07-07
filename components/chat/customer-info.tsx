@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 interface CustomerInfoProps {
   customer: {
@@ -19,7 +19,7 @@ export function CustomerInfo({ customer }: CustomerInfoProps) {
         <CardTitle>顧客情報</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center space-x-4 mb-4">
+        <div className="mb-4 flex items-center space-x-4">
           <Avatar className="h-20 w-20">
             <AvatarImage src={customer.image} alt={customer.name} />
             <AvatarFallback>{customer.name[0]}</AvatarFallback>

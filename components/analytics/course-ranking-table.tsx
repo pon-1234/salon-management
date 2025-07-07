@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -8,9 +8,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 
 interface CourseRankingTableProps {
@@ -41,63 +41,63 @@ export function CourseRankingTable({ year, month, analyticsUseCases }: CourseRan
       {
         rank: 1,
         previousRank: 1,
-        id: "1",
-        name: "リラクゼーション90分",
+        id: '1',
+        name: 'リラクゼーション90分',
         duration: 90,
         price: 12000,
         bookings: 178,
         revenue: 2136000,
         customerSatisfaction: 4.8,
-        rebookingRate: 72
+        rebookingRate: 72,
       },
       {
         rank: 2,
         previousRank: 3,
-        id: "2",
-        name: "ボディケア60分",
+        id: '2',
+        name: 'ボディケア60分',
         duration: 60,
         price: 8000,
         bookings: 156,
         revenue: 1248000,
         customerSatisfaction: 4.6,
-        rebookingRate: 68
+        rebookingRate: 68,
       },
       {
         rank: 3,
         previousRank: 2,
-        id: "3",
-        name: "フェイシャル45分",
+        id: '3',
+        name: 'フェイシャル45分',
         duration: 45,
         price: 6500,
         bookings: 134,
         revenue: 871000,
         customerSatisfaction: 4.7,
-        rebookingRate: 65
+        rebookingRate: 65,
       },
       {
         rank: 4,
         previousRank: 5,
-        id: "4",
-        name: "アロマトリートメント",
+        id: '4',
+        name: 'アロマトリートメント',
         duration: 75,
         price: 9500,
         bookings: 98,
         revenue: 931000,
         customerSatisfaction: 4.9,
-        rebookingRate: 78
+        rebookingRate: 78,
       },
       {
         rank: 5,
         previousRank: 4,
-        id: "5",
-        name: "ヘッドスパ30分",
+        id: '5',
+        name: 'ヘッドスパ30分',
         duration: 30,
         price: 4500,
         bookings: 87,
         revenue: 391500,
         customerSatisfaction: 4.5,
-        rebookingRate: 58
-      }
+        rebookingRate: 58,
+      },
     ]
     setData(dummyData)
   }, [year, month, analyticsUseCases])
@@ -140,14 +140,10 @@ export function CourseRankingTable({ year, month, analyticsUseCases }: CourseRan
               </TableCell>
               <TableCell className="font-medium">
                 {course.name}
-                <span className="text-xs text-gray-500 ml-2">({course.duration}分)</span>
+                <span className="ml-2 text-xs text-gray-500">({course.duration}分)</span>
               </TableCell>
-              <TableCell className="text-right">
-                ¥{course.price.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                {course.bookings}件
-              </TableCell>
+              <TableCell className="text-right">¥{course.price.toLocaleString()}</TableCell>
+              <TableCell className="text-right">{course.bookings}件</TableCell>
               <TableCell className="text-right font-medium text-green-600">
                 ¥{course.revenue.toLocaleString()}
               </TableCell>
@@ -161,7 +157,9 @@ export function CourseRankingTable({ year, month, analyticsUseCases }: CourseRan
                 <div className="flex items-center justify-end gap-1">
                   {course.rebookingRate}%
                   {course.rebookingRate >= 70 && (
-                    <Badge variant="outline" className="text-xs">高</Badge>
+                    <Badge variant="outline" className="text-xs">
+                      高
+                    </Badge>
                   )}
                 </div>
               </TableCell>

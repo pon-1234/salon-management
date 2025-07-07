@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/95</span>
+                <span class='fraction'>0/94</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/95</span>
+                <span class='fraction'>0/94</span>
             </div>
         
             
@@ -198,7 +198,8 @@
 <a name='L133'></a><a href='#L133'>133</a>
 <a name='L134'></a><a href='#L134'>134</a>
 <a name='L135'></a><a href='#L135'>135</a>
-<a name='L136'></a><a href='#L136'>136</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -289,8 +290,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -307,6 +306,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -333,7 +334,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >"use client"<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >'use client'<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
 &nbsp;
 import React, { createContext, useContext, useState, useCallback } from 'react'
 &nbsp;
@@ -345,13 +347,13 @@ interface NotificationDetails {
   customer: string
   phoneNumber?: string
   callDuration?: string
-  callStatus?: "answered" | "rejected" | "missed"
+  callStatus?: 'answered' | 'rejected' | 'missed'
 }
 &nbsp;
 interface Notification {
   id: string
   storeName: string
-  type: "reservation" | "incoming_call"
+  type: 'reservation' | 'incoming_call'
   message: string
   details: NotificationDetails
   read: boolean
@@ -370,44 +372,44 @@ interface NotificationContextType {
 <span class="cstat-no" title="statement not covered" >export function NotificationProvider({ children }: { children: React.ReactNode }) {</span>
 <span class="cstat-no" title="statement not covered" >  const [notifications, setNotifications] = useState&lt;Notification[]&gt;([</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
-<span class="cstat-no" title="statement not covered" >      id: "1",</span>
-<span class="cstat-no" title="statement not covered" >      storeName: "金の玉クラブ池袋～密着零丸マッサージ～",</span>
-<span class="cstat-no" title="statement not covered" >      type: "reservation" as const,</span>
-<span class="cstat-no" title="statement not covered" >      message: "新しい予約が入りました。",</span>
+<span class="cstat-no" title="statement not covered" >      id: '1',</span>
+<span class="cstat-no" title="statement not covered" >      storeName: '金の玉クラブ池袋～密着零丸マッサージ～',</span>
+<span class="cstat-no" title="statement not covered" >      type: 'reservation' as const,</span>
+<span class="cstat-no" title="statement not covered" >      message: '新しい予約が入りました。',</span>
 <span class="cstat-no" title="statement not covered" >      details: {</span>
-<span class="cstat-no" title="statement not covered" >        reservationDate: "12/15",</span>
-<span class="cstat-no" title="statement not covered" >        reservationTime: "16:00-17:30",</span>
-<span class="cstat-no" title="statement not covered" >        receivedTime: "12/09 08:19",</span>
-<span class="cstat-no" title="statement not covered" >        staff: "らん",</span>
-<span class="cstat-no" title="statement not covered" >        customer: "priv_hon.",</span>
+<span class="cstat-no" title="statement not covered" >        reservationDate: '12/15',</span>
+<span class="cstat-no" title="statement not covered" >        reservationTime: '16:00-17:30',</span>
+<span class="cstat-no" title="statement not covered" >        receivedTime: '12/09 08:19',</span>
+<span class="cstat-no" title="statement not covered" >        staff: 'らん',</span>
+<span class="cstat-no" title="statement not covered" >        customer: 'priv_hon.',</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      read: false,</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
-<span class="cstat-no" title="statement not covered" >      id: "2",</span>
-<span class="cstat-no" title="statement not covered" >      storeName: "金の玉クラブ新宿～癒しの手技～",</span>
-<span class="cstat-no" title="statement not covered" >      type: "reservation" as const,</span>
-<span class="cstat-no" title="statement not covered" >      message: "予約がキャンセルされました。",</span>
+<span class="cstat-no" title="statement not covered" >      id: '2',</span>
+<span class="cstat-no" title="statement not covered" >      storeName: '金の玉クラブ新宿～癒しの手技～',</span>
+<span class="cstat-no" title="statement not covered" >      type: 'reservation' as const,</span>
+<span class="cstat-no" title="statement not covered" >      message: '予約がキャンセルされました。',</span>
 <span class="cstat-no" title="statement not covered" >      details: {</span>
-<span class="cstat-no" title="statement not covered" >        reservationDate: "12/10",</span>
-<span class="cstat-no" title="statement not covered" >        reservationTime: "14:00-15:30",</span>
-<span class="cstat-no" title="statement not covered" >        receivedTime: "12/09 10:45",</span>
-<span class="cstat-no" title="statement not covered" >        staff: "みく",</span>
-<span class="cstat-no" title="statement not covered" >        customer: "tanaka_456",</span>
+<span class="cstat-no" title="statement not covered" >        reservationDate: '12/10',</span>
+<span class="cstat-no" title="statement not covered" >        reservationTime: '14:00-15:30',</span>
+<span class="cstat-no" title="statement not covered" >        receivedTime: '12/09 10:45',</span>
+<span class="cstat-no" title="statement not covered" >        staff: 'みく',</span>
+<span class="cstat-no" title="statement not covered" >        customer: 'tanaka_456',</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      read: true,</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
-<span class="cstat-no" title="statement not covered" >      id: "3",</span>
-<span class="cstat-no" title="statement not covered" >      storeName: "金の玉クラブ渋谷～極上の癒し空間～",</span>
-<span class="cstat-no" title="statement not covered" >      type: "reservation" as const,</span>
-<span class="cstat-no" title="statement not covered" >      message: "予約時間が変更されました。",</span>
+<span class="cstat-no" title="statement not covered" >      id: '3',</span>
+<span class="cstat-no" title="statement not covered" >      storeName: '金の玉クラブ渋谷～極上の癒し空間～',</span>
+<span class="cstat-no" title="statement not covered" >      type: 'reservation' as const,</span>
+<span class="cstat-no" title="statement not covered" >      message: '予約時間が変更されました。',</span>
 <span class="cstat-no" title="statement not covered" >      details: {</span>
-<span class="cstat-no" title="statement not covered" >        reservationDate: "12/12",</span>
-<span class="cstat-no" title="statement not covered" >        reservationTime: "18:30-20:00",</span>
-<span class="cstat-no" title="statement not covered" >        receivedTime: "12/09 15:30",</span>
-<span class="cstat-no" title="statement not covered" >        staff: "さくら",</span>
-<span class="cstat-no" title="statement not covered" >        customer: "yamada_789",</span>
+<span class="cstat-no" title="statement not covered" >        reservationDate: '12/12',</span>
+<span class="cstat-no" title="statement not covered" >        reservationTime: '18:30-20:00',</span>
+<span class="cstat-no" title="statement not covered" >        receivedTime: '12/09 15:30',</span>
+<span class="cstat-no" title="statement not covered" >        staff: 'さくら',</span>
+<span class="cstat-no" title="statement not covered" >        customer: 'yamada_789',</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      read: false,</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
@@ -416,31 +418,31 @@ interface NotificationContextType {
 <span class="cstat-no" title="statement not covered" >  const addNotification = useCallback((notification: Omit&lt;Notification, 'id'&gt;) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    const newNotification: Notification = {</span>
 <span class="cstat-no" title="statement not covered" >      ...notification,</span>
-<span class="cstat-no" title="statement not covered" >      id: `notification_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`</span>
+<span class="cstat-no" title="statement not covered" >      id: `notification_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
-<span class="cstat-no" title="statement not covered" >    setNotifications(prev =&gt; [newNotification, ...prev])</span>
+<span class="cstat-no" title="statement not covered" >    setNotifications((prev) =&gt; [newNotification, ...prev])</span>
 <span class="cstat-no" title="statement not covered" >  }, [])</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const markAsRead = useCallback((id: string) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    setNotifications(prev =&gt; prev.map(n =&gt; </span>
-<span class="cstat-no" title="statement not covered" >      n.id === id ? { ...n, read: true } : n</span>
-<span class="cstat-no" title="statement not covered" >    ))</span>
+<span class="cstat-no" title="statement not covered" >    setNotifications((prev) =&gt; prev.map((n) =&gt; (n.id === id ? { ...n, read: true } : n)))</span>
 <span class="cstat-no" title="statement not covered" >  }, [])</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const removeNotification = useCallback((id: string) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    setNotifications(prev =&gt; prev.filter(n =&gt; n.id !== id))</span>
+<span class="cstat-no" title="statement not covered" >    setNotifications((prev) =&gt; prev.filter((n) =&gt; n.id !== id))</span>
 <span class="cstat-no" title="statement not covered" >  }, [])</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  const unreadCount = notifications.filter(n =&gt; !n.read).length</span>
+<span class="cstat-no" title="statement not covered" >  const unreadCount = notifications.filter((n) =&gt; !n.read).length</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
-<span class="cstat-no" title="statement not covered" >    &lt;NotificationContext.Provider value={{</span>
-<span class="cstat-no" title="statement not covered" >      notifications,</span>
-<span class="cstat-no" title="statement not covered" >      addNotification,</span>
-<span class="cstat-no" title="statement not covered" >      markAsRead,</span>
-<span class="cstat-no" title="statement not covered" >      removeNotification,</span>
-<span class="cstat-no" title="statement not covered" >      unreadCount</span>
-<span class="cstat-no" title="statement not covered" >    }}&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;NotificationContext.Provider</span>
+<span class="cstat-no" title="statement not covered" >      value={{</span>
+<span class="cstat-no" title="statement not covered" >        notifications,</span>
+<span class="cstat-no" title="statement not covered" >        addNotification,</span>
+<span class="cstat-no" title="statement not covered" >        markAsRead,</span>
+<span class="cstat-no" title="statement not covered" >        removeNotification,</span>
+<span class="cstat-no" title="statement not covered" >        unreadCount,</span>
+<span class="cstat-no" title="statement not covered" >      }}</span>
+    &gt;
 <span class="cstat-no" title="statement not covered" >      {children}</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/NotificationContext.Provider&gt;</span>
   )
@@ -459,23 +461,24 @@ interface NotificationContextType {
 <span class="cstat-no" title="statement not covered" >  if (context === undefined) {</span>
 <span class="cstat-no" title="statement not covered" >    throw new Error('useNotification must be used within a NotificationProvider')</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  return {</span>
 <span class="cstat-no" title="statement not covered" >    hasNewNotifications: context.unreadCount &gt; 0,</span>
 <span class="cstat-no" title="statement not covered" >    notifications: context.notifications,</span>
 <span class="cstat-no" title="statement not covered" >    unreadCount: context.unreadCount,</span>
 <span class="cstat-no" title="statement not covered" >    addNotification: context.addNotification,</span>
 <span class="cstat-no" title="statement not covered" >    markAsRead: context.markAsRead,</span>
-<span class="cstat-no" title="statement not covered" >    removeNotification: context.removeNotification</span>
+<span class="cstat-no" title="statement not covered" >    removeNotification: context.removeNotification,</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

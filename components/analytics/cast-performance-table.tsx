@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -8,22 +8,22 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import Link from "next/link"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
-import { StaffPerformanceData } from "@/lib/types/analytics"
-import { 
-  TrendingUp, 
-  Users, 
-  DollarSign, 
+} from '@/components/ui/table'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import Link from 'next/link'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
+import { StaffPerformanceData } from '@/lib/types/analytics'
+import {
+  TrendingUp,
+  Users,
+  DollarSign,
   Target,
   Clock,
   CreditCard,
   Banknote,
-  Star
+  Star,
 } from 'lucide-react'
 
 interface CastPerformanceTableProps {
@@ -84,26 +84,29 @@ export function CastPerformanceTable({ analyticsUseCases }: CastPerformanceTable
     }
   )
 
-  totals.designations.rate = totals.totalTransactions > 0 
-    ? Math.round((totals.designations.total / totals.totalTransactions) * 100) 
-    : 0
+  totals.designations.rate =
+    totals.totalTransactions > 0
+      ? Math.round((totals.designations.total / totals.totalTransactions) * 100)
+      : 0
 
-  const averageServiceAmount = totals.totalTransactions > 0 
-    ? Math.round(totals.totalAmount / totals.totalTransactions) 
-    : 0
+  const averageServiceAmount =
+    totals.totalTransactions > 0 ? Math.round(totals.totalAmount / totals.totalTransactions) : 0
 
-  const newCustomerRate = totals.totalTransactions > 0 
-    ? Math.round(((totals.newCustomers.free + totals.newCustomers.paid) / totals.totalTransactions) * 100) 
-    : 0
+  const newCustomerRate =
+    totals.totalTransactions > 0
+      ? Math.round(
+          ((totals.newCustomers.free + totals.newCustomers.paid) / totals.totalTransactions) * 100
+        )
+      : 0
 
   return (
     <div className="space-y-6">
       {/* サマリーカード */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Users className="w-4 h-4 text-blue-600" />
+              <Users className="h-4 w-4 text-blue-600" />
               <div>
                 <p className="text-sm font-medium text-gray-600">稼働キャスト</p>
                 <p className="text-2xl font-bold">{totals.workingCasts}人</p>
@@ -112,24 +115,26 @@ export function CastPerformanceTable({ analyticsUseCases }: CastPerformanceTable
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Target className="w-4 h-4 text-green-600" />
+              <Target className="h-4 w-4 text-green-600" />
               <div>
                 <p className="text-sm font-medium text-gray-600">総サービス数</p>
                 <p className="text-2xl font-bold">{totals.totalTransactions}本</p>
-                <p className="text-xs text-gray-500">客単価 ¥{averageServiceAmount.toLocaleString()}</p>
+                <p className="text-xs text-gray-500">
+                  客単価 ¥{averageServiceAmount.toLocaleString()}
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <DollarSign className="w-4 h-4 text-orange-600" />
+              <DollarSign className="h-4 w-4 text-orange-600" />
               <div>
                 <p className="text-sm font-medium text-gray-600">総売上</p>
                 <p className="text-2xl font-bold">¥{totals.totalAmount.toLocaleString()}</p>
@@ -138,11 +143,11 @@ export function CastPerformanceTable({ analyticsUseCases }: CastPerformanceTable
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Star className="w-4 h-4 text-purple-600" />
+              <Star className="h-4 w-4 text-purple-600" />
               <div>
                 <p className="text-sm font-medium text-gray-600">指名率</p>
                 <p className="text-2xl font-bold">{totals.designations.rate}%</p>
@@ -154,38 +159,46 @@ export function CastPerformanceTable({ analyticsUseCases }: CastPerformanceTable
       </div>
 
       {/* 決済方法別と収益分析 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <CreditCard className="w-4 h-4" />
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CreditCard className="h-4 w-4" />
               決済方法別売上
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex justify-between items-center">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Banknote className="w-4 h-4 text-green-600" />
+                <Banknote className="h-4 w-4 text-green-600" />
                 <span className="text-sm">現金</span>
               </div>
               <div className="text-right">
                 <div className="font-medium">{totals.cashTransactions.count}本</div>
-                <div className="text-sm text-gray-500">¥{totals.cashTransactions.amount.toLocaleString()}</div>
+                <div className="text-sm text-gray-500">
+                  ¥{totals.cashTransactions.amount.toLocaleString()}
+                </div>
               </div>
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-blue-600" />
+                <CreditCard className="h-4 w-4 text-blue-600" />
                 <span className="text-sm">カード</span>
               </div>
               <div className="text-right">
                 <div className="font-medium">{totals.cardTransactions.count}本</div>
-                <div className="text-sm text-gray-500">¥{totals.cardTransactions.amount.toLocaleString()}</div>
+                <div className="text-sm text-gray-500">
+                  ¥{totals.cardTransactions.amount.toLocaleString()}
+                </div>
               </div>
             </div>
-            <div className="pt-2 border-t">
+            <div className="border-t pt-2">
               <div className="text-sm text-gray-600">
-                現金比率: {totals.totalTransactions > 0 ? Math.round((totals.cashTransactions.count / totals.totalTransactions) * 100) : 0}%
+                現金比率:{' '}
+                {totals.totalTransactions > 0
+                  ? Math.round((totals.cashTransactions.count / totals.totalTransactions) * 100)
+                  : 0}
+                %
               </div>
             </div>
           </CardContent>
@@ -193,31 +206,37 @@ export function CastPerformanceTable({ analyticsUseCases }: CastPerformanceTable
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="w-4 h-4" />
+            <CardTitle className="flex items-center gap-2 text-base">
+              <TrendingUp className="h-4 w-4" />
               収益分析
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex justify-between items-center">
+            <div className="flex items-center justify-between">
               <span className="text-sm">キャスト収益</span>
               <div className="text-right">
                 <div className="font-medium">¥{totals.castRevenue.toLocaleString()}</div>
-                <div className="text-xs text-gray-500">{Math.round((totals.castRevenue / totals.totalAmount) * 100)}%</div>
+                <div className="text-xs text-gray-500">
+                  {Math.round((totals.castRevenue / totals.totalAmount) * 100)}%
+                </div>
               </div>
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex items-center justify-between">
               <span className="text-sm">店舗収益</span>
               <div className="text-right">
                 <div className="font-medium">¥{totals.storeRevenue.toLocaleString()}</div>
-                <div className="text-xs text-gray-500">{Math.round((totals.storeRevenue / totals.totalAmount) * 100)}%</div>
+                <div className="text-xs text-gray-500">
+                  {Math.round((totals.storeRevenue / totals.totalAmount) * 100)}%
+                </div>
               </div>
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex items-center justify-between">
               <span className="text-sm">厚生費</span>
               <div className="text-right">
                 <div className="font-medium">¥{totals.castFee.toLocaleString()}</div>
-                <div className="text-xs text-gray-500">{Math.round((totals.castFee / totals.totalAmount) * 100)}%</div>
+                <div className="text-xs text-gray-500">
+                  {Math.round((totals.castFee / totals.totalAmount) * 100)}%
+                </div>
               </div>
             </div>
           </CardContent>
@@ -234,23 +253,23 @@ export function CastPerformanceTable({ analyticsUseCases }: CastPerformanceTable
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="whitespace-nowrap min-w-[120px]">キャスト</TableHead>
+                  <TableHead className="min-w-[120px] whitespace-nowrap">キャスト</TableHead>
                   <TableHead className="whitespace-nowrap">就業日数/時間</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">現金本数</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">現金金額</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">カード本数</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">カード金額</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">合計本数</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">新規(フリー)</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">新規(パネル)</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">本指名</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">指名合計</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">指名率</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">値引き</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">合計金額</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">厚生費</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">キャスト収益</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">店舗収益</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">現金本数</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">現金金額</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">カード本数</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">カード金額</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">合計本数</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">新規(フリー)</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">新規(パネル)</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">本指名</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">指名合計</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">指名率</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">値引き</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">合計金額</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">厚生費</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">キャスト収益</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">店舗収益</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -258,10 +277,13 @@ export function CastPerformanceTable({ analyticsUseCases }: CastPerformanceTable
                   <TableRow key={row.id} className="hover:bg-gray-50">
                     <TableCell className="font-medium">
                       <div>
-                        <Link href={`/cast/manage/${row.id}`} className="text-blue-600 hover:underline font-medium">
+                        <Link
+                          href={`/cast/manage/${row.id}`}
+                          className="font-medium text-blue-600 hover:underline"
+                        >
                           {row.name}
                         </Link>
-                        <span className="text-gray-500 ml-1">({row.age}歳)</span>
+                        <span className="ml-1 text-gray-500">({row.age}歳)</span>
                       </div>
                       <div className="text-xs text-gray-400">{row.id}</div>
                     </TableCell>
@@ -270,18 +292,38 @@ export function CastPerformanceTable({ analyticsUseCases }: CastPerformanceTable
                         {row.workDays}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right font-medium">{row.cashTransactions.count}</TableCell>
-                    <TableCell className="text-right">¥{row.cashTransactions.amount.toLocaleString()}</TableCell>
-                    <TableCell className="text-right font-medium">{row.cardTransactions.count}</TableCell>
-                    <TableCell className="text-right">¥{row.cardTransactions.amount.toLocaleString()}</TableCell>
-                    <TableCell className="text-right font-bold text-blue-600">{row.totalTransactions}</TableCell>
+                    <TableCell className="text-right font-medium">
+                      {row.cashTransactions.count}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      ¥{row.cashTransactions.amount.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {row.cardTransactions.count}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      ¥{row.cardTransactions.amount.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right font-bold text-blue-600">
+                      {row.totalTransactions}
+                    </TableCell>
                     <TableCell className="text-right">{row.newCustomers.free}</TableCell>
                     <TableCell className="text-right">{row.newCustomers.paid}</TableCell>
-                    <TableCell className="text-right font-medium">{row.designations.regular}</TableCell>
-                    <TableCell className="text-right font-medium">{row.designations.total}</TableCell>
+                    <TableCell className="text-right font-medium">
+                      {row.designations.regular}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {row.designations.total}
+                    </TableCell>
                     <TableCell className="text-right">
-                      <Badge 
-                        variant={row.designations.rate >= 70 ? "default" : row.designations.rate >= 50 ? "secondary" : "destructive"}
+                      <Badge
+                        variant={
+                          row.designations.rate >= 70
+                            ? 'default'
+                            : row.designations.rate >= 50
+                              ? 'secondary'
+                              : 'destructive'
+                        }
                         className="text-xs"
                       >
                         {row.designations.rate}%
@@ -290,15 +332,21 @@ export function CastPerformanceTable({ analyticsUseCases }: CastPerformanceTable
                     <TableCell className="text-right text-red-600">
                       {row.discount > 0 ? `-¥${row.discount.toLocaleString()}` : '-'}
                     </TableCell>
-                    <TableCell className="text-right font-bold">¥{row.totalAmount.toLocaleString()}</TableCell>
+                    <TableCell className="text-right font-bold">
+                      ¥{row.totalAmount.toLocaleString()}
+                    </TableCell>
                     <TableCell className="text-right">¥{row.staffFee.toLocaleString()}</TableCell>
-                    <TableCell className="text-right font-medium text-green-600">¥{row.staffRevenue.toLocaleString()}</TableCell>
-                    <TableCell className="text-right font-medium text-blue-600">¥{row.storeRevenue.toLocaleString()}</TableCell>
+                    <TableCell className="text-right font-medium text-green-600">
+                      ¥{row.staffRevenue.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right font-medium text-blue-600">
+                      ¥{row.storeRevenue.toLocaleString()}
+                    </TableCell>
                   </TableRow>
                 ))}
-                
+
                 {/* 合計行 */}
-                <TableRow className="bg-gray-50 font-bold border-t-2">
+                <TableRow className="border-t-2 bg-gray-50 font-bold">
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <div>
@@ -311,10 +359,16 @@ export function CastPerformanceTable({ analyticsUseCases }: CastPerformanceTable
                   </TableCell>
                   <TableCell></TableCell>
                   <TableCell className="text-right">{totals.cashTransactions.count}</TableCell>
-                  <TableCell className="text-right">¥{totals.cashTransactions.amount.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">
+                    ¥{totals.cashTransactions.amount.toLocaleString()}
+                  </TableCell>
                   <TableCell className="text-right">{totals.cardTransactions.count}</TableCell>
-                  <TableCell className="text-right">¥{totals.cardTransactions.amount.toLocaleString()}</TableCell>
-                  <TableCell className="text-right text-blue-600">{totals.totalTransactions}</TableCell>
+                  <TableCell className="text-right">
+                    ¥{totals.cardTransactions.amount.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right text-blue-600">
+                    {totals.totalTransactions}
+                  </TableCell>
                   <TableCell className="text-right">{totals.newCustomers.free}</TableCell>
                   <TableCell className="text-right">{totals.newCustomers.paid}</TableCell>
                   <TableCell className="text-right">{totals.designations.regular}</TableCell>
@@ -324,11 +378,19 @@ export function CastPerformanceTable({ analyticsUseCases }: CastPerformanceTable
                       {totals.designations.rate}%
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right text-red-600">-¥{totals.discount.toLocaleString()}</TableCell>
-                  <TableCell className="text-right text-lg">¥{totals.totalAmount.toLocaleString()}</TableCell>
+                  <TableCell className="text-right text-red-600">
+                    -¥{totals.discount.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right text-lg">
+                    ¥{totals.totalAmount.toLocaleString()}
+                  </TableCell>
                   <TableCell className="text-right">¥{totals.castFee.toLocaleString()}</TableCell>
-                  <TableCell className="text-right text-green-600">¥{totals.castRevenue.toLocaleString()}</TableCell>
-                  <TableCell className="text-right text-blue-600">¥{totals.storeRevenue.toLocaleString()}</TableCell>
+                  <TableCell className="text-right text-green-600">
+                    ¥{totals.castRevenue.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right text-blue-600">
+                    ¥{totals.storeRevenue.toLocaleString()}
+                  </TableCell>
                 </TableRow>
               </TableBody>
             </Table>

@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/50</span>
+                <span class='fraction'>0/55</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/50</span>
+                <span class='fraction'>0/55</span>
             </div>
         
             
@@ -137,7 +137,13 @@
 <a name='L72'></a><a href='#L72'>72</a>
 <a name='L73'></a><a href='#L73'>73</a>
 <a name='L74'></a><a href='#L74'>74</a>
-<a name='L75'></a><a href='#L75'>75</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -178,23 +184,11 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -205,18 +199,36 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { Button } from "@/components/ui/button"</span></span></span>
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { Button } from '@/components/ui/button'</span></span></span>
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { UserCircle, Phone, Crown } from 'lucide-react'
-import Link from "next/link"
-import { Customer } from "@/lib/types/chat"
+import Link from 'next/link'
+import { Customer } from '@/lib/types/chat'
 &nbsp;
 interface CustomerHeaderProps {
   customer?: Customer
@@ -225,43 +237,41 @@ interface CustomerHeaderProps {
 <span class="cstat-no" title="statement not covered" >export function CustomerHeader({ customer }: CustomerHeaderProps) {</span>
 <span class="cstat-no" title="statement not covered" >  if (!customer) {</span>
 <span class="cstat-no" title="statement not covered" >    return (</span>
-<span class="cstat-no" title="statement not covered" >      &lt;div className="h-[70px] border-b bg-white/80 backdrop-blur-sm px-6 flex items-center"&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;div className="text-gray-500 text-sm"&gt;顧客が選択されていません&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;div className="flex h-[70px] items-center border-b bg-white/80 px-6 backdrop-blur-sm"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="text-sm text-gray-500"&gt;顧客が選択されていません&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
     )
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
-<span class="cstat-no" title="statement not covered" >    &lt;div className="h-[70px] border-b bg-white/80 backdrop-blur-sm px-6 flex items-center justify-between"&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;div className="flex h-[70px] items-center justify-between border-b bg-white/80 px-6 backdrop-blur-sm"&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;div className="flex items-center gap-4"&gt;</span>
         {/* Customer Avatar and Info */}
 <span class="cstat-no" title="statement not covered" >        &lt;div className="relative"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;Avatar className="h-10 w-10"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;AvatarImage src={customer.avatar} alt={customer.name} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;AvatarFallback className="bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-medium"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;AvatarFallback className="bg-gradient-to-br from-emerald-400 to-emerald-600 font-medium text-white"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              {customer.name[0]}</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/AvatarFallback&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/Avatar&gt;</span>
 <span class="cstat-no" title="statement not covered" >          {customer.isOnline &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >            &lt;div className="absolute -bottom-1 -right-1 h-3 w-3 bg-green-500 border-2 border-white rounded-full"&gt;&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-white bg-green-500"&gt;&lt;/div&gt;</span>
           )}
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
-        
+&nbsp;
 <span class="cstat-no" title="statement not covered" >        &lt;div className="flex flex-col"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div className="flex items-center gap-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;h2 className="text-lg font-semibold text-gray-900"&gt;{customer.name} 様&lt;/h2&gt;</span>
-<span class="cstat-no" title="statement not covered" >            {customer.memberType === "vip" &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Crown className="h-4 w-4 text-amber-500" /&gt;</span>
-            )}
+<span class="cstat-no" title="statement not covered" >            {customer.memberType === 'vip' &amp;&amp; &lt;Crown className="h-4 w-4 text-amber-500" /&gt;}</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div className="flex items-center gap-2 text-sm text-gray-500"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            {customer.isOnline ? (</span>
-<span class="cstat-no" title="statement not covered" >              &lt;span className="text-green-600 font-medium"&gt;オンライン&lt;/span&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;span className="font-medium text-green-600"&gt;オンライン&lt;/span&gt;</span>
             ) : (
 <span class="cstat-no" title="statement not covered" >              &lt;span&gt;最終ログイン: {customer.lastSeen}&lt;/span&gt;</span>
             )}
 <span class="cstat-no" title="statement not covered" >            {customer.hasUnread &amp;&amp; customer.unreadCount &gt; 0 &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Badge variant="secondary" className="bg-emerald-100 text-emerald-700 text-xs"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Badge variant="secondary" className="bg-emerald-100 text-xs text-emerald-700"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                未読 {customer.unreadCount}</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/Badge&gt;</span>
             )}
@@ -271,13 +281,21 @@ interface CustomerHeaderProps {
 &nbsp;
       {/* Action Buttons */}
 <span class="cstat-no" title="statement not covered" >      &lt;div className="flex items-center gap-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;Button variant="ghost" size="sm" className="text-gray-600 hover:text-emerald-600 hover:bg-emerald-50"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;Button</span>
+<span class="cstat-no" title="statement not covered" >          variant="ghost"</span>
+<span class="cstat-no" title="statement not covered" >          size="sm"</span>
+<span class="cstat-no" title="statement not covered" >          className="text-gray-600 hover:bg-emerald-50 hover:text-emerald-600"</span>
+        &gt;
 <span class="cstat-no" title="statement not covered" >          &lt;Phone className="h-4 w-4" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/Button&gt;</span>
-        
+&nbsp;
 <span class="cstat-no" title="statement not covered" >        &lt;Link href={`/customers/${customer.id}`}&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Button variant="ghost" size="sm" className="text-gray-600 hover:text-emerald-600 hover:bg-emerald-50"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;UserCircle className="h-4 w-4 mr-2" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;Button</span>
+<span class="cstat-no" title="statement not covered" >            variant="ghost"</span>
+<span class="cstat-no" title="statement not covered" >            size="sm"</span>
+<span class="cstat-no" title="statement not covered" >            className="text-gray-600 hover:bg-emerald-50 hover:text-emerald-600"</span>
+          &gt;
+<span class="cstat-no" title="statement not covered" >            &lt;UserCircle className="mr-2 h-4 w-4" /&gt;</span>
             詳細
 <span class="cstat-no" title="statement not covered" >          &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/Link&gt;</span>
@@ -292,7 +310,7 @@ interface CustomerHeaderProps {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>48/48</span>
+                <span class='fraction'>52/52</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>48/48</span>
+                <span class='fraction'>52/52</span>
             </div>
         
             
@@ -131,7 +131,12 @@
 <a name='L66'></a><a href='#L66'>66</a>
 <a name='L67'></a><a href='#L67'>67</a>
 <a name='L68'></a><a href='#L68'>68</a>
-<a name='L69'></a><a href='#L69'>69</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -178,23 +183,28 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -204,27 +214,27 @@ export const UI_CONSTANTS = {
   HEADER_HEIGHT: 73,
   DIALOG_MAX_HEIGHT: '90vh',
   DIALOG_Z_INDEX: 50,
-} as const;
+} as const
 &nbsp;
 // Status Values
 export const RESERVATION_STATUS = {
   CONFIRMED: 'confirmed',
-  PENDING: 'pending', 
+  PENDING: 'pending',
   CANCELLED: 'cancelled',
   MODIFIABLE: 'modifiable',
-} as const;
+} as const
 &nbsp;
 export const CUSTOMER_TYPES = {
   REGULAR: '通常顧客',
   VIP: 'VIP顧客',
   NG: 'NG顧客',
-} as const;
+} as const
 &nbsp;
 export const PAYMENT_METHODS = {
   CASH: '現金',
   CARD: 'カード',
   TRANSFER: '振込',
-} as const;
+} as const
 &nbsp;
 // Default Values
 export const DEFAULT_VALUES = {
@@ -232,29 +242,33 @@ export const DEFAULT_VALUES = {
   CUSTOMER_POINTS: 100,
   DESIGNATION_FEE: 3000,
   MODIFICATION_TIMEOUT_MINUTES: 30,
-} as const;
+} as const
 &nbsp;
 // Business Hours
 export const BUSINESS_HOURS = {
   OPEN: 10,
   CLOSE: 24,
   LAST_ORDER: 23.5,
-} as const;
+} as const
 &nbsp;
 // Areas and Locations
 export const AREAS = [
-  '池袋', '新宿', '渋谷', '品川', '銀座', 
-  '上野', '秋葉原', '六本木', '恵比寿', '中野'
-] as const;
+  '池袋',
+  '新宿',
+  '渋谷',
+  '品川',
+  '銀座',
+  '上野',
+  '秋葉原',
+  '六本木',
+  '恵比寿',
+  '中野',
+] as const
 &nbsp;
-export const PREFECTURES = [
-  '東京都', '神奈川県', '埼玉県', '千葉県'
-] as const;
+export const PREFECTURES = ['東京都', '神奈川県', '埼玉県', '千葉県'] as const
 &nbsp;
 // Marketing Channels
-export const MARKETING_CHANNELS = [
-  'WEB', '電話', '紹介', 'リピート', 'SNS'
-] as const;
+export const MARKETING_CHANNELS = ['WEB', '電話', '紹介', 'リピート', 'SNS'] as const
 &nbsp;
 // Staff Work Status
 export const WORK_STATUS = {
@@ -262,19 +276,20 @@ export const WORK_STATUS = {
   NOT_WORKING: '未出勤',
   REST: '休み',
   NOT_SET: '未設定',
-} as const;
+} as const
 &nbsp;
-export type ReservationStatus = typeof RESERVATION_STATUS[keyof typeof RESERVATION_STATUS];
-export type CustomerType = typeof CUSTOMER_TYPES[keyof typeof CUSTOMER_TYPES];
-export type PaymentMethod = typeof PAYMENT_METHODS[keyof typeof PAYMENT_METHODS];
-export type WorkStatus = typeof WORK_STATUS[keyof typeof WORK_STATUS];</pre></td></tr></table></pre>
+export type ReservationStatus = (typeof RESERVATION_STATUS)[keyof typeof RESERVATION_STATUS]
+export type CustomerType = (typeof CUSTOMER_TYPES)[keyof typeof CUSTOMER_TYPES]
+export type PaymentMethod = (typeof PAYMENT_METHODS)[keyof typeof PAYMENT_METHODS]
+export type WorkStatus = (typeof WORK_STATUS)[keyof typeof WORK_STATUS]
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

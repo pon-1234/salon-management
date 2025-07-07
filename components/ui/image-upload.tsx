@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import React, { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
@@ -31,7 +31,7 @@ export function ImageUpload({ value, onChange, onRemove, index, disabled }: Imag
       toast({
         title: 'エラー',
         description: 'ファイルサイズが大きすぎます（最大5MB）',
-        variant: 'destructive'
+        variant: 'destructive',
       })
       return
     }
@@ -40,7 +40,7 @@ export function ImageUpload({ value, onChange, onRemove, index, disabled }: Imag
       toast({
         title: 'エラー',
         description: '対応していないファイル形式です（JPEG, PNG, WebPのみ）',
-        variant: 'destructive'
+        variant: 'destructive',
       })
       return
     }
@@ -53,7 +53,7 @@ export function ImageUpload({ value, onChange, onRemove, index, disabled }: Imag
 
       const response = await fetch('/api/upload', {
         method: 'POST',
-        body: formData
+        body: formData,
       })
 
       const result = await response.json()
@@ -62,7 +62,7 @@ export function ImageUpload({ value, onChange, onRemove, index, disabled }: Imag
         onChange(result.url)
         toast({
           title: '成功',
-          description: '画像をアップロードしました'
+          description: '画像をアップロードしました',
         })
       } else {
         throw new Error(result.error || 'アップロードに失敗しました')
@@ -72,7 +72,7 @@ export function ImageUpload({ value, onChange, onRemove, index, disabled }: Imag
       toast({
         title: 'エラー',
         description: error instanceof Error ? error.message : 'アップロードに失敗しました',
-        variant: 'destructive'
+        variant: 'destructive',
       })
     } finally {
       setIsUploading(false)
@@ -86,19 +86,20 @@ export function ImageUpload({ value, onChange, onRemove, index, disabled }: Imag
   return (
     <div className="flex items-center gap-2">
       <Label className="min-w-[60px]">画像{index + 1}</Label>
-      
+
       <div className="flex-1 space-y-2">
         {value ? (
           <div className="flex items-center gap-2">
-            <img 
-              src={value} 
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={value}
               alt={`プレビュー ${index + 1}`}
-              className="w-16 h-16 object-cover rounded border"
+              className="h-16 w-16 rounded border object-cover"
               onError={(e) => {
                 e.currentTarget.style.display = 'none'
               }}
             />
-            <span className="text-sm text-gray-600 flex-1 truncate">{value}</span>
+            <span className="flex-1 truncate text-sm text-gray-600">{value}</span>
           </div>
         ) : (
           <div className="flex items-center gap-2">
@@ -119,12 +120,12 @@ export function ImageUpload({ value, onChange, onRemove, index, disabled }: Imag
             >
               {isUploading ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   アップロード中...
                 </>
               ) : (
                 <>
-                  <Upload className="h-4 w-4 mr-2" />
+                  <Upload className="mr-2 h-4 w-4" />
                   画像を選択
                 </>
               )}

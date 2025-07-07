@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">66.1% </span>
+                <span class="strong">60% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>39/59</span>
+                <span class='fraction'>39/65</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">66.1% </span>
+                <span class="strong">60% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>39/59</span>
+                <span class='fraction'>39/65</span>
             </div>
         
             
@@ -158,7 +158,14 @@
 <a name='L93'></a><a href='#L93'>93</a>
 <a name='L94'></a><a href='#L94'>94</a>
 <a name='L95'></a><a href='#L95'>95</a>
-<a name='L96'></a><a href='#L96'>96</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -232,6 +239,10 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -248,13 +259,16 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { CoursePrice, OptionPrice } from './types';
-import { Course, Option } from '../types/course-option';
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { CoursePrice, OptionPrice } from './types'
+import { Course, Option } from '../types/course-option'
 &nbsp;
 /**
  * Converts CoursePrice objects from the centralized pricing system
@@ -263,32 +277,32 @@ import { Course, Option } from '../types/course-option';
 export function convertCoursePriceToCourse(coursePrice: CoursePrice): Course[] {
   // Convert each duration into a separate Course object for backward compatibility
   return coursePrice.durations.map((duration, index) =&gt; {
-    const baseName = coursePrice.name;
-    const durationSuffix = duration.time &gt;= 60 ? `${duration.time / 60<span class="branch-0 cbranch-no" title="branch not covered" >}時間` : `${duration.time}分`;</span>
-    
+    const baseName = coursePrice.name
+    const durationSuffix = duration.time &gt;= 60 ? `${duration.time / 60<span class="branch-0 cbranch-no" title="branch not covered" >}時間` : `${duration.time}分`</span>
+&nbsp;
     return {
       id: `${coursePrice.id}-${duration.time}min`,
       name: `${baseName} ${duration.time}分`,
       duration: duration.time,
       price: duration.price,
-    };
-  });
+    }
+  })
 }
 &nbsp;
 /**
  * Converts all active courses from the pricing system to legacy format
  */
 export function convertAllCoursePricesToCourses(coursePrices: CoursePrice[]): Course[] {
-  const courses: Course[] = [];
-  
+  const courses: Course[] = []
+&nbsp;
   coursePrices
-    .filter(cp =&gt; cp.isActive)
+    .filter((cp) =&gt; cp.isActive)
     .sort((a, b) =&gt; a.displayOrder - b.displayOrder)
-    .forEach(coursePrice =&gt; {
-      courses.push(...convertCoursePriceToCourse(coursePrice));
-    });
-  
-  return courses;
+    .forEach((coursePrice) =&gt; {
+      courses.push(...convertCoursePriceToCourse(coursePrice))
+    })
+&nbsp;
+  return courses
 }
 &nbsp;
 /**
@@ -301,7 +315,7 @@ export function convertOptionPriceToOption(optionPrice: OptionPrice): Option {
     name: optionPrice.name,
     price: optionPrice.price,
     note: optionPrice.note,
-  };
+  }
 }
 &nbsp;
 /**
@@ -309,53 +323,60 @@ export function convertOptionPriceToOption(optionPrice: OptionPrice): Option {
  */
 export function convertAllOptionPricesToOptions(optionPrices: OptionPrice[]): Option[] {
   return optionPrices
-    .filter(op =&gt; op.isActive)
+    .filter((op) =&gt; op.isActive)
     .sort((a, b) =&gt; a.displayOrder - b.displayOrder)
-    .map(convertOptionPriceToOption);
+    .map(convertOptionPriceToOption)
 }
 &nbsp;
 /**
  * Gets a specific course duration from the pricing system
  */
-export <span class="fstat-no" title="function not covered" >function getCourseDurationById(courseId: string, duration: number, coursePrices: CoursePrice[]): Course | undefined {</span>
+export <span class="fstat-no" title="function not covered" >function getCourseDurationById(</span>
+<span class="cstat-no" title="statement not covered" >  courseId: string,</span>
+<span class="cstat-no" title="statement not covered" >  duration: number,</span>
+<span class="cstat-no" title="statement not covered" >  coursePrices: CoursePrice[]</span>
+<span class="cstat-no" title="statement not covered" >): Course | undefined {</span>
 <span class="cstat-no" title="statement not covered" >  for (const coursePrice of coursePrices) {</span>
-<span class="cstat-no" title="statement not covered" >    const matchingDuration = coursePrice.durations.find(d =&gt; d.time === duration);</span>
+<span class="cstat-no" title="statement not covered" >    const matchingDuration = coursePrice.durations.find((d) =&gt; d.time === duration)</span>
 <span class="cstat-no" title="statement not covered" >    if (matchingDuration) {</span>
-<span class="cstat-no" title="statement not covered" >      const courses = convertCoursePriceToCourse(coursePrice);</span>
-<span class="cstat-no" title="statement not covered" >      return courses.find(c =&gt; c.duration === duration);</span>
+<span class="cstat-no" title="statement not covered" >      const courses = convertCoursePriceToCourse(coursePrice)</span>
+<span class="cstat-no" title="statement not covered" >      return courses.find((c) =&gt; c.duration === duration)</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
-<span class="cstat-no" title="statement not covered" >  return undefined;</span>
+<span class="cstat-no" title="statement not covered" >  return undefined</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
 /**
  * Creates a legacy course ID from coursePrice ID and duration
  */
 export <span class="fstat-no" title="function not covered" >function createLegacyCourseId(coursePriceId: string, duration: number): string {</span>
-<span class="cstat-no" title="statement not covered" >  return `${coursePriceId}-${duration}min`;</span>
+<span class="cstat-no" title="statement not covered" >  return `${coursePriceId}-${duration}min`</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
 /**
  * Parses a legacy course ID to get coursePrice ID and duration
  */
-export <span class="fstat-no" title="function not covered" >function parseLegacyCourseId(legacyId: string): { coursePriceId: string; duration: number } | null {</span>
-<span class="cstat-no" title="statement not covered" >  const match = legacyId.match(/^(.+)-(\d+)min$/);</span>
+export <span class="fstat-no" title="function not covered" >function parseLegacyCourseId(</span>
+<span class="cstat-no" title="statement not covered" >  legacyId: string</span>
+<span class="cstat-no" title="statement not covered" >): { coursePriceId: string; duration: number } | null {</span>
+<span class="cstat-no" title="statement not covered" >  const match = legacyId.match(/^(.+)-(\d+)min$/)</span>
 <span class="cstat-no" title="statement not covered" >  if (!match) {</span>
-<span class="cstat-no" title="statement not covered" >    return null;</span>
+<span class="cstat-no" title="statement not covered" >    return null</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  return {</span>
 <span class="cstat-no" title="statement not covered" >    coursePriceId: match[1],</span>
 <span class="cstat-no" title="statement not covered" >    duration: parseInt(match[2], 10),</span>
-<span class="cstat-no" title="statement not covered" >  };</span>
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >  }</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

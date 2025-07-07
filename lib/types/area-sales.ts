@@ -1,20 +1,20 @@
 export interface AreaSalesData {
-  area: string;
-  monthlySales: number[];
-  total: number;
-  isSubtotal?: boolean;
+  area: string
+  monthlySales: number[]
+  total: number
+  isSubtotal?: boolean
 }
 
 export interface AreaSalesReport {
-  year: number;
-  areas: AreaSalesData[];
+  year: number
+  areas: AreaSalesData[]
   total: {
-    monthlySales: number[];
-    total: number;
-  };
+    monthlySales: number[]
+    total: number
+  }
 }
 
 export interface TransportationFee {
-  area: string;
-  fee: number;
+  area: string
+  fee: number
 }

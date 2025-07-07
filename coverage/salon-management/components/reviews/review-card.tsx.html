@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/95</span>
+                <span class='fraction'>0/91</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/95</span>
+                <span class='fraction'>0/91</span>
             </div>
         
             
@@ -187,11 +187,7 @@
 <a name='L122'></a><a href='#L122'>122</a>
 <a name='L123'></a><a href='#L123'>123</a>
 <a name='L124'></a><a href='#L124'>124</a>
-<a name='L125'></a><a href='#L125'>125</a>
-<a name='L126'></a><a href='#L126'>126</a>
-<a name='L127'></a><a href='#L127'>127</a>
-<a name='L128'></a><a href='#L128'>128</a>
-<a name='L129'></a><a href='#L129'>129</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L125'></a><a href='#L125'>125</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -253,26 +249,21 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -319,7 +310,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
 import { useState } from 'react'
 import { Review } from '@/lib/reviews/types'
@@ -349,10 +341,10 @@ interface ReviewCardProps {
 <span class="cstat-no" title="statement not covered" >    &lt;Card className="overflow-hidden"&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;CardContent className="p-6"&gt;</span>
         {/* Header */}
-<span class="cstat-no" title="statement not covered" >        &lt;div className="flex items-start justify-between mb-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="mb-4 flex items-start justify-between"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;div className="flex items-center gap-2 mb-1"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;h3 className="font-bold text-lg"&gt;{review.castName}&lt;/h3&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;div className="mb-1 flex items-center gap-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;h3 className="text-lg font-bold"&gt;{review.castName}&lt;/h3&gt;</span>
 <span class="cstat-no" title="statement not covered" >              {review.isVerified &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >                &lt;div className="flex items-center gap-1 text-green-600"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;CheckCircle className="h-4 w-4" /&gt;</span>
@@ -375,9 +367,7 @@ interface ReviewCardProps {
 <span class="cstat-no" title="statement not covered" >              &lt;Star</span>
 <span class="cstat-no" title="statement not covered" >                key={i}</span>
 <span class="cstat-no" title="statement not covered" >                className={`h-5 w-5 ${</span>
-<span class="cstat-no" title="statement not covered" >                  i &lt; review.rating</span>
-<span class="cstat-no" title="statement not covered" >                    ? 'fill-yellow-400 text-yellow-400'</span>
-<span class="cstat-no" title="statement not covered" >                    : 'text-gray-300'</span>
+<span class="cstat-no" title="statement not covered" >                  i &lt; review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'</span>
 <span class="cstat-no" title="statement not covered" >                }`}</span>
 <span class="cstat-no" title="statement not covered" >              /&gt;</span>
 <span class="cstat-no" title="statement not covered" >            ))}</span>
@@ -385,26 +375,23 @@ interface ReviewCardProps {
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
 &nbsp;
         {/* Course and Options */}
-<span class="cstat-no" title="statement not covered" >        &lt;div className="flex flex-wrap gap-2 mb-3"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          {review.courseType &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >            &lt;Badge variant="outline"&gt;{review.courseType}&lt;/Badge&gt;</span>
-          )}
-<span class="cstat-no" title="statement not covered" >          {review.options?.map(option =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >            &lt;Badge key={option} variant="secondary"&gt;{option}&lt;/Badge&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="mb-3 flex flex-wrap gap-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          {review.courseType &amp;&amp; &lt;Badge variant="outline"&gt;{review.courseType}&lt;/Badge&gt;}</span>
+<span class="cstat-no" title="statement not covered" >          {review.options?.map((option) =&gt; (</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Badge key={option} variant="secondary"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              {option}</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/Badge&gt;</span>
 <span class="cstat-no" title="statement not covered" >          ))}</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
 &nbsp;
         {/* Review Content */}
-<span class="cstat-no" title="statement not covered" >        &lt;p className="text-gray-700 leading-relaxed mb-4"&gt;{review.content}&lt;/p&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;p className="mb-4 leading-relaxed text-gray-700"&gt;{review.content}&lt;/p&gt;</span>
 &nbsp;
         {/* Tags */}
 <span class="cstat-no" title="statement not covered" >        {review.tags &amp;&amp; review.tags.length &gt; 0 &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="flex flex-wrap gap-2 mb-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            {review.tags.map(tag =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >              &lt;span</span>
-<span class="cstat-no" title="statement not covered" >                key={tag}</span>
-<span class="cstat-no" title="statement not covered" >                className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full"</span>
-<span class="cstat-no" title="statement not covered" >              &gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="mb-4 flex flex-wrap gap-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            {review.tags.map((tag) =&gt; (</span>
+<span class="cstat-no" title="statement not covered" >              &lt;span key={tag} className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                #{tag}</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >            ))}</span>
@@ -413,12 +400,12 @@ interface ReviewCardProps {
 &nbsp;
         {/* Cast Response */}
 <span class="cstat-no" title="statement not covered" >        {review.response &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="bg-pink-50 border border-pink-200 rounded-lg p-4 mb-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="mb-4 rounded-lg border border-pink-200 bg-pink-50 p-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="flex items-start gap-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;MessageCircle className="h-5 w-5 text-pink-600 mt-0.5" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;MessageCircle className="mt-0.5 h-5 w-5 text-pink-600" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div className="flex-1"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="flex items-center gap-2 mb-1"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;span className="font-semibold text-sm text-pink-800"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="mb-1 flex items-center gap-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;span className="text-sm font-semibold text-pink-800"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    {review.response.respondedBy}からの返信</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;span className="text-xs text-gray-500"&gt;</span>
@@ -432,7 +419,7 @@ interface ReviewCardProps {
         )}
 &nbsp;
         {/* Footer */}
-<span class="cstat-no" title="statement not covered" >        &lt;div className="flex items-center justify-between pt-4 border-t"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="flex items-center justify-between border-t pt-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;Button</span>
 <span class="cstat-no" title="statement not covered" >            variant="ghost"</span>
 <span class="cstat-no" title="statement not covered" >            size="sm"</span>
@@ -440,21 +427,22 @@ interface ReviewCardProps {
 <span class="cstat-no" title="statement not covered" >            disabled={hasVoted}</span>
 <span class="cstat-no" title="statement not covered" >            className="text-gray-600"</span>
           &gt;
-<span class="cstat-no" title="statement not covered" >            &lt;ThumbsUp className={`h-4 w-4 mr-1 ${hasVoted ? 'fill-current' : ''}`} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;ThumbsUp className={`mr-1 h-4 w-4 ${hasVoted ? 'fill-current' : ''}`} /&gt;</span>
 <span class="cstat-no" title="statement not covered" >            参考になった ({helpful})</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/CardContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/Card&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

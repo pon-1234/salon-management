@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { HourlySalesReport } from "@/lib/types/hourly-sales"
+import { HourlySalesReport } from '@/lib/types/hourly-sales'
 import {
   Table,
   TableBody,
@@ -8,8 +8,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 interface PeakTimeAnalysisProps {
@@ -20,19 +20,19 @@ export function PeakTimeAnalysis({ data }: PeakTimeAnalysisProps) {
   // 時間帯別の分析データを作成
   const hourlyAnalysis = data.hourlyTotals.map((total, index) => {
     const hour = index + 7
-    const percentage = (total / data.grandTotal * 100).toFixed(1)
+    const percentage = ((total / data.grandTotal) * 100).toFixed(1)
     return {
       hour: `${hour}:00-${hour + 1}:00`,
       total,
       percentage: parseFloat(percentage),
-      rank: 0 // 後で設定
+      rank: 0, // 後で設定
     }
   })
 
   // ランキングを設定
   const sorted = [...hourlyAnalysis].sort((a, b) => b.total - a.total)
   sorted.forEach((item, index) => {
-    const original = hourlyAnalysis.find(h => h.hour === item.hour)
+    const original = hourlyAnalysis.find((h) => h.hour === item.hour)
     if (original) original.rank = index + 1
   })
 
@@ -42,32 +42,32 @@ export function PeakTimeAnalysis({ data }: PeakTimeAnalysisProps) {
   // 時間帯区分別の集計
   const periodAnalysis = [
     {
-      period: "朝（7:00-11:00）",
+      period: '朝（7:00-11:00）',
       hours: hourlyAnalysis.slice(0, 4),
-      color: "#fbbf24"
+      color: '#fbbf24',
     },
     {
-      period: "昼（11:00-15:00）",
+      period: '昼（11:00-15:00）',
       hours: hourlyAnalysis.slice(4, 8),
-      color: "#60a5fa"
+      color: '#60a5fa',
     },
     {
-      period: "夕方（15:00-19:00）",
+      period: '夕方（15:00-19:00）',
       hours: hourlyAnalysis.slice(8, 12),
-      color: "#f97316"
+      color: '#f97316',
     },
     {
-      period: "夜（19:00-28:00）",
+      period: '夜（19:00-28:00）',
       hours: hourlyAnalysis.slice(12),
-      color: "#8b5cf6"
-    }
+      color: '#8b5cf6',
+    },
   ]
 
-  const periodData = periodAnalysis.map(p => ({
+  const periodData = periodAnalysis.map((p) => ({
     period: p.period,
     total: p.hours.reduce((sum, h) => sum + h.total, 0),
     percentage: ((p.hours.reduce((sum, h) => sum + h.total, 0) / data.grandTotal) * 100).toFixed(1),
-    color: p.color
+    color: p.color,
   }))
 
   const getRankBadge = (rank: number) => {
@@ -82,7 +82,7 @@ export function PeakTimeAnalysis({ data }: PeakTimeAnalysisProps) {
     <div className="space-y-6">
       {/* 時間帯別グラフ */}
       <div>
-        <h3 className="text-lg font-semibold mb-4">時間帯別来客数分布</h3>
+        <h3 className="mb-4 text-lg font-semibold">時間帯別来客数分布</h3>
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={periodData}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -96,7 +96,7 @@ export function PeakTimeAnalysis({ data }: PeakTimeAnalysisProps) {
 
       {/* ピーク時間帯ランキング */}
       <div>
-        <h3 className="text-lg font-semibold mb-4">ピーク時間帯TOP5</h3>
+        <h3 className="mb-4 text-lg font-semibold">ピーク時間帯TOP5</h3>
         <div className="rounded-lg border">
           <Table>
             <TableHeader>
@@ -111,16 +111,12 @@ export function PeakTimeAnalysis({ data }: PeakTimeAnalysisProps) {
             <TableBody>
               {top5Hours.map((hour) => (
                 <TableRow key={hour.hour}>
-                  <TableCell>
-                    {getRankBadge(hour.rank)}
-                  </TableCell>
+                  <TableCell>{getRankBadge(hour.rank)}</TableCell>
                   <TableCell className="font-medium">{hour.hour}</TableCell>
                   <TableCell className="text-right">{hour.total}人</TableCell>
                   <TableCell className="text-right">{hour.percentage}%</TableCell>
                   <TableCell className="text-center">
-                    <Badge variant="outline">
-                      {Math.ceil(hour.total / 30)}人以上
-                    </Badge>
+                    <Badge variant="outline">{Math.ceil(hour.total / 30)}人以上</Badge>
                   </TableCell>
                 </TableRow>
               ))}
@@ -131,16 +127,16 @@ export function PeakTimeAnalysis({ data }: PeakTimeAnalysisProps) {
 
       {/* 時間帯区分別分析 */}
       <div>
-        <h3 className="text-lg font-semibold mb-4">時間帯区分別分析</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <h3 className="mb-4 text-lg font-semibold">時間帯区分別分析</h3>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           {periodData.map((period) => (
             <div
               key={period.period}
               className="rounded-lg border p-4 text-center"
               style={{ borderColor: period.color }}
             >
-              <h4 className="font-medium mb-2">{period.period}</h4>
-              <div className="text-2xl font-bold mb-1">{period.total}人</div>
+              <h4 className="mb-2 font-medium">{period.period}</h4>
+              <div className="mb-1 text-2xl font-bold">{period.total}人</div>
               <div className="text-sm text-gray-600">{period.percentage}%</div>
             </div>
           ))}

@@ -65,57 +65,51 @@ export function FavoriteCasts({ store }: FavoriteCastsProps) {
   return (
     <div className="space-y-6">
       {/* Favorites Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {favoriteCasts.map((cast) => (
           <Card key={cast.id} className="overflow-hidden">
             <div className="relative">
               {/* Cast Image */}
               <div className="aspect-[3/4] bg-gradient-to-br from-pink-300 to-purple-400" />
-              
+
               {/* Favorite Badge */}
-              <div className="absolute top-2 right-2">
-                <Button
-                  size="icon"
-                  variant="secondary"
-                  className="bg-white/90 backdrop-blur"
-                >
+              <div className="absolute right-2 top-2">
+                <Button size="icon" variant="secondary" className="bg-white/90 backdrop-blur">
                   <Heart className="h-5 w-5 fill-red-500 text-red-500" />
                 </Button>
               </div>
 
               {/* Working Status */}
               {cast.isWorking && (
-                <Badge className="absolute top-2 left-2 bg-green-500">
-                  出勤中
-                </Badge>
+                <Badge className="absolute left-2 top-2 bg-green-500">出勤中</Badge>
               )}
             </div>
 
             <CardContent className="p-4">
-              <div className="flex items-start justify-between mb-2">
+              <div className="mb-2 flex items-start justify-between">
                 <div>
-                  <h3 className="font-bold text-lg">{cast.name}</h3>
+                  <h3 className="text-lg font-bold">{cast.name}</h3>
                   <p className="text-sm text-gray-500">{cast.age}歳</p>
                 </div>
                 {getRankBadge(cast.rank)}
               </div>
 
-              <p className="text-sm text-gray-600 mb-3">{cast.measurements}</p>
+              <p className="mb-3 text-sm text-gray-600">{cast.measurements}</p>
 
               {/* Schedule */}
-              <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
+              <div className="mb-3 flex items-center gap-2 text-sm text-gray-600">
                 <Calendar className="h-4 w-4" />
                 <span>次回出勤: {cast.nextSchedule}</span>
               </div>
 
               {/* Visit History */}
-              <div className="bg-gray-50 p-3 rounded-lg mb-4">
+              <div className="mb-4 rounded-lg bg-gray-50 p-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">利用回数</span>
                   <span className="font-semibold">{cast.visitCount}回</span>
                 </div>
                 {cast.lastVisited && (
-                  <div className="flex justify-between text-sm mt-1">
+                  <div className="mt-1 flex justify-between text-sm">
                     <span className="text-gray-600">最終利用</span>
                     <span className="font-semibold">
                       {cast.lastVisited.toLocaleDateString('ja-JP')}
@@ -127,9 +121,7 @@ export function FavoriteCasts({ store }: FavoriteCastsProps) {
               {/* Actions */}
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" className="flex-1" asChild>
-                  <Link href={`/${store.slug}/cast/${cast.id}`}>
-                    詳細を見る
-                  </Link>
+                  <Link href={`/${store.slug}/cast/${cast.id}`}>詳細を見る</Link>
                 </Button>
                 <Button size="sm" className="flex-1">
                   予約する
@@ -143,9 +135,9 @@ export function FavoriteCasts({ store }: FavoriteCastsProps) {
       {/* Empty State */}
       {favoriteCasts.length === 0 && (
         <Card>
-          <CardContent className="text-center py-12">
-            <Heart className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 mb-4">まだお気に入りのキャストがいません</p>
+          <CardContent className="py-12 text-center">
+            <Heart className="mx-auto mb-4 h-12 w-12 text-gray-300" />
+            <p className="mb-4 text-gray-500">まだお気に入りのキャストがいません</p>
             <Button asChild>
               <Link href={`/${store.slug}/cast`}>キャストを探す</Link>
             </Button>
@@ -157,11 +149,11 @@ export function FavoriteCasts({ store }: FavoriteCastsProps) {
       {favoriteCasts.length > 0 && (
         <Card>
           <CardContent className="p-6">
-            <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <h3 className="mb-4 flex items-center gap-2 font-semibold">
               <Star className="h-5 w-5 text-yellow-500" />
               おすすめのキャスト
             </h3>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="mb-4 text-sm text-gray-600">
               お気に入りキャストの出勤日に合わせて、似たタイプのキャストをご紹介します
             </p>
             <Button variant="outline" className="w-full">

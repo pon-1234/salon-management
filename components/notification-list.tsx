@@ -1,17 +1,13 @@
 import { X, Archive } from 'lucide-react'
-import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
 
 interface Notification {
   id: string
   storeName: string
-  type: "reservation" | "message" | "system" | "incoming_call"
+  type: 'reservation' | 'message' | 'system' | 'incoming_call'
   message: string
   details: {
     reservationDate?: string
@@ -21,7 +17,7 @@ interface Notification {
     customer: string
     phoneNumber?: string
     callDuration?: string
-    callStatus?: "answered" | "rejected" | "missed"
+    callStatus?: 'answered' | 'rejected' | 'missed'
   }
   read: boolean
 }
@@ -29,8 +25,8 @@ interface Notification {
 interface NotificationListProps {
   notifications: Notification[]
   onClose: () => void
-  onNotificationClick: (id: string) => void;
-  onViewDetails: (id: string) => void;
+  onNotificationClick: (id: string) => void
+  onViewDetails: (id: string) => void
   onArchive: (id: string) => void
 }
 
@@ -39,16 +35,16 @@ export function NotificationList({
   onClose,
   onNotificationClick,
   onViewDetails,
-  onArchive
+  onArchive,
 }: NotificationListProps) {
   return (
-    <div className="w-[400px] bg-white border rounded-lg overflow-hidden">
+    <div className="w-[400px] overflow-hidden rounded-lg border bg-white">
       <div className="flex items-center justify-between bg-emerald-600 p-4 text-white">
         <h2 className="text-lg font-semibold">お知らせ一覧</h2>
         <Button
           variant="ghost"
           size="icon"
-          className="hover:bg-emerald-700 text-white"
+          className="text-white hover:bg-emerald-700"
           onClick={onClose}
         >
           <X className="h-5 w-5" />
@@ -59,18 +55,18 @@ export function NotificationList({
           <div
             key={notification.id}
             className={cn(
-              "border-b p-4 hover:bg-gray-50 cursor-pointer transition-colors",
-              !notification.read && "bg-emerald-50"
+              'cursor-pointer border-b p-4 transition-colors hover:bg-gray-50',
+              !notification.read && 'bg-emerald-50'
             )}
             onClick={() => onNotificationClick(notification.id)}
           >
             <div className="rounded-lg">
-              <div className="text-sm font-medium text-emerald-600 mb-1">
+              <div className="mb-1 text-sm font-medium text-emerald-600">
                 {notification.storeName}
               </div>
-              <div className="font-medium mb-2">{notification.message}</div>
+              <div className="mb-2 font-medium">{notification.message}</div>
               <div className="space-y-1 text-sm text-gray-600">
-                {notification.type === "incoming_call" ? (
+                {notification.type === 'incoming_call' ? (
                   <>
                     {notification.details.phoneNumber && (
                       <div className="flex justify-between">
@@ -85,13 +81,20 @@ export function NotificationList({
                     {notification.details.callStatus && (
                       <div className="flex justify-between">
                         <span>対応状況：</span>
-                        <span className={
-                          notification.details.callStatus === "answered" ? "text-green-600" :
-                          notification.details.callStatus === "rejected" ? "text-red-600" :
-                          "text-yellow-600"
-                        }>
-                          {notification.details.callStatus === "answered" ? "応答済み" :
-                           notification.details.callStatus === "rejected" ? "拒否" : "不在着信"}
+                        <span
+                          className={
+                            notification.details.callStatus === 'answered'
+                              ? 'text-green-600'
+                              : notification.details.callStatus === 'rejected'
+                                ? 'text-red-600'
+                                : 'text-yellow-600'
+                          }
+                        >
+                          {notification.details.callStatus === 'answered'
+                            ? '応答済み'
+                            : notification.details.callStatus === 'rejected'
+                              ? '拒否'
+                              : '不在着信'}
                         </span>
                       </div>
                     )}
@@ -111,7 +114,10 @@ export function NotificationList({
                     {notification.details.reservationDate && (
                       <div className="flex justify-between">
                         <span>ご予約日時：</span>
-                        <span>{notification.details.reservationDate} {notification.details.reservationTime}</span>
+                        <span>
+                          {notification.details.reservationDate}{' '}
+                          {notification.details.reservationTime}
+                        </span>
                       </div>
                     )}
                     <div className="flex justify-between">
@@ -131,24 +137,24 @@ export function NotificationList({
                   </>
                 )}
               </div>
-              <div className="flex justify-end mt-2">
+              <div className="mt-2 flex justify-end">
                 <Button
                   variant="ghost"
                   size="sm"
                   className="text-gray-500 hover:text-gray-700"
                   onClick={(e) => {
-                    e.stopPropagation();
-                    onArchive(notification.id);
+                    e.stopPropagation()
+                    onArchive(notification.id)
                   }}
                 >
-                  <Archive className="w-4 h-4" />
+                  <Archive className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="link"
-                  className="text-emerald-600 hover:text-emerald-700 p-0 h-auto"
+                  className="h-auto p-0 text-emerald-600 hover:text-emerald-700"
                   onClick={(e) => {
-                    e.stopPropagation();
-                    onViewDetails(notification.id);
+                    e.stopPropagation()
+                    onViewDetails(notification.id)
                   }}
                 >
                   詳細を見る →

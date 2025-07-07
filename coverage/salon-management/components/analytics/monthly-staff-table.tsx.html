@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/126</span>
+                <span class='fraction'>0/124</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/126</span>
+                <span class='fraction'>0/124</span>
             </div>
         
             
@@ -369,8 +369,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -383,9 +382,10 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -393,8 +393,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
+} from '@/components/ui/table'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 &nbsp;
 interface MonthlyStaffTableProps {
   year: number
@@ -420,54 +420,54 @@ interface StaffPerformance {
     // ダミーデータ（実際にはuseCasesから取得）
 <span class="cstat-no" title="statement not covered" >    const dummyData: StaffPerformance[] = [</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "1",</span>
-<span class="cstat-no" title="statement not covered" >        name: "田中 美咲",</span>
+<span class="cstat-no" title="statement not covered" >        id: '1',</span>
+<span class="cstat-no" title="statement not covered" >        name: '田中 美咲',</span>
 <span class="cstat-no" title="statement not covered" >        workDays: 22,</span>
 <span class="cstat-no" title="statement not covered" >        customerCount: 156,</span>
 <span class="cstat-no" title="statement not covered" >        totalSales: 1523400,</span>
 <span class="cstat-no" title="statement not covered" >        averagePerCustomer: 9765,</span>
 <span class="cstat-no" title="statement not covered" >        newCustomers: 28,</span>
-<span class="cstat-no" title="statement not covered" >        repeaters: 128</span>
+<span class="cstat-no" title="statement not covered" >        repeaters: 128,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "2",</span>
-<span class="cstat-no" title="statement not covered" >        name: "佐藤 健太",</span>
+<span class="cstat-no" title="statement not covered" >        id: '2',</span>
+<span class="cstat-no" title="statement not covered" >        name: '佐藤 健太',</span>
 <span class="cstat-no" title="statement not covered" >        workDays: 20,</span>
 <span class="cstat-no" title="statement not covered" >        customerCount: 142,</span>
 <span class="cstat-no" title="statement not covered" >        totalSales: 1356200,</span>
 <span class="cstat-no" title="statement not covered" >        averagePerCustomer: 9550,</span>
 <span class="cstat-no" title="statement not covered" >        newCustomers: 21,</span>
-<span class="cstat-no" title="statement not covered" >        repeaters: 121</span>
+<span class="cstat-no" title="statement not covered" >        repeaters: 121,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "3",</span>
-<span class="cstat-no" title="statement not covered" >        name: "山田 花子",</span>
+<span class="cstat-no" title="statement not covered" >        id: '3',</span>
+<span class="cstat-no" title="statement not covered" >        name: '山田 花子',</span>
 <span class="cstat-no" title="statement not covered" >        workDays: 24,</span>
 <span class="cstat-no" title="statement not covered" >        customerCount: 189,</span>
 <span class="cstat-no" title="statement not covered" >        totalSales: 1892300,</span>
 <span class="cstat-no" title="statement not covered" >        averagePerCustomer: 10012,</span>
 <span class="cstat-no" title="statement not covered" >        newCustomers: 35,</span>
-<span class="cstat-no" title="statement not covered" >        repeaters: 154</span>
+<span class="cstat-no" title="statement not covered" >        repeaters: 154,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "4",</span>
-<span class="cstat-no" title="statement not covered" >        name: "鈴木 太郎",</span>
+<span class="cstat-no" title="statement not covered" >        id: '4',</span>
+<span class="cstat-no" title="statement not covered" >        name: '鈴木 太郎',</span>
 <span class="cstat-no" title="statement not covered" >        workDays: 21,</span>
 <span class="cstat-no" title="statement not covered" >        customerCount: 134,</span>
 <span class="cstat-no" title="statement not covered" >        totalSales: 1234500,</span>
 <span class="cstat-no" title="statement not covered" >        averagePerCustomer: 9213,</span>
 <span class="cstat-no" title="statement not covered" >        newCustomers: 19,</span>
-<span class="cstat-no" title="statement not covered" >        repeaters: 115</span>
+<span class="cstat-no" title="statement not covered" >        repeaters: 115,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "5",</span>
-<span class="cstat-no" title="statement not covered" >        name: "高橋 さくら",</span>
+<span class="cstat-no" title="statement not covered" >        id: '5',</span>
+<span class="cstat-no" title="statement not covered" >        name: '高橋 さくら',</span>
 <span class="cstat-no" title="statement not covered" >        workDays: 23,</span>
 <span class="cstat-no" title="statement not covered" >        customerCount: 167,</span>
 <span class="cstat-no" title="statement not covered" >        totalSales: 1678900,</span>
 <span class="cstat-no" title="statement not covered" >        averagePerCustomer: 10053,</span>
 <span class="cstat-no" title="statement not covered" >        newCustomers: 31,</span>
-<span class="cstat-no" title="statement not covered" >        repeaters: 136</span>
+<span class="cstat-no" title="statement not covered" >        repeaters: 136,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >    ]</span>
 <span class="cstat-no" title="statement not covered" >    setData(dummyData)</span>
@@ -512,9 +512,7 @@ interface StaffPerformance {
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell className="font-medium"&gt;{staff.name}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;{staff.workDays}日&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;{staff.customerCount}人&lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                ¥{staff.totalSales.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;¥{staff.totalSales.toLocaleString()}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                ¥{staff.averagePerCustomer.toLocaleString()}</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
@@ -525,15 +523,16 @@ interface StaffPerformance {
 <span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TableRow&gt;</span>
 <span class="cstat-no" title="statement not covered" >          ))}</span>
-<span class="cstat-no" title="statement not covered" >          &lt;TableRow className="font-bold bg-gray-50"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;TableRow className="bg-gray-50 font-bold"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell&gt;合計&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;{totals.workDays}日&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;{totals.customerCount}人&lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;¥{totals.totalSales.toLocaleString()}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              ¥{totals.totalSales.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              ¥{totals.customerCount &gt; 0 ? Math.round(totals.totalSales / totals.customerCount).toLocaleString() : 0}</span>
+              ¥
+<span class="cstat-no" title="statement not covered" >              {totals.customerCount &gt; 0</span>
+<span class="cstat-no" title="statement not covered" >                ? Math.round(totals.totalSales / totals.customerCount).toLocaleString()</span>
+<span class="cstat-no" title="statement not covered" >                : 0}</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;{totals.newCustomers}人&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;{totals.repeaters}人&lt;/TableCell&gt;</span>
@@ -543,14 +542,15 @@ interface StaffPerformance {
 <span class="cstat-no" title="statement not covered" >      &lt;/Table&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/10</span>
+                <span class='fraction'>0/15</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/10</span>
+                <span class='fraction'>0/15</span>
             </div>
         
             
@@ -80,7 +80,12 @@
 <a name='L15'></a><a href='#L15'>15</a>
 <a name='L16'></a><a href='#L16'>16</a>
 <a name='L17'></a><a href='#L17'>17</a>
-<a name='L18'></a><a href='#L18'>18</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -93,25 +98,35 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { WeeklySchedule, ScheduleFilters } from './types';<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
-import { generateMockWeeklySchedule } from './data';
-import { startOfWeek } from 'date-fns';
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { WeeklySchedule, ScheduleFilters } from './types'<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
+import { generateMockWeeklySchedule } from './data'
+import { startOfWeek } from 'date-fns'
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export class CastScheduleUseCases {</span>
 <span class="cstat-no" title="statement not covered" >  async getWeeklySchedule(filters: ScheduleFilters): Promise&lt;WeeklySchedule&gt; {</span>
     // In a real application, this would fetch from an API
     // Ensure we always start from Monday
-<span class="cstat-no" title="statement not covered" >    const weekStart = startOfWeek(filters.date, { weekStartsOn: 1 });</span>
-<span class="cstat-no" title="statement not covered" >    return generateMockWeeklySchedule(weekStart);</span>
+<span class="cstat-no" title="statement not covered" >    const weekStart = startOfWeek(filters.date, { weekStartsOn: 1 })</span>
+<span class="cstat-no" title="statement not covered" >    return generateMockWeeklySchedule(weekStart)</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  async updateSchedule(castId: string, date: string, status: string, time?: { start: string; end: string }): Promise&lt;void&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  async updateSchedule(</span>
+<span class="cstat-no" title="statement not covered" >    castId: string,</span>
+<span class="cstat-no" title="statement not covered" >    date: string,</span>
+<span class="cstat-no" title="statement not covered" >    status: string,</span>
+<span class="cstat-no" title="statement not covered" >    time?: { start: string; end: string }</span>
+<span class="cstat-no" title="statement not covered" >  ): Promise&lt;void&gt; {</span>
     // In a real application, this would update via an API
-<span class="cstat-no" title="statement not covered" >    console.log('Updating schedule:', { castId, date, status, time });</span>
+<span class="cstat-no" title="statement not covered" >    console.log('Updating schedule:', { castId, date, status, time })</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;</pre></td></tr></table></pre>
@@ -121,7 +136,7 @@ import { startOfWeek } from 'date-fns';
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

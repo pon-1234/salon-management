@@ -1,25 +1,25 @@
-"use client"
+'use client'
 
-import React, { useState } from "react"
-import { Cast } from "@/lib/cast/types"
-import { options } from "@/lib/course-option/data"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import React, { useState } from 'react'
+import { Cast } from '@/lib/cast/types'
+import { options } from '@/lib/course-option/data'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Plus } from "lucide-react"
-import { ImageUpload } from "@/components/ui/image-upload"
+} from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Plus } from 'lucide-react'
+import { ImageUpload } from '@/components/ui/image-upload'
 
 interface CastFormProps {
   cast?: Cast | null
@@ -28,33 +28,32 @@ interface CastFormProps {
 
 export function CastForm({ cast, onSubmit }: CastFormProps) {
   const [formData, setFormData] = useState({
-    name: cast?.name || "",
-    nameKana: cast?.nameKana || "",
-    age: cast?.age || "",
-    height: cast?.height || "",
-    bust: cast?.bust || "",
-    waist: cast?.waist || "",
-    hip: cast?.hip || "",
-    type: cast?.type || "カワイイ系",
-    image: cast?.image || "",
+    name: cast?.name || '',
+    nameKana: cast?.nameKana || '',
+    age: cast?.age || '',
+    height: cast?.height || '',
+    bust: cast?.bust || '',
+    waist: cast?.waist || '',
+    hip: cast?.hip || '',
+    type: cast?.type || 'カワイイ系',
+    image: cast?.image || '',
     images: cast?.images || [],
-    description: cast?.description || "",
+    description: cast?.description || '',
     netReservation: cast?.netReservation ?? true,
-    specialDesignationFee: cast?.specialDesignationFee || "",
-    regularDesignationFee: cast?.regularDesignationFee || "",
+    specialDesignationFee: cast?.specialDesignationFee || '',
+    regularDesignationFee: cast?.regularDesignationFee || '',
     panelDesignationRank: cast?.panelDesignationRank || 0,
     regularDesignationRank: cast?.regularDesignationRank || 0,
-    workStatus: cast?.workStatus || "出勤",
+    workStatus: cast?.workStatus || '出勤',
     availableOptions: cast?.availableOptions || [],
-    phone: "",
-    email: "",
-    password: "",
-    birthDate: "",
+    phone: '',
+    email: '',
+    password: '',
+    birthDate: '',
     registrationDate: new Date().toISOString().split('T')[0],
-    blogId: "",
-    twitterId: "",
+    blogId: '',
+    twitterId: '',
   })
-
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -65,24 +64,24 @@ export function CastForm({ cast, onSubmit }: CastFormProps) {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
   const handleSwitchChange = (name: string, checked: boolean) => {
-    setFormData(prev => ({ ...prev, [name]: checked }))
+    setFormData((prev) => ({ ...prev, [name]: checked }))
   }
 
   const handleOptionChange = (optionId: string, checked: boolean) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      availableOptions: checked 
+      availableOptions: checked
         ? [...prev.availableOptions, optionId]
-        : prev.availableOptions.filter(id => id !== optionId)
+        : prev.availableOptions.filter((id) => id !== optionId),
     }))
   }
 
   const handleImageChange = (index: number, url: string) => {
-    setFormData(prev => {
+    setFormData((prev) => {
       const newImages = [...prev.images]
       newImages[index] = url
       return { ...prev, images: newImages }
@@ -91,20 +90,19 @@ export function CastForm({ cast, onSubmit }: CastFormProps) {
 
   const addImage = () => {
     if (formData.images.length < 10) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        images: [...prev.images, ""]
+        images: [...prev.images, ''],
       }))
     }
   }
 
   const removeImage = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      images: prev.images.filter((_, i) => i !== index)
+      images: prev.images.filter((_, i) => i !== index),
     }))
   }
-
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -161,12 +159,7 @@ export function CastForm({ cast, onSubmit }: CastFormProps) {
 
           <div className="space-y-2">
             <Label htmlFor="blogId">ブログウィジェット</Label>
-            <Input
-              id="blogId"
-              name="blogId"
-              value={formData.blogId}
-              onChange={handleInputChange}
-            />
+            <Input id="blogId" name="blogId" value={formData.blogId} onChange={handleInputChange} />
           </div>
 
           <div className="space-y-2">
@@ -217,8 +210,6 @@ export function CastForm({ cast, onSubmit }: CastFormProps) {
         </CardContent>
       </Card>
 
-
-
       {/* 予約設定 */}
       <Card>
         <CardHeader>
@@ -230,7 +221,7 @@ export function CastForm({ cast, onSubmit }: CastFormProps) {
             <Switch
               id="netReservation"
               checked={formData.netReservation}
-              onCheckedChange={(checked) => handleSwitchChange("netReservation", checked)}
+              onCheckedChange={(checked) => handleSwitchChange('netReservation', checked)}
             />
           </div>
 
@@ -301,15 +292,10 @@ export function CastForm({ cast, onSubmit }: CastFormProps) {
               />
             ))}
           </div>
-          
+
           {formData.images.length < 10 && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={addImage}
-              className="w-full"
-            >
-              <Plus className="h-4 w-4 mr-2" />
+            <Button type="button" variant="outline" onClick={addImage} className="w-full">
+              <Plus className="mr-2 h-4 w-4" />
               画像を追加 ({formData.images.length}/10)
             </Button>
           )}
@@ -333,7 +319,7 @@ export function CastForm({ cast, onSubmit }: CastFormProps) {
                 <Label htmlFor={option.id} className="text-sm">
                   {option.name}
                   <span className="ml-2 text-gray-500">
-                    {option.price === 0 ? "0円" : `${option.price.toLocaleString()}円`}
+                    {option.price === 0 ? '0円' : `${option.price.toLocaleString()}円`}
                   </span>
                 </Label>
               </div>

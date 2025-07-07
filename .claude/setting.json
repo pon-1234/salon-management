@@ -1,85 +1,87 @@
 {
-    "permissions": {
-      "allow": [
-        "Bash(pnpm install:*)",
-        "Bash(pnpm dev:*)",
-        "Bash(pnpm build:*)",
-        "Bash(pnpm lint:*)",
-        "Bash(pnpm test:*)",
-        "Bash(pnpm vitest:*)",
-        "Bash(pnpm prettier:*)",
-        "Bash(npx tsc:*)",
-        "Bash(npx coverage-check:*)",
-        "Bash(ls:*)",
-        "Bash(grep:*)",
-        "Bash(rg:*)",
-        "Bash(find:*)",
-        "Bash(cat:*)",
-        "Write",
-        "Edit",
-        "MultiEdit",
-        "Read",
-        "Glob"
-      ],
-      "deny": [
-        "Bash(git push:*)",
-        "Bash(git commit:*)",
-        "Bash(rm:*)",
-        "Bash(mv:*)"
-      ]
-    },
-    "enableAllProjectMcpServers": false,
-    "hooks": {
-      "PostToolUse": [
-        {
-          "matcher": "Write|Edit.*\\.(spec|test)\\.(ts|tsx)$",
-          "hooks": [
-            {
-              "type": "command",
-              "command": "pnpm vitest run --related '%(file_path)s'",
-              "blocking": false,
-              "timeout": 30
-            }
-          ]
-        },
-        {
-          "matcher": "Write|Edit.*\\.(ts|tsx)$",
-          "hooks": [
-            {
-              "type": "command",
-              "command": "pnpm prettier --write '%(file_path)s'",
-              "blocking": false
-            },
-            {
-              "type": "command",
-              "command": "pnpm eslint --fix '%(file_path)s'",
-              "blocking": false
-            }
-          ]
-        }
-      ],
-      "Stop": [
-        {
-          "matcher": "",
-          "hooks": [
-            {
-              "type": "command",
-              "command": "echo 'Running final checks...' && pnpm lint && pnpm typecheck && pnpm vitest run",
-              "blocking": true,
-              "timeout": 120
-            },
-            {
-              "type": "command",
-              "command": "pnpm vitest run --coverage",
-              "blocking": false
-            },
-            {
-              "type": "command",
-              "command": "npx coverage-check --statements 5 --branches 5 --functions 5 --lines 5",
-              "blocking": true
-            }
-          ]
-        }
-      ]
-    }
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm vitest:*)",
+      "Bash(pnpm prettier:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx coverage-check:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(find:*)",
+      "Bash(cat:*)",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Read",
+      "Glob"
+    ],
+    "deny": [
+      "Bash(git push:*)",
+      "Bash(git commit:*)",
+      "Bash(rm:*)",
+      "Bash(mv:*)"
+    ]
+  },
+  "enableAllProjectMcpServers": false,
+  "hooks": {
+    "PostToolUse": [
+      {
+        /*  Write / Edit で .spec.ts, .test.ts などが対象。*/
+        "matcher": "^(Write|Edit)\\s+.*\\.(spec|test)\\.(ts|tsx)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm vitest run --related '%(file_path)s'",
+            "blocking": false,
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        /*  Write / Edit で .ts, .tsx が対象（テスト系は上でマッチ済み）。*/
+        "matcher": "^(Write|Edit)\\s+.*\\.(ts|tsx)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm prettier --write '%(file_path)s'",
+            "blocking": false
+          },
+          {
+            "type": "command",
+            "command": "pnpm eslint --fix '%(file_path)s'",
+            "blocking": false
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Running final checks...' && pnpm lint && pnpm typecheck && pnpm vitest run",
+            "blocking": true,
+            "timeout": 120
+          },
+          {
+            "type": "command",
+            "command": "pnpm vitest run --coverage",
+            "blocking": false
+          },
+          {
+            "type": "command",
+            "command": "npx coverage-check --statements 5 --branches 5 --functions 5 --lines 5",
+            "blocking": true
+          }
+        ]
+      }
+    ]
   }
+}

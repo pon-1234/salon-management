@@ -315,23 +315,23 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Customer, type CustomerUsageRecord, type CustomerPointHistory } from "./types"
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Customer, type CustomerUsageRecord, type CustomerPointHistory } from './types'
 &nbsp;
 export type { Customer }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export const customers: Customer[] = [</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    id: "1",</span>
-<span class="cstat-no" title="statement not covered" >    name: "ダミー",</span>
-<span class="cstat-no" title="statement not covered" >    nameKana: "ダミー",</span>
-<span class="cstat-no" title="statement not covered" >    phone: "09012345678",</span>
-<span class="cstat-no" title="statement not covered" >    email: "dummy@example.com",</span>
+<span class="cstat-no" title="statement not covered" >    id: '1',</span>
+<span class="cstat-no" title="statement not covered" >    name: 'ダミー',</span>
+<span class="cstat-no" title="statement not covered" >    nameKana: 'ダミー',</span>
+<span class="cstat-no" title="statement not covered" >    phone: '09012345678',</span>
+<span class="cstat-no" title="statement not covered" >    email: 'dummy@example.com',</span>
 <span class="cstat-no" title="statement not covered" >    birthDate: new Date(1990, 0, 1),</span>
-<span class="cstat-no" title="statement not covered" >    memberType: "regular",</span>
+<span class="cstat-no" title="statement not covered" >    memberType: 'regular',</span>
 <span class="cstat-no" title="statement not covered" >    smsEnabled: true,</span>
 <span class="cstat-no" title="statement not covered" >    points: 4900,</span>
 <span class="cstat-no" title="statement not covered" >    lastVisitDate: new Date(2023, 6, 7),</span>
-<span class="cstat-no" title="statement not covered" >    notes: "",</span>
+<span class="cstat-no" title="statement not covered" >    notes: '',</span>
 <span class="cstat-no" title="statement not covered" >    createdAt: new Date(2023, 5, 1),</span>
 <span class="cstat-no" title="statement not covered" >    updatedAt: new Date(2023, 6, 7),</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
@@ -343,28 +343,28 @@ export type { Customer }
 <span class="cstat-no" title="statement not covered" >    setTimeout(() =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      const mockHistory: CustomerUsageRecord[] = [</span>
 <span class="cstat-no" title="statement not covered" >        {</span>
-<span class="cstat-no" title="statement not covered" >          id: "1",</span>
+<span class="cstat-no" title="statement not covered" >          id: '1',</span>
 <span class="cstat-no" title="statement not covered" >          date: new Date(2023, 11, 15),</span>
-<span class="cstat-no" title="statement not covered" >          serviceName: "60分コース",</span>
-<span class="cstat-no" title="statement not covered" >          staffName: "みるく",</span>
+<span class="cstat-no" title="statement not covered" >          serviceName: '60分コース',</span>
+<span class="cstat-no" title="statement not covered" >          staffName: 'みるく',</span>
 <span class="cstat-no" title="statement not covered" >          amount: 13000,</span>
-<span class="cstat-no" title="statement not covered" >          status: "completed",</span>
+<span class="cstat-no" title="statement not covered" >          status: 'completed',</span>
 <span class="cstat-no" title="statement not covered" >        },</span>
 <span class="cstat-no" title="statement not covered" >        {</span>
-<span class="cstat-no" title="statement not covered" >          id: "2",</span>
+<span class="cstat-no" title="statement not covered" >          id: '2',</span>
 <span class="cstat-no" title="statement not covered" >          date: new Date(2023, 11, 1),</span>
-<span class="cstat-no" title="statement not covered" >          serviceName: "90分コース",</span>
-<span class="cstat-no" title="statement not covered" >          staffName: "さくら",</span>
+<span class="cstat-no" title="statement not covered" >          serviceName: '90分コース',</span>
+<span class="cstat-no" title="statement not covered" >          staffName: 'さくら',</span>
 <span class="cstat-no" title="statement not covered" >          amount: 18000,</span>
-<span class="cstat-no" title="statement not covered" >          status: "completed",</span>
+<span class="cstat-no" title="statement not covered" >          status: 'completed',</span>
 <span class="cstat-no" title="statement not covered" >        },</span>
 <span class="cstat-no" title="statement not covered" >        {</span>
-<span class="cstat-no" title="statement not covered" >          id: "3",</span>
+<span class="cstat-no" title="statement not covered" >          id: '3',</span>
 <span class="cstat-no" title="statement not covered" >          date: new Date(2023, 10, 20),</span>
-<span class="cstat-no" title="statement not covered" >          serviceName: "120分コース",</span>
-<span class="cstat-no" title="statement not covered" >          staffName: "れい",</span>
+<span class="cstat-no" title="statement not covered" >          serviceName: '120分コース',</span>
+<span class="cstat-no" title="statement not covered" >          staffName: 'れい',</span>
 <span class="cstat-no" title="statement not covered" >          amount: 22000,</span>
-<span class="cstat-no" title="statement not covered" >          status: "cancelled",</span>
+<span class="cstat-no" title="statement not covered" >          status: 'cancelled',</span>
 <span class="cstat-no" title="statement not covered" >        },</span>
 <span class="cstat-no" title="statement not covered" >      ]</span>
 <span class="cstat-no" title="statement not covered" >      resolve(mockHistory)</span>
@@ -378,62 +378,62 @@ export type { Customer }
 <span class="cstat-no" title="statement not covered" >    setTimeout(() =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      const mockPointHistory: CustomerPointHistory[] = [</span>
 <span class="cstat-no" title="statement not covered" >        {</span>
-<span class="cstat-no" title="statement not covered" >          id: "1",</span>
+<span class="cstat-no" title="statement not covered" >          id: '1',</span>
 <span class="cstat-no" title="statement not covered" >          date: new Date(2023, 11, 15),</span>
-<span class="cstat-no" title="statement not covered" >          type: "earned",</span>
+<span class="cstat-no" title="statement not covered" >          type: 'earned',</span>
 <span class="cstat-no" title="statement not covered" >          amount: 130,</span>
-<span class="cstat-no" title="statement not covered" >          description: "60分コース利用",</span>
-<span class="cstat-no" title="statement not covered" >          relatedService: "60分コース",</span>
+<span class="cstat-no" title="statement not covered" >          description: '60分コース利用',</span>
+<span class="cstat-no" title="statement not covered" >          relatedService: '60分コース',</span>
 <span class="cstat-no" title="statement not covered" >          balance: 4900,</span>
 <span class="cstat-no" title="statement not covered" >        },</span>
 <span class="cstat-no" title="statement not covered" >        {</span>
-<span class="cstat-no" title="statement not covered" >          id: "2",</span>
+<span class="cstat-no" title="statement not covered" >          id: '2',</span>
 <span class="cstat-no" title="statement not covered" >          date: new Date(2023, 11, 10),</span>
-<span class="cstat-no" title="statement not covered" >          type: "used",</span>
+<span class="cstat-no" title="statement not covered" >          type: 'used',</span>
 <span class="cstat-no" title="statement not covered" >          amount: -200,</span>
-<span class="cstat-no" title="statement not covered" >          description: "ポイント利用",</span>
+<span class="cstat-no" title="statement not covered" >          description: 'ポイント利用',</span>
 <span class="cstat-no" title="statement not covered" >          balance: 4770,</span>
 <span class="cstat-no" title="statement not covered" >        },</span>
 <span class="cstat-no" title="statement not covered" >        {</span>
-<span class="cstat-no" title="statement not covered" >          id: "3",</span>
+<span class="cstat-no" title="statement not covered" >          id: '3',</span>
 <span class="cstat-no" title="statement not covered" >          date: new Date(2023, 11, 1),</span>
-<span class="cstat-no" title="statement not covered" >          type: "earned",</span>
+<span class="cstat-no" title="statement not covered" >          type: 'earned',</span>
 <span class="cstat-no" title="statement not covered" >          amount: 180,</span>
-<span class="cstat-no" title="statement not covered" >          description: "90分コース利用",</span>
-<span class="cstat-no" title="statement not covered" >          relatedService: "90分コース",</span>
+<span class="cstat-no" title="statement not covered" >          description: '90分コース利用',</span>
+<span class="cstat-no" title="statement not covered" >          relatedService: '90分コース',</span>
 <span class="cstat-no" title="statement not covered" >          balance: 4970,</span>
 <span class="cstat-no" title="statement not covered" >        },</span>
 <span class="cstat-no" title="statement not covered" >        {</span>
-<span class="cstat-no" title="statement not covered" >          id: "4",</span>
+<span class="cstat-no" title="statement not covered" >          id: '4',</span>
 <span class="cstat-no" title="statement not covered" >          date: new Date(2023, 10, 25),</span>
-<span class="cstat-no" title="statement not covered" >          type: "adjusted",</span>
+<span class="cstat-no" title="statement not covered" >          type: 'adjusted',</span>
 <span class="cstat-no" title="statement not covered" >          amount: 100,</span>
-<span class="cstat-no" title="statement not covered" >          description: "サービス調整",</span>
+<span class="cstat-no" title="statement not covered" >          description: 'サービス調整',</span>
 <span class="cstat-no" title="statement not covered" >          balance: 4790,</span>
 <span class="cstat-no" title="statement not covered" >        },</span>
 <span class="cstat-no" title="statement not covered" >        {</span>
-<span class="cstat-no" title="statement not covered" >          id: "5",</span>
+<span class="cstat-no" title="statement not covered" >          id: '5',</span>
 <span class="cstat-no" title="statement not covered" >          date: new Date(2023, 10, 20),</span>
-<span class="cstat-no" title="statement not covered" >          type: "used",</span>
+<span class="cstat-no" title="statement not covered" >          type: 'used',</span>
 <span class="cstat-no" title="statement not covered" >          amount: -500,</span>
-<span class="cstat-no" title="statement not covered" >          description: "ポイント利用（割引適用）",</span>
+<span class="cstat-no" title="statement not covered" >          description: 'ポイント利用（割引適用）',</span>
 <span class="cstat-no" title="statement not covered" >          balance: 4690,</span>
 <span class="cstat-no" title="statement not covered" >        },</span>
 <span class="cstat-no" title="statement not covered" >        {</span>
-<span class="cstat-no" title="statement not covered" >          id: "6",</span>
+<span class="cstat-no" title="statement not covered" >          id: '6',</span>
 <span class="cstat-no" title="statement not covered" >          date: new Date(2023, 10, 15),</span>
-<span class="cstat-no" title="statement not covered" >          type: "earned",</span>
+<span class="cstat-no" title="statement not covered" >          type: 'earned',</span>
 <span class="cstat-no" title="statement not covered" >          amount: 220,</span>
-<span class="cstat-no" title="statement not covered" >          description: "120分コース利用",</span>
-<span class="cstat-no" title="statement not covered" >          relatedService: "120分コース",</span>
+<span class="cstat-no" title="statement not covered" >          description: '120分コース利用',</span>
+<span class="cstat-no" title="statement not covered" >          relatedService: '120分コース',</span>
 <span class="cstat-no" title="statement not covered" >          balance: 5190,</span>
 <span class="cstat-no" title="statement not covered" >        },</span>
 <span class="cstat-no" title="statement not covered" >        {</span>
-<span class="cstat-no" title="statement not covered" >          id: "7",</span>
+<span class="cstat-no" title="statement not covered" >          id: '7',</span>
 <span class="cstat-no" title="statement not covered" >          date: new Date(2023, 9, 30),</span>
-<span class="cstat-no" title="statement not covered" >          type: "expired",</span>
+<span class="cstat-no" title="statement not covered" >          type: 'expired',</span>
 <span class="cstat-no" title="statement not covered" >          amount: -50,</span>
-<span class="cstat-no" title="statement not covered" >          description: "ポイント期限切れ",</span>
+<span class="cstat-no" title="statement not covered" >          description: 'ポイント期限切れ',</span>
 <span class="cstat-no" title="statement not covered" >          balance: 4970,</span>
 <span class="cstat-no" title="statement not covered" >        },</span>
 <span class="cstat-no" title="statement not covered" >      ]</span>
@@ -448,7 +448,7 @@ export type { Customer }
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

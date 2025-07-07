@@ -1,2 +1,2 @@
-export * from './useAsyncData';
-export * from './usePagination';
+export * from './useAsyncData'
+export * from './usePagination'

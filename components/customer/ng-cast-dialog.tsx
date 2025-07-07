@@ -1,13 +1,13 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
+import { useState, useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
@@ -15,14 +15,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from '@/components/ui/dialog'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from '@/components/ui/select'
 import {
   Form,
   FormControl,
@@ -30,13 +30,13 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Cast } from "@/lib/cast/types"
-import { NgCastEntry } from "@/lib/customer/types"
+} from '@/components/ui/form'
+import { Cast } from '@/lib/cast/types'
+import { NgCastEntry } from '@/lib/customer/types'
 
 const ngCastSchema = z.object({
-  castId: z.string().min(1, "キャストを選択してください"),
-  notes: z.string().max(500, "備考は500文字以内で入力してください").optional(),
+  castId: z.string().min(1, 'キャストを選択してください'),
+  notes: z.string().max(500, '備考は500文字以内で入力してください').optional(),
 })
 
 type NgCastFormData = z.infer<typeof ngCastSchema>
@@ -63,8 +63,8 @@ export function NgCastDialog({
   const form = useForm<NgCastFormData>({
     resolver: zodResolver(ngCastSchema),
     defaultValues: {
-      castId: editingNgCast?.castId || "",
-      notes: editingNgCast?.notes || "",
+      castId: editingNgCast?.castId || '',
+      notes: editingNgCast?.notes || '',
     },
   })
 
@@ -72,8 +72,8 @@ export function NgCastDialog({
   useEffect(() => {
     if (open) {
       form.reset({
-        castId: editingNgCast?.castId || "",
-        notes: editingNgCast?.notes || "",
+        castId: editingNgCast?.castId || '',
+        notes: editingNgCast?.notes || '',
       })
     }
   }, [open, editingNgCast, form])
@@ -84,7 +84,7 @@ export function NgCastDialog({
       notes: data.notes,
       addedDate: editingNgCast?.addedDate || new Date(),
     }
-    
+
     onSave(ngCastEntry)
     form.reset()
     onOpenChange(false)
@@ -96,8 +96,8 @@ export function NgCastDialog({
   }
 
   // Filter out casts that are already in NG list (except when editing the current one)
-  const selectableCasts = availableCasts.filter(cast => {
-    const isAlreadyNg = existingNgCasts.some(ng => ng.castId === cast.id)
+  const selectableCasts = availableCasts.filter((cast) => {
+    const isAlreadyNg = existingNgCasts.some((ng) => ng.castId === cast.id)
     const isCurrentlyEditing = editingNgCast?.castId === cast.id
     return !isAlreadyNg || isCurrentlyEditing
   })
@@ -106,14 +106,11 @@ export function NgCastDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>
-            {isEditing ? "NGキャスト編集" : "NGキャスト追加"}
-          </DialogTitle>
+          <DialogTitle>{isEditing ? 'NGキャスト編集' : 'NGキャスト追加'}</DialogTitle>
           <DialogDescription>
-            {isEditing 
-              ? "NGキャストの情報を編集します。" 
-              : "新しいNGキャストを追加します。備考には理由や詳細を記入できます。"
-            }
+            {isEditing
+              ? 'NGキャストの情報を編集します。'
+              : '新しいNGキャストを追加します。備考には理由や詳細を記入できます。'}
           </DialogDescription>
         </DialogHeader>
 
@@ -124,7 +121,9 @@ export function NgCastDialog({
               name="castId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>キャスト <span className="text-red-500">*</span></FormLabel>
+                  <FormLabel>
+                    キャスト <span className="text-red-500">*</span>
+                  </FormLabel>
                   <Select onValueChange={field.onChange} value={field.value} disabled={isEditing}>
                     <FormControl>
                       <SelectTrigger>
@@ -135,10 +134,11 @@ export function NgCastDialog({
                       {selectableCasts.map((cast) => (
                         <SelectItem key={cast.id} value={cast.id}>
                           <div className="flex items-center gap-3">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
-                              src={cast.image || "/placeholder.svg"}
+                              src={cast.image || '/placeholder.svg'}
                               alt={cast.name}
-                              className="w-8 aspect-[7/10] rounded object-cover"
+                              className="aspect-[7/10] w-8 rounded object-cover"
                             />
                             <div>
                               <div className="font-medium">{cast.name}</div>
@@ -167,9 +167,7 @@ export function NgCastDialog({
                       {...field}
                     />
                   </FormControl>
-                  <div className="text-sm text-gray-500">
-                    {field.value?.length || 0}/500文字
-                  </div>
+                  <div className="text-sm text-gray-500">{field.value?.length || 0}/500文字</div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -180,7 +178,7 @@ export function NgCastDialog({
                 キャンセル
               </Button>
               <Button type="submit" className="bg-red-600 hover:bg-red-700">
-                {isEditing ? "更新" : "追加"}
+                {isEditing ? '更新' : '追加'}
               </Button>
             </DialogFooter>
           </form>

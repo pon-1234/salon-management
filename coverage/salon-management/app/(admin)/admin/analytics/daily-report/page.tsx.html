@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/42</span>
+                <span class='fraction'>0/39</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/42</span>
+                <span class='fraction'>0/39</span>
             </div>
         
             
@@ -119,10 +119,7 @@
 <a name='L54'></a><a href='#L54'>54</a>
 <a name='L55'></a><a href='#L55'>55</a>
 <a name='L56'></a><a href='#L56'>56</a>
-<a name='L57'></a><a href='#L57'>57</a>
-<a name='L58'></a><a href='#L58'>58</a>
-<a name='L59'></a><a href='#L59'>59</a>
-<a name='L60'></a><a href='#L60'>60</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L57'></a><a href='#L57'>57</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -172,60 +169,54 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useState, useEffect } from 'react';
-import { DailyReport } from '@/lib/report/types';
-import { generateDailyReport } from '@/lib/report/usecases';
-import { DailyReportTable } from '@/components/analytics/daily-report-table';
-import { DatePicker } from '@/components/ui/date-picker';
-import { format } from 'date-fns';
-import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
+import { useState, useEffect } from 'react'
+import { DailyReport } from '@/lib/report/types'
+import { generateDailyReport } from '@/lib/report/usecases'
+import { DailyReportTable } from '@/components/analytics/daily-report-table'
+import { DatePicker } from '@/components/ui/date-picker'
+import { format } from 'date-fns'
+import { Button } from '@/components/ui/button'
+import { RefreshCw } from 'lucide-react'
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export default function DailyReportPage() {</span>
-<span class="cstat-no" title="statement not covered" >  const [selectedDate, setSelectedDate] = useState&lt;Date&gt;(new Date());</span>
-<span class="cstat-no" title="statement not covered" >  const [report, setReport] = useState&lt;DailyReport | null&gt;(null);</span>
-<span class="cstat-no" title="statement not covered" >  const [isLoading, setIsLoading] = useState(false);</span>
+<span class="cstat-no" title="statement not covered" >  const [selectedDate, setSelectedDate] = useState&lt;Date&gt;(new Date())</span>
+<span class="cstat-no" title="statement not covered" >  const [report, setReport] = useState&lt;DailyReport | null&gt;(null)</span>
+<span class="cstat-no" title="statement not covered" >  const [isLoading, setIsLoading] = useState(false)</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const fetchReport = async (date: Date) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    setIsLoading(true);</span>
+<span class="cstat-no" title="statement not covered" >    setIsLoading(true)</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
-<span class="cstat-no" title="statement not covered" >      const formattedDate = format(date, 'yyyy-MM-dd');</span>
-<span class="cstat-no" title="statement not covered" >      const dailyReport = await generateDailyReport(formattedDate);</span>
-<span class="cstat-no" title="statement not covered" >      setReport(dailyReport);</span>
+<span class="cstat-no" title="statement not covered" >      const formattedDate = format(date, 'yyyy-MM-dd')</span>
+<span class="cstat-no" title="statement not covered" >      const dailyReport = await generateDailyReport(formattedDate)</span>
+<span class="cstat-no" title="statement not covered" >      setReport(dailyReport)</span>
 <span class="cstat-no" title="statement not covered" >    } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Error fetching daily report:', error);</span>
+<span class="cstat-no" title="statement not covered" >      console.error('Error fetching daily report:', error)</span>
 <span class="cstat-no" title="statement not covered" >    } finally {</span>
-<span class="cstat-no" title="statement not covered" >      setIsLoading(false);</span>
+<span class="cstat-no" title="statement not covered" >      setIsLoading(false)</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
-<span class="cstat-no" title="statement not covered" >  };</span>
+<span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  useEffect(() =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    fetchReport(selectedDate);</span>
-<span class="cstat-no" title="statement not covered" >  }, [selectedDate]);</span>
+<span class="cstat-no" title="statement not covered" >    fetchReport(selectedDate)</span>
+<span class="cstat-no" title="statement not covered" >  }, [selectedDate])</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const handleRefresh = () =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    fetchReport(selectedDate);</span>
-<span class="cstat-no" title="statement not covered" >  };</span>
+<span class="cstat-no" title="statement not covered" >    fetchReport(selectedDate)</span>
+<span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;div className="container mx-auto py-8"&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;h1 className="text-2xl font-bold mb-4"&gt;日報&lt;/h1&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;div className="flex items-center gap-4 mb-6"&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;DatePicker</span>
-<span class="cstat-no" title="statement not covered" >          selected={selectedDate}</span>
-<span class="cstat-no" title="statement not covered" >          onSelect={(date) =&gt; date &amp;&amp; setSelectedDate(date)}</span>
-<span class="cstat-no" title="statement not covered" >        /&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;h1 className="mb-4 text-2xl font-bold"&gt;日報&lt;/h1&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;div className="mb-6 flex items-center gap-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;DatePicker selected={selectedDate} onSelect={(date) =&gt; date &amp;&amp; setSelectedDate(date)} /&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;Button onClick={handleRefresh} variant="outline" size="icon"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;RefreshCw className="h-4 w-4" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/Button&gt;</span>
@@ -238,7 +229,7 @@ import { RefreshCw } from 'lucide-react';
 <span class="cstat-no" title="statement not covered" >        &lt;p&gt;No data available&lt;/p&gt;</span>
       )}
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
-  );
+  )
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;</pre></td></tr></table></pre>
 
@@ -247,7 +238,7 @@ import { RefreshCw } from 'lucide-react';
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../../../../prettify.js"></script>
         <script>

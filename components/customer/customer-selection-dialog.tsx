@@ -1,7 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -27,7 +33,7 @@ export function CustomerSelectionDialog({ open, onOpenChange }: CustomerSelectio
 
   useEffect(() => {
     // 検索フィルタリング
-    const filtered = customerData.filter(customer => {
+    const filtered = customerData.filter((customer) => {
       const searchLower = searchTerm.toLowerCase()
       return (
         customer.name.toLowerCase().includes(searchLower) ||
@@ -61,14 +67,14 @@ export function CustomerSelectionDialog({ open, onOpenChange }: CustomerSelectio
     if (type === 'vip') {
       return (
         <Badge variant="default" className="bg-gradient-to-r from-yellow-400 to-yellow-600">
-          <Crown className="w-3 h-3 mr-1" />
+          <Crown className="mr-1 h-3 w-3" />
           VIP
         </Badge>
       )
     }
     return (
       <Badge variant="secondary">
-        <Star className="w-3 h-3 mr-1" />
+        <Star className="mr-1 h-3 w-3" />
         通常会員
       </Badge>
     )
@@ -76,7 +82,7 @@ export function CustomerSelectionDialog({ open, onOpenChange }: CustomerSelectio
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[80vh]">
+      <DialogContent className="max-h-[80vh] max-w-3xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">顧客を選択</DialogTitle>
           <DialogDescription>
@@ -87,7 +93,7 @@ export function CustomerSelectionDialog({ open, onOpenChange }: CustomerSelectio
         <div className="space-y-4">
           {/* 検索バー */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
             <Input
               type="text"
               placeholder="名前、電話番号、メールアドレス、会員番号で検索..."
@@ -98,11 +104,7 @@ export function CustomerSelectionDialog({ open, onOpenChange }: CustomerSelectio
           </div>
 
           {/* 新規顧客登録ボタン */}
-          <Button
-            onClick={handleNewCustomer}
-            variant="outline"
-            className="w-full justify-start"
-          >
+          <Button onClick={handleNewCustomer} variant="outline" className="w-full justify-start">
             <UserPlus className="mr-2 h-4 w-4" />
             新規顧客を登録
           </Button>
@@ -115,22 +117,22 @@ export function CustomerSelectionDialog({ open, onOpenChange }: CustomerSelectio
                   <Card
                     key={customer.id}
                     className={cn(
-                      "p-4 cursor-pointer transition-all hover:shadow-md",
-                      selectedCustomer?.id === customer.id && "ring-2 ring-purple-600 bg-purple-50"
+                      'cursor-pointer p-4 transition-all hover:shadow-md',
+                      selectedCustomer?.id === customer.id && 'bg-purple-50 ring-2 ring-purple-600'
                     )}
                     onClick={() => handleCustomerSelect(customer)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-semibold">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-purple-400 to-pink-400 font-semibold text-white">
                           {customer.name.charAt(0)}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-lg">{customer.name}</h3>
+                            <h3 className="text-lg font-semibold">{customer.name}</h3>
                             {getMemberBadge(customer.memberType)}
                           </div>
-                          <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                          <div className="mt-1 flex items-center gap-4 text-sm text-gray-600">
                             <span className="flex items-center gap-1">
                               <Phone className="h-3 w-3" />
                               {customer.phone}
@@ -140,7 +142,7 @@ export function CustomerSelectionDialog({ open, onOpenChange }: CustomerSelectio
                               {customer.email}
                             </span>
                           </div>
-                          <div className="text-sm text-gray-500 mt-1">
+                          <div className="mt-1 text-sm text-gray-500">
                             会員番号: {customer.id} | ポイント: {customer.points}pt
                           </div>
                         </div>
@@ -152,8 +154,8 @@ export function CustomerSelectionDialog({ open, onOpenChange }: CustomerSelectio
                   </Card>
                 ))
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <User className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <div className="py-8 text-center text-gray-500">
+                  <User className="mx-auto mb-4 h-12 w-12 text-gray-300" />
                   <p>検索条件に一致する顧客が見つかりません</p>
                 </div>
               )}
@@ -161,11 +163,8 @@ export function CustomerSelectionDialog({ open, onOpenChange }: CustomerSelectio
           </ScrollArea>
 
           {/* アクションボタン */}
-          <div className="flex justify-between items-center pt-4 border-t">
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
+          <div className="flex items-center justify-between border-t pt-4">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
               キャンセル
             </Button>
             <Button

@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import { format } from "date-fns";
-import { ja } from "date-fns/locale";
-import Image from "next/image";
-import { Badge } from "@/components/ui/badge";
+import { format } from 'date-fns'
+import { ja } from 'date-fns/locale'
+import Image from 'next/image'
+import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableBody,
@@ -11,29 +11,28 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { MoreHorizontal } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import { ReservationDialog } from "./reservation-dialog";
-import { ReservationData } from "@/lib/types/reservation";
-
+} from '@/components/ui/table'
+import { MoreHorizontal } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { useState } from 'react'
+import { ReservationDialog } from './reservation-dialog'
+import { ReservationData } from '@/lib/types/reservation'
 
 interface ReservationTableProps {
-  reservations: ReservationData[];
-  onOpenReservation?: (reservation: ReservationData | null) => void;
+  reservations: ReservationData[]
+  onOpenReservation?: (reservation: ReservationData | null) => void
 }
 
 export function ReservationTable({ reservations, onOpenReservation }: ReservationTableProps) {
-  const [selectedReservation, setSelectedReservation] = useState<ReservationData | null>(null);
+  const [selectedReservation, setSelectedReservation] = useState<ReservationData | null>(null)
 
   const handleOpenReservation = (reservation: ReservationData) => {
     if (onOpenReservation) {
-      onOpenReservation(reservation);
+      onOpenReservation(reservation)
     } else {
-      setSelectedReservation(reservation);
+      setSelectedReservation(reservation)
     }
-  };
+  }
 
   return (
     <>
@@ -55,17 +54,20 @@ export function ReservationTable({ reservations, onOpenReservation }: Reservatio
         <TableBody>
           {reservations.map((reservation, index) => (
             <TableRow key={index} onClick={() => handleOpenReservation(reservation)}>
-              <TableCell className="font-medium">{(index + 1).toString().padStart(4, '0')}</TableCell>
+              <TableCell className="font-medium">
+                {(index + 1).toString().padStart(4, '0')}
+              </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
                   {reservation.customerName} 様
-                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 rounded-full px-2 py-0.5 text-xs">
+                  <Badge
+                    variant="secondary"
+                    className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700"
+                  >
                     {reservation.customerType}
                   </Badge>
                 </div>
-                <div className="text-xs text-gray-500">
-                  顧客ID: {reservation?.customerId || ""}
-                </div>
+                <div className="text-xs text-gray-500">顧客ID: {reservation?.customerId || ''}</div>
               </TableCell>
               <TableCell>
                 {reservation.date} {reservation.time}
@@ -84,12 +86,12 @@ export function ReservationTable({ reservations, onOpenReservation }: Reservatio
               </TableCell>
               <TableCell>{reservation.course}</TableCell>
               <TableCell>{reservation.time}</TableCell>
-              <TableCell>{reservation.inOutTime.split('-')[1] || "-"}</TableCell>
+              <TableCell>{reservation.inOutTime.split('-')[1] || '-'}</TableCell>
               <TableCell>
                 <Badge
-                  variant={reservation.bookingStatus === "確定済" ? "default" : "outline"}
+                  variant={reservation.bookingStatus === '確定済' ? 'default' : 'outline'}
                   className={`w-fit ${
-                    reservation.bookingStatus === "確定済" ? "bg-emerald-600 text-white" : ""
+                    reservation.bookingStatus === '確定済' ? 'bg-emerald-600 text-white' : ''
                   }`}
                 >
                   {reservation.bookingStatus}
@@ -116,5 +118,5 @@ export function ReservationTable({ reservations, onOpenReservation }: Reservatio
         reservation={selectedReservation}
       />
     </>
-  );
+  )
 }

@@ -155,7 +155,8 @@
 <a name='L90'></a><a href='#L90'>90</a>
 <a name='L91'></a><a href='#L91'>91</a>
 <a name='L92'></a><a href='#L92'>92</a>
-<a name='L93'></a><a href='#L93'>93</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -247,29 +248,30 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { Card, CardContent } from "@/components/ui/card"</span></span></span>
-import { Badge } from "@/components/ui/badge"
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { Card, CardContent } from '@/components/ui/card'</span></span></span>
+import { Badge } from '@/components/ui/badge'
 import { Users, Clock, TrendingUp, Calendar } from 'lucide-react'
 &nbsp;
 interface ScheduleInfoBarProps {
-  totalCast: number;
-  workingCast: number;
-  averageWorkingHours: number;
-  averageWorkingCast: number;
+  totalCast: number
+  workingCast: number
+  averageWorkingHours: number
+  averageWorkingCast: number
 }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export function ScheduleInfoBar({ </span>
-<span class="cstat-no" title="statement not covered" >  totalCast, </span>
-<span class="cstat-no" title="statement not covered" >  workingCast, </span>
-<span class="cstat-no" title="statement not covered" >  averageWorkingHours, </span>
-<span class="cstat-no" title="statement not covered" >  averageWorkingCast </span>
+<span class="cstat-no" title="statement not covered" >export function ScheduleInfoBar({</span>
+<span class="cstat-no" title="statement not covered" >  totalCast,</span>
+<span class="cstat-no" title="statement not covered" >  workingCast,</span>
+<span class="cstat-no" title="statement not covered" >  averageWorkingHours,</span>
+<span class="cstat-no" title="statement not covered" >  averageWorkingCast,</span>
 <span class="cstat-no" title="statement not covered" >}: ScheduleInfoBarProps) {</span>
-<span class="cstat-no" title="statement not covered" >  const onLeave = 14; // 休職中の人数</span>
+<span class="cstat-no" title="statement not covered" >  const onLeave = 14 // 休職中の人数</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
-<span class="cstat-no" title="statement not covered" >    &lt;div className="bg-gradient-to-r from-emerald-50 to-blue-50 border-b"&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;div className="max-w-7xl mx-auto p-6"&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;div className="flex items-center justify-between mb-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;div className="border-b bg-gradient-to-r from-emerald-50 to-blue-50"&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;div className="mx-auto max-w-7xl p-6"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="mb-4 flex items-center justify-between"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div className="flex items-center gap-3"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;Calendar className="h-6 w-6 text-emerald-600" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;h1 className="text-xl font-semibold text-gray-900"&gt;キャスト出勤管理&lt;/h1&gt;</span>
@@ -278,12 +280,12 @@ interface ScheduleInfoBarProps {
 <span class="cstat-no" title="statement not covered" >            &lt;/Badge&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
-        
-<span class="cstat-no" title="statement not covered" >        &lt;div className="grid grid-cols-1 md:grid-cols-4 gap-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Card className="bg-white/70 backdrop-blur-sm border-emerald-200"&gt;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        &lt;div className="grid grid-cols-1 gap-4 md:grid-cols-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;Card className="border-emerald-200 bg-white/70 backdrop-blur-sm"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;CardContent className="p-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div className="flex items-center gap-3"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="p-2 bg-emerald-100 rounded-lg"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="rounded-lg bg-emerald-100 p-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;Users className="h-5 w-5 text-emerald-600" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;div&gt;</span>
@@ -294,10 +296,10 @@ interface ScheduleInfoBarProps {
 <span class="cstat-no" title="statement not covered" >            &lt;/CardContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/Card&gt;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >          &lt;Card className="bg-white/70 backdrop-blur-sm border-blue-200"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;Card className="border-blue-200 bg-white/70 backdrop-blur-sm"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;CardContent className="p-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div className="flex items-center gap-3"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="p-2 bg-blue-100 rounded-lg"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="rounded-lg bg-blue-100 p-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;TrendingUp className="h-5 w-5 text-blue-600" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;div&gt;</span>
@@ -308,10 +310,10 @@ interface ScheduleInfoBarProps {
 <span class="cstat-no" title="statement not covered" >            &lt;/CardContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/Card&gt;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >          &lt;Card className="bg-white/70 backdrop-blur-sm border-green-200"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;Card className="border-green-200 bg-white/70 backdrop-blur-sm"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;CardContent className="p-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div className="flex items-center gap-3"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="p-2 bg-green-100 rounded-lg"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="rounded-lg bg-green-100 p-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;Clock className="h-5 w-5 text-green-600" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;div&gt;</span>
@@ -322,10 +324,10 @@ interface ScheduleInfoBarProps {
 <span class="cstat-no" title="statement not covered" >            &lt;/CardContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/Card&gt;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >          &lt;Card className="bg-white/70 backdrop-blur-sm border-red-200"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;Card className="border-red-200 bg-white/70 backdrop-blur-sm"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;CardContent className="p-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div className="flex items-center gap-3"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="p-2 bg-red-100 rounded-lg"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="rounded-lg bg-red-100 p-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;Users className="h-5 w-5 text-red-600" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;div&gt;</span>
@@ -339,14 +341,15 @@ interface ScheduleInfoBarProps {
 <span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

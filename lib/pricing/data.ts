@@ -1,11 +1,12 @@
-import { CoursePrice, OptionPrice, AdditionalFee } from './types';
+import { CoursePrice, OptionPrice, AdditionalFee } from './types'
 
 // Default course pricing data
 export const defaultCourses: CoursePrice[] = [
   {
     id: '1',
     name: '【ご利用者数2万人突破】ありがとうキャンペーン',
-    description: 'おかげさまで累計ご利用者数22,200人突破！感謝の気持ちを込めてキャンペーンを開催いたします！',
+    description:
+      'おかげさまで累計ご利用者数22,200人突破！感謝の気持ちを込めてキャンペーンを開催いたします！',
     durations: [
       { time: 70, price: 13000, originalPrice: 22000, label: 'お試しフリー限定' },
       { time: 90, price: 19000, originalPrice: 27000 },
@@ -14,12 +15,7 @@ export const defaultCourses: CoursePrice[] = [
       { time: 160, price: 36000, originalPrice: 45000 },
       { time: 190, price: 42000, originalPrice: 52000 },
     ],
-    features: [
-      '本格睾丸マッサージ',
-      '回春性感マッサージ',
-      '密着フェザータッチ',
-      '全身マッサージ',
-    ],
+    features: ['本格睾丸マッサージ', '回春性感マッサージ', '密着フェザータッチ', '全身マッサージ'],
     notes: [
       'お試しコースはフリー指名限定のご案内になります',
       '回春マッサージを多め希望は、回春増し増し（有料）をオススメです',
@@ -78,7 +74,7 @@ export const defaultCourses: CoursePrice[] = [
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
   },
-];
+]
 
 // Default option pricing data
 export const defaultOptions: OptionPrice[] = [
@@ -197,7 +193,7 @@ export const defaultOptions: OptionPrice[] = [
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
   },
-];
+]
 
 // Default additional fees data
 export const defaultAdditionalFees: AdditionalFee[] = [
@@ -234,7 +230,7 @@ export const defaultAdditionalFees: AdditionalFee[] = [
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
   },
-];
+]
 
 // Default pricing notes
 export const defaultPricingNotes = [
@@ -244,4 +240,4 @@ export const defaultPricingNotes = [
   'お支払いは現金のみとなります',
   'キャンセル料: 当日キャンセルは料金の50%',
   'ご予約は10分単位で承ります',
-];
+]

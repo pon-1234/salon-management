@@ -18,12 +18,18 @@ export async function POST(request: NextRequest) {
 
     // ファイルサイズチェック
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ error: 'ファイルサイズが大きすぎます（最大5MB）' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'ファイルサイズが大きすぎます（最大5MB）' },
+        { status: 400 }
+      )
     }
 
     // ファイル形式チェック
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json({ error: '対応していないファイル形式です（JPEG, PNG, WebPのみ）' }, { status: 400 })
+      return NextResponse.json(
+        { error: '対応していないファイル形式です（JPEG, PNG, WebPのみ）' },
+        { status: 400 }
+      )
     }
 
     // アップロードディレクトリを作成
@@ -41,18 +47,17 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
     const filePath = join(UPLOAD_DIR, fileName)
-    
+
     await writeFile(filePath, buffer)
 
     // アップロードされたファイルのURLを返す
     const fileUrl = `/uploads/${fileName}`
-    
-    return NextResponse.json({ 
-      success: true, 
-      url: fileUrl,
-      filename: fileName 
-    })
 
+    return NextResponse.json({
+      success: true,
+      url: fileUrl,
+      filename: fileName,
+    })
   } catch (error) {
     console.error('Upload error:', error)
     return NextResponse.json({ error: 'アップロードに失敗しました' }, { status: 500 })

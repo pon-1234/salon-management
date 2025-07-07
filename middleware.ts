@@ -11,11 +11,9 @@ export function middleware(request: NextRequest) {
 
   // 管理画面へのアクセス制御
   if (pathname.startsWith('/admin')) {
-    
     // ここで認証チェックを行う
     // 現在はモックなので、常に通過させる
     // 実際の実装では、JWTトークンやセッションをチェック
-    
     // 例: 認証されていない場合のリダイレクト
     // const token = request.cookies.get('auth-token')
     // if (!token) {

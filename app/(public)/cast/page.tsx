@@ -5,7 +5,13 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Star, Search, Filter } from 'lucide-react'
 
@@ -65,10 +71,11 @@ export default function CastListPage() {
     },
   ]
 
-  const filteredCasts = casts.filter(cast =>
-    cast.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    cast.nickname.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    cast.specialties.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredCasts = casts.filter(
+    (cast) =>
+      cast.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      cast.nickname.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      cast.specialties.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase()))
   )
 
   const sortedCasts = [...filteredCasts].sort((a, b) => {
@@ -85,19 +92,17 @@ export default function CastListPage() {
   })
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="mx-auto max-w-7xl px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-4">キャスト一覧</h1>
-        <p className="text-gray-600">
-          経験豊富なプロフェッショナルがあなたをお待ちしています
-        </p>
+        <h1 className="mb-4 text-3xl font-bold">キャスト一覧</h1>
+        <p className="text-gray-600">経験豊富なプロフェッショナルがあなたをお待ちしています</p>
       </div>
 
       {/* Search and Filter */}
       <div className="mb-8 space-y-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+        <div className="flex flex-col gap-4 md:flex-row">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
             <Input
               placeholder="名前、スペシャリティで検索..."
               value={searchQuery}
@@ -107,7 +112,7 @@ export default function CastListPage() {
           </div>
           <Select value={sortBy} onValueChange={setSortBy}>
             <SelectTrigger className="w-full md:w-[200px]">
-              <Filter className="h-4 w-4 mr-2" />
+              <Filter className="mr-2 h-4 w-4" />
               <SelectValue placeholder="並び替え" />
             </SelectTrigger>
             <SelectContent>
@@ -121,20 +126,20 @@ export default function CastListPage() {
       </div>
 
       {/* Cast Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {sortedCasts.map((cast) => (
-          <Card key={cast.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-            <div className="aspect-[4/3] bg-gradient-to-br from-purple-400 to-pink-400 relative">
+          <Card key={cast.id} className="overflow-hidden transition-shadow hover:shadow-lg">
+            <div className="relative aspect-[4/3] bg-gradient-to-br from-purple-400 to-pink-400">
               {!cast.available && (
-                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                  <Badge variant="secondary" className="text-lg px-4 py-2">
+                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                  <Badge variant="secondary" className="px-4 py-2 text-lg">
                     本日予約不可
                   </Badge>
                 </div>
               )}
             </div>
             <CardHeader>
-              <div className="flex justify-between items-start">
+              <div className="flex items-start justify-between">
                 <div>
                   <CardTitle className="text-xl">{cast.nickname}</CardTitle>
                   <CardDescription>{cast.name}</CardDescription>
@@ -148,7 +153,7 @@ export default function CastListPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <p className="text-sm text-gray-600 mb-2">得意な施術</p>
+                <p className="mb-2 text-sm text-gray-600">得意な施術</p>
                 <div className="flex flex-wrap gap-2">
                   {cast.specialties.map((specialty) => (
                     <Badge key={specialty} variant="outline" className="text-xs">
@@ -158,20 +163,16 @@ export default function CastListPage() {
                 </div>
               </div>
               <div>
-                <p className="text-sm text-gray-600 mb-1">経験年数</p>
+                <p className="mb-1 text-sm text-gray-600">経験年数</p>
                 <p className="font-medium">{cast.experience}年</p>
               </div>
-              <p className="text-sm text-gray-600 italic">"{cast.message}"</p>
+              <p className="text-sm italic text-gray-600">&ldquo;{cast.message}&rdquo;</p>
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1" asChild>
-                  <Link href={`/cast/${cast.id}`}>
-                    詳細を見る
-                  </Link>
+                  <Link href={`/cast/${cast.id}`}>詳細を見る</Link>
                 </Button>
                 <Button className="flex-1" disabled={!cast.available} asChild>
-                  <Link href={`/booking?cast=${cast.id}`}>
-                    予約する
-                  </Link>
+                  <Link href={`/booking?cast=${cast.id}`}>予約する</Link>
                 </Button>
               </div>
             </CardContent>
@@ -180,7 +181,7 @@ export default function CastListPage() {
       </div>
 
       {sortedCasts.length === 0 && (
-        <div className="text-center py-12">
+        <div className="py-12 text-center">
           <p className="text-gray-500">該当するキャストが見つかりませんでした。</p>
         </div>
       )}

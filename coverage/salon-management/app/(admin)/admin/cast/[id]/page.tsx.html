@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/103</span>
+                <span class='fraction'>0/92</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/103</span>
+                <span class='fraction'>0/92</span>
             </div>
         
             
@@ -155,18 +155,7 @@
 <a name='L90'></a><a href='#L90'>90</a>
 <a name='L91'></a><a href='#L91'>91</a>
 <a name='L92'></a><a href='#L92'>92</a>
-<a name='L93'></a><a href='#L93'>93</a>
-<a name='L94'></a><a href='#L94'>94</a>
-<a name='L95'></a><a href='#L95'>95</a>
-<a name='L96'></a><a href='#L96'>96</a>
-<a name='L97'></a><a href='#L97'>97</a>
-<a name='L98'></a><a href='#L98'>98</a>
-<a name='L99'></a><a href='#L99'>99</a>
-<a name='L100'></a><a href='#L100'>100</a>
-<a name='L101'></a><a href='#L101'>101</a>
-<a name='L102'></a><a href='#L102'>102</a>
-<a name='L103'></a><a href='#L103'>103</a>
-<a name='L104'></a><a href='#L104'>104</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L93'></a><a href='#L93'>93</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -258,40 +247,29 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { Badge } from "@/components/ui/badge"</span></span></span>
-<span class="cstat-no" title="statement not covered" >import { Button } from "@/components/ui/button"</span>
-<span class="cstat-no" title="statement not covered" >import { Cast, CastSchedule } from "@/lib/cast"</span>
-<span class="cstat-no" title="statement not covered" >import { castMembers, generateCastSchedule } from "@/lib/cast/data"</span>
-<span class="cstat-no" title="statement not covered" >import { generateSchedule } from "@/lib/cast/utils"</span>
-<span class="cstat-no" title="statement not covered" >import { options } from "@/lib/course-option/data"</span>
-<span class="cstat-no" title="statement not covered" >import { CastProfile } from "@/components/cast/cast-profile"</span>
-<span class="cstat-no" title="statement not covered" >import { notFound } from "next/navigation"</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { Badge } from '@/components/ui/badge'</span></span></span>
+<span class="cstat-no" title="statement not covered" >import { Button } from '@/components/ui/button'</span>
+<span class="cstat-no" title="statement not covered" >import { Cast, CastSchedule } from '@/lib/cast'</span>
+<span class="cstat-no" title="statement not covered" >import { castMembers, generateCastSchedule } from '@/lib/cast/data'</span>
+<span class="cstat-no" title="statement not covered" >import { generateSchedule } from '@/lib/cast/utils'</span>
+<span class="cstat-no" title="statement not covered" >import { options } from '@/lib/course-option/data'</span>
+<span class="cstat-no" title="statement not covered" >import { CastProfile } from '@/components/cast/cast-profile'</span>
+<span class="cstat-no" title="statement not covered" >import { notFound } from 'next/navigation'</span>
 <span class="cstat-no" title="statement not covered" >import { format } from 'date-fns'</span>
 <span class="cstat-no" title="statement not covered" >import { ja } from 'date-fns/locale'</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >function getCast(id: string): Cast | undefined {</span>
-<span class="cstat-no" title="statement not covered" >  return castMembers.find(cast =&gt; cast.id === id);</span>
+<span class="cstat-no" title="statement not covered" >  return castMembers.find((cast) =&gt; cast.id === id)</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >function getCastSchedule(id: string, startDate: Date, endDate: Date): CastSchedule[] {</span>
-<span class="cstat-no" title="statement not covered" >  const cast = getCast(id);</span>
-<span class="cstat-no" title="statement not covered" >  if (!cast) return [];</span>
-<span class="cstat-no" title="statement not covered" >  return generateCastSchedule(id, startDate, endDate);</span>
+<span class="cstat-no" title="statement not covered" >  const cast = getCast(id)</span>
+<span class="cstat-no" title="statement not covered" >  if (!cast) return []</span>
+<span class="cstat-no" title="statement not covered" >  return generateCastSchedule(id, startDate, endDate)</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >export default async function CastDetailPage({ params }: { params: { id: string } }) {</span>
-<span class="cstat-no" title="statement not covered" >  const cast = getCast(params.id);</span>
+<span class="cstat-no" title="statement not covered" >  const cast = getCast(params.id)</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  if (!cast) {</span>
 <span class="cstat-no" title="statement not covered" >    notFound()</span>
@@ -303,31 +281,26 @@
 <span class="cstat-no" title="statement not covered" >  const schedule = getCastSchedule(params.id, today, endDate)</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  return (</span>
-<span class="cstat-no" title="statement not covered" >    &lt;div className="container mx-auto py-8 px-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;div className="grid md:grid-cols-2 gap-8"&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;div className="container mx-auto px-4 py-8"&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;div className="grid gap-8 md:grid-cols-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        {/* 基本情報・プロフィール */}</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div className="space-y-6"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;CastProfile cast={cast} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >          </span>
+<span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >          &lt;div className="space-y-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;h4 className="font-bold flex items-center gap-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;h4 className="flex items-center gap-2 font-bold"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              利用可能なオプション</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Badge variant="secondary" className="bg-emerald-100"&gt;{options.length}点&lt;/Badge&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Badge variant="secondary" className="bg-emerald-100"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                {options.length}点</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/Badge&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/h4&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="grid grid-cols-2 gap-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              {options.map((option, index) =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div</span>
-<span class="cstat-no" title="statement not covered" >                  key={index}</span>
-<span class="cstat-no" title="statement not covered" >                  className="border rounded-lg p-3 text-sm relative"</span>
-<span class="cstat-no" title="statement not covered" >                &gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div key={index} className="relative rounded-lg border p-3 text-sm"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div className="font-medium"&gt;{option.name}&lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;div className="text-emerald-600"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    ¥{option.price.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;div className="text-emerald-600"&gt;¥{option.price.toLocaleString()}&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  {option.note &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;div className="absolute top-2 right-2 text-gray-500"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                      {option.note}</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;div className="absolute right-2 top-2 text-gray-500"&gt;{option.note}&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  )}</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >              ))}</span>
@@ -340,16 +313,13 @@
 <span class="cstat-no" title="statement not covered" >          &lt;h2 className="text-2xl font-bold"&gt;出勤情報&lt;/h2&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div className="space-y-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            {schedule.map((day, index) =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >              &lt;div</span>
-<span class="cstat-no" title="statement not covered" >                key={index}</span>
-<span class="cstat-no" title="statement not covered" >                className="flex items-center justify-between p-4 border rounded-lg"</span>
-<span class="cstat-no" title="statement not covered" >              &gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;div key={index} className="flex items-center justify-between rounded-lg border p-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;div className="space-y-1"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div className="font-medium"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    {format(day.date, 'yyyy/MM/dd (E)', { locale: ja })}</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div className="text-gray-600"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    {format(day.startTime, 'HH:mm', { locale: ja })} - </span>
+<span class="cstat-no" title="statement not covered" >                    {format(day.startTime, 'HH:mm', { locale: ja })} -</span>
 <span class="cstat-no" title="statement not covered" >                    {format(day.endTime, 'HH:mm', { locale: ja })}</span>
 <span class="cstat-no" title="statement not covered" >                    {day.bookings &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;Badge className="ml-2 bg-emerald-100 text-emerald-700"&gt;</span>
@@ -358,10 +328,7 @@
 <span class="cstat-no" title="statement not covered" >                    )}</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;Button</span>
-<span class="cstat-no" title="statement not covered" >                  variant="default"</span>
-<span class="cstat-no" title="statement not covered" >                  className="bg-emerald-600"</span>
-<span class="cstat-no" title="statement not covered" >                &gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;Button variant="default" className="bg-emerald-600"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  この日時を選択</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
@@ -379,7 +346,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../../../../prettify.js"></script>
         <script>

@@ -1,57 +1,57 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Header } from "@/components/header"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
+import { useState } from 'react'
+import { Header } from '@/components/header'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
 import { ArrowLeft, Store, MapPin, Phone, Mail, Clock, Globe } from 'lucide-react'
-import Link from "next/link"
+import Link from 'next/link'
 
 export default function StoreInfoPage() {
   const [formData, setFormData] = useState({
-    storeName: "金の玉クラブ(池袋)",
-    address: "東京都豊島区池袋2-1-1",
-    phone: "03-1234-5678",
-    email: "info@example.com",
-    website: "https://example.com",
-    businessHours: "10:00 - 24:00",
-    description: "池袋エリアの高級メンズエステサロンです。",
-    zipCode: "171-0014",
-    prefecture: "東京都",
-    city: "豊島区",
-    building: "池袋ビル3F",
-    businessDays: "年中無休",
-    lastOrder: "23:30",
-    parkingInfo: "近隣にコインパーキングあり",
+    storeName: '金の玉クラブ(池袋)',
+    address: '東京都豊島区池袋2-1-1',
+    phone: '03-1234-5678',
+    email: 'info@example.com',
+    website: 'https://example.com',
+    businessHours: '10:00 - 24:00',
+    description: '池袋エリアの高級メンズエステサロンです。',
+    zipCode: '171-0014',
+    prefecture: '東京都',
+    city: '豊島区',
+    building: '池袋ビル3F',
+    businessDays: '年中無休',
+    lastOrder: '23:30',
+    parkingInfo: '近隣にコインパーキングあり',
   })
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+    setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
   const handleSave = () => {
     // TODO: 実際の保存処理を実装
-    console.log("Store info saved:", formData)
-    alert("店舗情報を保存しました")
+    console.log('Store info saved:', formData)
+    alert('店舗情報を保存しました')
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="p-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="mx-auto max-w-4xl">
           {/* ヘッダー */}
-          <div className="flex items-center gap-4 mb-6">
+          <div className="mb-6 flex items-center gap-4">
             <Link href="/admin/settings">
               <Button variant="ghost" size="icon">
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="h-5 w-5" />
               </Button>
             </Link>
-            <Store className="w-8 h-8 text-emerald-600" />
+            <Store className="h-8 w-8 text-emerald-600" />
             <h1 className="text-3xl font-bold text-gray-900">店舗情報設定</h1>
           </div>
 
@@ -60,12 +60,12 @@ export default function StoreInfoPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Store className="w-5 h-5 text-emerald-600" />
+                  <Store className="h-5 w-5 text-emerald-600" />
                   基本情報
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="storeName">店舗名</Label>
                     <Input
@@ -116,12 +116,12 @@ export default function StoreInfoPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-emerald-600" />
+                  <MapPin className="h-5 w-5 text-emerald-600" />
                   住所情報
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-3 gap-4">
+                <div className="grid gap-4 md:grid-cols-3">
                   <div className="space-y-2">
                     <Label htmlFor="zipCode">郵便番号</Label>
                     <Input
@@ -148,7 +148,7 @@ export default function StoreInfoPage() {
                     />
                   </div>
                 </div>
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="address">住所</Label>
                     <Input
@@ -181,12 +181,12 @@ export default function StoreInfoPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-emerald-600" />
+                  <Clock className="h-5 w-5 text-emerald-600" />
                   営業時間
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-3 gap-4">
+                <div className="grid gap-4 md:grid-cols-3">
                   <div className="space-y-2">
                     <Label htmlFor="businessHours">営業時間</Label>
                     <Input

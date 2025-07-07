@@ -9,7 +9,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { CalendarIcon, User, Mail, Phone, Lock, Gift } from 'lucide-react'
@@ -33,11 +39,11 @@ export function RegisterForm({ store }: RegisterFormProps) {
       alert('利用規約に同意してください')
       return
     }
-    
+
     setLoading(true)
     // Simulate registration
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+
     // In real app, this would make an API call
     alert('会員登録が完了しました！')
     router.push(`/${store.slug}/login`)
@@ -49,15 +55,13 @@ export function RegisterForm({ store }: RegisterFormProps) {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="text-2xl text-center">会員登録</CardTitle>
-        <CardDescription className="text-center">
-          会員登録で特典がいっぱい！
-        </CardDescription>
+        <CardTitle className="text-center text-2xl">会員登録</CardTitle>
+        <CardDescription className="text-center">会員登録で特典がいっぱい！</CardDescription>
       </CardHeader>
       <CardContent>
         {/* Benefits */}
-        <div className="bg-purple-50 p-4 rounded-lg mb-6">
-          <h3 className="font-semibold mb-2 flex items-center gap-2">
+        <div className="mb-6 rounded-lg bg-purple-50 p-4">
+          <h3 className="mb-2 flex items-center gap-2 font-semibold">
             <Gift className="h-5 w-5 text-purple-600" />
             会員特典
           </h3>
@@ -75,24 +79,17 @@ export function RegisterForm({ store }: RegisterFormProps) {
           <div className="space-y-2">
             <Label htmlFor="nickname">ニックネーム</Label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                id="nickname"
-                placeholder="お好きなニックネーム"
-                className="pl-10"
-                required
-              />
+              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+              <Input id="nickname" placeholder="お好きなニックネーム" className="pl-10" required />
             </div>
-            <p className="text-xs text-gray-500">
-              サイト内で表示される名前です
-            </p>
+            <p className="text-xs text-gray-500">サイト内で表示される名前です</p>
           </div>
 
           {/* Email */}
           <div className="space-y-2">
             <Label htmlFor="email">メールアドレス</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
               <Input
                 id="email"
                 type="email"
@@ -107,7 +104,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
           <div className="space-y-2">
             <Label htmlFor="phone">電話番号</Label>
             <div className="relative">
-              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
               <Input
                 id="phone"
                 type="tel"
@@ -128,16 +125,18 @@ export function RegisterForm({ store }: RegisterFormProps) {
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !birthDate && "text-muted-foreground"
+                    'w-full justify-start text-left font-normal',
+                    !birthDate && 'text-muted-foreground'
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {birthDate ? format(birthDate, "yyyy年MM月dd日", { locale: ja }) : "生年月日を選択"}
+                  {birthDate
+                    ? format(birthDate, 'yyyy年MM月dd日', { locale: ja })
+                    : '生年月日を選択'}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <div className="p-3 space-y-2">
+                <div className="space-y-2 p-3">
                   <Select
                     onValueChange={(year) => {
                       const newDate = birthDate || new Date()
@@ -149,7 +148,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
                       <SelectValue placeholder="年を選択" />
                     </SelectTrigger>
                     <SelectContent>
-                      {years.map(year => (
+                      {years.map((year) => (
                         <SelectItem key={year} value={year.toString()}>
                           {year}年
                         </SelectItem>
@@ -162,9 +161,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
                   selected={birthDate}
                   onSelect={setBirthDate}
                   locale={ja}
-                  disabled={(date) =>
-                    date > new Date() || date < new Date("1900-01-01")
-                  }
+                  disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
                 />
               </PopoverContent>
             </Popover>
@@ -174,7 +171,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
           <div className="space-y-2">
             <Label htmlFor="password">パスワード</Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
               <Input
                 id="password"
                 type="password"
@@ -190,7 +187,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">パスワード（確認）</Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
               <Input
                 id="confirmPassword"
                 type="password"
@@ -205,10 +202,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
           {/* SMS Notifications */}
           <div className="flex items-center space-x-2">
             <Checkbox id="sms" />
-            <Label
-              htmlFor="sms"
-              className="text-sm font-normal cursor-pointer"
-            >
+            <Label htmlFor="sms" className="cursor-pointer text-sm font-normal">
               お得な情報をSMSで受け取る
             </Label>
           </div>
@@ -220,10 +214,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
               checked={agreed}
               onCheckedChange={(checked) => setAgreed(checked as boolean)}
             />
-            <Label
-              htmlFor="terms"
-              className="text-sm font-normal cursor-pointer"
-            >
+            <Label htmlFor="terms" className="cursor-pointer text-sm font-normal">
               <Link href="/terms" className="text-blue-600 hover:underline">
                 利用規約
               </Link>
@@ -236,11 +227,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
           </div>
 
           {/* Submit Button */}
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={loading || !agreed}
-          >
+          <Button type="submit" className="w-full" disabled={loading || !agreed}>
             {loading ? '登録中...' : '会員登録'}
           </Button>
         </form>
@@ -249,10 +236,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             すでにアカウントをお持ちの方は
-            <Link
-              href={`/${store.slug}/login`}
-              className="text-blue-600 hover:underline ml-1"
-            >
+            <Link href={`/${store.slug}/login`} className="ml-1 text-blue-600 hover:underline">
               ログイン
             </Link>
           </p>

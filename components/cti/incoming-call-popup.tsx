@@ -1,12 +1,12 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
-import { Dialog, DialogContent } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
+import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import { Phone, PhoneOff, User, Calendar, Star, AlertCircle } from 'lucide-react'
-import { Customer } from "@/lib/customer/types"
+import { Customer } from '@/lib/customer/types'
 
 interface IncomingCallPopupProps {
   isOpen: boolean
@@ -25,22 +25,21 @@ export function IncomingCallPopup({
   onAnswer,
   onReject,
   onViewDetails,
-  onClose
+  onClose,
 }: IncomingCallPopupProps) {
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md mx-auto">
+      <DialogContent className="mx-auto max-w-md">
         <div className="space-y-4">
           {/* Header */}
-          <div className="text-center space-y-2">
+          <div className="space-y-2 text-center">
             <div className="flex items-center justify-center gap-2">
               <div className="animate-pulse">
-                <Phone className="w-6 h-6 text-emerald-600" />
+                <Phone className="h-6 w-6 text-emerald-600" />
               </div>
               <span className="text-lg font-semibold text-emerald-600">着信中</span>
             </div>
-            <div className="text-2xl font-mono font-bold">{phoneNumber}</div>
+            <div className="font-mono text-2xl font-bold">{phoneNumber}</div>
           </div>
 
           {/* Customer Information */}
@@ -48,37 +47,38 @@ export function IncomingCallPopup({
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={customer.image || "/placeholder-user.jpg"}
+                    src={customer.image || '/placeholder-user.jpg'}
                     alt={customer.name}
-                    className="w-16 h-16 rounded-full object-cover"
+                    className="h-16 w-16 rounded-full object-cover"
                   />
                   <div className="flex-1 space-y-2">
                     <div>
-                      <div className="font-semibold text-lg">{customer.name} 様</div>
+                      <div className="text-lg font-semibold">{customer.name} 様</div>
                       <div className="text-sm text-gray-500">{customer.nameKana}</div>
                     </div>
-                    
+
                     <div className="flex gap-2">
                       <Badge variant={customer.memberType === 'vip' ? 'default' : 'secondary'}>
                         {customer.memberType === 'vip' ? 'VIP会員' : '一般会員'}
                       </Badge>
                       {customer.points && customer.points > 0 && (
                         <Badge variant="outline">
-                          <Star className="w-3 h-3 mr-1" />
+                          <Star className="mr-1 h-3 w-3" />
                           {customer.points}pt
                         </Badge>
                       )}
                     </div>
 
-                    <div className="text-sm space-y-1">
+                    <div className="space-y-1 text-sm">
                       <div className="flex items-center gap-2">
-                        <User className="w-4 h-4" />
+                        <User className="h-4 w-4" />
                         <span>来店回数: {customer.visitCount || 0}回</span>
                       </div>
                       {customer.lastVisit && (
                         <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4" />
+                          <Calendar className="h-4 w-4" />
                           <span>前回来店: {customer.lastVisit}</span>
                         </div>
                       )}
@@ -86,8 +86,8 @@ export function IncomingCallPopup({
 
                     {/* 要注意事項 */}
                     {customer.notes && (
-                      <div className="flex items-start gap-2 p-2 bg-yellow-50 rounded">
-                        <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                      <div className="flex items-start gap-2 rounded bg-yellow-50 p-2">
+                        <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-yellow-600" />
                         <span className="text-sm text-yellow-800">{customer.notes}</span>
                       </div>
                     )}
@@ -98,7 +98,7 @@ export function IncomingCallPopup({
           ) : (
             <Card>
               <CardContent className="p-4 text-center">
-                <User className="w-12 h-12 mx-auto text-gray-400 mb-2" />
+                <User className="mx-auto mb-2 h-12 w-12 text-gray-400" />
                 <div className="font-medium">新規のお客様</div>
                 <div className="text-sm text-gray-500">登録されていない電話番号です</div>
               </CardContent>
@@ -109,29 +109,20 @@ export function IncomingCallPopup({
           <div className="flex gap-3">
             <Button
               onClick={onAnswer}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="flex-1 bg-emerald-600 text-white hover:bg-emerald-700"
               size="lg"
             >
-              <Phone className="w-5 h-5 mr-2" />
+              <Phone className="mr-2 h-5 w-5" />
               応答
             </Button>
-            <Button
-              onClick={onReject}
-              variant="destructive"
-              className="flex-1"
-              size="lg"
-            >
-              <PhoneOff className="w-5 h-5 mr-2" />
+            <Button onClick={onReject} variant="destructive" className="flex-1" size="lg">
+              <PhoneOff className="mr-2 h-5 w-5" />
               拒否
             </Button>
           </div>
 
           {customer && (
-            <Button
-              onClick={onViewDetails}
-              variant="outline"
-              className="w-full"
-            >
+            <Button onClick={onViewDetails} variant="outline" className="w-full">
               顧客詳細を表示
             </Button>
           )}

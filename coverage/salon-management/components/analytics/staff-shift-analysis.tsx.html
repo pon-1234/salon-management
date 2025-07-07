@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/152</span>
+                <span class='fraction'>0/149</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/152</span>
+                <span class='fraction'>0/149</span>
             </div>
         
             
@@ -251,9 +251,7 @@
 <a name='L186'></a><a href='#L186'>186</a>
 <a name='L187'></a><a href='#L187'>187</a>
 <a name='L188'></a><a href='#L188'>188</a>
-<a name='L189'></a><a href='#L189'>189</a>
-<a name='L190'></a><a href='#L190'>190</a>
-<a name='L191'></a><a href='#L191'>191</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L189'></a><a href='#L189'>189</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -373,9 +371,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -443,9 +438,10 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -453,9 +449,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
 &nbsp;
 interface StaffShiftAnalysisProps {
   year: number
@@ -481,60 +477,60 @@ interface StaffShiftData {
     // ダミーデータ（実際にはAPIから取得）
 <span class="cstat-no" title="statement not covered" >    const dummyData: StaffShiftData[] = [</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "1",</span>
-<span class="cstat-no" title="statement not covered" >        name: "みお",</span>
+<span class="cstat-no" title="statement not covered" >        id: '1',</span>
+<span class="cstat-no" title="statement not covered" >        name: 'みお',</span>
 <span class="cstat-no" title="statement not covered" >        totalDays: 22,</span>
 <span class="cstat-no" title="statement not covered" >        weekdayDays: 16,</span>
 <span class="cstat-no" title="statement not covered" >        weekendDays: 6,</span>
 <span class="cstat-no" title="statement not covered" >        morningShifts: 8,</span>
 <span class="cstat-no" title="statement not covered" >        eveningShifts: 14,</span>
 <span class="cstat-no" title="statement not covered" >        averageHours: 7.5,</span>
-<span class="cstat-no" title="statement not covered" >        performanceScore: 92</span>
+<span class="cstat-no" title="statement not covered" >        performanceScore: 92,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "2",</span>
-<span class="cstat-no" title="statement not covered" >        name: "みるく",</span>
+<span class="cstat-no" title="statement not covered" >        id: '2',</span>
+<span class="cstat-no" title="statement not covered" >        name: 'みるく',</span>
 <span class="cstat-no" title="statement not covered" >        totalDays: 18,</span>
 <span class="cstat-no" title="statement not covered" >        weekdayDays: 14,</span>
 <span class="cstat-no" title="statement not covered" >        weekendDays: 4,</span>
 <span class="cstat-no" title="statement not covered" >        morningShifts: 10,</span>
 <span class="cstat-no" title="statement not covered" >        eveningShifts: 8,</span>
 <span class="cstat-no" title="statement not covered" >        averageHours: 6.8,</span>
-<span class="cstat-no" title="statement not covered" >        performanceScore: 88</span>
+<span class="cstat-no" title="statement not covered" >        performanceScore: 88,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "3",</span>
-<span class="cstat-no" title="statement not covered" >        name: "しほ",</span>
+<span class="cstat-no" title="statement not covered" >        id: '3',</span>
+<span class="cstat-no" title="statement not covered" >        name: 'しほ',</span>
 <span class="cstat-no" title="statement not covered" >        totalDays: 15,</span>
 <span class="cstat-no" title="statement not covered" >        weekdayDays: 12,</span>
 <span class="cstat-no" title="statement not covered" >        weekendDays: 3,</span>
 <span class="cstat-no" title="statement not covered" >        morningShifts: 6,</span>
 <span class="cstat-no" title="statement not covered" >        eveningShifts: 9,</span>
 <span class="cstat-no" title="statement not covered" >        averageHours: 7.2,</span>
-<span class="cstat-no" title="statement not covered" >        performanceScore: 85</span>
+<span class="cstat-no" title="statement not covered" >        performanceScore: 85,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "4",</span>
-<span class="cstat-no" title="statement not covered" >        name: "みなみ",</span>
+<span class="cstat-no" title="statement not covered" >        id: '4',</span>
+<span class="cstat-no" title="statement not covered" >        name: 'みなみ',</span>
 <span class="cstat-no" title="statement not covered" >        totalDays: 20,</span>
 <span class="cstat-no" title="statement not covered" >        weekdayDays: 15,</span>
 <span class="cstat-no" title="statement not covered" >        weekendDays: 5,</span>
 <span class="cstat-no" title="statement not covered" >        morningShifts: 12,</span>
 <span class="cstat-no" title="statement not covered" >        eveningShifts: 8,</span>
 <span class="cstat-no" title="statement not covered" >        averageHours: 8.0,</span>
-<span class="cstat-no" title="statement not covered" >        performanceScore: 94</span>
+<span class="cstat-no" title="statement not covered" >        performanceScore: 94,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "5",</span>
-<span class="cstat-no" title="statement not covered" >        name: "ななみ",</span>
+<span class="cstat-no" title="statement not covered" >        id: '5',</span>
+<span class="cstat-no" title="statement not covered" >        name: 'ななみ',</span>
 <span class="cstat-no" title="statement not covered" >        totalDays: 12,</span>
 <span class="cstat-no" title="statement not covered" >        weekdayDays: 10,</span>
 <span class="cstat-no" title="statement not covered" >        weekendDays: 2,</span>
 <span class="cstat-no" title="statement not covered" >        morningShifts: 5,</span>
 <span class="cstat-no" title="statement not covered" >        eveningShifts: 7,</span>
 <span class="cstat-no" title="statement not covered" >        averageHours: 6.5,</span>
-<span class="cstat-no" title="statement not covered" >        performanceScore: 78</span>
-<span class="cstat-no" title="statement not covered" >      }</span>
+<span class="cstat-no" title="statement not covered" >        performanceScore: 78,</span>
+<span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >    ]</span>
 <span class="cstat-no" title="statement not covered" >    setData(dummyData)</span>
 <span class="cstat-no" title="statement not covered" >  }, [year, month])</span>
@@ -550,17 +546,14 @@ interface StaffShiftData {
 <span class="cstat-no" title="statement not covered" >    const total = morning + evening</span>
 <span class="cstat-no" title="statement not covered" >    const morningRatio = (morning / total) * 100</span>
 <span class="cstat-no" title="statement not covered" >    const eveningRatio = (evening / total) * 100</span>
-    
+&nbsp;
 <span class="cstat-no" title="statement not covered" >    return (</span>
 <span class="cstat-no" title="statement not covered" >      &lt;div className="flex items-center gap-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;span className="text-xs"&gt;朝&lt;/span&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;div className="w-24 bg-gray-200 rounded-full h-2 relative"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div </span>
-<span class="cstat-no" title="statement not covered" >            className="bg-yellow-500 h-2 rounded-l-full" </span>
-<span class="cstat-no" title="statement not covered" >            style={{ width: `${morningRatio}%` }}</span>
-<span class="cstat-no" title="statement not covered" >          /&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div </span>
-<span class="cstat-no" title="statement not covered" >            className="bg-purple-500 h-2 rounded-r-full absolute right-0 top-0" </span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="relative h-2 w-24 rounded-full bg-gray-200"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="h-2 rounded-l-full bg-yellow-500" style={{ width: `${morningRatio}%` }} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div</span>
+<span class="cstat-no" title="statement not covered" >            className="absolute right-0 top-0 h-2 rounded-r-full bg-purple-500"</span>
 <span class="cstat-no" title="statement not covered" >            style={{ width: `${eveningRatio}%` }}</span>
 <span class="cstat-no" title="statement not covered" >          /&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
@@ -591,18 +584,18 @@ interface StaffShiftData {
 <span class="cstat-no" title="statement not covered" >                &lt;TableCell className="text-center"&gt;{staff.totalDays}日&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;TableCell className="text-center"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div className="flex flex-col items-center"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;span className="text-sm"&gt;{staff.weekdayDays}/{staff.weekendDays}&lt;/span&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;span className="text-sm"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                      {staff.weekdayDays}/{staff.weekendDays}</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;span className="text-xs text-gray-500"&gt;平日/週末&lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  {getShiftBalance(staff.morningShifts, staff.eveningShifts)}</span>
-<span class="cstat-no" title="statement not covered" >                &lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;TableCell&gt;{getShiftBalance(staff.morningShifts, staff.eveningShifts)}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;TableCell className="text-center"&gt;{staff.averageHours}時間&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;TableCell className="text-center"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div className="flex flex-col items-center gap-1"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;span className="text-sm font-medium"&gt;{staff.performanceScore}%&lt;/span&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;Progress value={staff.performanceScore} className="w-16 h-2" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;Progress value={staff.performanceScore} className="h-2 w-16" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;TableCell className="text-center"&gt;</span>
@@ -614,33 +607,34 @@ interface StaffShiftData {
 <span class="cstat-no" title="statement not covered" >        &lt;/Table&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >      &lt;div className="grid grid-cols-1 md:grid-cols-3 gap-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;div className="grid grid-cols-1 gap-4 md:grid-cols-3"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div className="rounded-lg border p-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;h4 className="font-medium mb-2"&gt;シフト充足率&lt;/h4&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;h4 className="mb-2 font-medium"&gt;シフト充足率&lt;/h4&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div className="text-2xl font-bold text-green-600"&gt;94.5%&lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;p className="text-xs text-gray-600 mt-1"&gt;必要人数に対する実際の出勤率&lt;/p&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;p className="mt-1 text-xs text-gray-600"&gt;必要人数に対する実際の出勤率&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div className="rounded-lg border p-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;h4 className="font-medium mb-2"&gt;平均労働時間&lt;/h4&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;h4 className="mb-2 font-medium"&gt;平均労働時間&lt;/h4&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div className="text-2xl font-bold"&gt;7.2時間/日&lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;p className="text-xs text-gray-600 mt-1"&gt;全スタッフの平均勤務時間&lt;/p&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;p className="mt-1 text-xs text-gray-600"&gt;全スタッフの平均勤務時間&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div className="rounded-lg border p-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;h4 className="font-medium mb-2"&gt;週末カバー率&lt;/h4&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;h4 className="mb-2 font-medium"&gt;週末カバー率&lt;/h4&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div className="text-2xl font-bold text-blue-600"&gt;82.3%&lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;p className="text-xs text-gray-600 mt-1"&gt;週末の必要人数充足率&lt;/p&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;p className="mt-1 text-xs text-gray-600"&gt;週末の必要人数充足率&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

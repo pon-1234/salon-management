@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -8,8 +8,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 
 interface DistrictPerformanceTableProps {
@@ -34,9 +34,21 @@ export function DistrictPerformanceTable({ area, year }: DistrictPerformanceTabl
 
   useEffect(() => {
     // ダミーデータ（実際にはAPIから取得）
-    const districts = area === "東京都" 
-      ? ["渋谷区", "新宿区", "港区", "中央区", "千代田区", "品川区", "目黒区", "世田谷区", "豊島区", "台東区"]
-      : ["横浜市", "川崎市", "相模原市", "藤沢市", "鎌倉市", "茅ヶ崎市", "平塚市", "小田原市"]
+    const districts =
+      area === '東京都'
+        ? [
+            '渋谷区',
+            '新宿区',
+            '港区',
+            '中央区',
+            '千代田区',
+            '品川区',
+            '目黒区',
+            '世田谷区',
+            '豊島区',
+            '台東区',
+          ]
+        : ['横浜市', '川崎市', '相模原市', '藤沢市', '鎌倉市', '茅ヶ崎市', '平塚市', '小田原市']
 
     const dummyData: PerformanceData[] = districts.map((district, index) => ({
       district,
@@ -47,9 +59,9 @@ export function DistrictPerformanceTable({ area, year }: DistrictPerformanceTabl
       repeatRate: Math.random() * 40 + 50,
       growthRate: (Math.random() - 0.5) * 40,
       rank: index + 1,
-      previousRank: Math.floor(Math.random() * districts.length) + 1
+      previousRank: Math.floor(Math.random() * districts.length) + 1,
     }))
-    
+
     // 売上高でソート
     dummyData.sort((a, b) => b.revenue - a.revenue)
     dummyData.forEach((item, index) => {
@@ -97,27 +109,16 @@ export function DistrictPerformanceTable({ area, year }: DistrictPerformanceTabl
                 </div>
               </TableCell>
               <TableCell className="font-medium">{item.district}</TableCell>
+              <TableCell className="text-right">¥{item.revenue.toLocaleString()}</TableCell>
+              <TableCell className="text-right">{item.customers.toLocaleString()}人</TableCell>
+              <TableCell className="text-right">¥{item.averageSpending.toLocaleString()}</TableCell>
+              <TableCell className="text-right">{item.newCustomerRate.toFixed(1)}%</TableCell>
+              <TableCell className="text-right">{item.repeatRate.toFixed(1)}%</TableCell>
+              <TableCell className="text-center">{getPerformanceBadge(item.repeatRate)}</TableCell>
               <TableCell className="text-right">
-                ¥{item.revenue.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                {item.customers.toLocaleString()}人
-              </TableCell>
-              <TableCell className="text-right">
-                ¥{item.averageSpending.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                {item.newCustomerRate.toFixed(1)}%
-              </TableCell>
-              <TableCell className="text-right">
-                {item.repeatRate.toFixed(1)}%
-              </TableCell>
-              <TableCell className="text-center">
-                {getPerformanceBadge(item.repeatRate)}
-              </TableCell>
-              <TableCell className="text-right">
-                <span className={item.growthRate > 0 ? "text-green-600" : "text-red-600"}>
-                  {item.growthRate > 0 ? "+" : ""}{item.growthRate.toFixed(1)}%
+                <span className={item.growthRate > 0 ? 'text-green-600' : 'text-red-600'}>
+                  {item.growthRate > 0 ? '+' : ''}
+                  {item.growthRate.toFixed(1)}%
                 </span>
               </TableCell>
             </TableRow>

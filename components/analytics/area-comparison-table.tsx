@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import {
   Table,
@@ -7,11 +7,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { AreaSalesData } from "@/lib/types/area-sales"
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { AreaSalesData } from '@/lib/types/area-sales'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
-import { Progress } from "@/components/ui/progress"
+import { Progress } from '@/components/ui/progress'
 
 interface AreaComparisonTableProps {
   data: AreaSalesData[]
@@ -22,25 +22,23 @@ export function AreaComparisonTable({ data, year }: AreaComparisonTableProps) {
   // Null/array check
   if (!data || !Array.isArray(data) || data.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-500">
-        データがありません
-      </div>
-    );
+      <div className="flex h-64 items-center justify-center text-gray-500">データがありません</div>
+    )
   }
 
   // ダミーの前年データ（実際にはAPIから取得）
-  const previousYearData = data.map(area => ({
+  const previousYearData = data.map((area) => ({
     area: area.area,
     total: area.total * (0.8 + Math.random() * 0.4), // 80-120%のランダム値
-    customerCount: Math.floor(Math.random() * 3000) + 2000
+    customerCount: Math.floor(Math.random() * 3000) + 2000,
   }))
 
   // 分析データを作成
   const analysisData = data.map((area, index) => {
     const previous = previousYearData[index]
-    const growthRate = ((area.total - previous.total) / previous.total * 100)
-    const marketShare = (area.total / data.reduce((sum, a) => sum + a.total, 0) * 100)
-    
+    const growthRate = ((area.total - previous.total) / previous.total) * 100
+    const marketShare = (area.total / data.reduce((sum, a) => sum + a.total, 0)) * 100
+
     return {
       area: area.area,
       currentSales: area.total,
@@ -49,7 +47,7 @@ export function AreaComparisonTable({ data, year }: AreaComparisonTableProps) {
       marketShare,
       customerCount: previous.customerCount,
       averageSpending: area.total / previous.customerCount,
-      rank: 0 // 後で設定
+      rank: 0, // 後で設定
     }
   })
 
@@ -73,31 +71,36 @@ export function AreaComparisonTable({ data, year }: AreaComparisonTableProps) {
   }
 
   // 全体の合計
-  const totals = analysisData.reduce((acc, curr) => ({
-    currentSales: acc.currentSales + curr.currentSales,
-    previousSales: acc.previousSales + curr.previousSales,
-    customerCount: acc.customerCount + curr.customerCount
-  }), { currentSales: 0, previousSales: 0, customerCount: 0 })
+  const totals = analysisData.reduce(
+    (acc, curr) => ({
+      currentSales: acc.currentSales + curr.currentSales,
+      previousSales: acc.previousSales + curr.previousSales,
+      customerCount: acc.customerCount + curr.customerCount,
+    }),
+    { currentSales: 0, previousSales: 0, customerCount: 0 }
+  )
 
-  const overallGrowthRate = ((totals.currentSales - totals.previousSales) / totals.previousSales * 100)
+  const overallGrowthRate =
+    ((totals.currentSales - totals.previousSales) / totals.previousSales) * 100
 
   return (
     <div className="space-y-4">
       {/* サマリーカード */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
         <div className="rounded-lg border p-4 text-center">
           <div className="text-2xl font-bold">¥{totals.currentSales.toLocaleString()}</div>
           <div className="text-sm text-gray-600">全エリア合計</div>
         </div>
         <div className="rounded-lg border p-4 text-center">
-          <div className="text-2xl font-bold flex items-center justify-center gap-1">
+          <div className="flex items-center justify-center gap-1 text-2xl font-bold">
             {overallGrowthRate > 0 ? (
               <TrendingUp className="h-5 w-5 text-green-600" />
             ) : (
               <TrendingDown className="h-5 w-5 text-red-600" />
             )}
-            <span className={overallGrowthRate > 0 ? "text-green-600" : "text-red-600"}>
-              {overallGrowthRate > 0 ? "+" : ""}{overallGrowthRate.toFixed(1)}%
+            <span className={overallGrowthRate > 0 ? 'text-green-600' : 'text-red-600'}>
+              {overallGrowthRate > 0 ? '+' : ''}
+              {overallGrowthRate.toFixed(1)}%
             </span>
           </div>
           <div className="text-sm text-gray-600">全体成長率</div>
@@ -126,28 +129,25 @@ export function AreaComparisonTable({ data, year }: AreaComparisonTableProps) {
           <TableBody>
             {analysisData.map((area) => (
               <TableRow key={area.area}>
-                <TableCell>
-                  {getRankBadge(area.rank)}
-                </TableCell>
+                <TableCell>{getRankBadge(area.rank)}</TableCell>
                 <TableCell className="font-medium">{area.area}</TableCell>
-                <TableCell className="text-right">
-                  ¥{area.currentSales.toLocaleString()}
-                </TableCell>
+                <TableCell className="text-right">¥{area.currentSales.toLocaleString()}</TableCell>
                 <TableCell className="text-right text-gray-500">
                   ¥{Math.round(area.previousSales).toLocaleString()}
                 </TableCell>
                 <TableCell className="text-center">
                   <div className="flex items-center justify-center gap-1">
                     {getGrowthIcon(area.growthRate)}
-                    <span className={area.growthRate > 0 ? "text-green-600" : "text-red-600"}>
-                      {area.growthRate > 0 ? "+" : ""}{area.growthRate.toFixed(1)}%
+                    <span className={area.growthRate > 0 ? 'text-green-600' : 'text-red-600'}>
+                      {area.growthRate > 0 ? '+' : ''}
+                      {area.growthRate.toFixed(1)}%
                     </span>
                   </div>
                 </TableCell>
                 <TableCell className="text-center">
                   <div className="flex flex-col items-center gap-1">
                     <span className="text-sm font-medium">{area.marketShare.toFixed(1)}%</span>
-                    <Progress value={area.marketShare} className="w-16 h-2" />
+                    <Progress value={area.marketShare} className="h-2 w-16" />
                   </div>
                 </TableCell>
                 <TableCell className="text-right">

@@ -105,10 +105,10 @@ export function PointHistory({ user }: PointHistoryProps) {
           <CardTitle>ポイント残高</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center mb-6">
-            <p className="text-4xl font-bold text-purple-600 mb-2">
+          <div className="mb-6 text-center">
+            <p className="mb-2 text-4xl font-bold text-purple-600">
               {user.points.toLocaleString()}
-              <span className="text-lg ml-1">pt</span>
+              <span className="ml-1 text-lg">pt</span>
             </p>
             <p className="text-sm text-gray-500">現在の保有ポイント</p>
           </div>
@@ -130,24 +130,24 @@ export function PointHistory({ user }: PointHistoryProps) {
       {/* Point Rules */}
       <Card>
         <CardContent className="p-6">
-          <h3 className="font-semibold mb-4">ポイントについて</h3>
+          <h3 className="mb-4 font-semibold">ポイントについて</h3>
           <div className="space-y-3 text-sm">
             <div className="flex items-start gap-2">
-              <div className="w-1 h-1 bg-gray-400 rounded-full mt-2" />
+              <div className="mt-2 h-1 w-1 rounded-full bg-gray-400" />
               <div>
                 <p className="font-medium">獲得ルール</p>
                 <p className="text-gray-600">ご利用金額の1%をポイント還元</p>
               </div>
             </div>
             <div className="flex items-start gap-2">
-              <div className="w-1 h-1 bg-gray-400 rounded-full mt-2" />
+              <div className="mt-2 h-1 w-1 rounded-full bg-gray-400" />
               <div>
                 <p className="font-medium">利用方法</p>
                 <p className="text-gray-600">1ポイント = 1円として次回予約時に利用可能</p>
               </div>
             </div>
             <div className="flex items-start gap-2">
-              <div className="w-1 h-1 bg-gray-400 rounded-full mt-2" />
+              <div className="mt-2 h-1 w-1 rounded-full bg-gray-400" />
               <div>
                 <p className="font-medium">有効期限</p>
                 <p className="text-gray-600">最後の獲得日から1年間</p>
@@ -167,28 +167,31 @@ export function PointHistory({ user }: PointHistoryProps) {
             {pointHistory.map((history) => (
               <div
                 key={history.id}
-                className="flex items-start justify-between py-3 border-b last:border-0"
+                className="flex items-start justify-between border-b py-3 last:border-0"
               >
                 <div className="flex items-start gap-3">
                   <div className="mt-1">{getTypeIcon(history.type)}</div>
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="mb-1 flex items-center gap-2">
                       <span className="font-medium">{history.description}</span>
                       {getTypeBadge(history.type)}
                     </div>
                     <p className="text-sm text-gray-600">{history.details}</p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="mt-1 text-xs text-gray-500">
                       {format(history.date, 'yyyy年MM月dd日 HH:mm', { locale: ja })}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className={`font-bold ${
-                    history.amount > 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {history.amount > 0 ? '+' : ''}{history.amount.toLocaleString()}pt
+                  <p
+                    className={`font-bold ${
+                      history.amount > 0 ? 'text-green-600' : 'text-red-600'
+                    }`}
+                  >
+                    {history.amount > 0 ? '+' : ''}
+                    {history.amount.toLocaleString()}pt
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="mt-1 text-xs text-gray-500">
                     残高: {history.balance.toLocaleString()}pt
                   </p>
                 </div>
@@ -197,7 +200,7 @@ export function PointHistory({ user }: PointHistoryProps) {
           </div>
 
           {/* Load More */}
-          <Button variant="outline" className="w-full mt-4">
+          <Button variant="outline" className="mt-4 w-full">
             もっと見る
           </Button>
         </CardContent>

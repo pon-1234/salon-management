@@ -47,11 +47,9 @@ export function AnalyticsTable<T extends Record<string, any>>({
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle>{title}</CardTitle>
-          {description && (
-            <p className="text-sm text-muted-foreground mt-1">{description}</p>
-          )}
+          {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
           {dateRange && (
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="mt-1 text-sm text-muted-foreground">
               期間: {formatDate(dateRange.start)} 〜 {formatDate(dateRange.end)}
             </p>
           )}
@@ -60,12 +58,9 @@ export function AnalyticsTable<T extends Record<string, any>>({
       </CardHeader>
       <CardContent>
         {error ? (
-          <div className="text-center py-8">
-            <p className="text-red-500 mb-4">データの読み込みに失敗しました</p>
-            <button
-              onClick={refetch}
-              className="text-blue-600 hover:text-blue-800 underline"
-            >
+          <div className="py-8 text-center">
+            <p className="mb-4 text-red-500">データの読み込みに失敗しました</p>
+            <button onClick={refetch} className="text-blue-600 underline hover:text-blue-800">
               再読み込み
             </button>
           </div>
@@ -78,9 +73,7 @@ export function AnalyticsTable<T extends Record<string, any>>({
             pageSize={pageSize}
             showFooter={showFooter}
             emptyMessage={emptyMessage}
-            rowClassName={(row) => 
-              totalRow && row === totalRow ? 'bg-gray-50 font-semibold' : ''
-            }
+            rowClassName={(row) => (totalRow && row === totalRow ? 'bg-gray-50 font-semibold' : '')}
           />
         )}
       </CardContent>
@@ -100,7 +93,7 @@ export function createColumns<T>(
     footer?: (rows: T[]) => ReactNode
   }>
 ): ColumnDef<T>[] {
-  return definitions.map(def => ({
+  return definitions.map((def) => ({
     ...def,
     cell: def.cell || ((value) => value?.toString() || '-'),
   }))

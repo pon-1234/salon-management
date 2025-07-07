@@ -32,6 +32,7 @@ The pricing synchronization system ensures that pricing information is consisten
 ### Repository Pattern
 
 The system uses a repository pattern with:
+
 - `PricingRepository` interface for data access
 - `PricingRepositoryImpl` with in-memory storage (can be replaced with API calls)
 - `PricingUseCases` for business logic
@@ -47,17 +48,20 @@ The system uses a repository pattern with:
 ## Admin Panel Pages
 
 ### Course Info (`/admin/settings/course-info`)
+
 - Manage course pricing with multiple durations
 - Set features and target audience
 - Enable/disable courses
 - Mark courses as popular
 
 ### Option Info (`/admin/settings/option-info`)
+
 - Manage add-on options
 - Set prices and categories
 - Optional duration for time-based options
 
 ### Additional Fees (`/admin/settings/additional-fees`)
+
 - Configure extra charges
 - Support for fixed amounts, percentages, or ranges
 - Examples: nomination fee, transportation, late night charges
@@ -65,6 +69,7 @@ The system uses a repository pattern with:
 ## Frontend Integration
 
 ### Pricing Page (`/[store]/pricing`)
+
 - Reads pricing from centralized system
 - Displays courses grouped by category
 - Shows options organized by type
@@ -73,6 +78,7 @@ The system uses a repository pattern with:
 ## Usage Examples
 
 ### Adding a New Course
+
 ```typescript
 const pricingUseCases = getPricingUseCases()
 const newCourse = await pricingUseCases.createCourse({
@@ -80,27 +86,29 @@ const newCourse = await pricingUseCases.createCourse({
   description: '特別なサービス',
   durations: [
     { time: 90, price: 30000 },
-    { time: 120, price: 40000 }
+    { time: 120, price: 40000 },
   ],
   features: ['特別マッサージ', 'VIPルーム'],
   category: 'premium',
   displayOrder: 4,
   isActive: true,
-  isPopular: true
+  isPopular: true,
 })
 ```
 
 ### Calculating Total Price
+
 ```typescript
 const total = await pricingUseCases.calculateTotalPrice(
-  courseId,        // Selected course
-  90,             // Duration in minutes
+  courseId, // Selected course
+  90, // Duration in minutes
   ['opt1', 'opt2'], // Selected options
-  true            // Is late night
+  true // Is late night
 )
 ```
 
 ### Syncing Prices
+
 ```typescript
 await pricingUseCases.syncPricing(storeId)
 ```
@@ -108,12 +116,9 @@ await pricingUseCases.syncPricing(storeId)
 ## Migration from Old System
 
 The system includes a migration method to convert from the old format:
+
 ```typescript
-await pricingUseCases.migrateFromOldFormat(
-  oldCourses,
-  oldOptions,
-  storeId
-)
+await pricingUseCases.migrateFromOldFormat(oldCourses, oldOptions, storeId)
 ```
 
 ## Future Enhancements

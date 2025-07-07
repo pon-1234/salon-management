@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/115</span>
+                <span class='fraction'>0/124</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/115</span>
+                <span class='fraction'>0/124</span>
             </div>
         
             
@@ -226,7 +226,13 @@
 <a name='L161'></a><a href='#L161'>161</a>
 <a name='L162'></a><a href='#L162'>162</a>
 <a name='L163'></a><a href='#L163'>163</a>
-<a name='L164'></a><a href='#L164'>164</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L164'></a><a href='#L164'>164</a>
+<a name='L165'></a><a href='#L165'>165</a>
+<a name='L166'></a><a href='#L166'>166</a>
+<a name='L167'></a><a href='#L167'>167</a>
+<a name='L168'></a><a href='#L168'>168</a>
+<a name='L169'></a><a href='#L169'>169</a>
+<a name='L170'></a><a href='#L170'>170</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -258,10 +264,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -317,24 +319,34 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -390,19 +402,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { X, Archive } from 'lucide-react'</span></span></span>
-import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
 &nbsp;
 interface Notification {
   id: string
   storeName: string
-  type: "reservation" | "message" | "system" | "incoming_call"
+  type: 'reservation' | 'message' | 'system' | 'incoming_call'
   message: string
   details: {
     reservationDate?: string
@@ -412,7 +420,7 @@ interface Notification {
     customer: string
     phoneNumber?: string
     callDuration?: string
-    callStatus?: "answered" | "rejected" | "missed"
+    callStatus?: 'answered' | 'rejected' | 'missed'
   }
   read: boolean
 }
@@ -420,8 +428,8 @@ interface Notification {
 interface NotificationListProps {
   notifications: Notification[]
   onClose: () =&gt; void
-  onNotificationClick: (id: string) =&gt; void;
-  onViewDetails: (id: string) =&gt; void;
+  onNotificationClick: (id: string) =&gt; void
+  onViewDetails: (id: string) =&gt; void
   onArchive: (id: string) =&gt; void
 }
 &nbsp;
@@ -430,16 +438,16 @@ interface NotificationListProps {
 <span class="cstat-no" title="statement not covered" >  onClose,</span>
 <span class="cstat-no" title="statement not covered" >  onNotificationClick,</span>
 <span class="cstat-no" title="statement not covered" >  onViewDetails,</span>
-<span class="cstat-no" title="statement not covered" >  onArchive</span>
+<span class="cstat-no" title="statement not covered" >  onArchive,</span>
 <span class="cstat-no" title="statement not covered" >}: NotificationListProps) {</span>
 <span class="cstat-no" title="statement not covered" >  return (</span>
-<span class="cstat-no" title="statement not covered" >    &lt;div className="w-[400px] bg-white border rounded-lg overflow-hidden"&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;div className="w-[400px] overflow-hidden rounded-lg border bg-white"&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;div className="flex items-center justify-between bg-emerald-600 p-4 text-white"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;h2 className="text-lg font-semibold"&gt;お知らせ一覧&lt;/h2&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;Button</span>
 <span class="cstat-no" title="statement not covered" >          variant="ghost"</span>
 <span class="cstat-no" title="statement not covered" >          size="icon"</span>
-<span class="cstat-no" title="statement not covered" >          className="hover:bg-emerald-700 text-white"</span>
+<span class="cstat-no" title="statement not covered" >          className="text-white hover:bg-emerald-700"</span>
 <span class="cstat-no" title="statement not covered" >          onClick={onClose}</span>
         &gt;
 <span class="cstat-no" title="statement not covered" >          &lt;X className="h-5 w-5" /&gt;</span>
@@ -450,18 +458,18 @@ interface NotificationListProps {
 <span class="cstat-no" title="statement not covered" >          &lt;div</span>
 <span class="cstat-no" title="statement not covered" >            key={notification.id}</span>
 <span class="cstat-no" title="statement not covered" >            className={cn(</span>
-<span class="cstat-no" title="statement not covered" >              "border-b p-4 hover:bg-gray-50 cursor-pointer transition-colors",</span>
-<span class="cstat-no" title="statement not covered" >              !notification.read &amp;&amp; "bg-emerald-50"</span>
+<span class="cstat-no" title="statement not covered" >              'cursor-pointer border-b p-4 transition-colors hover:bg-gray-50',</span>
+<span class="cstat-no" title="statement not covered" >              !notification.read &amp;&amp; 'bg-emerald-50'</span>
 <span class="cstat-no" title="statement not covered" >            )}</span>
 <span class="cstat-no" title="statement not covered" >            onClick={() =&gt; onNotificationClick(notification.id)}</span>
           &gt;
 <span class="cstat-no" title="statement not covered" >            &lt;div className="rounded-lg"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;div className="text-sm font-medium text-emerald-600 mb-1"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;div className="mb-1 text-sm font-medium text-emerald-600"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                {notification.storeName}</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;div className="font-medium mb-2"&gt;{notification.message}&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;div className="mb-2 font-medium"&gt;{notification.message}&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div className="space-y-1 text-sm text-gray-600"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                {notification.type === "incoming_call" ? (</span>
+<span class="cstat-no" title="statement not covered" >                {notification.type === 'incoming_call' ? (</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    {notification.details.phoneNumber &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;div className="flex justify-between"&gt;</span>
@@ -476,13 +484,20 @@ interface NotificationListProps {
 <span class="cstat-no" title="statement not covered" >                    {notification.details.callStatus &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;div className="flex justify-between"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;span&gt;対応状況：&lt;/span&gt;</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;span className={</span>
-<span class="cstat-no" title="statement not covered" >                          notification.details.callStatus === "answered" ? "text-green-600" :</span>
-<span class="cstat-no" title="statement not covered" >                          notification.details.callStatus === "rejected" ? "text-red-600" :</span>
-<span class="cstat-no" title="statement not covered" >                          "text-yellow-600"</span>
-                        }&gt;
-<span class="cstat-no" title="statement not covered" >                          {notification.details.callStatus === "answered" ? "応答済み" :</span>
-<span class="cstat-no" title="statement not covered" >                           notification.details.callStatus === "rejected" ? "拒否" : "不在着信"}</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;span</span>
+<span class="cstat-no" title="statement not covered" >                          className={</span>
+<span class="cstat-no" title="statement not covered" >                            notification.details.callStatus === 'answered'</span>
+<span class="cstat-no" title="statement not covered" >                              ? 'text-green-600'</span>
+<span class="cstat-no" title="statement not covered" >                              : notification.details.callStatus === 'rejected'</span>
+<span class="cstat-no" title="statement not covered" >                                ? 'text-red-600'</span>
+<span class="cstat-no" title="statement not covered" >                                : 'text-yellow-600'</span>
+                          }
+                        &gt;
+<span class="cstat-no" title="statement not covered" >                          {notification.details.callStatus === 'answered'</span>
+<span class="cstat-no" title="statement not covered" >                            ? '応答済み'</span>
+<span class="cstat-no" title="statement not covered" >                            : notification.details.callStatus === 'rejected'</span>
+<span class="cstat-no" title="statement not covered" >                              ? '拒否'</span>
+<span class="cstat-no" title="statement not covered" >                              : '不在着信'}</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;/div&gt;</span>
                     )}
@@ -502,7 +517,10 @@ interface NotificationListProps {
 <span class="cstat-no" title="statement not covered" >                    {notification.details.reservationDate &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;div className="flex justify-between"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;span&gt;ご予約日時：&lt;/span&gt;</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;span&gt;{notification.details.reservationDate} {notification.details.reservationTime}&lt;/span&gt;</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;span&gt;</span>
+<span class="cstat-no" title="statement not covered" >                          {notification.details.reservationDate}{' '}</span>
+<span class="cstat-no" title="statement not covered" >                          {notification.details.reservationTime}</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;/div&gt;</span>
                     )}
 <span class="cstat-no" title="statement not covered" >                    &lt;div className="flex justify-between"&gt;</span>
@@ -522,24 +540,24 @@ interface NotificationListProps {
 <span class="cstat-no" title="statement not covered" >                  &lt;/&gt;</span>
                 )}
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;div className="flex justify-end mt-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;div className="mt-2 flex justify-end"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;Button</span>
 <span class="cstat-no" title="statement not covered" >                  variant="ghost"</span>
 <span class="cstat-no" title="statement not covered" >                  size="sm"</span>
 <span class="cstat-no" title="statement not covered" >                  className="text-gray-500 hover:text-gray-700"</span>
 <span class="cstat-no" title="statement not covered" >                  onClick={(e) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >                    e.stopPropagation();</span>
-<span class="cstat-no" title="statement not covered" >                    onArchive(notification.id);</span>
+<span class="cstat-no" title="statement not covered" >                    e.stopPropagation()</span>
+<span class="cstat-no" title="statement not covered" >                    onArchive(notification.id)</span>
 <span class="cstat-no" title="statement not covered" >                  }}</span>
                 &gt;
-<span class="cstat-no" title="statement not covered" >                  &lt;Archive className="w-4 h-4" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;Archive className="h-4 w-4" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;Button</span>
 <span class="cstat-no" title="statement not covered" >                  variant="link"</span>
-<span class="cstat-no" title="statement not covered" >                  className="text-emerald-600 hover:text-emerald-700 p-0 h-auto"</span>
+<span class="cstat-no" title="statement not covered" >                  className="h-auto p-0 text-emerald-600 hover:text-emerald-700"</span>
 <span class="cstat-no" title="statement not covered" >                  onClick={(e) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >                    e.stopPropagation();</span>
-<span class="cstat-no" title="statement not covered" >                    onViewDetails(notification.id);</span>
+<span class="cstat-no" title="statement not covered" >                    e.stopPropagation()</span>
+<span class="cstat-no" title="statement not covered" >                    onViewDetails(notification.id)</span>
 <span class="cstat-no" title="statement not covered" >                  }}</span>
 <span class="cstat-no" title="statement not covered" >                &gt;</span>
                   詳細を見る →
@@ -559,7 +577,7 @@ interface NotificationListProps {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

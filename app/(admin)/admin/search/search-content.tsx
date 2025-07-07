@@ -1,11 +1,11 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Header } from "@/components/header"
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Header } from '@/components/header'
 
 // モックデータ
 const mockCustomers = [
@@ -21,21 +21,19 @@ export function SearchContent() {
 
   useEffect(() => {
     // 実際のアプリケーションでは、ここでAPIリクエストを行います
-    const filteredResults = mockCustomers.filter(
-      customer => customer.phone.includes(query || '')
-    )
+    const filteredResults = mockCustomers.filter((customer) => customer.phone.includes(query || ''))
     setResults(filteredResults)
   }, [query])
 
   return (
-    <div className="container mx-auto py-6 px-4">
+    <div className="container mx-auto px-4 py-6">
       <Header />
-      <h1 className="text-2xl font-bold mb-4 mt-6">検索結果: {query}</h1>
+      <h1 className="mb-4 mt-6 text-2xl font-bold">検索結果: {query}</h1>
       {results.length === 0 ? (
         <p>該当する顧客が見つかりませんでした。</p>
       ) : (
         <div className="space-y-4">
-          {results.map(customer => (
+          {results.map((customer) => (
             <Card key={customer.id}>
               <CardContent className="flex items-center justify-between p-4">
                 <div>
@@ -52,4 +50,4 @@ export function SearchContent() {
       )}
     </div>
   )
-} 
+}

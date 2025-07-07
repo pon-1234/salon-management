@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/127</span>
+                <span class='fraction'>0/125</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/127</span>
+                <span class='fraction'>0/125</span>
             </div>
         
             
@@ -252,8 +252,7 @@
 <a name='L187'></a><a href='#L187'>187</a>
 <a name='L188'></a><a href='#L188'>188</a>
 <a name='L189'></a><a href='#L189'>189</a>
-<a name='L190'></a><a href='#L190'>190</a>
-<a name='L191'></a><a href='#L191'>191</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L190'></a><a href='#L190'>190</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -371,7 +370,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -390,6 +388,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -425,8 +424,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -443,16 +440,17 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useState, useEffect } from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
+import { useState, useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
@@ -460,14 +458,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from '@/components/ui/dialog'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from '@/components/ui/select'
 import {
   Form,
   FormControl,
@@ -475,13 +473,13 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Cast } from "@/lib/cast/types"
-import { NgCastEntry } from "@/lib/customer/types"
+} from '@/components/ui/form'
+import { Cast } from '@/lib/cast/types'
+import { NgCastEntry } from '@/lib/customer/types'
 &nbsp;
 <span class="cstat-no" title="statement not covered" >const ngCastSchema = z.object({</span>
-<span class="cstat-no" title="statement not covered" >  castId: z.string().min(1, "キャストを選択してください"),</span>
-<span class="cstat-no" title="statement not covered" >  notes: z.string().max(500, "備考は500文字以内で入力してください").optional(),</span>
+<span class="cstat-no" title="statement not covered" >  castId: z.string().min(1, 'キャストを選択してください'),</span>
+<span class="cstat-no" title="statement not covered" >  notes: z.string().max(500, '備考は500文字以内で入力してください').optional(),</span>
 <span class="cstat-no" title="statement not covered" >})</span>
 &nbsp;
 type NgCastFormData = z.infer&lt;typeof ngCastSchema&gt;
@@ -508,8 +506,8 @@ interface NgCastDialogProps {
 <span class="cstat-no" title="statement not covered" >  const form = useForm&lt;NgCastFormData&gt;({</span>
 <span class="cstat-no" title="statement not covered" >    resolver: zodResolver(ngCastSchema),</span>
 <span class="cstat-no" title="statement not covered" >    defaultValues: {</span>
-<span class="cstat-no" title="statement not covered" >      castId: editingNgCast?.castId || "",</span>
-<span class="cstat-no" title="statement not covered" >      notes: editingNgCast?.notes || "",</span>
+<span class="cstat-no" title="statement not covered" >      castId: editingNgCast?.castId || '',</span>
+<span class="cstat-no" title="statement not covered" >      notes: editingNgCast?.notes || '',</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >  })</span>
 &nbsp;
@@ -517,8 +515,8 @@ interface NgCastDialogProps {
 <span class="cstat-no" title="statement not covered" >  useEffect(() =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    if (open) {</span>
 <span class="cstat-no" title="statement not covered" >      form.reset({</span>
-<span class="cstat-no" title="statement not covered" >        castId: editingNgCast?.castId || "",</span>
-<span class="cstat-no" title="statement not covered" >        notes: editingNgCast?.notes || "",</span>
+<span class="cstat-no" title="statement not covered" >        castId: editingNgCast?.castId || '',</span>
+<span class="cstat-no" title="statement not covered" >        notes: editingNgCast?.notes || '',</span>
 <span class="cstat-no" title="statement not covered" >      })</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  }, [open, editingNgCast, form])</span>
@@ -529,7 +527,7 @@ interface NgCastDialogProps {
 <span class="cstat-no" title="statement not covered" >      notes: data.notes,</span>
 <span class="cstat-no" title="statement not covered" >      addedDate: editingNgCast?.addedDate || new Date(),</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
-    
+&nbsp;
 <span class="cstat-no" title="statement not covered" >    onSave(ngCastEntry)</span>
 <span class="cstat-no" title="statement not covered" >    form.reset()</span>
 <span class="cstat-no" title="statement not covered" >    onOpenChange(false)</span>
@@ -541,8 +539,8 @@ interface NgCastDialogProps {
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
   // Filter out casts that are already in NG list (except when editing the current one)
-<span class="cstat-no" title="statement not covered" >  const selectableCasts = availableCasts.filter(cast =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    const isAlreadyNg = existingNgCasts.some(ng =&gt; ng.castId === cast.id)</span>
+<span class="cstat-no" title="statement not covered" >  const selectableCasts = availableCasts.filter((cast) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    const isAlreadyNg = existingNgCasts.some((ng) =&gt; ng.castId === cast.id)</span>
 <span class="cstat-no" title="statement not covered" >    const isCurrentlyEditing = editingNgCast?.castId === cast.id</span>
 <span class="cstat-no" title="statement not covered" >    return !isAlreadyNg || isCurrentlyEditing</span>
 <span class="cstat-no" title="statement not covered" >  })</span>
@@ -551,14 +549,11 @@ interface NgCastDialogProps {
 <span class="cstat-no" title="statement not covered" >    &lt;Dialog open={open} onOpenChange={onOpenChange}&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;DialogContent className="sm:max-w-[500px]"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;DialogHeader&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;DialogTitle&gt;</span>
-<span class="cstat-no" title="statement not covered" >            {isEditing ? "NGキャスト編集" : "NGキャスト追加"}</span>
-<span class="cstat-no" title="statement not covered" >          &lt;/DialogTitle&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;DialogTitle&gt;{isEditing ? 'NGキャスト編集' : 'NGキャスト追加'}&lt;/DialogTitle&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;DialogDescription&gt;</span>
-<span class="cstat-no" title="statement not covered" >            {isEditing </span>
-<span class="cstat-no" title="statement not covered" >              ? "NGキャストの情報を編集します。" </span>
-<span class="cstat-no" title="statement not covered" >              : "新しいNGキャストを追加します。備考には理由や詳細を記入できます。"</span>
-            }
+<span class="cstat-no" title="statement not covered" >            {isEditing</span>
+<span class="cstat-no" title="statement not covered" >              ? 'NGキャストの情報を編集します。'</span>
+<span class="cstat-no" title="statement not covered" >              : '新しいNGキャストを追加します。備考には理由や詳細を記入できます。'}</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/DialogDescription&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/DialogHeader&gt;</span>
 &nbsp;
@@ -569,7 +564,9 @@ interface NgCastDialogProps {
 <span class="cstat-no" title="statement not covered" >              name="castId"</span>
 <span class="cstat-no" title="statement not covered" >              render={({ field }) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >                &lt;FormItem&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;FormLabel&gt;キャスト &lt;span className="text-red-500"&gt;*&lt;/span&gt;&lt;/FormLabel&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;FormLabel&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    キャスト &lt;span className="text-red-500"&gt;*&lt;/span&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;/FormLabel&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;Select onValueChange={field.onChange} value={field.value} disabled={isEditing}&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;FormControl&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;SelectTrigger&gt;</span>
@@ -580,10 +577,11 @@ interface NgCastDialogProps {
 <span class="cstat-no" title="statement not covered" >                      {selectableCasts.map((cast) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;SelectItem key={cast.id} value={cast.id}&gt;</span>
 <span class="cstat-no" title="statement not covered" >                          &lt;div className="flex items-center gap-3"&gt;</span>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
 <span class="cstat-no" title="statement not covered" >                            &lt;img</span>
-<span class="cstat-no" title="statement not covered" >                              src={cast.image || "/placeholder.svg"}</span>
+<span class="cstat-no" title="statement not covered" >                              src={cast.image || '/placeholder.svg'}</span>
 <span class="cstat-no" title="statement not covered" >                              alt={cast.name}</span>
-<span class="cstat-no" title="statement not covered" >                              className="w-8 aspect-[7/10] rounded object-cover"</span>
+<span class="cstat-no" title="statement not covered" >                              className="aspect-[7/10] w-8 rounded object-cover"</span>
 <span class="cstat-no" title="statement not covered" >                            /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                            &lt;div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                              &lt;div className="font-medium"&gt;{cast.name}&lt;/div&gt;</span>
@@ -612,9 +610,7 @@ interface NgCastDialogProps {
 <span class="cstat-no" title="statement not covered" >                      {...field}</span>
 <span class="cstat-no" title="statement not covered" >                    /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/FormControl&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;div className="text-sm text-gray-500"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    {field.value?.length || 0}/500文字</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;div className="text-sm text-gray-500"&gt;{field.value?.length || 0}/500文字&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;FormMessage /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/FormItem&gt;</span>
               )}
@@ -625,7 +621,7 @@ interface NgCastDialogProps {
                 キャンセル
 <span class="cstat-no" title="statement not covered" >              &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;Button type="submit" className="bg-red-600 hover:bg-red-700"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                {isEditing ? "更新" : "追加"}</span>
+<span class="cstat-no" title="statement not covered" >                {isEditing ? '更新' : '追加'}</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/DialogFooter&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/form&gt;</span>
@@ -633,14 +629,15 @@ interface NgCastDialogProps {
 <span class="cstat-no" title="statement not covered" >      &lt;/DialogContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/Dialog&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

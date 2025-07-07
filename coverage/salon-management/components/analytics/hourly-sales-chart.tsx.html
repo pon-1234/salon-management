@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/25</span>
+                <span class='fraction'>0/17</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/25</span>
+                <span class='fraction'>0/17</span>
             </div>
         
             
@@ -108,6 +108,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -120,25 +128,25 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { HourlySalesReport } from "@/lib/types/hourly-sales"
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts'
+import { HourlySalesReport } from '@/lib/types/hourly-sales'
 &nbsp;
 interface HourlySalesChartProps {
   data: HourlySalesReport
@@ -148,37 +156,29 @@ interface HourlySalesChartProps {
   // 時間別の合計データをグラフ用に変換
 <span class="cstat-no" title="statement not covered" >  const chartData = data.hourlyTotals.map((total, index) =&gt; ({</span>
 <span class="cstat-no" title="statement not covered" >    hour: `${index + 7}時`,</span>
-<span class="cstat-no" title="statement not covered" >    来客数: total</span>
+<span class="cstat-no" title="statement not covered" >    来客数: total,</span>
 <span class="cstat-no" title="statement not covered" >  }))</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;ResponsiveContainer width="100%" height={350}&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;AreaChart</span>
-<span class="cstat-no" title="statement not covered" >        data={chartData}</span>
-<span class="cstat-no" title="statement not covered" >        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}</span>
-      &gt;
+<span class="cstat-no" title="statement not covered" >      &lt;AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;CartesianGrid strokeDasharray="3 3" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;XAxis dataKey="hour" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;YAxis /&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;Tooltip /&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;Area </span>
-<span class="cstat-no" title="statement not covered" >          type="monotone" </span>
-<span class="cstat-no" title="statement not covered" >          dataKey="来客数" </span>
-<span class="cstat-no" title="statement not covered" >          stroke="#10b981" </span>
-<span class="cstat-no" title="statement not covered" >          fill="#10b981" </span>
-<span class="cstat-no" title="statement not covered" >          fillOpacity={0.6}</span>
-<span class="cstat-no" title="statement not covered" >        /&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;Area type="monotone" dataKey="来客数" stroke="#10b981" fill="#10b981" fillOpacity={0.6} /&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/AreaChart&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/ResponsiveContainer&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/74</span>
+                <span class='fraction'>0/65</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/74</span>
+                <span class='fraction'>0/65</span>
             </div>
         
             
@@ -175,6 +175,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -211,16 +220,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -253,11 +252,21 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useEffect, useState } from "react"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
+import { useEffect, useState } from 'react'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 &nbsp;
 interface OptionTrendChartProps {
   year: number
@@ -276,18 +285,18 @@ interface MonthlyData {
 <span class="cstat-no" title="statement not covered" >  useEffect(() =&gt; {</span>
     // ダミーデータ（実際にはuseCasesから取得）
 <span class="cstat-no" title="statement not covered" >    const dummyData: MonthlyData[] = [</span>
-<span class="cstat-no" title="statement not covered" >      { month: "1月", sales: 156700, attachRate: 38.5 },</span>
-<span class="cstat-no" title="statement not covered" >      { month: "2月", sales: 167800, attachRate: 39.2 },</span>
-<span class="cstat-no" title="statement not covered" >      { month: "3月", sales: 178900, attachRate: 40.1 },</span>
-<span class="cstat-no" title="statement not covered" >      { month: "4月", sales: 182300, attachRate: 40.8 },</span>
-<span class="cstat-no" title="statement not covered" >      { month: "5月", sales: 175600, attachRate: 39.5 },</span>
-<span class="cstat-no" title="statement not covered" >      { month: "6月", sales: 189200, attachRate: 41.2 },</span>
-<span class="cstat-no" title="statement not covered" >      { month: "7月", sales: 195600, attachRate: 42.1 },</span>
-<span class="cstat-no" title="statement not covered" >      { month: "8月", sales: 201200, attachRate: 42.8 },</span>
-<span class="cstat-no" title="statement not covered" >      { month: "9月", sales: 187600, attachRate: 41.5 },</span>
-<span class="cstat-no" title="statement not covered" >      { month: "10月", sales: 193400, attachRate: 42.3 },</span>
-<span class="cstat-no" title="statement not covered" >      { month: "11月", sales: 198700, attachRate: 42.7 },</span>
-<span class="cstat-no" title="statement not covered" >      { month: "12月", sales: 207500, attachRate: 43.2 }</span>
+<span class="cstat-no" title="statement not covered" >      { month: '1月', sales: 156700, attachRate: 38.5 },</span>
+<span class="cstat-no" title="statement not covered" >      { month: '2月', sales: 167800, attachRate: 39.2 },</span>
+<span class="cstat-no" title="statement not covered" >      { month: '3月', sales: 178900, attachRate: 40.1 },</span>
+<span class="cstat-no" title="statement not covered" >      { month: '4月', sales: 182300, attachRate: 40.8 },</span>
+<span class="cstat-no" title="statement not covered" >      { month: '5月', sales: 175600, attachRate: 39.5 },</span>
+<span class="cstat-no" title="statement not covered" >      { month: '6月', sales: 189200, attachRate: 41.2 },</span>
+<span class="cstat-no" title="statement not covered" >      { month: '7月', sales: 195600, attachRate: 42.1 },</span>
+<span class="cstat-no" title="statement not covered" >      { month: '8月', sales: 201200, attachRate: 42.8 },</span>
+<span class="cstat-no" title="statement not covered" >      { month: '9月', sales: 187600, attachRate: 41.5 },</span>
+<span class="cstat-no" title="statement not covered" >      { month: '10月', sales: 193400, attachRate: 42.3 },</span>
+<span class="cstat-no" title="statement not covered" >      { month: '11月', sales: 198700, attachRate: 42.7 },</span>
+<span class="cstat-no" title="statement not covered" >      { month: '12月', sales: 207500, attachRate: 43.2 },</span>
 <span class="cstat-no" title="statement not covered" >    ]</span>
 <span class="cstat-no" title="statement not covered" >    setData(dummyData)</span>
 <span class="cstat-no" title="statement not covered" >  }, [year, analyticsUseCases])</span>
@@ -303,22 +312,12 @@ interface MonthlyData {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;ResponsiveContainer width="100%" height={300}&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;LineChart</span>
-<span class="cstat-no" title="statement not covered" >        data={data}</span>
-<span class="cstat-no" title="statement not covered" >        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}</span>
-      &gt;
+<span class="cstat-no" title="statement not covered" >      &lt;LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;CartesianGrid strokeDasharray="3 3" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;XAxis dataKey="month" /&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;YAxis </span>
-<span class="cstat-no" title="statement not covered" >          yAxisId="left"</span>
-<span class="cstat-no" title="statement not covered" >          tickFormatter={formatYAxis}</span>
-<span class="cstat-no" title="statement not covered" >        /&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;YAxis </span>
-<span class="cstat-no" title="statement not covered" >          yAxisId="right"</span>
-<span class="cstat-no" title="statement not covered" >          orientation="right"</span>
-<span class="cstat-no" title="statement not covered" >          domain={[35, 45]}</span>
-<span class="cstat-no" title="statement not covered" >        /&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;Tooltip </span>
+<span class="cstat-no" title="statement not covered" >        &lt;YAxis yAxisId="left" tickFormatter={formatYAxis} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;YAxis yAxisId="right" orientation="right" domain={[35, 45]} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;Tooltip</span>
 <span class="cstat-no" title="statement not covered" >          formatter={(value: number, name: string) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >            if (name === '売上額') return [`¥${value.toLocaleString()}`, name]</span>
 <span class="cstat-no" title="statement not covered" >            if (name === '装着率') return [`${value}%`, name]</span>
@@ -326,20 +325,20 @@ interface MonthlyData {
 <span class="cstat-no" title="statement not covered" >          }}</span>
 <span class="cstat-no" title="statement not covered" >        /&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;Legend /&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;Line </span>
+<span class="cstat-no" title="statement not covered" >        &lt;Line</span>
 <span class="cstat-no" title="statement not covered" >          yAxisId="left"</span>
-<span class="cstat-no" title="statement not covered" >          type="monotone" </span>
-<span class="cstat-no" title="statement not covered" >          dataKey="sales" </span>
-<span class="cstat-no" title="statement not covered" >          stroke="#10b981" </span>
+<span class="cstat-no" title="statement not covered" >          type="monotone"</span>
+<span class="cstat-no" title="statement not covered" >          dataKey="sales"</span>
+<span class="cstat-no" title="statement not covered" >          stroke="#10b981"</span>
 <span class="cstat-no" title="statement not covered" >          strokeWidth={2}</span>
 <span class="cstat-no" title="statement not covered" >          name="売上額"</span>
 <span class="cstat-no" title="statement not covered" >          dot={{ fill: '#10b981', r: 3 }}</span>
 <span class="cstat-no" title="statement not covered" >        /&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;Line </span>
+<span class="cstat-no" title="statement not covered" >        &lt;Line</span>
 <span class="cstat-no" title="statement not covered" >          yAxisId="right"</span>
-<span class="cstat-no" title="statement not covered" >          type="monotone" </span>
-<span class="cstat-no" title="statement not covered" >          dataKey="attachRate" </span>
-<span class="cstat-no" title="statement not covered" >          stroke="#f59e0b" </span>
+<span class="cstat-no" title="statement not covered" >          type="monotone"</span>
+<span class="cstat-no" title="statement not covered" >          dataKey="attachRate"</span>
+<span class="cstat-no" title="statement not covered" >          stroke="#f59e0b"</span>
 <span class="cstat-no" title="statement not covered" >          strokeWidth={2}</span>
 <span class="cstat-no" title="statement not covered" >          name="装着率"</span>
 <span class="cstat-no" title="statement not covered" >          strokeDasharray="5 5"</span>
@@ -348,14 +347,15 @@ interface MonthlyData {
 <span class="cstat-no" title="statement not covered" >      &lt;/LineChart&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/ResponsiveContainer&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

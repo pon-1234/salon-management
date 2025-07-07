@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/70</span>
+                <span class='fraction'>0/65</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/70</span>
+                <span class='fraction'>0/65</span>
             </div>
         
             
@@ -173,13 +173,7 @@
 <a name='L108'></a><a href='#L108'>108</a>
 <a name='L109'></a><a href='#L109'>109</a>
 <a name='L110'></a><a href='#L110'>110</a>
-<a name='L111'></a><a href='#L111'>111</a>
-<a name='L112'></a><a href='#L112'>112</a>
-<a name='L113'></a><a href='#L113'>113</a>
-<a name='L114'></a><a href='#L114'>114</a>
-<a name='L115'></a><a href='#L115'>115</a>
-<a name='L116'></a><a href='#L116'>116</a>
-<a name='L117'></a><a href='#L117'>117</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L111'></a><a href='#L111'>111</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -230,15 +224,10 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -260,8 +249,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -295,7 +282,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
 import { ReactNode } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -344,11 +332,9 @@ interface AnalyticsTableProps&lt;T&gt; {
 <span class="cstat-no" title="statement not covered" >      &lt;CardHeader className="flex flex-row items-center justify-between"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;CardTitle&gt;{title}&lt;/CardTitle&gt;</span>
-<span class="cstat-no" title="statement not covered" >          {description &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >            &lt;p className="text-sm text-muted-foreground mt-1"&gt;{description}&lt;/p&gt;</span>
-          )}
+<span class="cstat-no" title="statement not covered" >          {description &amp;&amp; &lt;p className="mt-1 text-sm text-muted-foreground"&gt;{description}&lt;/p&gt;}</span>
 <span class="cstat-no" title="statement not covered" >          {dateRange &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >            &lt;p className="text-sm text-muted-foreground mt-1"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;p className="mt-1 text-sm text-muted-foreground"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              期間: {formatDate(dateRange.start)} 〜 {formatDate(dateRange.end)}</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/p&gt;</span>
           )}
@@ -357,12 +343,9 @@ interface AnalyticsTableProps&lt;T&gt; {
 <span class="cstat-no" title="statement not covered" >      &lt;/CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;CardContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >        {error ? (</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="text-center py-8"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;p className="text-red-500 mb-4"&gt;データの読み込みに失敗しました&lt;/p&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;button</span>
-<span class="cstat-no" title="statement not covered" >              onClick={refetch}</span>
-<span class="cstat-no" title="statement not covered" >              className="text-blue-600 hover:text-blue-800 underline"</span>
-<span class="cstat-no" title="statement not covered" >            &gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="py-8 text-center"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;p className="mb-4 text-red-500"&gt;データの読み込みに失敗しました&lt;/p&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;button onClick={refetch} className="text-blue-600 underline hover:text-blue-800"&gt;</span>
               再読み込み
 <span class="cstat-no" title="statement not covered" >            &lt;/button&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
@@ -375,9 +358,7 @@ interface AnalyticsTableProps&lt;T&gt; {
 <span class="cstat-no" title="statement not covered" >            pageSize={pageSize}</span>
 <span class="cstat-no" title="statement not covered" >            showFooter={showFooter}</span>
 <span class="cstat-no" title="statement not covered" >            emptyMessage={emptyMessage}</span>
-<span class="cstat-no" title="statement not covered" >            rowClassName={(row) =&gt; </span>
-<span class="cstat-no" title="statement not covered" >              totalRow &amp;&amp; row === totalRow ? 'bg-gray-50 font-semibold' : ''</span>
-            }
+<span class="cstat-no" title="statement not covered" >            rowClassName={(row) =&gt; (totalRow &amp;&amp; row === totalRow ? 'bg-gray-50 font-semibold' : '')}</span>
 <span class="cstat-no" title="statement not covered" >          /&gt;</span>
         )}
 <span class="cstat-no" title="statement not covered" >      &lt;/CardContent&gt;</span>
@@ -397,7 +378,7 @@ interface AnalyticsTableProps&lt;T&gt; {
     footer?: (rows: T[]) =&gt; ReactNode
   }&gt;
 <span class="cstat-no" title="statement not covered" >): ColumnDef&lt;T&gt;[] {</span>
-<span class="cstat-no" title="statement not covered" >  return definitions.map(def =&gt; ({</span>
+<span class="cstat-no" title="statement not covered" >  return definitions.map((def) =&gt; ({</span>
 <span class="cstat-no" title="statement not covered" >    ...def,</span>
 <span class="cstat-no" title="statement not covered" >    cell: def.cell || ((value) =&gt; value?.toString() || '-'),</span>
 <span class="cstat-no" title="statement not covered" >  }))</span>
@@ -411,14 +392,15 @@ interface AnalyticsTableProps&lt;T&gt; {
 // パーセンテージフォーマット用ヘルパー
 <span class="cstat-no" title="statement not covered" >export function formatPercentage(value: number, decimals: number = 1): string {</span>
 <span class="cstat-no" title="statement not covered" >  return `${value.toFixed(decimals)}%`</span>
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

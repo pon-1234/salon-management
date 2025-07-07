@@ -1,47 +1,48 @@
-import { Button } from "@/components/ui/button"
+import { Button } from '@/components/ui/button'
 import { RefreshCw, Filter, UserPlus, UserMinus } from 'lucide-react'
-import { useState } from "react"
-import { QuickBookingDialog } from "./quick-booking-dialog"
-import { FilterDialog } from "./filter-dialog"
+import { useState } from 'react'
+import { QuickBookingDialog } from './quick-booking-dialog'
+import { FilterDialog } from './filter-dialog'
 
 interface ActionButtonsProps {
-  onRefresh: () => void;
-  onFilter: () => void;
-  onCustomerSelect: (customer: { id: string; name: string } | null) => void;
-  selectedCustomer: { id: string; name: string } | null;
+  onRefresh: () => void
+  onFilter: () => void
+  onCustomerSelect: (customer: { id: string; name: string } | null) => void
+  selectedCustomer: { id: string; name: string } | null
 }
 
-export function ActionButtons({ onRefresh, onFilter, onCustomerSelect, selectedCustomer }: ActionButtonsProps) {
+export function ActionButtons({
+  onRefresh,
+  onFilter,
+  onCustomerSelect,
+  selectedCustomer,
+}: ActionButtonsProps) {
   const [openQuickBooking, setOpenQuickBooking] = useState(false)
   const [openFilter, setOpenFilter] = useState(false)
 
   return (
-    <div className="flex justify-between items-center p-4 border-b">
+    <div className="flex items-center justify-between border-b p-4">
       <div className="flex gap-2">
         <Button onClick={onRefresh} variant="outline" size="sm">
-          <RefreshCw className="w-4 h-4 mr-2" />
+          <RefreshCw className="mr-2 h-4 w-4" />
           更新
         </Button>
         <Button onClick={onFilter} variant="outline" size="sm">
-          <Filter className="w-4 h-4 mr-2" />
+          <Filter className="mr-2 h-4 w-4" />
           フィルター
         </Button>
         {selectedCustomer ? (
-          <Button 
-            onClick={() => onCustomerSelect(null)} 
-            variant="outline" 
-            size="sm"
-          >
-            <UserMinus className="w-4 h-4 mr-2" />
+          <Button onClick={() => onCustomerSelect(null)} variant="outline" size="sm">
+            <UserMinus className="mr-2 h-4 w-4" />
             顧客選択を解除
           </Button>
         ) : (
-          <Button 
-            onClick={() => onCustomerSelect({ id: "dummy-id", name: "山田太郎" })} 
-            variant="outline" 
+          <Button
+            onClick={() => onCustomerSelect({ id: 'dummy-id', name: '山田太郎' })}
+            variant="outline"
             size="sm"
           >
-            <UserPlus className="w-4 h-4 mr-2" />
+            <UserPlus className="mr-2 h-4 w-4" />
             この顧客で予約を取る
           </Button>
         )}
@@ -54,7 +55,11 @@ export function ActionButtons({ onRefresh, onFilter, onCustomerSelect, selectedC
           絞り込み
         </Button>
       </div>
-      <QuickBookingDialog open={openQuickBooking} onOpenChange={setOpenQuickBooking} selectedCustomer={null} />
+      <QuickBookingDialog
+        open={openQuickBooking}
+        onOpenChange={setOpenQuickBooking}
+        selectedCustomer={null}
+      />
       <FilterDialog open={openFilter} onOpenChange={setOpenFilter} onApplyFilters={() => {}} />
     </div>
   )

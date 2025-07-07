@@ -1,7 +1,7 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 import { Printer } from 'lucide-react'
 import {
   Select,
@@ -9,10 +9,10 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { CastPerformanceTable } from "@/components/analytics/cast-performance-table"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
-import { AnalyticsRepositoryImpl } from "@/lib/analytics/repository"
+} from '@/components/ui/select'
+import { CastPerformanceTable } from '@/components/analytics/cast-performance-table'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
+import { AnalyticsRepositoryImpl } from '@/lib/analytics/repository'
 
 const analyticsRepository = new AnalyticsRepositoryImpl()
 const analyticsUseCases = new AnalyticsUseCases(analyticsRepository)
@@ -20,14 +20,14 @@ const analyticsUseCases = new AnalyticsUseCases(analyticsRepository)
 export default function CastPerformancePage() {
   const [selectedYear, setSelectedYear] = useState(2024)
   const [selectedMonth, setSelectedMonth] = useState(12)
-  const [displayType, setDisplayType] = useState("全て表示")
-  const [selectedCast, setSelectedCast] = useState("")
+  const [displayType, setDisplayType] = useState('全て表示')
+  const [selectedCast, setSelectedCast] = useState('')
 
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i)
   const months = Array.from({ length: 12 }, (_, i) => i + 1)
-  const displayTypes = ["全て表示", "出勤のみ", "休みのみ"]
-  const castList = ["----------", "きょうか", "れいな", "はるひ"]
+  const displayTypes = ['全て表示', '出勤のみ', '休みのみ']
+  const castList = ['----------', 'きょうか', 'れいな', 'はるひ']
 
   const handlePrint = () => {
     window.print()
@@ -69,10 +69,7 @@ export default function CastPerformancePage() {
                 ))}
               </SelectContent>
             </Select>
-            <Select
-              value={displayType}
-              onValueChange={setDisplayType}
-            >
+            <Select value={displayType} onValueChange={setDisplayType}>
               <SelectTrigger className="w-[120px]">
                 <SelectValue />
               </SelectTrigger>
@@ -84,10 +81,7 @@ export default function CastPerformancePage() {
                 ))}
               </SelectContent>
             </Select>
-            <Select
-              value={selectedCast}
-              onValueChange={setSelectedCast}
-            >
+            <Select value={selectedCast} onValueChange={setSelectedCast}>
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="キャスト：" />
               </SelectTrigger>
@@ -101,28 +95,30 @@ export default function CastPerformancePage() {
             </Select>
           </div>
         </div>
-        <Button onClick={handlePrint} className="print:hidden bg-emerald-600 hover:bg-emerald-700 text-white">
+        <Button
+          onClick={handlePrint}
+          className="bg-emerald-600 text-white hover:bg-emerald-700 print:hidden"
+        >
           <Printer className="mr-2 h-4 w-4" />
           印刷する
         </Button>
       </div>
 
       <div className="flex items-center justify-between text-sm">
-        <div className="text-red-500">
-          ※ 厚生費は未払いも含めて全て表示しています
-        </div>
+        <div className="text-red-500">※ 厚生費は未払いも含めて全て表示しています</div>
         <div className="text-gray-600">
-          最終更新: {new Date().toLocaleDateString('ja-JP', { 
-            year: 'numeric', 
-            month: 'numeric', 
+          最終更新:{' '}
+          {new Date().toLocaleDateString('ja-JP', {
+            year: 'numeric',
+            month: 'numeric',
             day: 'numeric',
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
           })}
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+      <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
         <CastPerformanceTable analyticsUseCases={analyticsUseCases} />
       </div>
     </div>

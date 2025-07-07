@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/132</span>
+                <span class='fraction'>0/131</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/132</span>
+                <span class='fraction'>0/131</span>
             </div>
         
             
@@ -228,7 +228,8 @@
 <a name='L163'></a><a href='#L163'>163</a>
 <a name='L164'></a><a href='#L164'>164</a>
 <a name='L165'></a><a href='#L165'>165</a>
-<a name='L166'></a><a href='#L166'>166</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L166'></a><a href='#L166'>166</a>
+<a name='L167'></a><a href='#L167'>167</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -381,7 +382,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -393,9 +394,10 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -403,8 +405,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
+} from '@/components/ui/table'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 &nbsp;
 interface MonthlyAreaTableProps {
   year: number
@@ -429,59 +431,59 @@ interface AreaPerformance {
     // ダミーデータ（実際にはuseCasesから取得）
 <span class="cstat-no" title="statement not covered" >    const dummyData: AreaPerformance[] = [</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        area: "渋谷区",</span>
+<span class="cstat-no" title="statement not covered" >        area: '渋谷区',</span>
 <span class="cstat-no" title="statement not covered" >        customerCount: 234,</span>
 <span class="cstat-no" title="statement not covered" >        newCustomers: 42,</span>
 <span class="cstat-no" title="statement not covered" >        repeaters: 192,</span>
 <span class="cstat-no" title="statement not covered" >        totalSales: 2234500,</span>
 <span class="cstat-no" title="statement not covered" >        averagePerCustomer: 9550,</span>
-<span class="cstat-no" title="statement not covered" >        growthRate: 8.5</span>
+<span class="cstat-no" title="statement not covered" >        growthRate: 8.5,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        area: "新宿区",</span>
+<span class="cstat-no" title="statement not covered" >        area: '新宿区',</span>
 <span class="cstat-no" title="statement not covered" >        customerCount: 189,</span>
 <span class="cstat-no" title="statement not covered" >        newCustomers: 31,</span>
 <span class="cstat-no" title="statement not covered" >        repeaters: 158,</span>
 <span class="cstat-no" title="statement not covered" >        totalSales: 1823400,</span>
 <span class="cstat-no" title="statement not covered" >        averagePerCustomer: 9649,</span>
-<span class="cstat-no" title="statement not covered" >        growthRate: 5.2</span>
+<span class="cstat-no" title="statement not covered" >        growthRate: 5.2,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        area: "港区",</span>
+<span class="cstat-no" title="statement not covered" >        area: '港区',</span>
 <span class="cstat-no" title="statement not covered" >        customerCount: 156,</span>
 <span class="cstat-no" title="statement not covered" >        newCustomers: 28,</span>
 <span class="cstat-no" title="statement not covered" >        repeaters: 128,</span>
 <span class="cstat-no" title="statement not covered" >        totalSales: 1612300,</span>
 <span class="cstat-no" title="statement not covered" >        averagePerCustomer: 10336,</span>
-<span class="cstat-no" title="statement not covered" >        growthRate: 12.3</span>
+<span class="cstat-no" title="statement not covered" >        growthRate: 12.3,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        area: "中央区",</span>
+<span class="cstat-no" title="statement not covered" >        area: '中央区',</span>
 <span class="cstat-no" title="statement not covered" >        customerCount: 98,</span>
 <span class="cstat-no" title="statement not covered" >        newCustomers: 15,</span>
 <span class="cstat-no" title="statement not covered" >        repeaters: 83,</span>
 <span class="cstat-no" title="statement not covered" >        totalSales: 943200,</span>
 <span class="cstat-no" title="statement not covered" >        averagePerCustomer: 9624,</span>
-<span class="cstat-no" title="statement not covered" >        growthRate: -2.1</span>
+<span class="cstat-no" title="statement not covered" >        growthRate: -2.1,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        area: "千代田区",</span>
+<span class="cstat-no" title="statement not covered" >        area: '千代田区',</span>
 <span class="cstat-no" title="statement not covered" >        customerCount: 67,</span>
 <span class="cstat-no" title="statement not covered" >        newCustomers: 10,</span>
 <span class="cstat-no" title="statement not covered" >        repeaters: 57,</span>
 <span class="cstat-no" title="statement not covered" >        totalSales: 678900,</span>
 <span class="cstat-no" title="statement not covered" >        averagePerCustomer: 10133,</span>
-<span class="cstat-no" title="statement not covered" >        growthRate: 3.8</span>
+<span class="cstat-no" title="statement not covered" >        growthRate: 3.8,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        area: "その他",</span>
+<span class="cstat-no" title="statement not covered" >        area: 'その他',</span>
 <span class="cstat-no" title="statement not covered" >        customerCount: 148,</span>
 <span class="cstat-no" title="statement not covered" >        newCustomers: 28,</span>
 <span class="cstat-no" title="statement not covered" >        repeaters: 120,</span>
 <span class="cstat-no" title="statement not covered" >        totalSales: 1345600,</span>
 <span class="cstat-no" title="statement not covered" >        averagePerCustomer: 9092,</span>
-<span class="cstat-no" title="statement not covered" >        growthRate: 6.7</span>
-<span class="cstat-no" title="statement not covered" >      }</span>
+<span class="cstat-no" title="statement not covered" >        growthRate: 6.7,</span>
+<span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >    ]</span>
 <span class="cstat-no" title="statement not covered" >    setData(dummyData)</span>
 <span class="cstat-no" title="statement not covered" >  }, [year, month, analyticsUseCases])</span>
@@ -524,9 +526,7 @@ interface AreaPerformance {
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;{area.customerCount}人&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;{area.newCustomers}人&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;{area.repeaters}人&lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                ¥{area.totalSales.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;¥{area.totalSales.toLocaleString()}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                ¥{area.averagePerCustomer.toLocaleString()}</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
@@ -534,22 +534,24 @@ interface AreaPerformance {
 <span class="cstat-no" title="statement not covered" >                {((area.totalSales / totals.totalSales) * 100).toFixed(1)}%</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;span className={area.growthRate &gt; 0 ? "text-green-600" : "text-red-600"}&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  {area.growthRate &gt; 0 ? "+" : ""}{area.growthRate}%</span>
+<span class="cstat-no" title="statement not covered" >                &lt;span className={area.growthRate &gt; 0 ? 'text-green-600' : 'text-red-600'}&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  {area.growthRate &gt; 0 ? '+' : ''}</span>
+<span class="cstat-no" title="statement not covered" >                  {area.growthRate}%</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TableRow&gt;</span>
 <span class="cstat-no" title="statement not covered" >          ))}</span>
-<span class="cstat-no" title="statement not covered" >          &lt;TableRow className="font-bold bg-gray-50"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;TableRow className="bg-gray-50 font-bold"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell&gt;合計&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;{totals.customerCount}人&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;{totals.newCustomers}人&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;{totals.repeaters}人&lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;¥{totals.totalSales.toLocaleString()}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              ¥{totals.totalSales.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              ¥{totals.customerCount &gt; 0 ? Math.round(totals.totalSales / totals.customerCount).toLocaleString() : 0}</span>
+              ¥
+<span class="cstat-no" title="statement not covered" >              {totals.customerCount &gt; 0</span>
+<span class="cstat-no" title="statement not covered" >                ? Math.round(totals.totalSales / totals.customerCount).toLocaleString()</span>
+<span class="cstat-no" title="statement not covered" >                : 0}</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;100.0%&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;-&lt;/TableCell&gt;</span>
@@ -558,14 +560,15 @@ interface AreaPerformance {
 <span class="cstat-no" title="statement not covered" >      &lt;/Table&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

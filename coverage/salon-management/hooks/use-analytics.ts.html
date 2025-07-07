@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/25</span>
+                <span class='fraction'>0/22</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/25</span>
+                <span class='fraction'>0/22</span>
             </div>
         
             
@@ -89,13 +89,8 @@
 <a name='L24'></a><a href='#L24'>24</a>
 <a name='L25'></a><a href='#L25'>25</a>
 <a name='L26'></a><a href='#L26'>26</a>
-<a name='L27'></a><a href='#L27'>27</a>
-<a name='L28'></a><a href='#L28'>28</a>
-<a name='L29'></a><a href='#L29'>29</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L27'></a><a href='#L27'>27</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -119,42 +114,41 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { useEffect, useState } from 'react';</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { useEffect, useState } from 'react'</span></span></span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export function useAnalyticsData&lt;T&gt;(</span>
-<span class="cstat-no" title="statement not covered" >  fetchFn: () =&gt; Promise&lt;T&gt;,</span>
-<span class="cstat-no" title="statement not covered" >  deps: readonly unknown[] = []</span>
-<span class="cstat-no" title="statement not covered" >) {</span>
-<span class="cstat-no" title="statement not covered" >  const [data, setData] = useState&lt;T | null&gt;(null);</span>
-<span class="cstat-no" title="statement not covered" >  const [loading, setLoading] = useState(true);</span>
-<span class="cstat-no" title="statement not covered" >  const [error, setError] = useState&lt;string | null&gt;(null);</span>
+<span class="cstat-no" title="statement not covered" >export function useAnalyticsData&lt;T&gt;(fetchFn: () =&gt; Promise&lt;T&gt;, deps: readonly unknown[] = []) {</span>
+<span class="cstat-no" title="statement not covered" >  const [data, setData] = useState&lt;T | null&gt;(null)</span>
+<span class="cstat-no" title="statement not covered" >  const [loading, setLoading] = useState(true)</span>
+<span class="cstat-no" title="statement not covered" >  const [error, setError] = useState&lt;string | null&gt;(null)</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  useEffect(() =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    const fetchData = async () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      try {</span>
-<span class="cstat-no" title="statement not covered" >        setLoading(true);</span>
-<span class="cstat-no" title="statement not covered" >        setError(null);</span>
-<span class="cstat-no" title="statement not covered" >        const result = await fetchFn();</span>
-<span class="cstat-no" title="statement not covered" >        setData(result);</span>
+<span class="cstat-no" title="statement not covered" >        setLoading(true)</span>
+<span class="cstat-no" title="statement not covered" >        setError(null)</span>
+<span class="cstat-no" title="statement not covered" >        const result = await fetchFn()</span>
+<span class="cstat-no" title="statement not covered" >        setData(result)</span>
 <span class="cstat-no" title="statement not covered" >      } catch (err) {</span>
-<span class="cstat-no" title="statement not covered" >        setError(err instanceof Error ? err.message : 'An error occurred');</span>
+<span class="cstat-no" title="statement not covered" >        setError(err instanceof Error ? err.message : 'An error occurred')</span>
 <span class="cstat-no" title="statement not covered" >      } finally {</span>
-<span class="cstat-no" title="statement not covered" >        setLoading(false);</span>
+<span class="cstat-no" title="statement not covered" >        setLoading(false)</span>
 <span class="cstat-no" title="statement not covered" >      }</span>
-<span class="cstat-no" title="statement not covered" >    };</span>
+<span class="cstat-no" title="statement not covered" >    }</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    fetchData();</span>
-<span class="cstat-no" title="statement not covered" >  }, deps);</span>
+<span class="cstat-no" title="statement not covered" >    fetchData()</span>
+<span class="cstat-no" title="statement not covered" >  }, deps)</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  return { data, loading, error };</span>
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >  return { data, loading, error }</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

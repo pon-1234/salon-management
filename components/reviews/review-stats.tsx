@@ -18,11 +18,9 @@ export function ReviewStats({ stats }: ReviewStatsProps) {
       </CardHeader>
       <CardContent>
         {/* Average Rating */}
-        <div className="text-center mb-6">
-          <div className="text-4xl font-bold mb-2">
-            {stats.averageRating.toFixed(1)}
-          </div>
-          <div className="flex justify-center mb-2">
+        <div className="mb-6 text-center">
+          <div className="mb-2 text-4xl font-bold">{stats.averageRating.toFixed(1)}</div>
+          <div className="mb-2 flex justify-center">
             {[...Array(5)].map((_, i) => (
               <Star
                 key={i}
@@ -34,34 +32,28 @@ export function ReviewStats({ stats }: ReviewStatsProps) {
               />
             ))}
           </div>
-          <p className="text-sm text-gray-600">
-            {stats.totalReviews}件の評価
-          </p>
+          <p className="text-sm text-gray-600">{stats.totalReviews}件の評価</p>
         </div>
 
         {/* Rating Distribution */}
         <div className="space-y-2">
-          {[5, 4, 3, 2, 1].map(rating => {
+          {[5, 4, 3, 2, 1].map((rating) => {
             const count = stats.ratingDistribution[rating as keyof typeof stats.ratingDistribution]
-            const percentage = stats.totalReviews > 0 
-              ? (count / stats.totalReviews) * 100 
-              : 0
+            const percentage = stats.totalReviews > 0 ? (count / stats.totalReviews) * 100 : 0
 
             return (
               <div key={rating} className="flex items-center gap-2">
-                <div className="flex items-center gap-1 w-12">
+                <div className="flex w-12 items-center gap-1">
                   <span className="text-sm">{rating}</span>
                   <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                 </div>
-                <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-200">
                   <div
-                    className="bg-yellow-400 h-full transition-all duration-300"
+                    className="h-full bg-yellow-400 transition-all duration-300"
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
-                <span className="text-sm text-gray-600 w-12 text-right">
-                  {count}
-                </span>
+                <span className="w-12 text-right text-sm text-gray-600">{count}</span>
               </div>
             )
           })}
@@ -70,12 +62,12 @@ export function ReviewStats({ stats }: ReviewStatsProps) {
         {/* Popular Tags */}
         {stats.popularTags.length > 0 && (
           <div className="mt-6">
-            <h4 className="font-semibold text-sm mb-3">人気のタグ</h4>
+            <h4 className="mb-3 text-sm font-semibold">人気のタグ</h4>
             <div className="flex flex-wrap gap-2">
               {stats.popularTags.slice(0, 5).map(({ tag, count }) => (
                 <span
                   key={tag}
-                  className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full"
+                  className="rounded-full bg-purple-100 px-2 py-1 text-xs text-purple-700"
                 >
                   {tag} ({count})
                 </span>

@@ -9,18 +9,8 @@ interface StoreContextType {
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined)
 
-export function StoreProvider({
-  children,
-  store,
-}: {
-  children: React.ReactNode
-  store: Store
-}) {
-  return (
-    <StoreContext.Provider value={{ store }}>
-      {children}
-    </StoreContext.Provider>
-  )
+export function StoreProvider({ children, store }: { children: React.ReactNode; store: Store }) {
+  return <StoreContext.Provider value={{ store }}>{children}</StoreContext.Provider>
 }
 
 export function useStore() {

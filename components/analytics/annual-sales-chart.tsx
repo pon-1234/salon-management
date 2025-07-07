@@ -1,9 +1,20 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
-import { Bar, BarChart, Line, ComposedChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
-import { MonthlyData } from "@/lib/types/analytics"
+import { useEffect, useState } from 'react'
+import {
+  Bar,
+  BarChart,
+  Line,
+  ComposedChart,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
+import { MonthlyData } from '@/lib/types/analytics'
 
 interface AnnualSalesChartProps {
   year: number
@@ -21,7 +32,7 @@ export function AnnualSalesChart({ year, analyticsUseCases }: AnnualSalesChartPr
     fetchData()
   }, [year, analyticsUseCases])
 
-  const chartData = data.map(item => ({
+  const chartData = data.map((item) => ({
     month: `${item.month}月`,
     売上高: item.totalSales,
     来客数: item.totalCount,
@@ -39,24 +50,21 @@ export function AnnualSalesChart({ year, analyticsUseCases }: AnnualSalesChartPr
 
   return (
     <ResponsiveContainer width="100%" height={350}>
-      <ComposedChart
-        data={chartData}
-        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-      >
+      <ComposedChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="month" />
-        <YAxis 
+        <YAxis
           yAxisId="left"
           tickFormatter={formatYAxis}
           label={{ value: '売上高 (円)', angle: -90, position: 'insideLeft' }}
         />
-        <YAxis 
+        <YAxis
           yAxisId="right"
           orientation="right"
           label={{ value: '前年比 (%)', angle: 90, position: 'insideRight' }}
           domain={[80, 120]}
         />
-        <Tooltip 
+        <Tooltip
           formatter={(value: number, name: string) => {
             if (name === '売上高') return [`¥${value.toLocaleString()}`, name]
             if (name === '来客数') return [`${value.toLocaleString()}人`, name]
@@ -65,15 +73,11 @@ export function AnnualSalesChart({ year, analyticsUseCases }: AnnualSalesChartPr
           }}
         />
         <Legend />
-        <Bar 
-          yAxisId="left"
-          dataKey="売上高" 
-          fill="#10b981" 
-        />
-        <Line 
+        <Bar yAxisId="left" dataKey="売上高" fill="#10b981" />
+        <Line
           yAxisId="right"
-          type="monotone" 
-          dataKey="前年比" 
+          type="monotone"
+          dataKey="前年比"
           stroke="#f59e0b"
           strokeWidth={2}
           dot={{ fill: '#f59e0b', r: 4 }}

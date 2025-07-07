@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -8,8 +8,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
+} from '@/components/ui/table'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 
 interface MonthlyStaffTableProps {
   year: number
@@ -35,54 +35,54 @@ export function MonthlyStaffTable({ year, month, analyticsUseCases }: MonthlySta
     // ダミーデータ（実際にはuseCasesから取得）
     const dummyData: StaffPerformance[] = [
       {
-        id: "1",
-        name: "田中 美咲",
+        id: '1',
+        name: '田中 美咲',
         workDays: 22,
         customerCount: 156,
         totalSales: 1523400,
         averagePerCustomer: 9765,
         newCustomers: 28,
-        repeaters: 128
+        repeaters: 128,
       },
       {
-        id: "2",
-        name: "佐藤 健太",
+        id: '2',
+        name: '佐藤 健太',
         workDays: 20,
         customerCount: 142,
         totalSales: 1356200,
         averagePerCustomer: 9550,
         newCustomers: 21,
-        repeaters: 121
+        repeaters: 121,
       },
       {
-        id: "3",
-        name: "山田 花子",
+        id: '3',
+        name: '山田 花子',
         workDays: 24,
         customerCount: 189,
         totalSales: 1892300,
         averagePerCustomer: 10012,
         newCustomers: 35,
-        repeaters: 154
+        repeaters: 154,
       },
       {
-        id: "4",
-        name: "鈴木 太郎",
+        id: '4',
+        name: '鈴木 太郎',
         workDays: 21,
         customerCount: 134,
         totalSales: 1234500,
         averagePerCustomer: 9213,
         newCustomers: 19,
-        repeaters: 115
+        repeaters: 115,
       },
       {
-        id: "5",
-        name: "高橋 さくら",
+        id: '5',
+        name: '高橋 さくら',
         workDays: 23,
         customerCount: 167,
         totalSales: 1678900,
         averagePerCustomer: 10053,
         newCustomers: 31,
-        repeaters: 136
+        repeaters: 136,
       },
     ]
     setData(dummyData)
@@ -127,9 +127,7 @@ export function MonthlyStaffTable({ year, month, analyticsUseCases }: MonthlySta
               <TableCell className="font-medium">{staff.name}</TableCell>
               <TableCell className="text-right">{staff.workDays}日</TableCell>
               <TableCell className="text-right">{staff.customerCount}人</TableCell>
-              <TableCell className="text-right">
-                ¥{staff.totalSales.toLocaleString()}
-              </TableCell>
+              <TableCell className="text-right">¥{staff.totalSales.toLocaleString()}</TableCell>
               <TableCell className="text-right">
                 ¥{staff.averagePerCustomer.toLocaleString()}
               </TableCell>
@@ -140,15 +138,16 @@ export function MonthlyStaffTable({ year, month, analyticsUseCases }: MonthlySta
               </TableCell>
             </TableRow>
           ))}
-          <TableRow className="font-bold bg-gray-50">
+          <TableRow className="bg-gray-50 font-bold">
             <TableCell>合計</TableCell>
             <TableCell className="text-right">{totals.workDays}日</TableCell>
             <TableCell className="text-right">{totals.customerCount}人</TableCell>
+            <TableCell className="text-right">¥{totals.totalSales.toLocaleString()}</TableCell>
             <TableCell className="text-right">
-              ¥{totals.totalSales.toLocaleString()}
-            </TableCell>
-            <TableCell className="text-right">
-              ¥{totals.customerCount > 0 ? Math.round(totals.totalSales / totals.customerCount).toLocaleString() : 0}
+              ¥
+              {totals.customerCount > 0
+                ? Math.round(totals.totalSales / totals.customerCount).toLocaleString()
+                : 0}
             </TableCell>
             <TableCell className="text-right">{totals.newCustomers}人</TableCell>
             <TableCell className="text-right">{totals.repeaters}人</TableCell>

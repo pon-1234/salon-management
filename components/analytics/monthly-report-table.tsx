@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -8,10 +8,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { cn } from "@/lib/utils"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
-import { DailyData } from "@/lib/types/analytics"
+} from '@/components/ui/table'
+import { cn } from '@/lib/utils'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
+import { DailyData } from '@/lib/types/analytics'
 
 interface MonthlyReportTableProps {
   year: number
@@ -116,8 +116,8 @@ export function MonthlyReportTable({ year, month, analyticsUseCases }: MonthlyRe
               <TableRow
                 key={row.date}
                 className={cn(
-                  row.dayOfWeek === "日" && "bg-red-50",
-                  row.dayOfWeek === "土" && "bg-blue-50"
+                  row.dayOfWeek === '日' && 'bg-red-50',
+                  row.dayOfWeek === '土' && 'bg-blue-50'
                 )}
               >
                 <TableCell>
@@ -125,98 +125,48 @@ export function MonthlyReportTable({ year, month, analyticsUseCases }: MonthlyRe
                 </TableCell>
                 <TableCell className="text-right">{row.staffCount}</TableCell>
                 <TableCell className="text-right">{row.workingHours}</TableCell>
-                <TableCell className="text-right">
-                  {row.directSales.toLocaleString()}
-                </TableCell>
-                <TableCell className="text-right">
-                  {row.cardSales.toLocaleString()}
-                </TableCell>
-                <TableCell className="text-right">
-                  {row.turnoverRate.toFixed(2)}
-                </TableCell>
+                <TableCell className="text-right">{row.directSales.toLocaleString()}</TableCell>
+                <TableCell className="text-right">{row.cardSales.toLocaleString()}</TableCell>
+                <TableCell className="text-right">{row.turnoverRate.toFixed(2)}</TableCell>
                 <TableCell className="text-right">{row.newCustomers}</TableCell>
                 <TableCell className="text-right">{row.repeaters}</TableCell>
-                <TableCell className="text-right">
-                  {row.discounts.toLocaleString()}
-                </TableCell>
-                <TableCell className="text-right">
-                  {row.pointUsage.toLocaleString()}
-                </TableCell>
+                <TableCell className="text-right">{row.discounts.toLocaleString()}</TableCell>
+                <TableCell className="text-right">{row.pointUsage.toLocaleString()}</TableCell>
                 <TableCell className="text-right">{row.customerCount}</TableCell>
-                <TableCell className="text-right">
-                  {row.totalSales.toLocaleString()}
-                </TableCell>
+                <TableCell className="text-right">{row.totalSales.toLocaleString()}</TableCell>
                 <TableCell className="text-right">0</TableCell>
                 <TableCell className="text-right">0</TableCell>
                 <TableCell className="text-right">0</TableCell>
-                <TableCell className="text-right">
-                  {row.staffSales.toLocaleString()}
-                </TableCell>
-                <TableCell className="text-right">
-                  {row.storeSales.toLocaleString()}
-                </TableCell>
-                <TableCell className="text-right">
-                  {row.storeSales.toLocaleString()}
-                </TableCell>
-                <TableCell className="text-right">
-                  {row.cashSales.toLocaleString()}
-                </TableCell>
+                <TableCell className="text-right">{row.staffSales.toLocaleString()}</TableCell>
+                <TableCell className="text-right">{row.storeSales.toLocaleString()}</TableCell>
+                <TableCell className="text-right">{row.storeSales.toLocaleString()}</TableCell>
+                <TableCell className="text-right">{row.cashSales.toLocaleString()}</TableCell>
               </TableRow>
             ))}
             <TableRow className="font-bold">
               <TableCell>TOTAL</TableCell>
-              <TableCell className="text-right">
-                {totals.staffCount.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                {totals.workingHours.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                {totals.directSales.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                {totals.cardSales.toLocaleString()}
-              </TableCell>
+              <TableCell className="text-right">{totals.staffCount.toLocaleString()}</TableCell>
+              <TableCell className="text-right">{totals.workingHours.toLocaleString()}</TableCell>
+              <TableCell className="text-right">{totals.directSales.toLocaleString()}</TableCell>
+              <TableCell className="text-right">{totals.cardSales.toLocaleString()}</TableCell>
               <TableCell className="text-right">-</TableCell>
-              <TableCell className="text-right">
-                {totals.newCustomers.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                {totals.repeaters.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                {totals.discounts.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                {totals.pointUsage.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                {totals.customerCount.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                {totals.totalSales.toLocaleString()}
-              </TableCell>
+              <TableCell className="text-right">{totals.newCustomers.toLocaleString()}</TableCell>
+              <TableCell className="text-right">{totals.repeaters.toLocaleString()}</TableCell>
+              <TableCell className="text-right">{totals.discounts.toLocaleString()}</TableCell>
+              <TableCell className="text-right">{totals.pointUsage.toLocaleString()}</TableCell>
+              <TableCell className="text-right">{totals.customerCount.toLocaleString()}</TableCell>
+              <TableCell className="text-right">{totals.totalSales.toLocaleString()}</TableCell>
               <TableCell className="text-right">0</TableCell>
               <TableCell className="text-right">0</TableCell>
               <TableCell className="text-right">0</TableCell>
-              <TableCell className="text-right">
-                {totals.staffSales.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                {totals.storeSales.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                {totals.storeSales.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                {totals.cashSales.toLocaleString()}
-              </TableCell>
+              <TableCell className="text-right">{totals.staffSales.toLocaleString()}</TableCell>
+              <TableCell className="text-right">{totals.storeSales.toLocaleString()}</TableCell>
+              <TableCell className="text-right">{totals.storeSales.toLocaleString()}</TableCell>
+              <TableCell className="text-right">{totals.cashSales.toLocaleString()}</TableCell>
             </TableRow>
             <TableRow className="text-sm text-gray-500">
               <TableCell>1日平均</TableCell>
-              <TableCell className="text-right">
-                {averages.staffCount.toFixed(1)}人/日
-              </TableCell>
+              <TableCell className="text-right">{averages.staffCount.toFixed(1)}人/日</TableCell>
               <TableCell className="text-right">
                 {averages.workingHours.toFixed(1)}時間/日
               </TableCell>
@@ -227,21 +177,15 @@ export function MonthlyReportTable({ year, month, analyticsUseCases }: MonthlyRe
                 {Math.round(averages.cardSales).toLocaleString()}円/日
               </TableCell>
               <TableCell className="text-right">-</TableCell>
-              <TableCell className="text-right">
-                {averages.newCustomers.toFixed(1)}人/日
-              </TableCell>
-              <TableCell className="text-right">
-                {averages.repeaters.toFixed(1)}人/日
-              </TableCell>
+              <TableCell className="text-right">{averages.newCustomers.toFixed(1)}人/日</TableCell>
+              <TableCell className="text-right">{averages.repeaters.toFixed(1)}人/日</TableCell>
               <TableCell className="text-right">
                 {Math.round(averages.discounts).toLocaleString()}円/日
               </TableCell>
               <TableCell className="text-right">
                 {Math.round(averages.pointUsage).toLocaleString()}pt/日
               </TableCell>
-              <TableCell className="text-right">
-                {averages.customerCount.toFixed(1)}本/日
-              </TableCell>
+              <TableCell className="text-right">{averages.customerCount.toFixed(1)}本/日</TableCell>
               <TableCell className="text-right">
                 {Math.round(averages.totalSales).toLocaleString()}円/日
               </TableCell>

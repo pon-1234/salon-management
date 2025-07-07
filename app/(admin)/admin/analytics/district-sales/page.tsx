@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
+import { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
 import { Printer, TrendingUp, MapPin, DollarSign, Users } from 'lucide-react'
 import {
   Select,
@@ -11,20 +11,20 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { DistrictSalesChart } from "@/components/analytics/district-sales-chart"
-import { DistrictSalesTable } from "@/components/analytics/district-sales-table"
-import { DistrictHeatmapTable } from "@/components/analytics/district-heatmap-table"
-import { DistrictPerformanceTable } from "@/components/analytics/district-performance-table"
-import { generateDistrictSalesData } from "@/lib/district-sales/data"
+} from '@/components/ui/select'
+import { DistrictSalesChart } from '@/components/analytics/district-sales-chart'
+import { DistrictSalesTable } from '@/components/analytics/district-sales-table'
+import { DistrictHeatmapTable } from '@/components/analytics/district-heatmap-table'
+import { DistrictPerformanceTable } from '@/components/analytics/district-performance-table'
+import { generateDistrictSalesData } from '@/lib/district-sales/data'
 
 export default function DistrictSalesPage() {
   const [selectedYear, setSelectedYear] = useState(2024)
-  const [selectedArea, setSelectedArea] = useState("東京都")
-  
+  const [selectedArea, setSelectedArea] = useState('東京都')
+
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i)
-  const areas = ["東京都", "神奈川県", "埼玉県", "千葉県"]
+  const areas = ['東京都', '神奈川県', '埼玉県', '千葉県']
 
   const handlePrint = () => {
     window.print()
@@ -38,14 +38,14 @@ export default function DistrictSalesPage() {
     previousYearSales: 43234500,
     totalCustomers: 5234,
     previousYearCustomers: 4867,
-    topDistrict: selectedArea === "東京都" ? "渋谷区" : "横浜市",
+    topDistrict: selectedArea === '東京都' ? '渋谷区' : '横浜市',
     topDistrictPercentage: 28.5,
     averageSpending: 9284,
-    activeDistricts: 15
+    activeDistricts: 15,
   }
 
   const calculateGrowthRate = (current: number, previous: number) => {
-    return ((current - previous) / previous * 100).toFixed(1)
+    return (((current - previous) / previous) * 100).toFixed(1)
   }
 
   return (
@@ -70,10 +70,7 @@ export default function DistrictSalesPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Select
-              value={selectedArea}
-              onValueChange={setSelectedArea}
-            >
+            <Select value={selectedArea} onValueChange={setSelectedArea}>
               <SelectTrigger className="w-[120px]">
                 <SelectValue />
               </SelectTrigger>
@@ -87,14 +84,17 @@ export default function DistrictSalesPage() {
             </Select>
           </div>
         </div>
-        <Button onClick={handlePrint} className="print:hidden bg-emerald-600 hover:bg-emerald-700 text-white">
+        <Button
+          onClick={handlePrint}
+          className="bg-emerald-600 text-white hover:bg-emerald-700 print:hidden"
+        >
           <Printer className="mr-2 h-4 w-4" />
           印刷する
         </Button>
       </div>
 
       {/* KPIカード */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">エリア売上高</CardTitle>
@@ -102,7 +102,7 @@ export default function DistrictSalesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">¥{kpiData.totalSales.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
               <TrendingUp className="h-3 w-3 text-green-600" />
               <span className="text-green-600">
                 {calculateGrowthRate(kpiData.totalSales, kpiData.previousYearSales)}%
@@ -119,7 +119,7 @@ export default function DistrictSalesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{kpiData.totalCustomers.toLocaleString()}人</div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
               <TrendingUp className="h-3 w-3 text-green-600" />
               <span className="text-green-600">
                 {calculateGrowthRate(kpiData.totalCustomers, kpiData.previousYearCustomers)}%
@@ -149,9 +149,7 @@ export default function DistrictSalesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">¥{kpiData.averageSpending.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              稼働地区: {kpiData.activeDistricts}区
-            </p>
+            <p className="text-xs text-muted-foreground">稼働地区: {kpiData.activeDistricts}区</p>
           </CardContent>
         </Card>
       </div>

@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/138</span>
+                <span class='fraction'>0/133</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/138</span>
+                <span class='fraction'>0/133</span>
             </div>
         
             
@@ -236,8 +236,7 @@
 <a name='L171'></a><a href='#L171'>171</a>
 <a name='L172'></a><a href='#L172'>172</a>
 <a name='L173'></a><a href='#L173'>173</a>
-<a name='L174'></a><a href='#L174'>174</a>
-<a name='L175'></a><a href='#L175'>175</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L174'></a><a href='#L174'>174</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -368,18 +367,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -394,9 +381,19 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -411,9 +408,10 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -421,9 +419,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 import { TrendingUp, TrendingDown } from 'lucide-react'
 &nbsp;
 interface MarketingROITableProps {
@@ -449,55 +447,55 @@ interface ROIData {
     // ダミーデータ（実際にはuseCasesから取得）
 <span class="cstat-no" title="statement not covered" >    const dummyData: ROIData[] = [</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        channel: "ホットペッパー",</span>
+<span class="cstat-no" title="statement not covered" >        channel: 'ホットペッパー',</span>
 <span class="cstat-no" title="statement not covered" >        cost: 1200000,</span>
 <span class="cstat-no" title="statement not covered" >        customers: 3945,</span>
 <span class="cstat-no" title="statement not covered" >        revenue: 35678000,</span>
 <span class="cstat-no" title="statement not covered" >        cac: 304,</span>
 <span class="cstat-no" title="statement not covered" >        ltv: 9042,</span>
 <span class="cstat-no" title="statement not covered" >        roi: 2873,</span>
-<span class="cstat-no" title="statement not covered" >        trend: 12.5</span>
+<span class="cstat-no" title="statement not covered" >        trend: 12.5,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        channel: "Instagram",</span>
+<span class="cstat-no" title="statement not covered" >        channel: 'Instagram',</span>
 <span class="cstat-no" title="statement not covered" >        cost: 450000,</span>
 <span class="cstat-no" title="statement not covered" >        customers: 2456,</span>
 <span class="cstat-no" title="statement not covered" >        revenue: 21345000,</span>
 <span class="cstat-no" title="statement not covered" >        cac: 183,</span>
 <span class="cstat-no" title="statement not covered" >        ltv: 8693,</span>
 <span class="cstat-no" title="statement not covered" >        roi: 4643,</span>
-<span class="cstat-no" title="statement not covered" >        trend: 23.8</span>
+<span class="cstat-no" title="statement not covered" >        trend: 23.8,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        channel: "Google広告",</span>
+<span class="cstat-no" title="statement not covered" >        channel: 'Google広告',</span>
 <span class="cstat-no" title="statement not covered" >        cost: 680000,</span>
 <span class="cstat-no" title="statement not covered" >        customers: 1678,</span>
 <span class="cstat-no" title="statement not covered" >        revenue: 14567000,</span>
 <span class="cstat-no" title="statement not covered" >        cac: 405,</span>
 <span class="cstat-no" title="statement not covered" >        ltv: 8683,</span>
 <span class="cstat-no" title="statement not covered" >        roi: 2042,</span>
-<span class="cstat-no" title="statement not covered" >        trend: -5.2</span>
+<span class="cstat-no" title="statement not covered" >        trend: -5.2,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        channel: "紹介",</span>
+<span class="cstat-no" title="statement not covered" >        channel: '紹介',</span>
 <span class="cstat-no" title="statement not covered" >        cost: 120000,</span>
 <span class="cstat-no" title="statement not covered" >        customers: 1432,</span>
 <span class="cstat-no" title="statement not covered" >        revenue: 13890000,</span>
 <span class="cstat-no" title="statement not covered" >        cac: 84,</span>
 <span class="cstat-no" title="statement not covered" >        ltv: 9701,</span>
 <span class="cstat-no" title="statement not covered" >        roi: 11475,</span>
-<span class="cstat-no" title="statement not covered" >        trend: 8.9</span>
+<span class="cstat-no" title="statement not covered" >        trend: 8.9,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        channel: "ウォークイン",</span>
+<span class="cstat-no" title="statement not covered" >        channel: 'ウォークイン',</span>
 <span class="cstat-no" title="statement not covered" >        cost: 0,</span>
 <span class="cstat-no" title="statement not covered" >        customers: 1023,</span>
 <span class="cstat-no" title="statement not covered" >        revenue: 9234000,</span>
 <span class="cstat-no" title="statement not covered" >        cac: 0,</span>
 <span class="cstat-no" title="statement not covered" >        ltv: 9025,</span>
 <span class="cstat-no" title="statement not covered" >        roi: 0,</span>
-<span class="cstat-no" title="statement not covered" >        trend: 3.2</span>
-<span class="cstat-no" title="statement not covered" >      }</span>
+<span class="cstat-no" title="statement not covered" >        trend: 3.2,</span>
+<span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >    ]</span>
 <span class="cstat-no" title="statement not covered" >    setData(dummyData)</span>
 <span class="cstat-no" title="statement not covered" >  }, [year, analyticsUseCases])</span>
@@ -529,27 +527,15 @@ interface ROIData {
 <span class="cstat-no" title="statement not covered" >          {data.map((item) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableRow key={item.channel}&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell className="font-medium"&gt;{item.channel}&lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                ¥{item.cost.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                {item.customers.toLocaleString()}人</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                ¥{item.revenue.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                ¥{item.cac.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                ¥{item.ltv.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;¥{item.cost.toLocaleString()}&lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;{item.customers.toLocaleString()}人&lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;¥{item.revenue.toLocaleString()}&lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;¥{item.cac.toLocaleString()}&lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;¥{item.ltv.toLocaleString()}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right font-medium"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                {item.roi &gt; 0 ? `${item.roi}%` : '-'}</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-center"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                {item.roi &gt; 0 &amp;&amp; getROIBadge(item.roi)}</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-center"&gt;{item.roi &gt; 0 &amp;&amp; getROIBadge(item.roi)}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;div className="flex items-center justify-end gap-1"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  {item.trend &gt; 0 ? (</span>
@@ -557,23 +543,33 @@ interface ROIData {
                   ) : (
 <span class="cstat-no" title="statement not covered" >                    &lt;TrendingDown className="h-4 w-4 text-red-600" /&gt;</span>
                   )}
-<span class="cstat-no" title="statement not covered" >                  &lt;span className={item.trend &gt; 0 ? "text-green-600" : "text-red-600"}&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    {item.trend &gt; 0 ? "+" : ""}{item.trend}%</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;span className={item.trend &gt; 0 ? 'text-green-600' : 'text-red-600'}&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    {item.trend &gt; 0 ? '+' : ''}</span>
+<span class="cstat-no" title="statement not covered" >                    {item.trend}%</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TableRow&gt;</span>
 <span class="cstat-no" title="statement not covered" >          ))}</span>
-<span class="cstat-no" title="statement not covered" >          &lt;TableRow className="font-bold bg-gray-50"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;TableRow className="bg-gray-50 font-bold"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell&gt;合計&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              ¥{data.length &gt; 0 ? data.reduce((sum, item) =&gt; sum + item.cost, 0).toLocaleString() : '0'}</span>
+              ¥
+<span class="cstat-no" title="statement not covered" >              {data.length &gt; 0</span>
+<span class="cstat-no" title="statement not covered" >                ? data.reduce((sum, item) =&gt; sum + item.cost, 0).toLocaleString()</span>
+<span class="cstat-no" title="statement not covered" >                : '0'}</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              {data.length &gt; 0 ? data.reduce((sum, item) =&gt; sum + item.customers, 0).toLocaleString() : '0'}人</span>
+<span class="cstat-no" title="statement not covered" >              {data.length &gt; 0</span>
+<span class="cstat-no" title="statement not covered" >                ? data.reduce((sum, item) =&gt; sum + item.customers, 0).toLocaleString()</span>
+<span class="cstat-no" title="statement not covered" >                : '0'}</span>
+              人
 <span class="cstat-no" title="statement not covered" >            &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              ¥{data.length &gt; 0 ? data.reduce((sum, item) =&gt; sum + item.revenue, 0).toLocaleString() : '0'}</span>
+              ¥
+<span class="cstat-no" title="statement not covered" >              {data.length &gt; 0</span>
+<span class="cstat-no" title="statement not covered" >                ? data.reduce((sum, item) =&gt; sum + item.revenue, 0).toLocaleString()</span>
+<span class="cstat-no" title="statement not covered" >                : '0'}</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;-&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;-&lt;/TableCell&gt;</span>
@@ -585,14 +581,15 @@ interface ROIData {
 <span class="cstat-no" title="statement not covered" >      &lt;/Table&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

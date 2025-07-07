@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/117</span>
+                <span class='fraction'>0/113</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/117</span>
+                <span class='fraction'>0/113</span>
             </div>
         
             
@@ -210,10 +210,7 @@
 <a name='L145'></a><a href='#L145'>145</a>
 <a name='L146'></a><a href='#L146'>146</a>
 <a name='L147'></a><a href='#L147'>147</a>
-<a name='L148'></a><a href='#L148'>148</a>
-<a name='L149'></a><a href='#L149'>149</a>
-<a name='L150'></a><a href='#L150'>150</a>
-<a name='L151'></a><a href='#L151'>151</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L148'></a><a href='#L148'>148</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -339,10 +336,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -363,9 +356,10 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { HourlySalesReport } from "@/lib/types/hourly-sales"
+import { HourlySalesReport } from '@/lib/types/hourly-sales'
 import {
   Table,
   TableBody,
@@ -373,8 +367,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 &nbsp;
 interface PeakTimeAnalysisProps {
@@ -385,19 +379,19 @@ interface PeakTimeAnalysisProps {
   // 時間帯別の分析データを作成
 <span class="cstat-no" title="statement not covered" >  const hourlyAnalysis = data.hourlyTotals.map((total, index) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    const hour = index + 7</span>
-<span class="cstat-no" title="statement not covered" >    const percentage = (total / data.grandTotal * 100).toFixed(1)</span>
+<span class="cstat-no" title="statement not covered" >    const percentage = ((total / data.grandTotal) * 100).toFixed(1)</span>
 <span class="cstat-no" title="statement not covered" >    return {</span>
 <span class="cstat-no" title="statement not covered" >      hour: `${hour}:00-${hour + 1}:00`,</span>
 <span class="cstat-no" title="statement not covered" >      total,</span>
 <span class="cstat-no" title="statement not covered" >      percentage: parseFloat(percentage),</span>
-<span class="cstat-no" title="statement not covered" >      rank: 0 // 後で設定</span>
+<span class="cstat-no" title="statement not covered" >      rank: 0, // 後で設定</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  })</span>
 &nbsp;
   // ランキングを設定
 <span class="cstat-no" title="statement not covered" >  const sorted = [...hourlyAnalysis].sort((a, b) =&gt; b.total - a.total)</span>
 <span class="cstat-no" title="statement not covered" >  sorted.forEach((item, index) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    const original = hourlyAnalysis.find(h =&gt; h.hour === item.hour)</span>
+<span class="cstat-no" title="statement not covered" >    const original = hourlyAnalysis.find((h) =&gt; h.hour === item.hour)</span>
 <span class="cstat-no" title="statement not covered" >    if (original) original.rank = index + 1</span>
 <span class="cstat-no" title="statement not covered" >  })</span>
 &nbsp;
@@ -407,32 +401,32 @@ interface PeakTimeAnalysisProps {
   // 時間帯区分別の集計
 <span class="cstat-no" title="statement not covered" >  const periodAnalysis = [</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
-<span class="cstat-no" title="statement not covered" >      period: "朝（7:00-11:00）",</span>
+<span class="cstat-no" title="statement not covered" >      period: '朝（7:00-11:00）',</span>
 <span class="cstat-no" title="statement not covered" >      hours: hourlyAnalysis.slice(0, 4),</span>
-<span class="cstat-no" title="statement not covered" >      color: "#fbbf24"</span>
+<span class="cstat-no" title="statement not covered" >      color: '#fbbf24',</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
-<span class="cstat-no" title="statement not covered" >      period: "昼（11:00-15:00）",</span>
+<span class="cstat-no" title="statement not covered" >      period: '昼（11:00-15:00）',</span>
 <span class="cstat-no" title="statement not covered" >      hours: hourlyAnalysis.slice(4, 8),</span>
-<span class="cstat-no" title="statement not covered" >      color: "#60a5fa"</span>
+<span class="cstat-no" title="statement not covered" >      color: '#60a5fa',</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
-<span class="cstat-no" title="statement not covered" >      period: "夕方（15:00-19:00）",</span>
+<span class="cstat-no" title="statement not covered" >      period: '夕方（15:00-19:00）',</span>
 <span class="cstat-no" title="statement not covered" >      hours: hourlyAnalysis.slice(8, 12),</span>
-<span class="cstat-no" title="statement not covered" >      color: "#f97316"</span>
+<span class="cstat-no" title="statement not covered" >      color: '#f97316',</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
-<span class="cstat-no" title="statement not covered" >      period: "夜（19:00-28:00）",</span>
+<span class="cstat-no" title="statement not covered" >      period: '夜（19:00-28:00）',</span>
 <span class="cstat-no" title="statement not covered" >      hours: hourlyAnalysis.slice(12),</span>
-<span class="cstat-no" title="statement not covered" >      color: "#8b5cf6"</span>
-<span class="cstat-no" title="statement not covered" >    }</span>
+<span class="cstat-no" title="statement not covered" >      color: '#8b5cf6',</span>
+<span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >  ]</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  const periodData = periodAnalysis.map(p =&gt; ({</span>
+<span class="cstat-no" title="statement not covered" >  const periodData = periodAnalysis.map((p) =&gt; ({</span>
 <span class="cstat-no" title="statement not covered" >    period: p.period,</span>
 <span class="cstat-no" title="statement not covered" >    total: p.hours.reduce((sum, h) =&gt; sum + h.total, 0),</span>
 <span class="cstat-no" title="statement not covered" >    percentage: ((p.hours.reduce((sum, h) =&gt; sum + h.total, 0) / data.grandTotal) * 100).toFixed(1),</span>
-<span class="cstat-no" title="statement not covered" >    color: p.color</span>
+<span class="cstat-no" title="statement not covered" >    color: p.color,</span>
 <span class="cstat-no" title="statement not covered" >  }))</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const getRankBadge = (rank: number) =&gt; {</span>
@@ -447,7 +441,7 @@ interface PeakTimeAnalysisProps {
 <span class="cstat-no" title="statement not covered" >    &lt;div className="space-y-6"&gt;</span>
       {/* 時間帯別グラフ */}
 <span class="cstat-no" title="statement not covered" >      &lt;div&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;h3 className="text-lg font-semibold mb-4"&gt;時間帯別来客数分布&lt;/h3&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;h3 className="mb-4 text-lg font-semibold"&gt;時間帯別来客数分布&lt;/h3&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;ResponsiveContainer width="100%" height={250}&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;BarChart data={periodData}&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;CartesianGrid strokeDasharray="3 3" /&gt;</span>
@@ -461,7 +455,7 @@ interface PeakTimeAnalysisProps {
 &nbsp;
       {/* ピーク時間帯ランキング */}
 <span class="cstat-no" title="statement not covered" >      &lt;div&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;h3 className="text-lg font-semibold mb-4"&gt;ピーク時間帯TOP5&lt;/h3&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;h3 className="mb-4 text-lg font-semibold"&gt;ピーク時間帯TOP5&lt;/h3&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div className="rounded-lg border"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;Table&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableHeader&gt;</span>
@@ -476,16 +470,12 @@ interface PeakTimeAnalysisProps {
 <span class="cstat-no" title="statement not covered" >            &lt;TableBody&gt;</span>
 <span class="cstat-no" title="statement not covered" >              {top5Hours.map((hour) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >                &lt;TableRow key={hour.hour}&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    {getRankBadge(hour.rank)}</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;TableCell&gt;{getRankBadge(hour.rank)}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;TableCell className="font-medium"&gt;{hour.hour}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;TableCell className="text-right"&gt;{hour.total}人&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;TableCell className="text-right"&gt;{hour.percentage}%&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;TableCell className="text-center"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;Badge variant="outline"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                      {Math.ceil(hour.total / 30)}人以上</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;/Badge&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;Badge variant="outline"&gt;{Math.ceil(hour.total / 30)}人以上&lt;/Badge&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/TableRow&gt;</span>
 <span class="cstat-no" title="statement not covered" >              ))}</span>
@@ -496,16 +486,16 @@ interface PeakTimeAnalysisProps {
 &nbsp;
       {/* 時間帯区分別分析 */}
 <span class="cstat-no" title="statement not covered" >      &lt;div&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;h3 className="text-lg font-semibold mb-4"&gt;時間帯区分別分析&lt;/h3&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;h3 className="mb-4 text-lg font-semibold"&gt;時間帯区分別分析&lt;/h3&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          {periodData.map((period) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div</span>
 <span class="cstat-no" title="statement not covered" >              key={period.period}</span>
 <span class="cstat-no" title="statement not covered" >              className="rounded-lg border p-4 text-center"</span>
 <span class="cstat-no" title="statement not covered" >              style={{ borderColor: period.color }}</span>
             &gt;
-<span class="cstat-no" title="statement not covered" >              &lt;h4 className="font-medium mb-2"&gt;{period.period}&lt;/h4&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;div className="text-2xl font-bold mb-1"&gt;{period.total}人&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;h4 className="mb-2 font-medium"&gt;{period.period}&lt;/h4&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;div className="mb-1 text-2xl font-bold"&gt;{period.total}人&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div className="text-sm text-gray-600"&gt;{period.percentage}%&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >          ))}</span>
@@ -513,14 +503,15 @@ interface PeakTimeAnalysisProps {
 <span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

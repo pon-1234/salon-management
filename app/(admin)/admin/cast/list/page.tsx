@@ -1,19 +1,19 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
-import { Header } from "@/components/header"
-import { CastListView } from "@/components/cast/cast-list-view"
-import { Cast } from "@/lib/cast/types"
-import { getAllCasts } from "@/lib/cast/data"
-import { CastListActionButtons } from "@/components/cast/cast-list-action-buttons"
-import { CastListViewToggle } from "@/components/cast/cast-list-view-toggle"
-import { CastListInfoBar } from "@/components/cast/cast-list-info-bar"
+import { Header } from '@/components/header'
+import { CastListView } from '@/components/cast/cast-list-view'
+import { Cast } from '@/lib/cast/types'
+import { getAllCasts } from '@/lib/cast/data'
+import { CastListActionButtons } from '@/components/cast/cast-list-action-buttons'
+import { CastListViewToggle } from '@/components/cast/cast-list-view-toggle'
+import { CastListInfoBar } from '@/components/cast/cast-list-info-bar'
 
 export default function CastListPage() {
   const [castList, setCastList] = useState<Cast[]>([])
-  const [view, setView] = useState<"grid" | "list">("grid")
-  const [workStatus, setWorkStatus] = useState("就業中(公開)")
-  const [nameSearch, setNameSearch] = useState("")
+  const [view, setView] = useState<'grid' | 'list'>('grid')
+  const [workStatus, setWorkStatus] = useState('就業中(公開)')
+  const [nameSearch, setNameSearch] = useState('')
 
   useEffect(() => {
     // ページ遷移時にスクロール位置をリセット
@@ -25,9 +25,10 @@ export default function CastListPage() {
     setCastList(casts)
   }, [])
 
-  const filteredCasts = castList.filter(cast => {
-    const matchesName = cast.name.toLowerCase().includes(nameSearch.toLowerCase()) ||
-                       cast.nameKana.toLowerCase().includes(nameSearch.toLowerCase())
+  const filteredCasts = castList.filter((cast) => {
+    const matchesName =
+      cast.name.toLowerCase().includes(nameSearch.toLowerCase()) ||
+      cast.nameKana.toLowerCase().includes(nameSearch.toLowerCase())
     return matchesName
   })
 
@@ -37,41 +38,41 @@ export default function CastListPage() {
   }
 
   const handleFilterCharacter = (char: string) => {
-    if (char === "全") {
+    if (char === '全') {
       const casts = getAllCasts()
       setCastList(casts)
       return
     }
 
-    const aRow = ["あ","い","う","え","お"]
-    const kaRow = ["か","き","く","け","こ"]
-    const saRow = ["さ","し","す","せ","そ"]
-    const taRow = ["た","ち","つ","て","と"]
-    const naRow = ["な","に","ぬ","ね","の"]
-    const haRow = ["は","ひ","ふ","へ","ほ"]
-    const maRow = ["ま","み","む","め","も"]
-    const yaRow = ["や","ゆ","よ"]
-    const raRow = ["ら","り","る","れ","ろ"]
-    const waRow = ["わ","を","ん"]
+    const aRow = ['あ', 'い', 'う', 'え', 'お']
+    const kaRow = ['か', 'き', 'く', 'け', 'こ']
+    const saRow = ['さ', 'し', 'す', 'せ', 'そ']
+    const taRow = ['た', 'ち', 'つ', 'て', 'と']
+    const naRow = ['な', 'に', 'ぬ', 'ね', 'の']
+    const haRow = ['は', 'ひ', 'ふ', 'へ', 'ほ']
+    const maRow = ['ま', 'み', 'む', 'め', 'も']
+    const yaRow = ['や', 'ゆ', 'よ']
+    const raRow = ['ら', 'り', 'る', 'れ', 'ろ']
+    const waRow = ['わ', 'を', 'ん']
 
     const rowMap: Record<string, string[]> = {
-      "あ": aRow,
-      "か": kaRow,
-      "さ": saRow,
-      "た": taRow,
-      "な": naRow,
-      "は": haRow,
-      "ま": maRow,
-      "や": yaRow,
-      "ら": raRow,
-      "わ": waRow,
+      あ: aRow,
+      か: kaRow,
+      さ: saRow,
+      た: taRow,
+      な: naRow,
+      は: haRow,
+      ま: maRow,
+      や: yaRow,
+      ら: raRow,
+      わ: waRow,
     }
 
-    if (char === "その他") {
+    if (char === 'その他') {
       const allCasts = getAllCasts()
-      const filtered = allCasts.filter(cast => {
+      const filtered = allCasts.filter((cast) => {
         const firstChar = cast.nameKana.charAt(0)
-        const isOther = !Object.values(rowMap).some(row => row.includes(firstChar))
+        const isOther = !Object.values(rowMap).some((row) => row.includes(firstChar))
         return isOther
       })
       setCastList(filtered)
@@ -80,7 +81,7 @@ export default function CastListPage() {
 
     const targetRow = rowMap[char] || []
     const allCasts = getAllCasts()
-    const filtered = allCasts.filter(cast => {
+    const filtered = allCasts.filter((cast) => {
       const firstChar = cast.nameKana.charAt(0)
       return targetRow.includes(firstChar)
     })

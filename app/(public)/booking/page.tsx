@@ -4,7 +4,13 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Calendar } from '@/components/ui/calendar'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { format } from 'date-fns'
@@ -21,7 +27,7 @@ export default function BookingPage() {
 
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
-  
+
   const casts = [
     { id: '1', name: 'キャスト A', available: true },
     { id: '2', name: 'キャスト B', available: true },
@@ -44,15 +50,25 @@ export default function BookingPage() {
   }, [])
 
   const timeSlots = [
-    '10:00', '11:00', '12:00', '13:00', '14:00', '15:00',
-    '16:00', '17:00', '18:00', '19:00', '20:00', '21:00'
+    '10:00',
+    '11:00',
+    '12:00',
+    '13:00',
+    '14:00',
+    '15:00',
+    '16:00',
+    '17:00',
+    '18:00',
+    '19:00',
+    '20:00',
+    '21:00',
   ]
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">予約</h1>
+    <div className="mx-auto max-w-4xl px-4 py-8">
+      <h1 className="mb-8 text-3xl font-bold">予約</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
         {/* Left Column */}
         <div className="space-y-6">
           {/* Date Selection */}
@@ -76,27 +92,23 @@ export default function BookingPage() {
           <Card>
             <CardHeader>
               <CardTitle>キャストを選択</CardTitle>
-              <CardDescription>
-                ご希望のキャストをお選びください
-              </CardDescription>
+              <CardDescription>ご希望のキャストをお選びください</CardDescription>
             </CardHeader>
             <CardContent>
               <RadioGroup value={selectedCast} onValueChange={setSelectedCast}>
                 <div className="space-y-3">
                   {casts.map((cast) => (
                     <div key={cast.id} className="flex items-center space-x-2">
-                      <RadioGroupItem 
-                        value={cast.id} 
-                        id={cast.id}
-                        disabled={!cast.available}
-                      />
-                      <Label 
-                        htmlFor={cast.id} 
-                        className={`flex items-center gap-2 cursor-pointer ${!cast.available ? 'opacity-50' : ''}`}
+                      <RadioGroupItem value={cast.id} id={cast.id} disabled={!cast.available} />
+                      <Label
+                        htmlFor={cast.id}
+                        className={`flex cursor-pointer items-center gap-2 ${!cast.available ? 'opacity-50' : ''}`}
                       >
                         <User className="h-4 w-4" />
                         {cast.name}
-                        {!cast.available && <span className="text-sm text-gray-500">（予約不可）</span>}
+                        {!cast.available && (
+                          <span className="text-sm text-gray-500">（予約不可）</span>
+                        )}
                       </Label>
                     </div>
                   ))}
@@ -112,16 +124,14 @@ export default function BookingPage() {
           <Card>
             <CardHeader>
               <CardTitle>コースを選択</CardTitle>
-              <CardDescription>
-                ご希望のコースをお選びください
-              </CardDescription>
+              <CardDescription>ご希望のコースをお選びください</CardDescription>
             </CardHeader>
             <CardContent>
               <RadioGroup value={selectedCourse} onValueChange={setSelectedCourse}>
                 <div className="space-y-3">
                   {loading ? (
-                    <div className="text-center py-4">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                    <div className="py-4 text-center">
+                      <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900"></div>
                       <p className="mt-2 text-sm text-gray-500">コース情報を読み込み中...</p>
                     </div>
                   ) : courses.length === 0 ? (
@@ -131,7 +141,7 @@ export default function BookingPage() {
                       <div key={course.id} className="flex items-center space-x-2">
                         <RadioGroupItem value={course.id} id={`course-${course.id}`} />
                         <Label htmlFor={`course-${course.id}`} className="flex-1 cursor-pointer">
-                          <div className="flex justify-between items-center">
+                          <div className="flex items-center justify-between">
                             <div>
                               <div className="font-medium">{course.name}</div>
                               <div className="text-sm text-gray-500">{course.duration}分</div>
@@ -165,7 +175,7 @@ export default function BookingPage() {
                     onClick={() => setSelectedTime(time)}
                     className="w-full"
                   >
-                    <Clock className="h-3 w-3 mr-1" />
+                    <Clock className="mr-1 h-3 w-3" />
                     {time}
                   </Button>
                 ))}
@@ -189,23 +199,23 @@ export default function BookingPage() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">キャスト</span>
-                <span>{casts.find(c => c.id === selectedCast)?.name || '未選択'}</span>
+                <span>{casts.find((c) => c.id === selectedCast)?.name || '未選択'}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">コース</span>
-                <span>{courses.find(c => c.id === selectedCourse)?.name || '未選択'}</span>
+                <span>{courses.find((c) => c.id === selectedCourse)?.name || '未選択'}</span>
               </div>
-              <div className="flex justify-between font-semibold pt-2 border-t">
+              <div className="flex justify-between border-t pt-2 font-semibold">
                 <span>合計</span>
                 <span>
-                  ¥{courses.find(c => c.id === selectedCourse)?.price.toLocaleString() || '0'}
+                  ¥{courses.find((c) => c.id === selectedCourse)?.price.toLocaleString() || '0'}
                 </span>
               </div>
             </CardContent>
           </Card>
 
-          <Button 
-            className="w-full" 
+          <Button
+            className="w-full"
             size="lg"
             disabled={!date || !selectedCast || !selectedCourse || !selectedTime}
           >

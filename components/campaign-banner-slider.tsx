@@ -21,11 +21,11 @@ interface CampaignBannerSliderProps {
   dismissible?: boolean
 }
 
-export function CampaignBannerSlider({ 
-  banners, 
+export function CampaignBannerSlider({
+  banners,
   autoPlayInterval = 5000,
   showDots = true,
-  dismissible = true
+  dismissible = true,
 }: CampaignBannerSliderProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isVisible, setIsVisible] = useState(true)
@@ -43,9 +43,7 @@ export function CampaignBannerSlider({
   }, [currentIndex, isPaused, banners.length, autoPlayInterval])
 
   const goToPrevious = () => {
-    setCurrentIndex((prevIndex) => 
-      prevIndex === 0 ? banners.length - 1 : prevIndex - 1
-    )
+    setCurrentIndex((prevIndex) => (prevIndex === 0 ? banners.length - 1 : prevIndex - 1))
   }
 
   const goToNext = () => {
@@ -62,9 +60,9 @@ export function CampaignBannerSlider({
 
   return (
     <section className="relative w-full bg-gray-50 py-4">
-      <div className="relative max-w-7xl mx-auto px-4">
+      <div className="relative mx-auto max-w-7xl px-4">
         {/* Banner Container */}
-        <div 
+        <div
           className="relative overflow-hidden"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
@@ -73,7 +71,7 @@ export function CampaignBannerSlider({
           {dismissible && (
             <button
               onClick={() => setIsVisible(false)}
-              className="absolute top-4 right-4 z-20 p-2 bg-black/50 backdrop-blur-sm rounded-full hover:bg-black/70 transition-colors"
+              className="absolute right-4 top-4 z-20 rounded-full bg-black/50 p-2 backdrop-blur-sm transition-colors hover:bg-black/70"
               aria-label="Close banner"
             >
               <X className="h-4 w-4 text-white" />
@@ -81,9 +79,9 @@ export function CampaignBannerSlider({
           )}
 
           {/* Banner Image */}
-          <div className="relative aspect-[7/3] max-w-[700px] mx-auto">
+          <div className="relative mx-auto aspect-[7/3] max-w-[700px]">
             {currentBanner.link ? (
-              <Link 
+              <Link
                 href={currentBanner.link}
                 target={currentBanner.external ? '_blank' : undefined}
                 rel={currentBanner.external ? 'noopener noreferrer' : undefined}
@@ -91,16 +89,13 @@ export function CampaignBannerSlider({
                 <picture>
                   {/* Mobile Image */}
                   {currentBanner.mobileImageUrl && (
-                    <source 
-                      media="(max-width: 768px)" 
-                      srcSet={currentBanner.mobileImageUrl}
-                    />
+                    <source media="(max-width: 768px)" srcSet={currentBanner.mobileImageUrl} />
                   )}
                   {/* Desktop Image */}
                   <img
                     src={currentBanner.imageUrl}
                     alt={currentBanner.title}
-                    className="w-full h-full object-cover cursor-pointer rounded-lg shadow-lg"
+                    className="h-full w-full cursor-pointer rounded-lg object-cover shadow-lg"
                   />
                 </picture>
               </Link>
@@ -108,16 +103,13 @@ export function CampaignBannerSlider({
               <picture>
                 {/* Mobile Image */}
                 {currentBanner.mobileImageUrl && (
-                  <source 
-                    media="(max-width: 768px)" 
-                    srcSet={currentBanner.mobileImageUrl}
-                  />
+                  <source media="(max-width: 768px)" srcSet={currentBanner.mobileImageUrl} />
                 )}
                 {/* Desktop Image */}
                 <img
                   src={currentBanner.imageUrl}
                   alt={currentBanner.title}
-                  className="w-full h-full object-cover rounded-lg shadow-lg"
+                  className="h-full w-full rounded-lg object-cover shadow-lg"
                 />
               </picture>
             )}
@@ -128,14 +120,14 @@ export function CampaignBannerSlider({
             <>
               <button
                 onClick={goToPrevious}
-                className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 backdrop-blur-sm rounded-full hover:bg-black/70 transition-colors"
+                className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 backdrop-blur-sm transition-colors hover:bg-black/70"
                 aria-label="Previous banner"
               >
                 <ChevronLeft className="h-5 w-5 text-white" />
               </button>
               <button
                 onClick={goToNext}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 backdrop-blur-sm rounded-full hover:bg-black/70 transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 backdrop-blur-sm transition-colors hover:bg-black/70"
                 aria-label="Next banner"
               >
                 <ChevronRight className="h-5 w-5 text-white" />
@@ -146,15 +138,13 @@ export function CampaignBannerSlider({
 
         {/* Dots Indicator - Only show if more than one banner */}
         {showDots && banners.length > 1 && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+          <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
             {banners.map((_, index) => (
               <button
                 key={index}
                 onClick={() => goToSlide(index)}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  index === currentIndex 
-                    ? 'w-8 bg-white' 
-                    : 'bg-white/50 hover:bg-white/70'
+                className={`h-2 w-2 rounded-full transition-all ${
+                  index === currentIndex ? 'w-8 bg-white' : 'bg-white/50 hover:bg-white/70'
                 }`}
                 aria-label={`Go to slide ${index + 1}`}
               />

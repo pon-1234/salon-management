@@ -28,10 +28,10 @@ export function ReviewCard({ review }: ReviewCardProps) {
     <Card className="overflow-hidden">
       <CardContent className="p-6">
         {/* Header */}
-        <div className="flex items-start justify-between mb-4">
+        <div className="mb-4 flex items-start justify-between">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-bold text-lg">{review.castName}</h3>
+            <div className="mb-1 flex items-center gap-2">
+              <h3 className="text-lg font-bold">{review.castName}</h3>
               {review.isVerified && (
                 <div className="flex items-center gap-1 text-green-600">
                   <CheckCircle className="h-4 w-4" />
@@ -54,9 +54,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
               <Star
                 key={i}
                 className={`h-5 w-5 ${
-                  i < review.rating
-                    ? 'fill-yellow-400 text-yellow-400'
-                    : 'text-gray-300'
+                  i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
                 }`}
               />
             ))}
@@ -64,26 +62,23 @@ export function ReviewCard({ review }: ReviewCardProps) {
         </div>
 
         {/* Course and Options */}
-        <div className="flex flex-wrap gap-2 mb-3">
-          {review.courseType && (
-            <Badge variant="outline">{review.courseType}</Badge>
-          )}
-          {review.options?.map(option => (
-            <Badge key={option} variant="secondary">{option}</Badge>
+        <div className="mb-3 flex flex-wrap gap-2">
+          {review.courseType && <Badge variant="outline">{review.courseType}</Badge>}
+          {review.options?.map((option) => (
+            <Badge key={option} variant="secondary">
+              {option}
+            </Badge>
           ))}
         </div>
 
         {/* Review Content */}
-        <p className="text-gray-700 leading-relaxed mb-4">{review.content}</p>
+        <p className="mb-4 leading-relaxed text-gray-700">{review.content}</p>
 
         {/* Tags */}
         {review.tags && review.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {review.tags.map(tag => (
-              <span
-                key={tag}
-                className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full"
-              >
+          <div className="mb-4 flex flex-wrap gap-2">
+            {review.tags.map((tag) => (
+              <span key={tag} className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600">
                 #{tag}
               </span>
             ))}
@@ -92,12 +87,12 @@ export function ReviewCard({ review }: ReviewCardProps) {
 
         {/* Cast Response */}
         {review.response && (
-          <div className="bg-pink-50 border border-pink-200 rounded-lg p-4 mb-4">
+          <div className="mb-4 rounded-lg border border-pink-200 bg-pink-50 p-4">
             <div className="flex items-start gap-2">
-              <MessageCircle className="h-5 w-5 text-pink-600 mt-0.5" />
+              <MessageCircle className="mt-0.5 h-5 w-5 text-pink-600" />
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-semibold text-sm text-pink-800">
+                <div className="mb-1 flex items-center gap-2">
+                  <span className="text-sm font-semibold text-pink-800">
                     {review.response.respondedBy}からの返信
                   </span>
                   <span className="text-xs text-gray-500">
@@ -111,7 +106,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-4 border-t">
+        <div className="flex items-center justify-between border-t pt-4">
           <Button
             variant="ghost"
             size="sm"
@@ -119,7 +114,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
             disabled={hasVoted}
             className="text-gray-600"
           >
-            <ThumbsUp className={`h-4 w-4 mr-1 ${hasVoted ? 'fill-current' : ''}`} />
+            <ThumbsUp className={`mr-1 h-4 w-4 ${hasVoted ? 'fill-current' : ''}`} />
             参考になった ({helpful})
           </Button>
         </div>

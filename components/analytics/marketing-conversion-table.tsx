@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -8,9 +8,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Progress } from "@/components/ui/progress"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
+} from '@/components/ui/table'
+import { Progress } from '@/components/ui/progress'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 
 interface MarketingConversionTableProps {
   year: number
@@ -30,14 +30,17 @@ interface ConversionData {
   conversionRate: number
 }
 
-export function MarketingConversionTable({ year, analyticsUseCases }: MarketingConversionTableProps) {
+export function MarketingConversionTable({
+  year,
+  analyticsUseCases,
+}: MarketingConversionTableProps) {
   const [data, setData] = useState<ConversionData[]>([])
 
   useEffect(() => {
     // ダミーデータ（実際にはuseCasesから取得）
     const dummyData: ConversionData[] = [
       {
-        channel: "ホットペッパー",
+        channel: 'ホットペッパー',
         impressions: 125000,
         clicks: 15625,
         visits: 12500,
@@ -46,10 +49,10 @@ export function MarketingConversionTable({ year, analyticsUseCases }: MarketingC
         ctr: 12.5,
         visitRate: 80.0,
         bookingRate: 37.5,
-        conversionRate: 31.6
+        conversionRate: 31.6,
       },
       {
-        channel: "Instagram",
+        channel: 'Instagram',
         impressions: 85000,
         clicks: 8500,
         visits: 6800,
@@ -58,10 +61,10 @@ export function MarketingConversionTable({ year, analyticsUseCases }: MarketingC
         ctr: 10.0,
         visitRate: 80.0,
         bookingRate: 45.0,
-        conversionRate: 28.9
+        conversionRate: 28.9,
       },
       {
-        channel: "Google広告",
+        channel: 'Google広告',
         impressions: 68000,
         clicks: 5440,
         visits: 4352,
@@ -70,10 +73,10 @@ export function MarketingConversionTable({ year, analyticsUseCases }: MarketingC
         ctr: 8.0,
         visitRate: 80.0,
         bookingRate: 50.0,
-        conversionRate: 24.7
+        conversionRate: 24.7,
       },
       {
-        channel: "紹介",
+        channel: '紹介',
         impressions: 0,
         clicks: 0,
         visits: 2864,
@@ -82,10 +85,10 @@ export function MarketingConversionTable({ year, analyticsUseCases }: MarketingC
         ctr: 0,
         visitRate: 0,
         bookingRate: 60.0,
-        conversionRate: 50.0
+        conversionRate: 50.0,
       },
       {
-        channel: "ウォークイン",
+        channel: 'ウォークイン',
         impressions: 0,
         clicks: 0,
         visits: 1705,
@@ -94,8 +97,8 @@ export function MarketingConversionTable({ year, analyticsUseCases }: MarketingC
         ctr: 0,
         visitRate: 0,
         bookingRate: 75.0,
-        conversionRate: 60.0
-      }
+        conversionRate: 60.0,
+      },
     ]
     setData(dummyData)
   }, [year, analyticsUseCases])
@@ -126,12 +129,8 @@ export function MarketingConversionTable({ year, analyticsUseCases }: MarketingC
               <TableCell className="text-right">
                 {item.clicks > 0 ? item.clicks.toLocaleString() : '-'}
               </TableCell>
-              <TableCell className="text-right">
-                {item.visits.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                {item.bookings.toLocaleString()}
-              </TableCell>
+              <TableCell className="text-right">{item.visits.toLocaleString()}</TableCell>
+              <TableCell className="text-right">{item.bookings.toLocaleString()}</TableCell>
               <TableCell className="text-right font-medium">
                 {item.customers.toLocaleString()}
               </TableCell>
@@ -139,20 +138,22 @@ export function MarketingConversionTable({ year, analyticsUseCases }: MarketingC
                 {item.ctr > 0 ? (
                   <div className="flex flex-col items-center gap-1">
                     <span className="text-sm">{item.ctr}%</span>
-                    <Progress value={item.ctr} className="w-16 h-2" />
+                    <Progress value={item.ctr} className="h-2 w-16" />
                   </div>
-                ) : '-'}
+                ) : (
+                  '-'
+                )}
               </TableCell>
               <TableCell className="text-center">
                 <div className="flex flex-col items-center gap-1">
                   <span className="text-sm">{item.bookingRate}%</span>
-                  <Progress value={item.bookingRate} className="w-16 h-2" />
+                  <Progress value={item.bookingRate} className="h-2 w-16" />
                 </div>
               </TableCell>
               <TableCell className="text-center">
                 <div className="flex flex-col items-center gap-1">
                   <span className="text-sm font-medium text-green-600">{item.conversionRate}%</span>
-                  <Progress value={item.conversionRate} className="w-16 h-2" />
+                  <Progress value={item.conversionRate} className="h-2 w-16" />
                 </div>
               </TableCell>
             </TableRow>

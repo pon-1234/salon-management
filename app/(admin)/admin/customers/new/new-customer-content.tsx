@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
@@ -6,15 +6,15 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from '@/components/ui/select'
 import {
   Form,
   FormControl,
@@ -22,8 +22,8 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+} from '@/components/ui/form'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 const formSchema = z.object({
   store: z.string().min(1, '登録店舗を選択してください'),
@@ -36,7 +36,7 @@ type FormData = z.infer<typeof formSchema>
 export function NewCustomerContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -60,10 +60,12 @@ export function NewCustomerContent() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
+    <div className="mx-auto max-w-2xl p-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">新規顧客登録</h1>
-        <p className="text-sm text-gray-600 mt-2">基本情報を入力してください。詳細情報は後で編集できます。</p>
+        <p className="mt-2 text-sm text-gray-600">
+          基本情報を入力してください。詳細情報は後で編集できます。
+        </p>
       </div>
 
       <Form {...form}>
@@ -79,7 +81,9 @@ export function NewCustomerContent() {
                 name="store"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium">登録店舗 <span className="text-red-500">*</span></FormLabel>
+                    <FormLabel className="text-sm font-medium">
+                      登録店舗 <span className="text-red-500">*</span>
+                    </FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -103,7 +107,9 @@ export function NewCustomerContent() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium">名前 <span className="text-red-500">*</span></FormLabel>
+                    <FormLabel className="text-sm font-medium">
+                      名前 <span className="text-red-500">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input placeholder="山田太郎" {...field} />
                     </FormControl>
@@ -111,13 +117,15 @@ export function NewCustomerContent() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium">電話番号 <span className="text-red-500">*</span></FormLabel>
+                    <FormLabel className="text-sm font-medium">
+                      電話番号 <span className="text-red-500">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input placeholder="090-1234-5678" {...field} />
                     </FormControl>
@@ -126,9 +134,10 @@ export function NewCustomerContent() {
                 )}
               />
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
                 <p className="text-sm text-blue-800">
-                  <strong>📝 登録後について</strong><br />
+                  <strong>📝 登録後について</strong>
+                  <br />
                   基本登録後、顧客詳細ページでメールアドレス、生年月日、会員タイプなどの詳細情報を追加できます。
                 </p>
               </div>
@@ -136,17 +145,10 @@ export function NewCustomerContent() {
           </Card>
 
           <div className="flex justify-end space-x-4 pt-6">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.back()}
-            >
+            <Button type="button" variant="outline" onClick={() => router.back()}>
               キャンセル
             </Button>
-            <Button
-              type="submit"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-8"
-            >
+            <Button type="submit" className="bg-emerald-600 px-8 text-white hover:bg-emerald-700">
               登録
             </Button>
           </div>

@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/126</span>
+                <span class='fraction'>0/124</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/126</span>
+                <span class='fraction'>0/124</span>
             </div>
         
             
@@ -252,21 +252,13 @@
 <a name='L187'></a><a href='#L187'>187</a>
 <a name='L188'></a><a href='#L188'>188</a>
 <a name='L189'></a><a href='#L189'>189</a>
-<a name='L190'></a><a href='#L190'>190</a>
-<a name='L191'></a><a href='#L191'>191</a>
-<a name='L192'></a><a href='#L192'>192</a>
-<a name='L193'></a><a href='#L193'>193</a>
-<a name='L194'></a><a href='#L194'>194</a>
-<a name='L195'></a><a href='#L195'>195</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L190'></a><a href='#L190'>190</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -341,8 +333,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -451,15 +441,12 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >"use client"<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >'use client'<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
 &nbsp;
 // Inspired by react-hot-toast library
-import * as React from "react"
+import * as React from 'react'
 &nbsp;
-import type {
-  ToastActionElement,
-  ToastProps,
-} from "@/components/ui/toast"
+import type { ToastActionElement, ToastProps } from '@/components/ui/toast'
 &nbsp;
 <span class="cstat-no" title="statement not covered" >const TOAST_LIMIT = 1</span>
 <span class="cstat-no" title="statement not covered" >const TOAST_REMOVE_DELAY = 1000000</span>
@@ -472,10 +459,10 @@ type ToasterToast = ToastProps &amp; {
 }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >const actionTypes = {</span>
-<span class="cstat-no" title="statement not covered" >  ADD_TOAST: "ADD_TOAST",</span>
-<span class="cstat-no" title="statement not covered" >  UPDATE_TOAST: "UPDATE_TOAST",</span>
-<span class="cstat-no" title="statement not covered" >  DISMISS_TOAST: "DISMISS_TOAST",</span>
-<span class="cstat-no" title="statement not covered" >  REMOVE_TOAST: "REMOVE_TOAST",</span>
+<span class="cstat-no" title="statement not covered" >  ADD_TOAST: 'ADD_TOAST',</span>
+<span class="cstat-no" title="statement not covered" >  UPDATE_TOAST: 'UPDATE_TOAST',</span>
+<span class="cstat-no" title="statement not covered" >  DISMISS_TOAST: 'DISMISS_TOAST',</span>
+<span class="cstat-no" title="statement not covered" >  REMOVE_TOAST: 'REMOVE_TOAST',</span>
 <span class="cstat-no" title="statement not covered" >} as const</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >let count = 0</span>
@@ -489,20 +476,20 @@ type ActionType = typeof actionTypes
 &nbsp;
 type Action =
   | {
-      type: ActionType["ADD_TOAST"]
+      type: ActionType['ADD_TOAST']
       toast: ToasterToast
     }
   | {
-      type: ActionType["UPDATE_TOAST"]
+      type: ActionType['UPDATE_TOAST']
       toast: Partial&lt;ToasterToast&gt;
     }
   | {
-      type: ActionType["DISMISS_TOAST"]
-      toastId?: ToasterToast["id"]
+      type: ActionType['DISMISS_TOAST']
+      toastId?: ToasterToast['id']
     }
   | {
-      type: ActionType["REMOVE_TOAST"]
-      toastId?: ToasterToast["id"]
+      type: ActionType['REMOVE_TOAST']
+      toastId?: ToasterToast['id']
     }
 &nbsp;
 interface State {
@@ -519,7 +506,7 @@ interface State {
 <span class="cstat-no" title="statement not covered" >  const timeout = setTimeout(() =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    toastTimeouts.delete(toastId)</span>
 <span class="cstat-no" title="statement not covered" >    dispatch({</span>
-<span class="cstat-no" title="statement not covered" >      type: "REMOVE_TOAST",</span>
+<span class="cstat-no" title="statement not covered" >      type: 'REMOVE_TOAST',</span>
 <span class="cstat-no" title="statement not covered" >      toastId: toastId,</span>
 <span class="cstat-no" title="statement not covered" >    })</span>
 <span class="cstat-no" title="statement not covered" >  }, TOAST_REMOVE_DELAY)</span>
@@ -529,21 +516,19 @@ interface State {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export const reducer = (state: State, action: Action): State =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  switch (action.type) {</span>
-<span class="cstat-no" title="statement not covered" >    case "ADD_TOAST":</span>
+<span class="cstat-no" title="statement not covered" >    case 'ADD_TOAST':</span>
 <span class="cstat-no" title="statement not covered" >      return {</span>
 <span class="cstat-no" title="statement not covered" >        ...state,</span>
 <span class="cstat-no" title="statement not covered" >        toasts: [action.toast, ...state.toasts].slice(0, TOAST_LIMIT),</span>
 <span class="cstat-no" title="statement not covered" >      }</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    case "UPDATE_TOAST":</span>
+<span class="cstat-no" title="statement not covered" >    case 'UPDATE_TOAST':</span>
 <span class="cstat-no" title="statement not covered" >      return {</span>
 <span class="cstat-no" title="statement not covered" >        ...state,</span>
-<span class="cstat-no" title="statement not covered" >        toasts: state.toasts.map((t) =&gt;</span>
-<span class="cstat-no" title="statement not covered" >          t.id === action.toast.id ? { ...t, ...action.toast } : t</span>
-<span class="cstat-no" title="statement not covered" >        ),</span>
+<span class="cstat-no" title="statement not covered" >        toasts: state.toasts.map((t) =&gt; (t.id === action.toast.id ? { ...t, ...action.toast } : t)),</span>
 <span class="cstat-no" title="statement not covered" >      }</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    case "DISMISS_TOAST": {</span>
+<span class="cstat-no" title="statement not covered" >    case 'DISMISS_TOAST': {</span>
 <span class="cstat-no" title="statement not covered" >      const { toastId } = action</span>
 &nbsp;
       // ! Side effects ! - This could be extracted into a dismissToast() action,
@@ -568,7 +553,7 @@ interface State {
 <span class="cstat-no" title="statement not covered" >        ),</span>
 <span class="cstat-no" title="statement not covered" >      }</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
-<span class="cstat-no" title="statement not covered" >    case "REMOVE_TOAST":</span>
+<span class="cstat-no" title="statement not covered" >    case 'REMOVE_TOAST':</span>
 <span class="cstat-no" title="statement not covered" >      if (action.toastId === undefined) {</span>
 <span class="cstat-no" title="statement not covered" >        return {</span>
 <span class="cstat-no" title="statement not covered" >          ...state,</span>
@@ -593,20 +578,20 @@ interface State {
 <span class="cstat-no" title="statement not covered" >  })</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
-type Toast = Omit&lt;ToasterToast, "id"&gt;
+type Toast = Omit&lt;ToasterToast, 'id'&gt;
 &nbsp;
 <span class="cstat-no" title="statement not covered" >function toast({ ...props }: Toast) {</span>
 <span class="cstat-no" title="statement not covered" >  const id = genId()</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const update = (props: ToasterToast) =&gt;</span>
 <span class="cstat-no" title="statement not covered" >    dispatch({</span>
-<span class="cstat-no" title="statement not covered" >      type: "UPDATE_TOAST",</span>
+<span class="cstat-no" title="statement not covered" >      type: 'UPDATE_TOAST',</span>
 <span class="cstat-no" title="statement not covered" >      toast: { ...props, id },</span>
 <span class="cstat-no" title="statement not covered" >    })</span>
-<span class="cstat-no" title="statement not covered" >  const dismiss = () =&gt; dispatch({ type: "DISMISS_TOAST", toastId: id })</span>
+<span class="cstat-no" title="statement not covered" >  const dismiss = () =&gt; dispatch({ type: 'DISMISS_TOAST', toastId: id })</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  dispatch({</span>
-<span class="cstat-no" title="statement not covered" >    type: "ADD_TOAST",</span>
+<span class="cstat-no" title="statement not covered" >    type: 'ADD_TOAST',</span>
 <span class="cstat-no" title="statement not covered" >    toast: {</span>
 <span class="cstat-no" title="statement not covered" >      ...props,</span>
 <span class="cstat-no" title="statement not covered" >      id,</span>
@@ -640,7 +625,7 @@ type Toast = Omit&lt;ToasterToast, "id"&gt;
 <span class="cstat-no" title="statement not covered" >  return {</span>
 <span class="cstat-no" title="statement not covered" >    ...state,</span>
 <span class="cstat-no" title="statement not covered" >    toast,</span>
-<span class="cstat-no" title="statement not covered" >    dismiss: (toastId?: string) =&gt; dispatch({ type: "DISMISS_TOAST", toastId }),</span>
+<span class="cstat-no" title="statement not covered" >    dismiss: (toastId?: string) =&gt; dispatch({ type: 'DISMISS_TOAST', toastId }),</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
@@ -652,7 +637,7 @@ export { useToast, toast }
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

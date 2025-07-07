@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/117</span>
+                <span class='fraction'>0/130</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/117</span>
+                <span class='fraction'>0/130</span>
             </div>
         
             
@@ -186,7 +186,20 @@
 <a name='L121'></a><a href='#L121'>121</a>
 <a name='L122'></a><a href='#L122'>122</a>
 <a name='L123'></a><a href='#L123'>123</a>
-<a name='L124'></a><a href='#L124'>124</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L124'></a><a href='#L124'>124</a>
+<a name='L125'></a><a href='#L125'>125</a>
+<a name='L126'></a><a href='#L126'>126</a>
+<a name='L127'></a><a href='#L127'>127</a>
+<a name='L128'></a><a href='#L128'>128</a>
+<a name='L129'></a><a href='#L129'>129</a>
+<a name='L130'></a><a href='#L130'>130</a>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a>
+<a name='L133'></a><a href='#L133'>133</a>
+<a name='L134'></a><a href='#L134'>134</a>
+<a name='L135'></a><a href='#L135'>135</a>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -288,6 +301,27 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -296,129 +330,134 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { CastScheduleEntry, WeeklySchedule } from './types';<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
-import { format, addDays } from 'date-fns';
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { CastScheduleEntry, WeeklySchedule } from './types'<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
+import { format, addDays } from 'date-fns'
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export function generateMockWeeklySchedule(startDate: Date): WeeklySchedule {</span>
   // Generate dates for the week (Monday to Sunday)
 <span class="cstat-no" title="statement not covered" >  const weekDates = Array.from({ length: 7 }, (_, i) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    const date = addDays(startDate, i);</span>
-<span class="cstat-no" title="statement not covered" >    return format(date, 'yyyy-MM-dd');</span>
-<span class="cstat-no" title="statement not covered" >  });</span>
+<span class="cstat-no" title="statement not covered" >    const date = addDays(startDate, i)</span>
+<span class="cstat-no" title="statement not covered" >    return format(date, 'yyyy-MM-dd')</span>
+<span class="cstat-no" title="statement not covered" >  })</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const mockEntries: CastScheduleEntry[] = [</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
-<span class="cstat-no" title="statement not covered" >      castId: "1",</span>
-<span class="cstat-no" title="statement not covered" >      name: "あい",</span>
-<span class="cstat-no" title="statement not covered" >      nameKana: "あい",</span>
+<span class="cstat-no" title="statement not covered" >      castId: '1',</span>
+<span class="cstat-no" title="statement not covered" >      name: 'あい',</span>
+<span class="cstat-no" title="statement not covered" >      nameKana: 'あい',</span>
 <span class="cstat-no" title="statement not covered" >      age: 27,</span>
-<span class="cstat-no" title="statement not covered" >      image: "/placeholder-user.jpg",</span>
+<span class="cstat-no" title="statement not covered" >      image: '/placeholder-user.jpg',</span>
 <span class="cstat-no" title="statement not covered" >      hasPhone: true,</span>
 <span class="cstat-no" title="statement not covered" >      hasBusinessContact: true,</span>
 <span class="cstat-no" title="statement not covered" >      schedule: {</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[0]]: { type: "休日" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[1]]: { type: "出勤予定", startTime: "12:00", endTime: "18:00" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[2]]: { type: "出勤予定", startTime: "14:00", endTime: "22:00" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[3]]: { type: "出勤予定", startTime: "10:00", endTime: "15:00" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[4]]: { type: "休日" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[5]]: { type: "出勤予定", startTime: "16:00", endTime: "24:00" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[6]]: { type: "出勤予定", startTime: "18:00", endTime: "01:00", note: "遅番シフト" },</span>
-<span class="cstat-no" title="statement not covered" >      }</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[0]]: { type: '休日' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[1]]: { type: '出勤予定', startTime: '12:00', endTime: '18:00' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[2]]: { type: '出勤予定', startTime: '14:00', endTime: '22:00' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[3]]: { type: '出勤予定', startTime: '10:00', endTime: '15:00' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[4]]: { type: '休日' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[5]]: { type: '出勤予定', startTime: '16:00', endTime: '24:00' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[6]]: {</span>
+<span class="cstat-no" title="statement not covered" >          type: '出勤予定',</span>
+<span class="cstat-no" title="statement not covered" >          startTime: '18:00',</span>
+<span class="cstat-no" title="statement not covered" >          endTime: '01:00',</span>
+<span class="cstat-no" title="statement not covered" >          note: '遅番シフト',</span>
+<span class="cstat-no" title="statement not covered" >        },</span>
+<span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
-<span class="cstat-no" title="statement not covered" >      castId: "2",</span>
-<span class="cstat-no" title="statement not covered" >      name: "あやみ",</span>
-<span class="cstat-no" title="statement not covered" >      nameKana: "あやみ",</span>
+<span class="cstat-no" title="statement not covered" >      castId: '2',</span>
+<span class="cstat-no" title="statement not covered" >      name: 'あやみ',</span>
+<span class="cstat-no" title="statement not covered" >      nameKana: 'あやみ',</span>
 <span class="cstat-no" title="statement not covered" >      age: 27,</span>
-<span class="cstat-no" title="statement not covered" >      image: "/placeholder-user.jpg",</span>
+<span class="cstat-no" title="statement not covered" >      image: '/placeholder-user.jpg',</span>
 <span class="cstat-no" title="statement not covered" >      hasPhone: true,</span>
 <span class="cstat-no" title="statement not covered" >      hasBusinessContact: true,</span>
 <span class="cstat-no" title="statement not covered" >      schedule: {</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[0]]: { type: "休日" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[1]]: { type: "休日" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[2]]: { type: "休日", note: "※休みに変更" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[3]]: { type: "出勤予定", startTime: "20:00", endTime: "02:00" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[4]]: { type: "出勤予定", startTime: "17:30", endTime: "23:00", note: "※来週出勤（17：30〜22：45分）" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[5]]: { type: "出勤予定", startTime: "19:00", endTime: "01:00" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[6]]: { type: "未入力" },</span>
-<span class="cstat-no" title="statement not covered" >      }</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[0]]: { type: '休日' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[1]]: { type: '休日' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[2]]: { type: '休日', note: '※休みに変更' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[3]]: { type: '出勤予定', startTime: '20:00', endTime: '02:00' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[4]]: {</span>
+<span class="cstat-no" title="statement not covered" >          type: '出勤予定',</span>
+<span class="cstat-no" title="statement not covered" >          startTime: '17:30',</span>
+<span class="cstat-no" title="statement not covered" >          endTime: '23:00',</span>
+<span class="cstat-no" title="statement not covered" >          note: '※来週出勤（17：30〜22：45分）',</span>
+<span class="cstat-no" title="statement not covered" >        },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[5]]: { type: '出勤予定', startTime: '19:00', endTime: '01:00' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[6]]: { type: '未入力' },</span>
+<span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
-<span class="cstat-no" title="statement not covered" >      castId: "3",</span>
-<span class="cstat-no" title="statement not covered" >      name: "いずみ",</span>
-<span class="cstat-no" title="statement not covered" >      nameKana: "いずみ",</span>
+<span class="cstat-no" title="statement not covered" >      castId: '3',</span>
+<span class="cstat-no" title="statement not covered" >      name: 'いずみ',</span>
+<span class="cstat-no" title="statement not covered" >      nameKana: 'いずみ',</span>
 <span class="cstat-no" title="statement not covered" >      age: 32,</span>
-<span class="cstat-no" title="statement not covered" >      image: "/placeholder-user.jpg",</span>
+<span class="cstat-no" title="statement not covered" >      image: '/placeholder-user.jpg',</span>
 <span class="cstat-no" title="statement not covered" >      hasPhone: true,</span>
 <span class="cstat-no" title="statement not covered" >      hasBusinessContact: true,</span>
 <span class="cstat-no" title="statement not covered" >      schedule: {</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[0]]: { type: "出勤予定", startTime: "15:00", endTime: "23:00" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[1]]: { type: "出勤予定", startTime: "15:00", endTime: "24:00" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[2]]: { type: "休日" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[3]]: { type: "出勤予定", startTime: "15:00", endTime: "24:00" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[4]]: { type: "休日" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[5]]: { type: "出勤予定", startTime: "15:00", endTime: "24:00" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[6]]: { type: "休日" },</span>
-<span class="cstat-no" title="statement not covered" >      }</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[0]]: { type: '出勤予定', startTime: '15:00', endTime: '23:00' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[1]]: { type: '出勤予定', startTime: '15:00', endTime: '24:00' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[2]]: { type: '休日' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[3]]: { type: '出勤予定', startTime: '15:00', endTime: '24:00' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[4]]: { type: '休日' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[5]]: { type: '出勤予定', startTime: '15:00', endTime: '24:00' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[6]]: { type: '休日' },</span>
+<span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
-<span class="cstat-no" title="statement not covered" >      castId: "4",</span>
-<span class="cstat-no" title="statement not covered" >      name: "えみか",</span>
-<span class="cstat-no" title="statement not covered" >      nameKana: "えみか",</span>
+<span class="cstat-no" title="statement not covered" >      castId: '4',</span>
+<span class="cstat-no" title="statement not covered" >      name: 'えみか',</span>
+<span class="cstat-no" title="statement not covered" >      nameKana: 'えみか',</span>
 <span class="cstat-no" title="statement not covered" >      age: 24,</span>
-<span class="cstat-no" title="statement not covered" >      image: "/placeholder-user.jpg",</span>
+<span class="cstat-no" title="statement not covered" >      image: '/placeholder-user.jpg',</span>
 <span class="cstat-no" title="statement not covered" >      hasPhone: false,</span>
 <span class="cstat-no" title="statement not covered" >      hasBusinessContact: true,</span>
 <span class="cstat-no" title="statement not covered" >      schedule: {</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[0]]: { type: "出勤予定", startTime: "11:00", endTime: "17:00", note: "昼シフト" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[1]]: { type: "出勤予定", startTime: "11:00", endTime: "17:00" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[2]]: { type: "出勤予定", startTime: "14:00", endTime: "20:00" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[3]]: { type: "休日" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[4]]: { type: "出勤予定", startTime: "18:00", endTime: "24:00" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[5]]: { type: "出勤予定", startTime: "20:00", endTime: "02:00" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[6]]: { type: "休日" },</span>
-<span class="cstat-no" title="statement not covered" >      }</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[0]]: {</span>
+<span class="cstat-no" title="statement not covered" >          type: '出勤予定',</span>
+<span class="cstat-no" title="statement not covered" >          startTime: '11:00',</span>
+<span class="cstat-no" title="statement not covered" >          endTime: '17:00',</span>
+<span class="cstat-no" title="statement not covered" >          note: '昼シフト',</span>
+<span class="cstat-no" title="statement not covered" >        },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[1]]: { type: '出勤予定', startTime: '11:00', endTime: '17:00' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[2]]: { type: '出勤予定', startTime: '14:00', endTime: '20:00' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[3]]: { type: '休日' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[4]]: { type: '出勤予定', startTime: '18:00', endTime: '24:00' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[5]]: { type: '出勤予定', startTime: '20:00', endTime: '02:00' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[6]]: { type: '休日' },</span>
+<span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
-<span class="cstat-no" title="statement not covered" >      castId: "5",</span>
-<span class="cstat-no" title="statement not covered" >      name: "かおり",</span>
-<span class="cstat-no" title="statement not covered" >      nameKana: "かおり",</span>
+<span class="cstat-no" title="statement not covered" >      castId: '5',</span>
+<span class="cstat-no" title="statement not covered" >      name: 'かおり',</span>
+<span class="cstat-no" title="statement not covered" >      nameKana: 'かおり',</span>
 <span class="cstat-no" title="statement not covered" >      age: 29,</span>
-<span class="cstat-no" title="statement not covered" >      image: "/placeholder-user.jpg",</span>
+<span class="cstat-no" title="statement not covered" >      image: '/placeholder-user.jpg',</span>
 <span class="cstat-no" title="statement not covered" >      hasPhone: true,</span>
 <span class="cstat-no" title="statement not covered" >      hasBusinessContact: true,</span>
 <span class="cstat-no" title="statement not covered" >      schedule: {</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[0]]: { type: "未入力" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[1]]: { type: "出勤予定", startTime: "16:00", endTime: "22:00" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[2]]: { type: "出勤予定", startTime: "18:00", endTime: "01:00" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[3]]: { type: "出勤予定", startTime: "20:00", endTime: "03:00" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[4]]: { type: "休日" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[5]]: { type: "休日" },</span>
-<span class="cstat-no" title="statement not covered" >        [weekDates[6]]: { type: "出勤予定", startTime: "19:00", endTime: "02:00" },</span>
-<span class="cstat-no" title="statement not covered" >      }</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[0]]: { type: '未入力' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[1]]: { type: '出勤予定', startTime: '16:00', endTime: '22:00' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[2]]: { type: '出勤予定', startTime: '18:00', endTime: '01:00' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[3]]: { type: '出勤予定', startTime: '20:00', endTime: '03:00' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[4]]: { type: '休日' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[5]]: { type: '休日' },</span>
+<span class="cstat-no" title="statement not covered" >        [weekDates[6]]: { type: '出勤予定', startTime: '19:00', endTime: '02:00' },</span>
+<span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
-<span class="cstat-no" title="statement not covered" >  ];</span>
+<span class="cstat-no" title="statement not covered" >  ]</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  const workingStaff = mockEntries.length;</span>
+<span class="cstat-no" title="statement not covered" >  const workingStaff = mockEntries.length</span>
 <span class="cstat-no" title="statement not covered" >  const totalHours = mockEntries.reduce((acc, entry) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    const workingDays = Object.values(entry.schedule).filter(</span>
-<span class="cstat-no" title="statement not covered" >      s =&gt; s.type === "出勤予定"</span>
-<span class="cstat-no" title="statement not covered" >    ).length;</span>
-<span class="cstat-no" title="statement not covered" >    return acc + (workingDays * 8); // Assuming 8 hours per working day</span>
-<span class="cstat-no" title="statement not covered" >  }, 0);</span>
+<span class="cstat-no" title="statement not covered" >    const workingDays = Object.values(entry.schedule).filter((s) =&gt; s.type === '出勤予定').length</span>
+<span class="cstat-no" title="statement not covered" >    return acc + workingDays * 8 // Assuming 8 hours per working day</span>
+<span class="cstat-no" title="statement not covered" >  }, 0)</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return {</span>
 <span class="cstat-no" title="statement not covered" >    startDate,</span>
@@ -429,8 +468,8 @@ import { format, addDays } from 'date-fns';
 <span class="cstat-no" title="statement not covered" >      workingCast: 14,</span>
 <span class="cstat-no" title="statement not covered" >      averageWorkingHours: 68.5,</span>
 <span class="cstat-no" title="statement not covered" >      averageWorkingCast: 11,</span>
-<span class="cstat-no" title="statement not covered" >    }</span>
-<span class="cstat-no" title="statement not covered" >  };</span>
+<span class="cstat-no" title="statement not covered" >    },</span>
+<span class="cstat-no" title="statement not covered" >  }</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;</pre></td></tr></table></pre>
 
@@ -439,7 +478,7 @@ import { format, addDays } from 'date-fns';
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

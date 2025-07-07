@@ -158,7 +158,8 @@
 <a name='L93'></a><a href='#L93'>93</a>
 <a name='L94'></a><a href='#L94'>94</a>
 <a name='L95'></a><a href='#L95'>95</a>
-<a name='L96'></a><a href='#L96'>96</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -253,7 +254,8 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span></td><td class="text"><pre class="prettyprint lang-js">import { describe, it, expect } from "vitest";
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { describe, it, expect } from 'vitest'
 import {
   generateMonthlyData,
   generateDailyData,
@@ -261,101 +263,102 @@ import {
   generateOptionSalesData,
   generateMarketingChannelData,
   staffPerformanceData,
-} from "./data";
-import { courses, options } from "@/lib/course-option/data";
+} from './data'
+import { courses, options } from '@/lib/course-option/data'
 &nbsp;
-describe("Analytics Data Generators", () =&gt; {
-  describe("generateMonthlyData", () =&gt; {
-    it("should generate 12 months of data", () =&gt; {
-      const data = generateMonthlyData(2024);
-      expect(data).toHaveLength(12);
-    });
+describe('Analytics Data Generators', () =&gt; {
+  describe('generateMonthlyData', () =&gt; {
+    it('should generate 12 months of data', () =&gt; {
+      const data = generateMonthlyData(2024)
+      expect(data).toHaveLength(12)
+    })
 &nbsp;
-    it("should contain all required keys for each month", () =&gt; {
-      const data = generateMonthlyData(2024);
-      const firstMonth = data[0];
-      expect(firstMonth).toHaveProperty("month");
-      expect(firstMonth).toHaveProperty("totalSales");
-    });
+    it('should contain all required keys for each month', () =&gt; {
+      const data = generateMonthlyData(2024)
+      const firstMonth = data[0]
+      expect(firstMonth).toHaveProperty('month')
+      expect(firstMonth).toHaveProperty('totalSales')
+    })
 &nbsp;
-    it("should correctly calculate derived values", () =&gt; {
-      const data = generateMonthlyData(2024);
-      const firstMonth = data[0];
-      expect(firstMonth.totalSales).toBe(firstMonth.cashSales + firstMonth.cardSales);
-      expect(firstMonth.totalCount).toBe(firstMonth.tokyoCount + firstMonth.kanagawaCount);
-    });
-  });
+    it('should correctly calculate derived values', () =&gt; {
+      const data = generateMonthlyData(2024)
+      const firstMonth = data[0]
+      expect(firstMonth.totalSales).toBe(firstMonth.cashSales + firstMonth.cardSales)
+      expect(firstMonth.totalCount).toBe(firstMonth.tokyoCount + firstMonth.kanagawaCount)
+    })
+  })
 &nbsp;
-  describe("generateDailyData", () =&gt; {
-    it("should generate data for the correct number of days in a month", () =&gt; {
-      const dataFeb = generateDailyData(2024, 2); // Leap year
-      expect(dataFeb).toHaveLength(29);
-      const dataApr = generateDailyData(2024, 4);
-      expect(dataApr).toHaveLength(30);
-    });
+  describe('generateDailyData', () =&gt; {
+    it('should generate data for the correct number of days in a month', () =&gt; {
+      const dataFeb = generateDailyData(2024, 2) // Leap year
+      expect(dataFeb).toHaveLength(29)
+      const dataApr = generateDailyData(2024, 4)
+      expect(dataApr).toHaveLength(30)
+    })
 &nbsp;
-    it("should contain all required keys for each day", () =&gt; {
-        const data = generateDailyData(2024, 7);
-        const firstDay = data[0];
-        expect(firstDay).toHaveProperty("date");
-        expect(firstDay).toHaveProperty("totalSales");
-    });
+    it('should contain all required keys for each day', () =&gt; {
+      const data = generateDailyData(2024, 7)
+      const firstDay = data[0]
+      expect(firstDay).toHaveProperty('date')
+      expect(firstDay).toHaveProperty('totalSales')
+    })
 &nbsp;
-    it("should correctly calculate derived daily values", () =&gt; {
-        const data = generateDailyData(2024, 7);
-        const firstDay = data[0];
-        expect(firstDay.totalSales).toBe(firstDay.directSales + firstDay.cardSales);
-    });
-  });
+    it('should correctly calculate derived daily values', () =&gt; {
+      const data = generateDailyData(2024, 7)
+      const firstDay = data[0]
+      expect(firstDay.totalSales).toBe(firstDay.directSales + firstDay.cardSales)
+    })
+  })
 &nbsp;
-  describe("generateCourseSalesData", () =&gt; {
-    it("should generate sales data for all courses", () =&gt; {
-      const data = generateCourseSalesData(2024, 7);
-      expect(data).toHaveLength(courses.length);
-      expect(data[0]).toHaveProperty('id');
-      expect(data[0]).toHaveProperty('sales');
-      expect(data[0].sales).toHaveLength(31); // July has 31 days
-    });
-  });
+  describe('generateCourseSalesData', () =&gt; {
+    it('should generate sales data for all courses', () =&gt; {
+      const data = generateCourseSalesData(2024, 7)
+      expect(data).toHaveLength(courses.length)
+      expect(data[0]).toHaveProperty('id')
+      expect(data[0]).toHaveProperty('sales')
+      expect(data[0].sales).toHaveLength(31) // July has 31 days
+    })
+  })
 &nbsp;
-  describe("generateOptionSalesData", () =&gt; {
-    it("should generate sales data for all options", () =&gt; {
-      const data = generateOptionSalesData(2024);
-      expect(data).toHaveLength(options.length);
-      expect(data[0]).toHaveProperty('id');
-      expect(data[0]).toHaveProperty('monthlySales');
-      expect(data[0].monthlySales).toHaveLength(12);
-    });
-  });
+  describe('generateOptionSalesData', () =&gt; {
+    it('should generate sales data for all options', () =&gt; {
+      const data = generateOptionSalesData(2024)
+      expect(data).toHaveLength(options.length)
+      expect(data[0]).toHaveProperty('id')
+      expect(data[0]).toHaveProperty('monthlySales')
+      expect(data[0].monthlySales).toHaveLength(12)
+    })
+  })
 &nbsp;
-  describe("generateMarketingChannelData", () =&gt; {
-    it("should return a static array of marketing data", () =&gt; {
-      const data = generateMarketingChannelData(2024);
-      expect(Array.isArray(data)).toBe(true);
-      expect(data.length).toBeGreaterThan(0);
-      expect(data[0]).toHaveProperty('channel');
-      expect(data[0]).toHaveProperty('monthlySales');
-    });
-  });
+  describe('generateMarketingChannelData', () =&gt; {
+    it('should return a static array of marketing data', () =&gt; {
+      const data = generateMarketingChannelData(2024)
+      expect(Array.isArray(data)).toBe(true)
+      expect(data.length).toBeGreaterThan(0)
+      expect(data[0]).toHaveProperty('channel')
+      expect(data[0]).toHaveProperty('monthlySales')
+    })
+  })
 &nbsp;
-  describe("staffPerformanceData", () =&gt; {
-    it("should be a non-empty array with the correct structure", () =&gt; {
-      expect(Array.isArray(staffPerformanceData)).toBe(true);
-      expect(staffPerformanceData.length).toBeGreaterThan(0);
-      const firstStaff = staffPerformanceData[0];
-      expect(firstStaff).toHaveProperty('id');
-      expect(firstStaff).toHaveProperty('name');
-      expect(firstStaff).toHaveProperty('totalAmount');
-    });
-  });
-}); </pre></td></tr></table></pre>
+  describe('staffPerformanceData', () =&gt; {
+    it('should be a non-empty array with the correct structure', () =&gt; {
+      expect(Array.isArray(staffPerformanceData)).toBe(true)
+      expect(staffPerformanceData.length).toBeGreaterThan(0)
+      const firstStaff = staffPerformanceData[0]
+      expect(firstStaff).toHaveProperty('id')
+      expect(firstStaff).toHaveProperty('name')
+      expect(firstStaff).toHaveProperty('totalAmount')
+    })
+  })
+})
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

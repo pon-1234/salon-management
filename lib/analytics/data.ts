@@ -1,5 +1,12 @@
-import { MonthlyData, DailyData, StaffPerformanceData, CourseSalesData, OptionSalesData, MarketingChannelData } from '../types/analytics';
-import { courses, options } from '@/lib/course-option/data';
+import {
+  MonthlyData,
+  DailyData,
+  StaffPerformanceData,
+  CourseSalesData,
+  OptionSalesData,
+  MarketingChannelData,
+} from '../types/analytics'
+import { courses, options } from '@/lib/course-option/data'
 
 export function generateMonthlyData(year: number): MonthlyData[] {
   return Array.from({ length: 12 }, (_, index) => ({
@@ -27,22 +34,22 @@ export function generateMonthlyData(year: number): MonthlyData[] {
     storeSales: 0, // Will be calculated
     previousYearRatio: Math.round((Math.random() * 0.4 + 0.8) * 100) / 100,
     storeSalesRatio: Math.round((Math.random() * 0.2 + 0.4) * 100) / 100,
-  })).map(data => {
-    data.totalCount = data.tokyoCount + data.kanagawaCount;
-    data.totalSales = data.cashSales + data.cardSales;
-    data.salesPerCustomer = Math.round(data.totalSales / data.totalCount);
-    data.totalRevenue = data.totalSales - data.discounts - data.pointRewards;
-    data.storeSales = data.totalRevenue - data.outsourcingCost - data.welfareCost;
-    return data;
-  });
+  })).map((data) => {
+    data.totalCount = data.tokyoCount + data.kanagawaCount
+    data.totalSales = data.cashSales + data.cardSales
+    data.salesPerCustomer = Math.round(data.totalSales / data.totalCount)
+    data.totalRevenue = data.totalSales - data.discounts - data.pointRewards
+    data.storeSales = data.totalRevenue - data.outsourcingCost - data.welfareCost
+    return data
+  })
 }
 
 export const staffPerformanceData: StaffPerformanceData[] = [
   {
-    id: "1",
-    name: "みるく",
+    id: '1',
+    name: 'みるく',
     age: 20,
-    workDays: "20/30",
+    workDays: '20/30',
     cashTransactions: { count: 40, amount: 800000 },
     cardTransactions: { count: 20, amount: 400000 },
     totalTransactions: 60,
@@ -55,10 +62,10 @@ export const staffPerformanceData: StaffPerformanceData[] = [
     storeRevenue: 115000,
   },
   {
-    id: "2",
-    name: "さくら",
+    id: '2',
+    name: 'さくら',
     age: 23,
-    workDays: "22/30",
+    workDays: '22/30',
     cashTransactions: { count: 50, amount: 1000000 },
     cardTransactions: { count: 25, amount: 500000 },
     totalTransactions: 75,
@@ -70,112 +77,112 @@ export const staffPerformanceData: StaffPerformanceData[] = [
     staffRevenue: 570000,
     storeRevenue: 142500,
   },
-];
+]
 
 export function generateOptionSalesData(year: number): OptionSalesData[] {
-  return options.map(option => ({
+  return options.map((option) => ({
     id: option.id,
     name: option.name,
     price: option.price,
     monthlySales: Array.from({ length: 12 }, () => Math.floor(Math.random() * 100)),
-  }));
+  }))
 }
 
 export function generateMarketingChannelData(year: number): MarketingChannelData[] {
   return [
     {
-      channel: "オフィシャル",
+      channel: 'オフィシャル',
       monthlySales: [26, 16, 13, 21, 20, 18, 17, 13, 9, 8, 3, 0],
-      total: 164
+      total: 164,
     },
     {
-      channel: "口コミ風俗情報局",
+      channel: '口コミ風俗情報局',
       monthlySales: [60, 56, 45, 67, 81, 81, 99, 77, 59, 46, 50, 23],
-      total: 744
+      total: 744,
     },
     {
-      channel: "シティーヘブン",
+      channel: 'シティーヘブン',
       monthlySales: [71, 68, 43, 70, 53, 91, 81, 80, 50, 40, 58, 25],
-      total: 730
+      total: 730,
     },
     {
-      channel: "ヘブンネット予約（店リピ）",
+      channel: 'ヘブンネット予約（店リピ）',
       monthlySales: [13, 28, 8, 13, 23, 16, 14, 11, 16, 11, 12, 6],
-      total: 171
+      total: 171,
     },
     {
-      channel: "ヘブンネット予約（新規）",
+      channel: 'ヘブンネット予約（新規）',
       monthlySales: [0, 0, 0, 0, 0, 12, 24, 22, 18, 10, 17, 4],
-      total: 107
+      total: 107,
     },
     {
-      channel: "姫(ヒメ)予約※店リピ・本指",
+      channel: '姫(ヒメ)予約※店リピ・本指',
       monthlySales: [38, 42, 22, 5, 6, 31, 36, 22, 36, 38, 28, 16],
-      total: 320
+      total: 320,
     },
     {
-      channel: "姫(ヒメ)予約※新規",
+      channel: '姫(ヒメ)予約※新規',
       monthlySales: [0, 0, 0, 0, 0, 0, 1, 5, 10, 5, 8, 3],
-      total: 32
+      total: 32,
     },
     {
-      channel: "店リピート",
+      channel: '店リピート',
       monthlySales: [113, 96, 103, 93, 91, 103, 110, 104, 69, 82, 75, 30],
-      total: 1069
+      total: 1069,
     },
     {
-      channel: "本指名リピート",
+      channel: '本指名リピート',
       monthlySales: [30, 35, 27, 30, 30, 36, 38, 48, 35, 28, 45, 21],
-      total: 403
+      total: 403,
     },
     {
-      channel: "女性紹介",
+      channel: '女性紹介',
       monthlySales: [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-      total: 1
+      total: 1,
     },
     {
-      channel: "知人紹介",
+      channel: '知人紹介',
       monthlySales: [1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0],
-      total: 3
+      total: 3,
     },
     {
-      channel: "FJS協会（講師）紹介",
+      channel: 'FJS協会（講師）紹介',
       monthlySales: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      total: 0
+      total: 0,
     },
     {
-      channel: "姉妹店（会員など）",
+      channel: '姉妹店（会員など）',
       monthlySales: [0, 1, 0, 0, 3, 1, 3, 3, 5, 3, 2, 3],
-      total: 24
+      total: 24,
     },
     {
-      channel: "DXブログ取材",
+      channel: 'DXブログ取材',
       monthlySales: [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-      total: 1
+      total: 1,
     },
     {
-      channel: "不明（わからない）",
+      channel: '不明（わからない）',
       monthlySales: [0, 0, 0, 0, 1, 2, 0, 0, 3, 0, 0, 1],
-      total: 7
-    }
-  ];
+      total: 7,
+    },
+  ]
 }
 
 export function generateCourseSalesData(year: number, month: number): CourseSalesData[] {
-  const daysInMonth = new Date(year, month, 0).getDate();
-  return courses.map(course => ({
+  const daysInMonth = new Date(year, month, 0).getDate()
+  return courses.map((course) => ({
     id: course.id,
     name: course.name,
     duration: course.duration,
     price: course.price,
-    sales: Array.from({ length: daysInMonth }, () => Math.floor(Math.random() * 10))
-  }));
+    sales: Array.from({ length: daysInMonth }, () => Math.floor(Math.random() * 10)),
+  }))
 }
 
 export function generateDailyData(year: number, month: number): DailyData[] {
-  const daysInMonth = new Date(year, month, 0).getDate();
+  const daysInMonth = new Date(year, month, 0).getDate()
   return Array.from({ length: daysInMonth }, (_, index) => {
-    const date = new Date(year, month - 1, index + 1);
+    const date = new Date(year, month - 1, index + 1)
     return {
       date: index + 1,
       dayOfWeek: ['日', '月', '火', '水', '木', '金', '土'][date.getDay()],
@@ -194,11 +201,11 @@ export function generateDailyData(year: number, month: number): DailyData[] {
       repeaters: Math.floor(Math.random() * 15) + 5,
       discounts: Math.floor(Math.random() * 5000),
       pointUsage: Math.floor(Math.random() * 3000),
-    };
-  }).map(day => {
-    day.totalSales = day.directSales + day.cardSales;
-    day.storeSales = day.totalSales - day.staffSales;
-    day.cashSales = day.totalSales - day.cardSales;
-    return day;
-  });
+    }
+  }).map((day) => {
+    day.totalSales = day.directSales + day.cardSales
+    day.storeSales = day.totalSales - day.staffSales
+    day.cashSales = day.totalSales - day.cardSales
+    return day
+  })
 }

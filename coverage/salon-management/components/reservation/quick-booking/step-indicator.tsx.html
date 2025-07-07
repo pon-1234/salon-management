@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/26</span>
+                <span class='fraction'>0/24</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/26</span>
+                <span class='fraction'>0/24</span>
             </div>
         
             
@@ -96,8 +96,7 @@
 <a name='L31'></a><a href='#L31'>31</a>
 <a name='L32'></a><a href='#L32'>32</a>
 <a name='L33'></a><a href='#L33'>33</a>
-<a name='L34'></a><a href='#L34'>34</a>
-<a name='L35'></a><a href='#L35'>35</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L34'></a><a href='#L34'>34</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -124,14 +123,13 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { Check } from 'lucide-react'</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { Check } from 'lucide-react'</span></span></span>
 &nbsp;
 interface StepIndicatorProps {
   currentStep: number
@@ -140,39 +138,38 @@ interface StepIndicatorProps {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export function StepIndicator({ currentStep, totalSteps }: StepIndicatorProps) {</span>
 <span class="cstat-no" title="statement not covered" >  return (</span>
-<span class="cstat-no" title="statement not covered" >    &lt;div className="flex items-center justify-center mb-6"&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;div className="mb-6 flex items-center justify-center"&gt;</span>
 <span class="cstat-no" title="statement not covered" >      {Array.from({ length: totalSteps }, (_, i) =&gt; i + 1).map((step) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div key={step} className="flex items-center"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div</span>
-<span class="cstat-no" title="statement not covered" >            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${</span>
+<span class="cstat-no" title="statement not covered" >            className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${</span>
 <span class="cstat-no" title="statement not covered" >              step === currentStep</span>
 <span class="cstat-no" title="statement not covered" >                ? 'bg-gray-900 text-white'</span>
 <span class="cstat-no" title="statement not covered" >                : step &lt; currentStep</span>
-<span class="cstat-no" title="statement not covered" >                ? 'bg-gray-100 text-gray-900'</span>
-<span class="cstat-no" title="statement not covered" >                : 'bg-gray-200 text-gray-500'</span>
+<span class="cstat-no" title="statement not covered" >                  ? 'bg-gray-100 text-gray-900'</span>
+<span class="cstat-no" title="statement not covered" >                  : 'bg-gray-200 text-gray-500'</span>
 <span class="cstat-no" title="statement not covered" >            }`}</span>
           &gt;
-<span class="cstat-no" title="statement not covered" >            {step &lt; currentStep ? &lt;Check className="w-4 h-4" /&gt; : step}</span>
+<span class="cstat-no" title="statement not covered" >            {step &lt; currentStep ? &lt;Check className="h-4 w-4" /&gt; : step}</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >          {step &lt; totalSteps &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div</span>
-<span class="cstat-no" title="statement not covered" >              className={`w-12 h-1 mx-2 ${</span>
-<span class="cstat-no" title="statement not covered" >                step &lt; currentStep ? 'bg-gray-900' : 'bg-gray-200'</span>
-<span class="cstat-no" title="statement not covered" >              }`}</span>
+<span class="cstat-no" title="statement not covered" >              className={`mx-2 h-1 w-12 ${step &lt; currentStep ? 'bg-gray-900' : 'bg-gray-200'}`}</span>
 <span class="cstat-no" title="statement not covered" >            /&gt;</span>
           )}
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >      ))}</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

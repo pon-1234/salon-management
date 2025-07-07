@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/189</span>
+                <span class='fraction'>0/207</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/189</span>
+                <span class='fraction'>0/207</span>
             </div>
         
             
@@ -251,7 +251,26 @@
 <a name='L186'></a><a href='#L186'>186</a>
 <a name='L187'></a><a href='#L187'>187</a>
 <a name='L188'></a><a href='#L188'>188</a>
-<a name='L189'></a><a href='#L189'>189</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L189'></a><a href='#L189'>189</a>
+<a name='L190'></a><a href='#L190'>190</a>
+<a name='L191'></a><a href='#L191'>191</a>
+<a name='L192'></a><a href='#L192'>192</a>
+<a name='L193'></a><a href='#L193'>193</a>
+<a name='L194'></a><a href='#L194'>194</a>
+<a name='L195'></a><a href='#L195'>195</a>
+<a name='L196'></a><a href='#L196'>196</a>
+<a name='L197'></a><a href='#L197'>197</a>
+<a name='L198'></a><a href='#L198'>198</a>
+<a name='L199'></a><a href='#L199'>199</a>
+<a name='L200'></a><a href='#L200'>200</a>
+<a name='L201'></a><a href='#L201'>201</a>
+<a name='L202'></a><a href='#L202'>202</a>
+<a name='L203'></a><a href='#L203'>203</a>
+<a name='L204'></a><a href='#L204'>204</a>
+<a name='L205'></a><a href='#L205'>205</a>
+<a name='L206'></a><a href='#L206'>206</a>
+<a name='L207'></a><a href='#L207'>207</a>
+<a name='L208'></a><a href='#L208'>208</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -439,7 +458,26 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { notFound } from 'next/navigation'</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { notFound } from 'next/navigation'</span></span></span>
 <span class="cstat-no" title="statement not covered" >import { getStoreBySlug } from '@/lib/store/data'</span>
 <span class="cstat-no" title="statement not covered" >import { StoreNavigation } from '@/components/store-navigation'</span>
 <span class="cstat-no" title="statement not covered" >import { StoreFooter } from '@/components/store-footer'</span>
@@ -449,11 +487,7 @@
 <span class="cstat-no" title="statement not covered" >import { Star, Heart, Crown } from 'lucide-react'</span>
 <span class="cstat-no" title="statement not covered" >import Link from 'next/link'</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >export default async function CastListPage({ </span>
-<span class="cstat-no" title="statement not covered" >  params </span>
-<span class="cstat-no" title="statement not covered" >}: { </span>
-<span class="cstat-no" title="statement not covered" >  params: Promise&lt;{ store: string }&gt; </span>
-<span class="cstat-no" title="statement not covered" >}) {</span>
+<span class="cstat-no" title="statement not covered" >export default async function CastListPage({ params }: { params: Promise&lt;{ store: string }&gt; }) {</span>
 <span class="cstat-no" title="statement not covered" >  const { store: storeSlug } = await params</span>
 <span class="cstat-no" title="statement not covered" >  const store = getStoreBySlug(storeSlug)</span>
 <span class="cstat-no" title="statement not covered" ></span>
@@ -474,7 +508,7 @@
 <span class="cstat-no" title="statement not covered" >      rating: 4.8,</span>
 <span class="cstat-no" title="statement not covered" >      reviews: 156,</span>
 <span class="cstat-no" title="statement not covered" >      tags: ['巨乳', '人気No.1', 'リピート率高'],</span>
-<span class="cstat-no" title="statement not covered" >      schedule: '出勤中'</span>
+<span class="cstat-no" title="statement not covered" >      schedule: '出勤中',</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
 <span class="cstat-no" title="statement not covered" >      id: '2',</span>
@@ -487,7 +521,7 @@
 <span class="cstat-no" title="statement not covered" >      rating: 4.7,</span>
 <span class="cstat-no" title="statement not covered" >      reviews: 132,</span>
 <span class="cstat-no" title="statement not covered" >      tags: ['テクニシャン', '癒し系'],</span>
-<span class="cstat-no" title="statement not covered" >      schedule: '出勤中'</span>
+<span class="cstat-no" title="statement not covered" >      schedule: '出勤中',</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
 <span class="cstat-no" title="statement not covered" >      id: '3',</span>
@@ -500,7 +534,7 @@
 <span class="cstat-no" title="statement not covered" >      rating: 4.9,</span>
 <span class="cstat-no" title="statement not covered" >      reviews: 45,</span>
 <span class="cstat-no" title="statement not covered" >      tags: ['新人', '巨乳', '笑顔が素敵'],</span>
-<span class="cstat-no" title="statement not covered" >      schedule: '15:00-23:00'</span>
+<span class="cstat-no" title="statement not covered" >      schedule: '15:00-23:00',</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    // Add more cast members...</span>
 <span class="cstat-no" title="statement not covered" >  ]</span>
@@ -508,72 +542,88 @@
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;StoreNavigation /&gt;</span>
-<span class="cstat-no" title="statement not covered" >      </span>
+<span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >      &lt;main className="min-h-screen bg-gray-50"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        {/* Header */}</span>
-<span class="cstat-no" title="statement not covered" >        &lt;div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-12"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="max-w-7xl mx-auto px-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;h1 className="text-4xl font-bold text-center mb-4"&gt;在籍一覧&lt;/h1&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="bg-gradient-to-r from-purple-600 to-pink-600 py-12 text-white"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="mx-auto max-w-7xl px-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;h1 className="mb-4 text-center text-4xl font-bold"&gt;在籍一覧&lt;/h1&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;p className="text-center text-xl"&gt;{store.name}の魅力的なキャスト&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >        {/* Filters */}</span>
-<span class="cstat-no" title="statement not covered" >        &lt;div className="bg-white shadow-sm sticky top-16 z-40"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="max-w-7xl mx-auto px-4 py-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="sticky top-16 z-40 bg-white shadow-sm"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="mx-auto max-w-7xl px-4 py-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="flex flex-wrap gap-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline" size="sm"&gt;すべて&lt;/Button&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline" size="sm"&gt;新人&lt;/Button&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline" size="sm"&gt;本日出勤&lt;/Button&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline" size="sm"&gt;巨乳&lt;/Button&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline" size="sm"&gt;スレンダー&lt;/Button&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline" size="sm"&gt;20代&lt;/Button&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline" size="sm"&gt;30代&lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline" size="sm"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                すべて</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline" size="sm"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                新人</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline" size="sm"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                本日出勤</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline" size="sm"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                巨乳</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline" size="sm"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                スレンダー</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline" size="sm"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                20代</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline" size="sm"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                30代</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >        {/* Cast Grid */}</span>
 <span class="cstat-no" title="statement not covered" >        &lt;section className="py-8"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="max-w-7xl mx-auto px-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="mx-auto max-w-7xl px-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              {casts.map((cast) =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >                &lt;Card key={cast.id} className="hover:shadow-lg transition-shadow"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;Card key={cast.id} className="transition-shadow hover:shadow-lg"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;CardHeader className="p-4 pb-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;div className="relative"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                      &lt;div className="aspect-[3/4] bg-gradient-to-br from-pink-300 to-purple-400 rounded-lg mb-3" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                      &lt;div className="mb-3 aspect-[3/4] rounded-lg bg-gradient-to-br from-pink-300 to-purple-400" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      {cast.rank &lt;= 3 &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;Badge className={`absolute top-2 left-2 ${</span>
-<span class="cstat-no" title="statement not covered" >                          cast.rank === 1 ? 'bg-yellow-500' : </span>
-<span class="cstat-no" title="statement not covered" >                          cast.rank === 2 ? 'bg-gray-400' : 'bg-orange-600'</span>
-<span class="cstat-no" title="statement not covered" >                        }`}&gt;</span>
-<span class="cstat-no" title="statement not covered" >                          &lt;Crown className="h-3 w-3 mr-1" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;Badge</span>
+<span class="cstat-no" title="statement not covered" >                          className={`absolute left-2 top-2 ${</span>
+<span class="cstat-no" title="statement not covered" >                            cast.rank === 1</span>
+<span class="cstat-no" title="statement not covered" >                              ? 'bg-yellow-500'</span>
+<span class="cstat-no" title="statement not covered" >                              : cast.rank === 2</span>
+<span class="cstat-no" title="statement not covered" >                                ? 'bg-gray-400'</span>
+<span class="cstat-no" title="statement not covered" >                                : 'bg-orange-600'</span>
+<span class="cstat-no" title="statement not covered" >                          }`}</span>
+<span class="cstat-no" title="statement not covered" >                        &gt;</span>
+<span class="cstat-no" title="statement not covered" >                          &lt;Crown className="mr-1 h-3 w-3" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                          {cast.rank}位</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;/Badge&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      )}</span>
 <span class="cstat-no" title="statement not covered" >                      {cast.isNew &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;Badge className="absolute top-2 right-2 bg-pink-500"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                          NEW</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;/Badge&gt;</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;Badge className="absolute right-2 top-2 bg-pink-500"&gt;NEW&lt;/Badge&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      )}</span>
 <span class="cstat-no" title="statement not covered" >                      {cast.schedule === '出勤中' &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;Badge className="absolute bottom-2 left-2 bg-green-500"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                          出勤中</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;/Badge&gt;</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;Badge className="absolute bottom-2 left-2 bg-green-500"&gt;出勤中&lt;/Badge&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      )}</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/CardHeader&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;CardContent className="p-4 pt-0 space-y-3"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;CardContent className="space-y-3 p-4 pt-0"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                      &lt;h3 className="font-bold text-lg"&gt;{cast.name}&lt;/h3&gt;</span>
+<span class="cstat-no" title="statement not covered" >                      &lt;h3 className="text-lg font-bold"&gt;{cast.name}&lt;/h3&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;p className="text-sm text-muted-foreground"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                        {cast.age}歳 T{cast.height}</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;p className="text-xs text-muted-foreground"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                        B{cast.measurements.bust}({cast.measurements.cup}) W{cast.measurements.waist} H{cast.measurements.hip}</span>
+<span class="cstat-no" title="statement not covered" >                        B{cast.measurements.bust}({cast.measurements.cup}) W</span>
+<span class="cstat-no" title="statement not covered" >                        {cast.measurements.waist} H{cast.measurements.hip}</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    </span>
+<span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >                    &lt;div className="flex items-center justify-between"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;div className="flex items-center gap-1"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;Star className="h-4 w-4 fill-yellow-400 text-yellow-400" /&gt;</span>
@@ -591,16 +641,12 @@
 <span class="cstat-no" title="statement not covered" >                      ))}</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >                    &lt;div className="pt-2 space-y-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;div className="space-y-2 pt-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;Button asChild className="w-full" size="sm"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;Link href={`/${store.slug}/cast/${cast.id}`}&gt;</span>
-<span class="cstat-no" title="statement not covered" >                          詳細を見る</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;/Link&gt;</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;Link href={`/${store.slug}/cast/${cast.id}`}&gt;詳細を見る&lt;/Link&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;Button asChild variant="outline" className="w-full" size="sm"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;Link href={`/${store.slug}/booking?cast=${cast.id}`}&gt;</span>
-<span class="cstat-no" title="statement not covered" >                          予約する</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;/Link&gt;</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;Link href={`/${store.slug}/booking?cast=${cast.id}`}&gt;予約する&lt;/Link&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/CardContent&gt;</span>
@@ -612,29 +658,40 @@
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >        {/* Pagination */}</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div className="py-8"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="max-w-7xl mx-auto px-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="mx-auto max-w-7xl px-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="flex justify-center gap-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline" size="sm"&gt;前へ&lt;/Button&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline" size="sm"&gt;1&lt;/Button&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Button variant="default" size="sm"&gt;2&lt;/Button&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline" size="sm"&gt;3&lt;/Button&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline" size="sm"&gt;次へ&lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline" size="sm"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                前へ</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline" size="sm"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                1</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Button variant="default" size="sm"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                2</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline" size="sm"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                3</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline" size="sm"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                次へ</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >        </span>
+<span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >        &lt;StoreFooter store={store} /&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/main&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/&gt;</span>
 <span class="cstat-no" title="statement not covered" >  )</span>
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

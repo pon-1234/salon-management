@@ -95,7 +95,10 @@
 <a name='L30'></a><a href='#L30'>30</a>
 <a name='L31'></a><a href='#L31'>31</a>
 <a name='L32'></a><a href='#L32'>32</a>
-<a name='L33'></a><a href='#L33'>33</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -127,46 +130,52 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Repository } from '../shared';
-import { CoursePrice, OptionPrice, AdditionalFee, StorePricing, PricingSyncStatus } from './types';
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Repository } from '../shared'
+import { CoursePrice, OptionPrice, AdditionalFee, StorePricing, PricingSyncStatus } from './types'
 &nbsp;
 export interface PricingRepository {
   // Course pricing methods
-  getCourses(storeId?: string): Promise&lt;CoursePrice[]&gt;;
-  getCourseById(id: string): Promise&lt;CoursePrice | null&gt;;
-  createCourse(course: Omit&lt;CoursePrice, 'id' | 'createdAt' | 'updatedAt'&gt;): Promise&lt;CoursePrice&gt;;
-  updateCourse(id: string, course: Partial&lt;CoursePrice&gt;): Promise&lt;CoursePrice&gt;;
-  deleteCourse(id: string): Promise&lt;void&gt;;
-  
+  getCourses(storeId?: string): Promise&lt;CoursePrice[]&gt;
+  getCourseById(id: string): Promise&lt;CoursePrice | null&gt;
+  createCourse(course: Omit&lt;CoursePrice, 'id' | 'createdAt' | 'updatedAt'&gt;): Promise&lt;CoursePrice&gt;
+  updateCourse(id: string, course: Partial&lt;CoursePrice&gt;): Promise&lt;CoursePrice&gt;
+  deleteCourse(id: string): Promise&lt;void&gt;
+&nbsp;
   // Option pricing methods
-  getOptions(storeId?: string): Promise&lt;OptionPrice[]&gt;;
-  getOptionById(id: string): Promise&lt;OptionPrice | null&gt;;
-  createOption(option: Omit&lt;OptionPrice, 'id' | 'createdAt' | 'updatedAt'&gt;): Promise&lt;OptionPrice&gt;;
-  updateOption(id: string, option: Partial&lt;OptionPrice&gt;): Promise&lt;OptionPrice&gt;;
-  deleteOption(id: string): Promise&lt;void&gt;;
-  
+  getOptions(storeId?: string): Promise&lt;OptionPrice[]&gt;
+  getOptionById(id: string): Promise&lt;OptionPrice | null&gt;
+  createOption(option: Omit&lt;OptionPrice, 'id' | 'createdAt' | 'updatedAt'&gt;): Promise&lt;OptionPrice&gt;
+  updateOption(id: string, option: Partial&lt;OptionPrice&gt;): Promise&lt;OptionPrice&gt;
+  deleteOption(id: string): Promise&lt;void&gt;
+&nbsp;
   // Additional fees methods
-  getAdditionalFees(storeId?: string): Promise&lt;AdditionalFee[]&gt;;
-  getAdditionalFeeById(id: string): Promise&lt;AdditionalFee | null&gt;;
-  createAdditionalFee(fee: Omit&lt;AdditionalFee, 'id' | 'createdAt' | 'updatedAt'&gt;): Promise&lt;AdditionalFee&gt;;
-  updateAdditionalFee(id: string, fee: Partial&lt;AdditionalFee&gt;): Promise&lt;AdditionalFee&gt;;
-  deleteAdditionalFee(id: string): Promise&lt;void&gt;;
-  
+  getAdditionalFees(storeId?: string): Promise&lt;AdditionalFee[]&gt;
+  getAdditionalFeeById(id: string): Promise&lt;AdditionalFee | null&gt;
+  createAdditionalFee(
+    fee: Omit&lt;AdditionalFee, 'id' | 'createdAt' | 'updatedAt'&gt;
+  ): Promise&lt;AdditionalFee&gt;
+  updateAdditionalFee(id: string, fee: Partial&lt;AdditionalFee&gt;): Promise&lt;AdditionalFee&gt;
+  deleteAdditionalFee(id: string): Promise&lt;void&gt;
+&nbsp;
   // Store-specific pricing methods
-  getStorePricing(storeId: string): Promise&lt;StorePricing&gt;;
-  updateStorePricing(storeId: string, pricing: Partial&lt;StorePricing&gt;): Promise&lt;StorePricing&gt;;
-  
+  getStorePricing(storeId: string): Promise&lt;StorePricing&gt;
+  updateStorePricing(storeId: string, pricing: Partial&lt;StorePricing&gt;): Promise&lt;StorePricing&gt;
+&nbsp;
   // Sync methods
-  getSyncStatus(storeId: string): Promise&lt;PricingSyncStatus&gt;;
-  syncPricing(storeId: string): Promise&lt;void&gt;;
-}</pre></td></tr></table></pre>
+  getSyncStatus(storeId: string): Promise&lt;PricingSyncStatus&gt;
+  syncPricing(storeId: string): Promise&lt;void&gt;
+}
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

@@ -1,30 +1,30 @@
-"use client"
+'use client'
 
-import { Badge } from "@/components/ui/badge"
-import { Cast } from "@/lib/cast/types"
-import { calculateAge } from "@/lib/customer/utils"
-import { Separator } from "@/components/ui/separator"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useState } from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Badge } from '@/components/ui/badge'
+import { Cast } from '@/lib/cast/types'
+import { calculateAge } from '@/lib/customer/utils'
+import { Separator } from '@/components/ui/separator'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useState } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface CastProfileProps {
   cast: Cast
 }
 
 export function CastProfile({ cast }: CastProfileProps) {
-  const age = cast.age;
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const images = cast.images && cast.images.length > 0 ? cast.images : [cast.image];
+  const age = cast.age
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const images = cast.images && cast.images.length > 0 ? cast.images : [cast.image]
 
   const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % images.length);
-  };
+    setCurrentImageIndex((prev) => (prev + 1) % images.length)
+  }
 
   const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
+  }
 
   return (
     <div className="space-y-6">
@@ -34,20 +34,21 @@ export function CastProfile({ cast }: CastProfileProps) {
           <CardTitle>基本情報</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="relative max-w-sm mx-auto">
+          <div className="relative mx-auto max-w-sm">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={images[currentImageIndex]}
               alt={`${cast.name}の写真 ${currentImageIndex + 1}`}
-              className="w-full aspect-[7/10] object-cover rounded-lg"
+              className="aspect-[7/10] w-full rounded-lg object-cover"
             />
-            <Badge className="absolute top-4 left-4 bg-emerald-600">掲載中</Badge>
-            
+            <Badge className="absolute left-4 top-4 bg-emerald-600">掲載中</Badge>
+
             {images.length > 1 && (
               <>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 transform bg-white/80 hover:bg-white"
                   onClick={prevImage}
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -55,16 +56,16 @@ export function CastProfile({ cast }: CastProfileProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 transform bg-white/80 hover:bg-white"
                   onClick={nextImage}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
-                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
+                <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 transform gap-1">
                   {images.map((_, index) => (
                     <button
                       key={index}
-                      className={`w-2 h-2 rounded-full ${
+                      className={`h-2 w-2 rounded-full ${
                         index === currentImageIndex ? 'bg-white' : 'bg-white/50'
                       }`}
                       onClick={() => setCurrentImageIndex(index)}
@@ -74,10 +75,10 @@ export function CastProfile({ cast }: CastProfileProps) {
               </>
             )}
           </div>
-          
+
           {/* 画像ギャラリー */}
           {images.length > 1 && (
-            <div className="flex flex-wrap gap-2 justify-center">
+            <div className="flex flex-wrap justify-center gap-2">
               {images.map((image, index) => (
                 <button
                   key={index}
@@ -86,10 +87,11 @@ export function CastProfile({ cast }: CastProfileProps) {
                     index === currentImageIndex ? 'ring-2 ring-emerald-500' : ''
                   }`}
                 >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={image}
                     alt={`${cast.name} 画像 ${index + 1}`}
-                    className="w-16 h-20 object-cover rounded border"
+                    className="h-20 w-16 rounded border object-cover"
                   />
                 </button>
               ))}
@@ -104,7 +106,9 @@ export function CastProfile({ cast }: CastProfileProps) {
               </div>
               <div>
                 <dt className="text-gray-600">スリーサイズ：</dt>
-                <dd>{cast.bust}/{cast.waist}/{cast.hip} ({cast.publicProfile?.bustCup || ""}カップ)</dd>
+                <dd>
+                  {cast.bust}/{cast.waist}/{cast.hip} ({cast.publicProfile?.bustCup || ''}カップ)
+                </dd>
               </div>
               <div>
                 <dt className="text-gray-600">身長：</dt>
@@ -117,23 +121,31 @@ export function CastProfile({ cast }: CastProfileProps) {
             </dl>
           </div>
           <div className="space-y-4">
-            <div className="flex justify-between items-center border-b pb-2">
+            <div className="flex items-center justify-between border-b pb-2">
               <div>ネット予約</div>
-              <div className="text-emerald-600">{cast.netReservation ? "可" : "不可"}</div>
+              <div className="text-emerald-600">{cast.netReservation ? '可' : '不可'}</div>
             </div>
-            <div className="flex justify-between items-center border-b pb-2">
+            <div className="flex items-center justify-between border-b pb-2">
               <div>特別指名料</div>
-              <div>{cast.specialDesignationFee ? `${cast.specialDesignationFee.toLocaleString()}円` : "-"}</div>
+              <div>
+                {cast.specialDesignationFee
+                  ? `${cast.specialDesignationFee.toLocaleString()}円`
+                  : '-'}
+              </div>
             </div>
-            <div className="flex justify-between items-center border-b pb-2">
+            <div className="flex items-center justify-between border-b pb-2">
               <div>本指名</div>
-              <div>{cast.regularDesignationFee ? `${cast.regularDesignationFee.toLocaleString()}円` : "-"}</div>
+              <div>
+                {cast.regularDesignationFee
+                  ? `${cast.regularDesignationFee.toLocaleString()}円`
+                  : '-'}
+              </div>
             </div>
-            <div className="flex justify-between items-center border-b pb-2">
+            <div className="flex items-center justify-between border-b pb-2">
               <div>パネル指名ランク</div>
               <div>{cast.panelDesignationRank}</div>
             </div>
-            <div className="flex justify-between items-center border-b pb-2">
+            <div className="flex items-center justify-between border-b pb-2">
               <div>本指名ランク</div>
               <div>{cast.regularDesignationRank}</div>
             </div>
@@ -152,20 +164,24 @@ export function CastProfile({ cast }: CastProfileProps) {
             <CardContent className="space-y-4">
               {cast.publicProfile.bodyType.length > 0 && (
                 <div>
-                  <dt className="text-gray-600 font-medium">体型</dt>
-                  <dd className="flex gap-2 mt-1">
+                  <dt className="font-medium text-gray-600">体型</dt>
+                  <dd className="mt-1 flex gap-2">
                     {cast.publicProfile.bodyType.map((type) => (
-                      <Badge key={type} variant="outline">{type}</Badge>
+                      <Badge key={type} variant="outline">
+                        {type}
+                      </Badge>
                     ))}
                   </dd>
                 </div>
               )}
               {cast.publicProfile.personality.length > 0 && (
                 <div>
-                  <dt className="text-gray-600 font-medium">個性</dt>
-                  <dd className="flex gap-2 mt-1 flex-wrap">
+                  <dt className="font-medium text-gray-600">個性</dt>
+                  <dd className="mt-1 flex flex-wrap gap-2">
                     {cast.publicProfile.personality.map((personality) => (
-                      <Badge key={personality} variant="secondary">{personality}</Badge>
+                      <Badge key={personality} variant="secondary">
+                        {personality}
+                      </Badge>
                     ))}
                   </dd>
                 </div>
@@ -260,18 +276,19 @@ export function CastProfile({ cast }: CastProfileProps) {
                 )}
               </dl>
 
-              {cast.publicProfile.massageQualification && cast.publicProfile.qualificationDetails.length > 0 && (
-                <div>
-                  <dt className="text-gray-600 font-medium">エステ・マッサージ資格</dt>
-                  <dd className="mt-2">
-                    {cast.publicProfile.qualificationDetails.map((detail, index) => (
-                      <Badge key={index} variant="outline" className="mr-2 mb-2">
-                        {detail}
-                      </Badge>
-                    ))}
-                  </dd>
-                </div>
-              )}
+              {cast.publicProfile.massageQualification &&
+                cast.publicProfile.qualificationDetails.length > 0 && (
+                  <div>
+                    <dt className="font-medium text-gray-600">エステ・マッサージ資格</dt>
+                    <dd className="mt-2">
+                      {cast.publicProfile.qualificationDetails.map((detail, index) => (
+                        <Badge key={index} variant="outline" className="mb-2 mr-2">
+                          {detail}
+                        </Badge>
+                      ))}
+                    </dd>
+                  </div>
+                )}
             </CardContent>
           </Card>
 

@@ -94,22 +94,20 @@
 <a name='L29'></a><a href='#L29'>29</a>
 <a name='L30'></a><a href='#L30'>30</a>
 <a name='L31'></a><a href='#L31'>31</a>
-<a name='L32'></a><a href='#L32'>32</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -124,36 +122,53 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { AnalyticsRepository, MonthlyData, DailyData, StaffPerformanceData } from '../types/analytics';
-import { CourseSalesData, OptionSalesData } from '../types/analytics'; //追加インポート
-import { MarketingChannelData } from '../types/analytics'; //追加インポート
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import {
+  AnalyticsRepository,
+  MonthlyData,
+  DailyData,
+  StaffPerformanceData,
+} from '../types/analytics'
+import { CourseSalesData, OptionSalesData } from '../types/analytics' //追加インポート
+import { MarketingChannelData } from '../types/analytics' //追加インポート
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export class AnalyticsUseCases {</span>
 <span class="cstat-no" title="statement not covered" >  constructor(private repository: AnalyticsRepository) {}</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  async getMonthlyReport(year: number): Promise&lt;MonthlyData[]&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    return this.repository.getMonthlyData(year);</span>
+<span class="cstat-no" title="statement not covered" >    return this.repository.getMonthlyData(year)</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  async getDailyReport(year: number, month: number): Promise&lt;DailyData[]&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    return this.repository.getDailyData(year, month);</span>
+<span class="cstat-no" title="statement not covered" >    return this.repository.getDailyData(year, month)</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  async getStaffPerformance(): Promise&lt;StaffPerformanceData[]&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    return this.repository.getStaffPerformanceData();</span>
+<span class="cstat-no" title="statement not covered" >    return this.repository.getStaffPerformanceData()</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  async getCourseSalesReport(year: number, month: number): Promise&lt;CourseSalesData[]&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    return this.repository.getCourseSalesData(year, month);</span>
+<span class="cstat-no" title="statement not covered" >    return this.repository.getCourseSalesData(year, month)</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  async getOptionSalesReport(year: number): Promise&lt;OptionSalesData[]&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    return this.repository.getOptionSalesData(year);</span>
+<span class="cstat-no" title="statement not covered" >    return this.repository.getOptionSalesData(year)</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  async getMarketingChannelReport(year: number): Promise&lt;MarketingChannelData[]&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    return this.repository.getMarketingChannelData(year);</span>
+<span class="cstat-no" title="statement not covered" >    return this.repository.getMarketingChannelData(year)</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;</pre></td></tr></table></pre>
@@ -163,7 +178,7 @@ import { MarketingChannelData } from '../types/analytics'; //追加インポー�
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

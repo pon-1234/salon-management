@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/37</span>
+                <span class='fraction'>0/35</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/37</span>
+                <span class='fraction'>0/35</span>
             </div>
         
             
@@ -110,8 +110,7 @@
 <a name='L45'></a><a href='#L45'>45</a>
 <a name='L46'></a><a href='#L46'>46</a>
 <a name='L47'></a><a href='#L47'>47</a>
-<a name='L48'></a><a href='#L48'>48</a>
-<a name='L49'></a><a href='#L49'>49</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L48'></a><a href='#L48'>48</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -156,11 +155,10 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"</span></span></span>
-import { Badge } from "@/components/ui/badge"
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'</span></span></span>
+import { Badge } from '@/components/ui/badge'
 import { Phone, User } from 'lucide-react'
 &nbsp;
 interface CustomerInfoCardProps {
@@ -170,11 +168,11 @@ interface CustomerInfoCardProps {
   points: number
 }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export function CustomerInfoCard({ </span>
-<span class="cstat-no" title="statement not covered" >  customerName, </span>
-<span class="cstat-no" title="statement not covered" >  customerType, </span>
-<span class="cstat-no" title="statement not covered" >  phoneNumber, </span>
-<span class="cstat-no" title="statement not covered" >  points </span>
+<span class="cstat-no" title="statement not covered" >export function CustomerInfoCard({</span>
+<span class="cstat-no" title="statement not covered" >  customerName,</span>
+<span class="cstat-no" title="statement not covered" >  customerType,</span>
+<span class="cstat-no" title="statement not covered" >  phoneNumber,</span>
+<span class="cstat-no" title="statement not covered" >  points,</span>
 <span class="cstat-no" title="statement not covered" >}: CustomerInfoCardProps) {</span>
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;Card&gt;</span>
@@ -185,8 +183,8 @@ interface CustomerInfoCardProps {
 <span class="cstat-no" title="statement not covered" >        &lt;/CardTitle&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;CardContent&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;div className="bg-gray-50 p-4 rounded-lg"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="flex justify-between items-center"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="rounded-lg bg-gray-50 p-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="flex items-center justify-between"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;h3 className="text-lg font-semibold"&gt;{customerName}&lt;/h3&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;Badge variant="secondary" className="mt-1"&gt;</span>
@@ -195,26 +193,25 @@ interface CustomerInfoCardProps {
 <span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="text-right"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div className="flex items-center"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;Phone className="h-4 w-4 mr-1" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;Phone className="mr-1 h-4 w-4" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;span className="font-semibold"&gt;{phoneNumber}&lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;div className="text-sm text-gray-600 mt-1"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                現在 {points}pt</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;div className="mt-1 text-sm text-gray-600"&gt;現在 {points}pt&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/CardContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/Card&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

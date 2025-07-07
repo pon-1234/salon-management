@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/184</span>
+                <span class='fraction'>0/180</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/184</span>
+                <span class='fraction'>0/180</span>
             </div>
         
             
@@ -283,10 +283,7 @@
 <a name='L218'></a><a href='#L218'>218</a>
 <a name='L219'></a><a href='#L219'>219</a>
 <a name='L220'></a><a href='#L220'>220</a>
-<a name='L221'></a><a href='#L221'>221</a>
-<a name='L222'></a><a href='#L222'>222</a>
-<a name='L223'></a><a href='#L223'>223</a>
-<a name='L224'></a><a href='#L224'>224</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L221'></a><a href='#L221'>221</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -382,11 +379,9 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -436,8 +431,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -509,7 +502,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
 import { Store } from '@/lib/store/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -585,36 +579,34 @@ interface ReservationHistoryProps {
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  const upcomingReservations = reservations.filter(r =&gt; r.status === 'confirmed')</span>
-<span class="cstat-no" title="statement not covered" >  const pastReservations = reservations.filter(r =&gt; r.status !== 'confirmed')</span>
+<span class="cstat-no" title="statement not covered" >  const upcomingReservations = reservations.filter((r) =&gt; r.status === 'confirmed')</span>
+<span class="cstat-no" title="statement not covered" >  const pastReservations = reservations.filter((r) =&gt; r.status !== 'confirmed')</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;div className="space-y-6"&gt;</span>
       {/* Upcoming Reservations */}
 <span class="cstat-no" title="statement not covered" >      {upcomingReservations.length &gt; 0 &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;h3 className="text-lg font-semibold mb-4"&gt;予約中&lt;/h3&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;h3 className="mb-4 text-lg font-semibold"&gt;予約中&lt;/h3&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div className="space-y-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            {upcomingReservations.map((reservation) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >              &lt;Card key={reservation.id}&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;CardContent className="p-6"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;div className="flex items-start justify-between mb-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;div className="mb-4 flex items-start justify-between"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;div className="flex items-center gap-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      {getStatusBadge(reservation.status)}</span>
-<span class="cstat-no" title="statement not covered" >                      &lt;span className="text-sm text-gray-500"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                        予約番号: {reservation.id}</span>
-<span class="cstat-no" title="statement not covered" >                      &lt;/span&gt;</span>
+<span class="cstat-no" title="statement not covered" >                      &lt;span className="text-sm text-gray-500"&gt;予約番号: {reservation.id}&lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;span className="text-lg font-bold"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                      ¥{reservation.price.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;/span&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;span className="text-lg font-bold"&gt;¥{reservation.price.toLocaleString()}&lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/div&gt;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >                  &lt;div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;div className="space-y-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;div className="flex items-center gap-2 text-sm"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;Calendar className="h-4 w-4 text-gray-400" /&gt;</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;span&gt;{format(reservation.date, 'yyyy年MM月dd日（E）', { locale: ja })}&lt;/span&gt;</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;span&gt;</span>
+<span class="cstat-no" title="statement not covered" >                          {format(reservation.date, 'yyyy年MM月dd日（E）', { locale: ja })}</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;div className="flex items-center gap-2 text-sm"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;Clock className="h-4 w-4 text-gray-400" /&gt;</span>
@@ -634,7 +626,7 @@ interface ReservationHistoryProps {
 <span class="cstat-no" title="statement not covered" >                  &lt;/div&gt;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >                  {reservation.options.length &gt; 0 &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;div className="flex flex-wrap gap-2 mb-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;div className="mb-4 flex flex-wrap gap-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      {reservation.options.map((option) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;Badge key={option} variant="outline"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                          {option}</span>
@@ -660,24 +652,22 @@ interface ReservationHistoryProps {
 &nbsp;
       {/* Past Reservations */}
 <span class="cstat-no" title="statement not covered" >      &lt;div&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;h3 className="text-lg font-semibold mb-4"&gt;利用履歴&lt;/h3&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;h3 className="mb-4 text-lg font-semibold"&gt;利用履歴&lt;/h3&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div className="space-y-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          {pastReservations.map((reservation) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >            &lt;Card key={reservation.id} className="overflow-hidden"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;CardContent className="p-6"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="flex items-start justify-between mb-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="mb-4 flex items-start justify-between"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div className="flex items-center gap-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    {getStatusBadge(reservation.status)}</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;span className="text-sm text-gray-500"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      {format(reservation.date, 'yyyy年MM月dd日', { locale: ja })}</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;span className="text-lg font-bold"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    ¥{reservation.price.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;/span&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;span className="text-lg font-bold"&gt;¥{reservation.price.toLocaleString()}&lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >                &lt;div className="space-y-2 mb-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="mb-4 space-y-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div className="flex items-center gap-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;User className="h-4 w-4 text-gray-400" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;span className="font-medium"&gt;{reservation.castName}&lt;/span&gt;</span>
@@ -699,12 +689,12 @@ interface ReservationHistoryProps {
 <span class="cstat-no" title="statement not covered" >                  &lt;div className="flex gap-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    {!reservation.hasReview ? (</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;Button variant="outline" size="sm" className="flex-1"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;MessageSquare className="h-4 w-4 mr-2" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;MessageSquare className="mr-2 h-4 w-4" /&gt;</span>
                         口コミを書く
 <span class="cstat-no" title="statement not covered" >                      &lt;/Button&gt;</span>
                     ) : (
 <span class="cstat-no" title="statement not covered" >                      &lt;Button variant="outline" size="sm" disabled className="flex-1"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;MessageSquare className="h-4 w-4 mr-2" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;MessageSquare className="mr-2 h-4 w-4" /&gt;</span>
                         口コミ投稿済み
 <span class="cstat-no" title="statement not covered" >                      &lt;/Button&gt;</span>
                     )}
@@ -722,8 +712,8 @@ interface ReservationHistoryProps {
       {/* Empty State */}
 <span class="cstat-no" title="statement not covered" >      {reservations.length === 0 &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >        &lt;Card&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;CardContent className="text-center py-12"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;p className="text-gray-500 mb-4"&gt;まだ予約履歴がありません&lt;/p&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;CardContent className="py-12 text-center"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;p className="mb-4 text-gray-500"&gt;まだ予約履歴がありません&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;Button asChild&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;a href={`/${store.slug}/cast`}&gt;キャストを見る&lt;/a&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/Button&gt;</span>
@@ -732,14 +722,15 @@ interface ReservationHistoryProps {
       )}
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

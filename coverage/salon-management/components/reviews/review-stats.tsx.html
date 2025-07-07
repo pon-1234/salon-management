@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/69</span>
+                <span class='fraction'>0/61</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/69</span>
+                <span class='fraction'>0/61</span>
             </div>
         
             
@@ -144,14 +144,7 @@
 <a name='L79'></a><a href='#L79'>79</a>
 <a name='L80'></a><a href='#L80'>80</a>
 <a name='L81'></a><a href='#L81'>81</a>
-<a name='L82'></a><a href='#L82'>82</a>
-<a name='L83'></a><a href='#L83'>83</a>
-<a name='L84'></a><a href='#L84'>84</a>
-<a name='L85'></a><a href='#L85'>85</a>
-<a name='L86'></a><a href='#L86'>86</a>
-<a name='L87'></a><a href='#L87'>87</a>
-<a name='L88'></a><a href='#L88'>88</a>
-<a name='L89'></a><a href='#L89'>89</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L82'></a><a href='#L82'>82</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -187,21 +180,13 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -239,7 +224,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
 import { ReviewStats as ReviewStatsType } from '@/lib/reviews/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -259,11 +245,9 @@ interface ReviewStatsProps {
 <span class="cstat-no" title="statement not covered" >      &lt;/CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;CardContent&gt;</span>
         {/* Average Rating */}
-<span class="cstat-no" title="statement not covered" >        &lt;div className="text-center mb-6"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="text-4xl font-bold mb-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            {stats.averageRating.toFixed(1)}</span>
-<span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="flex justify-center mb-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="mb-6 text-center"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="mb-2 text-4xl font-bold"&gt;{stats.averageRating.toFixed(1)}&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="mb-2 flex justify-center"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            {[...Array(5)].map((_, i) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >              &lt;Star</span>
 <span class="cstat-no" title="statement not covered" >                key={i}</span>
@@ -275,34 +259,28 @@ interface ReviewStatsProps {
 <span class="cstat-no" title="statement not covered" >              /&gt;</span>
 <span class="cstat-no" title="statement not covered" >            ))}</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;p className="text-sm text-gray-600"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            {stats.totalReviews}件の評価</span>
-<span class="cstat-no" title="statement not covered" >          &lt;/p&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;p className="text-sm text-gray-600"&gt;{stats.totalReviews}件の評価&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
 &nbsp;
         {/* Rating Distribution */}
 <span class="cstat-no" title="statement not covered" >        &lt;div className="space-y-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          {[5, 4, 3, 2, 1].map(rating =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >          {[5, 4, 3, 2, 1].map((rating) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >            const count = stats.ratingDistribution[rating as keyof typeof stats.ratingDistribution]</span>
-<span class="cstat-no" title="statement not covered" >            const percentage = stats.totalReviews &gt; 0 </span>
-<span class="cstat-no" title="statement not covered" >              ? (count / stats.totalReviews) * 100 </span>
-<span class="cstat-no" title="statement not covered" >              : 0</span>
+<span class="cstat-no" title="statement not covered" >            const percentage = stats.totalReviews &gt; 0 ? (count / stats.totalReviews) * 100 : 0</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >            return (</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div key={rating} className="flex items-center gap-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="flex items-center gap-1 w-12"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="flex w-12 items-center gap-1"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;span className="text-sm"&gt;{rating}&lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;Star className="h-3 w-3 fill-yellow-400 text-yellow-400" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-200"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div</span>
-<span class="cstat-no" title="statement not covered" >                    className="bg-yellow-400 h-full transition-all duration-300"</span>
+<span class="cstat-no" title="statement not covered" >                    className="h-full bg-yellow-400 transition-all duration-300"</span>
 <span class="cstat-no" title="statement not covered" >                    style={{ width: `${percentage}%` }}</span>
 <span class="cstat-no" title="statement not covered" >                  /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;span className="text-sm text-gray-600 w-12 text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  {count}</span>
-<span class="cstat-no" title="statement not covered" >                &lt;/span&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;span className="w-12 text-right text-sm text-gray-600"&gt;{count}&lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
             )
 <span class="cstat-no" title="statement not covered" >          })}</span>
@@ -311,12 +289,12 @@ interface ReviewStatsProps {
         {/* Popular Tags */}
 <span class="cstat-no" title="statement not covered" >        {stats.popularTags.length &gt; 0 &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div className="mt-6"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;h4 className="font-semibold text-sm mb-3"&gt;人気のタグ&lt;/h4&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;h4 className="mb-3 text-sm font-semibold"&gt;人気のタグ&lt;/h4&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="flex flex-wrap gap-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              {stats.popularTags.slice(0, 5).map(({ tag, count }) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >                &lt;span</span>
 <span class="cstat-no" title="statement not covered" >                  key={tag}</span>
-<span class="cstat-no" title="statement not covered" >                  className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full"</span>
+<span class="cstat-no" title="statement not covered" >                  className="rounded-full bg-purple-100 px-2 py-1 text-xs text-purple-700"</span>
                 &gt;
 <span class="cstat-no" title="statement not covered" >                  {tag} ({count})</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/span&gt;</span>
@@ -327,14 +305,15 @@ interface ReviewStatsProps {
 <span class="cstat-no" title="statement not covered" >      &lt;/CardContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/Card&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

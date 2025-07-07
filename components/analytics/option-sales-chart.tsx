@@ -1,8 +1,17 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
+import { useEffect, useState } from 'react'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 
 interface OptionSalesChartProps {
   year: number
@@ -21,12 +30,12 @@ export function OptionSalesChart({ year, analyticsUseCases }: OptionSalesChartPr
   useEffect(() => {
     // ダミーデータ（実際にはuseCasesから取得）
     const dummyData: OptionData[] = [
-      { name: "アロマオイル", sales: 678900, count: 234 },
-      { name: "ホットストーン", sales: 456700, count: 98 },
-      { name: "ヘッドマッサージ", sales: 345600, count: 156 },
-      { name: "フットケア", sales: 234500, count: 87 },
-      { name: "ハンドケア", sales: 198700, count: 112 },
-      { name: "その他", sales: 220100, count: 78 }
+      { name: 'アロマオイル', sales: 678900, count: 234 },
+      { name: 'ホットストーン', sales: 456700, count: 98 },
+      { name: 'ヘッドマッサージ', sales: 345600, count: 156 },
+      { name: 'フットケア', sales: 234500, count: 87 },
+      { name: 'ハンドケア', sales: 198700, count: 112 },
+      { name: 'その他', sales: 220100, count: 78 },
     ]
     setData(dummyData)
   }, [year, analyticsUseCases])
@@ -42,14 +51,11 @@ export function OptionSalesChart({ year, analyticsUseCases }: OptionSalesChartPr
 
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <BarChart
-        data={data}
-        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-      >
+      <BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
         <YAxis tickFormatter={formatYAxis} />
-        <Tooltip 
+        <Tooltip
           formatter={(value: number, name: string) => {
             if (name === '売上額') return [`¥${value.toLocaleString()}`, name]
             return [value, name]

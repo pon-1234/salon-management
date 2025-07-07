@@ -5,10 +5,10 @@ import { CastDetailContent } from '@/components/cast/cast-detail-content'
 import { StoreNavigation } from '@/components/store-navigation'
 import { StoreFooter } from '@/components/store-footer'
 
-export default async function CastDetailPage({ 
-  params 
-}: { 
-  params: Promise<{ store: string; id: string }> 
+export default async function CastDetailPage({
+  params,
+}: {
+  params: Promise<{ store: string; id: string }>
 }) {
   const { store: storeSlug, id } = await params
   const store = getStoreBySlug(storeSlug)
@@ -19,7 +19,7 @@ export default async function CastDetailPage({
 
   // Get cast data
   const cast = getCastById(id)
-  
+
   if (!cast) {
     notFound()
   }
@@ -27,10 +27,10 @@ export default async function CastDetailPage({
   return (
     <>
       <StoreNavigation />
-      
+
       <main className="min-h-screen bg-gray-50">
         <CastDetailContent cast={cast} store={store} />
-        
+
         <StoreFooter store={store} />
       </main>
     </>

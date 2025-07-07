@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
+import { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
 import { Printer, TrendingUp, Package, DollarSign, Sparkles } from 'lucide-react'
 import {
   Select,
@@ -11,13 +11,13 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { OptionSalesChart } from "@/components/analytics/option-sales-chart"
-import { OptionSalesTable } from "@/components/analytics/option-sales-table"
-import { OptionCombinationTable } from "@/components/analytics/option-combination-table"
-import { OptionTrendChart } from "@/components/analytics/option-trend-chart"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
-import { AnalyticsRepositoryImpl } from "@/lib/analytics/repository"
+} from '@/components/ui/select'
+import { OptionSalesChart } from '@/components/analytics/option-sales-chart'
+import { OptionSalesTable } from '@/components/analytics/option-sales-table'
+import { OptionCombinationTable } from '@/components/analytics/option-combination-table'
+import { OptionTrendChart } from '@/components/analytics/option-trend-chart'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
+import { AnalyticsRepositoryImpl } from '@/lib/analytics/repository'
 
 const analyticsRepository = new AnalyticsRepositoryImpl()
 const analyticsUseCases = new AnalyticsUseCases(analyticsRepository)
@@ -38,13 +38,13 @@ export default function OptionSalesPage() {
     optionCount: 12,
     activeOptionsCount: 8,
     topOptionRevenue: 678900,
-    topOptionName: "アロマオイル",
+    topOptionName: 'アロマオイル',
     attachRate: 42.5,
-    averageOptionPrice: 2800
+    averageOptionPrice: 2800,
   }
 
   const calculateGrowthRate = (current: number, previous: number) => {
-    return ((current - previous) / previous * 100).toFixed(1)
+    return (((current - previous) / previous) * 100).toFixed(1)
   }
 
   return (
@@ -69,14 +69,17 @@ export default function OptionSalesPage() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={handlePrint} className="print:hidden bg-emerald-600 hover:bg-emerald-700 text-white">
+        <Button
+          onClick={handlePrint}
+          className="bg-emerald-600 text-white hover:bg-emerald-700 print:hidden"
+        >
           <Printer className="mr-2 h-4 w-4" />
           印刷する
         </Button>
       </div>
 
       {/* KPIカード */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">オプション売上高</CardTitle>
@@ -84,7 +87,7 @@ export default function OptionSalesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">¥{kpiData.totalOptionSales.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
               <TrendingUp className="h-3 w-3 text-green-600" />
               <span className="text-green-600">
                 {calculateGrowthRate(kpiData.totalOptionSales, kpiData.previousYearOptionSales)}%
@@ -113,7 +116,7 @@ export default function OptionSalesPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-sm font-bold truncate">{kpiData.topOptionName}</div>
+            <div className="truncate text-sm font-bold">{kpiData.topOptionName}</div>
             <p className="text-xs text-muted-foreground">
               売上: ¥{kpiData.topOptionRevenue.toLocaleString()}
             </p>
@@ -126,7 +129,9 @@ export default function OptionSalesPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{kpiData.activeOptionsCount} / {kpiData.optionCount}</div>
+            <div className="text-2xl font-bold">
+              {kpiData.activeOptionsCount} / {kpiData.optionCount}
+            </div>
             <p className="text-xs text-muted-foreground">
               稼働率: {((kpiData.activeOptionsCount / kpiData.optionCount) * 100).toFixed(0)}%
             </p>
@@ -135,7 +140,7 @@ export default function OptionSalesPage() {
       </div>
 
       {/* 売上構成グラフ */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>オプション別売上構成</CardTitle>
@@ -167,16 +172,10 @@ export default function OptionSalesPage() {
               <TabsTrigger value="combination">組み合わせ分析</TabsTrigger>
             </TabsList>
             <TabsContent value="monthly" className="mt-4">
-              <OptionSalesTable 
-                year={selectedYear} 
-                analyticsUseCases={analyticsUseCases}
-              />
+              <OptionSalesTable year={selectedYear} analyticsUseCases={analyticsUseCases} />
             </TabsContent>
             <TabsContent value="combination" className="mt-4">
-              <OptionCombinationTable 
-                year={selectedYear} 
-                analyticsUseCases={analyticsUseCases}
-              />
+              <OptionCombinationTable year={selectedYear} analyticsUseCases={analyticsUseCases} />
             </TabsContent>
           </Tabs>
         </CardContent>

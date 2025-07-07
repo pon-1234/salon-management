@@ -15,6 +15,7 @@ Place your video files in this directory:
 ## Alternative Video Sources:
 
 You can also use external video URLs by updating the video source in the component:
+
 ```jsx
 <source src="https://example.com/your-video.mp4" type="video/mp4" />
 ```
@@ -22,6 +23,7 @@ You can also use external video URLs by updating the video source in the compone
 ## Fallback Image:
 
 Consider adding a poster attribute to the video tag for a fallback image:
+
 ```jsx
 <video poster="/images/hero-poster.jpg" ...>
 ```

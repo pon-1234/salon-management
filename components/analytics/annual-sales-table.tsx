@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -8,9 +8,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
-import { MonthlyData } from "@/lib/types/analytics"
+} from '@/components/ui/table'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
+import { MonthlyData } from '@/lib/types/analytics'
 
 interface AnnualSalesTableProps {
   year: number
@@ -79,48 +79,33 @@ export function AnnualSalesTable({ year, analyticsUseCases }: AnnualSalesTablePr
               <TableCell className="text-right">{row.totalCount.toLocaleString()}</TableCell>
               <TableCell className="text-right">{row.newCustomerCount}</TableCell>
               <TableCell className="text-right">{row.repeatCustomerCount}</TableCell>
+              <TableCell className="text-right">¥{row.totalSales.toLocaleString()}</TableCell>
+              <TableCell className="text-right">¥{row.cashSales.toLocaleString()}</TableCell>
+              <TableCell className="text-right">¥{row.cardSales.toLocaleString()}</TableCell>
+              <TableCell className="text-right">¥{row.salesPerCustomer.toLocaleString()}</TableCell>
               <TableCell className="text-right">
-                ¥{row.totalSales.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                ¥{row.cashSales.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                ¥{row.cardSales.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                ¥{row.salesPerCustomer.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                <span className={row.previousYearRatio > 1 ? "text-green-600" : "text-red-600"}>
+                <span className={row.previousYearRatio > 1 ? 'text-green-600' : 'text-red-600'}>
                   {(row.previousYearRatio * 100).toFixed(1)}%
                 </span>
               </TableCell>
             </TableRow>
           ))}
-          <TableRow className="font-bold bg-gray-50">
+          <TableRow className="bg-gray-50 font-bold">
             <TableCell>合計</TableCell>
             <TableCell className="text-right">{totals.workingDays}日</TableCell>
-            <TableCell className="text-right">
-              {totals.totalCount.toLocaleString()}
-            </TableCell>
-            <TableCell className="text-right">
-              {totals.newCustomerCount.toLocaleString()}
-            </TableCell>
+            <TableCell className="text-right">{totals.totalCount.toLocaleString()}</TableCell>
+            <TableCell className="text-right">{totals.newCustomerCount.toLocaleString()}</TableCell>
             <TableCell className="text-right">
               {totals.repeatCustomerCount.toLocaleString()}
             </TableCell>
+            <TableCell className="text-right">¥{totals.totalSales.toLocaleString()}</TableCell>
+            <TableCell className="text-right">¥{totals.cashSales.toLocaleString()}</TableCell>
+            <TableCell className="text-right">¥{totals.cardSales.toLocaleString()}</TableCell>
             <TableCell className="text-right">
-              ¥{totals.totalSales.toLocaleString()}
-            </TableCell>
-            <TableCell className="text-right">
-              ¥{totals.cashSales.toLocaleString()}
-            </TableCell>
-            <TableCell className="text-right">
-              ¥{totals.cardSales.toLocaleString()}
-            </TableCell>
-            <TableCell className="text-right">
-              ¥{totals.totalCount > 0 ? Math.round(totals.totalSales / totals.totalCount).toLocaleString() : 0}
+              ¥
+              {totals.totalCount > 0
+                ? Math.round(totals.totalSales / totals.totalCount).toLocaleString()
+                : 0}
             </TableCell>
             <TableCell className="text-right">-</TableCell>
           </TableRow>

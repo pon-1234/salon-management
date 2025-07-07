@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/108</span>
+                <span class='fraction'>0/92</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/108</span>
+                <span class='fraction'>0/92</span>
             </div>
         
             
@@ -179,21 +179,7 @@
 <a name='L114'></a><a href='#L114'>114</a>
 <a name='L115'></a><a href='#L115'>115</a>
 <a name='L116'></a><a href='#L116'>116</a>
-<a name='L117'></a><a href='#L117'>117</a>
-<a name='L118'></a><a href='#L118'>118</a>
-<a name='L119'></a><a href='#L119'>119</a>
-<a name='L120'></a><a href='#L120'>120</a>
-<a name='L121'></a><a href='#L121'>121</a>
-<a name='L122'></a><a href='#L122'>122</a>
-<a name='L123'></a><a href='#L123'>123</a>
-<a name='L124'></a><a href='#L124'>124</a>
-<a name='L125'></a><a href='#L125'>125</a>
-<a name='L126'></a><a href='#L126'>126</a>
-<a name='L127'></a><a href='#L127'>127</a>
-<a name='L128'></a><a href='#L128'>128</a>
-<a name='L129'></a><a href='#L129'>129</a>
-<a name='L130'></a><a href='#L130'>130</a>
-<a name='L131'></a><a href='#L131'>131</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L117'></a><a href='#L117'>117</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -297,22 +283,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -323,9 +294,10 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -333,9 +305,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
-import { MonthlyData } from "@/lib/types/analytics"
+} from '@/components/ui/table'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
+import { MonthlyData } from '@/lib/types/analytics'
 &nbsp;
 interface AnnualSalesTableProps {
   year: number
@@ -404,48 +376,33 @@ interface AnnualSalesTableProps {
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;{row.totalCount.toLocaleString()}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;{row.newCustomerCount}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;{row.repeatCustomerCount}&lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;¥{row.totalSales.toLocaleString()}&lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;¥{row.cashSales.toLocaleString()}&lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;¥{row.cardSales.toLocaleString()}&lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;¥{row.salesPerCustomer.toLocaleString()}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                ¥{row.totalSales.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                ¥{row.cashSales.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                ¥{row.cardSales.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                ¥{row.salesPerCustomer.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;span className={row.previousYearRatio &gt; 1 ? "text-green-600" : "text-red-600"}&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;span className={row.previousYearRatio &gt; 1 ? 'text-green-600' : 'text-red-600'}&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  {(row.previousYearRatio * 100).toFixed(1)}%</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TableRow&gt;</span>
 <span class="cstat-no" title="statement not covered" >          ))}</span>
-<span class="cstat-no" title="statement not covered" >          &lt;TableRow className="font-bold bg-gray-50"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;TableRow className="bg-gray-50 font-bold"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell&gt;合計&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;{totals.workingDays}日&lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              {totals.totalCount.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              {totals.newCustomerCount.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;{totals.totalCount.toLocaleString()}&lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;{totals.newCustomerCount.toLocaleString()}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              {totals.repeatCustomerCount.toLocaleString()}</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;¥{totals.totalSales.toLocaleString()}&lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;¥{totals.cashSales.toLocaleString()}&lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;¥{totals.cardSales.toLocaleString()}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              ¥{totals.totalSales.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              ¥{totals.cashSales.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              ¥{totals.cardSales.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              ¥{totals.totalCount &gt; 0 ? Math.round(totals.totalSales / totals.totalCount).toLocaleString() : 0}</span>
+              ¥
+<span class="cstat-no" title="statement not covered" >              {totals.totalCount &gt; 0</span>
+<span class="cstat-no" title="statement not covered" >                ? Math.round(totals.totalSales / totals.totalCount).toLocaleString()</span>
+<span class="cstat-no" title="statement not covered" >                : 0}</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;-&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/TableRow&gt;</span>
@@ -453,14 +410,15 @@ interface AnnualSalesTableProps {
 <span class="cstat-no" title="statement not covered" >      &lt;/Table&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

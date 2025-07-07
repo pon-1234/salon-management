@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/113</span>
+                <span class='fraction'>0/105</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/113</span>
+                <span class='fraction'>0/105</span>
             </div>
         
             
@@ -202,15 +202,7 @@
 <a name='L137'></a><a href='#L137'>137</a>
 <a name='L138'></a><a href='#L138'>138</a>
 <a name='L139'></a><a href='#L139'>139</a>
-<a name='L140'></a><a href='#L140'>140</a>
-<a name='L141'></a><a href='#L141'>141</a>
-<a name='L142'></a><a href='#L142'>142</a>
-<a name='L143'></a><a href='#L143'>143</a>
-<a name='L144'></a><a href='#L144'>144</a>
-<a name='L145'></a><a href='#L145'>145</a>
-<a name='L146'></a><a href='#L146'>146</a>
-<a name='L147'></a><a href='#L147'>147</a>
-<a name='L148'></a><a href='#L148'>148</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L140'></a><a href='#L140'>140</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -295,11 +287,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -352,22 +339,19 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { RefreshCw, CheckCircle, AlertCircle, Clock } from "lucide-react"
-import { getPricingUseCases, PricingSyncStatus } from "@/lib/pricing"
-import { useToast } from "@/hooks/use-toast"
-import { formatDistanceToNow } from "date-fns"
-import { ja } from "date-fns/locale"
+import { useState, useEffect, useCallback } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { RefreshCw, CheckCircle, AlertCircle, Clock } from 'lucide-react'
+import { getPricingUseCases, PricingSyncStatus } from '@/lib/pricing'
+import { useToast } from '@/hooks/use-toast'
+import { formatDistanceToNow } from 'date-fns'
+import { ja } from 'date-fns/locale'
 &nbsp;
 interface PricingSyncStatusCardProps {
   storeId: string
@@ -379,28 +363,28 @@ interface PricingSyncStatusCardProps {
 <span class="cstat-no" title="statement not covered" >  const [syncing, setSyncing] = useState(false)</span>
 <span class="cstat-no" title="statement not covered" >  const [loading, setLoading] = useState(true)</span>
 <span class="cstat-no" title="statement not covered" >  const { toast } = useToast()</span>
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  const pricingUseCases = getPricingUseCases()</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  useEffect(() =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    loadSyncStatus()</span>
-<span class="cstat-no" title="statement not covered" >  }, [storeId])</span>
+<span class="cstat-no" title="statement not covered" >  }, [storeId, loadSyncStatus])</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  const loadSyncStatus = async () =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  const loadSyncStatus = useCallback(async () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      setLoading(true)</span>
 <span class="cstat-no" title="statement not covered" >      const status = await pricingUseCases.getSyncStatus(storeId)</span>
 <span class="cstat-no" title="statement not covered" >      setSyncStatus(status)</span>
 <span class="cstat-no" title="statement not covered" >    } catch (error) {</span>
 <span class="cstat-no" title="statement not covered" >      toast({</span>
-<span class="cstat-no" title="statement not covered" >        title: "エラー",</span>
-<span class="cstat-no" title="statement not covered" >        description: "同期状態の取得に失敗しました",</span>
-<span class="cstat-no" title="statement not covered" >        variant: "destructive",</span>
+<span class="cstat-no" title="statement not covered" >        title: 'エラー',</span>
+<span class="cstat-no" title="statement not covered" >        description: '同期状態の取得に失敗しました',</span>
+<span class="cstat-no" title="statement not covered" >        variant: 'destructive',</span>
 <span class="cstat-no" title="statement not covered" >      })</span>
 <span class="cstat-no" title="statement not covered" >    } finally {</span>
 <span class="cstat-no" title="statement not covered" >      setLoading(false)</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
-<span class="cstat-no" title="statement not covered" >  }</span>
+<span class="cstat-no" title="statement not covered" >  }, [pricingUseCases, storeId, toast])</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const handleSync = async () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
@@ -408,14 +392,14 @@ interface PricingSyncStatusCardProps {
 <span class="cstat-no" title="statement not covered" >      await pricingUseCases.syncPricing(storeId)</span>
 <span class="cstat-no" title="statement not covered" >      await loadSyncStatus()</span>
 <span class="cstat-no" title="statement not covered" >      toast({</span>
-<span class="cstat-no" title="statement not covered" >        title: "同期完了",</span>
+<span class="cstat-no" title="statement not covered" >        title: '同期完了',</span>
 <span class="cstat-no" title="statement not covered" >        description: `${storeName}の料金情報が同期されました`,</span>
 <span class="cstat-no" title="statement not covered" >      })</span>
 <span class="cstat-no" title="statement not covered" >    } catch (error) {</span>
 <span class="cstat-no" title="statement not covered" >      toast({</span>
-<span class="cstat-no" title="statement not covered" >        title: "エラー",</span>
-<span class="cstat-no" title="statement not covered" >        description: "同期に失敗しました",</span>
-<span class="cstat-no" title="statement not covered" >        variant: "destructive",</span>
+<span class="cstat-no" title="statement not covered" >        title: 'エラー',</span>
+<span class="cstat-no" title="statement not covered" >        description: '同期に失敗しました',</span>
+<span class="cstat-no" title="statement not covered" >        variant: 'destructive',</span>
 <span class="cstat-no" title="statement not covered" >      })</span>
 <span class="cstat-no" title="statement not covered" >    } finally {</span>
 <span class="cstat-no" title="statement not covered" >      setSyncing(false)</span>
@@ -427,8 +411,8 @@ interface PricingSyncStatusCardProps {
 <span class="cstat-no" title="statement not covered" >      &lt;Card&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;CardContent className="p-6"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div className="animate-pulse space-y-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;div className="h-4 bg-gray-200 rounded w-1/3"&gt;&lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;div className="h-3 bg-gray-200 rounded w-1/2"&gt;&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;div className="h-4 w-1/3 rounded bg-gray-200"&gt;&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;div className="h-3 w-1/2 rounded bg-gray-200"&gt;&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/CardContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/Card&gt;</span>
@@ -438,15 +422,10 @@ interface PricingSyncStatusCardProps {
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;Card&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;CardHeader className="pb-3"&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;CardTitle className="text-lg flex items-center justify-between"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;CardTitle className="flex items-center justify-between text-lg"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          {storeName}</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Button</span>
-<span class="cstat-no" title="statement not covered" >            size="sm"</span>
-<span class="cstat-no" title="statement not covered" >            variant="outline"</span>
-<span class="cstat-no" title="statement not covered" >            onClick={handleSync}</span>
-<span class="cstat-no" title="statement not covered" >            disabled={syncing}</span>
-          &gt;
-<span class="cstat-no" title="statement not covered" >            &lt;RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;Button size="sm" variant="outline" onClick={handleSync} disabled={syncing}&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;RefreshCw className={`mr-2 h-4 w-4 ${syncing ? 'animate-spin' : ''}`} /&gt;</span>
             同期
 <span class="cstat-no" title="statement not covered" >          &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/CardTitle&gt;</span>
@@ -456,13 +435,13 @@ interface PricingSyncStatusCardProps {
 <span class="cstat-no" title="statement not covered" >          &lt;div className="flex items-center justify-between"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;span className="text-sm text-gray-600"&gt;状態&lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >            {syncStatus.isSynced ? (</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Badge variant="outline" className="text-green-600 border-green-600"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;CheckCircle className="w-3 h-3 mr-1" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Badge variant="outline" className="border-green-600 text-green-600"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;CheckCircle className="mr-1 h-3 w-3" /&gt;</span>
                 同期済み
 <span class="cstat-no" title="statement not covered" >              &lt;/Badge&gt;</span>
             ) : (
-<span class="cstat-no" title="statement not covered" >              &lt;Badge variant="outline" className="text-orange-600 border-orange-600"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;AlertCircle className="w-3 h-3 mr-1" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Badge variant="outline" className="border-orange-600 text-orange-600"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;AlertCircle className="mr-1 h-3 w-3" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                未同期 ({syncStatus.pendingChanges}件)</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/Badge&gt;</span>
             )}
@@ -470,10 +449,10 @@ interface PricingSyncStatusCardProps {
 <span class="cstat-no" title="statement not covered" >          &lt;div className="flex items-center justify-between"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;span className="text-sm text-gray-600"&gt;最終同期&lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="flex items-center text-sm"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Clock className="w-3 h-3 mr-1 text-gray-400" /&gt;</span>
-<span class="cstat-no" title="statement not covered" >              {formatDistanceToNow(new Date(syncStatus.lastSyncedAt), { </span>
+<span class="cstat-no" title="statement not covered" >              &lt;Clock className="mr-1 h-3 w-3 text-gray-400" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >              {formatDistanceToNow(new Date(syncStatus.lastSyncedAt), {</span>
 <span class="cstat-no" title="statement not covered" >                addSuffix: true,</span>
-<span class="cstat-no" title="statement not covered" >                locale: ja </span>
+<span class="cstat-no" title="statement not covered" >                locale: ja,</span>
 <span class="cstat-no" title="statement not covered" >              })}</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
@@ -493,25 +472,22 @@ interface AllStoresSyncStatusProps {
 <span class="cstat-no" title="statement not covered" >      &lt;div className="flex items-center justify-between"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;h2 className="text-xl font-semibold"&gt;店舗別同期状態&lt;/h2&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        {stores.map((store) =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >          &lt;PricingSyncStatusCard</span>
-<span class="cstat-no" title="statement not covered" >            key={store.id}</span>
-<span class="cstat-no" title="statement not covered" >            storeId={store.id}</span>
-<span class="cstat-no" title="statement not covered" >            storeName={store.name}</span>
-<span class="cstat-no" title="statement not covered" >          /&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;PricingSyncStatusCard key={store.id} storeId={store.id} storeName={store.name} /&gt;</span>
 <span class="cstat-no" title="statement not covered" >        ))}</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

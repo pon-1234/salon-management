@@ -295,9 +295,9 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -305,12 +305,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
-import { OptionSalesData } from "@/lib/types/analytics"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+} from '@/components/ui/table'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
+import { OptionSalesData } from '@/lib/types/analytics'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
-import { Skeleton } from "@/components/ui/skeleton"
+import { Skeleton } from '@/components/ui/skeleton'
 &nbsp;
 interface OptionSalesTableProps {
   year: number
@@ -330,7 +330,7 @@ interface OptionSalesTableProps {
 <span class="cstat-no" title="statement not covered" >        const result = await analyticsUseCases.getOptionSalesReport(year)</span>
 <span class="cstat-no" title="statement not covered" >        setData(result)</span>
 <span class="cstat-no" title="statement not covered" >      } catch (err) {</span>
-<span class="cstat-no" title="statement not covered" >        setError("データの取得中にエラーが発生しました。")</span>
+<span class="cstat-no" title="statement not covered" >        setError('データの取得中にエラーが発生しました。')</span>
 <span class="cstat-no" title="statement not covered" >        console.error(err)</span>
 <span class="cstat-no" title="statement not covered" >      } finally {</span>
 <span class="cstat-no" title="statement not covered" >        setIsLoading(false)</span>
@@ -367,11 +367,11 @@ interface OptionSalesTableProps {
 <span class="cstat-no" title="statement not covered" >            &lt;TableHead className="w-[200px]"&gt;オプション&lt;/TableHead&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableHead className="w-[100px]"&gt;価格&lt;/TableHead&gt;</span>
 <span class="cstat-no" title="statement not covered" >            {months.map((month) =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableHead key={month} className="text-right whitespace-nowrap"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableHead key={month} className="whitespace-nowrap text-right"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                {`${month.toString().padStart(2, '0')}月`}</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/TableHead&gt;</span>
 <span class="cstat-no" title="statement not covered" >            ))}</span>
-<span class="cstat-no" title="statement not covered" >            &lt;TableHead className="text-right bg-gray-100"&gt;TOTAL&lt;/TableHead&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;TableHead className="bg-gray-100 text-right"&gt;TOTAL&lt;/TableHead&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/TableRow&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/TableHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;TableBody&gt;</span>
@@ -382,15 +382,15 @@ interface OptionSalesTableProps {
 <span class="cstat-no" title="statement not covered" >            return (</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableRow key={option.id}&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;TableCell className="font-medium"&gt;{option.name}&lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;TableCell&gt;{option.price &gt; 0 ? `${option.price.toLocaleString()}円` : "無料"}&lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  {option.price &gt; 0 ? `${option.price.toLocaleString()}円` : '無料'}</span>
+<span class="cstat-no" title="statement not covered" >                &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                {option.monthlySales.map((count, index) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;TableCell key={index} className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    {count || ""}</span>
+<span class="cstat-no" title="statement not covered" >                    {count || ''}</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >                ))}</span>
-<span class="cstat-no" title="statement not covered" >                &lt;TableCell className="text-right font-medium text-blue-600"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  {total}</span>
-<span class="cstat-no" title="statement not covered" >                &lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;TableCell className="text-right font-medium text-blue-600"&gt;{total}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/TableRow&gt;</span>
             )
 <span class="cstat-no" title="statement not covered" >          })}</span>
@@ -418,7 +418,7 @@ interface OptionSalesTableProps {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

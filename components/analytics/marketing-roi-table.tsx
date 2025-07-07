@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -8,9 +8,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 import { TrendingUp, TrendingDown } from 'lucide-react'
 
 interface MarketingROITableProps {
@@ -36,55 +36,55 @@ export function MarketingROITable({ year, analyticsUseCases }: MarketingROITable
     // ダミーデータ（実際にはuseCasesから取得）
     const dummyData: ROIData[] = [
       {
-        channel: "ホットペッパー",
+        channel: 'ホットペッパー',
         cost: 1200000,
         customers: 3945,
         revenue: 35678000,
         cac: 304,
         ltv: 9042,
         roi: 2873,
-        trend: 12.5
+        trend: 12.5,
       },
       {
-        channel: "Instagram",
+        channel: 'Instagram',
         cost: 450000,
         customers: 2456,
         revenue: 21345000,
         cac: 183,
         ltv: 8693,
         roi: 4643,
-        trend: 23.8
+        trend: 23.8,
       },
       {
-        channel: "Google広告",
+        channel: 'Google広告',
         cost: 680000,
         customers: 1678,
         revenue: 14567000,
         cac: 405,
         ltv: 8683,
         roi: 2042,
-        trend: -5.2
+        trend: -5.2,
       },
       {
-        channel: "紹介",
+        channel: '紹介',
         cost: 120000,
         customers: 1432,
         revenue: 13890000,
         cac: 84,
         ltv: 9701,
         roi: 11475,
-        trend: 8.9
+        trend: 8.9,
       },
       {
-        channel: "ウォークイン",
+        channel: 'ウォークイン',
         cost: 0,
         customers: 1023,
         revenue: 9234000,
         cac: 0,
         ltv: 9025,
         roi: 0,
-        trend: 3.2
-      }
+        trend: 3.2,
+      },
     ]
     setData(dummyData)
   }, [year, analyticsUseCases])
@@ -116,27 +116,15 @@ export function MarketingROITable({ year, analyticsUseCases }: MarketingROITable
           {data.map((item) => (
             <TableRow key={item.channel}>
               <TableCell className="font-medium">{item.channel}</TableCell>
-              <TableCell className="text-right">
-                ¥{item.cost.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                {item.customers.toLocaleString()}人
-              </TableCell>
-              <TableCell className="text-right">
-                ¥{item.revenue.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                ¥{item.cac.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                ¥{item.ltv.toLocaleString()}
-              </TableCell>
+              <TableCell className="text-right">¥{item.cost.toLocaleString()}</TableCell>
+              <TableCell className="text-right">{item.customers.toLocaleString()}人</TableCell>
+              <TableCell className="text-right">¥{item.revenue.toLocaleString()}</TableCell>
+              <TableCell className="text-right">¥{item.cac.toLocaleString()}</TableCell>
+              <TableCell className="text-right">¥{item.ltv.toLocaleString()}</TableCell>
               <TableCell className="text-right font-medium">
                 {item.roi > 0 ? `${item.roi}%` : '-'}
               </TableCell>
-              <TableCell className="text-center">
-                {item.roi > 0 && getROIBadge(item.roi)}
-              </TableCell>
+              <TableCell className="text-center">{item.roi > 0 && getROIBadge(item.roi)}</TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-1">
                   {item.trend > 0 ? (
@@ -144,23 +132,33 @@ export function MarketingROITable({ year, analyticsUseCases }: MarketingROITable
                   ) : (
                     <TrendingDown className="h-4 w-4 text-red-600" />
                   )}
-                  <span className={item.trend > 0 ? "text-green-600" : "text-red-600"}>
-                    {item.trend > 0 ? "+" : ""}{item.trend}%
+                  <span className={item.trend > 0 ? 'text-green-600' : 'text-red-600'}>
+                    {item.trend > 0 ? '+' : ''}
+                    {item.trend}%
                   </span>
                 </div>
               </TableCell>
             </TableRow>
           ))}
-          <TableRow className="font-bold bg-gray-50">
+          <TableRow className="bg-gray-50 font-bold">
             <TableCell>合計</TableCell>
             <TableCell className="text-right">
-              ¥{data.length > 0 ? data.reduce((sum, item) => sum + item.cost, 0).toLocaleString() : '0'}
+              ¥
+              {data.length > 0
+                ? data.reduce((sum, item) => sum + item.cost, 0).toLocaleString()
+                : '0'}
             </TableCell>
             <TableCell className="text-right">
-              {data.length > 0 ? data.reduce((sum, item) => sum + item.customers, 0).toLocaleString() : '0'}人
+              {data.length > 0
+                ? data.reduce((sum, item) => sum + item.customers, 0).toLocaleString()
+                : '0'}
+              人
             </TableCell>
             <TableCell className="text-right">
-              ¥{data.length > 0 ? data.reduce((sum, item) => sum + item.revenue, 0).toLocaleString() : '0'}
+              ¥
+              {data.length > 0
+                ? data.reduce((sum, item) => sum + item.revenue, 0).toLocaleString()
+                : '0'}
             </TableCell>
             <TableCell className="text-right">-</TableCell>
             <TableCell className="text-right">-</TableCell>

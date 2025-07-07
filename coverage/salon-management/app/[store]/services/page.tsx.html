@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/191</span>
+                <span class='fraction'>0/193</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/191</span>
+                <span class='fraction'>0/193</span>
             </div>
         
             
@@ -253,7 +253,10 @@
 <a name='L188'></a><a href='#L188'>188</a>
 <a name='L189'></a><a href='#L189'>189</a>
 <a name='L190'></a><a href='#L190'>190</a>
-<a name='L191'></a><a href='#L191'>191</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L191'></a><a href='#L191'>191</a>
+<a name='L192'></a><a href='#L192'>192</a>
+<a name='L193'></a><a href='#L193'>193</a>
+<a name='L194'></a><a href='#L194'>194</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -443,7 +446,10 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { notFound } from 'next/navigation'</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { notFound } from 'next/navigation'</span></span></span>
 <span class="cstat-no" title="statement not covered" >import { getStoreBySlug } from '@/lib/store/data'</span>
 <span class="cstat-no" title="statement not covered" >import { StoreNavigation } from '@/components/store-navigation'</span>
 <span class="cstat-no" title="statement not covered" >import { StoreFooter } from '@/components/store-footer'</span>
@@ -451,11 +457,7 @@
 <span class="cstat-no" title="statement not covered" >import { Badge } from '@/components/ui/badge'</span>
 <span class="cstat-no" title="statement not covered" >import { Sparkles, Heart, Star, Shield } from 'lucide-react'</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >export default async function ServicesPage({ </span>
-<span class="cstat-no" title="statement not covered" >  params </span>
-<span class="cstat-no" title="statement not covered" >}: { </span>
-<span class="cstat-no" title="statement not covered" >  params: Promise&lt;{ store: string }&gt; </span>
-<span class="cstat-no" title="statement not covered" >}) {</span>
+<span class="cstat-no" title="statement not covered" >export default async function ServicesPage({ params }: { params: Promise&lt;{ store: string }&gt; }) {</span>
 <span class="cstat-no" title="statement not covered" >  const { store: storeSlug } = await params</span>
 <span class="cstat-no" title="statement not covered" >  const store = getStoreBySlug(storeSlug)</span>
 <span class="cstat-no" title="statement not covered" ></span>
@@ -477,67 +479,73 @@
 <span class="cstat-no" title="statement not covered" >      '全身密着泡洗体',</span>
 <span class="cstat-no" title="statement not covered" >      'トップレスサービス',</span>
 <span class="cstat-no" title="statement not covered" >      'Tバックランジェリー',</span>
-<span class="cstat-no" title="statement not covered" >      '最後はローションにて極上のハンドフィニッシュ'</span>
+<span class="cstat-no" title="statement not covered" >      '最後はローションにて極上のハンドフィニッシュ',</span>
 <span class="cstat-no" title="statement not covered" >    ],</span>
 <span class="cstat-no" title="statement not covered" >    special: [</span>
-<span class="cstat-no" title="statement not covered" >      { name: '気分に合わせた圧', desc: 'がっつり強めからフェザータッチまでお好みの圧をお申し付けください' },</span>
+<span class="cstat-no" title="statement not covered" >      {</span>
+<span class="cstat-no" title="statement not covered" >        name: '気分に合わせた圧',</span>
+<span class="cstat-no" title="statement not covered" >        desc: 'がっつり強めからフェザータッチまでお好みの圧をお申し付けください',</span>
+<span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      { name: '心のケア', desc: '技術だけではリラクゼーションにならないと考えております' },</span>
 <span class="cstat-no" title="statement not covered" >      { name: '会話での癒し', desc: '女性らしい心遣いや会話での癒しも重要です' },</span>
-<span class="cstat-no" title="statement not covered" >      { name: '厳選採用', desc: '施術を受けながらも楽しめるセラピストを厳選採用' }</span>
-<span class="cstat-no" title="statement not covered" >    ]</span>
+<span class="cstat-no" title="statement not covered" >      { name: '厳選採用', desc: '施術を受けながらも楽しめるセラピストを厳選採用' },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;StoreNavigation /&gt;</span>
-<span class="cstat-no" title="statement not covered" >      </span>
+<span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >      &lt;main className="min-h-screen bg-gray-50"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        {/* Header */}</span>
-<span class="cstat-no" title="statement not covered" >        &lt;div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-12"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="max-w-7xl mx-auto px-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;h1 className="text-4xl font-bold text-center mb-4"&gt;プレイ内容&lt;/h1&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="bg-gradient-to-r from-purple-600 to-pink-600 py-12 text-white"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="mx-auto max-w-7xl px-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;h1 className="mb-4 text-center text-4xl font-bold"&gt;プレイ内容&lt;/h1&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;p className="text-center text-xl"&gt;極上の癒しと快楽をご提供&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >        {/* Main Message */}</span>
-<span class="cstat-no" title="statement not covered" >        &lt;section className="py-12 bg-white"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="max-w-4xl mx-auto px-4 text-center space-y-6"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;section className="bg-white py-12"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="mx-auto max-w-4xl space-y-6 px-4 text-center"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;h2 className="text-3xl font-bold"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              マッサージの技術と&lt;br /&gt;</span>
-<span class="cstat-no" title="statement not covered" >              睾丸の知識を兼ね備えた&lt;br /&gt;</span>
+<span class="cstat-no" title="statement not covered" >              マッサージの技術と</span>
+<span class="cstat-no" title="statement not covered" >              &lt;br /&gt;</span>
+<span class="cstat-no" title="statement not covered" >              睾丸の知識を兼ね備えた</span>
+<span class="cstat-no" title="statement not covered" >              &lt;br /&gt;</span>
 <span class="cstat-no" title="statement not covered" >              エッチな密着睾丸マッサージ</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/h2&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;p className="text-xl text-purple-600 font-semibold"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              快楽と癒し{store.displayName}</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/p&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;p className="text-xl font-semibold text-purple-600"&gt;快楽と癒し{store.displayName}&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/section&gt;</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >        {/* Basic Services */}</span>
 <span class="cstat-no" title="statement not covered" >        &lt;section className="py-12"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="max-w-7xl mx-auto px-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="mx-auto max-w-7xl px-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;Card&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;CardHeader&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;CardTitle className="text-2xl flex items-center gap-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;CardTitle className="flex items-center gap-2 text-2xl"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;Sparkles className="h-6 w-6 text-purple-500" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  基本施術プレイ</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/CardTitle&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;CardContent&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="grid grid-cols-1 md:grid-cols-2 gap-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="grid grid-cols-1 gap-4 md:grid-cols-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  {services.basic.map((service, index) =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;div key={index} className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                      &lt;Star className="h-5 w-5 text-yellow-500 mt-0.5" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;div</span>
+<span class="cstat-no" title="statement not covered" >                      key={index}</span>
+<span class="cstat-no" title="statement not covered" >                      className="flex items-start gap-3 rounded-lg p-3 hover:bg-gray-50"</span>
+<span class="cstat-no" title="statement not covered" >                    &gt;</span>
+<span class="cstat-no" title="statement not covered" >                      &lt;Star className="mt-0.5 h-5 w-5 text-yellow-500" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;span&gt;{service}&lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  ))}</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="mt-6 p-4 bg-yellow-50 rounded-lg"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="mt-6 rounded-lg bg-yellow-50 p-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;p className="text-sm"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    ※全身密着泡洗体サービスご希望の場合はオールヌード（OP）が必要になります。</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/p&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;p className="text-sm mt-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;p className="mt-2 text-sm"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    ※ご希望によりマスクを着用されたままで施術を受けて頂く事も可能です。</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
@@ -547,21 +555,19 @@
 <span class="cstat-no" title="statement not covered" >        &lt;/section&gt;</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >        {/* Special Features */}</span>
-<span class="cstat-no" title="statement not covered" >        &lt;section className="py-12 bg-purple-50"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="max-w-7xl mx-auto px-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;h2 className="text-3xl font-bold text-center mb-12"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              施術だけでない心のケア</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/h2&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;div className="grid grid-cols-1 md:grid-cols-2 gap-6"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;section className="bg-purple-50 py-12"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="mx-auto max-w-7xl px-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;h2 className="mb-12 text-center text-3xl font-bold"&gt;施術だけでない心のケア&lt;/h2&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;div className="grid grid-cols-1 gap-6 md:grid-cols-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              {services.special.map((feature, index) =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >                &lt;Card key={index} className="hover:shadow-lg transition-shadow"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;Card key={index} className="transition-shadow hover:shadow-lg"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;CardContent className="p-6"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;div className="flex items-start gap-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                      &lt;div className="p-3 bg-purple-100 rounded-lg"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                      &lt;div className="rounded-lg bg-purple-100 p-3"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;Heart className="h-6 w-6 text-purple-600" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;h3 className="font-bold text-lg mb-2"&gt;{feature.name}&lt;/h3&gt;</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;h3 className="mb-2 text-lg font-bold"&gt;{feature.name}&lt;/h3&gt;</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;p className="text-muted-foreground"&gt;{feature.desc}&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;/div&gt;</span>
@@ -574,7 +580,7 @@
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >        {/* Safety Measures */}</span>
 <span class="cstat-no" title="statement not covered" >        &lt;section className="py-12"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="max-w-4xl mx-auto px-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="mx-auto max-w-4xl px-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;Card&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;CardTitle className="flex items-center gap-2"&gt;</span>
@@ -583,17 +589,20 @@
 <span class="cstat-no" title="statement not covered" >                &lt;/CardTitle&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;CardContent&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="grid grid-cols-2 md:grid-cols-3 gap-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="grid grid-cols-2 gap-4 md:grid-cols-3"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  {[</span>
 <span class="cstat-no" title="statement not covered" >                    '毎月性病検査の実施',</span>
 <span class="cstat-no" title="statement not covered" >                    '出勤時の体温計測',</span>
 <span class="cstat-no" title="statement not covered" >                    'マスク着用の徹底',</span>
 <span class="cstat-no" title="statement not covered" >                    '手洗い・うがいの徹底',</span>
 <span class="cstat-no" title="statement not covered" >                    '待機時の換気',</span>
-<span class="cstat-no" title="statement not covered" >                    'プレイ後の消毒徹底'</span>
+<span class="cstat-no" title="statement not covered" >                    'プレイ後の消毒徹底',</span>
 <span class="cstat-no" title="statement not covered" >                  ].map((measure, index) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;div key={index} className="flex items-center gap-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                      &lt;Badge variant="outline" className="h-6 w-6 rounded-full p-0 flex items-center justify-center bg-green-100 border-green-300"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                      &lt;Badge</span>
+<span class="cstat-no" title="statement not covered" >                        variant="outline"</span>
+<span class="cstat-no" title="statement not covered" >                        className="flex h-6 w-6 items-center justify-center rounded-full border-green-300 bg-green-100 p-0"</span>
+<span class="cstat-no" title="statement not covered" >                      &gt;</span>
 <span class="cstat-no" title="statement not covered" >                        ✓</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;/Badge&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;span className="text-sm"&gt;{measure}&lt;/span&gt;</span>
@@ -606,8 +615,8 @@
 <span class="cstat-no" title="statement not covered" >        &lt;/section&gt;</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >        {/* Service Philosophy */}</span>
-<span class="cstat-no" title="statement not covered" >        &lt;section className="py-12 bg-gray-100"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="max-w-4xl mx-auto px-4 text-center space-y-6"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;section className="bg-gray-100 py-12"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="mx-auto max-w-4xl space-y-6 px-4 text-center"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;h2 className="text-2xl font-bold"&gt;サービスへのこだわり&lt;/h2&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="prose prose-lg mx-auto"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;p&gt;</span>
@@ -622,25 +631,25 @@
 <span class="cstat-no" title="statement not covered" >              &lt;p&gt;</span>
 <span class="cstat-no" title="statement not covered" >                サービス内容とキャストに特にこだわっています。</span>
 <span class="cstat-no" title="statement not covered" >                大人の清潔感のある女性や本能的にエロい女性など</span>
-<span class="cstat-no" title="statement not covered" >                サービス精神が高くお客様を気持ちよくして差し上げたい女性を</span>
-<span class="cstat-no" title="statement not covered" >                主に採用しております。</span>
+<span class="cstat-no" title="statement not covered" >                サービス精神が高くお客様を気持ちよくして差し上げたい女性を 主に採用しております。</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/section&gt;</span>
-<span class="cstat-no" title="statement not covered" >        </span>
+<span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >        &lt;StoreFooter store={store} /&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/main&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/&gt;</span>
 <span class="cstat-no" title="statement not covered" >  )</span>
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

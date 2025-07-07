@@ -1,8 +1,8 @@
-"use client"
+'use client'
 
-import React, { type ErrorInfo } from "react"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle } from "lucide-react"
+import React, { type ErrorInfo } from 'react'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { AlertCircle } from 'lucide-react'
 
 interface ErrorBoundaryProps {
   children: React.ReactNode
@@ -23,7 +23,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Uncaught error:", error, errorInfo)
+    console.error('Uncaught error:', error, errorInfo)
   }
 
   render() {
@@ -32,7 +32,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>エラー</AlertTitle>
-          <AlertDescription>予期せぬエラーが発生しました。ページを再読み込みしてください。</AlertDescription>
+          <AlertDescription>
+            予期せぬエラーが発生しました。ページを再読み込みしてください。
+          </AlertDescription>
         </Alert>
       )
     }

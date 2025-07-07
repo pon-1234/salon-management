@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/126</span>
+                <span class='fraction'>0/122</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/126</span>
+                <span class='fraction'>0/122</span>
             </div>
         
             
@@ -233,11 +233,7 @@
 <a name='L168'></a><a href='#L168'>168</a>
 <a name='L169'></a><a href='#L169'>169</a>
 <a name='L170'></a><a href='#L170'>170</a>
-<a name='L171'></a><a href='#L171'>171</a>
-<a name='L172'></a><a href='#L172'>172</a>
-<a name='L173'></a><a href='#L173'>173</a>
-<a name='L174'></a><a href='#L174'>174</a>
-<a name='L175'></a><a href='#L175'>175</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L171'></a><a href='#L171'>171</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -381,10 +377,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -411,9 +403,9 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -421,13 +413,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { cn } from "@/lib/utils"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
-import { CourseSalesData } from "@/lib/types/analytics"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+} from '@/components/ui/table'
+import { cn } from '@/lib/utils'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
+import { CourseSalesData } from '@/lib/types/analytics'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
-import { Skeleton } from "@/components/ui/skeleton"
+import { Skeleton } from '@/components/ui/skeleton'
 &nbsp;
 interface CourseReportTableProps {
   year: number
@@ -437,27 +429,27 @@ interface CourseReportTableProps {
 &nbsp;
 // 祝日判定（簡易版）
 <span class="cstat-no" title="statement not covered" >const isHoliday = (year: number, month: number, day: number) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >  const date = new Date(year, month - 1, day);</span>
-<span class="cstat-no" title="statement not covered" >  const dayOfWeek = date.getDay();</span>
+<span class="cstat-no" title="statement not covered" >  const date = new Date(year, month - 1, day)</span>
+<span class="cstat-no" title="statement not covered" >  const dayOfWeek = date.getDay()</span>
 &nbsp;
   // 土曜日か日曜日
-<span class="cstat-no" title="statement not covered" >  if (dayOfWeek === 0 || dayOfWeek === 6) return true;</span>
+<span class="cstat-no" title="statement not covered" >  if (dayOfWeek === 0 || dayOfWeek === 6) return true</span>
 &nbsp;
   // 祝日（固定）
 <span class="cstat-no" title="statement not covered" >  const fixedHolidays = [</span>
-<span class="cstat-no" title="statement not covered" >    [1, 1],  // 元日</span>
+<span class="cstat-no" title="statement not covered" >    [1, 1], // 元日</span>
 <span class="cstat-no" title="statement not covered" >    [2, 11], // 建国記念の日</span>
 <span class="cstat-no" title="statement not covered" >    [4, 29], // 昭和の日</span>
-<span class="cstat-no" title="statement not covered" >    [5, 3],  // 憲法記念日</span>
-<span class="cstat-no" title="statement not covered" >    [5, 4],  // みどりの日</span>
-<span class="cstat-no" title="statement not covered" >    [5, 5],  // こどもの日</span>
+<span class="cstat-no" title="statement not covered" >    [5, 3], // 憲法記念日</span>
+<span class="cstat-no" title="statement not covered" >    [5, 4], // みどりの日</span>
+<span class="cstat-no" title="statement not covered" >    [5, 5], // こどもの日</span>
 <span class="cstat-no" title="statement not covered" >    [8, 11], // 山の日</span>
 <span class="cstat-no" title="statement not covered" >    [11, 3], // 文化の日</span>
-<span class="cstat-no" title="statement not covered" >    [11, 23] // 勤労感謝の日</span>
-<span class="cstat-no" title="statement not covered" >  ];</span>
+<span class="cstat-no" title="statement not covered" >    [11, 23], // 勤労感謝の日</span>
+<span class="cstat-no" title="statement not covered" >  ]</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  return fixedHolidays.some(([m, d]) =&gt; m === month &amp;&amp; d === day);</span>
-<span class="cstat-no" title="statement not covered" >};</span>
+<span class="cstat-no" title="statement not covered" >  return fixedHolidays.some(([m, d]) =&gt; m === month &amp;&amp; d === day)</span>
+<span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export function CourseReportTable({ year, month, analyticsUseCases }: CourseReportTableProps) {</span>
 <span class="cstat-no" title="statement not covered" >  const [data, setData] = useState&lt;CourseSalesData[]&gt;([])</span>
@@ -472,7 +464,7 @@ interface CourseReportTableProps {
 <span class="cstat-no" title="statement not covered" >        const result = await analyticsUseCases.getCourseSalesReport(year, month)</span>
 <span class="cstat-no" title="statement not covered" >        setData(result)</span>
 <span class="cstat-no" title="statement not covered" >      } catch (err) {</span>
-<span class="cstat-no" title="statement not covered" >        setError("データの取得中にエラーが発生しました。")</span>
+<span class="cstat-no" title="statement not covered" >        setError('データの取得中にエラーが発生しました。')</span>
 <span class="cstat-no" title="statement not covered" >        console.error(err)</span>
 <span class="cstat-no" title="statement not covered" >      } finally {</span>
 <span class="cstat-no" title="statement not covered" >        setIsLoading(false)</span>
@@ -486,14 +478,14 @@ interface CourseReportTableProps {
 &nbsp;
   // 日付の配列を生成
 <span class="cstat-no" title="statement not covered" >  const dates = Array.from({ length: daysInMonth }, (_, i) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    const date = new Date(year, month - 1, i + 1);</span>
-<span class="cstat-no" title="statement not covered" >    const dayOfWeek = ["日", "月", "火", "水", "木", "金", "土"][date.getDay()];</span>
+<span class="cstat-no" title="statement not covered" >    const date = new Date(year, month - 1, i + 1)</span>
+<span class="cstat-no" title="statement not covered" >    const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()]</span>
 <span class="cstat-no" title="statement not covered" >    return {</span>
 <span class="cstat-no" title="statement not covered" >      day: i + 1,</span>
 <span class="cstat-no" title="statement not covered" >      dayOfWeek,</span>
-<span class="cstat-no" title="statement not covered" >      isHoliday: isHoliday(year, month, i + 1)</span>
-<span class="cstat-no" title="statement not covered" >    };</span>
-<span class="cstat-no" title="statement not covered" >  });</span>
+<span class="cstat-no" title="statement not covered" >      isHoliday: isHoliday(year, month, i + 1),</span>
+<span class="cstat-no" title="statement not covered" >    }</span>
+<span class="cstat-no" title="statement not covered" >  })</span>
 &nbsp;
   // 合計を計算
 <span class="cstat-no" title="statement not covered" >  const calculateTotal = (sales: number[]) =&gt; {</span>
@@ -534,36 +526,32 @@ interface CourseReportTableProps {
 <span class="cstat-no" title="statement not covered" >              &lt;TableHead</span>
 <span class="cstat-no" title="statement not covered" >                key={date.day}</span>
 <span class="cstat-no" title="statement not covered" >                className={cn(</span>
-<span class="cstat-no" title="statement not covered" >                  "text-center p-2 whitespace-nowrap",</span>
-<span class="cstat-no" title="statement not covered" >                  date.isHoliday &amp;&amp; "bg-orange-100"</span>
+<span class="cstat-no" title="statement not covered" >                  'whitespace-nowrap p-2 text-center',</span>
+<span class="cstat-no" title="statement not covered" >                  date.isHoliday &amp;&amp; 'bg-orange-100'</span>
 <span class="cstat-no" title="statement not covered" >                )}</span>
               &gt;
 <span class="cstat-no" title="statement not covered" >                {date.day}</span>
-<span class="cstat-no" title="statement not covered" >                &lt;br /&gt;</span>
-<span class="cstat-no" title="statement not covered" >                ({date.dayOfWeek})</span>
+<span class="cstat-no" title="statement not covered" >                &lt;br /&gt;({date.dayOfWeek})</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/TableHead&gt;</span>
 <span class="cstat-no" title="statement not covered" >            ))}</span>
-<span class="cstat-no" title="statement not covered" >            &lt;TableHead className="text-center bg-gray-100"&gt;TOTAL&lt;/TableHead&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;TableHead className="bg-gray-100 text-center"&gt;TOTAL&lt;/TableHead&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/TableRow&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/TableHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;TableBody&gt;</span>
 <span class="cstat-no" title="statement not covered" >          {data.map((course) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableRow key={course.id}&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="font-medium whitespace-nowrap"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="whitespace-nowrap font-medium"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                {course.name} ({course.duration}分)</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              {dates.map((date, index) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >                &lt;TableCell</span>
 <span class="cstat-no" title="statement not covered" >                  key={index}</span>
-<span class="cstat-no" title="statement not covered" >                  className={cn(</span>
-<span class="cstat-no" title="statement not covered" >                    "text-center",</span>
-<span class="cstat-no" title="statement not covered" >                    date.isHoliday &amp;&amp; "bg-orange-50"</span>
-<span class="cstat-no" title="statement not covered" >                  )}</span>
+<span class="cstat-no" title="statement not covered" >                  className={cn('text-center', date.isHoliday &amp;&amp; 'bg-orange-50')}</span>
                 &gt;
-<span class="cstat-no" title="statement not covered" >                  {course.sales[index] || ""}</span>
+<span class="cstat-no" title="statement not covered" >                  {course.sales[index] || ''}</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              ))}</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-center font-medium bg-gray-50"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="bg-gray-50 text-center font-medium"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                {calculateTotal(course.sales)}</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TableRow&gt;</span>
@@ -592,7 +580,7 @@ interface CourseReportTableProps {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

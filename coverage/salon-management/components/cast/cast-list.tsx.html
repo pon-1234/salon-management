@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/33</span>
+                <span class='fraction'>0/37</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/33</span>
+                <span class='fraction'>0/37</span>
             </div>
         
             
@@ -105,7 +105,13 @@
 <a name='L40'></a><a href='#L40'>40</a>
 <a name='L41'></a><a href='#L41'>41</a>
 <a name='L42'></a><a href='#L42'>42</a>
-<a name='L43'></a><a href='#L43'>43</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -121,6 +127,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -128,6 +135,11 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -147,10 +159,10 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { Cast } from "@/lib/cast/types"</span></span></span>
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import Link from "next/link"
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { Cast } from '@/lib/cast/types'</span></span></span>
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import Link from 'next/link'
 &nbsp;
 interface CastListProps {
   staff: Cast[]
@@ -158,28 +170,34 @@ interface CastListProps {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export function StaffList({ staff }: CastListProps) {</span>
 <span class="cstat-no" title="statement not covered" >  return (</span>
-<span class="cstat-no" title="statement not covered" >    &lt;div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"&gt;</span>
 <span class="cstat-no" title="statement not covered" >      {staff.map((member) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >        &lt;Card key={member.id} className="overflow-hidden"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;CardContent className="p-0"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="relative"&gt;</span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
 <span class="cstat-no" title="statement not covered" >              &lt;img</span>
 <span class="cstat-no" title="statement not covered" >                src={member.image}</span>
 <span class="cstat-no" title="statement not covered" >                alt={member.name}</span>
-<span class="cstat-no" title="statement not covered" >                className="w-full aspect-[7/10] object-cover"</span>
+<span class="cstat-no" title="statement not covered" >                className="aspect-[7/10] w-full object-cover"</span>
 <span class="cstat-no" title="statement not covered" >              /&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Badge className="absolute top-2 right-2 bg-emerald-600"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                {member.workStatus}</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/Badge&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Badge className="absolute right-2 top-2 bg-emerald-600"&gt;{member.workStatus}&lt;/Badge&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="p-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Link href={`/cast/${member.id}`} className="text-lg font-semibold hover:text-emerald-600"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Link</span>
+<span class="cstat-no" title="statement not covered" >                href={`/cast/${member.id}`}</span>
+<span class="cstat-no" title="statement not covered" >                className="text-lg font-semibold hover:text-emerald-600"</span>
+              &gt;
 <span class="cstat-no" title="statement not covered" >                {member.name}</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/Link&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;p className="text-sm text-gray-500"&gt;{member.nameKana}&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div className="mt-2 text-sm"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;p&gt;{member.age}歳 / {member.height}cm&lt;/p&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;p&gt;{member.bust}/{member.waist}/{member.hip}&lt;/p&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;p&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  {member.age}歳 / {member.height}cm</span>
+<span class="cstat-no" title="statement not covered" >                &lt;/p&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;p&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  {member.bust}/{member.waist}/{member.hip}</span>
+<span class="cstat-no" title="statement not covered" >                &lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;p&gt;{member.type}&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
@@ -196,7 +214,7 @@ interface CastListProps {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

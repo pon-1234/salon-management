@@ -1,24 +1,32 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
 import { MapPin, Users, CreditCard } from 'lucide-react'
-import { CourseOption } from "@/lib/course-option/types"
+import { CourseOption } from '@/lib/course-option/types'
 
 interface StepDetailsProps {
   bookingDetails: any
   availableOptions: CourseOption[]
-  onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void
+  onInputChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => void
   onCheckboxChange: (name: string, checked: boolean) => void
 }
 
-export function StepDetails({ 
-  bookingDetails, 
-  availableOptions, 
-  onInputChange, 
-  onCheckboxChange 
+export function StepDetails({
+  bookingDetails,
+  availableOptions,
+  onInputChange,
+  onCheckboxChange,
 }: StepDetailsProps) {
   return (
     <div className="space-y-6">
@@ -34,9 +42,11 @@ export function StepDetails({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>都道府県</Label>
-              <Select 
-                value={bookingDetails.prefecture} 
-                onValueChange={(value) => onInputChange({ target: { name: "prefecture", value } } as any)}
+              <Select
+                value={bookingDetails.prefecture}
+                onValueChange={(value) =>
+                  onInputChange({ target: { name: 'prefecture', value } } as any)
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -50,9 +60,11 @@ export function StepDetails({
             </div>
             <div>
               <Label>地区</Label>
-              <Select 
-                value={bookingDetails.district} 
-                onValueChange={(value) => onInputChange({ target: { name: "district", value } } as any)}
+              <Select
+                value={bookingDetails.district}
+                onValueChange={(value) =>
+                  onInputChange({ target: { name: 'district', value } } as any)
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -65,11 +77,11 @@ export function StepDetails({
               </Select>
             </div>
           </div>
-          
+
           <div>
             <Label>詳細場所</Label>
-            <Textarea 
-              value={bookingDetails.specificLocation} 
+            <Textarea
+              value={bookingDetails.specificLocation}
               onChange={onInputChange}
               name="specificLocation"
               placeholder="例: グランドホテル 605号室"
@@ -89,19 +101,22 @@ export function StepDetails({
         <CardContent>
           <div className="space-y-3">
             {availableOptions.map((option) => (
-              <div key={option.id} className="flex items-center justify-between p-3 border rounded-lg">
+              <div
+                key={option.id}
+                className="flex items-center justify-between rounded-lg border p-3"
+              >
                 <div className="flex items-center">
                   <Checkbox
                     id={option.id}
                     checked={bookingDetails.options[option.name] || false}
                     onCheckedChange={(checked) => onCheckboxChange(option.name, checked as boolean)}
                   />
-                  <Label htmlFor={option.id} className="ml-3 font-medium cursor-pointer">
+                  <Label htmlFor={option.id} className="ml-3 cursor-pointer font-medium">
                     {option.name}
                   </Label>
                 </div>
                 <Badge variant="secondary">
-                  {option.price === 0 ? "無料" : `+${option.price.toLocaleString()}円`}
+                  {option.price === 0 ? '無料' : `+${option.price.toLocaleString()}円`}
                 </Badge>
               </div>
             ))}
@@ -118,9 +133,11 @@ export function StepDetails({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Select 
-            value={bookingDetails.paymentMethod} 
-            onValueChange={(value) => onInputChange({ target: { name: "paymentMethod", value } } as any)}
+          <Select
+            value={bookingDetails.paymentMethod}
+            onValueChange={(value) =>
+              onInputChange({ target: { name: 'paymentMethod', value } } as any)
+            }
           >
             <SelectTrigger>
               <SelectValue />

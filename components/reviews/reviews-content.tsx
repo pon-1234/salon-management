@@ -26,20 +26,20 @@ export function ReviewsContent({ store }: ReviewsContentProps) {
   const stats = getReviewStats(store.id)
 
   // Filter reviews
-  let filteredReviews = reviews.filter(review => {
+  let filteredReviews = reviews.filter((review) => {
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase()
-      const matchesSearch = 
+      const matchesSearch =
         review.content.toLowerCase().includes(searchLower) ||
         review.castName.toLowerCase().includes(searchLower) ||
-        review.tags?.some(tag => tag.toLowerCase().includes(searchLower))
+        review.tags?.some((tag) => tag.toLowerCase().includes(searchLower))
       if (!matchesSearch) return false
     }
 
     if (selectedRating && review.rating !== selectedRating) return false
 
     if (selectedTags.length > 0) {
-      const hasSelectedTag = selectedTags.some(tag => review.tags?.includes(tag))
+      const hasSelectedTag = selectedTags.some((tag) => review.tags?.includes(tag))
       if (!hasSelectedTag) return false
     }
 
@@ -62,18 +62,18 @@ export function ReviewsContent({ store }: ReviewsContentProps) {
   return (
     <>
       <StoreNavigation />
-      
+
       <main className="min-h-screen bg-gray-50">
         {/* Header */}
-        <section className="bg-gradient-to-b from-purple-900 to-pink-900 text-white py-16">
-          <div className="max-w-7xl mx-auto px-4">
-            <h1 className="text-4xl font-bold mb-4">{store.name} 口コミ・評価</h1>
+        <section className="bg-gradient-to-b from-purple-900 to-pink-900 py-16 text-white">
+          <div className="mx-auto max-w-7xl px-4">
+            <h1 className="mb-4 text-4xl font-bold">{store.name} 口コミ・評価</h1>
             <p className="text-xl opacity-90">お客様の生の声をお届けします</p>
           </div>
         </section>
 
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="mx-auto max-w-7xl px-4 py-8">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
             {/* Sidebar */}
             <aside className="lg:col-span-1">
               <ReviewStats stats={stats} />
@@ -82,17 +82,17 @@ export function ReviewsContent({ store }: ReviewsContentProps) {
                 onRatingChange={setSelectedRating}
                 selectedTags={selectedTags}
                 onTagsChange={setSelectedTags}
-                availableTags={stats.popularTags.map(t => t.tag)}
+                availableTags={stats.popularTags.map((t) => t.tag)}
               />
             </aside>
 
             {/* Main Content */}
             <div className="lg:col-span-3">
               {/* Search and Sort */}
-              <div className="bg-white p-4 rounded-lg shadow mb-6">
-                <div className="flex flex-col sm:flex-row gap-4">
+              <div className="mb-6 rounded-lg bg-white p-4 shadow">
+                <div className="flex flex-col gap-4 sm:flex-row">
                   <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                    <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-gray-400" />
                     <Input
                       type="text"
                       placeholder="キャスト名や口コミ内容を検索..."
@@ -128,26 +128,26 @@ export function ReviewsContent({ store }: ReviewsContentProps) {
               </div>
 
               {/* Results count */}
-              <p className="text-gray-600 mb-4">
+              <p className="mb-4 text-gray-600">
                 {filteredReviews.length}件の口コミが見つかりました
               </p>
 
               {/* Reviews List */}
               <div className="space-y-4">
-                {filteredReviews.map(review => (
+                {filteredReviews.map((review) => (
                   <ReviewCard key={review.id} review={review} />
                 ))}
               </div>
 
               {filteredReviews.length === 0 && (
-                <div className="text-center py-12">
+                <div className="py-12 text-center">
                   <p className="text-gray-500">条件に一致する口コミが見つかりませんでした</p>
                 </div>
               )}
             </div>
           </div>
         </div>
-        
+
         <StoreFooter store={store} />
       </main>
     </>

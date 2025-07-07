@@ -1,20 +1,39 @@
-"use client"
+'use client'
 
-import React, { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import React, { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Calendar, DollarSign, MapPin, User, Plus, Edit } from 'lucide-react'
-import { SalesRecord } from "@/lib/cast/types"
-import { getSalesRecordsByCast } from "@/lib/cast/sales-data"
-import { format } from "date-fns"
-import { ja } from "date-fns/locale"
+import { SalesRecord } from '@/lib/cast/types'
+import { getSalesRecordsByCast } from '@/lib/cast/sales-data'
+import { format } from 'date-fns'
+import { ja } from 'date-fns/locale'
 
 interface SalesManagementTabProps {
   castId: string
@@ -36,25 +55,40 @@ export function SalesManagementTab({ castId, castName }: SalesManagementTabProps
       serviceAmount: newRecord.serviceAmount!,
       designationFee: newRecord.designationFee || 0,
       optionFees: newRecord.optionFees || 0,
-      totalAmount: (newRecord.serviceAmount || 0) + (newRecord.designationFee || 0) + (newRecord.optionFees || 0),
-      castShare: Math.floor(((newRecord.serviceAmount || 0) + (newRecord.designationFee || 0) + (newRecord.optionFees || 0)) * 0.6),
-      shopShare: Math.floor(((newRecord.serviceAmount || 0) + (newRecord.designationFee || 0) + (newRecord.optionFees || 0)) * 0.4),
-      paymentStatus: "未精算",
+      totalAmount:
+        (newRecord.serviceAmount || 0) +
+        (newRecord.designationFee || 0) +
+        (newRecord.optionFees || 0),
+      castShare: Math.floor(
+        ((newRecord.serviceAmount || 0) +
+          (newRecord.designationFee || 0) +
+          (newRecord.optionFees || 0)) *
+          0.6
+      ),
+      shopShare: Math.floor(
+        ((newRecord.serviceAmount || 0) +
+          (newRecord.designationFee || 0) +
+          (newRecord.optionFees || 0)) *
+          0.4
+      ),
+      paymentStatus: '未精算',
       location: newRecord.location!,
-      notes: newRecord.notes
+      notes: newRecord.notes,
     }
     setSalesRecords([record, ...salesRecords])
     setIsAddDialogOpen(false)
   }
 
-  const handleStatusChange = (recordId: string, status: "未精算" | "精算済み") => {
-    setSalesRecords(salesRecords.map(record => 
-      record.id === recordId ? { ...record, paymentStatus: status } : record
-    ))
+  const handleStatusChange = (recordId: string, status: '未精算' | '精算済み') => {
+    setSalesRecords(
+      salesRecords.map((record) =>
+        record.id === recordId ? { ...record, paymentStatus: status } : record
+      )
+    )
   }
 
   const totalUnpaid = salesRecords
-    .filter(record => record.paymentStatus === "未精算")
+    .filter((record) => record.paymentStatus === '未精算')
     .reduce((sum, record) => sum + record.castShare, 0)
 
   const totalSales = salesRecords.reduce((sum, record) => sum + record.totalAmount, 0)
@@ -62,11 +96,11 @@ export function SalesManagementTab({ castId, castName }: SalesManagementTabProps
   return (
     <div className="space-y-6">
       {/* サマリーカード */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <DollarSign className="w-4 h-4 text-green-600" />
+              <DollarSign className="h-4 w-4 text-green-600" />
               <div>
                 <p className="text-sm font-medium text-gray-600">総売上</p>
                 <p className="text-2xl font-bold">¥{totalSales.toLocaleString()}</p>
@@ -74,26 +108,31 @@ export function SalesManagementTab({ castId, castName }: SalesManagementTabProps
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <User className="w-4 h-4 text-blue-600" />
+              <User className="h-4 w-4 text-blue-600" />
               <div>
                 <p className="text-sm font-medium text-gray-600">取り分合計</p>
-                <p className="text-2xl font-bold">¥{salesRecords.reduce((sum, record) => sum + record.castShare, 0).toLocaleString()}</p>
+                <p className="text-2xl font-bold">
+                  ¥
+                  {salesRecords.reduce((sum, record) => sum + record.castShare, 0).toLocaleString()}
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Calendar className="w-4 h-4 text-orange-600" />
+              <Calendar className="h-4 w-4 text-orange-600" />
               <div>
                 <p className="text-sm font-medium text-gray-600">未精算額</p>
-                <p className="text-2xl font-bold text-orange-600">¥{totalUnpaid.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  ¥{totalUnpaid.toLocaleString()}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -103,12 +142,12 @@ export function SalesManagementTab({ castId, castName }: SalesManagementTabProps
       {/* 売上記録テーブル */}
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
+          <div className="flex items-center justify-between">
             <CardTitle>売上記録</CardTitle>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="mr-2 h-4 w-4" />
                   売上追加
                 </Button>
               </DialogTrigger>
@@ -140,8 +179,8 @@ export function SalesManagementTab({ castId, castName }: SalesManagementTabProps
                 <TableRow key={record.id}>
                   <TableCell>
                     <div className="text-sm">
-                      <div>{format(record.date, "M/d(E)", { locale: ja })}</div>
-                      <div className="text-gray-500">{format(record.date, "HH:mm")}</div>
+                      <div>{format(record.date, 'M/d(E)', { locale: ja })}</div>
+                      <div className="text-gray-500">{format(record.date, 'HH:mm')}</div>
                     </div>
                   </TableCell>
                   <TableCell className="font-medium">{record.customerName}</TableCell>
@@ -149,51 +188,58 @@ export function SalesManagementTab({ castId, castName }: SalesManagementTabProps
                     <div className="text-sm">
                       <div>{record.serviceName}</div>
                       {record.optionFees > 0 && (
-                        <div className="text-gray-500">オプション: ¥{record.optionFees.toLocaleString()}</div>
+                        <div className="text-gray-500">
+                          オプション: ¥{record.optionFees.toLocaleString()}
+                        </div>
                       )}
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center text-sm">
-                      <MapPin className="w-3 h-3 mr-1 text-gray-400" />
+                      <MapPin className="mr-1 h-3 w-3 text-gray-400" />
                       {record.location}
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="text-sm">
                       <div className="font-medium">¥{record.totalAmount.toLocaleString()}</div>
-                      <div className="text-gray-500 text-xs">
+                      <div className="text-xs text-gray-500">
                         サービス: ¥{record.serviceAmount.toLocaleString()}
-                        {record.designationFee > 0 && ` + 指名: ¥${record.designationFee.toLocaleString()}`}
+                        {record.designationFee > 0 &&
+                          ` + 指名: ¥${record.designationFee.toLocaleString()}`}
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="font-medium">¥{record.castShare.toLocaleString()}</TableCell>
+                  <TableCell className="font-medium">
+                    ¥{record.castShare.toLocaleString()}
+                  </TableCell>
                   <TableCell>
-                    <Select 
-                      value={record.paymentStatus} 
-                      onValueChange={(value: "未精算" | "精算済み") => handleStatusChange(record.id, value)}
+                    <Select
+                      value={record.paymentStatus}
+                      onValueChange={(value: '未精算' | '精算済み') =>
+                        handleStatusChange(record.id, value)
+                      }
                     >
                       <SelectTrigger className="w-28">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="未精算">
-                          <Badge variant="destructive" className="text-xs">未精算</Badge>
+                          <Badge variant="destructive" className="text-xs">
+                            未精算
+                          </Badge>
                         </SelectItem>
                         <SelectItem value="精算済み">
-                          <Badge variant="secondary" className="text-xs">精算済み</Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            精算済み
+                          </Badge>
                         </SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
                   <TableCell>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => setSelectedRecord(record)}
-                    >
-                      <Edit className="w-4 h-4" />
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedRecord(record)}>
+                      <Edit className="h-4 w-4" />
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -202,7 +248,6 @@ export function SalesManagementTab({ castId, castName }: SalesManagementTabProps
           </Table>
         </CardContent>
       </Card>
-
     </div>
   )
 }
@@ -214,15 +259,17 @@ interface SalesRecordFormProps {
 
 function SalesRecordForm({ onSubmit, initialData }: SalesRecordFormProps) {
   const [formData, setFormData] = useState({
-    date: initialData?.date ? format(initialData.date, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"),
-    time: initialData?.date ? format(initialData.date, "HH:mm") : "14:00",
-    customerName: initialData?.customerName || "",
-    serviceName: initialData?.serviceName || "",
+    date: initialData?.date
+      ? format(initialData.date, 'yyyy-MM-dd')
+      : format(new Date(), 'yyyy-MM-dd'),
+    time: initialData?.date ? format(initialData.date, 'HH:mm') : '14:00',
+    customerName: initialData?.customerName || '',
+    serviceName: initialData?.serviceName || '',
     serviceAmount: initialData?.serviceAmount || 0,
     designationFee: initialData?.designationFee || 0,
     optionFees: initialData?.optionFees || 0,
-    location: initialData?.location || "",
-    notes: initialData?.notes || ""
+    location: initialData?.location || '',
+    notes: initialData?.notes || '',
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -233,7 +280,7 @@ function SalesRecordForm({ onSubmit, initialData }: SalesRecordFormProps) {
       date: dateTime,
       serviceAmount: Number(formData.serviceAmount),
       designationFee: Number(formData.designationFee),
-      optionFees: Number(formData.optionFees)
+      optionFees: Number(formData.optionFees),
     })
   }
 
@@ -274,7 +321,10 @@ function SalesRecordForm({ onSubmit, initialData }: SalesRecordFormProps) {
 
       <div>
         <Label htmlFor="serviceName">サービス名</Label>
-        <Select value={formData.serviceName} onValueChange={(value) => setFormData({ ...formData, serviceName: value })}>
+        <Select
+          value={formData.serviceName}
+          onValueChange={(value) => setFormData({ ...formData, serviceName: value })}
+        >
           <SelectTrigger>
             <SelectValue placeholder="サービスを選択" />
           </SelectTrigger>

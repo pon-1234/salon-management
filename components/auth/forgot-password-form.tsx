@@ -25,7 +25,7 @@ export function ForgotPasswordForm({ store }: ForgotPasswordFormProps) {
     setLoading(true)
 
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    await new Promise((resolve) => setTimeout(resolve, 1500))
 
     setSubmitted(true)
     setLoading(false)
@@ -35,10 +35,10 @@ export function ForgotPasswordForm({ store }: ForgotPasswordFormProps) {
     return (
       <Card className="w-full">
         <CardHeader>
-          <div className="flex justify-center mb-4">
+          <div className="mb-4 flex justify-center">
             <CheckCircle className="h-12 w-12 text-green-500" />
           </div>
-          <CardTitle className="text-2xl text-center">送信完了</CardTitle>
+          <CardTitle className="text-center text-2xl">送信完了</CardTitle>
           <CardDescription className="text-center">
             パスワードリセットの手順をメールで送信しました
           </CardDescription>
@@ -50,15 +50,12 @@ export function ForgotPasswordForm({ store }: ForgotPasswordFormProps) {
               メールをご確認の上、リンクからパスワードの再設定を行ってください。
             </AlertDescription>
           </Alert>
-          
-          <p className="text-sm text-gray-600 text-center">
+
+          <p className="text-center text-sm text-gray-600">
             メールが届かない場合は、迷惑メールフォルダをご確認ください。
           </p>
 
-          <Button
-            className="w-full"
-            onClick={() => router.push(`/${store.slug}/login`)}
-          >
+          <Button className="w-full" onClick={() => router.push(`/${store.slug}/login`)}>
             ログインページに戻る
           </Button>
         </CardContent>
@@ -69,7 +66,7 @@ export function ForgotPasswordForm({ store }: ForgotPasswordFormProps) {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="text-2xl text-center">パスワードをお忘れの方</CardTitle>
+        <CardTitle className="text-center text-2xl">パスワードをお忘れの方</CardTitle>
         <CardDescription className="text-center">
           ご登録のメールアドレスを入力してください
         </CardDescription>
@@ -80,7 +77,7 @@ export function ForgotPasswordForm({ store }: ForgotPasswordFormProps) {
           <div className="space-y-2">
             <Label htmlFor="email">メールアドレス</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
               <Input
                 id="email"
                 name="email"
@@ -90,17 +87,11 @@ export function ForgotPasswordForm({ store }: ForgotPasswordFormProps) {
                 required
               />
             </div>
-            <p className="text-xs text-gray-500">
-              パスワードリセット用のリンクをお送りします
-            </p>
+            <p className="text-xs text-gray-500">パスワードリセット用のリンクをお送りします</p>
           </div>
 
           {/* Submit Button */}
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={loading}
-          >
+          <Button type="submit" className="w-full" disabled={loading}>
             {loading ? '送信中...' : 'リセットリンクを送信'}
           </Button>
         </form>
@@ -111,7 +102,7 @@ export function ForgotPasswordForm({ store }: ForgotPasswordFormProps) {
             href={`/${store.slug}/login`}
             className="flex items-center justify-center text-sm text-blue-600 hover:underline"
           >
-            <ArrowLeft className="h-4 w-4 mr-1" />
+            <ArrowLeft className="mr-1 h-4 w-4" />
             ログインページに戻る
           </Link>
         </div>

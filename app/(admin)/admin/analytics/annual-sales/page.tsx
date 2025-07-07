@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
+import { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
 import { Printer, TrendingUp, TrendingDown, Users, Store, DollarSign, Calendar } from 'lucide-react'
 import {
   Select,
@@ -11,13 +11,13 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
-import { AnalyticsRepositoryImpl } from "@/lib/analytics/repository"
-import { AnnualSalesChart } from "@/components/analytics/annual-sales-chart"
-import { AnnualSalesTable } from "@/components/analytics/annual-sales-table"
-import { AnnualQuarterTable } from "@/components/analytics/annual-quarter-table"
-import { AnnualStoreTable } from "@/components/analytics/annual-store-table"
+} from '@/components/ui/select'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
+import { AnalyticsRepositoryImpl } from '@/lib/analytics/repository'
+import { AnnualSalesChart } from '@/components/analytics/annual-sales-chart'
+import { AnnualSalesTable } from '@/components/analytics/annual-sales-table'
+import { AnnualQuarterTable } from '@/components/analytics/annual-quarter-table'
+import { AnnualStoreTable } from '@/components/analytics/annual-store-table'
 
 const analyticsRepository = new AnalyticsRepositoryImpl()
 const analyticsUseCases = new AnalyticsUseCases(analyticsRepository)
@@ -40,11 +40,11 @@ export default function AnnualReportPage() {
     storeCount: 3,
     newStoreCount: 1,
     averageMonthly: 8543200,
-    previousAverageMonthly: 7889433
+    previousAverageMonthly: 7889433,
   }
 
   const calculateGrowthRate = (current: number, previous: number) => {
-    return ((current - previous) / previous * 100).toFixed(1)
+    return (((current - previous) / previous) * 100).toFixed(1)
   }
 
   return (
@@ -69,14 +69,17 @@ export default function AnnualReportPage() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={handlePrint} className="print:hidden bg-emerald-600 hover:bg-emerald-700 text-white">
+        <Button
+          onClick={handlePrint}
+          className="bg-emerald-600 text-white hover:bg-emerald-700 print:hidden"
+        >
           <Printer className="mr-2 h-4 w-4" />
           印刷する
         </Button>
       </div>
 
       {/* KPIカード */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">年間売上高</CardTitle>
@@ -84,13 +87,20 @@ export default function AnnualReportPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">¥{kpiData.totalSales.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              {parseFloat(calculateGrowthRate(kpiData.totalSales, kpiData.previousYearSales)) > 0 ? (
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
+              {parseFloat(calculateGrowthRate(kpiData.totalSales, kpiData.previousYearSales)) >
+              0 ? (
                 <TrendingUp className="h-3 w-3 text-green-600" />
               ) : (
                 <TrendingDown className="h-3 w-3 text-red-600" />
               )}
-              <span className={parseFloat(calculateGrowthRate(kpiData.totalSales, kpiData.previousYearSales)) > 0 ? "text-green-600" : "text-red-600"}>
+              <span
+                className={
+                  parseFloat(calculateGrowthRate(kpiData.totalSales, kpiData.previousYearSales)) > 0
+                    ? 'text-green-600'
+                    : 'text-red-600'
+                }
+              >
                 {calculateGrowthRate(kpiData.totalSales, kpiData.previousYearSales)}%
               </span>
               前年比
@@ -105,13 +115,23 @@ export default function AnnualReportPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{kpiData.customerCount.toLocaleString()}人</div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              {parseFloat(calculateGrowthRate(kpiData.customerCount, kpiData.previousYearCustomers)) > 0 ? (
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
+              {parseFloat(
+                calculateGrowthRate(kpiData.customerCount, kpiData.previousYearCustomers)
+              ) > 0 ? (
                 <TrendingUp className="h-3 w-3 text-green-600" />
               ) : (
                 <TrendingDown className="h-3 w-3 text-red-600" />
               )}
-              <span className={parseFloat(calculateGrowthRate(kpiData.customerCount, kpiData.previousYearCustomers)) > 0 ? "text-green-600" : "text-red-600"}>
+              <span
+                className={
+                  parseFloat(
+                    calculateGrowthRate(kpiData.customerCount, kpiData.previousYearCustomers)
+                  ) > 0
+                    ? 'text-green-600'
+                    : 'text-red-600'
+                }
+              >
                 {calculateGrowthRate(kpiData.customerCount, kpiData.previousYearCustomers)}%
               </span>
               前年比
@@ -126,13 +146,23 @@ export default function AnnualReportPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">¥{kpiData.averageMonthly.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              {parseFloat(calculateGrowthRate(kpiData.averageMonthly, kpiData.previousAverageMonthly)) > 0 ? (
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
+              {parseFloat(
+                calculateGrowthRate(kpiData.averageMonthly, kpiData.previousAverageMonthly)
+              ) > 0 ? (
                 <TrendingUp className="h-3 w-3 text-green-600" />
               ) : (
                 <TrendingDown className="h-3 w-3 text-red-600" />
               )}
-              <span className={parseFloat(calculateGrowthRate(kpiData.averageMonthly, kpiData.previousAverageMonthly)) > 0 ? "text-green-600" : "text-red-600"}>
+              <span
+                className={
+                  parseFloat(
+                    calculateGrowthRate(kpiData.averageMonthly, kpiData.previousAverageMonthly)
+                  ) > 0
+                    ? 'text-green-600'
+                    : 'text-red-600'
+                }
+              >
                 {calculateGrowthRate(kpiData.averageMonthly, kpiData.previousAverageMonthly)}%
               </span>
               前年比
@@ -149,9 +179,7 @@ export default function AnnualReportPage() {
             <div className="text-2xl font-bold">{kpiData.storeCount}店舗</div>
             <p className="text-xs text-muted-foreground">
               {kpiData.newStoreCount > 0 && (
-                <span className="text-green-600">
-                  +{kpiData.newStoreCount}店舗（新規）
-                </span>
+                <span className="text-green-600">+{kpiData.newStoreCount}店舗（新規）</span>
               )}
             </p>
           </CardContent>
@@ -181,22 +209,13 @@ export default function AnnualReportPage() {
               <TabsTrigger value="store">店舗別</TabsTrigger>
             </TabsList>
             <TabsContent value="monthly" className="mt-4">
-              <AnnualSalesTable 
-                year={selectedYear} 
-                analyticsUseCases={analyticsUseCases}
-              />
+              <AnnualSalesTable year={selectedYear} analyticsUseCases={analyticsUseCases} />
             </TabsContent>
             <TabsContent value="quarter" className="mt-4">
-              <AnnualQuarterTable 
-                year={selectedYear} 
-                analyticsUseCases={analyticsUseCases}
-              />
+              <AnnualQuarterTable year={selectedYear} analyticsUseCases={analyticsUseCases} />
             </TabsContent>
             <TabsContent value="store" className="mt-4">
-              <AnnualStoreTable 
-                year={selectedYear} 
-                analyticsUseCases={analyticsUseCases}
-              />
+              <AnnualStoreTable year={selectedYear} analyticsUseCases={analyticsUseCases} />
             </TabsContent>
           </Tabs>
         </CardContent>

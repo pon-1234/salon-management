@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -8,10 +8,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { cn } from "@/lib/utils"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
-import { DailyData } from "@/lib/types/analytics"
+} from '@/components/ui/table'
+import { cn } from '@/lib/utils'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
+import { DailyData } from '@/lib/types/analytics'
 
 interface MonthlySalesTableProps {
   year: number
@@ -31,20 +31,33 @@ export function MonthlySalesTable({ year, month, analyticsUseCases }: MonthlySal
   }, [year, month, analyticsUseCases])
 
   // 合計を計算
-  const totals = data && Array.isArray(data) && data.length > 0 
-    ? data.reduce(
-        (acc, curr) => ({
-          customerCount: acc.customerCount + curr.customerCount,
-          directSales: acc.directSales + curr.directSales,
-          cardSales: acc.cardSales + curr.cardSales,
-          totalSales: acc.totalSales + curr.totalSales,
-          cashSales: acc.cashSales + curr.cashSales,
-          newCustomers: acc.newCustomers + curr.newCustomers,
-          repeaters: acc.repeaters + curr.repeaters,
-          discounts: acc.discounts + curr.discounts,
-          pointUsage: acc.pointUsage + curr.pointUsage,
-        }),
-        {
+  const totals =
+    data && Array.isArray(data) && data.length > 0
+      ? data.reduce(
+          (acc, curr) => ({
+            customerCount: acc.customerCount + curr.customerCount,
+            directSales: acc.directSales + curr.directSales,
+            cardSales: acc.cardSales + curr.cardSales,
+            totalSales: acc.totalSales + curr.totalSales,
+            cashSales: acc.cashSales + curr.cashSales,
+            newCustomers: acc.newCustomers + curr.newCustomers,
+            repeaters: acc.repeaters + curr.repeaters,
+            discounts: acc.discounts + curr.discounts,
+            pointUsage: acc.pointUsage + curr.pointUsage,
+          }),
+          {
+            customerCount: 0,
+            directSales: 0,
+            cardSales: 0,
+            totalSales: 0,
+            cashSales: 0,
+            newCustomers: 0,
+            repeaters: 0,
+            discounts: 0,
+            pointUsage: 0,
+          }
+        )
+      : {
           customerCount: 0,
           directSales: 0,
           cardSales: 0,
@@ -55,18 +68,6 @@ export function MonthlySalesTable({ year, month, analyticsUseCases }: MonthlySal
           discounts: 0,
           pointUsage: 0,
         }
-      )
-    : {
-        customerCount: 0,
-        directSales: 0,
-        cardSales: 0,
-        totalSales: 0,
-        cashSales: 0,
-        newCustomers: 0,
-        repeaters: 0,
-        discounts: 0,
-        pointUsage: 0,
-      }
 
   // 日平均を計算
   const averages = {
@@ -103,8 +104,8 @@ export function MonthlySalesTable({ year, month, analyticsUseCases }: MonthlySal
             <TableRow
               key={row.date}
               className={cn(
-                row.dayOfWeek === "日" && "bg-red-50",
-                row.dayOfWeek === "土" && "bg-blue-50"
+                row.dayOfWeek === '日' && 'bg-red-50',
+                row.dayOfWeek === '土' && 'bg-blue-50'
               )}
             >
               <TableCell>
@@ -113,15 +114,9 @@ export function MonthlySalesTable({ year, month, analyticsUseCases }: MonthlySal
               <TableCell className="text-right">{row.customerCount}</TableCell>
               <TableCell className="text-right">{row.newCustomers}</TableCell>
               <TableCell className="text-right">{row.repeaters}</TableCell>
-              <TableCell className="text-right">
-                ¥{row.totalSales.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                ¥{row.cashSales.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                ¥{row.cardSales.toLocaleString()}
-              </TableCell>
+              <TableCell className="text-right">¥{row.totalSales.toLocaleString()}</TableCell>
+              <TableCell className="text-right">¥{row.cashSales.toLocaleString()}</TableCell>
+              <TableCell className="text-right">¥{row.cardSales.toLocaleString()}</TableCell>
               <TableCell className="text-right text-red-600">
                 -¥{row.discounts.toLocaleString()}
               </TableCell>
@@ -129,30 +124,21 @@ export function MonthlySalesTable({ year, month, analyticsUseCases }: MonthlySal
                 -{row.pointUsage.toLocaleString()}pt
               </TableCell>
               <TableCell className="text-right">
-                ¥{row.customerCount > 0 ? Math.round(row.totalSales / row.customerCount).toLocaleString() : 0}
+                ¥
+                {row.customerCount > 0
+                  ? Math.round(row.totalSales / row.customerCount).toLocaleString()
+                  : 0}
               </TableCell>
             </TableRow>
           ))}
-          <TableRow className="font-bold bg-gray-50">
+          <TableRow className="bg-gray-50 font-bold">
             <TableCell>合計</TableCell>
-            <TableCell className="text-right">
-              {totals.customerCount.toLocaleString()}
-            </TableCell>
-            <TableCell className="text-right">
-              {totals.newCustomers.toLocaleString()}
-            </TableCell>
-            <TableCell className="text-right">
-              {totals.repeaters.toLocaleString()}
-            </TableCell>
-            <TableCell className="text-right">
-              ¥{totals.totalSales.toLocaleString()}
-            </TableCell>
-            <TableCell className="text-right">
-              ¥{totals.cashSales.toLocaleString()}
-            </TableCell>
-            <TableCell className="text-right">
-              ¥{totals.cardSales.toLocaleString()}
-            </TableCell>
+            <TableCell className="text-right">{totals.customerCount.toLocaleString()}</TableCell>
+            <TableCell className="text-right">{totals.newCustomers.toLocaleString()}</TableCell>
+            <TableCell className="text-right">{totals.repeaters.toLocaleString()}</TableCell>
+            <TableCell className="text-right">¥{totals.totalSales.toLocaleString()}</TableCell>
+            <TableCell className="text-right">¥{totals.cashSales.toLocaleString()}</TableCell>
+            <TableCell className="text-right">¥{totals.cardSales.toLocaleString()}</TableCell>
             <TableCell className="text-right text-red-600">
               -¥{totals.discounts.toLocaleString()}
             </TableCell>
@@ -160,20 +146,17 @@ export function MonthlySalesTable({ year, month, analyticsUseCases }: MonthlySal
               -{totals.pointUsage.toLocaleString()}pt
             </TableCell>
             <TableCell className="text-right">
-              ¥{totals.customerCount > 0 ? Math.round(totals.totalSales / totals.customerCount).toLocaleString() : 0}
+              ¥
+              {totals.customerCount > 0
+                ? Math.round(totals.totalSales / totals.customerCount).toLocaleString()
+                : 0}
             </TableCell>
           </TableRow>
           <TableRow className="text-sm text-gray-500">
             <TableCell>日平均</TableCell>
-            <TableCell className="text-right">
-              {averages.customerCount.toFixed(1)}人
-            </TableCell>
-            <TableCell className="text-right">
-              {averages.newCustomers.toFixed(1)}人
-            </TableCell>
-            <TableCell className="text-right">
-              {averages.repeaters.toFixed(1)}人
-            </TableCell>
+            <TableCell className="text-right">{averages.customerCount.toFixed(1)}人</TableCell>
+            <TableCell className="text-right">{averages.newCustomers.toFixed(1)}人</TableCell>
+            <TableCell className="text-right">{averages.repeaters.toFixed(1)}人</TableCell>
             <TableCell className="text-right">
               ¥{Math.round(averages.totalSales).toLocaleString()}
             </TableCell>
@@ -190,7 +173,10 @@ export function MonthlySalesTable({ year, month, analyticsUseCases }: MonthlySal
               -{Math.round(averages.pointUsage).toLocaleString()}pt
             </TableCell>
             <TableCell className="text-right">
-              ¥{averages.customerCount > 0 ? Math.round(averages.totalSales / averages.customerCount).toLocaleString() : 0}
+              ¥
+              {averages.customerCount > 0
+                ? Math.round(averages.totalSales / averages.customerCount).toLocaleString()
+                : 0}
             </TableCell>
           </TableRow>
         </TableBody>

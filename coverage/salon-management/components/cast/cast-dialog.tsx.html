@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/133</span>
+                <span class='fraction'>0/137</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/133</span>
+                <span class='fraction'>0/137</span>
             </div>
         
             
@@ -228,7 +228,11 @@
 <a name='L163'></a><a href='#L163'>163</a>
 <a name='L164'></a><a href='#L164'>164</a>
 <a name='L165'></a><a href='#L165'>165</a>
-<a name='L166'></a><a href='#L166'>166</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L166'></a><a href='#L166'>166</a>
+<a name='L167'></a><a href='#L167'>167</a>
+<a name='L168'></a><a href='#L168'>168</a>
+<a name='L169'></a><a href='#L169'>169</a>
+<a name='L170'></a><a href='#L170'>170</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -272,6 +276,17 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -350,10 +365,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -370,9 +381,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -393,15 +401,15 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import React, { useState, useEffect } from "react"
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import { Badge } from "@/components/ui/badge"
-import { Cast, CastSchedule } from "@/lib/cast/types"
-import { options } from "@/lib/course-option/data"
-import { Button } from "@/components/ui/button"
-import { generateCastSchedule } from "@/lib/cast/data"
+import React, { useState, useEffect } from 'react'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Badge } from '@/components/ui/badge'
+import { Cast, CastSchedule } from '@/lib/cast/types'
+import { options } from '@/lib/course-option/data'
+import { Button } from '@/components/ui/button'
+import { generateCastSchedule } from '@/lib/cast/data'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 &nbsp;
@@ -428,7 +436,7 @@ interface CastDialogProps {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;Dialog open={open} onOpenChange={onOpenChange}&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;DialogContent className="max-w-5xl p-0 overflow-y-auto max-h-[90vh]"&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto p-0"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;DialogTitle&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;span className="sr-only"&gt;{staff.name}のプロフィールと予約状況&lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/DialogTitle&gt;</span>
@@ -437,12 +445,13 @@ interface CastDialogProps {
             {/* 左側：画像とスタッフ詳細情報 */}
 <span class="cstat-no" title="statement not covered" >            &lt;div className="w-1/2 space-y-6"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div className="relative"&gt;</span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
 <span class="cstat-no" title="statement not covered" >                &lt;img</span>
 <span class="cstat-no" title="statement not covered" >                  src={staff.image}</span>
 <span class="cstat-no" title="statement not covered" >                  alt={`${staff.name}の写真`}</span>
-<span class="cstat-no" title="statement not covered" >                  className="w-full aspect-[7/10] object-cover rounded-lg"</span>
+<span class="cstat-no" title="statement not covered" >                  className="aspect-[7/10] w-full rounded-lg object-cover"</span>
 <span class="cstat-no" title="statement not covered" >                /&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;Badge className="absolute top-4 left-4 bg-emerald-600"&gt;掲載中&lt;/Badge&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;Badge className="absolute left-4 top-4 bg-emerald-600"&gt;掲載中&lt;/Badge&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div className="space-y-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;h2 className="text-3xl font-bold"&gt;{staff.name}&lt;/h2&gt;</span>
@@ -453,7 +462,9 @@ interface CastDialogProps {
 <span class="cstat-no" title="statement not covered" >                  &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;dt className="text-gray-600"&gt;スリーサイズ：&lt;/dt&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;dd&gt;{staff.bust}/{staff.waist}/{staff.hip} ({staff.bust}カップ)&lt;/dd&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;dd&gt;</span>
+<span class="cstat-no" title="statement not covered" >                      {staff.bust}/{staff.waist}/{staff.hip} ({staff.bust}カップ)</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;/dd&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;dt className="text-gray-600"&gt;身長：&lt;/dt&gt;</span>
@@ -466,23 +477,31 @@ interface CastDialogProps {
 <span class="cstat-no" title="statement not covered" >                &lt;/dl&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div className="space-y-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="flex justify-between items-center border-b pb-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="flex items-center justify-between border-b pb-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div&gt;ネット予約&lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;div className="text-emerald-600"&gt;{staff.netReservation ? "可" : "不可"}&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;div className="text-emerald-600"&gt;{staff.netReservation ? '可' : '不可'}&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="flex justify-between items-center border-b pb-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="flex items-center justify-between border-b pb-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div&gt;特別指名料&lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;div&gt;{staff.specialDesignationFee ? `${staff.specialDesignationFee.toLocaleString()}円` : "-"}&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;div&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    {staff.specialDesignationFee</span>
+<span class="cstat-no" title="statement not covered" >                      ? `${staff.specialDesignationFee.toLocaleString()}円`</span>
+<span class="cstat-no" title="statement not covered" >                      : '-'}</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="flex justify-between items-center border-b pb-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="flex items-center justify-between border-b pb-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div&gt;本指名&lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;div&gt;{staff.regularDesignationFee ? `${staff.regularDesignationFee.toLocaleString()}円` : "-"}&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;div&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    {staff.regularDesignationFee</span>
+<span class="cstat-no" title="statement not covered" >                      ? `${staff.regularDesignationFee.toLocaleString()}円`</span>
+<span class="cstat-no" title="statement not covered" >                      : '-'}</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="flex justify-between items-center border-b pb-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="flex items-center justify-between border-b pb-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div&gt;パネル指名ランク&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div&gt;{staff.panelDesignationRank}&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="flex justify-between items-center border-b pb-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="flex items-center justify-between border-b pb-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div&gt;本指名ランク&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div&gt;{staff.regularDesignationRank}&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
@@ -493,11 +512,11 @@ interface CastDialogProps {
 <span class="cstat-no" title="statement not covered" >            &lt;div className="w-1/2 space-y-6"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div className="space-y-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;h2 className="text-2xl font-bold"&gt;出勤情報&lt;/h2&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="space-y-2 max-h-[300px] overflow-y-auto"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="max-h-[300px] space-y-2 overflow-y-auto"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  {schedule.map((day, index) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;div</span>
 <span class="cstat-no" title="statement not covered" >                      key={index}</span>
-<span class="cstat-no" title="statement not covered" >                      className="flex items-center justify-between p-3 border rounded-lg"</span>
+<span class="cstat-no" title="statement not covered" >                      className="flex items-center justify-between rounded-lg border p-3"</span>
                     &gt;
 <span class="cstat-no" title="statement not covered" >                      &lt;div className="space-y-1"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;div className="font-medium"&gt;</span>
@@ -514,11 +533,7 @@ interface CastDialogProps {
 <span class="cstat-no" title="statement not covered" >                            予約 {day.bookings}件</span>
 <span class="cstat-no" title="statement not covered" >                          &lt;/Badge&gt;</span>
                         )}
-<span class="cstat-no" title="statement not covered" >                        &lt;Button</span>
-<span class="cstat-no" title="statement not covered" >                          variant="default"</span>
-<span class="cstat-no" title="statement not covered" >                          size="sm"</span>
-<span class="cstat-no" title="statement not covered" >                          className="bg-emerald-600"</span>
-<span class="cstat-no" title="statement not covered" >                        &gt;</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;Button variant="default" size="sm" className="bg-emerald-600"&gt;</span>
                           選択
 <span class="cstat-no" title="statement not covered" >                        &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;/div&gt;</span>
@@ -528,22 +543,19 @@ interface CastDialogProps {
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >              &lt;div className="space-y-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;h4 className="font-bold flex items-center gap-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;h4 className="flex items-center gap-2 font-bold"&gt;</span>
                   利用可能なオプション
-<span class="cstat-no" title="statement not covered" >                  &lt;Badge variant="secondary" className="bg-emerald-100"&gt;{options.length}点&lt;/Badge&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;Badge variant="secondary" className="bg-emerald-100"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    {options.length}点</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;/Badge&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/h4&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="grid max-h-[200px] grid-cols-2 gap-2 overflow-y-auto"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  {options.map((option, index) =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;div</span>
-<span class="cstat-no" title="statement not covered" >                      key={index}</span>
-<span class="cstat-no" title="statement not covered" >                      className="border rounded-lg p-3 text-sm relative"</span>
-                    &gt;
+<span class="cstat-no" title="statement not covered" >                    &lt;div key={index} className="relative rounded-lg border p-3 text-sm"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;div className="font-medium"&gt;{option.name}&lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                      &lt;div className="text-emerald-600"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                        ¥{option.price.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >                      &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >                      &lt;div className="text-emerald-600"&gt;¥{option.price.toLocaleString()}&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      {option.note &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;div className="absolute top-2 right-2 text-gray-500 text-xs"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;div className="absolute right-2 top-2 text-xs text-gray-500"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                          {option.note}</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;/div&gt;</span>
                       )}
@@ -565,7 +577,7 @@ interface CastDialogProps {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

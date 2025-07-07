@@ -109,7 +109,8 @@
 <a name='L44'></a><a href='#L44'>44</a>
 <a name='L45'></a><a href='#L45'>45</a>
 <a name='L46'></a><a href='#L46'>46</a>
-<a name='L47'></a><a href='#L47'>47</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -155,19 +156,20 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { ReactNode } from 'react';
-import { DataTable, TableColumn } from './data-table';
-import { useAnalyticsData } from '@/hooks/use-analytics';
+import { ReactNode } from 'react'
+import { DataTable, TableColumn } from './data-table'
+import { useAnalyticsData } from '@/hooks/use-analytics'
 &nbsp;
 interface AnalyticsTableProps&lt;T&gt; {
-  title: string;
-  fetchData: () =&gt; Promise&lt;T[]&gt;;
-  columns: TableColumn&lt;T&gt;[];
-  summary?: (data: T[]) =&gt; ReactNode;
-  deps?: readonly unknown[];
-  className?: string;
+  title: string
+  fetchData: () =&gt; Promise&lt;T[]&gt;
+  columns: TableColumn&lt;T&gt;[]
+  summary?: (data: T[]) =&gt; ReactNode
+  deps?: readonly unknown[]
+  className?: string
 }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export function AnalyticsTable&lt;T&gt;({</span>
@@ -176,20 +178,20 @@ interface AnalyticsTableProps&lt;T&gt; {
 <span class="cstat-no" title="statement not covered" >  columns,</span>
 <span class="cstat-no" title="statement not covered" >  summary,</span>
 <span class="cstat-no" title="statement not covered" >  deps = [],</span>
-<span class="cstat-no" title="statement not covered" >  className</span>
+<span class="cstat-no" title="statement not covered" >  className,</span>
 <span class="cstat-no" title="statement not covered" >}: AnalyticsTableProps&lt;T&gt;) {</span>
-<span class="cstat-no" title="statement not covered" >  const { data, loading, error } = useAnalyticsData(fetchData, deps);</span>
+<span class="cstat-no" title="statement not covered" >  const { data, loading, error } = useAnalyticsData(fetchData, deps)</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  if (loading) {</span>
-<span class="cstat-no" title="statement not covered" >    return &lt;div className="p-4"&gt;データを読み込んでいます...&lt;/div&gt;;</span>
+<span class="cstat-no" title="statement not covered" >    return &lt;div className="p-4"&gt;データを読み込んでいます...&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  if (error) {</span>
-<span class="cstat-no" title="statement not covered" >    return &lt;div className="p-4 text-red-500"&gt;エラー: {error}&lt;/div&gt;;</span>
+<span class="cstat-no" title="statement not covered" >    return &lt;div className="p-4 text-red-500"&gt;エラー: {error}&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  if (!data || data.length === 0) {</span>
-<span class="cstat-no" title="statement not covered" >    return &lt;div className="p-4"&gt;データがありません&lt;/div&gt;;</span>
+<span class="cstat-no" title="statement not covered" >    return &lt;div className="p-4"&gt;データがありません&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
@@ -200,15 +202,16 @@ interface AnalyticsTableProps&lt;T&gt; {
 <span class="cstat-no" title="statement not covered" >      columns={columns}</span>
 <span class="cstat-no" title="statement not covered" >      className={className}</span>
 <span class="cstat-no" title="statement not covered" >    /&gt;</span>
-  );
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+  )
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

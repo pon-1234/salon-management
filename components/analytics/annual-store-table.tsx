@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -8,8 +8,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
+} from '@/components/ui/table'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 
 interface AnnualStoreTableProps {
   year: number
@@ -35,38 +35,38 @@ export function AnnualStoreTable({ year, analyticsUseCases }: AnnualStoreTablePr
     // ダミーデータ（実際にはuseCasesから取得）
     const dummyData: StoreData[] = [
       {
-        id: "1",
-        name: "渋谷店",
-        location: "東京都渋谷区",
+        id: '1',
+        name: '渋谷店',
+        location: '東京都渋谷区',
         totalSales: 45678900,
         customerCount: 4567,
         averagePerCustomer: 10004,
         staffCount: 8,
         salesPerStaff: 5709863,
-        growthRate: 12.3
+        growthRate: 12.3,
       },
       {
-        id: "2",
-        name: "新宿店",
-        location: "東京都新宿区",
+        id: '2',
+        name: '新宿店',
+        location: '東京都新宿区',
         totalSales: 38912300,
         customerCount: 4012,
         averagePerCustomer: 9700,
         staffCount: 7,
         salesPerStaff: 5558900,
-        growthRate: 8.5
+        growthRate: 8.5,
       },
       {
-        id: "3",
-        name: "横浜店",
-        location: "神奈川県横浜市",
+        id: '3',
+        name: '横浜店',
+        location: '神奈川県横浜市',
         totalSales: 17927200,
         customerCount: 2125,
         averagePerCustomer: 8437,
         staffCount: 5,
         salesPerStaff: 3585440,
-        growthRate: -2.1
-      }
+        growthRate: -2.1,
+      },
     ]
     setData(dummyData)
   }, [year, analyticsUseCases])
@@ -105,44 +105,37 @@ export function AnnualStoreTable({ year, analyticsUseCases }: AnnualStoreTablePr
             <TableRow key={store.id}>
               <TableCell className="font-medium">{store.name}</TableCell>
               <TableCell>{store.location}</TableCell>
-              <TableCell className="text-right">
-                ¥{store.totalSales.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                {store.customerCount.toLocaleString()}人
-              </TableCell>
+              <TableCell className="text-right">¥{store.totalSales.toLocaleString()}</TableCell>
+              <TableCell className="text-right">{store.customerCount.toLocaleString()}人</TableCell>
               <TableCell className="text-right">
                 ¥{store.averagePerCustomer.toLocaleString()}
               </TableCell>
+              <TableCell className="text-right">{store.staffCount}人</TableCell>
+              <TableCell className="text-right">¥{store.salesPerStaff.toLocaleString()}</TableCell>
               <TableCell className="text-right">
-                {store.staffCount}人
-              </TableCell>
-              <TableCell className="text-right">
-                ¥{store.salesPerStaff.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-right">
-                <span className={store.growthRate > 0 ? "text-green-600" : "text-red-600"}>
-                  {store.growthRate > 0 ? "+" : ""}{store.growthRate}%
+                <span className={store.growthRate > 0 ? 'text-green-600' : 'text-red-600'}>
+                  {store.growthRate > 0 ? '+' : ''}
+                  {store.growthRate}%
                 </span>
               </TableCell>
             </TableRow>
           ))}
-          <TableRow className="font-bold bg-gray-50">
+          <TableRow className="bg-gray-50 font-bold">
             <TableCell colSpan={2}>全店舗合計</TableCell>
+            <TableCell className="text-right">¥{totals.totalSales.toLocaleString()}</TableCell>
+            <TableCell className="text-right">{totals.customerCount.toLocaleString()}人</TableCell>
             <TableCell className="text-right">
-              ¥{totals.totalSales.toLocaleString()}
+              ¥
+              {totals.customerCount > 0
+                ? Math.round(totals.totalSales / totals.customerCount).toLocaleString()
+                : 0}
             </TableCell>
+            <TableCell className="text-right">{totals.staffCount}人</TableCell>
             <TableCell className="text-right">
-              {totals.customerCount.toLocaleString()}人
-            </TableCell>
-            <TableCell className="text-right">
-              ¥{totals.customerCount > 0 ? Math.round(totals.totalSales / totals.customerCount).toLocaleString() : 0}
-            </TableCell>
-            <TableCell className="text-right">
-              {totals.staffCount}人
-            </TableCell>
-            <TableCell className="text-right">
-              ¥{totals.staffCount > 0 ? Math.round(totals.totalSales / totals.staffCount).toLocaleString() : 0}
+              ¥
+              {totals.staffCount > 0
+                ? Math.round(totals.totalSales / totals.staffCount).toLocaleString()
+                : 0}
             </TableCell>
             <TableCell className="text-right">-</TableCell>
           </TableRow>

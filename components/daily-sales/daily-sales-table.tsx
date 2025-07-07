@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import {
   Table,
@@ -7,8 +7,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { DailySalesData } from "@/lib/types/daily-sales"
+} from '@/components/ui/table'
+import { DailySalesData } from '@/lib/types/daily-sales'
 
 interface DailySalesTableProps {
   data: DailySalesData
@@ -44,11 +44,17 @@ export function DailySalesTable({ data }: DailySalesTableProps) {
               <TableCell className="font-medium">{staff.staffName}</TableCell>
               <TableCell>{staff.workingHours.total}</TableCell>
               <TableCell className="text-right">{staff.cashTransactions.count}</TableCell>
-              <TableCell className="text-right">{staff.cashTransactions.amount.toLocaleString()}</TableCell>
+              <TableCell className="text-right">
+                {staff.cashTransactions.amount.toLocaleString()}
+              </TableCell>
               <TableCell className="text-right">{staff.cardTransactions.count}</TableCell>
-              <TableCell className="text-right">{staff.cardTransactions.amount.toLocaleString()}</TableCell>
+              <TableCell className="text-right">
+                {staff.cardTransactions.amount.toLocaleString()}
+              </TableCell>
               <TableCell className="text-right">{staff.totalTransactions}</TableCell>
-              <TableCell className="text-right">{staff.discounts.regular.toLocaleString()}</TableCell>
+              <TableCell className="text-right">
+                {staff.discounts.regular.toLocaleString()}
+              </TableCell>
               <TableCell className="text-right">{staff.discounts.hotel.toLocaleString()}</TableCell>
               <TableCell className="text-right">{staff.totalAmount.toLocaleString()}</TableCell>
               <TableCell className="text-right">{staff.staffFee.toLocaleString()}</TableCell>
@@ -59,7 +65,7 @@ export function DailySalesTable({ data }: DailySalesTableProps) {
               <TableCell className="text-right">{staff.currentBalance.toLocaleString()}</TableCell>
             </TableRow>
           ))}
-          <TableRow className="font-bold bg-gray-50">
+          <TableRow className="bg-gray-50 font-bold">
             <TableCell>
               TOTAL
               <div className="text-sm font-normal">
@@ -70,19 +76,29 @@ export function DailySalesTable({ data }: DailySalesTableProps) {
             </TableCell>
             <TableCell />
             <TableCell className="text-right">{data.totals.cashTransactions.count}</TableCell>
-            <TableCell className="text-right">{data.totals.cashTransactions.amount.toLocaleString()}</TableCell>
+            <TableCell className="text-right">
+              {data.totals.cashTransactions.amount.toLocaleString()}
+            </TableCell>
             <TableCell className="text-right">{data.totals.cardTransactions.count}</TableCell>
-            <TableCell className="text-right">{data.totals.cardTransactions.amount.toLocaleString()}</TableCell>
+            <TableCell className="text-right">
+              {data.totals.cardTransactions.amount.toLocaleString()}
+            </TableCell>
             <TableCell className="text-right">{data.totals.totalTransactions}</TableCell>
-            <TableCell className="text-right">{data.totals.discounts.regular.toLocaleString()}</TableCell>
-            <TableCell className="text-right">{data.totals.discounts.hotel.toLocaleString()}</TableCell>
+            <TableCell className="text-right">
+              {data.totals.discounts.regular.toLocaleString()}
+            </TableCell>
+            <TableCell className="text-right">
+              {data.totals.discounts.hotel.toLocaleString()}
+            </TableCell>
             <TableCell className="text-right">{data.totals.totalAmount.toLocaleString()}</TableCell>
             <TableCell className="text-right">{data.totals.staffFee.toLocaleString()}</TableCell>
             <TableCell className="text-right">{data.totals.staffSales.toLocaleString()}</TableCell>
             <TableCell className="text-right">{data.totals.sales.cash.toLocaleString()}</TableCell>
             <TableCell className="text-right">{data.totals.sales.card.toLocaleString()}</TableCell>
             <TableCell className="text-right">{data.totals.sales.total.toLocaleString()}</TableCell>
-            <TableCell className="text-right">{data.totals.currentBalance.toLocaleString()}</TableCell>
+            <TableCell className="text-right">
+              {data.totals.currentBalance.toLocaleString()}
+            </TableCell>
           </TableRow>
         </TableBody>
       </Table>

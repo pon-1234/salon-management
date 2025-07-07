@@ -153,7 +153,8 @@
 <a name='L88'></a><a href='#L88'>88</a>
 <a name='L89'></a><a href='#L89'>89</a>
 <a name='L90'></a><a href='#L90'>90</a>
-<a name='L91'></a><a href='#L91'>91</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -243,61 +244,62 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { Button } from "@/components/ui/button"</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { Button } from '@/components/ui/button'</span></span></span>
 import { RefreshCw, Filter, PlusCircle } from 'lucide-react'
-import { Input } from "@/components/ui/input"
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import Link from "next/link"
+} from '@/components/ui/select'
+import Link from 'next/link'
 &nbsp;
 interface CastListActionButtonsProps {
-  onRefresh: () =&gt; void;
-  onFilterCharacter: (char: string) =&gt; void;
-  onFilter: () =&gt; void;
-  nameSearch: string;
-  onNameSearchChange: (value: string) =&gt; void;
-  workStatus: string;
-  onWorkStatusChange: (value: string) =&gt; void;
+  onRefresh: () =&gt; void
+  onFilterCharacter: (char: string) =&gt; void
+  onFilter: () =&gt; void
+  nameSearch: string
+  onNameSearchChange: (value: string) =&gt; void
+  workStatus: string
+  onWorkStatusChange: (value: string) =&gt; void
 }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export function CastListActionButtons({ </span>
-<span class="cstat-no" title="statement not covered" >  onRefresh, </span>
-<span class="cstat-no" title="statement not covered" >  onFilterCharacter, </span>
+<span class="cstat-no" title="statement not covered" >export function CastListActionButtons({</span>
+<span class="cstat-no" title="statement not covered" >  onRefresh,</span>
+<span class="cstat-no" title="statement not covered" >  onFilterCharacter,</span>
 <span class="cstat-no" title="statement not covered" >  onFilter,</span>
 <span class="cstat-no" title="statement not covered" >  nameSearch,</span>
 <span class="cstat-no" title="statement not covered" >  onNameSearchChange,</span>
 <span class="cstat-no" title="statement not covered" >  workStatus,</span>
-<span class="cstat-no" title="statement not covered" >  onWorkStatusChange</span>
+<span class="cstat-no" title="statement not covered" >  onWorkStatusChange,</span>
 <span class="cstat-no" title="statement not covered" >}: CastListActionButtonsProps) {</span>
-<span class="cstat-no" title="statement not covered" >  const characters = ["全", "あ", "か", "さ", "た", "な", "は", "ま", "や", "ら", "わ", "その他"]</span>
+<span class="cstat-no" title="statement not covered" >  const characters = ['全', 'あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ', 'その他']</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
-<span class="cstat-no" title="statement not covered" >    &lt;div className="space-y-4 p-4 border-b"&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;div className="flex justify-between items-center"&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;div className="space-y-4 border-b p-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;div className="flex items-center justify-between"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div className="flex gap-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;Button onClick={onRefresh} variant="outline" size="sm"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;RefreshCw className="w-4 h-4 mr-2" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;RefreshCw className="mr-2 h-4 w-4" /&gt;</span>
             更新
 <span class="cstat-no" title="statement not covered" >          &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;Button onClick={onFilter} variant="outline" size="sm"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;Filter className="w-4 h-4 mr-2" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Filter className="mr-2 h-4 w-4" /&gt;</span>
             フィルター
 <span class="cstat-no" title="statement not covered" >          &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;Link href="/admin/cast/manage/new"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;Button className="bg-emerald-600 hover:bg-emerald-700"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;PlusCircle className="w-4 h-4 mr-2" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;PlusCircle className="mr-2 h-4 w-4" /&gt;</span>
             新規キャスト追加
 <span class="cstat-no" title="statement not covered" >          &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/Link&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >      &lt;div className="flex gap-4 items-center"&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;div className="flex items-center gap-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;Select value={workStatus} onValueChange={onWorkStatusChange}&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;SelectTrigger className="w-[200px]"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;SelectValue /&gt;</span>
@@ -318,7 +320,7 @@ interface CastListActionButtonsProps {
 <span class="cstat-no" title="statement not covered" >        /&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >      &lt;div className="flex gap-2 flex-wrap"&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;div className="flex flex-wrap gap-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        {characters.map((char) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >          &lt;Button</span>
 <span class="cstat-no" title="statement not covered" >            key={char}</span>
@@ -333,14 +335,15 @@ interface CastListActionButtonsProps {
 <span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

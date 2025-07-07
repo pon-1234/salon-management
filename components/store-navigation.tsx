@@ -6,13 +6,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Phone, Menu, User, LogIn } from 'lucide-react'
 import { useStore } from '@/components/store-provider'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 
 const navigationItems = [
   { name: '料金システム', href: '/pricing' },
@@ -29,24 +23,24 @@ export function StoreNavigation() {
   const store = useStore()
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+    <header className="sticky top-0 z-50 border-b bg-white">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href={`/${store.slug}`} className="flex items-center gap-2">
             <h1 className="text-xl font-bold">{store.displayName}</h1>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-6">
+          <nav className="hidden items-center gap-6 lg:flex">
             {navigationItems.map((item) => (
               <Link
                 key={item.href}
                 href={`/${store.slug}${item.href}`}
                 className={cn(
                   'text-sm font-medium transition-colors hover:text-primary',
-                  pathname === `/${store.slug}${item.href}` 
-                    ? 'text-primary' 
+                  pathname === `/${store.slug}${item.href}`
+                    ? 'text-primary'
                     : 'text-muted-foreground'
                 )}
               >
@@ -59,24 +53,28 @@ export function StoreNavigation() {
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" className="hidden sm:flex" asChild>
               <Link href={`/${store.slug}/register`}>
-                <User className="h-4 w-4 mr-2" />
+                <User className="mr-2 h-4 w-4" />
                 会員登録
               </Link>
             </Button>
             <Button variant="ghost" size="sm" className="hidden sm:flex" asChild>
               <Link href={`/${store.slug}/login`}>
-                <LogIn className="h-4 w-4 mr-2" />
+                <LogIn className="mr-2 h-4 w-4" />
                 ログイン
               </Link>
             </Button>
-            
+
             <div className="flex flex-col items-end">
-              <a href={`tel:${store.phone}`} className="flex items-center gap-1 text-primary font-bold">
+              <a
+                href={`tel:${store.phone}`}
+                className="flex items-center gap-1 font-bold text-primary"
+              >
                 <Phone className="h-4 w-4" />
                 {store.phone}
               </a>
               <span className="text-xs text-muted-foreground">
-                {store.openingHours.weekday.open}～翌{store.openingHours.weekday.close.split(':')[0]}:00
+                {store.openingHours.weekday.open}～翌
+                {store.openingHours.weekday.close.split(':')[0]}:00
               </span>
             </div>
 
@@ -91,15 +89,15 @@ export function StoreNavigation() {
                 <SheetHeader>
                   <SheetTitle>{store.name}</SheetTitle>
                 </SheetHeader>
-                <nav className="flex flex-col gap-4 mt-6">
+                <nav className="mt-6 flex flex-col gap-4">
                   {navigationItems.map((item) => (
                     <Link
                       key={item.href}
                       href={`/${store.slug}${item.href}`}
                       className={cn(
-                        'text-sm font-medium transition-colors hover:text-primary py-2',
-                        pathname === `/${store.slug}${item.href}` 
-                          ? 'text-primary' 
+                        'py-2 text-sm font-medium transition-colors hover:text-primary',
+                        pathname === `/${store.slug}${item.href}`
+                          ? 'text-primary'
                           : 'text-muted-foreground'
                       )}
                     >
@@ -107,10 +105,10 @@ export function StoreNavigation() {
                     </Link>
                   ))}
                   <hr className="my-4" />
-                  <Link href={`/${store.slug}/register`} className="text-sm font-medium py-2">
+                  <Link href={`/${store.slug}/register`} className="py-2 text-sm font-medium">
                     会員登録
                   </Link>
-                  <Link href={`/${store.slug}/login`} className="text-sm font-medium py-2">
+                  <Link href={`/${store.slug}/login`} className="py-2 text-sm font-medium">
                     ログイン
                   </Link>
                 </nav>

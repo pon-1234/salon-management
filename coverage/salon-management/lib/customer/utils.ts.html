@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/23</span>
+                <span class='fraction'>0/21</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/23</span>
+                <span class='fraction'>0/21</span>
             </div>
         
             
@@ -89,9 +89,7 @@
 <a name='L24'></a><a href='#L24'>24</a>
 <a name='L25'></a><a href='#L25'>25</a>
 <a name='L26'></a><a href='#L26'>26</a>
-<a name='L27'></a><a href='#L27'>27</a>
-<a name='L28'></a><a href='#L28'>28</a>
-<a name='L29'></a><a href='#L29'>29</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L27'></a><a href='#L27'>27</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -110,8 +108,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -119,33 +115,31 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Customer } from './types';
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Customer } from './types'
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export function calculateAge(birthDate: Date): number {</span>
-<span class="cstat-no" title="statement not covered" >  const today = new Date();</span>
-<span class="cstat-no" title="statement not covered" >  let age = today.getFullYear() - birthDate.getFullYear();</span>
-<span class="cstat-no" title="statement not covered" >  const m = today.getMonth() - birthDate.getMonth();</span>
+<span class="cstat-no" title="statement not covered" >  const today = new Date()</span>
+<span class="cstat-no" title="statement not covered" >  let age = today.getFullYear() - birthDate.getFullYear()</span>
+<span class="cstat-no" title="statement not covered" >  const m = today.getMonth() - birthDate.getMonth()</span>
 <span class="cstat-no" title="statement not covered" >  if (m &lt; 0 || (m === 0 &amp;&amp; today.getDate() &lt; birthDate.getDate())) {</span>
-<span class="cstat-no" title="statement not covered" >    age--;</span>
+<span class="cstat-no" title="statement not covered" >    age--</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
-<span class="cstat-no" title="statement not covered" >  return age;</span>
+<span class="cstat-no" title="statement not covered" >  return age</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export function getTotalPoints(customers: Customer[]): number {</span>
-<span class="cstat-no" title="statement not covered" >  return customers.reduce((total, customer) =&gt; total + customer.points, 0);</span>
+<span class="cstat-no" title="statement not covered" >  return customers.reduce((total, customer) =&gt; total + customer.points, 0)</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export function getTopCustomers(customers: Customer[], limit: number): Customer[] {</span>
-<span class="cstat-no" title="statement not covered" >  return customers</span>
-<span class="cstat-no" title="statement not covered" >    .sort((a, b) =&gt; b.points - a.points)</span>
-<span class="cstat-no" title="statement not covered" >    .slice(0, limit);</span>
+<span class="cstat-no" title="statement not covered" >  return customers.sort((a, b) =&gt; b.points - a.points).slice(0, limit)</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export function calculateCustomerLoyalty(customer: Customer, totalVisits: number): string {</span>
-<span class="cstat-no" title="statement not covered" >  if (totalVisits &gt; 20) return 'VIP';</span>
-<span class="cstat-no" title="statement not covered" >  if (totalVisits &gt; 10) return 'Loyal';</span>
-<span class="cstat-no" title="statement not covered" >  if (totalVisits &gt; 5) return 'Regular';</span>
-<span class="cstat-no" title="statement not covered" >  return 'New';</span>
+<span class="cstat-no" title="statement not covered" >  if (totalVisits &gt; 20) return 'VIP'</span>
+<span class="cstat-no" title="statement not covered" >  if (totalVisits &gt; 10) return 'Loyal'</span>
+<span class="cstat-no" title="statement not covered" >  if (totalVisits &gt; 5) return 'Regular'</span>
+<span class="cstat-no" title="statement not covered" >  return 'New'</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;</pre></td></tr></table></pre>
 
@@ -154,7 +148,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

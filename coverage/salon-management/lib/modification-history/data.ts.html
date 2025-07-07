@@ -169,7 +169,8 @@
 <a name='L104'></a><a href='#L104'>104</a>
 <a name='L105'></a><a href='#L105'>105</a>
 <a name='L106'></a><a href='#L106'>106</a>
-<a name='L107'></a><a href='#L107'>107</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -275,7 +276,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { ModificationHistory, ModificationAlert } from '@/lib/types/modification-history';
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { ModificationHistory, ModificationAlert } from '@/lib/types/modification-history'
 &nbsp;
 // Mock data for modification history
 <span class="cstat-no" title="statement not covered" >const modificationHistoryData: ModificationHistory[] = [</span>
@@ -308,8 +310,8 @@
 <span class="cstat-no" title="statement not covered" >    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',</span>
 <span class="cstat-no" title="statement not covered" >    sessionId: 'session_12345',</span>
 <span class="cstat-no" title="statement not covered" >    timestamp: new Date('2024-01-15T11:00:00Z'),</span>
-<span class="cstat-no" title="statement not covered" >  }</span>
-<span class="cstat-no" title="statement not covered" >];</span>
+<span class="cstat-no" title="statement not covered" >  },</span>
+<span class="cstat-no" title="statement not covered" >]</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >const modificationAlertsData: ModificationAlert[] = [</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
@@ -327,15 +329,15 @@
 <span class="cstat-no" title="statement not covered" >    message: 'スタッフが変更されました',</span>
 <span class="cstat-no" title="statement not covered" >    timestamp: new Date('2024-01-15T11:00:00Z'),</span>
 <span class="cstat-no" title="statement not covered" >    isRead: true,</span>
-<span class="cstat-no" title="statement not covered" >  }</span>
-<span class="cstat-no" title="statement not covered" >];</span>
+<span class="cstat-no" title="statement not covered" >  },</span>
+<span class="cstat-no" title="statement not covered" >]</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export function getModificationHistory(reservationId: string): ModificationHistory[] {</span>
-<span class="cstat-no" title="statement not covered" >  return modificationHistoryData.filter(history =&gt; history.reservationId === reservationId);</span>
+<span class="cstat-no" title="statement not covered" >  return modificationHistoryData.filter((history) =&gt; history.reservationId === reservationId)</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export function getModificationAlerts(reservationId: string): ModificationAlert[] {</span>
-<span class="cstat-no" title="statement not covered" >  return modificationAlertsData.filter(alert =&gt; alert.reservationId === reservationId);</span>
+<span class="cstat-no" title="statement not covered" >  return modificationAlertsData.filter((alert) =&gt; alert.reservationId === reservationId)</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export function recordModification(</span>
@@ -365,10 +367,10 @@
 <span class="cstat-no" title="statement not covered" >    userAgent,</span>
 <span class="cstat-no" title="statement not covered" >    sessionId,</span>
 <span class="cstat-no" title="statement not covered" >    timestamp: new Date(),</span>
-<span class="cstat-no" title="statement not covered" >  };</span>
-  
-<span class="cstat-no" title="statement not covered" >  modificationHistoryData.push(newModification);</span>
-  
+<span class="cstat-no" title="statement not covered" >  }</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >  modificationHistoryData.push(newModification)</span>
+&nbsp;
   // Add alert if needed
 <span class="cstat-no" title="statement not covered" >  if (fieldName === 'status' &amp;&amp; newValue === 'modifiable') {</span>
 <span class="cstat-no" title="statement not covered" >    const alert: ModificationAlert = {</span>
@@ -378,17 +380,18 @@
 <span class="cstat-no" title="statement not covered" >      message: '予約が修正可能状態に変更されました',</span>
 <span class="cstat-no" title="statement not covered" >      timestamp: new Date(),</span>
 <span class="cstat-no" title="statement not covered" >      isRead: false,</span>
-<span class="cstat-no" title="statement not covered" >    };</span>
-<span class="cstat-no" title="statement not covered" >    modificationAlertsData.push(alert);</span>
+<span class="cstat-no" title="statement not covered" >    }</span>
+<span class="cstat-no" title="statement not covered" >    modificationAlertsData.push(alert)</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

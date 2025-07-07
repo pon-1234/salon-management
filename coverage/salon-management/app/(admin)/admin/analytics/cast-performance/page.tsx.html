@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/102</span>
+                <span class='fraction'>0/100</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/102</span>
+                <span class='fraction'>0/100</span>
             </div>
         
             
@@ -189,11 +189,7 @@
 <a name='L124'></a><a href='#L124'>124</a>
 <a name='L125'></a><a href='#L125'>125</a>
 <a name='L126'></a><a href='#L126'>126</a>
-<a name='L127'></a><a href='#L127'>127</a>
-<a name='L128'></a><a href='#L128'>128</a>
-<a name='L129'></a><a href='#L129'>129</a>
-<a name='L130'></a><a href='#L130'>130</a>
-<a name='L131'></a><a href='#L131'>131</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L127'></a><a href='#L127'>127</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -267,7 +263,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -279,10 +274,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -300,11 +291,12 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -323,10 +315,10 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 import { Printer } from 'lucide-react'
 import {
   Select,
@@ -334,10 +326,10 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { CastPerformanceTable } from "@/components/analytics/cast-performance-table"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
-import { AnalyticsRepositoryImpl } from "@/lib/analytics/repository"
+} from '@/components/ui/select'
+import { CastPerformanceTable } from '@/components/analytics/cast-performance-table'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
+import { AnalyticsRepositoryImpl } from '@/lib/analytics/repository'
 &nbsp;
 <span class="cstat-no" title="statement not covered" >const analyticsRepository = new AnalyticsRepositoryImpl()</span>
 <span class="cstat-no" title="statement not covered" >const analyticsUseCases = new AnalyticsUseCases(analyticsRepository)</span>
@@ -345,14 +337,14 @@ import { AnalyticsRepositoryImpl } from "@/lib/analytics/repository"
 <span class="cstat-no" title="statement not covered" >export default function CastPerformancePage() {</span>
 <span class="cstat-no" title="statement not covered" >  const [selectedYear, setSelectedYear] = useState(2024)</span>
 <span class="cstat-no" title="statement not covered" >  const [selectedMonth, setSelectedMonth] = useState(12)</span>
-<span class="cstat-no" title="statement not covered" >  const [displayType, setDisplayType] = useState("全て表示")</span>
-<span class="cstat-no" title="statement not covered" >  const [selectedCast, setSelectedCast] = useState("")</span>
+<span class="cstat-no" title="statement not covered" >  const [displayType, setDisplayType] = useState('全て表示')</span>
+<span class="cstat-no" title="statement not covered" >  const [selectedCast, setSelectedCast] = useState('')</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const currentYear = new Date().getFullYear()</span>
 <span class="cstat-no" title="statement not covered" >  const years = Array.from({ length: 5 }, (_, i) =&gt; currentYear - 2 + i)</span>
 <span class="cstat-no" title="statement not covered" >  const months = Array.from({ length: 12 }, (_, i) =&gt; i + 1)</span>
-<span class="cstat-no" title="statement not covered" >  const displayTypes = ["全て表示", "出勤のみ", "休みのみ"]</span>
-<span class="cstat-no" title="statement not covered" >  const castList = ["----------", "きょうか", "れいな", "はるひ"]</span>
+<span class="cstat-no" title="statement not covered" >  const displayTypes = ['全て表示', '出勤のみ', '休みのみ']</span>
+<span class="cstat-no" title="statement not covered" >  const castList = ['----------', 'きょうか', 'れいな', 'はるひ']</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const handlePrint = () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    window.print()</span>
@@ -394,10 +386,7 @@ import { AnalyticsRepositoryImpl } from "@/lib/analytics/repository"
 <span class="cstat-no" title="statement not covered" >                ))}</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/SelectContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/Select&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;Select</span>
-<span class="cstat-no" title="statement not covered" >              value={displayType}</span>
-<span class="cstat-no" title="statement not covered" >              onValueChange={setDisplayType}</span>
-            &gt;
+<span class="cstat-no" title="statement not covered" >            &lt;Select value={displayType} onValueChange={setDisplayType}&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;SelectTrigger className="w-[120px]"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;SelectValue /&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/SelectTrigger&gt;</span>
@@ -409,10 +398,7 @@ import { AnalyticsRepositoryImpl } from "@/lib/analytics/repository"
 <span class="cstat-no" title="statement not covered" >                ))}</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/SelectContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/Select&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;Select</span>
-<span class="cstat-no" title="statement not covered" >              value={selectedCast}</span>
-<span class="cstat-no" title="statement not covered" >              onValueChange={setSelectedCast}</span>
-            &gt;
+<span class="cstat-no" title="statement not covered" >            &lt;Select value={selectedCast} onValueChange={setSelectedCast}&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;SelectTrigger className="w-[150px]"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;SelectValue placeholder="キャスト：" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/SelectTrigger&gt;</span>
@@ -426,28 +412,30 @@ import { AnalyticsRepositoryImpl } from "@/lib/analytics/repository"
 <span class="cstat-no" title="statement not covered" >            &lt;/Select&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;Button onClick={handlePrint} className="print:hidden bg-emerald-600 hover:bg-emerald-700 text-white"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;Button</span>
+<span class="cstat-no" title="statement not covered" >          onClick={handlePrint}</span>
+<span class="cstat-no" title="statement not covered" >          className="bg-emerald-600 text-white hover:bg-emerald-700 print:hidden"</span>
+        &gt;
 <span class="cstat-no" title="statement not covered" >          &lt;Printer className="mr-2 h-4 w-4" /&gt;</span>
           印刷する
 <span class="cstat-no" title="statement not covered" >        &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >      &lt;div className="flex items-center justify-between text-sm"&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;div className="text-red-500"&gt;</span>
-          ※ 厚生費は未払いも含めて全て表示しています
-<span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="text-red-500"&gt;※ 厚生費は未払いも含めて全て表示しています&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div className="text-gray-600"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          最終更新: {new Date().toLocaleDateString('ja-JP', { </span>
-<span class="cstat-no" title="statement not covered" >            year: 'numeric', </span>
-<span class="cstat-no" title="statement not covered" >            month: 'numeric', </span>
+<span class="cstat-no" title="statement not covered" >          最終更新:{' '}</span>
+<span class="cstat-no" title="statement not covered" >          {new Date().toLocaleDateString('ja-JP', {</span>
+<span class="cstat-no" title="statement not covered" >            year: 'numeric',</span>
+<span class="cstat-no" title="statement not covered" >            month: 'numeric',</span>
 <span class="cstat-no" title="statement not covered" >            day: 'numeric',</span>
 <span class="cstat-no" title="statement not covered" >            hour: '2-digit',</span>
-<span class="cstat-no" title="statement not covered" >            minute: '2-digit'</span>
+<span class="cstat-no" title="statement not covered" >            minute: '2-digit',</span>
 <span class="cstat-no" title="statement not covered" >          })}</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >      &lt;div className="bg-white rounded-lg border shadow-sm overflow-hidden"&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;div className="overflow-hidden rounded-lg border bg-white shadow-sm"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;CastPerformanceTable analyticsUseCases={analyticsUseCases} /&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
@@ -460,7 +448,7 @@ import { AnalyticsRepositoryImpl } from "@/lib/analytics/repository"
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../../../../prettify.js"></script>
         <script>

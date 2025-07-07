@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>105/105</span>
+                <span class='fraction'>97/97</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>105/105</span>
+                <span class='fraction'>97/97</span>
             </div>
         
             
@@ -186,14 +186,7 @@
 <a name='L121'></a><a href='#L121'>121</a>
 <a name='L122'></a><a href='#L122'>122</a>
 <a name='L123'></a><a href='#L123'>123</a>
-<a name='L124'></a><a href='#L124'>124</a>
-<a name='L125'></a><a href='#L125'>125</a>
-<a name='L126'></a><a href='#L126'>126</a>
-<a name='L127'></a><a href='#L127'>127</a>
-<a name='L128'></a><a href='#L128'>128</a>
-<a name='L129'></a><a href='#L129'>129</a>
-<a name='L130'></a><a href='#L130'>130</a>
-<a name='L131'></a><a href='#L131'>131</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L124'></a><a href='#L124'>124</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -213,8 +206,6 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -301,9 +292,6 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -314,153 +302,144 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span></td><td class="text"><pre class="prettyprint lang-js">/**
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
  * @design_doc   Not available
  * @related_to   Cast domain API endpoints
  * @known_issues Not available
  */
-import { describe, it, expect, beforeEach } from "vitest";
-import { GET, POST, PUT, DELETE } from "./route";
-import { NextRequest } from "next/server";
+import { describe, it, expect, beforeEach } from 'vitest'
+import { GET, POST, PUT, DELETE } from './route'
+import { NextRequest } from 'next/server'
 &nbsp;
-describe("Cast API endpoints", () =&gt; {
-  describe("GET /api/cast", () =&gt; {
-    it("should return all cast members", async () =&gt; {
-      const request = new NextRequest("http://localhost:3000/api/cast");
-      const response = await GET(request);
-      const data = await response.json();
+describe('Cast API endpoints', () =&gt; {
+  describe('GET /api/cast', () =&gt; {
+    it('should return all cast members', async () =&gt; {
+      const request = new NextRequest('http://localhost:3000/api/cast')
+      const response = await GET(request)
+      const data = await response.json()
 &nbsp;
-      expect(response.status).toBe(200);
-      expect(Array.isArray(data)).toBe(true);
-    });
+      expect(response.status).toBe(200)
+      expect(Array.isArray(data)).toBe(true)
+    })
 &nbsp;
-    it("should return a cast member by id", async () =&gt; {
-      const request = new NextRequest(
-        "http://localhost:3000/api/cast?id=test-id"
-      );
-      const response = await GET(request);
-      const data = await response.json();
+    it('should return a cast member by id', async () =&gt; {
+      const request = new NextRequest('http://localhost:3000/api/cast?id=test-id')
+      const response = await GET(request)
+      const data = await response.json()
 &nbsp;
-      expect(response.status).toBe(200);
-      expect(data).toHaveProperty("id", "test-id");
-    });
-  });
+      expect(response.status).toBe(200)
+      expect(data).toHaveProperty('id', 'test-id')
+    })
+  })
 &nbsp;
-  describe("POST /api/cast", () =&gt; {
-    it("should create a new cast member", async () =&gt; {
+  describe('POST /api/cast', () =&gt; {
+    it('should create a new cast member', async () =&gt; {
       const castData = {
-        name: "Test Cast",
+        name: 'Test Cast',
         age: 25,
         height: 165,
-        bust: "B",
+        bust: 'B',
         waist: 58,
         hip: 85,
         isActive: true,
-        workStart: "10:00",
-        workEnd: "22:00",
+        workStart: '10:00',
+        workEnd: '22:00',
         specialDesignationFee: 2000,
         regularDesignationFee: 1000,
-        availableOptions: ["option1"],
-      };
+        availableOptions: ['option1'],
+      }
 &nbsp;
-      const request = new NextRequest("http://localhost:3000/api/cast", {
-        method: "POST",
+      const request = new NextRequest('http://localhost:3000/api/cast', {
+        method: 'POST',
         body: JSON.stringify(castData),
-      });
+      })
 &nbsp;
-      const response = await POST(request);
-      const data = await response.json();
+      const response = await POST(request)
+      const data = await response.json()
 &nbsp;
-      expect(response.status).toBe(201);
-      expect(data).toMatchObject(castData);
-      expect(data).toHaveProperty("id");
-      expect(data).toHaveProperty("createdAt");
-      expect(data).toHaveProperty("updatedAt");
-    });
-  });
+      expect(response.status).toBe(201)
+      expect(data).toMatchObject(castData)
+      expect(data).toHaveProperty('id')
+      expect(data).toHaveProperty('createdAt')
+      expect(data).toHaveProperty('updatedAt')
+    })
+  })
 &nbsp;
-  describe("PUT /api/cast", () =&gt; {
-    it("should update an existing cast member", async () =&gt; {
+  describe('PUT /api/cast', () =&gt; {
+    it('should update an existing cast member', async () =&gt; {
       const updateData = {
-        id: "test-id",
-        name: "Updated Cast",
+        id: 'test-id',
+        name: 'Updated Cast',
         age: 26,
-      };
+      }
 &nbsp;
-      const request = new NextRequest("http://localhost:3000/api/cast", {
-        method: "PUT",
+      const request = new NextRequest('http://localhost:3000/api/cast', {
+        method: 'PUT',
         body: JSON.stringify(updateData),
-      });
+      })
 &nbsp;
-      const response = await PUT(request);
-      const data = await response.json();
+      const response = await PUT(request)
+      const data = await response.json()
 &nbsp;
-      expect(response.status).toBe(200);
-      expect(data).toMatchObject(updateData);
-      expect(data).toHaveProperty("updatedAt");
-    });
+      expect(response.status).toBe(200)
+      expect(data).toMatchObject(updateData)
+      expect(data).toHaveProperty('updatedAt')
+    })
 &nbsp;
-    it("should return 404 for non-existent cast member", async () =&gt; {
+    it('should return 404 for non-existent cast member', async () =&gt; {
       const updateData = {
-        id: "non-existent-id",
-        name: "Updated Cast",
-      };
+        id: 'non-existent-id',
+        name: 'Updated Cast',
+      }
 &nbsp;
-      const request = new NextRequest("http://localhost:3000/api/cast", {
-        method: "PUT",
+      const request = new NextRequest('http://localhost:3000/api/cast', {
+        method: 'PUT',
         body: JSON.stringify(updateData),
-      });
+      })
 &nbsp;
-      const response = await PUT(request);
+      const response = await PUT(request)
 &nbsp;
-      expect(response.status).toBe(404);
-    });
-  });
+      expect(response.status).toBe(404)
+    })
+  })
 &nbsp;
-  describe("DELETE /api/cast", () =&gt; {
-    it("should delete an existing cast member", async () =&gt; {
-      const request = new NextRequest(
-        "http://localhost:3000/api/cast?id=test-id",
-        {
-          method: "DELETE",
-        }
-      );
+  describe('DELETE /api/cast', () =&gt; {
+    it('should delete an existing cast member', async () =&gt; {
+      const request = new NextRequest('http://localhost:3000/api/cast?id=test-id', {
+        method: 'DELETE',
+      })
 &nbsp;
-      const response = await DELETE(request);
+      const response = await DELETE(request)
 &nbsp;
-      expect(response.status).toBe(204);
-    });
+      expect(response.status).toBe(204)
+    })
 &nbsp;
-    it("should return 404 for non-existent cast member", async () =&gt; {
-      const request = new NextRequest(
-        "http://localhost:3000/api/cast?id=non-existent-id",
-        {
-          method: "DELETE",
-        }
-      );
+    it('should return 404 for non-existent cast member', async () =&gt; {
+      const request = new NextRequest('http://localhost:3000/api/cast?id=non-existent-id', {
+        method: 'DELETE',
+      })
 &nbsp;
-      const response = await DELETE(request);
+      const response = await DELETE(request)
 &nbsp;
-      expect(response.status).toBe(404);
-    });
-  });
-});</pre></td></tr></table></pre>
+      expect(response.status).toBe(404)
+    })
+  })
+})
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

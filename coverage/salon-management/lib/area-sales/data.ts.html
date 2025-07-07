@@ -193,70 +193,70 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { AreaSalesData, TransportationFee } from '../types/area-sales';
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { AreaSalesData, TransportationFee } from '../types/area-sales'
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export function generateAreaSalesData(_year: number): AreaSalesData[] {</span>
   // Generate mock data for multiple areas
-<span class="cstat-no" title="statement not covered" >  const baseValue = 20000000; // 2000万円ベース</span>
-  
+<span class="cstat-no" title="statement not covered" >  const baseValue = 20000000 // 2000万円ベース</span>
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  const areas: AreaSalesData[] = [</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
-<span class="cstat-no" title="statement not covered" >      area: "東京都",</span>
-<span class="cstat-no" title="statement not covered" >      monthlySales: Array.from({ length: 12 }, () =&gt; </span>
+<span class="cstat-no" title="statement not covered" >      area: '東京都',</span>
+<span class="cstat-no" title="statement not covered" >      monthlySales: Array.from({ length: 12 }, () =&gt;</span>
 <span class="cstat-no" title="statement not covered" >        Math.floor(baseValue * 3 + (Math.random() - 0.5) * baseValue * 0.5)</span>
 <span class="cstat-no" title="statement not covered" >      ),</span>
 <span class="cstat-no" title="statement not covered" >      total: 0,</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
-<span class="cstat-no" title="statement not covered" >      area: "神奈川県",</span>
-<span class="cstat-no" title="statement not covered" >      monthlySales: Array.from({ length: 12 }, () =&gt; </span>
+<span class="cstat-no" title="statement not covered" >      area: '神奈川県',</span>
+<span class="cstat-no" title="statement not covered" >      monthlySales: Array.from({ length: 12 }, () =&gt;</span>
 <span class="cstat-no" title="statement not covered" >        Math.floor(baseValue * 1.5 + (Math.random() - 0.5) * baseValue * 0.3)</span>
 <span class="cstat-no" title="statement not covered" >      ),</span>
 <span class="cstat-no" title="statement not covered" >      total: 0,</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
-<span class="cstat-no" title="statement not covered" >      area: "千葉県",</span>
-<span class="cstat-no" title="statement not covered" >      monthlySales: Array.from({ length: 12 }, () =&gt; </span>
+<span class="cstat-no" title="statement not covered" >      area: '千葉県',</span>
+<span class="cstat-no" title="statement not covered" >      monthlySales: Array.from({ length: 12 }, () =&gt;</span>
 <span class="cstat-no" title="statement not covered" >        Math.floor(baseValue * 0.8 + (Math.random() - 0.5) * baseValue * 0.2)</span>
 <span class="cstat-no" title="statement not covered" >      ),</span>
 <span class="cstat-no" title="statement not covered" >      total: 0,</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
-<span class="cstat-no" title="statement not covered" >      area: "埼玉県",</span>
-<span class="cstat-no" title="statement not covered" >      monthlySales: Array.from({ length: 12 }, () =&gt; </span>
+<span class="cstat-no" title="statement not covered" >      area: '埼玉県',</span>
+<span class="cstat-no" title="statement not covered" >      monthlySales: Array.from({ length: 12 }, () =&gt;</span>
 <span class="cstat-no" title="statement not covered" >        Math.floor(baseValue * 0.7 + (Math.random() - 0.5) * baseValue * 0.2)</span>
 <span class="cstat-no" title="statement not covered" >      ),</span>
 <span class="cstat-no" title="statement not covered" >      total: 0,</span>
-<span class="cstat-no" title="statement not covered" >    }</span>
-<span class="cstat-no" title="statement not covered" >  ];</span>
+<span class="cstat-no" title="statement not covered" >    },</span>
+<span class="cstat-no" title="statement not covered" >  ]</span>
 &nbsp;
   // Calculate totals
-<span class="cstat-no" title="statement not covered" >  areas.forEach(area =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    area.total = area.monthlySales.reduce((sum, sale) =&gt; sum + sale, 0);</span>
-<span class="cstat-no" title="statement not covered" >  });</span>
+<span class="cstat-no" title="statement not covered" >  areas.forEach((area) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    area.total = area.monthlySales.reduce((sum, sale) =&gt; sum + sale, 0)</span>
+<span class="cstat-no" title="statement not covered" >  })</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  return areas;</span>
+<span class="cstat-no" title="statement not covered" >  return areas</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export function getTransportationFees(): TransportationFee[] {</span>
 <span class="cstat-no" title="statement not covered" >  return [</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
-<span class="cstat-no" title="statement not covered" >      area: "池袋北口・西口周辺",</span>
-<span class="cstat-no" title="statement not covered" >      fee: 0</span>
+<span class="cstat-no" title="statement not covered" >      area: '池袋北口・西口周辺',</span>
+<span class="cstat-no" title="statement not covered" >      fee: 0,</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
-<span class="cstat-no" title="statement not covered" >      area: "池袋南口・西口一部周辺",</span>
-<span class="cstat-no" title="statement not covered" >      fee: 1000</span>
+<span class="cstat-no" title="statement not covered" >      area: '池袋南口・西口一部周辺',</span>
+<span class="cstat-no" title="statement not covered" >      fee: 1000,</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
-<span class="cstat-no" title="statement not covered" >      area: "池袋東口周辺",</span>
-<span class="cstat-no" title="statement not covered" >      fee: 2000</span>
+<span class="cstat-no" title="statement not covered" >      area: '池袋東口周辺',</span>
+<span class="cstat-no" title="statement not covered" >      fee: 2000,</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
-<span class="cstat-no" title="statement not covered" >      area: "その他",</span>
-<span class="cstat-no" title="statement not covered" >      fee: 3000</span>
-<span class="cstat-no" title="statement not covered" >    }</span>
-<span class="cstat-no" title="statement not covered" >  ];</span>
+<span class="cstat-no" title="statement not covered" >      area: 'その他',</span>
+<span class="cstat-no" title="statement not covered" >      fee: 3000,</span>
+<span class="cstat-no" title="statement not covered" >    },</span>
+<span class="cstat-no" title="statement not covered" >  ]</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;</pre></td></tr></table></pre>
 
@@ -265,7 +265,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

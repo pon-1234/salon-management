@@ -1,12 +1,12 @@
-"use client"
+'use client'
 
-import React, { useState, useEffect } from "react"
-import { ScheduleGrid } from "@/components/cast-schedule/schedule-grid"
-import { CastScheduleUseCases } from "@/lib/cast-schedule/usecases"
-import { WeeklySchedule } from "@/lib/cast-schedule/types"
-import { Header } from "@/components/header"
-import { ScheduleInfoBar } from "@/components/cast-schedule/schedule-info-bar"
-import { ScheduleActionButtons } from "@/components/cast-schedule/schedule-action-buttons"
+import React, { useState, useEffect } from 'react'
+import { ScheduleGrid } from '@/components/cast-schedule/schedule-grid'
+import { CastScheduleUseCases } from '@/lib/cast-schedule/usecases'
+import { WeeklySchedule } from '@/lib/cast-schedule/types'
+import { Header } from '@/components/header'
+import { ScheduleInfoBar } from '@/components/cast-schedule/schedule-info-bar'
+import { ScheduleActionButtons } from '@/components/cast-schedule/schedule-action-buttons'
 
 const castScheduleUseCases = new CastScheduleUseCases()
 
@@ -17,13 +17,13 @@ export default function WeeklySchedulePage() {
   useEffect(() => {
     const fetchSchedule = async () => {
       try {
-        const weeklySchedule = await castScheduleUseCases.getWeeklySchedule({ 
-          date, 
-          castFilter: "all" 
+        const weeklySchedule = await castScheduleUseCases.getWeeklySchedule({
+          date,
+          castFilter: 'all',
         })
         setSchedule(weeklySchedule)
       } catch (error) {
-        console.error("Failed to fetch schedule:", error)
+        console.error('Failed to fetch schedule:', error)
       }
     }
 
@@ -37,13 +37,13 @@ export default function WeeklySchedulePage() {
   const handleRefresh = () => {
     const fetchSchedule = async () => {
       try {
-        const weeklySchedule = await castScheduleUseCases.getWeeklySchedule({ 
-          date, 
-          castFilter: "all" 
+        const weeklySchedule = await castScheduleUseCases.getWeeklySchedule({
+          date,
+          castFilter: 'all',
         })
         setSchedule(weeklySchedule)
       } catch (error) {
-        console.error("Failed to fetch schedule:", error)
+        console.error('Failed to fetch schedule:', error)
       }
     }
     fetchSchedule()
@@ -60,7 +60,7 @@ export default function WeeklySchedulePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      <ScheduleInfoBar 
+      <ScheduleInfoBar
         totalCast={schedule.stats.totalCast}
         workingCast={schedule.stats.workingCast}
         averageWorkingHours={schedule.stats.averageWorkingHours}
@@ -73,10 +73,7 @@ export default function WeeklySchedulePage() {
         date={date}
         onDateChange={setDate}
       />
-      <ScheduleGrid
-        startDate={schedule.startDate}
-        entries={schedule.entries}
-      />
+      <ScheduleGrid startDate={schedule.startDate} entries={schedule.entries} />
     </div>
   )
 }

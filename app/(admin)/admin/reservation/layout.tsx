@@ -1,11 +1,3 @@
-export default function ReservationLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  return (
-    <div className="flex flex-col h-full">
-      {children}
-    </div>
-  )
+export default function ReservationLayout({ children }: { children: React.ReactNode }) {
+  return <div className="flex h-full flex-col">{children}</div>
 }

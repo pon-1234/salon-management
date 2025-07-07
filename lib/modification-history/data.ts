@@ -1,4 +1,4 @@
-import { ModificationHistory, ModificationAlert } from '@/lib/types/modification-history';
+import { ModificationHistory, ModificationAlert } from '@/lib/types/modification-history'
 
 // Mock data for modification history
 const modificationHistoryData: ModificationHistory[] = [
@@ -31,8 +31,8 @@ const modificationHistoryData: ModificationHistory[] = [
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
     sessionId: 'session_12345',
     timestamp: new Date('2024-01-15T11:00:00Z'),
-  }
-];
+  },
+]
 
 const modificationAlertsData: ModificationAlert[] = [
   {
@@ -50,15 +50,15 @@ const modificationAlertsData: ModificationAlert[] = [
     message: 'スタッフが変更されました',
     timestamp: new Date('2024-01-15T11:00:00Z'),
     isRead: true,
-  }
-];
+  },
+]
 
 export function getModificationHistory(reservationId: string): ModificationHistory[] {
-  return modificationHistoryData.filter(history => history.reservationId === reservationId);
+  return modificationHistoryData.filter((history) => history.reservationId === reservationId)
 }
 
 export function getModificationAlerts(reservationId: string): ModificationAlert[] {
-  return modificationAlertsData.filter(alert => alert.reservationId === reservationId);
+  return modificationAlertsData.filter((alert) => alert.reservationId === reservationId)
 }
 
 export function recordModification(
@@ -88,10 +88,10 @@ export function recordModification(
     userAgent,
     sessionId,
     timestamp: new Date(),
-  };
-  
-  modificationHistoryData.push(newModification);
-  
+  }
+
+  modificationHistoryData.push(newModification)
+
   // Add alert if needed
   if (fieldName === 'status' && newValue === 'modifiable') {
     const alert: ModificationAlert = {
@@ -101,7 +101,7 @@ export function recordModification(
       message: '予約が修正可能状態に変更されました',
       timestamp: new Date(),
       isRead: false,
-    };
-    modificationAlertsData.push(alert);
+    }
+    modificationAlertsData.push(alert)
   }
 }

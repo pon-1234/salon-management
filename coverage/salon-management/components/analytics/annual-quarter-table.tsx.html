@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/110</span>
+                <span class='fraction'>0/105</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/110</span>
+                <span class='fraction'>0/105</span>
             </div>
         
             
@@ -202,10 +202,7 @@
 <a name='L137'></a><a href='#L137'>137</a>
 <a name='L138'></a><a href='#L138'>138</a>
 <a name='L139'></a><a href='#L139'>139</a>
-<a name='L140'></a><a href='#L140'>140</a>
-<a name='L141'></a><a href='#L141'>141</a>
-<a name='L142'></a><a href='#L142'>142</a>
-<a name='L143'></a><a href='#L143'>143</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L140'></a><a href='#L140'>140</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -331,11 +328,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -347,9 +340,10 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -357,8 +351,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
+} from '@/components/ui/table'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 &nbsp;
 interface AnnualQuarterTableProps {
   year: number
@@ -382,41 +376,41 @@ interface QuarterData {
     // ダミーデータ（実際にはuseCasesから取得）
 <span class="cstat-no" title="statement not covered" >    const dummyData: QuarterData[] = [</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        quarter: "第1四半期",</span>
-<span class="cstat-no" title="statement not covered" >        months: "1-3月",</span>
+<span class="cstat-no" title="statement not covered" >        quarter: '第1四半期',</span>
+<span class="cstat-no" title="statement not covered" >        months: '1-3月',</span>
 <span class="cstat-no" title="statement not covered" >        totalSales: 23456700,</span>
 <span class="cstat-no" title="statement not covered" >        customerCount: 2456,</span>
 <span class="cstat-no" title="statement not covered" >        averagePerCustomer: 9552,</span>
 <span class="cstat-no" title="statement not covered" >        growthRate: 5.2,</span>
-<span class="cstat-no" title="statement not covered" >        composition: 22.9</span>
+<span class="cstat-no" title="statement not covered" >        composition: 22.9,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        quarter: "第2四半期",</span>
-<span class="cstat-no" title="statement not covered" >        months: "4-6月",</span>
+<span class="cstat-no" title="statement not covered" >        quarter: '第2四半期',</span>
+<span class="cstat-no" title="statement not covered" >        months: '4-6月',</span>
 <span class="cstat-no" title="statement not covered" >        totalSales: 25678900,</span>
 <span class="cstat-no" title="statement not covered" >        customerCount: 2678,</span>
 <span class="cstat-no" title="statement not covered" >        averagePerCustomer: 9589,</span>
 <span class="cstat-no" title="statement not covered" >        growthRate: 8.7,</span>
-<span class="cstat-no" title="statement not covered" >        composition: 25.1</span>
+<span class="cstat-no" title="statement not covered" >        composition: 25.1,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        quarter: "第3四半期",</span>
-<span class="cstat-no" title="statement not covered" >        months: "7-9月",</span>
+<span class="cstat-no" title="statement not covered" >        quarter: '第3四半期',</span>
+<span class="cstat-no" title="statement not covered" >        months: '7-9月',</span>
 <span class="cstat-no" title="statement not covered" >        totalSales: 27234500,</span>
 <span class="cstat-no" title="statement not covered" >        customerCount: 2834,</span>
 <span class="cstat-no" title="statement not covered" >        averagePerCustomer: 9612,</span>
 <span class="cstat-no" title="statement not covered" >        growthRate: 11.2,</span>
-<span class="cstat-no" title="statement not covered" >        composition: 26.6</span>
+<span class="cstat-no" title="statement not covered" >        composition: 26.6,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        quarter: "第4四半期",</span>
-<span class="cstat-no" title="statement not covered" >        months: "10-12月",</span>
+<span class="cstat-no" title="statement not covered" >        quarter: '第4四半期',</span>
+<span class="cstat-no" title="statement not covered" >        months: '10-12月',</span>
 <span class="cstat-no" title="statement not covered" >        totalSales: 26148300,</span>
 <span class="cstat-no" title="statement not covered" >        customerCount: 2736,</span>
 <span class="cstat-no" title="statement not covered" >        averagePerCustomer: 9553,</span>
 <span class="cstat-no" title="statement not covered" >        growthRate: 6.8,</span>
-<span class="cstat-no" title="statement not covered" >        composition: 25.5</span>
-<span class="cstat-no" title="statement not covered" >      }</span>
+<span class="cstat-no" title="statement not covered" >        composition: 25.5,</span>
+<span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >    ]</span>
 <span class="cstat-no" title="statement not covered" >    setData(dummyData)</span>
 <span class="cstat-no" title="statement not covered" >  }, [year, analyticsUseCases])</span>
@@ -452,35 +446,31 @@ interface QuarterData {
 <span class="cstat-no" title="statement not covered" >            &lt;TableRow key={quarter.quarter}&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell className="font-medium"&gt;{quarter.quarter}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell&gt;{quarter.months}&lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                ¥{quarter.totalSales.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;¥{quarter.totalSales.toLocaleString()}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                {quarter.customerCount.toLocaleString()}人</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                ¥{quarter.averagePerCustomer.toLocaleString()}</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;{quarter.composition}%&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                {quarter.composition}%</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;span className={quarter.growthRate &gt; 0 ? "text-green-600" : "text-red-600"}&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  {quarter.growthRate &gt; 0 ? "+" : ""}{quarter.growthRate}%</span>
+<span class="cstat-no" title="statement not covered" >                &lt;span className={quarter.growthRate &gt; 0 ? 'text-green-600' : 'text-red-600'}&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  {quarter.growthRate &gt; 0 ? '+' : ''}</span>
+<span class="cstat-no" title="statement not covered" >                  {quarter.growthRate}%</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TableRow&gt;</span>
 <span class="cstat-no" title="statement not covered" >          ))}</span>
-<span class="cstat-no" title="statement not covered" >          &lt;TableRow className="font-bold bg-gray-50"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;TableRow className="bg-gray-50 font-bold"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell colSpan={2}&gt;年間合計&lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;¥{totals.totalSales.toLocaleString()}&lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;{totals.customerCount.toLocaleString()}人&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              ¥{totals.totalSales.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              {totals.customerCount.toLocaleString()}人</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              ¥{totals.customerCount &gt; 0 ? Math.round(totals.totalSales / totals.customerCount).toLocaleString() : 0}</span>
+              ¥
+<span class="cstat-no" title="statement not covered" >              {totals.customerCount &gt; 0</span>
+<span class="cstat-no" title="statement not covered" >                ? Math.round(totals.totalSales / totals.customerCount).toLocaleString()</span>
+<span class="cstat-no" title="statement not covered" >                : 0}</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;100.0%&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;-&lt;/TableCell&gt;</span>
@@ -489,14 +479,15 @@ interface QuarterData {
 <span class="cstat-no" title="statement not covered" >      &lt;/Table&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

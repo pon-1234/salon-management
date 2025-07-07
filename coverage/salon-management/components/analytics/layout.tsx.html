@@ -217,82 +217,82 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { Calendar, BarChart3, CalendarDays, Clock, Users } from 'lucide-react';</span></span></span>
-import Link from 'next/link';
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { Calendar, BarChart3, CalendarDays, Clock, Users } from 'lucide-react'</span></span></span>
+import Link from 'next/link'
 &nbsp;
 <span class="cstat-no" title="statement not covered" >const navigation = [</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    name: "日次レポート",</span>
-<span class="cstat-no" title="statement not covered" >    href: "/admin/analytics/daily-sales",</span>
+<span class="cstat-no" title="statement not covered" >    name: '日次レポート',</span>
+<span class="cstat-no" title="statement not covered" >    href: '/admin/analytics/daily-sales',</span>
 <span class="cstat-no" title="statement not covered" >    icon: Calendar,</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    name: "月次レポート",</span>
-<span class="cstat-no" title="statement not covered" >    href: "/admin/analytics/monthly-sales",</span>
+<span class="cstat-no" title="statement not covered" >    name: '月次レポート',</span>
+<span class="cstat-no" title="statement not covered" >    href: '/admin/analytics/monthly-sales',</span>
 <span class="cstat-no" title="statement not covered" >    icon: BarChart3,</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    name: "年間レポート",</span>
-<span class="cstat-no" title="statement not covered" >    href: "/admin/analytics/annual-sales",</span>
+<span class="cstat-no" title="statement not covered" >    name: '年間レポート',</span>
+<span class="cstat-no" title="statement not covered" >    href: '/admin/analytics/annual-sales',</span>
 <span class="cstat-no" title="statement not covered" >    icon: CalendarDays,</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    name: "コース別集計",</span>
-<span class="cstat-no" title="statement not covered" >    href: "/admin/analytics/course-sales",</span>
+<span class="cstat-no" title="statement not covered" >    name: 'コース別集計',</span>
+<span class="cstat-no" title="statement not covered" >    href: '/admin/analytics/course-sales',</span>
 <span class="cstat-no" title="statement not covered" >    icon: BarChart3,</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    name: "オプション別集計",</span>
-<span class="cstat-no" title="statement not covered" >    href: "/admin/analytics/option-sales",</span>
+<span class="cstat-no" title="statement not covered" >    name: 'オプション別集計',</span>
+<span class="cstat-no" title="statement not covered" >    href: '/admin/analytics/option-sales',</span>
 <span class="cstat-no" title="statement not covered" >    icon: BarChart3,</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    name: "営業媒体別集計",</span>
-<span class="cstat-no" title="statement not covered" >    href: "/admin/analytics/marketing-channels",</span>
+<span class="cstat-no" title="statement not covered" >    name: '営業媒体別集計',</span>
+<span class="cstat-no" title="statement not covered" >    href: '/admin/analytics/marketing-channels',</span>
 <span class="cstat-no" title="statement not covered" >    icon: BarChart3,</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    name: "エリア別集計",</span>
-<span class="cstat-no" title="statement not covered" >    href: "/admin/analytics/area-sales",</span>
+<span class="cstat-no" title="statement not covered" >    name: 'エリア別集計',</span>
+<span class="cstat-no" title="statement not covered" >    href: '/admin/analytics/area-sales',</span>
 <span class="cstat-no" title="statement not covered" >    icon: BarChart3,</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    name: "区別集計",</span>
-<span class="cstat-no" title="statement not covered" >    href: "/admin/analytics/district-sales",</span>
+<span class="cstat-no" title="statement not covered" >    name: '区別集計',</span>
+<span class="cstat-no" title="statement not covered" >    href: '/admin/analytics/district-sales',</span>
 <span class="cstat-no" title="statement not covered" >    icon: BarChart3,</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    name: "時間別集計",</span>
-<span class="cstat-no" title="statement not covered" >    href: "/admin/analytics/hourly-sales",</span>
+<span class="cstat-no" title="statement not covered" >    name: '時間別集計',</span>
+<span class="cstat-no" title="statement not covered" >    href: '/admin/analytics/hourly-sales',</span>
 <span class="cstat-no" title="statement not covered" >    icon: Clock,</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    name: "キャスト実績",</span>
-<span class="cstat-no" title="statement not covered" >    href: "/admin/analytics/cast-performance",</span>
+<span class="cstat-no" title="statement not covered" >    name: 'キャスト実績',</span>
+<span class="cstat-no" title="statement not covered" >    href: '/admin/analytics/cast-performance',</span>
 <span class="cstat-no" title="statement not covered" >    icon: Users,</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    name: "就業データ",</span>
-<span class="cstat-no" title="statement not covered" >    href: "/admin/analytics/staff-attendance",</span>
+<span class="cstat-no" title="statement not covered" >    name: '就業データ',</span>
+<span class="cstat-no" title="statement not covered" >    href: '/admin/analytics/staff-attendance',</span>
 <span class="cstat-no" title="statement not covered" >    icon: Users,</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
-<span class="cstat-no" title="statement not covered" >];</span>
+<span class="cstat-no" title="statement not covered" >]</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export function AnalyticsLayout() {</span>
 <span class="cstat-no" title="statement not covered" >  return (</span>
-<span class="cstat-no" title="statement not covered" >    &lt;nav className="w-64 bg-gray-100 flex-shrink-0 border-r sticky top-[83px] h-[calc(100vh-83px)] overflow-y-auto"&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;nav className="sticky top-[83px] h-[calc(100vh-83px)] w-64 flex-shrink-0 overflow-y-auto border-r bg-gray-100"&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;ul className="space-y-2 p-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        {navigation.map((item) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >          &lt;li key={item.name}&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;Link href={item.href} className="flex items-center p-2 rounded hover:bg-gray-200"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;item.icon className="w-5 h-5 mr-2" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Link href={item.href} className="flex items-center rounded p-2 hover:bg-gray-200"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;item.icon className="mr-2 h-5 w-5" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >              {item.name}</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/Link&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/li&gt;</span>
 <span class="cstat-no" title="statement not covered" >        ))}</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/ul&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/nav&gt;</span>
-  );
+  )
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;</pre></td></tr></table></pre>
 
@@ -301,7 +301,7 @@ import Link from 'next/link';
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -8,12 +8,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
-import { OptionSalesData } from "@/lib/types/analytics"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+} from '@/components/ui/table'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
+import { OptionSalesData } from '@/lib/types/analytics'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
-import { Skeleton } from "@/components/ui/skeleton"
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface OptionSalesTableProps {
   year: number
@@ -33,7 +33,7 @@ export function OptionSalesTable({ year, analyticsUseCases }: OptionSalesTablePr
         const result = await analyticsUseCases.getOptionSalesReport(year)
         setData(result)
       } catch (err) {
-        setError("データの取得中にエラーが発生しました。")
+        setError('データの取得中にエラーが発生しました。')
         console.error(err)
       } finally {
         setIsLoading(false)
@@ -70,11 +70,11 @@ export function OptionSalesTable({ year, analyticsUseCases }: OptionSalesTablePr
             <TableHead className="w-[200px]">オプション</TableHead>
             <TableHead className="w-[100px]">価格</TableHead>
             {months.map((month) => (
-              <TableHead key={month} className="text-right whitespace-nowrap">
+              <TableHead key={month} className="whitespace-nowrap text-right">
                 {`${month.toString().padStart(2, '0')}月`}
               </TableHead>
             ))}
-            <TableHead className="text-right bg-gray-100">TOTAL</TableHead>
+            <TableHead className="bg-gray-100 text-right">TOTAL</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -85,15 +85,15 @@ export function OptionSalesTable({ year, analyticsUseCases }: OptionSalesTablePr
             return (
               <TableRow key={option.id}>
                 <TableCell className="font-medium">{option.name}</TableCell>
-                <TableCell>{option.price > 0 ? `${option.price.toLocaleString()}円` : "無料"}</TableCell>
+                <TableCell>
+                  {option.price > 0 ? `${option.price.toLocaleString()}円` : '無料'}
+                </TableCell>
                 {option.monthlySales.map((count, index) => (
                   <TableCell key={index} className="text-right">
-                    {count || ""}
+                    {count || ''}
                   </TableCell>
                 ))}
-                <TableCell className="text-right font-medium text-blue-600">
-                  {total}
-                </TableCell>
+                <TableCell className="text-right font-medium text-blue-600">{total}</TableCell>
               </TableRow>
             )
           })}

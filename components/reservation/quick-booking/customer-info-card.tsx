@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Phone, User } from 'lucide-react'
 
 interface CustomerInfoCardProps {
@@ -9,11 +9,11 @@ interface CustomerInfoCardProps {
   points: number
 }
 
-export function CustomerInfoCard({ 
-  customerName, 
-  customerType, 
-  phoneNumber, 
-  points 
+export function CustomerInfoCard({
+  customerName,
+  customerType,
+  phoneNumber,
+  points,
 }: CustomerInfoCardProps) {
   return (
     <Card>
@@ -24,8 +24,8 @@ export function CustomerInfoCard({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <div className="flex justify-between items-center">
+        <div className="rounded-lg bg-gray-50 p-4">
+          <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold">{customerName}</h3>
               <Badge variant="secondary" className="mt-1">
@@ -34,12 +34,10 @@ export function CustomerInfoCard({
             </div>
             <div className="text-right">
               <div className="flex items-center">
-                <Phone className="h-4 w-4 mr-1" />
+                <Phone className="mr-1 h-4 w-4" />
                 <span className="font-semibold">{phoneNumber}</span>
               </div>
-              <div className="text-sm text-gray-600 mt-1">
-                現在 {points}pt
-              </div>
+              <div className="mt-1 text-sm text-gray-600">現在 {points}pt</div>
             </div>
           </div>
         </div>

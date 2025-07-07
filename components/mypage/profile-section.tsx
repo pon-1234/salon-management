@@ -59,29 +59,18 @@ export function ProfileSection({ user, store }: ProfileSectionProps) {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>基本情報</CardTitle>
           {!isEditing ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsEditing(true)}
-            >
-              <Edit2 className="h-4 w-4 mr-2" />
+            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+              <Edit2 className="mr-2 h-4 w-4" />
               編集
             </Button>
           ) : (
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCancel}
-              >
-                <X className="h-4 w-4 mr-2" />
+              <Button variant="outline" size="sm" onClick={handleCancel}>
+                <X className="mr-2 h-4 w-4" />
                 キャンセル
               </Button>
-              <Button
-                size="sm"
-                onClick={handleSave}
-              >
-                <Check className="h-4 w-4 mr-2" />
+              <Button size="sm" onClick={handleSave}>
+                <Check className="mr-2 h-4 w-4" />
                 保存
               </Button>
             </div>
@@ -151,7 +140,7 @@ export function ProfileSection({ user, store }: ProfileSectionProps) {
           </div>
 
           {/* SMS Notifications */}
-          <div className="flex items-center justify-between pt-4 border-t">
+          <div className="flex items-center justify-between border-t pt-4">
             <div className="flex items-center gap-2">
               <Label htmlFor="sms">SMS通知</Label>
               <p className="text-sm text-gray-500">お得な情報をSMSで受け取る</p>
@@ -214,7 +203,10 @@ export function ProfileSection({ user, store }: ProfileSectionProps) {
           <Button variant="outline" className="w-full justify-start">
             パスワードを変更
           </Button>
-          <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
+          <Button
+            variant="outline"
+            className="w-full justify-start text-red-600 hover:text-red-700"
+          >
             退会する
           </Button>
         </CardContent>

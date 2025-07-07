@@ -97,7 +97,9 @@
 <a name='L32'></a><a href='#L32'>32</a>
 <a name='L33'></a><a href='#L33'>33</a>
 <a name='L34'></a><a href='#L34'>34</a>
-<a name='L35'></a><a href='#L35'>35</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -114,7 +116,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -126,42 +128,46 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useState } from "react"
-import { ChatWindow } from "@/components/chat/chat-window"
-import { CustomerList } from "@/components/chat/customer-list"
-import { CustomerHeader } from "@/components/chat/customer-header"
-import { Customer } from "@/lib/types/chat"
-import { getCustomers } from "@/lib/chat/utils" // utilsからのインポートに変更
+import { useState } from 'react'
+import { ChatWindow } from '@/components/chat/chat-window'
+import { CustomerList } from '@/components/chat/customer-list'
+import { CustomerHeader } from '@/components/chat/customer-header'
+import { Customer } from '@/lib/types/chat'
+import { getCustomers } from '@/lib/chat/utils' // utilsからのインポートに変更
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export default function ChatPage() {</span>
 <span class="cstat-no" title="statement not covered" >  const [selectedCustomer, setSelectedCustomer] = useState&lt;Customer | null&gt;(null)</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;div className="flex h-full"&gt;</span>
-        {/* Customer List - Hidden on mobile when customer selected */}
-<span class="cstat-no" title="statement not covered" >        &lt;div className={`${</span>
-<span class="cstat-no" title="statement not covered" >          selectedCustomer ? 'hidden md:block' : 'block'</span>
-<span class="cstat-no" title="statement not covered" >        } transition-all duration-300`}&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;CustomerList </span>
-<span class="cstat-no" title="statement not covered" >            selectedCustomerId={selectedCustomer?.id}</span>
-<span class="cstat-no" title="statement not covered" >            onSelectCustomer={setSelectedCustomer}</span>
-<span class="cstat-no" title="statement not covered" >          /&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
-        
-        {/* Chat Window */}
-<span class="cstat-no" title="statement not covered" >        &lt;div className={`flex-1 flex flex-col ${</span>
+      {/* Customer List - Hidden on mobile when customer selected */}
+<span class="cstat-no" title="statement not covered" >      &lt;div</span>
+<span class="cstat-no" title="statement not covered" >        className={`${selectedCustomer ? 'hidden md:block' : 'block'} transition-all duration-300`}</span>
+      &gt;
+<span class="cstat-no" title="statement not covered" >        &lt;CustomerList</span>
+<span class="cstat-no" title="statement not covered" >          selectedCustomerId={selectedCustomer?.id}</span>
+<span class="cstat-no" title="statement not covered" >          onSelectCustomer={setSelectedCustomer}</span>
+<span class="cstat-no" title="statement not covered" >        /&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
+&nbsp;
+      {/* Chat Window */}
+<span class="cstat-no" title="statement not covered" >      &lt;div</span>
+<span class="cstat-no" title="statement not covered" >        className={`flex flex-1 flex-col ${</span>
 <span class="cstat-no" title="statement not covered" >          !selectedCustomer ? 'hidden md:flex' : 'flex'</span>
-<span class="cstat-no" title="statement not covered" >        } bg-white rounded-l-lg shadow-sm border border-gray-200`}&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;CustomerHeader customer={selectedCustomer || undefined} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;ChatWindow customerId={selectedCustomer?.id} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >        } rounded-l-lg border border-gray-200 bg-white shadow-sm`}</span>
+      &gt;
+<span class="cstat-no" title="statement not covered" >        &lt;CustomerHeader customer={selectedCustomer || undefined} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;ChatWindow customerId={selectedCustomer?.id} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
 <span class="cstat-no" title="statement not covered" >}</span>
@@ -172,7 +178,7 @@ import { getCustomers } from "@/lib/chat/utils" // utilsからのインポート
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../../../prettify.js"></script>
         <script>

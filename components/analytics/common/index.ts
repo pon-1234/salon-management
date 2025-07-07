@@ -1,1 +1,1 @@
-export * from './analytics-table';
+export * from './analytics-table'

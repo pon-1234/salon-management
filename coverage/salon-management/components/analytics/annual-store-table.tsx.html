@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/118</span>
+                <span class='fraction'>0/109</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/118</span>
+                <span class='fraction'>0/109</span>
             </div>
         
             
@@ -209,13 +209,7 @@
 <a name='L144'></a><a href='#L144'>144</a>
 <a name='L145'></a><a href='#L145'>145</a>
 <a name='L146'></a><a href='#L146'>146</a>
-<a name='L147'></a><a href='#L147'>147</a>
-<a name='L148'></a><a href='#L148'>148</a>
-<a name='L149'></a><a href='#L149'>149</a>
-<a name='L150'></a><a href='#L150'>150</a>
-<a name='L151'></a><a href='#L151'>151</a>
-<a name='L152'></a><a href='#L152'>152</a>
-<a name='L153'></a><a href='#L153'>153</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L147'></a><a href='#L147'>147</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -342,21 +336,14 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -367,9 +354,10 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -377,8 +365,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
+} from '@/components/ui/table'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 &nbsp;
 interface AnnualStoreTableProps {
   year: number
@@ -404,38 +392,38 @@ interface StoreData {
     // ダミーデータ（実際にはuseCasesから取得）
 <span class="cstat-no" title="statement not covered" >    const dummyData: StoreData[] = [</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "1",</span>
-<span class="cstat-no" title="statement not covered" >        name: "渋谷店",</span>
-<span class="cstat-no" title="statement not covered" >        location: "東京都渋谷区",</span>
+<span class="cstat-no" title="statement not covered" >        id: '1',</span>
+<span class="cstat-no" title="statement not covered" >        name: '渋谷店',</span>
+<span class="cstat-no" title="statement not covered" >        location: '東京都渋谷区',</span>
 <span class="cstat-no" title="statement not covered" >        totalSales: 45678900,</span>
 <span class="cstat-no" title="statement not covered" >        customerCount: 4567,</span>
 <span class="cstat-no" title="statement not covered" >        averagePerCustomer: 10004,</span>
 <span class="cstat-no" title="statement not covered" >        staffCount: 8,</span>
 <span class="cstat-no" title="statement not covered" >        salesPerStaff: 5709863,</span>
-<span class="cstat-no" title="statement not covered" >        growthRate: 12.3</span>
+<span class="cstat-no" title="statement not covered" >        growthRate: 12.3,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "2",</span>
-<span class="cstat-no" title="statement not covered" >        name: "新宿店",</span>
-<span class="cstat-no" title="statement not covered" >        location: "東京都新宿区",</span>
+<span class="cstat-no" title="statement not covered" >        id: '2',</span>
+<span class="cstat-no" title="statement not covered" >        name: '新宿店',</span>
+<span class="cstat-no" title="statement not covered" >        location: '東京都新宿区',</span>
 <span class="cstat-no" title="statement not covered" >        totalSales: 38912300,</span>
 <span class="cstat-no" title="statement not covered" >        customerCount: 4012,</span>
 <span class="cstat-no" title="statement not covered" >        averagePerCustomer: 9700,</span>
 <span class="cstat-no" title="statement not covered" >        staffCount: 7,</span>
 <span class="cstat-no" title="statement not covered" >        salesPerStaff: 5558900,</span>
-<span class="cstat-no" title="statement not covered" >        growthRate: 8.5</span>
+<span class="cstat-no" title="statement not covered" >        growthRate: 8.5,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "3",</span>
-<span class="cstat-no" title="statement not covered" >        name: "横浜店",</span>
-<span class="cstat-no" title="statement not covered" >        location: "神奈川県横浜市",</span>
+<span class="cstat-no" title="statement not covered" >        id: '3',</span>
+<span class="cstat-no" title="statement not covered" >        name: '横浜店',</span>
+<span class="cstat-no" title="statement not covered" >        location: '神奈川県横浜市',</span>
 <span class="cstat-no" title="statement not covered" >        totalSales: 17927200,</span>
 <span class="cstat-no" title="statement not covered" >        customerCount: 2125,</span>
 <span class="cstat-no" title="statement not covered" >        averagePerCustomer: 8437,</span>
 <span class="cstat-no" title="statement not covered" >        staffCount: 5,</span>
 <span class="cstat-no" title="statement not covered" >        salesPerStaff: 3585440,</span>
-<span class="cstat-no" title="statement not covered" >        growthRate: -2.1</span>
-<span class="cstat-no" title="statement not covered" >      }</span>
+<span class="cstat-no" title="statement not covered" >        growthRate: -2.1,</span>
+<span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >    ]</span>
 <span class="cstat-no" title="statement not covered" >    setData(dummyData)</span>
 <span class="cstat-no" title="statement not covered" >  }, [year, analyticsUseCases])</span>
@@ -474,44 +462,37 @@ interface StoreData {
 <span class="cstat-no" title="statement not covered" >            &lt;TableRow key={store.id}&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell className="font-medium"&gt;{store.name}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell&gt;{store.location}&lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                ¥{store.totalSales.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                {store.customerCount.toLocaleString()}人</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;¥{store.totalSales.toLocaleString()}&lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;{store.customerCount.toLocaleString()}人&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                ¥{store.averagePerCustomer.toLocaleString()}</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;{store.staffCount}人&lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;¥{store.salesPerStaff.toLocaleString()}&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                {store.staffCount}人</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                ¥{store.salesPerStaff.toLocaleString()}</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;span className={store.growthRate &gt; 0 ? "text-green-600" : "text-red-600"}&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  {store.growthRate &gt; 0 ? "+" : ""}{store.growthRate}%</span>
+<span class="cstat-no" title="statement not covered" >                &lt;span className={store.growthRate &gt; 0 ? 'text-green-600' : 'text-red-600'}&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  {store.growthRate &gt; 0 ? '+' : ''}</span>
+<span class="cstat-no" title="statement not covered" >                  {store.growthRate}%</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TableRow&gt;</span>
 <span class="cstat-no" title="statement not covered" >          ))}</span>
-<span class="cstat-no" title="statement not covered" >          &lt;TableRow className="font-bold bg-gray-50"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;TableRow className="bg-gray-50 font-bold"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell colSpan={2}&gt;全店舗合計&lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;¥{totals.totalSales.toLocaleString()}&lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;{totals.customerCount.toLocaleString()}人&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              ¥{totals.totalSales.toLocaleString()}</span>
+              ¥
+<span class="cstat-no" title="statement not covered" >              {totals.customerCount &gt; 0</span>
+<span class="cstat-no" title="statement not covered" >                ? Math.round(totals.totalSales / totals.customerCount).toLocaleString()</span>
+<span class="cstat-no" title="statement not covered" >                : 0}</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TableCell&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;{totals.staffCount}人&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              {totals.customerCount.toLocaleString()}人</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              ¥{totals.customerCount &gt; 0 ? Math.round(totals.totalSales / totals.customerCount).toLocaleString() : 0}</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              {totals.staffCount}人</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/TableCell&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              ¥{totals.staffCount &gt; 0 ? Math.round(totals.totalSales / totals.staffCount).toLocaleString() : 0}</span>
+              ¥
+<span class="cstat-no" title="statement not covered" >              {totals.staffCount &gt; 0</span>
+<span class="cstat-no" title="statement not covered" >                ? Math.round(totals.totalSales / totals.staffCount).toLocaleString()</span>
+<span class="cstat-no" title="statement not covered" >                : 0}</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TableCell className="text-right"&gt;-&lt;/TableCell&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/TableRow&gt;</span>
@@ -519,14 +500,15 @@ interface StoreData {
 <span class="cstat-no" title="statement not covered" >      &lt;/Table&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

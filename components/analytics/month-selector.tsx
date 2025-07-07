@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import {
   Select,
@@ -6,7 +6,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from '@/components/ui/select'
 
 interface MonthSelectorProps {
   year: number
@@ -15,22 +15,14 @@ interface MonthSelectorProps {
   onMonthChange: (month: number) => void
 }
 
-export function MonthSelector({
-  year,
-  month,
-  onYearChange,
-  onMonthChange,
-}: MonthSelectorProps) {
+export function MonthSelector({ year, month, onYearChange, onMonthChange }: MonthSelectorProps) {
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i)
   const months = Array.from({ length: 12 }, (_, i) => i + 1)
 
   return (
     <div className="flex items-center gap-2">
-      <Select
-        value={year.toString()}
-        onValueChange={(value) => onYearChange(parseInt(value))}
-      >
+      <Select value={year.toString()} onValueChange={(value) => onYearChange(parseInt(value))}>
         <SelectTrigger className="w-[120px]">
           <SelectValue />
         </SelectTrigger>
@@ -42,10 +34,7 @@ export function MonthSelector({
           ))}
         </SelectContent>
       </Select>
-      <Select
-        value={month.toString()}
-        onValueChange={(value) => onMonthChange(parseInt(value))}
-      >
+      <Select value={month.toString()} onValueChange={(value) => onMonthChange(parseInt(value))}>
         <SelectTrigger className="w-[120px]">
           <SelectValue />
         </SelectTrigger>

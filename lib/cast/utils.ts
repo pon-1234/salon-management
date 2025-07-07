@@ -1,20 +1,22 @@
-import { Cast, CastSchedule } from './types';
+import { Cast, CastSchedule } from './types'
 
 export function generateSchedule(cast: Cast, startDate: Date, endDate: Date): CastSchedule[] {
-  const schedule: CastSchedule[] = [];
-  let currentDate = new Date(startDate);
+  const schedule: CastSchedule[] = []
+  let currentDate = new Date(startDate)
   while (currentDate <= endDate) {
     if (cast.workStart && cast.workEnd) {
       schedule.push({
         castId: cast.id,
         date: new Date(currentDate),
-        startTime: new Date(currentDate.setHours(cast.workStart.getHours(), cast.workStart.getMinutes())),
+        startTime: new Date(
+          currentDate.setHours(cast.workStart.getHours(), cast.workStart.getMinutes())
+        ),
         endTime: new Date(currentDate.setHours(cast.workEnd.getHours(), cast.workEnd.getMinutes())),
-      });
+      })
     }
-    currentDate.setDate(currentDate.getDate() + 1);
+    currentDate.setDate(currentDate.getDate() + 1)
   }
-  return schedule;
+  return schedule
 }
 
 // TODO: 以下の関数は必要な型定義を追加後に有効にする

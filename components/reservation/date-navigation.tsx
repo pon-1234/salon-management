@@ -1,9 +1,9 @@
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Button } from '@/components/ui/button'
+import { Calendar } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ChevronLeft, ChevronRight, CalendarIcon } from 'lucide-react'
-import { useState } from "react"
-import { format } from "date-fns"
+import { useState } from 'react'
+import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 
 interface DateNavigationProps {
@@ -12,8 +12,8 @@ interface DateNavigationProps {
 }
 
 export function DateNavigation({ selectedDate, onSelectDate }: DateNavigationProps) {
-  const DAYS_OF_WEEK_JP = ["日", "月", "火", "水", "木", "金", "土"]
-  
+  const DAYS_OF_WEEK_JP = ['日', '月', '火', '水', '木', '金', '土']
+
   // baseDate: 現在表示している週の開始日 (初期値はselectedDateでOK)
   const [baseDate, setBaseDate] = useState(new Date(selectedDate))
   const [calendarOpen, setCalendarOpen] = useState(false)
@@ -27,7 +27,7 @@ export function DateNavigation({ selectedDate, onSelectDate }: DateNavigationPro
     return {
       date: currentDate,
       label: `${dayOfMonth}日(${dayOfWeek})`,
-      active: currentDate.toDateString() === selectedDate.toDateString()
+      active: currentDate.toDateString() === selectedDate.toDateString(),
     }
   })
 
@@ -56,13 +56,10 @@ export function DateNavigation({ selectedDate, onSelectDate }: DateNavigationPro
 
   return (
     <div className="p-4">
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
           <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className="justify-start text-left font-normal w-[280px]"
-            >
+            <Button variant="outline" className="w-[280px] justify-start text-left font-normal">
               <CalendarIcon className="mr-2 h-4 w-4" />
               {format(selectedDate, 'yyyy年MM月dd日(E)', { locale: ja })}
             </Button>
@@ -87,8 +84,8 @@ export function DateNavigation({ selectedDate, onSelectDate }: DateNavigationPro
           {dates.map((item, index) => (
             <Button
               key={index}
-              variant={item.active ? "default" : "outline"}
-              className={`rounded-full ${item.active ? "bg-emerald-600 text-white" : ""}`}
+              variant={item.active ? 'default' : 'outline'}
+              className={`rounded-full ${item.active ? 'bg-emerald-600 text-white' : ''}`}
               onClick={() => onSelectDate(item.date)}
             >
               {item.label}

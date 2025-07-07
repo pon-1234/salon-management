@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/150</span>
+                <span class='fraction'>0/144</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/150</span>
+                <span class='fraction'>0/144</span>
             </div>
         
             
@@ -246,13 +246,7 @@
 <a name='L181'></a><a href='#L181'>181</a>
 <a name='L182'></a><a href='#L182'>182</a>
 <a name='L183'></a><a href='#L183'>183</a>
-<a name='L184'></a><a href='#L184'>184</a>
-<a name='L185'></a><a href='#L185'>185</a>
-<a name='L186'></a><a href='#L186'>186</a>
-<a name='L187'></a><a href='#L187'>187</a>
-<a name='L188'></a><a href='#L188'>188</a>
-<a name='L189'></a><a href='#L189'>189</a>
-<a name='L190'></a><a href='#L190'>190</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L184'></a><a href='#L184'>184</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -311,7 +305,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -323,10 +316,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -344,11 +333,11 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -378,8 +367,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -441,12 +428,13 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
+import { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
 import { Printer, Clock, Users, TrendingUp, Activity } from 'lucide-react'
 import {
   Select,
@@ -454,12 +442,12 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { HourlySalesChart } from "@/components/analytics/hourly-sales-chart"
-import { HourlySalesTable } from "@/components/analytics/hourly-sales-table"
-import { HourlyHeatmap } from "@/components/analytics/hourly-heatmap"
-import { PeakTimeAnalysis } from "@/components/analytics/peak-time-analysis"
-import { generateHourlySalesData } from "@/lib/hourly-sales/data"
+} from '@/components/ui/select'
+import { HourlySalesChart } from '@/components/analytics/hourly-sales-chart'
+import { HourlySalesTable } from '@/components/analytics/hourly-sales-table'
+import { HourlyHeatmap } from '@/components/analytics/hourly-heatmap'
+import { PeakTimeAnalysis } from '@/components/analytics/peak-time-analysis'
+import { generateHourlySalesData } from '@/lib/hourly-sales/data'
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export default function HourlySalesPage() {</span>
 <span class="cstat-no" title="statement not covered" >  const [year, setYear] = useState(2024)</span>
@@ -476,18 +464,18 @@ import { generateHourlySalesData } from "@/lib/hourly-sales/data"
 &nbsp;
   // ダミーデータ（実際にはsalesDataから計算）
 <span class="cstat-no" title="statement not covered" >  const kpiData = {</span>
-<span class="cstat-no" title="statement not covered" >    peakHour: "19:00-20:00",</span>
+<span class="cstat-no" title="statement not covered" >    peakHour: '19:00-20:00',</span>
 <span class="cstat-no" title="statement not covered" >    peakCustomers: 245,</span>
 <span class="cstat-no" title="statement not covered" >    averagePerHour: 28,</span>
 <span class="cstat-no" title="statement not covered" >    busyHours: 8,</span>
 <span class="cstat-no" title="statement not covered" >    totalCustomers: salesData.grandTotal,</span>
 <span class="cstat-no" title="statement not covered" >    previousMonthTotal: 9876,</span>
 <span class="cstat-no" title="statement not covered" >    efficiency: 78.5,</span>
-<span class="cstat-no" title="statement not covered" >    previousEfficiency: 72.3</span>
+<span class="cstat-no" title="statement not covered" >    previousEfficiency: 72.3,</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const calculateGrowthRate = (current: number, previous: number) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    return ((current - previous) / previous * 100).toFixed(1)</span>
+<span class="cstat-no" title="statement not covered" >    return (((current - previous) / previous) * 100).toFixed(1)</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
@@ -497,10 +485,7 @@ import { generateHourlySalesData } from "@/lib/hourly-sales/data"
 <span class="cstat-no" title="statement not covered" >        &lt;div className="flex items-center gap-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;h1 className="text-3xl font-bold"&gt;時間別売上分析&lt;/h1&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div className="flex gap-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;Select</span>
-<span class="cstat-no" title="statement not covered" >              value={year.toString()}</span>
-<span class="cstat-no" title="statement not covered" >              onValueChange={(value) =&gt; setYear(parseInt(value))}</span>
-            &gt;
+<span class="cstat-no" title="statement not covered" >            &lt;Select value={year.toString()} onValueChange={(value) =&gt; setYear(parseInt(value))}&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;SelectTrigger className="w-[100px]"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;SelectValue /&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/SelectTrigger&gt;</span>
@@ -512,10 +497,7 @@ import { generateHourlySalesData } from "@/lib/hourly-sales/data"
 <span class="cstat-no" title="statement not covered" >                ))}</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/SelectContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/Select&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;Select</span>
-<span class="cstat-no" title="statement not covered" >              value={month.toString()}</span>
-<span class="cstat-no" title="statement not covered" >              onValueChange={(value) =&gt; setMonth(parseInt(value))}</span>
-            &gt;
+<span class="cstat-no" title="statement not covered" >            &lt;Select value={month.toString()} onValueChange={(value) =&gt; setMonth(parseInt(value))}&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;SelectTrigger className="w-[80px]"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;SelectValue /&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/SelectTrigger&gt;</span>
@@ -529,14 +511,17 @@ import { generateHourlySalesData } from "@/lib/hourly-sales/data"
 <span class="cstat-no" title="statement not covered" >            &lt;/Select&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;Button onClick={handlePrint} className="print:hidden bg-emerald-600 hover:bg-emerald-700 text-white"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;Button</span>
+<span class="cstat-no" title="statement not covered" >          onClick={handlePrint}</span>
+<span class="cstat-no" title="statement not covered" >          className="bg-emerald-600 text-white hover:bg-emerald-700 print:hidden"</span>
+        &gt;
 <span class="cstat-no" title="statement not covered" >          &lt;Printer className="mr-2 h-4 w-4" /&gt;</span>
           印刷する
 <span class="cstat-no" title="statement not covered" >        &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
 &nbsp;
       {/* KPIカード */}
-<span class="cstat-no" title="statement not covered" >      &lt;div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;Card&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;CardTitle className="text-sm font-medium"&gt;ピーク時間帯&lt;/CardTitle&gt;</span>
@@ -544,9 +529,7 @@ import { generateHourlySalesData } from "@/lib/hourly-sales/data"
 <span class="cstat-no" title="statement not covered" >          &lt;/CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;CardContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="text-2xl font-bold"&gt;{kpiData.peakHour}&lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;p className="text-xs text-muted-foreground"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              最大{kpiData.peakCustomers}人</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/p&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;p className="text-xs text-muted-foreground"&gt;最大{kpiData.peakCustomers}人&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/CardContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/Card&gt;</span>
 &nbsp;
@@ -557,7 +540,7 @@ import { generateHourlySalesData } from "@/lib/hourly-sales/data"
 <span class="cstat-no" title="statement not covered" >          &lt;/CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;CardContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="text-2xl font-bold"&gt;{kpiData.totalCustomers.toLocaleString()}人&lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;p className="text-xs text-muted-foreground flex items-center gap-1"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;p className="flex items-center gap-1 text-xs text-muted-foreground"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TrendingUp className="h-3 w-3 text-green-600" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;span className="text-green-600"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                {calculateGrowthRate(kpiData.totalCustomers, kpiData.previousMonthTotal)}%</span>
@@ -574,9 +557,7 @@ import { generateHourlySalesData } from "@/lib/hourly-sales/data"
 <span class="cstat-no" title="statement not covered" >          &lt;/CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;CardContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="text-2xl font-bold"&gt;{kpiData.averagePerHour}人/時&lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;p className="text-xs text-muted-foreground"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              混雑時間: {kpiData.busyHours}時間</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/p&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;p className="text-xs text-muted-foreground"&gt;混雑時間: {kpiData.busyHours}時間&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/CardContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/Card&gt;</span>
 &nbsp;
@@ -630,14 +611,15 @@ import { generateHourlySalesData } from "@/lib/hourly-sales/data"
 <span class="cstat-no" title="statement not covered" >      &lt;/Card&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../../../../prettify.js"></script>
         <script>

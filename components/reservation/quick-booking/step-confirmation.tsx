@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Check } from 'lucide-react'
 
 interface StepConfirmationProps {
@@ -26,7 +26,9 @@ export function StepConfirmation({ bookingDetails, totalPrice }: StepConfirmatio
               </div>
               <div>
                 <span className="text-gray-600">日時:</span>
-                <span className="ml-2 font-semibold">{bookingDetails.date} {bookingDetails.time}</span>
+                <span className="ml-2 font-semibold">
+                  {bookingDetails.date} {bookingDetails.time}
+                </span>
               </div>
               <div>
                 <span className="text-gray-600">担当:</span>
@@ -71,7 +73,7 @@ export function StepConfirmation({ bookingDetails, totalPrice }: StepConfirmatio
               <span>-3,000円</span>
             </div>
             <hr className="my-2" />
-            <div className="flex justify-between font-bold text-lg">
+            <div className="flex justify-between text-lg font-bold">
               <span>合計</span>
               <span className="font-bold">{totalPrice.toLocaleString()}円</span>
             </div>

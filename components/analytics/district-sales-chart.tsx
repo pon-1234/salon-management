@@ -1,7 +1,16 @@
-"use client"
+'use client'
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { DistrictSalesData } from "@/lib/types/district-sales"
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts'
+import { DistrictSalesData } from '@/lib/types/district-sales'
 
 interface DistrictSalesChartProps {
   area: string
@@ -11,15 +20,19 @@ interface DistrictSalesChartProps {
 
 export function DistrictSalesChart({ area, year, data }: DistrictSalesChartProps) {
   // 地区ごとの合計を計算
-  const districtTotals = data && Array.isArray(data) && data.length > 0 
-    ? data.reduce((acc, item) => {
-        if (item.monthlySales && Array.isArray(item.monthlySales)) {
-          const total = item.monthlySales.reduce((sum, sales) => sum + sales, 0)
-          acc[item.district] = total
-        }
-        return acc
-      }, {} as Record<string, number>)
-    : {}
+  const districtTotals =
+    data && Array.isArray(data) && data.length > 0
+      ? data.reduce(
+          (acc, item) => {
+            if (item.monthlySales && Array.isArray(item.monthlySales)) {
+              const total = item.monthlySales.reduce((sum, sales) => sum + sales, 0)
+              acc[item.district] = total
+            }
+            return acc
+          },
+          {} as Record<string, number>
+        )
+      : {}
 
   // グラフ用データに変換
   const chartData = Object.entries(districtTotals)
@@ -41,21 +54,11 @@ export function DistrictSalesChart({ area, year, data }: DistrictSalesChartProps
 
   return (
     <ResponsiveContainer width="100%" height={350}>
-      <BarChart
-        data={chartData}
-        margin={{ top: 5, right: 30, left: 20, bottom: 60 }}
-      >
+      <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis 
-          dataKey="district" 
-          angle={-45} 
-          textAnchor="end" 
-          height={100}
-        />
+        <XAxis dataKey="district" angle={-45} textAnchor="end" height={100} />
         <YAxis tickFormatter={formatYAxis} />
-        <Tooltip 
-          formatter={(value: number) => [`¥${value.toLocaleString()}`, '売上高']}
-        />
+        <Tooltip formatter={(value: number) => [`¥${value.toLocaleString()}`, '売上高']} />
         <Legend />
         <Bar dataKey="売上高" fill="#10b981" />
       </BarChart>

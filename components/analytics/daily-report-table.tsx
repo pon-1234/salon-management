@@ -1,9 +1,9 @@
-import { DailyReport } from '@/lib/report/types';
-import { DataTable, TableColumn, currencyCell, textCell } from '@/components/shared/data-table';
-import { formatCurrency } from '@/lib/shared';
+import { DailyReport } from '@/lib/report/types'
+import { DataTable, TableColumn, currencyCell, textCell } from '@/components/shared/data-table'
+import { formatCurrency } from '@/lib/shared'
 
 interface DailyReportTableProps {
-  report: DailyReport;
+  report: DailyReport
 }
 
 const columns: TableColumn[] = [
@@ -13,7 +13,7 @@ const columns: TableColumn[] = [
   { key: 'customerCount', header: '客数', cell: (item) => item.customerCount },
   { key: 'designationCount', header: '指名数', cell: (item) => item.designationCount },
   { key: 'optionSales', header: 'オプション売上', cell: (item) => currencyCell(item.optionSales) },
-];
+]
 
 export function DailyReportTable({ report }: DailyReportTableProps) {
   const summary = (
@@ -22,7 +22,7 @@ export function DailyReportTable({ report }: DailyReportTableProps) {
       <p>総客数: {report.totalCustomers}</p>
       <p>総労働時間: {report.totalWorkingHours}時間</p>
     </>
-  );
+  )
 
   return (
     <DataTable
@@ -31,5 +31,5 @@ export function DailyReportTable({ report }: DailyReportTableProps) {
       data={report.staffReports}
       columns={columns}
     />
-  );
+  )
 }

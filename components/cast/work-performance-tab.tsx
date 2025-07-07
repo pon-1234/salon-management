@@ -1,33 +1,40 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Progress } from "@/components/ui/progress"
-import { 
-  Clock, 
-  Users, 
-  CreditCard, 
-  Banknote, 
-  TrendingUp, 
+import { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Progress } from '@/components/ui/progress'
+import {
+  Clock,
+  Users,
+  CreditCard,
+  Banknote,
+  TrendingUp,
   Target,
   Calendar,
   BarChart3,
   Star,
   UserPlus,
-  Repeat
+  Repeat,
 } from 'lucide-react'
-import { WorkPerformance, MonthlyPerformanceSummary } from "@/lib/cast/types"
-import { 
-  getWorkPerformancesByCast, 
+import { WorkPerformance, MonthlyPerformanceSummary } from '@/lib/cast/types'
+import {
+  getWorkPerformancesByCast,
   getMonthlyPerformanceSummary,
-  calculateDailyStats 
-} from "@/lib/cast/performance-data"
-import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns"
-import { ja } from "date-fns/locale"
+  calculateDailyStats,
+} from '@/lib/cast/performance-data'
+import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
+import { ja } from 'date-fns/locale'
 
 interface WorkPerformanceTabProps {
   castId: string
@@ -36,46 +43,56 @@ interface WorkPerformanceTabProps {
 
 export function WorkPerformanceTab({ castId, castName }: WorkPerformanceTabProps) {
   const [performances] = useState<WorkPerformance[]>(getWorkPerformancesByCast(castId))
-  const [monthlyStats] = useState<MonthlyPerformanceSummary>(getMonthlyPerformanceSummary(castId, 2025, 6))
-  const [selectedPeriod, setSelectedPeriod] = useState<"week" | "month">("week")
+  const [monthlyStats] = useState<MonthlyPerformanceSummary>(
+    getMonthlyPerformanceSummary(castId, 2025, 6)
+  )
+  const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month'>('week')
 
   // 期間別データ取得
-  const getPerformancesByPeriod = (period: "week" | "month") => {
+  const getPerformancesByPeriod = (period: 'week' | 'month') => {
     const now = new Date()
-    const start = period === "week" ? startOfWeek(now, { weekStartsOn: 1 }) : startOfMonth(now)
-    const end = period === "week" ? endOfWeek(now, { weekStartsOn: 1 }) : endOfMonth(now)
-    
-    return performances.filter(p => p.date >= start && p.date <= end)
+    const start = period === 'week' ? startOfWeek(now, { weekStartsOn: 1 }) : startOfMonth(now)
+    const end = period === 'week' ? endOfWeek(now, { weekStartsOn: 1 }) : endOfMonth(now)
+
+    return performances.filter((p) => p.date >= start && p.date <= end)
   }
 
-  const weekPerformances = getPerformancesByPeriod("week")
-  const monthPerformances = getPerformancesByPeriod("month")
-  
+  const weekPerformances = getPerformancesByPeriod('week')
+  const monthPerformances = getPerformancesByPeriod('month')
+
   const weekStats = calculateDailyStats(weekPerformances)
   const monthStatsCalc = calculateDailyStats(monthPerformances)
 
   return (
     <div className="space-y-6">
       {/* 期間選択タブ */}
-      <Tabs value={selectedPeriod} onValueChange={(value: "week" | "month") => setSelectedPeriod(value)} className="space-y-6">
+      <Tabs
+        value={selectedPeriod}
+        onValueChange={(value: 'week' | 'month') => setSelectedPeriod(value)}
+        className="space-y-6"
+      >
         <TabsList>
           <TabsTrigger value="week">今週</TabsTrigger>
           <TabsTrigger value="month">今月</TabsTrigger>
         </TabsList>
 
         <TabsContent value="week" className="space-y-6">
-          <PerformanceOverview 
+          <PerformanceOverview
             title="今週の成績"
-            period={format(startOfWeek(new Date(), { weekStartsOn: 1 }), "M/d", { locale: ja }) + " - " + format(endOfWeek(new Date(), { weekStartsOn: 1 }), "M/d", { locale: ja })}
+            period={
+              format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'M/d', { locale: ja }) +
+              ' - ' +
+              format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'M/d', { locale: ja })
+            }
             stats={weekStats}
           />
           <PerformanceDetailTable performances={weekPerformances} />
         </TabsContent>
 
         <TabsContent value="month" className="space-y-6">
-          <PerformanceOverview 
+          <PerformanceOverview
             title="今月の成績"
-            period={format(startOfMonth(new Date()), "yyyy年M月", { locale: ja })}
+            period={format(startOfMonth(new Date()), 'yyyy年M月', { locale: ja })}
             stats={monthStatsCalc}
           />
           <MonthlyTargetProgress monthlyStats={monthlyStats} />
@@ -101,54 +118,62 @@ function PerformanceOverview({ title, period, stats }: PerformanceOverviewProps)
       </div>
 
       {/* メインKPI */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Clock className="w-4 h-4 text-blue-600" />
+              <Clock className="h-4 w-4 text-blue-600" />
               <div>
                 <p className="text-sm font-medium text-gray-600">出勤日数</p>
                 <p className="text-2xl font-bold">{stats.totalWorkDays}日</p>
-                <p className="text-xs text-gray-500">平均 {stats.averageWorkHours.toFixed(1)}h/日</p>
+                <p className="text-xs text-gray-500">
+                  平均 {stats.averageWorkHours.toFixed(1)}h/日
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Users className="w-4 h-4 text-green-600" />
+              <Users className="h-4 w-4 text-green-600" />
               <div>
                 <p className="text-sm font-medium text-gray-600">サービス数</p>
                 <p className="text-2xl font-bold">{stats.totalServiceCount}本</p>
-                <p className="text-xs text-gray-500">平均 {stats.averageServiceCount.toFixed(1)}本/日</p>
+                <p className="text-xs text-gray-500">
+                  平均 {stats.averageServiceCount.toFixed(1)}本/日
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <TrendingUp className="w-4 h-4 text-orange-600" />
+              <TrendingUp className="h-4 w-4 text-orange-600" />
               <div>
                 <p className="text-sm font-medium text-gray-600">売上金額</p>
                 <p className="text-2xl font-bold">¥{stats.totalRevenue.toLocaleString()}</p>
-                <p className="text-xs text-gray-500">平均 ¥{stats.averageRevenue.toLocaleString()}/日</p>
+                <p className="text-xs text-gray-500">
+                  平均 ¥{stats.averageRevenue.toLocaleString()}/日
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Target className="w-4 h-4 text-purple-600" />
+              <Target className="h-4 w-4 text-purple-600" />
               <div>
                 <p className="text-sm font-medium text-gray-600">客単価</p>
                 <p className="text-2xl font-bold">¥{stats.averageServiceAmount.toLocaleString()}</p>
-                <p className="text-xs text-gray-500">リピート率 {stats.averageRepeatRate.toFixed(1)}%</p>
+                <p className="text-xs text-gray-500">
+                  リピート率 {stats.averageRepeatRate.toFixed(1)}%
+                </p>
               </div>
             </div>
           </CardContent>
@@ -156,34 +181,38 @@ function PerformanceOverview({ title, period, stats }: PerformanceOverviewProps)
       </div>
 
       {/* 詳細指標 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {/* 決済方法別 */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <CreditCard className="w-4 h-4" />
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CreditCard className="h-4 w-4" />
               決済方法別
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex justify-between items-center">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Banknote className="w-4 h-4 text-green-600" />
+                <Banknote className="h-4 w-4 text-green-600" />
                 <span className="text-sm">現金</span>
               </div>
               <div className="text-right">
                 <div className="font-medium">{stats.totalCashCount}本</div>
-                <div className="text-sm text-gray-500">¥{stats.totalCashAmount.toLocaleString()}</div>
+                <div className="text-sm text-gray-500">
+                  ¥{stats.totalCashAmount.toLocaleString()}
+                </div>
               </div>
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-blue-600" />
+                <CreditCard className="h-4 w-4 text-blue-600" />
                 <span className="text-sm">カード</span>
               </div>
               <div className="text-right">
                 <div className="font-medium">{stats.totalCardCount}本</div>
-                <div className="text-sm text-gray-500">¥{stats.totalCardAmount.toLocaleString()}</div>
+                <div className="text-sm text-gray-500">
+                  ¥{stats.totalCardAmount.toLocaleString()}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -192,20 +221,20 @@ function PerformanceOverview({ title, period, stats }: PerformanceOverviewProps)
         {/* 顧客獲得 */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <UserPlus className="w-4 h-4" />
+            <CardTitle className="flex items-center gap-2 text-base">
+              <UserPlus className="h-4 w-4" />
               顧客獲得
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex justify-between items-center">
+            <div className="flex items-center justify-between">
               <span className="text-sm">新規顧客</span>
               <div className="text-right">
                 <div className="font-medium">{stats.totalNewCustomers}人</div>
                 <div className="text-sm text-gray-500">{stats.newCustomerRate.toFixed(1)}%</div>
               </div>
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex items-center justify-between">
               <span className="text-sm">指名獲得</span>
               <div className="text-right">
                 <div className="font-medium">{stats.totalDesignations}本</div>
@@ -218,21 +247,21 @@ function PerformanceOverview({ title, period, stats }: PerformanceOverviewProps)
         {/* パフォーマンス */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Star className="w-4 h-4" />
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Star className="h-4 w-4" />
               パフォーマンス
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <div className="flex justify-between text-sm mb-1">
+              <div className="mb-1 flex justify-between text-sm">
                 <span>リピート率</span>
                 <span>{stats.averageRepeatRate.toFixed(1)}%</span>
               </div>
               <Progress value={stats.averageRepeatRate} className="h-2" />
             </div>
             <div>
-              <div className="flex justify-between text-sm mb-1">
+              <div className="mb-1 flex justify-between text-sm">
                 <span>指名率</span>
                 <span>{stats.designationRate.toFixed(1)}%</span>
               </div>
@@ -256,59 +285,70 @@ function MonthlyTargetProgress({ monthlyStats }: MonthlyTargetProgressProps) {
     serviceCount: 120,
     revenue: 1800000,
     designationRate: 70,
-    repeatRate: 70
+    repeatRate: 70,
   }
 
   const workDaysProgress = (monthlyStats.totalWorkDays / targets.workDays) * 100
   const serviceProgress = (monthlyStats.totalServiceCount / targets.serviceCount) * 100
   const revenueProgress = (monthlyStats.totalRevenue / targets.revenue) * 100
-  const designationProgress = ((monthlyStats.totalDesignations / monthlyStats.totalServiceCount) * 100 / targets.designationRate) * 100
+  const designationProgress =
+    (((monthlyStats.totalDesignations / monthlyStats.totalServiceCount) * 100) /
+      targets.designationRate) *
+    100
   const repeatProgress = (monthlyStats.averageRepeatRate / targets.repeatRate) * 100
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <BarChart3 className="w-5 h-5" />
+          <BarChart3 className="h-5 w-5" />
           月間目標達成状況
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <div className="flex justify-between text-sm mb-2">
+            <div className="mb-2 flex justify-between text-sm">
               <span>出勤日数</span>
-              <span>{monthlyStats.totalWorkDays} / {targets.workDays}日</span>
+              <span>
+                {monthlyStats.totalWorkDays} / {targets.workDays}日
+              </span>
             </div>
             <Progress value={Math.min(workDaysProgress, 100)} className="h-2" />
-            <div className="text-xs text-gray-500 mt-1">{workDaysProgress.toFixed(1)}% 達成</div>
+            <div className="mt-1 text-xs text-gray-500">{workDaysProgress.toFixed(1)}% 達成</div>
           </div>
 
           <div>
-            <div className="flex justify-between text-sm mb-2">
+            <div className="mb-2 flex justify-between text-sm">
               <span>サービス数</span>
-              <span>{monthlyStats.totalServiceCount} / {targets.serviceCount}本</span>
+              <span>
+                {monthlyStats.totalServiceCount} / {targets.serviceCount}本
+              </span>
             </div>
             <Progress value={Math.min(serviceProgress, 100)} className="h-2" />
-            <div className="text-xs text-gray-500 mt-1">{serviceProgress.toFixed(1)}% 達成</div>
+            <div className="mt-1 text-xs text-gray-500">{serviceProgress.toFixed(1)}% 達成</div>
           </div>
 
           <div>
-            <div className="flex justify-between text-sm mb-2">
+            <div className="mb-2 flex justify-between text-sm">
               <span>売上金額</span>
-              <span>¥{monthlyStats.totalRevenue.toLocaleString()} / ¥{targets.revenue.toLocaleString()}</span>
+              <span>
+                ¥{monthlyStats.totalRevenue.toLocaleString()} / ¥{targets.revenue.toLocaleString()}
+              </span>
             </div>
             <Progress value={Math.min(revenueProgress, 100)} className="h-2" />
-            <div className="text-xs text-gray-500 mt-1">{revenueProgress.toFixed(1)}% 達成</div>
+            <div className="mt-1 text-xs text-gray-500">{revenueProgress.toFixed(1)}% 達成</div>
           </div>
 
           <div>
-            <div className="flex justify-between text-sm mb-2">
+            <div className="mb-2 flex justify-between text-sm">
               <span>リピート率</span>
-              <span>{monthlyStats.averageRepeatRate.toFixed(1)}% / {targets.repeatRate}%</span>
+              <span>
+                {monthlyStats.averageRepeatRate.toFixed(1)}% / {targets.repeatRate}%
+              </span>
             </div>
             <Progress value={Math.min(repeatProgress, 100)} className="h-2" />
-            <div className="text-xs text-gray-500 mt-1">{repeatProgress.toFixed(1)}% 達成</div>
+            <div className="mt-1 text-xs text-gray-500">{repeatProgress.toFixed(1)}% 達成</div>
           </div>
         </div>
       </CardContent>
@@ -348,7 +388,7 @@ function PerformanceDetailTable({ performances }: PerformanceDetailTableProps) {
               <TableRow key={performance.id}>
                 <TableCell>
                   <div className="text-sm">
-                    <div>{format(performance.date, "M/d(E)", { locale: ja })}</div>
+                    <div>{format(performance.date, 'M/d(E)', { locale: ja })}</div>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -368,9 +408,7 @@ function PerformanceDetailTable({ performances }: PerformanceDetailTableProps) {
                 <TableCell className="text-right">
                   ¥{performance.cardAmount.toLocaleString()}
                 </TableCell>
-                <TableCell className="text-center font-medium">
-                  {performance.totalCount}
-                </TableCell>
+                <TableCell className="text-center font-medium">{performance.totalCount}</TableCell>
                 <TableCell className="text-center">
                   <div className="text-sm">
                     <div>フリー: {performance.newFreeCount}</div>
@@ -384,8 +422,14 @@ function PerformanceDetailTable({ performances }: PerformanceDetailTableProps) {
                   </div>
                 </TableCell>
                 <TableCell className="text-center">
-                  <Badge 
-                    variant={performance.repeatRate >= 70 ? "default" : performance.repeatRate >= 50 ? "secondary" : "destructive"}
+                  <Badge
+                    variant={
+                      performance.repeatRate >= 70
+                        ? 'default'
+                        : performance.repeatRate >= 50
+                          ? 'secondary'
+                          : 'destructive'
+                    }
                     className="text-xs"
                   >
                     {performance.repeatRate}%
@@ -398,10 +442,10 @@ function PerformanceDetailTable({ performances }: PerformanceDetailTableProps) {
             ))}
           </TableBody>
         </Table>
-        
+
         {performances.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            <Calendar className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+          <div className="py-8 text-center text-gray-500">
+            <Calendar className="mx-auto mb-2 h-12 w-12 text-gray-300" />
             該当期間のデータがありません
           </div>
         )}

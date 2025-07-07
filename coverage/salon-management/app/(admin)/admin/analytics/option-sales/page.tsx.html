@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/145</span>
+                <span class='fraction'>0/143</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/145</span>
+                <span class='fraction'>0/143</span>
             </div>
         
             
@@ -321,6 +321,9 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -383,17 +386,9 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -405,13 +400,17 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -433,12 +432,13 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
+import { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
 import { Printer, TrendingUp, Package, DollarSign, Sparkles } from 'lucide-react'
 import {
   Select,
@@ -446,13 +446,13 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { OptionSalesChart } from "@/components/analytics/option-sales-chart"
-import { OptionSalesTable } from "@/components/analytics/option-sales-table"
-import { OptionCombinationTable } from "@/components/analytics/option-combination-table"
-import { OptionTrendChart } from "@/components/analytics/option-trend-chart"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
-import { AnalyticsRepositoryImpl } from "@/lib/analytics/repository"
+} from '@/components/ui/select'
+import { OptionSalesChart } from '@/components/analytics/option-sales-chart'
+import { OptionSalesTable } from '@/components/analytics/option-sales-table'
+import { OptionCombinationTable } from '@/components/analytics/option-combination-table'
+import { OptionTrendChart } from '@/components/analytics/option-trend-chart'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
+import { AnalyticsRepositoryImpl } from '@/lib/analytics/repository'
 &nbsp;
 <span class="cstat-no" title="statement not covered" >const analyticsRepository = new AnalyticsRepositoryImpl()</span>
 <span class="cstat-no" title="statement not covered" >const analyticsUseCases = new AnalyticsUseCases(analyticsRepository)</span>
@@ -473,13 +473,13 @@ import { AnalyticsRepositoryImpl } from "@/lib/analytics/repository"
 <span class="cstat-no" title="statement not covered" >    optionCount: 12,</span>
 <span class="cstat-no" title="statement not covered" >    activeOptionsCount: 8,</span>
 <span class="cstat-no" title="statement not covered" >    topOptionRevenue: 678900,</span>
-<span class="cstat-no" title="statement not covered" >    topOptionName: "アロマオイル",</span>
+<span class="cstat-no" title="statement not covered" >    topOptionName: 'アロマオイル',</span>
 <span class="cstat-no" title="statement not covered" >    attachRate: 42.5,</span>
-<span class="cstat-no" title="statement not covered" >    averageOptionPrice: 2800</span>
+<span class="cstat-no" title="statement not covered" >    averageOptionPrice: 2800,</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const calculateGrowthRate = (current: number, previous: number) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    return ((current - previous) / previous * 100).toFixed(1)</span>
+<span class="cstat-no" title="statement not covered" >    return (((current - previous) / previous) * 100).toFixed(1)</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
@@ -504,14 +504,17 @@ import { AnalyticsRepositoryImpl } from "@/lib/analytics/repository"
 <span class="cstat-no" title="statement not covered" >            &lt;/SelectContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/Select&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;Button onClick={handlePrint} className="print:hidden bg-emerald-600 hover:bg-emerald-700 text-white"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;Button</span>
+<span class="cstat-no" title="statement not covered" >          onClick={handlePrint}</span>
+<span class="cstat-no" title="statement not covered" >          className="bg-emerald-600 text-white hover:bg-emerald-700 print:hidden"</span>
+        &gt;
 <span class="cstat-no" title="statement not covered" >          &lt;Printer className="mr-2 h-4 w-4" /&gt;</span>
           印刷する
 <span class="cstat-no" title="statement not covered" >        &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
 &nbsp;
       {/* KPIカード */}
-<span class="cstat-no" title="statement not covered" >      &lt;div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;Card&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;CardTitle className="text-sm font-medium"&gt;オプション売上高&lt;/CardTitle&gt;</span>
@@ -519,7 +522,7 @@ import { AnalyticsRepositoryImpl } from "@/lib/analytics/repository"
 <span class="cstat-no" title="statement not covered" >          &lt;/CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;CardContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="text-2xl font-bold"&gt;¥{kpiData.totalOptionSales.toLocaleString()}&lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;p className="text-xs text-muted-foreground flex items-center gap-1"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;p className="flex items-center gap-1 text-xs text-muted-foreground"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;TrendingUp className="h-3 w-3 text-green-600" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;span className="text-green-600"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                {calculateGrowthRate(kpiData.totalOptionSales, kpiData.previousYearOptionSales)}%</span>
@@ -548,7 +551,7 @@ import { AnalyticsRepositoryImpl } from "@/lib/analytics/repository"
 <span class="cstat-no" title="statement not covered" >            &lt;Package className="h-4 w-4 text-muted-foreground" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;CardContent&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;div className="text-sm font-bold truncate"&gt;{kpiData.topOptionName}&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;div className="truncate text-sm font-bold"&gt;{kpiData.topOptionName}&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;p className="text-xs text-muted-foreground"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              売上: ¥{kpiData.topOptionRevenue.toLocaleString()}</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/p&gt;</span>
@@ -561,7 +564,9 @@ import { AnalyticsRepositoryImpl } from "@/lib/analytics/repository"
 <span class="cstat-no" title="statement not covered" >            &lt;Package className="h-4 w-4 text-muted-foreground" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;CardContent&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;div className="text-2xl font-bold"&gt;{kpiData.activeOptionsCount} / {kpiData.optionCount}&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;div className="text-2xl font-bold"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              {kpiData.activeOptionsCount} / {kpiData.optionCount}</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;p className="text-xs text-muted-foreground"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              稼働率: {((kpiData.activeOptionsCount / kpiData.optionCount) * 100).toFixed(0)}%</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/p&gt;</span>
@@ -570,7 +575,7 @@ import { AnalyticsRepositoryImpl } from "@/lib/analytics/repository"
 <span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
 &nbsp;
       {/* 売上構成グラフ */}
-<span class="cstat-no" title="statement not covered" >      &lt;div className="grid grid-cols-1 lg:grid-cols-2 gap-6"&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;div className="grid grid-cols-1 gap-6 lg:grid-cols-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;Card&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;CardTitle&gt;オプション別売上構成&lt;/CardTitle&gt;</span>
@@ -602,30 +607,25 @@ import { AnalyticsRepositoryImpl } from "@/lib/analytics/repository"
 <span class="cstat-no" title="statement not covered" >              &lt;TabsTrigger value="combination"&gt;組み合わせ分析&lt;/TabsTrigger&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TabsList&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TabsContent value="monthly" className="mt-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;OptionSalesTable </span>
-<span class="cstat-no" title="statement not covered" >                year={selectedYear} </span>
-<span class="cstat-no" title="statement not covered" >                analyticsUseCases={analyticsUseCases}</span>
-<span class="cstat-no" title="statement not covered" >              /&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;OptionSalesTable year={selectedYear} analyticsUseCases={analyticsUseCases} /&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TabsContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TabsContent value="combination" className="mt-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;OptionCombinationTable </span>
-<span class="cstat-no" title="statement not covered" >                year={selectedYear} </span>
-<span class="cstat-no" title="statement not covered" >                analyticsUseCases={analyticsUseCases}</span>
-<span class="cstat-no" title="statement not covered" >              /&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;OptionCombinationTable year={selectedYear} analyticsUseCases={analyticsUseCases} /&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TabsContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/Tabs&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/CardContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/Card&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../../../../prettify.js"></script>
         <script>

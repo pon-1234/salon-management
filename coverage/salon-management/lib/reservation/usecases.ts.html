@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/15</span>
+                <span class='fraction'>0/19</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/15</span>
+                <span class='fraction'>0/19</span>
             </div>
         
             
@@ -84,7 +84,11 @@
 <a name='L19'></a><a href='#L19'>19</a>
 <a name='L20'></a><a href='#L20'>20</a>
 <a name='L21'></a><a href='#L21'>21</a>
-<a name='L22'></a><a href='#L22'>22</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -100,30 +104,38 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { BaseUseCasesImpl } from '../shared';<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
-import { Reservation, Service } from '../types/reservation';
-import { ReservationRepository } from './repository';
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { BaseUseCasesImpl } from '../shared'<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
+import { Reservation, Service } from '../types/reservation'
+import { ReservationRepository } from './repository'
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export class ReservationUseCases extends BaseUseCasesImpl&lt;Reservation&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  constructor(private reservationRepository: ReservationRepository) {</span>
-<span class="cstat-no" title="statement not covered" >    super(reservationRepository);</span>
+<span class="cstat-no" title="statement not covered" >    super(reservationRepository)</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  async getReservationsByCustomer(customerId: string): Promise&lt;Reservation[]&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    return this.reservationRepository.getReservationsByCustomer(customerId);</span>
+<span class="cstat-no" title="statement not covered" >    return this.reservationRepository.getReservationsByCustomer(customerId)</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  async getReservationsByStaff(staffId: string, startDate: Date, endDate: Date): Promise&lt;Reservation[]&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    return this.reservationRepository.getReservationsByStaff(staffId, startDate, endDate);</span>
+<span class="cstat-no" title="statement not covered" >  async getReservationsByStaff(</span>
+<span class="cstat-no" title="statement not covered" >    staffId: string,</span>
+<span class="cstat-no" title="statement not covered" >    startDate: Date,</span>
+<span class="cstat-no" title="statement not covered" >    endDate: Date</span>
+<span class="cstat-no" title="statement not covered" >  ): Promise&lt;Reservation[]&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    return this.reservationRepository.getReservationsByStaff(staffId, startDate, endDate)</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  async getServices(): Promise&lt;Service[]&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    return this.reservationRepository.getServices();</span>
+<span class="cstat-no" title="statement not covered" >    return this.reservationRepository.getServices()</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;</pre></td></tr></table></pre>
@@ -133,7 +145,7 @@ import { ReservationRepository } from './repository';
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

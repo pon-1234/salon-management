@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/143</span>
+                <span class='fraction'>0/137</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/143</span>
+                <span class='fraction'>0/137</span>
             </div>
         
             
@@ -216,12 +216,7 @@
 <a name='L151'></a><a href='#L151'>151</a>
 <a name='L152'></a><a href='#L152'>152</a>
 <a name='L153'></a><a href='#L153'>153</a>
-<a name='L154'></a><a href='#L154'>154</a>
-<a name='L155'></a><a href='#L155'>155</a>
-<a name='L156'></a><a href='#L156'>156</a>
-<a name='L157'></a><a href='#L157'>157</a>
-<a name='L158'></a><a href='#L158'>158</a>
-<a name='L159'></a><a href='#L159'>159</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L154'></a><a href='#L154'>154</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -374,177 +369,167 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { SalesRecord, PaymentRecord, SettlementSummary } from './types';
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { SalesRecord, PaymentRecord, SettlementSummary } from './types'
 &nbsp;
 // 売上記録のモックデータ
 <span class="cstat-no" title="statement not covered" >export const mockSalesRecords: SalesRecord[] = [</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    id: "sales_001",</span>
-<span class="cstat-no" title="statement not covered" >    castId: "1",</span>
-<span class="cstat-no" title="statement not covered" >    date: new Date("2025-06-05T14:00:00"),</span>
-<span class="cstat-no" title="statement not covered" >    serviceName: "スタンダード120分",</span>
-<span class="cstat-no" title="statement not covered" >    customerName: "田中様",</span>
+<span class="cstat-no" title="statement not covered" >    id: 'sales_001',</span>
+<span class="cstat-no" title="statement not covered" >    castId: '1',</span>
+<span class="cstat-no" title="statement not covered" >    date: new Date('2025-06-05T14:00:00'),</span>
+<span class="cstat-no" title="statement not covered" >    serviceName: 'スタンダード120分',</span>
+<span class="cstat-no" title="statement not covered" >    customerName: '田中様',</span>
 <span class="cstat-no" title="statement not covered" >    serviceAmount: 15000,</span>
 <span class="cstat-no" title="statement not covered" >    designationFee: 2000,</span>
 <span class="cstat-no" title="statement not covered" >    optionFees: 3000,</span>
 <span class="cstat-no" title="statement not covered" >    totalAmount: 20000,</span>
 <span class="cstat-no" title="statement not covered" >    castShare: 12000,</span>
 <span class="cstat-no" title="statement not covered" >    shopShare: 8000,</span>
-<span class="cstat-no" title="statement not covered" >    paymentStatus: "未精算",</span>
-<span class="cstat-no" title="statement not covered" >    location: "六本木ヒルズ",</span>
-<span class="cstat-no" title="statement not covered" >    notes: "リピーター様"</span>
+<span class="cstat-no" title="statement not covered" >    paymentStatus: '未精算',</span>
+<span class="cstat-no" title="statement not covered" >    location: '六本木ヒルズ',</span>
+<span class="cstat-no" title="statement not covered" >    notes: 'リピーター様',</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    id: "sales_002",</span>
-<span class="cstat-no" title="statement not covered" >    castId: "1",</span>
-<span class="cstat-no" title="statement not covered" >    date: new Date("2025-06-04T19:30:00"),</span>
-<span class="cstat-no" title="statement not covered" >    serviceName: "プレミアム90分",</span>
-<span class="cstat-no" title="statement not covered" >    customerName: "佐藤様",</span>
+<span class="cstat-no" title="statement not covered" >    id: 'sales_002',</span>
+<span class="cstat-no" title="statement not covered" >    castId: '1',</span>
+<span class="cstat-no" title="statement not covered" >    date: new Date('2025-06-04T19:30:00'),</span>
+<span class="cstat-no" title="statement not covered" >    serviceName: 'プレミアム90分',</span>
+<span class="cstat-no" title="statement not covered" >    customerName: '佐藤様',</span>
 <span class="cstat-no" title="statement not covered" >    serviceAmount: 18000,</span>
 <span class="cstat-no" title="statement not covered" >    designationFee: 3000,</span>
 <span class="cstat-no" title="statement not covered" >    optionFees: 0,</span>
 <span class="cstat-no" title="statement not covered" >    totalAmount: 21000,</span>
 <span class="cstat-no" title="statement not covered" >    castShare: 12600,</span>
 <span class="cstat-no" title="statement not covered" >    shopShare: 8400,</span>
-<span class="cstat-no" title="statement not covered" >    paymentStatus: "精算済み",</span>
-<span class="cstat-no" title="statement not covered" >    location: "恵比寿ガーデンプレイス",</span>
+<span class="cstat-no" title="statement not covered" >    paymentStatus: '精算済み',</span>
+<span class="cstat-no" title="statement not covered" >    location: '恵比寿ガーデンプレイス',</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    id: "sales_003",</span>
-<span class="cstat-no" title="statement not covered" >    castId: "1",</span>
-<span class="cstat-no" title="statement not covered" >    date: new Date("2025-06-03T16:00:00"),</span>
-<span class="cstat-no" title="statement not covered" >    serviceName: "リラクゼーション60分",</span>
-<span class="cstat-no" title="statement not covered" >    customerName: "山田様",</span>
+<span class="cstat-no" title="statement not covered" >    id: 'sales_003',</span>
+<span class="cstat-no" title="statement not covered" >    castId: '1',</span>
+<span class="cstat-no" title="statement not covered" >    date: new Date('2025-06-03T16:00:00'),</span>
+<span class="cstat-no" title="statement not covered" >    serviceName: 'リラクゼーション60分',</span>
+<span class="cstat-no" title="statement not covered" >    customerName: '山田様',</span>
 <span class="cstat-no" title="statement not covered" >    serviceAmount: 10000,</span>
 <span class="cstat-no" title="statement not covered" >    designationFee: 1500,</span>
 <span class="cstat-no" title="statement not covered" >    optionFees: 2000,</span>
 <span class="cstat-no" title="statement not covered" >    totalAmount: 13500,</span>
 <span class="cstat-no" title="statement not covered" >    castShare: 8100,</span>
 <span class="cstat-no" title="statement not covered" >    shopShare: 5400,</span>
-<span class="cstat-no" title="statement not covered" >    paymentStatus: "未精算",</span>
-<span class="cstat-no" title="statement not covered" >    location: "新宿パークハイアット",</span>
+<span class="cstat-no" title="statement not covered" >    paymentStatus: '未精算',</span>
+<span class="cstat-no" title="statement not covered" >    location: '新宿パークハイアット',</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    id: "sales_004",</span>
-<span class="cstat-no" title="statement not covered" >    castId: "1",</span>
-<span class="cstat-no" title="statement not covered" >    date: new Date("2025-06-02T20:00:00"),</span>
-<span class="cstat-no" title="statement not covered" >    serviceName: "スタンダード120分",</span>
-<span class="cstat-no" title="statement not covered" >    customerName: "鈴木様",</span>
+<span class="cstat-no" title="statement not covered" >    id: 'sales_004',</span>
+<span class="cstat-no" title="statement not covered" >    castId: '1',</span>
+<span class="cstat-no" title="statement not covered" >    date: new Date('2025-06-02T20:00:00'),</span>
+<span class="cstat-no" title="statement not covered" >    serviceName: 'スタンダード120分',</span>
+<span class="cstat-no" title="statement not covered" >    customerName: '鈴木様',</span>
 <span class="cstat-no" title="statement not covered" >    serviceAmount: 15000,</span>
 <span class="cstat-no" title="statement not covered" >    designationFee: 2000,</span>
 <span class="cstat-no" title="statement not covered" >    optionFees: 1000,</span>
 <span class="cstat-no" title="statement not covered" >    totalAmount: 18000,</span>
 <span class="cstat-no" title="statement not covered" >    castShare: 10800,</span>
 <span class="cstat-no" title="statement not covered" >    shopShare: 7200,</span>
-<span class="cstat-no" title="statement not covered" >    paymentStatus: "精算済み",</span>
-<span class="cstat-no" title="statement not covered" >    location: "渋谷スクランブルスクエア",</span>
+<span class="cstat-no" title="statement not covered" >    paymentStatus: '精算済み',</span>
+<span class="cstat-no" title="statement not covered" >    location: '渋谷スクランブルスクエア',</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    id: "sales_005",</span>
-<span class="cstat-no" title="statement not covered" >    castId: "1",</span>
-<span class="cstat-no" title="statement not covered" >    date: new Date("2025-06-01T13:00:00"),</span>
-<span class="cstat-no" title="statement not covered" >    serviceName: "プレミアム150分",</span>
-<span class="cstat-no" title="statement not covered" >    customerName: "高橋様",</span>
+<span class="cstat-no" title="statement not covered" >    id: 'sales_005',</span>
+<span class="cstat-no" title="statement not covered" >    castId: '1',</span>
+<span class="cstat-no" title="statement not covered" >    date: new Date('2025-06-01T13:00:00'),</span>
+<span class="cstat-no" title="statement not covered" >    serviceName: 'プレミアム150分',</span>
+<span class="cstat-no" title="statement not covered" >    customerName: '高橋様',</span>
 <span class="cstat-no" title="statement not covered" >    serviceAmount: 25000,</span>
 <span class="cstat-no" title="statement not covered" >    designationFee: 4000,</span>
 <span class="cstat-no" title="statement not covered" >    optionFees: 5000,</span>
 <span class="cstat-no" title="statement not covered" >    totalAmount: 34000,</span>
 <span class="cstat-no" title="statement not covered" >    castShare: 20400,</span>
 <span class="cstat-no" title="statement not covered" >    shopShare: 13600,</span>
-<span class="cstat-no" title="statement not covered" >    paymentStatus: "未精算",</span>
-<span class="cstat-no" title="statement not covered" >    location: "銀座リッツカールトン",</span>
-<span class="cstat-no" title="statement not covered" >    notes: "VIP顧客"</span>
-<span class="cstat-no" title="statement not covered" >  }</span>
-<span class="cstat-no" title="statement not covered" >];</span>
+<span class="cstat-no" title="statement not covered" >    paymentStatus: '未精算',</span>
+<span class="cstat-no" title="statement not covered" >    location: '銀座リッツカールトン',</span>
+<span class="cstat-no" title="statement not covered" >    notes: 'VIP顧客',</span>
+<span class="cstat-no" title="statement not covered" >  },</span>
+<span class="cstat-no" title="statement not covered" >]</span>
 &nbsp;
 // 入金記録のモックデータ
 <span class="cstat-no" title="statement not covered" >export const mockPaymentRecords: PaymentRecord[] = [</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    id: "payment_001",</span>
-<span class="cstat-no" title="statement not covered" >    castId: "1",</span>
-<span class="cstat-no" title="statement not covered" >    date: new Date("2025-06-04T10:00:00"),</span>
-<span class="cstat-no" title="statement not covered" >    paymentType: "現金精算",</span>
+<span class="cstat-no" title="statement not covered" >    id: 'payment_001',</span>
+<span class="cstat-no" title="statement not covered" >    castId: '1',</span>
+<span class="cstat-no" title="statement not covered" >    date: new Date('2025-06-04T10:00:00'),</span>
+<span class="cstat-no" title="statement not covered" >    paymentType: '現金精算',</span>
 <span class="cstat-no" title="statement not covered" >    amount: 23400,</span>
-<span class="cstat-no" title="statement not covered" >    salesRecordIds: ["sales_002", "sales_004"],</span>
-<span class="cstat-no" title="statement not covered" >    handledBy: "管理者",</span>
-<span class="cstat-no" title="statement not covered" >    notes: "6/2-6/4分の精算"</span>
+<span class="cstat-no" title="statement not covered" >    salesRecordIds: ['sales_002', 'sales_004'],</span>
+<span class="cstat-no" title="statement not covered" >    handledBy: '管理者',</span>
+<span class="cstat-no" title="statement not covered" >    notes: '6/2-6/4分の精算',</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    id: "payment_002",</span>
-<span class="cstat-no" title="statement not covered" >    castId: "1",</span>
-<span class="cstat-no" title="statement not covered" >    date: new Date("2025-05-30T15:30:00"),</span>
-<span class="cstat-no" title="statement not covered" >    paymentType: "現金精算",</span>
+<span class="cstat-no" title="statement not covered" >    id: 'payment_002',</span>
+<span class="cstat-no" title="statement not covered" >    castId: '1',</span>
+<span class="cstat-no" title="statement not covered" >    date: new Date('2025-05-30T15:30:00'),</span>
+<span class="cstat-no" title="statement not covered" >    paymentType: '現金精算',</span>
 <span class="cstat-no" title="statement not covered" >    amount: 35000,</span>
-<span class="cstat-no" title="statement not covered" >    salesRecordIds: ["sales_006", "sales_007", "sales_008"],</span>
-<span class="cstat-no" title="statement not covered" >    handledBy: "管理者",</span>
-<span class="cstat-no" title="statement not covered" >    notes: "5月末分の精算"</span>
+<span class="cstat-no" title="statement not covered" >    salesRecordIds: ['sales_006', 'sales_007', 'sales_008'],</span>
+<span class="cstat-no" title="statement not covered" >    handledBy: '管理者',</span>
+<span class="cstat-no" title="statement not covered" >    notes: '5月末分の精算',</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    id: "payment_003",</span>
-<span class="cstat-no" title="statement not covered" >    castId: "1",</span>
-<span class="cstat-no" title="statement not covered" >    date: new Date("2025-05-25T11:00:00"),</span>
-<span class="cstat-no" title="statement not covered" >    paymentType: "振込",</span>
+<span class="cstat-no" title="statement not covered" >    id: 'payment_003',</span>
+<span class="cstat-no" title="statement not covered" >    castId: '1',</span>
+<span class="cstat-no" title="statement not covered" >    date: new Date('2025-05-25T11:00:00'),</span>
+<span class="cstat-no" title="statement not covered" >    paymentType: '振込',</span>
 <span class="cstat-no" title="statement not covered" >    amount: 45000,</span>
-<span class="cstat-no" title="statement not covered" >    salesRecordIds: ["sales_009", "sales_010"],</span>
-<span class="cstat-no" title="statement not covered" >    handledBy: "経理担当",</span>
-<span class="cstat-no" title="statement not covered" >    notes: "指定口座への振込"</span>
-<span class="cstat-no" title="statement not covered" >  }</span>
-<span class="cstat-no" title="statement not covered" >];</span>
+<span class="cstat-no" title="statement not covered" >    salesRecordIds: ['sales_009', 'sales_010'],</span>
+<span class="cstat-no" title="statement not covered" >    handledBy: '経理担当',</span>
+<span class="cstat-no" title="statement not covered" >    notes: '指定口座への振込',</span>
+<span class="cstat-no" title="statement not covered" >  },</span>
+<span class="cstat-no" title="statement not covered" >]</span>
 &nbsp;
 // 精算サマリーのモックデータ
 <span class="cstat-no" title="statement not covered" >export const mockSettlementSummary: SettlementSummary = {</span>
-<span class="cstat-no" title="statement not covered" >  castId: "1",</span>
+<span class="cstat-no" title="statement not covered" >  castId: '1',</span>
 <span class="cstat-no" title="statement not covered" >  period: {</span>
-<span class="cstat-no" title="statement not covered" >    from: new Date("2025-06-01"),</span>
-<span class="cstat-no" title="statement not covered" >    to: new Date("2025-06-05")</span>
+<span class="cstat-no" title="statement not covered" >    from: new Date('2025-06-01'),</span>
+<span class="cstat-no" title="statement not covered" >    to: new Date('2025-06-05'),</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
 <span class="cstat-no" title="statement not covered" >  totalSales: 106500,</span>
 <span class="cstat-no" title="statement not covered" >  totalCastShare: 63900,</span>
 <span class="cstat-no" title="statement not covered" >  totalPaid: 23400,</span>
 <span class="cstat-no" title="statement not covered" >  pendingAmount: 40500,</span>
-<span class="cstat-no" title="statement not covered" >  recordCount: 5</span>
-<span class="cstat-no" title="statement not covered" >};</span>
+<span class="cstat-no" title="statement not covered" >  recordCount: 5,</span>
+<span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
 // キャスト別の売上記録を取得
 <span class="cstat-no" title="statement not covered" >export const getSalesRecordsByCast = (castId: string): SalesRecord[] =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >  return mockSalesRecords.filter(record =&gt; record.castId === castId);</span>
-<span class="cstat-no" title="statement not covered" >};</span>
+<span class="cstat-no" title="statement not covered" >  return mockSalesRecords.filter((record) =&gt; record.castId === castId)</span>
+<span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
 // キャスト別の入金記録を取得
 <span class="cstat-no" title="statement not covered" >export const getPaymentRecordsByCast = (castId: string): PaymentRecord[] =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >  return mockPaymentRecords.filter(record =&gt; record.castId === castId);</span>
-<span class="cstat-no" title="statement not covered" >};</span>
+<span class="cstat-no" title="statement not covered" >  return mockPaymentRecords.filter((record) =&gt; record.castId === castId)</span>
+<span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
 // キャスト別の精算サマリーを取得
 <span class="cstat-no" title="statement not covered" >export const getSettlementSummaryByCast = (castId: string): SettlementSummary =&gt; {</span>
   // 実際のアプリでは動的に計算される
-<span class="cstat-no" title="statement not covered" >  return mockSettlementSummary;</span>
-<span class="cstat-no" title="statement not covered" >};</span>
+<span class="cstat-no" title="statement not covered" >  return mockSettlementSummary</span>
+<span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
 // 期間指定での売上記録取得
-<span class="cstat-no" title="statement not covered" >export const getSalesRecordsByPeriod = (</span>
-<span class="cstat-no" title="statement not covered" >  castId: string, </span>
-<span class="cstat-no" title="statement not covered" >  from: Date, </span>
-<span class="cstat-no" title="statement not covered" >  to: Date</span>
-<span class="cstat-no" title="statement not covered" >): SalesRecord[] =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >  return mockSalesRecords.filter(record =&gt; </span>
-<span class="cstat-no" title="statement not covered" >    record.castId === castId &amp;&amp;</span>
-<span class="cstat-no" title="statement not covered" >    record.date &gt;= from &amp;&amp;</span>
-<span class="cstat-no" title="statement not covered" >    record.date &lt;= to</span>
-<span class="cstat-no" title="statement not covered" >  );</span>
-<span class="cstat-no" title="statement not covered" >};</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >export const getSalesRecordsByPeriod = (castId: string, from: Date, to: Date): SalesRecord[] =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  return mockSalesRecords.filter(</span>
+<span class="cstat-no" title="statement not covered" >    (record) =&gt; record.castId === castId &amp;&amp; record.date &gt;= from &amp;&amp; record.date &lt;= to</span>
+<span class="cstat-no" title="statement not covered" >  )</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

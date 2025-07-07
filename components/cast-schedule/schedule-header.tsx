@@ -1,13 +1,13 @@
-import { Button } from "@/components/ui/button"
+import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { format } from "date-fns"
-import { ja } from "date-fns/locale"
+} from '@/components/ui/select'
+import { format } from 'date-fns'
+import { ja } from 'date-fns/locale'
 
 interface ScheduleHeaderProps {
   date: Date
@@ -27,7 +27,7 @@ export function ScheduleHeader({
   averageWorkingStaff,
 }: ScheduleHeaderProps) {
   return (
-    <div className="space-y-4 mb-6">
+    <div className="mb-6 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">【金の玉クラブ池袋店】女性出勤管理</span>
@@ -58,9 +58,7 @@ export function ScheduleHeader({
         <div>
           現在（在籍数：<span className="font-medium">{totalStaff}名</span>）
         </div>
-        <div className="text-red-500 font-medium">
-          （休職中14名）
-        </div>
+        <div className="font-medium text-red-500">（休職中14名）</div>
         <div>
           出勤者平均 <span className="font-medium">{averageWorkingHours}%</span>
         </div>

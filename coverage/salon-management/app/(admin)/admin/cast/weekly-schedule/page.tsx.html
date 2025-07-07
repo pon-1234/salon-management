@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/62</span>
+                <span class='fraction'>0/59</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/62</span>
+                <span class='fraction'>0/59</span>
             </div>
         
             
@@ -142,10 +142,7 @@
 <a name='L77'></a><a href='#L77'>77</a>
 <a name='L78'></a><a href='#L78'>78</a>
 <a name='L79'></a><a href='#L79'>79</a>
-<a name='L80'></a><a href='#L80'>80</a>
-<a name='L81'></a><a href='#L81'>81</a>
-<a name='L82'></a><a href='#L82'>82</a>
-<a name='L83'></a><a href='#L83'>83</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L80'></a><a href='#L80'>80</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -222,20 +219,17 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import React, { useState, useEffect } from "react"
-import { ScheduleGrid } from "@/components/cast-schedule/schedule-grid"
-import { CastScheduleUseCases } from "@/lib/cast-schedule/usecases"
-import { WeeklySchedule } from "@/lib/cast-schedule/types"
-import { Header } from "@/components/header"
-import { ScheduleInfoBar } from "@/components/cast-schedule/schedule-info-bar"
-import { ScheduleActionButtons } from "@/components/cast-schedule/schedule-action-buttons"
+import React, { useState, useEffect } from 'react'
+import { ScheduleGrid } from '@/components/cast-schedule/schedule-grid'
+import { CastScheduleUseCases } from '@/lib/cast-schedule/usecases'
+import { WeeklySchedule } from '@/lib/cast-schedule/types'
+import { Header } from '@/components/header'
+import { ScheduleInfoBar } from '@/components/cast-schedule/schedule-info-bar'
+import { ScheduleActionButtons } from '@/components/cast-schedule/schedule-action-buttons'
 &nbsp;
 <span class="cstat-no" title="statement not covered" >const castScheduleUseCases = new CastScheduleUseCases()</span>
 &nbsp;
@@ -246,13 +240,13 @@ import { ScheduleActionButtons } from "@/components/cast-schedule/schedule-actio
 <span class="cstat-no" title="statement not covered" >  useEffect(() =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    const fetchSchedule = async () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      try {</span>
-<span class="cstat-no" title="statement not covered" >        const weeklySchedule = await castScheduleUseCases.getWeeklySchedule({ </span>
-<span class="cstat-no" title="statement not covered" >          date, </span>
-<span class="cstat-no" title="statement not covered" >          castFilter: "all" </span>
+<span class="cstat-no" title="statement not covered" >        const weeklySchedule = await castScheduleUseCases.getWeeklySchedule({</span>
+<span class="cstat-no" title="statement not covered" >          date,</span>
+<span class="cstat-no" title="statement not covered" >          castFilter: 'all',</span>
 <span class="cstat-no" title="statement not covered" >        })</span>
 <span class="cstat-no" title="statement not covered" >        setSchedule(weeklySchedule)</span>
 <span class="cstat-no" title="statement not covered" >      } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >        console.error("Failed to fetch schedule:", error)</span>
+<span class="cstat-no" title="statement not covered" >        console.error('Failed to fetch schedule:', error)</span>
 <span class="cstat-no" title="statement not covered" >      }</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 &nbsp;
@@ -266,13 +260,13 @@ import { ScheduleActionButtons } from "@/components/cast-schedule/schedule-actio
 <span class="cstat-no" title="statement not covered" >  const handleRefresh = () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    const fetchSchedule = async () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      try {</span>
-<span class="cstat-no" title="statement not covered" >        const weeklySchedule = await castScheduleUseCases.getWeeklySchedule({ </span>
-<span class="cstat-no" title="statement not covered" >          date, </span>
-<span class="cstat-no" title="statement not covered" >          castFilter: "all" </span>
+<span class="cstat-no" title="statement not covered" >        const weeklySchedule = await castScheduleUseCases.getWeeklySchedule({</span>
+<span class="cstat-no" title="statement not covered" >          date,</span>
+<span class="cstat-no" title="statement not covered" >          castFilter: 'all',</span>
 <span class="cstat-no" title="statement not covered" >        })</span>
 <span class="cstat-no" title="statement not covered" >        setSchedule(weeklySchedule)</span>
 <span class="cstat-no" title="statement not covered" >      } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >        console.error("Failed to fetch schedule:", error)</span>
+<span class="cstat-no" title="statement not covered" >        console.error('Failed to fetch schedule:', error)</span>
 <span class="cstat-no" title="statement not covered" >      }</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >    fetchSchedule()</span>
@@ -289,7 +283,7 @@ import { ScheduleActionButtons } from "@/components/cast-schedule/schedule-actio
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;div className="min-h-screen bg-gray-50"&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;Header /&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;ScheduleInfoBar </span>
+<span class="cstat-no" title="statement not covered" >      &lt;ScheduleInfoBar</span>
 <span class="cstat-no" title="statement not covered" >        totalCast={schedule.stats.totalCast}</span>
 <span class="cstat-no" title="statement not covered" >        workingCast={schedule.stats.workingCast}</span>
 <span class="cstat-no" title="statement not covered" >        averageWorkingHours={schedule.stats.averageWorkingHours}</span>
@@ -302,10 +296,7 @@ import { ScheduleActionButtons } from "@/components/cast-schedule/schedule-actio
 <span class="cstat-no" title="statement not covered" >        date={date}</span>
 <span class="cstat-no" title="statement not covered" >        onDateChange={setDate}</span>
 <span class="cstat-no" title="statement not covered" >      /&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;ScheduleGrid</span>
-<span class="cstat-no" title="statement not covered" >        startDate={schedule.startDate}</span>
-<span class="cstat-no" title="statement not covered" >        entries={schedule.entries}</span>
-<span class="cstat-no" title="statement not covered" >      /&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;ScheduleGrid startDate={schedule.startDate} entries={schedule.entries} /&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
 <span class="cstat-no" title="statement not covered" >}</span>
@@ -316,7 +307,7 @@ import { ScheduleActionButtons } from "@/components/cast-schedule/schedule-actio
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../../../../prettify.js"></script>
         <script>

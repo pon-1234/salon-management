@@ -167,7 +167,11 @@
 <a name='L102'></a><a href='#L102'>102</a>
 <a name='L103'></a><a href='#L103'>103</a>
 <a name='L104'></a><a href='#L104'>104</a>
-<a name='L105'></a><a href='#L105'>105</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -195,6 +199,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -271,28 +278,32 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { useState, useEffect } from 'react';<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
-import { CoursePrice, OptionPrice, AdditionalFee } from '@/lib/pricing/types';
-import { Course, Option } from '@/lib/types/course-option';
-import { getPricingUseCases } from '@/lib/pricing';
-import { convertAllCoursePricesToCourses, convertAllOptionPricesToOptions } from '@/lib/pricing/adapters';
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { useState, useEffect } from 'react'<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
+import { CoursePrice, OptionPrice, AdditionalFee } from '@/lib/pricing/types'
+import { Course, Option } from '@/lib/types/course-option'
+import { getPricingUseCases } from '@/lib/pricing'
+import {
+  convertAllCoursePricesToCourses,
+  convertAllOptionPricesToOptions,
+} from '@/lib/pricing/adapters'
 &nbsp;
 interface UsePricingResult {
   // Raw pricing data
-  coursePrices: CoursePrice[];
-  optionPrices: OptionPrice[];
-  additionalFees: AdditionalFee[];
-  
+  coursePrices: CoursePrice[]
+  optionPrices: OptionPrice[]
+  additionalFees: AdditionalFee[]
+&nbsp;
   // Legacy format for backward compatibility
-  courses: Course[];
-  options: Option[];
-  
+  courses: Course[]
+  options: Option[]
+&nbsp;
   // Loading states
-  loading: boolean;
-  error: Error | null;
-  
+  loading: boolean
+  error: Error | null
+&nbsp;
   // Refresh function
-  refresh: () =&gt; Promise&lt;void&gt;;
+  refresh: () =&gt; Promise&lt;void&gt;
 }
 &nbsp;
 /**
@@ -300,47 +311,47 @@ interface UsePricingResult {
  * Provides both raw pricing data and legacy format for backward compatibility
  */
 <span class="cstat-no" title="statement not covered" >export function usePricing(storeId?: string): UsePricingResult {</span>
-<span class="cstat-no" title="statement not covered" >  const [coursePrices, setCoursePrices] = useState&lt;CoursePrice[]&gt;([]);</span>
-<span class="cstat-no" title="statement not covered" >  const [optionPrices, setOptionPrices] = useState&lt;OptionPrice[]&gt;([]);</span>
-<span class="cstat-no" title="statement not covered" >  const [additionalFees, setAdditionalFees] = useState&lt;AdditionalFee[]&gt;([]);</span>
-<span class="cstat-no" title="statement not covered" >  const [courses, setCourses] = useState&lt;Course[]&gt;([]);</span>
-<span class="cstat-no" title="statement not covered" >  const [options, setOptions] = useState&lt;Option[]&gt;([]);</span>
-<span class="cstat-no" title="statement not covered" >  const [loading, setLoading] = useState(true);</span>
-<span class="cstat-no" title="statement not covered" >  const [error, setError] = useState&lt;Error | null&gt;(null);</span>
+<span class="cstat-no" title="statement not covered" >  const [coursePrices, setCoursePrices] = useState&lt;CoursePrice[]&gt;([])</span>
+<span class="cstat-no" title="statement not covered" >  const [optionPrices, setOptionPrices] = useState&lt;OptionPrice[]&gt;([])</span>
+<span class="cstat-no" title="statement not covered" >  const [additionalFees, setAdditionalFees] = useState&lt;AdditionalFee[]&gt;([])</span>
+<span class="cstat-no" title="statement not covered" >  const [courses, setCourses] = useState&lt;Course[]&gt;([])</span>
+<span class="cstat-no" title="statement not covered" >  const [options, setOptions] = useState&lt;Option[]&gt;([])</span>
+<span class="cstat-no" title="statement not covered" >  const [loading, setLoading] = useState(true)</span>
+<span class="cstat-no" title="statement not covered" >  const [error, setError] = useState&lt;Error | null&gt;(null)</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const fetchPricing = async () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
-<span class="cstat-no" title="statement not covered" >      setLoading(true);</span>
-<span class="cstat-no" title="statement not covered" >      setError(null);</span>
-      
-<span class="cstat-no" title="statement not covered" >      const pricingUseCases = getPricingUseCases();</span>
-      
+<span class="cstat-no" title="statement not covered" >      setLoading(true)</span>
+<span class="cstat-no" title="statement not covered" >      setError(null)</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >      const pricingUseCases = getPricingUseCases()</span>
+&nbsp;
       // Fetch all pricing data in parallel
 <span class="cstat-no" title="statement not covered" >      const [fetchedCourses, fetchedOptions, fetchedFees] = await Promise.all([</span>
 <span class="cstat-no" title="statement not covered" >        pricingUseCases.getCourses(storeId),</span>
 <span class="cstat-no" title="statement not covered" >        pricingUseCases.getOptions(storeId),</span>
 <span class="cstat-no" title="statement not covered" >        pricingUseCases.getAdditionalFees(storeId),</span>
-<span class="cstat-no" title="statement not covered" >      ]);</span>
-      
+<span class="cstat-no" title="statement not covered" >      ])</span>
+&nbsp;
       // Update raw pricing data
-<span class="cstat-no" title="statement not covered" >      setCoursePrices(fetchedCourses);</span>
-<span class="cstat-no" title="statement not covered" >      setOptionPrices(fetchedOptions);</span>
-<span class="cstat-no" title="statement not covered" >      setAdditionalFees(fetchedFees);</span>
-      
+<span class="cstat-no" title="statement not covered" >      setCoursePrices(fetchedCourses)</span>
+<span class="cstat-no" title="statement not covered" >      setOptionPrices(fetchedOptions)</span>
+<span class="cstat-no" title="statement not covered" >      setAdditionalFees(fetchedFees)</span>
+&nbsp;
       // Convert to legacy format
-<span class="cstat-no" title="statement not covered" >      setCourses(convertAllCoursePricesToCourses(fetchedCourses));</span>
-<span class="cstat-no" title="statement not covered" >      setOptions(convertAllOptionPricesToOptions(fetchedOptions));</span>
+<span class="cstat-no" title="statement not covered" >      setCourses(convertAllCoursePricesToCourses(fetchedCourses))</span>
+<span class="cstat-no" title="statement not covered" >      setOptions(convertAllOptionPricesToOptions(fetchedOptions))</span>
 <span class="cstat-no" title="statement not covered" >    } catch (err) {</span>
-<span class="cstat-no" title="statement not covered" >      setError(err as Error);</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Failed to fetch pricing data:', err);</span>
+<span class="cstat-no" title="statement not covered" >      setError(err as Error)</span>
+<span class="cstat-no" title="statement not covered" >      console.error('Failed to fetch pricing data:', err)</span>
 <span class="cstat-no" title="statement not covered" >    } finally {</span>
-<span class="cstat-no" title="statement not covered" >      setLoading(false);</span>
+<span class="cstat-no" title="statement not covered" >      setLoading(false)</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
-<span class="cstat-no" title="statement not covered" >  };</span>
+<span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  useEffect(() =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    fetchPricing();</span>
-<span class="cstat-no" title="statement not covered" >  }, [storeId]);</span>
+<span class="cstat-no" title="statement not covered" >    fetchPricing()</span>
+<span class="cstat-no" title="statement not covered" >  }, [storeId])</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return {</span>
 <span class="cstat-no" title="statement not covered" >    coursePrices,</span>
@@ -351,14 +362,14 @@ interface UsePricingResult {
 <span class="cstat-no" title="statement not covered" >    loading,</span>
 <span class="cstat-no" title="statement not covered" >    error,</span>
 <span class="cstat-no" title="statement not covered" >    refresh: fetchPricing,</span>
-<span class="cstat-no" title="statement not covered" >  };</span>
+<span class="cstat-no" title="statement not covered" >  }</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
 /**
  * Hook to calculate total price based on selections
  */
 <span class="cstat-no" title="statement not covered" >export function usePriceCalculation() {</span>
-<span class="cstat-no" title="statement not covered" >  const pricingUseCases = getPricingUseCases();</span>
+<span class="cstat-no" title="statement not covered" >  const pricingUseCases = getPricingUseCases()</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const calculateTotal = async (</span>
 <span class="cstat-no" title="statement not covered" >    courseId: string,</span>
@@ -367,22 +378,23 @@ interface UsePricingResult {
 <span class="cstat-no" title="statement not covered" >    isLateNight: boolean = false</span>
 <span class="cstat-no" title="statement not covered" >  ): Promise&lt;number&gt; =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
-<span class="cstat-no" title="statement not covered" >      return await pricingUseCases.calculateTotalPrice(courseId, duration, optionIds, isLateNight);</span>
+<span class="cstat-no" title="statement not covered" >      return await pricingUseCases.calculateTotalPrice(courseId, duration, optionIds, isLateNight)</span>
 <span class="cstat-no" title="statement not covered" >    } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Failed to calculate price:', error);</span>
-<span class="cstat-no" title="statement not covered" >      return 0;</span>
+<span class="cstat-no" title="statement not covered" >      console.error('Failed to calculate price:', error)</span>
+<span class="cstat-no" title="statement not covered" >      return 0</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
-<span class="cstat-no" title="statement not covered" >  };</span>
+<span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  return { calculateTotal };</span>
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >  return { calculateTotal }</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

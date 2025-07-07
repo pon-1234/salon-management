@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
+import { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
 import { Printer, Users, Calendar, TrendingUp, AlertCircle } from 'lucide-react'
 import {
   Select,
@@ -11,23 +11,23 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { StaffAttendanceTable } from "@/components/analytics/staff-attendance-table"
-import { StaffAttendanceChart } from "@/components/analytics/staff-attendance-chart"
-import { StaffShiftAnalysis } from "@/components/analytics/staff-shift-analysis"
-import { StaffAbsenceTable } from "@/components/analytics/staff-absence-table"
+} from '@/components/ui/select'
+import { StaffAttendanceTable } from '@/components/analytics/staff-attendance-table'
+import { StaffAttendanceChart } from '@/components/analytics/staff-attendance-chart'
+import { StaffShiftAnalysis } from '@/components/analytics/staff-shift-analysis'
+import { StaffAbsenceTable } from '@/components/analytics/staff-absence-table'
 
 export default function StaffAttendancePage() {
   const [selectedYear, setSelectedYear] = useState(2024)
   const [selectedMonth, setSelectedMonth] = useState(12)
-  const [selectedStatus, setSelectedStatus] = useState("全て表示")
-  const [selectedStaff, setSelectedStaff] = useState("")
+  const [selectedStatus, setSelectedStatus] = useState('全て表示')
+  const [selectedStaff, setSelectedStaff] = useState('')
 
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i)
   const months = Array.from({ length: 12 }, (_, i) => i + 1)
-  const statuses = ["全て表示", "出勤のみ", "休みのみ", "当日欠勤"]
-  const staffList = ["全スタッフ", "きょうか", "れいな", "はるひ", "みお", "しほ"]
+  const statuses = ['全て表示', '出勤のみ', '休みのみ', '当日欠勤']
+  const staffList = ['全スタッフ', 'きょうか', 'れいな', 'はるひ', 'みお', 'しほ']
 
   const handlePrint = () => {
     window.print()
@@ -42,7 +42,7 @@ export default function StaffAttendancePage() {
     attendanceRate: 92.5,
     previousAttendanceRate: 89.2,
     totalAbsences: 23,
-    unexpectedAbsences: 5
+    unexpectedAbsences: 5,
   }
 
   return (
@@ -84,10 +84,7 @@ export default function StaffAttendancePage() {
               </SelectContent>
             </Select>
 
-            <Select
-              value={selectedStatus}
-              onValueChange={setSelectedStatus}
-            >
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
               <SelectTrigger className="w-[120px]">
                 <SelectValue />
               </SelectTrigger>
@@ -100,10 +97,7 @@ export default function StaffAttendancePage() {
               </SelectContent>
             </Select>
 
-            <Select
-              value={selectedStaff}
-              onValueChange={setSelectedStaff}
-            >
+            <Select value={selectedStaff} onValueChange={setSelectedStaff}>
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="担当者" />
               </SelectTrigger>
@@ -117,21 +111,26 @@ export default function StaffAttendancePage() {
             </Select>
           </div>
         </div>
-        <Button onClick={handlePrint} className="print:hidden bg-emerald-600 hover:bg-emerald-700 text-white">
+        <Button
+          onClick={handlePrint}
+          className="bg-emerald-600 text-white hover:bg-emerald-700 print:hidden"
+        >
           <Printer className="mr-2 h-4 w-4" />
           印刷する
         </Button>
       </div>
 
       {/* KPIカード */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">稼働スタッフ数</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{kpiData.activeStaff} / {kpiData.totalStaff}人</div>
+            <div className="text-2xl font-bold">
+              {kpiData.activeStaff} / {kpiData.totalStaff}人
+            </div>
             <p className="text-xs text-muted-foreground">
               稼働率: {((kpiData.activeStaff / kpiData.totalStaff) * 100).toFixed(0)}%
             </p>
@@ -145,7 +144,7 @@ export default function StaffAttendancePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{kpiData.averageAttendance}人/日</div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
               <TrendingUp className="h-3 w-3 text-green-600" />
               <span className="text-green-600">
                 +{(kpiData.averageAttendance - kpiData.previousAverageAttendance).toFixed(1)}人
@@ -205,22 +204,13 @@ export default function StaffAttendancePage() {
               <TabsTrigger value="absence">欠勤管理</TabsTrigger>
             </TabsList>
             <TabsContent value="attendance" className="mt-4">
-              <StaffAttendanceTable 
-                year={selectedYear}
-                month={selectedMonth}
-              />
+              <StaffAttendanceTable year={selectedYear} month={selectedMonth} />
             </TabsContent>
             <TabsContent value="shift" className="mt-4">
-              <StaffShiftAnalysis 
-                year={selectedYear}
-                month={selectedMonth}
-              />
+              <StaffShiftAnalysis year={selectedYear} month={selectedMonth} />
             </TabsContent>
             <TabsContent value="absence" className="mt-4">
-              <StaffAbsenceTable 
-                year={selectedYear}
-                month={selectedMonth}
-              />
+              <StaffAbsenceTable year={selectedYear} month={selectedMonth} />
             </TabsContent>
           </Tabs>
         </CardContent>

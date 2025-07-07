@@ -1,8 +1,14 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Calendar, Clock } from 'lucide-react'
 import { CustomerInfoCard } from './customer-info-card'
 
@@ -20,7 +26,9 @@ interface BookingDetails {
 
 interface StepBasicInfoProps {
   bookingDetails: BookingDetails
-  onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void
+  onInputChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => void
 }
 
 export function StepBasicInfo({ bookingDetails, onInputChange }: StepBasicInfoProps) {
@@ -45,38 +53,24 @@ export function StepBasicInfo({ bookingDetails, onInputChange }: StepBasicInfoPr
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>日付</Label>
-              <Input 
-                type="date" 
-                value={bookingDetails.date} 
-                readOnly 
-                className="bg-gray-50"
-              />
+              <Input type="date" value={bookingDetails.date} readOnly className="bg-gray-50" />
             </div>
             <div>
               <Label>時間</Label>
-              <Input 
-                type="time" 
-                value={bookingDetails.time} 
-                readOnly 
-                className="bg-gray-50"
-              />
+              <Input type="time" value={bookingDetails.time} readOnly className="bg-gray-50" />
             </div>
           </div>
-          
+
           <div>
             <Label>担当キャスト</Label>
-            <Input 
-              value={bookingDetails.staff} 
-              readOnly 
-              className="bg-gray-50"
-            />
+            <Input value={bookingDetails.staff} readOnly className="bg-gray-50" />
           </div>
 
           <div>
             <Label>コース選択</Label>
-            <Select 
-              value={bookingDetails.course} 
-              onValueChange={(value) => onInputChange({ target: { name: "course", value } } as any)}
+            <Select
+              value={bookingDetails.course}
+              onValueChange={(value) => onInputChange({ target: { name: 'course', value } } as any)}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -103,14 +97,16 @@ export function StepBasicInfo({ bookingDetails, onInputChange }: StepBasicInfoPr
           <div className="space-y-3">
             <div>
               <Label className="text-sm">予約レベル</Label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {["仮予約", "ネット予約", "事前予約", "当日予約", "確定済"].map((status) => (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {['仮予約', 'ネット予約', '事前予約', '当日予約', '確定済'].map((status) => (
                   <Button
                     key={status}
                     type="button"
                     size="sm"
-                    onClick={() => onInputChange({ target: { name: "bookingStatus", value: status } } as any)}
-                    variant={bookingDetails.bookingStatus === status ? "default" : "outline"}
+                    onClick={() =>
+                      onInputChange({ target: { name: 'bookingStatus', value: status } } as any)
+                    }
+                    variant={bookingDetails.bookingStatus === status ? 'default' : 'outline'}
                   >
                     {status}
                   </Button>

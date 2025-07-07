@@ -2,7 +2,7 @@ import { Message, Customer } from '../types/chat'
 import { messages, customers } from './data'
 
 export function getMessages(customerId: string): Message[] {
-  return messages.filter(message => message.customerId === customerId);
+  return messages.filter((message) => message.customerId === customerId)
 }
 
 export function getCustomers(): Customer[] {
@@ -17,8 +17,8 @@ export function addMessage(newMessage: Omit<Message, 'id'> & { customerId: strin
 }
 
 export function markMessageAsRead(messageId: string): void {
-  const message = messages.find(m => m.id === messageId)
+  const message = messages.find((m) => m.id === messageId)
   if (message) {
-    message.readStatus = "既読"
+    message.readStatus = '既読'
   }
 }

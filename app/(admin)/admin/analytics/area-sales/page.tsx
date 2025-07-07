@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
+import { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
 import { Printer, TrendingUp, MapPin, DollarSign, Users, Activity } from 'lucide-react'
 import {
   Select,
@@ -11,12 +11,12 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { AreaSalesChart } from "@/components/analytics/area-sales-chart"
-import { AreaSalesTable } from "@/components/analytics/area-sales-table"
-import { AreaComparisonTable } from "@/components/analytics/area-comparison-table"
-import { AreaTrendChart } from "@/components/analytics/area-trend-chart"
-import { generateAreaSalesData } from "@/lib/area-sales/data"
+} from '@/components/ui/select'
+import { AreaSalesChart } from '@/components/analytics/area-sales-chart'
+import { AreaSalesTable } from '@/components/analytics/area-sales-table'
+import { AreaComparisonTable } from '@/components/analytics/area-comparison-table'
+import { AreaTrendChart } from '@/components/analytics/area-trend-chart'
+import { generateAreaSalesData } from '@/lib/area-sales/data'
 
 export default function AreaSalesPage() {
   const [selectedYear, setSelectedYear] = useState(2024)
@@ -30,30 +30,33 @@ export default function AreaSalesPage() {
   const data = generateAreaSalesData(selectedYear)
 
   // Calculate KPI data from actual data
-  const totalSales = data && Array.isArray(data) && data.length > 0 
-    ? data.reduce((sum, area) => sum + area.total, 0)
-    : 0;
-  
-  const topArea = data && Array.isArray(data) && data.length > 0
-    ? data.reduce((max, area) => area.total > max.total ? area : max, data[0])
-    : null;
+  const totalSales =
+    data && Array.isArray(data) && data.length > 0
+      ? data.reduce((sum, area) => sum + area.total, 0)
+      : 0
+
+  const topArea =
+    data && Array.isArray(data) && data.length > 0
+      ? data.reduce((max, area) => (area.total > max.total ? area : max), data[0])
+      : null
 
   const kpiData = {
     totalSales: totalSales,
     previousYearSales: Math.floor(totalSales * 0.92), // Simulated previous year
     totalCustomers: 10704,
     previousYearCustomers: 10123,
-    topArea: topArea?.area || "---",
-    topAreaPercentage: topArea && totalSales > 0 ? ((topArea.total / totalSales) * 100).toFixed(1) : "0",
+    topArea: topArea?.area || '---',
+    topAreaPercentage:
+      topArea && totalSales > 0 ? ((topArea.total / totalSales) * 100).toFixed(1) : '0',
     averagePerArea: data && data.length > 0 ? Math.floor(totalSales / data.length) : 0,
     activeAreas: data ? data.length : 0,
-    growthLeader: "神奈川県",
-    growthLeaderRate: 18.5
+    growthLeader: '神奈川県',
+    growthLeaderRate: 18.5,
   }
 
   const calculateGrowthRate = (current: number, previous: number) => {
-    if (previous === 0) return "0.0";
-    return ((current - previous) / previous * 100).toFixed(1)
+    if (previous === 0) return '0.0'
+    return (((current - previous) / previous) * 100).toFixed(1)
   }
 
   return (
@@ -78,14 +81,17 @@ export default function AreaSalesPage() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={handlePrint} className="print:hidden bg-emerald-600 hover:bg-emerald-700 text-white">
+        <Button
+          onClick={handlePrint}
+          className="bg-emerald-600 text-white hover:bg-emerald-700 print:hidden"
+        >
           <Printer className="mr-2 h-4 w-4" />
           印刷する
         </Button>
       </div>
 
       {/* KPIカード */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">全エリア売上高</CardTitle>
@@ -93,7 +99,7 @@ export default function AreaSalesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">¥{kpiData.totalSales.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
               <TrendingUp className="h-3 w-3 text-green-600" />
               <span className="text-green-600">
                 {calculateGrowthRate(kpiData.totalSales, kpiData.previousYearSales)}%
@@ -110,9 +116,7 @@ export default function AreaSalesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-lg font-bold">{kpiData.topArea}</div>
-            <p className="text-xs text-muted-foreground">
-              全体の{kpiData.topAreaPercentage}%
-            </p>
+            <p className="text-xs text-muted-foreground">全体の{kpiData.topAreaPercentage}%</p>
           </CardContent>
         </Card>
 
@@ -136,15 +140,13 @@ export default function AreaSalesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">¥{kpiData.averagePerArea.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              展開エリア: {kpiData.activeAreas}都県
-            </p>
+            <p className="text-xs text-muted-foreground">展開エリア: {kpiData.activeAreas}都県</p>
           </CardContent>
         </Card>
       </div>
 
       {/* エリア別売上構成グラフ */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>エリア別売上構成</CardTitle>

@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/181</span>
+                <span class='fraction'>0/186</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/181</span>
+                <span class='fraction'>0/186</span>
             </div>
         
             
@@ -301,7 +301,12 @@
 <a name='L236'></a><a href='#L236'>236</a>
 <a name='L237'></a><a href='#L237'>237</a>
 <a name='L238'></a><a href='#L238'>238</a>
-<a name='L239'></a><a href='#L239'>239</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L239'></a><a href='#L239'>239</a>
+<a name='L240'></a><a href='#L240'>240</a>
+<a name='L241'></a><a href='#L241'>241</a>
+<a name='L242'></a><a href='#L242'>242</a>
+<a name='L243'></a><a href='#L243'>243</a>
+<a name='L244'></a><a href='#L244'>244</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -497,18 +502,23 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -540,243 +550,248 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">export interface StaffMember {
-  id: string;
-  name: string;
-  nameKana: string;
-  age: number;
-  height: number;
-  bust: string;
-  waist: number;
-  hip: number;
-  type: string;
-  image: string;
-  description: string;
-  netReservation: boolean;
-  specialDesignationFee: number | null;
-  regularDesignationFee: number | null;
-  workStatus: "出勤" | "未出勤";
-  courseTypes: string[];
-  workStart?: Date;
-  workEnd?: Date;
-  appointments: Appointment[];
+  id: string
+  name: string
+  nameKana: string
+  age: number
+  height: number
+  bust: string
+  waist: number
+  hip: number
+  type: string
+  image: string
+  description: string
+  netReservation: boolean
+  specialDesignationFee: number | null
+  regularDesignationFee: number | null
+  workStatus: '出勤' | '未出勤'
+  courseTypes: string[]
+  workStart?: Date
+  workEnd?: Date
+  appointments: Appointment[]
 }
 &nbsp;
 export interface Appointment {
-  id: string;
-  serviceName: string;
-  startTime: Date;
-  endTime: Date;
-  customerName: string;
-  customerPhone: string;
-  customerEmail: string;
-  reservationTime: string;
-  status: "provisional" | "confirmed";
-  location?: string;
-  price: number;
+  id: string
+  serviceName: string
+  startTime: Date
+  endTime: Date
+  customerName: string
+  customerPhone: string
+  customerEmail: string
+  reservationTime: string
+  status: 'provisional' | 'confirmed'
+  location?: string
+  price: number
 }
 &nbsp;
 export interface ScheduleDay {
-  date: string;
-  day: string;
-  time?: string;
-  status?: string;
-  bookings?: number;
+  date: string
+  day: string
+  time?: string
+  status?: string
+  bookings?: number
 }
 &nbsp;
 export interface Option {
-  name: string;
-  price: number;
-  note?: string;
+  name: string
+  price: number
+  note?: string
 }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >const createDate = (hours: number, minutes: number = 0) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >  const date = new Date();</span>
-<span class="cstat-no" title="statement not covered" >  date.setHours(hours, minutes, 0, 0);</span>
-<span class="cstat-no" title="statement not covered" >  return date;</span>
-<span class="cstat-no" title="statement not covered" >};</span>
+<span class="cstat-no" title="statement not covered" >  const date = new Date()</span>
+<span class="cstat-no" title="statement not covered" >  date.setHours(hours, minutes, 0, 0)</span>
+<span class="cstat-no" title="statement not covered" >  return date</span>
+<span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export const staffMembers: StaffMember[] = [</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    id: "1",</span>
-<span class="cstat-no" title="statement not covered" >    name: "みるく",</span>
-<span class="cstat-no" title="statement not covered" >    nameKana: "みるく",</span>
+<span class="cstat-no" title="statement not covered" >    id: '1',</span>
+<span class="cstat-no" title="statement not covered" >    name: 'みるく',</span>
+<span class="cstat-no" title="statement not covered" >    nameKana: 'みるく',</span>
 <span class="cstat-no" title="statement not covered" >    age: 20,</span>
 <span class="cstat-no" title="statement not covered" >    height: 160,</span>
-<span class="cstat-no" title="statement not covered" >    bust: "G",</span>
+<span class="cstat-no" title="statement not covered" >    bust: 'G',</span>
 <span class="cstat-no" title="statement not covered" >    waist: 62,</span>
 <span class="cstat-no" title="statement not covered" >    hip: 98,</span>
-<span class="cstat-no" title="statement not covered" >    type: "カワイイ系",</span>
-<span class="cstat-no" title="statement not covered" >    image: "https://rimane.net/images/tyrano-move-image01.jpg",</span>
-<span class="cstat-no" title="statement not covered" >    description: "明るく元気な性格で、お客様を楽しませることが得意です。マッサージの技術も高く、リピーターの多いスタッフです。",</span>
+<span class="cstat-no" title="statement not covered" >    type: 'カワイイ系',</span>
+<span class="cstat-no" title="statement not covered" >    image: 'https://rimane.net/images/tyrano-move-image01.jpg',</span>
+<span class="cstat-no" title="statement not covered" >    description:</span>
+<span class="cstat-no" title="statement not covered" >      '明るく元気な性格で、お客様を楽しませることが得意です。マッサージの技術も高く、リピーターの多いスタッフです。',</span>
 <span class="cstat-no" title="statement not covered" >    netReservation: true,</span>
 <span class="cstat-no" title="statement not covered" >    specialDesignationFee: null,</span>
 <span class="cstat-no" title="statement not covered" >    regularDesignationFee: null,</span>
-<span class="cstat-no" title="statement not covered" >    workStatus: "出勤",</span>
-<span class="cstat-no" title="statement not covered" >    courseTypes: ["イベントコース", "基本コース"],</span>
+<span class="cstat-no" title="statement not covered" >    workStatus: '出勤',</span>
+<span class="cstat-no" title="statement not covered" >    courseTypes: ['イベントコース', '基本コース'],</span>
 <span class="cstat-no" title="statement not covered" >    workStart: createDate(10),</span>
 <span class="cstat-no" title="statement not covered" >    workEnd: createDate(22),</span>
 <span class="cstat-no" title="statement not covered" >    appointments: [</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "1-1",</span>
-<span class="cstat-no" title="statement not covered" >        serviceName: "マッサージ施術名",</span>
+<span class="cstat-no" title="statement not covered" >        id: '1-1',</span>
+<span class="cstat-no" title="statement not covered" >        serviceName: 'マッサージ施術名',</span>
 <span class="cstat-no" title="statement not covered" >        startTime: createDate(11),</span>
 <span class="cstat-no" title="statement not covered" >        endTime: createDate(14),</span>
-<span class="cstat-no" title="statement not covered" >        customerName: "佐藤 花子",</span>
-<span class="cstat-no" title="statement not covered" >        customerPhone: "090-9999-9999",</span>
-<span class="cstat-no" title="statement not covered" >        customerEmail: "satoh_hanako@example.com",</span>
-<span class="cstat-no" title="statement not covered" >        reservationTime: "12月11日 12:03",</span>
-<span class="cstat-no" title="statement not covered" >        status: "provisional",</span>
+<span class="cstat-no" title="statement not covered" >        customerName: '佐藤 花子',</span>
+<span class="cstat-no" title="statement not covered" >        customerPhone: '090-9999-9999',</span>
+<span class="cstat-no" title="statement not covered" >        customerEmail: 'satoh_hanako@example.com',</span>
+<span class="cstat-no" title="statement not covered" >        reservationTime: '12月11日 12:03',</span>
+<span class="cstat-no" title="statement not covered" >        status: 'provisional',</span>
 <span class="cstat-no" title="statement not covered" >        price: 35000,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "1-2",</span>
-<span class="cstat-no" title="statement not covered" >        serviceName: "マッサージ施術名",</span>
+<span class="cstat-no" title="statement not covered" >        id: '1-2',</span>
+<span class="cstat-no" title="statement not covered" >        serviceName: 'マッサージ施術名',</span>
 <span class="cstat-no" title="statement not covered" >        startTime: createDate(15),</span>
 <span class="cstat-no" title="statement not covered" >        endTime: createDate(16, 30),</span>
-<span class="cstat-no" title="statement not covered" >        customerName: "鈴木 一郎",</span>
-<span class="cstat-no" title="statement not covered" >        customerPhone: "080-8888-8888",</span>
-<span class="cstat-no" title="statement not covered" >        customerEmail: "suzuki_ichiro@example.com",</span>
-<span class="cstat-no" title="statement not covered" >        reservationTime: "12月15日 10:30",</span>
-<span class="cstat-no" title="statement not covered" >        status: "confirmed",</span>
+<span class="cstat-no" title="statement not covered" >        customerName: '鈴木 一郎',</span>
+<span class="cstat-no" title="statement not covered" >        customerPhone: '080-8888-8888',</span>
+<span class="cstat-no" title="statement not covered" >        customerEmail: 'suzuki_ichiro@example.com',</span>
+<span class="cstat-no" title="statement not covered" >        reservationTime: '12月15日 10:30',</span>
+<span class="cstat-no" title="statement not covered" >        status: 'confirmed',</span>
 <span class="cstat-no" title="statement not covered" >        price: 35000,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >    ],</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    id: "2",</span>
-<span class="cstat-no" title="statement not covered" >    name: "やまだ たろう",</span>
-<span class="cstat-no" title="statement not covered" >    nameKana: "やまだ たろう",</span>
+<span class="cstat-no" title="statement not covered" >    id: '2',</span>
+<span class="cstat-no" title="statement not covered" >    name: 'やまだ たろう',</span>
+<span class="cstat-no" title="statement not covered" >    nameKana: 'やまだ たろう',</span>
 <span class="cstat-no" title="statement not covered" >    age: 25,</span>
 <span class="cstat-no" title="statement not covered" >    height: 175,</span>
-<span class="cstat-no" title="statement not covered" >    bust: "C",</span>
+<span class="cstat-no" title="statement not covered" >    bust: 'C',</span>
 <span class="cstat-no" title="statement not covered" >    waist: 70,</span>
 <span class="cstat-no" title="statement not covered" >    hip: 90,</span>
-<span class="cstat-no" title="statement not covered" >    type: "キレイ系",</span>
-<span class="cstat-no" title="statement not covered" >    image: "https://rimane.net/images/tyrano-move-image01.jpg",</span>
-<span class="cstat-no" title="statement not covered" >    description: "落ち着いた雰囲気で、丁寧な接客が好評です。マッサージの腕前も確かで、特にリラックスを求めるお客様に人気があります。",</span>
+<span class="cstat-no" title="statement not covered" >    type: 'キレイ系',</span>
+<span class="cstat-no" title="statement not covered" >    image: 'https://rimane.net/images/tyrano-move-image01.jpg',</span>
+<span class="cstat-no" title="statement not covered" >    description:</span>
+<span class="cstat-no" title="statement not covered" >      '落ち着いた雰囲気で、丁寧な接客が好評です。マッサージの腕前も確かで、特にリラックスを求めるお客様に人気があります。',</span>
 <span class="cstat-no" title="statement not covered" >    netReservation: true,</span>
 <span class="cstat-no" title="statement not covered" >    specialDesignationFee: 2000,</span>
 <span class="cstat-no" title="statement not covered" >    regularDesignationFee: 1000,</span>
-<span class="cstat-no" title="statement not covered" >    workStatus: "出勤",</span>
-<span class="cstat-no" title="statement not covered" >    courseTypes: ["イベントコース", "基本コース"],</span>
+<span class="cstat-no" title="statement not covered" >    workStatus: '出勤',</span>
+<span class="cstat-no" title="statement not covered" >    courseTypes: ['イベントコース', '基本コース'],</span>
 <span class="cstat-no" title="statement not covered" >    workStart: createDate(12),</span>
 <span class="cstat-no" title="statement not covered" >    workEnd: createDate(23),</span>
 <span class="cstat-no" title="statement not covered" >    appointments: [</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "2-1",</span>
-<span class="cstat-no" title="statement not covered" >        serviceName: "マッサージ施術名",</span>
+<span class="cstat-no" title="statement not covered" >        id: '2-1',</span>
+<span class="cstat-no" title="statement not covered" >        serviceName: 'マッサージ施術名',</span>
 <span class="cstat-no" title="statement not covered" >        startTime: createDate(13),</span>
 <span class="cstat-no" title="statement not covered" >        endTime: createDate(14, 40),</span>
-<span class="cstat-no" title="statement not covered" >        customerName: "田中 明",</span>
-<span class="cstat-no" title="statement not covered" >        customerPhone: "090-7777-7777",</span>
-<span class="cstat-no" title="statement not covered" >        customerEmail: "tanaka_akira@example.com",</span>
-<span class="cstat-no" title="statement not covered" >        reservationTime: "12月22日 18:32",</span>
-<span class="cstat-no" title="statement not covered" >        status: "provisional",</span>
+<span class="cstat-no" title="statement not covered" >        customerName: '田中 明',</span>
+<span class="cstat-no" title="statement not covered" >        customerPhone: '090-7777-7777',</span>
+<span class="cstat-no" title="statement not covered" >        customerEmail: 'tanaka_akira@example.com',</span>
+<span class="cstat-no" title="statement not covered" >        reservationTime: '12月22日 18:32',</span>
+<span class="cstat-no" title="statement not covered" >        status: 'provisional',</span>
 <span class="cstat-no" title="statement not covered" >        price: 35000,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "2-2",</span>
-<span class="cstat-no" title="statement not covered" >        serviceName: "マッサージ施術名",</span>
+<span class="cstat-no" title="statement not covered" >        id: '2-2',</span>
+<span class="cstat-no" title="statement not covered" >        serviceName: 'マッサージ施術名',</span>
 <span class="cstat-no" title="statement not covered" >        startTime: createDate(18),</span>
 <span class="cstat-no" title="statement not covered" >        endTime: createDate(21),</span>
-<span class="cstat-no" title="statement not covered" >        customerName: "高橋 誠",</span>
-<span class="cstat-no" title="statement not covered" >        customerPhone: "090-6666-6666",</span>
-<span class="cstat-no" title="statement not covered" >        customerEmail: "takahashi_makoto@example.com",</span>
-<span class="cstat-no" title="statement not covered" >        reservationTime: "12月20日 09:15",</span>
-<span class="cstat-no" title="statement not covered" >        status: "confirmed",</span>
+<span class="cstat-no" title="statement not covered" >        customerName: '高橋 誠',</span>
+<span class="cstat-no" title="statement not covered" >        customerPhone: '090-6666-6666',</span>
+<span class="cstat-no" title="statement not covered" >        customerEmail: 'takahashi_makoto@example.com',</span>
+<span class="cstat-no" title="statement not covered" >        reservationTime: '12月20日 09:15',</span>
+<span class="cstat-no" title="statement not covered" >        status: 'confirmed',</span>
 <span class="cstat-no" title="statement not covered" >        price: 35000,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >    ],</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
 <span class="cstat-no" title="statement not covered" >  {</span>
-<span class="cstat-no" title="statement not covered" >    id: "3",</span>
-<span class="cstat-no" title="statement not covered" >    name: "たかはし みか",</span>
-<span class="cstat-no" title="statement not covered" >    nameKana: "たかはし みか",</span>
+<span class="cstat-no" title="statement not covered" >    id: '3',</span>
+<span class="cstat-no" title="statement not covered" >    name: 'たかはし みか',</span>
+<span class="cstat-no" title="statement not covered" >    nameKana: 'たかはし みか',</span>
 <span class="cstat-no" title="statement not covered" >    age: 22,</span>
 <span class="cstat-no" title="statement not covered" >    height: 158,</span>
-<span class="cstat-no" title="statement not covered" >    bust: "G",</span>
+<span class="cstat-no" title="statement not covered" >    bust: 'G',</span>
 <span class="cstat-no" title="statement not covered" >    waist: 58,</span>
 <span class="cstat-no" title="statement not covered" >    hip: 88,</span>
-<span class="cstat-no" title="statement not covered" >    type: "ロリ系",</span>
-<span class="cstat-no" title="statement not covered" >    image: "https://rimane.net/images/tyrano-move-image01.jpg",</span>
-<span class="cstat-no" title="statement not covered" >    description: "小柄でキュートな外見と、意外な大人の魅力を併せ持つスタッフです。細やかな気配りが得意で、初めてのお客様にも安心して利用いただけます。",</span>
+<span class="cstat-no" title="statement not covered" >    type: 'ロリ系',</span>
+<span class="cstat-no" title="statement not covered" >    image: 'https://rimane.net/images/tyrano-move-image01.jpg',</span>
+<span class="cstat-no" title="statement not covered" >    description:</span>
+<span class="cstat-no" title="statement not covered" >      '小柄でキュートな外見と、意外な大人の魅力を併せ持つスタッフです。細やかな気配りが得意で、初めてのお客様にも安心して利用いただけます。',</span>
 <span class="cstat-no" title="statement not covered" >    netReservation: true,</span>
 <span class="cstat-no" title="statement not covered" >    specialDesignationFee: 3000,</span>
 <span class="cstat-no" title="statement not covered" >    regularDesignationFee: 1500,</span>
-<span class="cstat-no" title="statement not covered" >    workStatus: "未出勤",</span>
-<span class="cstat-no" title="statement not covered" >    courseTypes: ["基本コース"],</span>
+<span class="cstat-no" title="statement not covered" >    workStatus: '未出勤',</span>
+<span class="cstat-no" title="statement not covered" >    courseTypes: ['基本コース'],</span>
 <span class="cstat-no" title="statement not covered" >    workStart: createDate(14),</span>
 <span class="cstat-no" title="statement not covered" >    workEnd: createDate(22),</span>
 <span class="cstat-no" title="statement not covered" >    appointments: [</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "3-1",</span>
-<span class="cstat-no" title="statement not covered" >        serviceName: "マッサージ施術名",</span>
+<span class="cstat-no" title="statement not covered" >        id: '3-1',</span>
+<span class="cstat-no" title="statement not covered" >        serviceName: 'マッサージ施術名',</span>
 <span class="cstat-no" title="statement not covered" >        startTime: createDate(15),</span>
 <span class="cstat-no" title="statement not covered" >        endTime: createDate(16, 30),</span>
-<span class="cstat-no" title="statement not covered" >        customerName: "小林 さくら",</span>
-<span class="cstat-no" title="statement not covered" >        customerPhone: "090-5555-5555",</span>
-<span class="cstat-no" title="statement not covered" >        customerEmail: "kobayashi_sakura@example.com",</span>
-<span class="cstat-no" title="statement not covered" >        reservationTime: "12月18日 14:45",</span>
-<span class="cstat-no" title="statement not covered" >        status: "confirmed",</span>
+<span class="cstat-no" title="statement not covered" >        customerName: '小林 さくら',</span>
+<span class="cstat-no" title="statement not covered" >        customerPhone: '090-5555-5555',</span>
+<span class="cstat-no" title="statement not covered" >        customerEmail: 'kobayashi_sakura@example.com',</span>
+<span class="cstat-no" title="statement not covered" >        reservationTime: '12月18日 14:45',</span>
+<span class="cstat-no" title="statement not covered" >        status: 'confirmed',</span>
 <span class="cstat-no" title="statement not covered" >        price: 35000,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >      {</span>
-<span class="cstat-no" title="statement not covered" >        id: "3-2",</span>
-<span class="cstat-no" title="statement not covered" >        serviceName: "マッサージ施術名",</span>
+<span class="cstat-no" title="statement not covered" >        id: '3-2',</span>
+<span class="cstat-no" title="statement not covered" >        serviceName: 'マッサージ施術名',</span>
 <span class="cstat-no" title="statement not covered" >        startTime: createDate(20),</span>
 <span class="cstat-no" title="statement not covered" >        endTime: createDate(21, 30),</span>
-<span class="cstat-no" title="statement not covered" >        customerName: "渡辺 健太",</span>
-<span class="cstat-no" title="statement not covered" >        customerPhone: "090-4444-4444",</span>
-<span class="cstat-no" title="statement not covered" >        customerEmail: "watanabe_kenta@example.com",</span>
-<span class="cstat-no" title="statement not covered" >        reservationTime: "12月23日 11:20",</span>
-<span class="cstat-no" title="statement not covered" >        status: "provisional",</span>
+<span class="cstat-no" title="statement not covered" >        customerName: '渡辺 健太',</span>
+<span class="cstat-no" title="statement not covered" >        customerPhone: '090-4444-4444',</span>
+<span class="cstat-no" title="statement not covered" >        customerEmail: 'watanabe_kenta@example.com',</span>
+<span class="cstat-no" title="statement not covered" >        reservationTime: '12月23日 11:20',</span>
+<span class="cstat-no" title="statement not covered" >        status: 'provisional',</span>
 <span class="cstat-no" title="statement not covered" >        price: 35000,</span>
 <span class="cstat-no" title="statement not covered" >      },</span>
 <span class="cstat-no" title="statement not covered" >    ],</span>
 <span class="cstat-no" title="statement not covered" >  },</span>
-<span class="cstat-no" title="statement not covered" >];</span>
+<span class="cstat-no" title="statement not covered" >]</span>
 &nbsp;
 // Import options from the centralized location
-export { options } from "./course-option/data";
+export { options } from './course-option/data'
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export function generateSchedule(staff: StaffMember): ScheduleDay[] {</span>
-<span class="cstat-no" title="statement not covered" >  const today = new Date();</span>
+<span class="cstat-no" title="statement not covered" >  const today = new Date()</span>
 <span class="cstat-no" title="statement not covered" >  return Array.from({ length: 11 }, (_, i) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    const date = new Date(today);</span>
-<span class="cstat-no" title="statement not covered" >    date.setDate(today.getDate() + i);</span>
-<span class="cstat-no" title="statement not covered" >    const day = ["日", "月", "火", "水", "木", "金", "土"][date.getDay()];</span>
-<span class="cstat-no" title="statement not covered" >    const dateString = `${date.getFullYear()}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;</span>
-    
+<span class="cstat-no" title="statement not covered" >    const date = new Date(today)</span>
+<span class="cstat-no" title="statement not covered" >    date.setDate(today.getDate() + i)</span>
+<span class="cstat-no" title="statement not covered" >    const day = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()]</span>
+<span class="cstat-no" title="statement not covered" >    const dateString = `${date.getFullYear()}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`</span>
+&nbsp;
 <span class="cstat-no" title="statement not covered" >    if (i === 2) {</span>
-<span class="cstat-no" title="statement not covered" >      return { date: dateString, day, status: "休み" };</span>
+<span class="cstat-no" title="statement not covered" >      return { date: dateString, day, status: '休み' }</span>
 <span class="cstat-no" title="statement not covered" >    } else if (i &gt;= 7) {</span>
-<span class="cstat-no" title="statement not covered" >      return { date: dateString, day, status: "未設定" };</span>
+<span class="cstat-no" title="statement not covered" >      return { date: dateString, day, status: '未設定' }</span>
 <span class="cstat-no" title="statement not covered" >    } else {</span>
-<span class="cstat-no" title="statement not covered" >      const bookings = staff.appointments.filter(a =&gt; a.startTime.toDateString() === date.toDateString()).length;</span>
+<span class="cstat-no" title="statement not covered" >      const bookings = staff.appointments.filter(</span>
+<span class="cstat-no" title="statement not covered" >        (a) =&gt; a.startTime.toDateString() === date.toDateString()</span>
+<span class="cstat-no" title="statement not covered" >      ).length</span>
 <span class="cstat-no" title="statement not covered" >      return {</span>
 <span class="cstat-no" title="statement not covered" >        date: dateString,</span>
 <span class="cstat-no" title="statement not covered" >        day,</span>
 <span class="cstat-no" title="statement not covered" >        time: `${staff.workStart?.getHours().toString().padStart(2, '0')}:00 - ${staff.workEnd?.getHours().toString().padStart(2, '0')}:00`,</span>
-<span class="cstat-no" title="statement not covered" >        status: bookings &gt; 0 ? "予約" : undefined,</span>
-<span class="cstat-no" title="statement not covered" >        bookings: bookings &gt; 0 ? bookings : undefined</span>
-<span class="cstat-no" title="statement not covered" >      };</span>
+<span class="cstat-no" title="statement not covered" >        status: bookings &gt; 0 ? '予約' : undefined,</span>
+<span class="cstat-no" title="statement not covered" >        bookings: bookings &gt; 0 ? bookings : undefined,</span>
+<span class="cstat-no" title="statement not covered" >      }</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
-<span class="cstat-no" title="statement not covered" >  });</span>
+<span class="cstat-no" title="statement not covered" >  })</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export const schedule: ScheduleDay[] = [</span>
-<span class="cstat-no" title="statement not covered" >  { date: "2024/12/09", day: "月", time: "16:00 - 00:00", status: "予約", bookings: 1 },</span>
-<span class="cstat-no" title="statement not covered" >  { date: "2024/12/10", day: "火", time: "16:00 - 00:00" },</span>
-<span class="cstat-no" title="statement not covered" >  { date: "2024/12/11", day: "水", status: "休み" },</span>
-<span class="cstat-no" title="statement not covered" >  { date: "2024/12/12", day: "木", time: "16:00 - 00:00" },</span>
-<span class="cstat-no" title="statement not covered" >  { date: "2024/12/13", day: "金", time: "16:00 - 00:00" },</span>
-<span class="cstat-no" title="statement not covered" >  { date: "2024/12/14", day: "土", time: "16:00 - 00:00" },</span>
-<span class="cstat-no" title="statement not covered" >  { date: "2024/12/15", day: "日", time: "16:00 - 00:00" },</span>
-<span class="cstat-no" title="statement not covered" >  { date: "2024/12/16", day: "月", status: "未設定" },</span>
-<span class="cstat-no" title="statement not covered" >  { date: "2024/12/17", day: "火", status: "未設定" },</span>
-<span class="cstat-no" title="statement not covered" >  { date: "2024/12/18", day: "水", status: "未設定" },</span>
-<span class="cstat-no" title="statement not covered" >  { date: "2024/12/19", day: "木", status: "未設定" },</span>
-<span class="cstat-no" title="statement not covered" >];</span>
+<span class="cstat-no" title="statement not covered" >  { date: '2024/12/09', day: '月', time: '16:00 - 00:00', status: '予約', bookings: 1 },</span>
+<span class="cstat-no" title="statement not covered" >  { date: '2024/12/10', day: '火', time: '16:00 - 00:00' },</span>
+<span class="cstat-no" title="statement not covered" >  { date: '2024/12/11', day: '水', status: '休み' },</span>
+<span class="cstat-no" title="statement not covered" >  { date: '2024/12/12', day: '木', time: '16:00 - 00:00' },</span>
+<span class="cstat-no" title="statement not covered" >  { date: '2024/12/13', day: '金', time: '16:00 - 00:00' },</span>
+<span class="cstat-no" title="statement not covered" >  { date: '2024/12/14', day: '土', time: '16:00 - 00:00' },</span>
+<span class="cstat-no" title="statement not covered" >  { date: '2024/12/15', day: '日', time: '16:00 - 00:00' },</span>
+<span class="cstat-no" title="statement not covered" >  { date: '2024/12/16', day: '月', status: '未設定' },</span>
+<span class="cstat-no" title="statement not covered" >  { date: '2024/12/17', day: '火', status: '未設定' },</span>
+<span class="cstat-no" title="statement not covered" >  { date: '2024/12/18', day: '水', status: '未設定' },</span>
+<span class="cstat-no" title="statement not covered" >  { date: '2024/12/19', day: '木', status: '未設定' },</span>
+<span class="cstat-no" title="statement not covered" >]</span>
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -784,7 +799,7 @@ export { options } from "./course-option/data";
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

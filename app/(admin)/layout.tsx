@@ -13,16 +13,9 @@ function AdminLayoutContent({ children }: { children: ReactNode }) {
   return (
     <>
       <Header />
-      <div className="pt-[83px] min-h-screen w-full">
+      <div className="min-h-screen w-full pt-[83px]">
         <main>
-          <div
-            className={cn(
-              'w-full',
-              hasNewNotifications && 'has-notifications'
-            )}
-          >
-            {children}
-          </div>
+          <div className={cn('w-full', hasNewNotifications && 'has-notifications')}>{children}</div>
         </main>
       </div>
     </>

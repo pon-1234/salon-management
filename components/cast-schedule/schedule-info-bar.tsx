@@ -1,26 +1,26 @@
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Users, Clock, TrendingUp, Calendar } from 'lucide-react'
 
 interface ScheduleInfoBarProps {
-  totalCast: number;
-  workingCast: number;
-  averageWorkingHours: number;
-  averageWorkingCast: number;
+  totalCast: number
+  workingCast: number
+  averageWorkingHours: number
+  averageWorkingCast: number
 }
 
-export function ScheduleInfoBar({ 
-  totalCast, 
-  workingCast, 
-  averageWorkingHours, 
-  averageWorkingCast 
+export function ScheduleInfoBar({
+  totalCast,
+  workingCast,
+  averageWorkingHours,
+  averageWorkingCast,
 }: ScheduleInfoBarProps) {
-  const onLeave = 14; // 休職中の人数
+  const onLeave = 14 // 休職中の人数
 
   return (
-    <div className="bg-gradient-to-r from-emerald-50 to-blue-50 border-b">
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="flex items-center justify-between mb-4">
+    <div className="border-b bg-gradient-to-r from-emerald-50 to-blue-50">
+      <div className="mx-auto max-w-7xl p-6">
+        <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Calendar className="h-6 w-6 text-emerald-600" />
             <h1 className="text-xl font-semibold text-gray-900">キャスト出勤管理</h1>
@@ -29,12 +29,12 @@ export function ScheduleInfoBar({
             </Badge>
           </div>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="bg-white/70 backdrop-blur-sm border-emerald-200">
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+          <Card className="border-emerald-200 bg-white/70 backdrop-blur-sm">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-100 rounded-lg">
+                <div className="rounded-lg bg-emerald-100 p-2">
                   <Users className="h-5 w-5 text-emerald-600" />
                 </div>
                 <div>
@@ -45,10 +45,10 @@ export function ScheduleInfoBar({
             </CardContent>
           </Card>
 
-          <Card className="bg-white/70 backdrop-blur-sm border-blue-200">
+          <Card className="border-blue-200 bg-white/70 backdrop-blur-sm">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
+                <div className="rounded-lg bg-blue-100 p-2">
                   <TrendingUp className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
@@ -59,10 +59,10 @@ export function ScheduleInfoBar({
             </CardContent>
           </Card>
 
-          <Card className="bg-white/70 backdrop-blur-sm border-green-200">
+          <Card className="border-green-200 bg-white/70 backdrop-blur-sm">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
+                <div className="rounded-lg bg-green-100 p-2">
                   <Clock className="h-5 w-5 text-green-600" />
                 </div>
                 <div>
@@ -73,10 +73,10 @@ export function ScheduleInfoBar({
             </CardContent>
           </Card>
 
-          <Card className="bg-white/70 backdrop-blur-sm border-red-200">
+          <Card className="border-red-200 bg-white/70 backdrop-blur-sm">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-100 rounded-lg">
+                <div className="rounded-lg bg-red-100 p-2">
                   <Users className="h-5 w-5 text-red-600" />
                 </div>
                 <div>

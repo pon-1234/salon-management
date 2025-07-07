@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/29</span>
+                <span class='fraction'>0/24</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/29</span>
+                <span class='fraction'>0/24</span>
             </div>
         
             
@@ -97,13 +97,7 @@
 <a name='L32'></a><a href='#L32'>32</a>
 <a name='L33'></a><a href='#L33'>33</a>
 <a name='L34'></a><a href='#L34'>34</a>
-<a name='L35'></a><a href='#L35'>35</a>
-<a name='L36'></a><a href='#L36'>36</a>
-<a name='L37'></a><a href='#L37'>37</a>
-<a name='L38'></a><a href='#L38'>38</a>
-<a name='L39'></a><a href='#L39'>39</a>
-<a name='L40'></a><a href='#L40'>40</a>
-<a name='L41'></a><a href='#L41'>41</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L35'></a><a href='#L35'>35</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -116,12 +110,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -143,8 +131,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { Button } from "@/components/ui/button"</span></span></span>
-import { StaffSchedule as Schedule } from "@/lib/staff/types"
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { Button } from '@/components/ui/button'</span></span></span>
+import { StaffSchedule as Schedule } from '@/lib/staff/types'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 &nbsp;
@@ -158,23 +146,17 @@ interface StaffScheduleProps {
 <span class="cstat-no" title="statement not covered" >      &lt;h2 className="text-2xl font-bold"&gt;出勤情報&lt;/h2&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;div className="space-y-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        {schedule.map((day, index) =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div</span>
-<span class="cstat-no" title="statement not covered" >            key={index}</span>
-<span class="cstat-no" title="statement not covered" >            className="flex items-center justify-between p-4 border rounded-lg"</span>
-          &gt;
+<span class="cstat-no" title="statement not covered" >          &lt;div key={index} className="flex items-center justify-between rounded-lg border p-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="space-y-1"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div className="font-medium"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                {format(day.date, 'yyyy/MM/dd (E)', { locale: ja })}</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div className="text-gray-600"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                {format(day.startTime, 'HH:mm', { locale: ja })} - </span>
+<span class="cstat-no" title="statement not covered" >                {format(day.startTime, 'HH:mm', { locale: ja })} -</span>
 <span class="cstat-no" title="statement not covered" >                {format(day.endTime, 'HH:mm', { locale: ja })}</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;Button</span>
-<span class="cstat-no" title="statement not covered" >              variant="default"</span>
-<span class="cstat-no" title="statement not covered" >              className="bg-emerald-600"</span>
-<span class="cstat-no" title="statement not covered" >            &gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Button variant="default" className="bg-emerald-600"&gt;</span>
               この日時を選択
 <span class="cstat-no" title="statement not covered" >            &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
@@ -190,7 +172,7 @@ interface StaffScheduleProps {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/100</span>
+                <span class='fraction'>0/92</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/100</span>
+                <span class='fraction'>0/92</span>
             </div>
         
             
@@ -196,15 +196,7 @@
 <a name='L131'></a><a href='#L131'>131</a>
 <a name='L132'></a><a href='#L132'>132</a>
 <a name='L133'></a><a href='#L133'>133</a>
-<a name='L134'></a><a href='#L134'>134</a>
-<a name='L135'></a><a href='#L135'>135</a>
-<a name='L136'></a><a href='#L136'>136</a>
-<a name='L137'></a><a href='#L137'>137</a>
-<a name='L138'></a><a href='#L138'>138</a>
-<a name='L139'></a><a href='#L139'>139</a>
-<a name='L140'></a><a href='#L140'>140</a>
-<a name='L141'></a><a href='#L141'>141</a>
-<a name='L142'></a><a href='#L142'>142</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L134'></a><a href='#L134'>134</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -233,7 +225,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -254,6 +245,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -323,19 +315,10 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -345,15 +328,16 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
 import { useState, useEffect } from 'react'
-import { Dialog, DialogContent } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
+import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import { Phone, PhoneOff, User, Calendar, Star, AlertCircle } from 'lucide-react'
-import { Customer } from "@/lib/customer/types"
+import { Customer } from '@/lib/customer/types'
 &nbsp;
 interface IncomingCallPopupProps {
   isOpen: boolean
@@ -372,22 +356,21 @@ interface IncomingCallPopupProps {
 <span class="cstat-no" title="statement not covered" >  onAnswer,</span>
 <span class="cstat-no" title="statement not covered" >  onReject,</span>
 <span class="cstat-no" title="statement not covered" >  onViewDetails,</span>
-<span class="cstat-no" title="statement not covered" >  onClose</span>
+<span class="cstat-no" title="statement not covered" >  onClose,</span>
 <span class="cstat-no" title="statement not covered" >}: IncomingCallPopupProps) {</span>
-&nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;Dialog open={isOpen} onOpenChange={onClose}&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;DialogContent className="max-w-md mx-auto"&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;DialogContent className="mx-auto max-w-md"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div className="space-y-4"&gt;</span>
           {/* Header */}
-<span class="cstat-no" title="statement not covered" >          &lt;div className="text-center space-y-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="space-y-2 text-center"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="flex items-center justify-center gap-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div className="animate-pulse"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;Phone className="w-6 h-6 text-emerald-600" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;Phone className="h-6 w-6 text-emerald-600" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;span className="text-lg font-semibold text-emerald-600"&gt;着信中&lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;div className="text-2xl font-mono font-bold"&gt;{phoneNumber}&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;div className="font-mono text-2xl font-bold"&gt;{phoneNumber}&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 &nbsp;
           {/* Customer Information */}
@@ -395,37 +378,38 @@ interface IncomingCallPopupProps {
 <span class="cstat-no" title="statement not covered" >            &lt;Card&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;CardContent className="p-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;div className="flex items-start gap-3"&gt;</span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
 <span class="cstat-no" title="statement not covered" >                  &lt;img</span>
-<span class="cstat-no" title="statement not covered" >                    src={customer.image || "/placeholder-user.jpg"}</span>
+<span class="cstat-no" title="statement not covered" >                    src={customer.image || '/placeholder-user.jpg'}</span>
 <span class="cstat-no" title="statement not covered" >                    alt={customer.name}</span>
-<span class="cstat-no" title="statement not covered" >                    className="w-16 h-16 rounded-full object-cover"</span>
+<span class="cstat-no" title="statement not covered" >                    className="h-16 w-16 rounded-full object-cover"</span>
 <span class="cstat-no" title="statement not covered" >                  /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div className="flex-1 space-y-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                      &lt;div className="font-semibold text-lg"&gt;{customer.name} 様&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >                      &lt;div className="text-lg font-semibold"&gt;{customer.name} 様&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;div className="text-sm text-gray-500"&gt;{customer.nameKana}&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;/div&gt;</span>
-                    
+&nbsp;
 <span class="cstat-no" title="statement not covered" >                    &lt;div className="flex gap-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;Badge variant={customer.memberType === 'vip' ? 'default' : 'secondary'}&gt;</span>
 <span class="cstat-no" title="statement not covered" >                        {customer.memberType === 'vip' ? 'VIP会員' : '一般会員'}</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;/Badge&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      {customer.points &amp;&amp; customer.points &gt; 0 &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;Badge variant="outline"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                          &lt;Star className="w-3 h-3 mr-1" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                          &lt;Star className="mr-1 h-3 w-3" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                          {customer.points}pt</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;/Badge&gt;</span>
                       )}
 <span class="cstat-no" title="statement not covered" >                    &lt;/div&gt;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >                    &lt;div className="text-sm space-y-1"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;div className="space-y-1 text-sm"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;div className="flex items-center gap-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;User className="w-4 h-4" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;User className="h-4 w-4" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;span&gt;来店回数: {customer.visitCount || 0}回&lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      {customer.lastVisit &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;div className="flex items-center gap-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                          &lt;Calendar className="w-4 h-4" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                          &lt;Calendar className="h-4 w-4" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                          &lt;span&gt;前回来店: {customer.lastVisit}&lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;/div&gt;</span>
                       )}
@@ -433,8 +417,8 @@ interface IncomingCallPopupProps {
 &nbsp;
                     {/* 要注意事項 */}
 <span class="cstat-no" title="statement not covered" >                    {customer.notes &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >                      &lt;div className="flex items-start gap-2 p-2 bg-yellow-50 rounded"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                      &lt;div className="flex items-start gap-2 rounded bg-yellow-50 p-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-yellow-600" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                        &lt;span className="text-sm text-yellow-800"&gt;{customer.notes}&lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;/div&gt;</span>
                     )}
@@ -445,7 +429,7 @@ interface IncomingCallPopupProps {
           ) : (
 <span class="cstat-no" title="statement not covered" >            &lt;Card&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;CardContent className="p-4 text-center"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;User className="w-12 h-12 mx-auto text-gray-400 mb-2" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;User className="mx-auto mb-2 h-12 w-12 text-gray-400" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;div className="font-medium"&gt;新規のお客様&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;div className="text-sm text-gray-500"&gt;登録されていない電話番号です&lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/CardContent&gt;</span>
@@ -456,29 +440,20 @@ interface IncomingCallPopupProps {
 <span class="cstat-no" title="statement not covered" >          &lt;div className="flex gap-3"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;Button</span>
 <span class="cstat-no" title="statement not covered" >              onClick={onAnswer}</span>
-<span class="cstat-no" title="statement not covered" >              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"</span>
+<span class="cstat-no" title="statement not covered" >              className="flex-1 bg-emerald-600 text-white hover:bg-emerald-700"</span>
 <span class="cstat-no" title="statement not covered" >              size="lg"</span>
             &gt;
-<span class="cstat-no" title="statement not covered" >              &lt;Phone className="w-5 h-5 mr-2" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Phone className="mr-2 h-5 w-5" /&gt;</span>
               応答
 <span class="cstat-no" title="statement not covered" >            &lt;/Button&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;Button</span>
-<span class="cstat-no" title="statement not covered" >              onClick={onReject}</span>
-<span class="cstat-no" title="statement not covered" >              variant="destructive"</span>
-<span class="cstat-no" title="statement not covered" >              className="flex-1"</span>
-<span class="cstat-no" title="statement not covered" >              size="lg"</span>
-            &gt;
-<span class="cstat-no" title="statement not covered" >              &lt;PhoneOff className="w-5 h-5 mr-2" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Button onClick={onReject} variant="destructive" className="flex-1" size="lg"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;PhoneOff className="mr-2 h-5 w-5" /&gt;</span>
               拒否
 <span class="cstat-no" title="statement not covered" >            &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >          {customer &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >            &lt;Button</span>
-<span class="cstat-no" title="statement not covered" >              onClick={onViewDetails}</span>
-<span class="cstat-no" title="statement not covered" >              variant="outline"</span>
-<span class="cstat-no" title="statement not covered" >              className="w-full"</span>
-<span class="cstat-no" title="statement not covered" >            &gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Button onClick={onViewDetails} variant="outline" className="w-full"&gt;</span>
               顧客詳細を表示
 <span class="cstat-no" title="statement not covered" >            &lt;/Button&gt;</span>
           )}
@@ -486,14 +461,15 @@ interface IncomingCallPopupProps {
 <span class="cstat-no" title="statement not covered" >      &lt;/DialogContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/Dialog&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

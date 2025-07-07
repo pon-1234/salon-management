@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
+import { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
 import { Printer, TrendingUp, Megaphone, DollarSign, Target, BarChart3 } from 'lucide-react'
 import {
   Select,
@@ -11,13 +11,13 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { MarketingChannelChart } from "@/components/analytics/marketing-channel-chart"
-import { MarketingChannelTable } from "@/components/analytics/marketing-channel-table"
-import { MarketingROITable } from "@/components/analytics/marketing-roi-table"
-import { MarketingConversionTable } from "@/components/analytics/marketing-conversion-table"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
-import { AnalyticsRepositoryImpl } from "@/lib/analytics/repository-impl"
+} from '@/components/ui/select'
+import { MarketingChannelChart } from '@/components/analytics/marketing-channel-chart'
+import { MarketingChannelTable } from '@/components/analytics/marketing-channel-table'
+import { MarketingROITable } from '@/components/analytics/marketing-roi-table'
+import { MarketingConversionTable } from '@/components/analytics/marketing-conversion-table'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
+import { AnalyticsRepositoryImpl } from '@/lib/analytics/repository-impl'
 
 const analyticsRepository = new AnalyticsRepositoryImpl()
 const analyticsUseCases = new AnalyticsUseCases(analyticsRepository)
@@ -35,16 +35,16 @@ export default function MarketingChannelsPage() {
   const kpiData = {
     totalCustomers: 10245,
     previousYearCustomers: 9456,
-    topChannel: "ホットペッパー",
+    topChannel: 'ホットペッパー',
     topChannelPercentage: 38.5,
     averageCAC: 1250, // Customer Acquisition Cost
     previousCAC: 1430,
     conversionRate: 24.5,
-    previousConversionRate: 22.1
+    previousConversionRate: 22.1,
   }
 
   const calculateGrowthRate = (current: number, previous: number) => {
-    return ((current - previous) / previous * 100).toFixed(1)
+    return (((current - previous) / previous) * 100).toFixed(1)
   }
 
   return (
@@ -69,14 +69,17 @@ export default function MarketingChannelsPage() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={handlePrint} className="print:hidden bg-emerald-600 hover:bg-emerald-700 text-white">
+        <Button
+          onClick={handlePrint}
+          className="bg-emerald-600 text-white hover:bg-emerald-700 print:hidden"
+        >
           <Printer className="mr-2 h-4 w-4" />
           印刷する
         </Button>
       </div>
 
       {/* KPIカード */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">総顧客獲得数</CardTitle>
@@ -84,7 +87,7 @@ export default function MarketingChannelsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{kpiData.totalCustomers.toLocaleString()}人</div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
               <TrendingUp className="h-3 w-3 text-green-600" />
               <span className="text-green-600">
                 {calculateGrowthRate(kpiData.totalCustomers, kpiData.previousYearCustomers)}%
@@ -101,9 +104,7 @@ export default function MarketingChannelsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-lg font-bold">{kpiData.topChannel}</div>
-            <p className="text-xs text-muted-foreground">
-              全体の{kpiData.topChannelPercentage}%
-            </p>
+            <p className="text-xs text-muted-foreground">全体の{kpiData.topChannelPercentage}%</p>
           </CardContent>
         </Card>
 
@@ -114,10 +115,12 @@ export default function MarketingChannelsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">¥{kpiData.averageCAC.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
               <TrendingUp className="h-3 w-3 text-green-600" />
               <span className="text-green-600">
-                -{Math.abs(parseFloat(calculateGrowthRate(kpiData.averageCAC, kpiData.previousCAC)))}%
+                -
+                {Math.abs(parseFloat(calculateGrowthRate(kpiData.averageCAC, kpiData.previousCAC)))}
+                %
               </span>
               前年比（改善）
             </p>
@@ -161,22 +164,13 @@ export default function MarketingChannelsPage() {
               <TabsTrigger value="conversion">CV分析</TabsTrigger>
             </TabsList>
             <TabsContent value="monthly" className="mt-4">
-              <MarketingChannelTable 
-                year={selectedYear} 
-                analyticsUseCases={analyticsUseCases}
-              />
+              <MarketingChannelTable year={selectedYear} analyticsUseCases={analyticsUseCases} />
             </TabsContent>
             <TabsContent value="roi" className="mt-4">
-              <MarketingROITable 
-                year={selectedYear} 
-                analyticsUseCases={analyticsUseCases}
-              />
+              <MarketingROITable year={selectedYear} analyticsUseCases={analyticsUseCases} />
             </TabsContent>
             <TabsContent value="conversion" className="mt-4">
-              <MarketingConversionTable 
-                year={selectedYear} 
-                analyticsUseCases={analyticsUseCases}
-              />
+              <MarketingConversionTable year={selectedYear} analyticsUseCases={analyticsUseCases} />
             </TabsContent>
           </Tabs>
         </CardContent>

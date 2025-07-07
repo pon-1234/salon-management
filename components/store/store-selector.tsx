@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useState } from 'react'
 import { useStore } from '@/contexts/store-context'
@@ -26,7 +26,7 @@ export function StoreSelector() {
   if (!isSuperAdmin || availableStores.length <= 1) {
     return (
       <div className="flex items-center gap-2 text-sm">
-        <Building2 className="w-4 h-4" />
+        <Building2 className="h-4 w-4" />
         <span className="font-medium">{currentStore.displayName}</span>
       </div>
     )
@@ -35,10 +35,10 @@ export function StoreSelector() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" className="flex items-center gap-2 h-auto py-2 px-3">
-          <Building2 className="w-4 h-4" />
+        <Button variant="ghost" className="flex h-auto items-center gap-2 px-3 py-2">
+          <Building2 className="h-4 w-4" />
           <span className="text-sm font-medium">{currentStore.displayName}</span>
-          <ChevronDown className="w-3 h-3" />
+          <ChevronDown className="h-3 w-3" />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
@@ -61,7 +61,7 @@ export function StoreSelector() {
                 <SelectItem key={store.id} value={store.slug}>
                   <div className="flex items-center gap-3">
                     <div
-                      className="w-3 h-3 rounded-full"
+                      className="h-3 w-3 rounded-full"
                       style={{ backgroundColor: store.theme?.primaryColor }}
                     />
                     <div>
@@ -73,10 +73,15 @@ export function StoreSelector() {
               ))}
             </SelectContent>
           </Select>
-          
-          <div className="text-xs text-gray-500 space-y-2">
-            <div>現在の店舗: <span className="font-medium">{currentStore.name}</span></div>
-            <div>営業時間: 平日 {currentStore.openingHours.weekday.open} - {currentStore.openingHours.weekday.close}</div>
+
+          <div className="space-y-2 text-xs text-gray-500">
+            <div>
+              現在の店舗: <span className="font-medium">{currentStore.name}</span>
+            </div>
+            <div>
+              営業時間: 平日 {currentStore.openingHours.weekday.open} -{' '}
+              {currentStore.openingHours.weekday.close}
+            </div>
             <div>電話番号: {currentStore.phone}</div>
           </div>
         </div>

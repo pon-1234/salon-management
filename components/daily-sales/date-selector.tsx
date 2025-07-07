@@ -1,14 +1,14 @@
-"use client"
+'use client'
 
-import { format } from "date-fns"
-import { ja } from "date-fns/locale"
+import { format } from 'date-fns'
+import { ja } from 'date-fns/locale'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from '@/components/ui/select'
 
 interface DateSelectorProps {
   selectedDate: Date
@@ -25,7 +25,7 @@ export function DateSelector({ selectedDate, onDateChange }: DateSelectorProps) 
   )
 
   return (
-    <div className="flex gap-2 items-center">
+    <div className="flex items-center gap-2">
       <Select
         value={selectedDate.getFullYear().toString()}
         onValueChange={(value) => {

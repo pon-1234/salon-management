@@ -1,7 +1,16 @@
-"use client"
+'use client'
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { AreaSalesData } from "@/lib/types/area-sales"
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts'
+import { AreaSalesData } from '@/lib/types/area-sales'
 
 interface AreaTrendChartProps {
   data: AreaSalesData[]
@@ -12,18 +21,31 @@ export function AreaTrendChart({ data, year }: AreaTrendChartProps) {
   // Null/array check
   if (!data || !Array.isArray(data) || data.length === 0) {
     return (
-      <div className="flex items-center justify-center h-[350px] text-gray-500">
+      <div className="flex h-[350px] items-center justify-center text-gray-500">
         データがありません
       </div>
-    );
+    )
   }
 
   // 月別データを変換
-  const months = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"]
-  
+  const months = [
+    '1月',
+    '2月',
+    '3月',
+    '4月',
+    '5月',
+    '6月',
+    '7月',
+    '8月',
+    '9月',
+    '10月',
+    '11月',
+    '12月',
+  ]
+
   const chartData = months.map((month, index) => {
     const monthData: any = { month }
-    data.forEach(area => {
+    data.forEach((area) => {
       monthData[area.area] = area.monthlySales[index]
     })
     return monthData
@@ -42,16 +64,11 @@ export function AreaTrendChart({ data, year }: AreaTrendChartProps) {
 
   return (
     <ResponsiveContainer width="100%" height={350}>
-      <LineChart
-        data={chartData}
-        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-      >
+      <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="month" />
         <YAxis tickFormatter={formatYAxis} />
-        <Tooltip 
-          formatter={(value: number) => `¥${value.toLocaleString()}`}
-        />
+        <Tooltip formatter={(value: number) => `¥${value.toLocaleString()}`} />
         <Legend />
         {data.map((area, index) => (
           <Line

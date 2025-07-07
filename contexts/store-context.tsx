@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { Store, StoreConfig } from '@/lib/store/types'
@@ -25,11 +25,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         // サブドメインから店舗を判定
         const hostname = window.location.hostname
         const subdomain = hostname.split('.')[0]
-        
+
         // 開発環境の場合はクエリパラメータもチェック
         const urlParams = new URLSearchParams(window.location.search)
         const storeParam = urlParams.get('store')
-        
+
         if (storeParam) {
           storeCode = storeParam
         } else if (subdomain && subdomain !== 'localhost' && subdomain !== 'www') {
@@ -50,7 +50,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         setConfig({
           currentStore,
           availableStores,
-          isSuperAdmin: true // 実際の実装では認証情報から判定
+          isSuperAdmin: true, // 実際の実装では認証情報から判定
         })
       } else {
         // フォールバック: 最初の店舗を使用
@@ -59,7 +59,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           setConfig({
             currentStore: fallbackStore,
             availableStores,
-            isSuperAdmin: true
+            isSuperAdmin: true,
           })
         }
       }
@@ -75,9 +75,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (newStore && config) {
       setConfig({
         ...config,
-        currentStore: newStore
+        currentStore: newStore,
       })
-      
+
       // localStorage に保存
       if (typeof window !== 'undefined') {
         localStorage.setItem('selectedStore', storeCode)
@@ -90,11 +90,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <StoreContext.Provider value={{
-      ...config,
-      switchStore,
-      isLoading
-    }}>
+    <StoreContext.Provider
+      value={{
+        ...config,
+        switchStore,
+        isLoading,
+      }}
+    >
       {children}
     </StoreContext.Provider>
   )

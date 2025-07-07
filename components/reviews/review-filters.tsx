@@ -23,7 +23,7 @@ export function ReviewFilters({
 }: ReviewFiltersProps) {
   const handleTagToggle = (tag: string) => {
     if (selectedTags.includes(tag)) {
-      onTagsChange(selectedTags.filter(t => t !== tag))
+      onTagsChange(selectedTags.filter((t) => t !== tag))
     } else {
       onTagsChange([...selectedTags, tag])
     }
@@ -37,7 +37,7 @@ export function ReviewFilters({
       <CardContent className="space-y-6">
         {/* Rating Filter */}
         <div>
-          <h4 className="font-semibold text-sm mb-3">評価</h4>
+          <h4 className="mb-3 text-sm font-semibold">評価</h4>
           <div className="space-y-2">
             <Button
               variant={selectedRating === null ? 'default' : 'outline'}
@@ -47,7 +47,7 @@ export function ReviewFilters({
             >
               すべて
             </Button>
-            {[5, 4, 3, 2, 1].map(rating => (
+            {[5, 4, 3, 2, 1].map((rating) => (
               <Button
                 key={rating}
                 variant={selectedRating === rating ? 'default' : 'outline'}
@@ -60,9 +60,7 @@ export function ReviewFilters({
                     <Star
                       key={i}
                       className={`h-3 w-3 ${
-                        i < rating
-                          ? 'fill-yellow-400 text-yellow-400'
-                          : 'text-gray-300'
+                        i < rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
                       }`}
                     />
                   ))}
@@ -76,19 +74,16 @@ export function ReviewFilters({
         {/* Tag Filter */}
         {availableTags.length > 0 && (
           <div>
-            <h4 className="font-semibold text-sm mb-3">タグ</h4>
+            <h4 className="mb-3 text-sm font-semibold">タグ</h4>
             <div className="space-y-2">
-              {availableTags.map(tag => (
+              {availableTags.map((tag) => (
                 <div key={tag} className="flex items-center space-x-2">
                   <Checkbox
                     id={tag}
                     checked={selectedTags.includes(tag)}
                     onCheckedChange={() => handleTagToggle(tag)}
                   />
-                  <Label
-                    htmlFor={tag}
-                    className="text-sm font-normal cursor-pointer"
-                  >
+                  <Label htmlFor={tag} className="cursor-pointer text-sm font-normal">
                     {tag}
                   </Label>
                 </div>

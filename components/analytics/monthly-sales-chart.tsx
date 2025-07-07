@@ -1,9 +1,18 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
-import { Line, LineChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
-import { DailyData } from "@/lib/types/analytics"
+import { useEffect, useState } from 'react'
+import {
+  Line,
+  LineChart,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
+import { DailyData } from '@/lib/types/analytics'
 
 interface MonthlySalesChartProps {
   year: number
@@ -22,7 +31,7 @@ export function MonthlySalesChart({ year, month, analyticsUseCases }: MonthlySal
     fetchData()
   }, [year, month, analyticsUseCases])
 
-  const chartData = data.map(item => ({
+  const chartData = data.map((item) => ({
     date: parseInt(item.date),
     売上高: item.totalSales,
     来客数: item.customerCount * 1000, // スケール調整のため1000倍
@@ -40,26 +49,20 @@ export function MonthlySalesChart({ year, month, analyticsUseCases }: MonthlySal
 
   return (
     <ResponsiveContainer width="100%" height={350}>
-      <LineChart
-        data={chartData}
-        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-      >
+      <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis 
-          dataKey="date" 
-          label={{ value: '日', position: 'insideBottomRight', offset: -10 }}
-        />
-        <YAxis 
+        <XAxis dataKey="date" label={{ value: '日', position: 'insideBottomRight', offset: -10 }} />
+        <YAxis
           yAxisId="left"
           tickFormatter={formatYAxis}
           label={{ value: '売上高 (円)', angle: -90, position: 'insideLeft' }}
         />
-        <YAxis 
+        <YAxis
           yAxisId="right"
           orientation="right"
           label={{ value: '客単価 (円)', angle: 90, position: 'insideRight' }}
         />
-        <Tooltip 
+        <Tooltip
           formatter={(value: number, name: string) => {
             if (name === '売上高') return [`¥${value.toLocaleString()}`, name]
             if (name === '来客数') return [`${(value / 1000).toFixed(0)}人`, name]
@@ -68,29 +71,29 @@ export function MonthlySalesChart({ year, month, analyticsUseCases }: MonthlySal
           }}
         />
         <Legend />
-        <Line 
+        <Line
           yAxisId="left"
-          type="monotone" 
-          dataKey="売上高" 
-          stroke="#10b981" 
+          type="monotone"
+          dataKey="売上高"
+          stroke="#10b981"
           strokeWidth={2}
           dot={{ fill: '#10b981', r: 3 }}
           activeDot={{ r: 5 }}
         />
-        <Line 
+        <Line
           yAxisId="left"
-          type="monotone" 
-          dataKey="来客数" 
-          stroke="#3b82f6" 
+          type="monotone"
+          dataKey="来客数"
+          stroke="#3b82f6"
           strokeWidth={2}
           dot={{ fill: '#3b82f6', r: 3 }}
           activeDot={{ r: 5 }}
         />
-        <Line 
+        <Line
           yAxisId="right"
-          type="monotone" 
-          dataKey="客単価" 
-          stroke="#f59e0b" 
+          type="monotone"
+          dataKey="客単価"
+          stroke="#f59e0b"
           strokeWidth={2}
           strokeDasharray="5 5"
           dot={{ fill: '#f59e0b', r: 3 }}

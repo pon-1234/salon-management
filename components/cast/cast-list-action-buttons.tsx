@@ -1,58 +1,58 @@
-import { Button } from "@/components/ui/button"
+import { Button } from '@/components/ui/button'
 import { RefreshCw, Filter, PlusCircle } from 'lucide-react'
-import { Input } from "@/components/ui/input"
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import Link from "next/link"
+} from '@/components/ui/select'
+import Link from 'next/link'
 
 interface CastListActionButtonsProps {
-  onRefresh: () => void;
-  onFilterCharacter: (char: string) => void;
-  onFilter: () => void;
-  nameSearch: string;
-  onNameSearchChange: (value: string) => void;
-  workStatus: string;
-  onWorkStatusChange: (value: string) => void;
+  onRefresh: () => void
+  onFilterCharacter: (char: string) => void
+  onFilter: () => void
+  nameSearch: string
+  onNameSearchChange: (value: string) => void
+  workStatus: string
+  onWorkStatusChange: (value: string) => void
 }
 
-export function CastListActionButtons({ 
-  onRefresh, 
-  onFilterCharacter, 
+export function CastListActionButtons({
+  onRefresh,
+  onFilterCharacter,
   onFilter,
   nameSearch,
   onNameSearchChange,
   workStatus,
-  onWorkStatusChange
+  onWorkStatusChange,
 }: CastListActionButtonsProps) {
-  const characters = ["全", "あ", "か", "さ", "た", "な", "は", "ま", "や", "ら", "わ", "その他"]
+  const characters = ['全', 'あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ', 'その他']
 
   return (
-    <div className="space-y-4 p-4 border-b">
-      <div className="flex justify-between items-center">
+    <div className="space-y-4 border-b p-4">
+      <div className="flex items-center justify-between">
         <div className="flex gap-2">
           <Button onClick={onRefresh} variant="outline" size="sm">
-            <RefreshCw className="w-4 h-4 mr-2" />
+            <RefreshCw className="mr-2 h-4 w-4" />
             更新
           </Button>
           <Button onClick={onFilter} variant="outline" size="sm">
-            <Filter className="w-4 h-4 mr-2" />
+            <Filter className="mr-2 h-4 w-4" />
             フィルター
           </Button>
         </div>
         <Link href="/admin/cast/manage/new">
           <Button className="bg-emerald-600 hover:bg-emerald-700">
-            <PlusCircle className="w-4 h-4 mr-2" />
+            <PlusCircle className="mr-2 h-4 w-4" />
             新規キャスト追加
           </Button>
         </Link>
       </div>
 
-      <div className="flex gap-4 items-center">
+      <div className="flex items-center gap-4">
         <Select value={workStatus} onValueChange={onWorkStatusChange}>
           <SelectTrigger className="w-[200px]">
             <SelectValue />
@@ -73,7 +73,7 @@ export function CastListActionButtons({
         />
       </div>
 
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex flex-wrap gap-2">
         {characters.map((char) => (
           <Button
             key={char}

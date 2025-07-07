@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -8,10 +8,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { cn } from "@/lib/utils"
-import { AnalyticsUseCases } from "@/lib/analytics/usecases"
-import { CourseSalesData } from "@/lib/types/analytics"
+} from '@/components/ui/table'
+import { cn } from '@/lib/utils'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
+import { CourseSalesData } from '@/lib/types/analytics'
 
 interface CourseSalesTableProps {
   year: number
@@ -67,32 +67,28 @@ export function CourseSalesTable({ year, month, analyticsUseCases }: CourseSales
           {data.map((course) => {
             const total = calculateTotal(course.sales)
             const revenue = calculateRevenue(course)
-            
+
             return (
               <TableRow key={course.id}>
                 <TableCell className="font-medium">
                   {course.name}
-                  <span className="text-xs text-gray-500 ml-2">({course.duration}分)</span>
+                  <span className="ml-2 text-xs text-gray-500">({course.duration}分)</span>
                 </TableCell>
-                <TableCell className="text-right">
-                  ¥{course.price.toLocaleString()}
-                </TableCell>
+                <TableCell className="text-right">¥{course.price.toLocaleString()}</TableCell>
                 {dates.map((date, index) => (
                   <TableCell key={index} className="text-center">
-                    {course.sales[index] || "-"}
+                    {course.sales[index] || '-'}
                   </TableCell>
                 ))}
                 <TableCell className="text-center text-gray-400">...</TableCell>
-                <TableCell className="text-right font-medium">
-                  {total}
-                </TableCell>
+                <TableCell className="text-right font-medium">{total}</TableCell>
                 <TableCell className="text-right font-medium text-green-600">
                   ¥{revenue.toLocaleString()}
                 </TableCell>
               </TableRow>
             )
           })}
-          <TableRow className="font-bold bg-gray-50">
+          <TableRow className="bg-gray-50 font-bold">
             <TableCell colSpan={dates.length + 3}>合計</TableCell>
             <TableCell className="text-right">
               {data.reduce((sum, course) => sum + calculateTotal(course.sales), 0)}

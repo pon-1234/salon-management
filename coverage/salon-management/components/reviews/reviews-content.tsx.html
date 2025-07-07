@@ -217,7 +217,8 @@
 <a name='L152'></a><a href='#L152'>152</a>
 <a name='L153'></a><a href='#L153'>153</a>
 <a name='L154'></a><a href='#L154'>154</a>
-<a name='L155'></a><a href='#L155'>155</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L155'></a><a href='#L155'>155</a>
+<a name='L156'></a><a href='#L156'>156</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -371,7 +372,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
 import { useState } from 'react'
 import { Store } from '@/lib/store/types'
@@ -399,20 +401,20 @@ interface ReviewsContentProps {
 <span class="cstat-no" title="statement not covered" >  const stats = getReviewStats(store.id)</span>
 &nbsp;
   // Filter reviews
-<span class="cstat-no" title="statement not covered" >  let filteredReviews = reviews.filter(review =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  let filteredReviews = reviews.filter((review) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    if (searchTerm) {</span>
 <span class="cstat-no" title="statement not covered" >      const searchLower = searchTerm.toLowerCase()</span>
-<span class="cstat-no" title="statement not covered" >      const matchesSearch = </span>
+<span class="cstat-no" title="statement not covered" >      const matchesSearch =</span>
 <span class="cstat-no" title="statement not covered" >        review.content.toLowerCase().includes(searchLower) ||</span>
 <span class="cstat-no" title="statement not covered" >        review.castName.toLowerCase().includes(searchLower) ||</span>
-<span class="cstat-no" title="statement not covered" >        review.tags?.some(tag =&gt; tag.toLowerCase().includes(searchLower))</span>
+<span class="cstat-no" title="statement not covered" >        review.tags?.some((tag) =&gt; tag.toLowerCase().includes(searchLower))</span>
 <span class="cstat-no" title="statement not covered" >      if (!matchesSearch) return false</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    if (selectedRating &amp;&amp; review.rating !== selectedRating) return false</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    if (selectedTags.length &gt; 0) {</span>
-<span class="cstat-no" title="statement not covered" >      const hasSelectedTag = selectedTags.some(tag =&gt; review.tags?.includes(tag))</span>
+<span class="cstat-no" title="statement not covered" >      const hasSelectedTag = selectedTags.some((tag) =&gt; review.tags?.includes(tag))</span>
 <span class="cstat-no" title="statement not covered" >      if (!hasSelectedTag) return false</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 &nbsp;
@@ -435,18 +437,18 @@ interface ReviewsContentProps {
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;StoreNavigation /&gt;</span>
-      
+&nbsp;
 <span class="cstat-no" title="statement not covered" >      &lt;main className="min-h-screen bg-gray-50"&gt;</span>
         {/* Header */}
-<span class="cstat-no" title="statement not covered" >        &lt;section className="bg-gradient-to-b from-purple-900 to-pink-900 text-white py-16"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="max-w-7xl mx-auto px-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;h1 className="text-4xl font-bold mb-4"&gt;{store.name} 口コミ・評価&lt;/h1&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;section className="bg-gradient-to-b from-purple-900 to-pink-900 py-16 text-white"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="mx-auto max-w-7xl px-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;h1 className="mb-4 text-4xl font-bold"&gt;{store.name} 口コミ・評価&lt;/h1&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;p className="text-xl opacity-90"&gt;お客様の生の声をお届けします&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/section&gt;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >        &lt;div className="max-w-7xl mx-auto px-4 py-8"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="grid grid-cols-1 lg:grid-cols-4 gap-8"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="mx-auto max-w-7xl px-4 py-8"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="grid grid-cols-1 gap-8 lg:grid-cols-4"&gt;</span>
             {/* Sidebar */}
 <span class="cstat-no" title="statement not covered" >            &lt;aside className="lg:col-span-1"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;ReviewStats stats={stats} /&gt;</span>
@@ -455,17 +457,17 @@ interface ReviewsContentProps {
 <span class="cstat-no" title="statement not covered" >                onRatingChange={setSelectedRating}</span>
 <span class="cstat-no" title="statement not covered" >                selectedTags={selectedTags}</span>
 <span class="cstat-no" title="statement not covered" >                onTagsChange={setSelectedTags}</span>
-<span class="cstat-no" title="statement not covered" >                availableTags={stats.popularTags.map(t =&gt; t.tag)}</span>
+<span class="cstat-no" title="statement not covered" >                availableTags={stats.popularTags.map((t) =&gt; t.tag)}</span>
 <span class="cstat-no" title="statement not covered" >              /&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/aside&gt;</span>
 &nbsp;
             {/* Main Content */}
 <span class="cstat-no" title="statement not covered" >            &lt;div className="lg:col-span-3"&gt;</span>
               {/* Search and Sort */}
-<span class="cstat-no" title="statement not covered" >              &lt;div className="bg-white p-4 rounded-lg shadow mb-6"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="flex flex-col sm:flex-row gap-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;div className="mb-6 rounded-lg bg-white p-4 shadow"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="flex flex-col gap-4 sm:flex-row"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div className="relative flex-1"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-gray-400" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;Input</span>
 <span class="cstat-no" title="statement not covered" >                      type="text"</span>
 <span class="cstat-no" title="statement not covered" >                      placeholder="キャスト名や口コミ内容を検索..."</span>
@@ -501,38 +503,39 @@ interface ReviewsContentProps {
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
 &nbsp;
               {/* Results count */}
-<span class="cstat-no" title="statement not covered" >              &lt;p className="text-gray-600 mb-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;p className="mb-4 text-gray-600"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                {filteredReviews.length}件の口コミが見つかりました</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/p&gt;</span>
 &nbsp;
               {/* Reviews List */}
 <span class="cstat-no" title="statement not covered" >              &lt;div className="space-y-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                {filteredReviews.map(review =&gt; (</span>
+<span class="cstat-no" title="statement not covered" >                {filteredReviews.map((review) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;ReviewCard key={review.id} review={review} /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                ))}</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >              {filteredReviews.length === 0 &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="text-center py-12"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="py-12 text-center"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;p className="text-gray-500"&gt;条件に一致する口コミが見つかりませんでした&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
               )}
 <span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
-        
+&nbsp;
 <span class="cstat-no" title="statement not covered" >        &lt;StoreFooter store={store} /&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/main&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

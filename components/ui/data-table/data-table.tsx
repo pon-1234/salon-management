@@ -106,10 +106,7 @@ export function DataTable<T extends Record<string, any>>({
               {columns.map((column) => (
                 <TableHead
                   key={column.id}
-                  className={cn(
-                    getAlignment(column.align),
-                    column.className
-                  )}
+                  className={cn(getAlignment(column.align), column.className)}
                 >
                   {column.header}
                 </TableHead>
@@ -131,10 +128,7 @@ export function DataTable<T extends Record<string, any>>({
                   return (
                     <TableCell
                       key={column.id}
-                      className={cn(
-                        getAlignment(column.align),
-                        column.className
-                      )}
+                      className={cn(getAlignment(column.align), column.className)}
                     >
                       {column.cell ? column.cell(value, row) : value}
                     </TableCell>
@@ -149,11 +143,7 @@ export function DataTable<T extends Record<string, any>>({
                 {columns.map((column) => (
                   <TableCell
                     key={column.id}
-                    className={cn(
-                      getAlignment(column.align),
-                      column.className,
-                      'font-semibold'
-                    )}
+                    className={cn(getAlignment(column.align), column.className, 'font-semibold')}
                   >
                     {column.footer?.(data)}
                   </TableCell>

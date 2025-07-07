@@ -1,16 +1,10 @@
-import { Header } from "@/components/header"
+import { Header } from '@/components/header'
 
-export default function CustomersLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function CustomersLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      <main className="container mx-auto py-6 px-4">
-        {children}
-      </main>
+      <main className="container mx-auto px-4 py-6">{children}</main>
     </div>
   )
 }

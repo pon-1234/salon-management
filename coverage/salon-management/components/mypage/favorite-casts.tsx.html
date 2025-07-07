@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/130</span>
+                <span class='fraction'>0/125</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/130</span>
+                <span class='fraction'>0/125</span>
             </div>
         
             
@@ -230,14 +230,7 @@
 <a name='L165'></a><a href='#L165'>165</a>
 <a name='L166'></a><a href='#L166'>166</a>
 <a name='L167'></a><a href='#L167'>167</a>
-<a name='L168'></a><a href='#L168'>168</a>
-<a name='L169'></a><a href='#L169'>169</a>
-<a name='L170'></a><a href='#L170'>170</a>
-<a name='L171'></a><a href='#L171'>171</a>
-<a name='L172'></a><a href='#L172'>172</a>
-<a name='L173'></a><a href='#L173'>173</a>
-<a name='L174'></a><a href='#L174'>174</a>
-<a name='L175'></a><a href='#L175'>175</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L168'></a><a href='#L168'>168</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -318,14 +311,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -366,8 +353,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -411,7 +396,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
 import { Store } from '@/lib/store/types'
 import { Card, CardContent } from '@/components/ui/card'
@@ -478,57 +464,51 @@ interface FavoriteCastsProps {
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;div className="space-y-6"&gt;</span>
       {/* Favorites Grid */}
-<span class="cstat-no" title="statement not covered" >      &lt;div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        {favoriteCasts.map((cast) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >          &lt;Card key={cast.id} className="overflow-hidden"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="relative"&gt;</span>
               {/* Cast Image */}
 <span class="cstat-no" title="statement not covered" >              &lt;div className="aspect-[3/4] bg-gradient-to-br from-pink-300 to-purple-400" /&gt;</span>
-              
+&nbsp;
               {/* Favorite Badge */}
-<span class="cstat-no" title="statement not covered" >              &lt;div className="absolute top-2 right-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;Button</span>
-<span class="cstat-no" title="statement not covered" >                  size="icon"</span>
-<span class="cstat-no" title="statement not covered" >                  variant="secondary"</span>
-<span class="cstat-no" title="statement not covered" >                  className="bg-white/90 backdrop-blur"</span>
-                &gt;
+<span class="cstat-no" title="statement not covered" >              &lt;div className="absolute right-2 top-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;Button size="icon" variant="secondary" className="bg-white/90 backdrop-blur"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;Heart className="h-5 w-5 fill-red-500 text-red-500" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
 &nbsp;
               {/* Working Status */}
 <span class="cstat-no" title="statement not covered" >              {cast.isWorking &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >                &lt;Badge className="absolute top-2 left-2 bg-green-500"&gt;</span>
-                  出勤中
-<span class="cstat-no" title="statement not covered" >                &lt;/Badge&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;Badge className="absolute left-2 top-2 bg-green-500"&gt;出勤中&lt;/Badge&gt;</span>
               )}
 <span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >            &lt;CardContent className="p-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;div className="flex items-start justify-between mb-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;div className="mb-2 flex items-start justify-between"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;h3 className="font-bold text-lg"&gt;{cast.name}&lt;/h3&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;h3 className="text-lg font-bold"&gt;{cast.name}&lt;/h3&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;p className="text-sm text-gray-500"&gt;{cast.age}歳&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                {getRankBadge(cast.rank)}</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >              &lt;p className="text-sm text-gray-600 mb-3"&gt;{cast.measurements}&lt;/p&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;p className="mb-3 text-sm text-gray-600"&gt;{cast.measurements}&lt;/p&gt;</span>
 &nbsp;
               {/* Schedule */}
-<span class="cstat-no" title="statement not covered" >              &lt;div className="flex items-center gap-2 text-sm text-gray-600 mb-3"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;div className="mb-3 flex items-center gap-2 text-sm text-gray-600"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;Calendar className="h-4 w-4" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;span&gt;次回出勤: {cast.nextSchedule}&lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
 &nbsp;
               {/* Visit History */}
-<span class="cstat-no" title="statement not covered" >              &lt;div className="bg-gray-50 p-3 rounded-lg mb-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;div className="mb-4 rounded-lg bg-gray-50 p-3"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;div className="flex justify-between text-sm"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;span className="text-gray-600"&gt;利用回数&lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;span className="font-semibold"&gt;{cast.visitCount}回&lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                {cast.lastVisited &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;div className="flex justify-between text-sm mt-1"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;div className="mt-1 flex justify-between text-sm"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;span className="text-gray-600"&gt;最終利用&lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;span className="font-semibold"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      {cast.lastVisited.toLocaleDateString('ja-JP')}</span>
@@ -540,9 +520,7 @@ interface FavoriteCastsProps {
               {/* Actions */}
 <span class="cstat-no" title="statement not covered" >              &lt;div className="flex gap-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;Button variant="outline" size="sm" className="flex-1" asChild&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;Link href={`/${store.slug}/cast/${cast.id}`}&gt;</span>
-                    詳細を見る
-<span class="cstat-no" title="statement not covered" >                  &lt;/Link&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;Link href={`/${store.slug}/cast/${cast.id}`}&gt;詳細を見る&lt;/Link&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;Button size="sm" className="flex-1"&gt;</span>
                   予約する
@@ -556,9 +534,9 @@ interface FavoriteCastsProps {
       {/* Empty State */}
 <span class="cstat-no" title="statement not covered" >      {favoriteCasts.length === 0 &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >        &lt;Card&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;CardContent className="text-center py-12"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;Heart className="h-12 w-12 text-gray-300 mx-auto mb-4" /&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;p className="text-gray-500 mb-4"&gt;まだお気に入りのキャストがいません&lt;/p&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;CardContent className="py-12 text-center"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Heart className="mx-auto mb-4 h-12 w-12 text-gray-300" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;p className="mb-4 text-gray-500"&gt;まだお気に入りのキャストがいません&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;Button asChild&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;Link href={`/${store.slug}/cast`}&gt;キャストを探す&lt;/Link&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/Button&gt;</span>
@@ -570,11 +548,11 @@ interface FavoriteCastsProps {
 <span class="cstat-no" title="statement not covered" >      {favoriteCasts.length &gt; 0 &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >        &lt;Card&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;CardContent className="p-6"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;h3 className="font-semibold mb-4 flex items-center gap-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;h3 className="mb-4 flex items-center gap-2 font-semibold"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;Star className="h-5 w-5 text-yellow-500" /&gt;</span>
               おすすめのキャスト
 <span class="cstat-no" title="statement not covered" >            &lt;/h3&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;p className="text-sm text-gray-600 mb-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;p className="mb-4 text-sm text-gray-600"&gt;</span>
               お気に入りキャストの出勤日に合わせて、似たタイプのキャストをご紹介します
 <span class="cstat-no" title="statement not covered" >            &lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;Button variant="outline" className="w-full"&gt;</span>
@@ -585,14 +563,15 @@ interface FavoriteCastsProps {
       )}
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

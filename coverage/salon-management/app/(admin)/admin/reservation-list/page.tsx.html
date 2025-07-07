@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/47</span>
+                <span class='fraction'>0/43</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/47</span>
+                <span class='fraction'>0/43</span>
             </div>
         
             
@@ -128,12 +128,7 @@
 <a name='L63'></a><a href='#L63'>63</a>
 <a name='L64'></a><a href='#L64'>64</a>
 <a name='L65'></a><a href='#L65'>65</a>
-<a name='L66'></a><a href='#L66'>66</a>
-<a name='L67'></a><a href='#L67'>67</a>
-<a name='L68'></a><a href='#L68'>68</a>
-<a name='L69'></a><a href='#L69'>69</a>
-<a name='L70'></a><a href='#L70'>70</a>
-<a name='L71'></a><a href='#L71'>71</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L66'></a><a href='#L66'>66</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -192,53 +187,48 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
 import { useState, useEffect } from 'react'
-import { Header } from "@/components/header"
-import { ReservationList } from "@/components/reservation/reservation-list"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Header } from '@/components/header'
+import { ReservationList } from '@/components/reservation/reservation-list'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { getAllReservations } from "@/lib/reservation/data"
-import { ReservationDialog } from "@/components/reservation/reservation-dialog"
-import { Reservation } from "@/lib/types/reservation"
+} from '@/components/ui/select'
+import { getAllReservations } from '@/lib/reservation/data'
+import { ReservationDialog } from '@/components/reservation/reservation-dialog'
+import { Reservation } from '@/lib/types/reservation'
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export default function ReservationListPage() {</span>
-<span class="cstat-no" title="statement not covered" >  const [selectedReservation, setSelectedReservation] = useState&lt;Reservation | null&gt;(null);</span>
-<span class="cstat-no" title="statement not covered" >  const [reservations, setReservations] = useState&lt;Reservation[]&gt;([]);</span>
+<span class="cstat-no" title="statement not covered" >  const [selectedReservation, setSelectedReservation] = useState&lt;Reservation | null&gt;(null)</span>
+<span class="cstat-no" title="statement not covered" >  const [reservations, setReservations] = useState&lt;Reservation[]&gt;([])</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  useEffect(() =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    const fetchReservations = async () =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >      const fetchedReservations = await getAllReservations();</span>
-<span class="cstat-no" title="statement not covered" >      setReservations(fetchedReservations);</span>
-<span class="cstat-no" title="statement not covered" >    };</span>
+<span class="cstat-no" title="statement not covered" >      const fetchedReservations = await getAllReservations()</span>
+<span class="cstat-no" title="statement not covered" >      setReservations(fetchedReservations)</span>
+<span class="cstat-no" title="statement not covered" >    }</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    fetchReservations();</span>
-<span class="cstat-no" title="statement not covered" >  }, []);</span>
+<span class="cstat-no" title="statement not covered" >    fetchReservations()</span>
+<span class="cstat-no" title="statement not covered" >  }, [])</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;div className="min-h-screen bg-gray-50"&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;Header /&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;main className="container mx-auto py-8 px-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;div className="flex justify-between items-center mb-6"&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;main className="container mx-auto px-4 py-8"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="mb-6 flex items-center justify-between"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;h1 className="text-2xl font-bold"&gt;予約一覧&lt;/h1&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div className="flex items-center gap-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;Select defaultValue="all"&gt;</span>
@@ -252,13 +242,8 @@ import { Reservation } from "@/lib/types/reservation"
 <span class="cstat-no" title="statement not covered" >              &lt;/SelectContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/Select&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="flex gap-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Input </span>
-<span class="cstat-no" title="statement not covered" >                placeholder="予約No" </span>
-<span class="cstat-no" title="statement not covered" >                className="w-[200px]"</span>
-<span class="cstat-no" title="statement not covered" >              /&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Button className="bg-emerald-600 hover:bg-emerald-700"&gt;</span>
-                検索
-<span class="cstat-no" title="statement not covered" >              &lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Input placeholder="予約No" className="w-[200px]" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Button className="bg-emerald-600 hover:bg-emerald-700"&gt;検索&lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
@@ -280,7 +265,7 @@ import { Reservation } from "@/lib/types/reservation"
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../../../prettify.js"></script>
         <script>

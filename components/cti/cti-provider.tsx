@@ -1,7 +1,7 @@
-"use client"
+'use client'
 
-import { useCTI } from "@/hooks/use-cti"
-import { IncomingCallPopup } from "./incoming-call-popup"
+import { useCTI } from '@/hooks/use-cti'
+import { IncomingCallPopup } from './incoming-call-popup'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
 
@@ -35,7 +35,7 @@ export function CTIProvider({ children }: CTIProviderProps) {
   return (
     <>
       {children}
-      
+
       {/* CTI着信ポップアップ */}
       <IncomingCallPopup
         isOpen={!!incomingCall}

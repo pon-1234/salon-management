@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/54</span>
+                <span class='fraction'>0/53</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/54</span>
+                <span class='fraction'>0/53</span>
             </div>
         
             
@@ -137,7 +137,8 @@
 <a name='L72'></a><a href='#L72'>72</a>
 <a name='L73'></a><a href='#L73'>73</a>
 <a name='L74'></a><a href='#L74'>74</a>
-<a name='L75'></a><a href='#L75'>75</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -167,8 +168,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -203,6 +202,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -211,14 +212,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
 import { useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Header } from "@/components/header"
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Header } from '@/components/header'
 import { UserPlus } from 'lucide-react'
 &nbsp;
 // モックデータ
@@ -237,9 +239,7 @@ import { UserPlus } from 'lucide-react'
 <span class="cstat-no" title="statement not covered" >  useEffect(() =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    if (query) {</span>
       // 実際のアプリケーションでは、ここでAPIリクエストを行います
-<span class="cstat-no" title="statement not covered" >      const filteredResults = mockCustomers.filter(</span>
-<span class="cstat-no" title="statement not covered" >        customer =&gt; customer.phone.includes(query)</span>
-<span class="cstat-no" title="statement not covered" >      )</span>
+<span class="cstat-no" title="statement not covered" >      const filteredResults = mockCustomers.filter((customer) =&gt; customer.phone.includes(query))</span>
 <span class="cstat-no" title="statement not covered" >      setResults(filteredResults)</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  }, [query])</span>
@@ -252,15 +252,15 @@ import { UserPlus } from 'lucide-react'
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
-<span class="cstat-no" title="statement not covered" >    &lt;div className="container mx-auto py-6 px-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;div className="container mx-auto px-4 py-6"&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;Header /&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;h1 className="text-2xl font-bold mb-4 mt-6"&gt;電話番号検索結果: {query}&lt;/h1&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;h1 className="mb-4 mt-6 text-2xl font-bold"&gt;電話番号検索結果: {query}&lt;/h1&gt;</span>
 <span class="cstat-no" title="statement not covered" >      {results.length === 0 ? (</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div className="space-y-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;p&gt;該当する顧客が見つかりませんでした。&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;Button</span>
 <span class="cstat-no" title="statement not covered" >            onClick={handleAddNewCustomer}</span>
-<span class="cstat-no" title="statement not covered" >            className="bg-emerald-600 hover:bg-emerald-700 text-white"</span>
+<span class="cstat-no" title="statement not covered" >            className="bg-emerald-600 text-white hover:bg-emerald-700"</span>
           &gt;
 <span class="cstat-no" title="statement not covered" >            &lt;UserPlus className="mr-2 h-4 w-4" /&gt;</span>
             新規顧客追加
@@ -268,7 +268,7 @@ import { UserPlus } from 'lucide-react'
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
       ) : (
 <span class="cstat-no" title="statement not covered" >        &lt;div className="space-y-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          {results.map(customer =&gt; (</span>
+<span class="cstat-no" title="statement not covered" >          {results.map((customer) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >            &lt;Card key={customer.id}&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;CardContent className="flex items-center justify-between p-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;div&gt;</span>
@@ -276,7 +276,9 @@ import { UserPlus } from 'lucide-react'
 <span class="cstat-no" title="statement not covered" >                  &lt;p className="text-sm text-gray-500"&gt;{customer.phone}&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;Link href={`/admin/customers/${customer.id}`}&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;Button className="bg-emerald-600 hover:bg-emerald-700 text-white"&gt;詳細を見る&lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;Button className="bg-emerald-600 text-white hover:bg-emerald-700"&gt;</span>
+                    詳細を見る
+<span class="cstat-no" title="statement not covered" >                  &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/Link&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/CardContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/Card&gt;</span>
@@ -285,14 +287,15 @@ import { UserPlus } from 'lucide-react'
       )}
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >} </span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../../../prettify.js"></script>
         <script>

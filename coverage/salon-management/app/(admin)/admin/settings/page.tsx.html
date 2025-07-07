@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/269</span>
+                <span class='fraction'>0/267</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/269</span>
+                <span class='fraction'>0/267</span>
             </div>
         
             
@@ -386,7 +386,8 @@
 <a name='L321'></a><a href='#L321'>321</a>
 <a name='L322'></a><a href='#L322'>322</a>
 <a name='L323'></a><a href='#L323'>323</a>
-<a name='L324'></a><a href='#L324'>324</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L324'></a><a href='#L324'>324</a>
+<a name='L325'></a><a href='#L325'>325</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -633,8 +634,12 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -659,8 +664,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -669,8 +672,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -709,31 +710,32 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { 
-  Store, 
-  HelpCircle, 
-  MessageSquare, 
-  Calendar, 
-  MapPin, 
-  Train, 
-  Megaphone, 
-  Shield, 
-  CreditCard, 
-  Link, 
-  Building, 
-  FileText, 
+import { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import {
+  Store,
+  HelpCircle,
+  MessageSquare,
+  Calendar,
+  MapPin,
+  Train,
+  Megaphone,
+  Shield,
+  CreditCard,
+  Link,
+  Building,
+  FileText,
   Mail,
   Settings as SettingsIcon,
   ChevronRight,
   Package,
   BookOpen,
-  Receipt
+  Receipt,
 } from 'lucide-react'
 &nbsp;
 interface SettingItem {
@@ -753,293 +755,294 @@ interface SettingItem {
 <span class="cstat-no" title="statement not covered" >      id: 'store-info',</span>
 <span class="cstat-no" title="statement not covered" >      title: '店舗情報',</span>
 <span class="cstat-no" title="statement not covered" >      description: '店舗の基本情報、営業時間、連絡先などを管理',</span>
-<span class="cstat-no" title="statement not covered" >      icon: &lt;Store className="w-5 h-5" /&gt;,</span>
+<span class="cstat-no" title="statement not covered" >      icon: &lt;Store className="h-5 w-5" /&gt;,</span>
 <span class="cstat-no" title="statement not covered" >      status: 'available',</span>
-<span class="cstat-no" title="statement not covered" >      category: '基本設定'</span>
+<span class="cstat-no" title="statement not covered" >      category: '基本設定',</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
 <span class="cstat-no" title="statement not covered" >      id: 'business-qa',</span>
 <span class="cstat-no" title="statement not covered" >      title: '業務Q&amp;A管理',</span>
 <span class="cstat-no" title="statement not covered" >      description: 'スタッフ向けの業務Q&amp;Aを管理',</span>
-<span class="cstat-no" title="statement not covered" >      icon: &lt;HelpCircle className="w-5 h-5" /&gt;,</span>
+<span class="cstat-no" title="statement not covered" >      icon: &lt;HelpCircle className="h-5 w-5" /&gt;,</span>
 <span class="cstat-no" title="statement not covered" >      status: 'coming-soon',</span>
-<span class="cstat-no" title="statement not covered" >      category: '業務管理'</span>
+<span class="cstat-no" title="statement not covered" >      category: '業務管理',</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
 <span class="cstat-no" title="statement not covered" >      id: 'faq',</span>
 <span class="cstat-no" title="statement not covered" >      title: 'よくある質問',</span>
 <span class="cstat-no" title="statement not covered" >      description: '顧客向けのよくある質問を管理',</span>
-<span class="cstat-no" title="statement not covered" >      icon: &lt;MessageSquare className="w-5 h-5" /&gt;,</span>
+<span class="cstat-no" title="statement not covered" >      icon: &lt;MessageSquare className="h-5 w-5" /&gt;,</span>
 <span class="cstat-no" title="statement not covered" >      status: 'available',</span>
-<span class="cstat-no" title="statement not covered" >      category: '顧客対応'</span>
+<span class="cstat-no" title="statement not covered" >      category: '顧客対応',</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
 <span class="cstat-no" title="statement not covered" >      id: 'events',</span>
 <span class="cstat-no" title="statement not covered" >      title: 'イベント(PC)',</span>
 <span class="cstat-no" title="statement not covered" >      description: 'PCサイト向けのイベント情報を管理',</span>
-<span class="cstat-no" title="statement not covered" >      icon: &lt;Calendar className="w-5 h-5" /&gt;,</span>
+<span class="cstat-no" title="statement not covered" >      icon: &lt;Calendar className="h-5 w-5" /&gt;,</span>
 <span class="cstat-no" title="statement not covered" >      status: 'available',</span>
-<span class="cstat-no" title="statement not covered" >      category: 'コンテンツ管理'</span>
+<span class="cstat-no" title="statement not covered" >      category: 'コンテンツ管理',</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
 <span class="cstat-no" title="statement not covered" >      id: 'area-info',</span>
 <span class="cstat-no" title="statement not covered" >      title: 'エリア情報',</span>
 <span class="cstat-no" title="statement not covered" >      description: 'サービス提供エリアの情報を管理',</span>
-<span class="cstat-no" title="statement not covered" >      icon: &lt;MapPin className="w-5 h-5" /&gt;,</span>
+<span class="cstat-no" title="statement not covered" >      icon: &lt;MapPin className="h-5 w-5" /&gt;,</span>
 <span class="cstat-no" title="statement not covered" >      status: 'available',</span>
-<span class="cstat-no" title="statement not covered" >      category: '地域設定'</span>
+<span class="cstat-no" title="statement not covered" >      category: '地域設定',</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
 <span class="cstat-no" title="statement not covered" >      id: 'station-info',</span>
 <span class="cstat-no" title="statement not covered" >      title: '駅情報',</span>
 <span class="cstat-no" title="statement not covered" >      description: '最寄り駅や交通費設定を管理',</span>
-<span class="cstat-no" title="statement not covered" >      icon: &lt;Train className="w-5 h-5" /&gt;,</span>
+<span class="cstat-no" title="statement not covered" >      icon: &lt;Train className="h-5 w-5" /&gt;,</span>
 <span class="cstat-no" title="statement not covered" >      status: 'available',</span>
-<span class="cstat-no" title="statement not covered" >      category: '地域設定'</span>
+<span class="cstat-no" title="statement not covered" >      category: '地域設定',</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
 <span class="cstat-no" title="statement not covered" >      id: 'media-info',</span>
 <span class="cstat-no" title="statement not covered" >      title: '媒体情報',</span>
 <span class="cstat-no" title="statement not covered" >      description: '広告媒体や集客チャネルの情報を管理',</span>
-<span class="cstat-no" title="statement not covered" >      icon: &lt;Megaphone className="w-5 h-5" /&gt;,</span>
+<span class="cstat-no" title="statement not covered" >      icon: &lt;Megaphone className="h-5 w-5" /&gt;,</span>
 <span class="cstat-no" title="statement not covered" >      status: 'available',</span>
-<span class="cstat-no" title="statement not covered" >      category: 'マーケティング'</span>
+<span class="cstat-no" title="statement not covered" >      category: 'マーケティング',</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
 <span class="cstat-no" title="statement not covered" >      id: 'admin-info',</span>
 <span class="cstat-no" title="statement not covered" >      title: '管理者情報',</span>
 <span class="cstat-no" title="statement not covered" >      description: '管理者アカウントと権限を管理',</span>
-<span class="cstat-no" title="statement not covered" >      icon: &lt;Shield className="w-5 h-5" /&gt;,</span>
+<span class="cstat-no" title="statement not covered" >      icon: &lt;Shield className="h-5 w-5" /&gt;,</span>
 <span class="cstat-no" title="statement not covered" >      status: 'available',</span>
-<span class="cstat-no" title="statement not covered" >      category: 'セキュリティ'</span>
+<span class="cstat-no" title="statement not covered" >      category: 'セキュリティ',</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
 <span class="cstat-no" title="statement not covered" >      id: 'hp-pricing',</span>
 <span class="cstat-no" title="statement not covered" >      title: 'HP料金情報',</span>
 <span class="cstat-no" title="statement not covered" >      description: 'ホームページに表示する料金情報を管理',</span>
-<span class="cstat-no" title="statement not covered" >      icon: &lt;CreditCard className="w-5 h-5" /&gt;,</span>
+<span class="cstat-no" title="statement not covered" >      icon: &lt;CreditCard className="h-5 w-5" /&gt;,</span>
 <span class="cstat-no" title="statement not covered" >      status: 'available',</span>
-<span class="cstat-no" title="statement not covered" >      category: 'コンテンツ管理'</span>
+<span class="cstat-no" title="statement not covered" >      category: 'コンテンツ管理',</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
 <span class="cstat-no" title="statement not covered" >      id: 'mutual-links',</span>
 <span class="cstat-no" title="statement not covered" >      title: '相互リンク',</span>
 <span class="cstat-no" title="statement not covered" >      description: '相互リンクの管理',</span>
-<span class="cstat-no" title="statement not covered" >      icon: &lt;Link className="w-5 h-5" /&gt;,</span>
+<span class="cstat-no" title="statement not covered" >      icon: &lt;Link className="h-5 w-5" /&gt;,</span>
 <span class="cstat-no" title="statement not covered" >      status: 'available',</span>
-<span class="cstat-no" title="statement not covered" >      category: 'コンテンツ管理'</span>
+<span class="cstat-no" title="statement not covered" >      category: 'コンテンツ管理',</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
 <span class="cstat-no" title="statement not covered" >      id: 'hotel-info',</span>
 <span class="cstat-no" title="statement not covered" >      title: 'ホテル情報',</span>
 <span class="cstat-no" title="statement not covered" >      description: 'ホテル情報とマッピング設定',</span>
-<span class="cstat-no" title="statement not covered" >      icon: &lt;Building className="w-5 h-5" /&gt;,</span>
+<span class="cstat-no" title="statement not covered" >      icon: &lt;Building className="h-5 w-5" /&gt;,</span>
 <span class="cstat-no" title="statement not covered" >      status: 'available',</span>
-<span class="cstat-no" title="statement not covered" >      category: '地域設定'</span>
+<span class="cstat-no" title="statement not covered" >      category: '地域設定',</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
 <span class="cstat-no" title="statement not covered" >      id: 'templates',</span>
 <span class="cstat-no" title="statement not covered" >      title: '定型文',</span>
 <span class="cstat-no" title="statement not covered" >      description: 'メッセージやメールの定型文を管理',</span>
-<span class="cstat-no" title="statement not covered" >      icon: &lt;FileText className="w-5 h-5" /&gt;,</span>
+<span class="cstat-no" title="statement not covered" >      icon: &lt;FileText className="h-5 w-5" /&gt;,</span>
 <span class="cstat-no" title="statement not covered" >      status: 'available',</span>
-<span class="cstat-no" title="statement not covered" >      category: '顧客対応'</span>
+<span class="cstat-no" title="statement not covered" >      category: '顧客対応',</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
 <span class="cstat-no" title="statement not covered" >      id: 'newsletter',</span>
 <span class="cstat-no" title="statement not covered" >      title: 'メルマガ送信',</span>
 <span class="cstat-no" title="statement not covered" >      description: 'メルマガの作成と送信管理',</span>
-<span class="cstat-no" title="statement not covered" >      icon: &lt;Mail className="w-5 h-5" /&gt;,</span>
+<span class="cstat-no" title="statement not covered" >      icon: &lt;Mail className="h-5 w-5" /&gt;,</span>
 <span class="cstat-no" title="statement not covered" >      status: 'available',</span>
-<span class="cstat-no" title="statement not covered" >      category: 'マーケティング'</span>
+<span class="cstat-no" title="statement not covered" >      category: 'マーケティング',</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
 <span class="cstat-no" title="statement not covered" >      id: 'option-info',</span>
 <span class="cstat-no" title="statement not covered" >      title: 'オプション情報',</span>
 <span class="cstat-no" title="statement not covered" >      description: 'サービスオプションの管理と料金設定',</span>
-<span class="cstat-no" title="statement not covered" >      icon: &lt;Package className="w-5 h-5" /&gt;,</span>
+<span class="cstat-no" title="statement not covered" >      icon: &lt;Package className="h-5 w-5" /&gt;,</span>
 <span class="cstat-no" title="statement not covered" >      status: 'available',</span>
-<span class="cstat-no" title="statement not covered" >      category: 'サービス管理'</span>
+<span class="cstat-no" title="statement not covered" >      category: 'サービス管理',</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
 <span class="cstat-no" title="statement not covered" >      id: 'course-info',</span>
 <span class="cstat-no" title="statement not covered" >      title: 'コース情報',</span>
 <span class="cstat-no" title="statement not covered" >      description: 'コース内容と料金の管理',</span>
-<span class="cstat-no" title="statement not covered" >      icon: &lt;BookOpen className="w-5 h-5" /&gt;,</span>
+<span class="cstat-no" title="statement not covered" >      icon: &lt;BookOpen className="h-5 w-5" /&gt;,</span>
 <span class="cstat-no" title="statement not covered" >      status: 'available',</span>
-<span class="cstat-no" title="statement not covered" >      category: 'サービス管理'</span>
+<span class="cstat-no" title="statement not covered" >      category: 'サービス管理',</span>
 <span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
 <span class="cstat-no" title="statement not covered" >      id: 'additional-fees',</span>
 <span class="cstat-no" title="statement not covered" >      title: '追加料金設定',</span>
 <span class="cstat-no" title="statement not covered" >      description: '指名料、交通費、深夜料金などの追加料金を管理',</span>
-<span class="cstat-no" title="statement not covered" >      icon: &lt;Receipt className="w-5 h-5" /&gt;,</span>
+<span class="cstat-no" title="statement not covered" >      icon: &lt;Receipt className="h-5 w-5" /&gt;,</span>
 <span class="cstat-no" title="statement not covered" >      status: 'available',</span>
-<span class="cstat-no" title="statement not covered" >      category: 'サービス管理'</span>
-<span class="cstat-no" title="statement not covered" >    }</span>
+<span class="cstat-no" title="statement not covered" >      category: 'サービス管理',</span>
+<span class="cstat-no" title="statement not covered" >    },</span>
 <span class="cstat-no" title="statement not covered" >  ]</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  const categories = [...new Set(settingsItems.map(item =&gt; item.category))]</span>
+<span class="cstat-no" title="statement not covered" >  const categories = [...new Set(settingsItems.map((item) =&gt; item.category))]</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  const filteredItems = selectedCategory </span>
-<span class="cstat-no" title="statement not covered" >    ? settingsItems.filter(item =&gt; item.category === selectedCategory)</span>
+<span class="cstat-no" title="statement not covered" >  const filteredItems = selectedCategory</span>
+<span class="cstat-no" title="statement not covered" >    ? settingsItems.filter((item) =&gt; item.category === selectedCategory)</span>
 <span class="cstat-no" title="statement not covered" >    : settingsItems</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;div className="p-8"&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;div className="max-w-7xl mx-auto"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="flex items-center gap-3 mb-6"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;SettingsIcon className="w-8 h-8 text-gray-700" /&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;h1 className="text-3xl font-bold text-gray-900"&gt;設定&lt;/h1&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
-&nbsp;
-          {/* カテゴリフィルター */}
-<span class="cstat-no" title="statement not covered" >          &lt;div className="flex flex-wrap gap-2 mb-8"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;Button</span>
-<span class="cstat-no" title="statement not covered" >              variant={selectedCategory === null ? "default" : "outline"}</span>
-<span class="cstat-no" title="statement not covered" >              onClick={() =&gt; setSelectedCategory(null)}</span>
-<span class="cstat-no" title="statement not covered" >              className="mb-2"</span>
-<span class="cstat-no" title="statement not covered" >            &gt;</span>
-              すべて
-<span class="cstat-no" title="statement not covered" >            &lt;/Button&gt;</span>
-<span class="cstat-no" title="statement not covered" >            {categories.map((category) =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Button</span>
-<span class="cstat-no" title="statement not covered" >                key={category}</span>
-<span class="cstat-no" title="statement not covered" >                variant={selectedCategory === category ? "default" : "outline"}</span>
-<span class="cstat-no" title="statement not covered" >                onClick={() =&gt; setSelectedCategory(category)}</span>
-<span class="cstat-no" title="statement not covered" >                className="mb-2"</span>
-              &gt;
-<span class="cstat-no" title="statement not covered" >                {category}</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/Button&gt;</span>
-<span class="cstat-no" title="statement not covered" >            ))}</span>
-<span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
-&nbsp;
-          {/* 設定項目グリッド */}
-<span class="cstat-no" title="statement not covered" >          &lt;div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            {filteredItems.map((item) =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Card </span>
-<span class="cstat-no" title="statement not covered" >                key={item.id} </span>
-<span class="cstat-no" title="statement not covered" >                className={`cursor-pointer hover:shadow-md transition-all duration-200 ${</span>
-<span class="cstat-no" title="statement not covered" >                  item.status === 'coming-soon' </span>
-<span class="cstat-no" title="statement not covered" >                    ? 'opacity-60 cursor-not-allowed' </span>
-<span class="cstat-no" title="statement not covered" >                    : 'hover:shadow-lg hover:-translate-y-1'</span>
-<span class="cstat-no" title="statement not covered" >                }`}</span>
-<span class="cstat-no" title="statement not covered" >onClick={() =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >                  if (item.status === 'available') {</span>
-                    // 利用可能な設定項目のナビゲーション
-<span class="cstat-no" title="statement not covered" >                    switch (item.id) {</span>
-<span class="cstat-no" title="statement not covered" >                      case 'store-info':</span>
-<span class="cstat-no" title="statement not covered" >                        window.location.href = '/admin/settings/store-info'</span>
-<span class="cstat-no" title="statement not covered" >                        break</span>
-<span class="cstat-no" title="statement not covered" >                      case 'option-info':</span>
-<span class="cstat-no" title="statement not covered" >                        window.location.href = '/admin/settings/option-info'</span>
-<span class="cstat-no" title="statement not covered" >                        break</span>
-<span class="cstat-no" title="statement not covered" >                      case 'course-info':</span>
-<span class="cstat-no" title="statement not covered" >                        window.location.href = '/admin/settings/course-info'</span>
-<span class="cstat-no" title="statement not covered" >                        break</span>
-<span class="cstat-no" title="statement not covered" >                      case 'hotel-info':</span>
-<span class="cstat-no" title="statement not covered" >                        window.location.href = '/admin/settings/hotel-info'</span>
-<span class="cstat-no" title="statement not covered" >                        break</span>
-<span class="cstat-no" title="statement not covered" >                      case 'additional-fees':</span>
-<span class="cstat-no" title="statement not covered" >                        window.location.href = '/admin/settings/additional-fees'</span>
-<span class="cstat-no" title="statement not covered" >                        break</span>
-<span class="cstat-no" title="statement not covered" >                      default:</span>
-<span class="cstat-no" title="statement not covered" >                        console.log(`${item.title}の設定ページは準備中です`)</span>
-<span class="cstat-no" title="statement not covered" >                        alert(`${item.title}の設定ページは準備中です`)</span>
-<span class="cstat-no" title="statement not covered" >                    }</span>
-<span class="cstat-no" title="statement not covered" >                  }</span>
-<span class="cstat-no" title="statement not covered" >                }}</span>
-              &gt;
-<span class="cstat-no" title="statement not covered" >                &lt;CardHeader className="pb-3"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;div className="flex items-start justify-between"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;div className={`p-3 rounded-lg ${</span>
-<span class="cstat-no" title="statement not covered" >                      item.status === 'available' ? 'bg-emerald-100' : 'bg-gray-100'</span>
-<span class="cstat-no" title="statement not covered" >                    }`}&gt;</span>
-<span class="cstat-no" title="statement not covered" >                      &lt;div className={`${</span>
-<span class="cstat-no" title="statement not covered" >                        item.status === 'available' ? 'text-emerald-600' : 'text-gray-400'</span>
-<span class="cstat-no" title="statement not covered" >                      }`}&gt;</span>
-<span class="cstat-no" title="statement not covered" >                        {item.icon}</span>
-<span class="cstat-no" title="statement not covered" >                      &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;div className="flex flex-col gap-1"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                      {item.status === 'coming-soon' &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;Badge variant="secondary" className="text-xs"&gt;</span>
-                          準備中
-<span class="cstat-no" title="statement not covered" >                        &lt;/Badge&gt;</span>
-                      )}
-<span class="cstat-no" title="statement not covered" >                      &lt;Badge variant="outline" className="text-xs"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                        {item.category}</span>
-<span class="cstat-no" title="statement not covered" >                      &lt;/Badge&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;CardTitle className="text-lg font-semibold"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    {item.title}</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;/CardTitle&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;/CardHeader&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;CardContent&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;CardDescription className="text-sm text-gray-600 mb-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    {item.description}</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;/CardDescription&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;div className="flex items-center justify-between"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;div className="flex-1" /&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    {item.status === 'available' &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >                      &lt;ChevronRight className="w-4 h-4 text-gray-400" /&gt;</span>
-                    )}
-<span class="cstat-no" title="statement not covered" >                  &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;/CardContent&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/Card&gt;</span>
-<span class="cstat-no" title="statement not covered" >            ))}</span>
-<span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
-&nbsp;
-          {/* 統計情報 */}
-<span class="cstat-no" title="statement not covered" >          &lt;div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;Card&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;CardHeader&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;CardTitle className="text-lg"&gt;設定項目&lt;/CardTitle&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/CardHeader&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;CardContent&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="text-3xl font-bold text-emerald-600"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  {settingsItems.length}</span>
-<span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;p className="text-sm text-gray-600"&gt;総設定項目数&lt;/p&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/CardContent&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/Card&gt;</span>
-            
-<span class="cstat-no" title="statement not covered" >            &lt;Card&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;CardHeader&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;CardTitle className="text-lg"&gt;利用可能&lt;/CardTitle&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/CardHeader&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;CardContent&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="text-3xl font-bold text-blue-600"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  {settingsItems.filter(item =&gt; item.status === 'available').length}</span>
-<span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;p className="text-sm text-gray-600"&gt;設定可能な項目&lt;/p&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/CardContent&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/Card&gt;</span>
-            
-<span class="cstat-no" title="statement not covered" >            &lt;Card&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;CardHeader&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;CardTitle className="text-lg"&gt;準備中&lt;/CardTitle&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/CardHeader&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;CardContent&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="text-3xl font-bold text-orange-600"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  {settingsItems.filter(item =&gt; item.status === 'coming-soon').length}</span>
-<span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;p className="text-sm text-gray-600"&gt;準備中の項目&lt;/p&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/CardContent&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/Card&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;div className="mx-auto max-w-7xl"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="mb-6 flex items-center gap-3"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;SettingsIcon className="h-8 w-8 text-gray-700" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;h1 className="text-3xl font-bold text-gray-900"&gt;設定&lt;/h1&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
+&nbsp;
+        {/* カテゴリフィルター */}
+<span class="cstat-no" title="statement not covered" >        &lt;div className="mb-8 flex flex-wrap gap-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;Button</span>
+<span class="cstat-no" title="statement not covered" >            variant={selectedCategory === null ? 'default' : 'outline'}</span>
+<span class="cstat-no" title="statement not covered" >            onClick={() =&gt; setSelectedCategory(null)}</span>
+<span class="cstat-no" title="statement not covered" >            className="mb-2"</span>
+<span class="cstat-no" title="statement not covered" >          &gt;</span>
+            すべて
+<span class="cstat-no" title="statement not covered" >          &lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >          {categories.map((category) =&gt; (</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Button</span>
+<span class="cstat-no" title="statement not covered" >              key={category}</span>
+<span class="cstat-no" title="statement not covered" >              variant={selectedCategory === category ? 'default' : 'outline'}</span>
+<span class="cstat-no" title="statement not covered" >              onClick={() =&gt; setSelectedCategory(category)}</span>
+<span class="cstat-no" title="statement not covered" >              className="mb-2"</span>
+            &gt;
+<span class="cstat-no" title="statement not covered" >              {category}</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >          ))}</span>
+<span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
+&nbsp;
+        {/* 設定項目グリッド */}
+<span class="cstat-no" title="statement not covered" >        &lt;div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          {filteredItems.map((item) =&gt; (</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Card</span>
+<span class="cstat-no" title="statement not covered" >              key={item.id}</span>
+<span class="cstat-no" title="statement not covered" >              className={`cursor-pointer transition-all duration-200 hover:shadow-md ${</span>
+<span class="cstat-no" title="statement not covered" >                item.status === 'coming-soon'</span>
+<span class="cstat-no" title="statement not covered" >                  ? 'cursor-not-allowed opacity-60'</span>
+<span class="cstat-no" title="statement not covered" >                  : 'hover:-translate-y-1 hover:shadow-lg'</span>
+<span class="cstat-no" title="statement not covered" >              }`}</span>
+<span class="cstat-no" title="statement not covered" >              onClick={() =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >                if (item.status === 'available') {</span>
+                  // 利用可能な設定項目のナビゲーション
+<span class="cstat-no" title="statement not covered" >                  switch (item.id) {</span>
+<span class="cstat-no" title="statement not covered" >                    case 'store-info':</span>
+<span class="cstat-no" title="statement not covered" >                      window.location.href = '/admin/settings/store-info'</span>
+<span class="cstat-no" title="statement not covered" >                      break</span>
+<span class="cstat-no" title="statement not covered" >                    case 'option-info':</span>
+<span class="cstat-no" title="statement not covered" >                      window.location.href = '/admin/settings/option-info'</span>
+<span class="cstat-no" title="statement not covered" >                      break</span>
+<span class="cstat-no" title="statement not covered" >                    case 'course-info':</span>
+<span class="cstat-no" title="statement not covered" >                      window.location.href = '/admin/settings/course-info'</span>
+<span class="cstat-no" title="statement not covered" >                      break</span>
+<span class="cstat-no" title="statement not covered" >                    case 'hotel-info':</span>
+<span class="cstat-no" title="statement not covered" >                      window.location.href = '/admin/settings/hotel-info'</span>
+<span class="cstat-no" title="statement not covered" >                      break</span>
+<span class="cstat-no" title="statement not covered" >                    case 'additional-fees':</span>
+<span class="cstat-no" title="statement not covered" >                      window.location.href = '/admin/settings/additional-fees'</span>
+<span class="cstat-no" title="statement not covered" >                      break</span>
+<span class="cstat-no" title="statement not covered" >                    default:</span>
+<span class="cstat-no" title="statement not covered" >                      console.log(`${item.title}の設定ページは準備中です`)</span>
+<span class="cstat-no" title="statement not covered" >                      alert(`${item.title}の設定ページは準備中です`)</span>
+<span class="cstat-no" title="statement not covered" >                  }</span>
+<span class="cstat-no" title="statement not covered" >                }</span>
+<span class="cstat-no" title="statement not covered" >              }}</span>
+            &gt;
+<span class="cstat-no" title="statement not covered" >              &lt;CardHeader className="pb-3"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="flex items-start justify-between"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;div</span>
+<span class="cstat-no" title="statement not covered" >                    className={`rounded-lg p-3 ${</span>
+<span class="cstat-no" title="statement not covered" >                      item.status === 'available' ? 'bg-emerald-100' : 'bg-gray-100'</span>
+<span class="cstat-no" title="statement not covered" >                    }`}</span>
+                  &gt;
+<span class="cstat-no" title="statement not covered" >                    &lt;div</span>
+<span class="cstat-no" title="statement not covered" >                      className={`${</span>
+<span class="cstat-no" title="statement not covered" >                        item.status === 'available' ? 'text-emerald-600' : 'text-gray-400'</span>
+<span class="cstat-no" title="statement not covered" >                      }`}</span>
+                    &gt;
+<span class="cstat-no" title="statement not covered" >                      {item.icon}</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;div className="flex flex-col gap-1"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    {item.status === 'coming-soon' &amp;&amp; (</span>
+<span class="cstat-no" title="statement not covered" >                      &lt;Badge variant="secondary" className="text-xs"&gt;</span>
+                        準備中
+<span class="cstat-no" title="statement not covered" >                      &lt;/Badge&gt;</span>
+                    )}
+<span class="cstat-no" title="statement not covered" >                    &lt;Badge variant="outline" className="text-xs"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                      {item.category}</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;/Badge&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;CardTitle className="text-lg font-semibold"&gt;{item.title}&lt;/CardTitle&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/CardHeader&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;CardContent&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;CardDescription className="mb-4 text-sm text-gray-600"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  {item.description}</span>
+<span class="cstat-no" title="statement not covered" >                &lt;/CardDescription&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="flex items-center justify-between"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;div className="flex-1" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  {item.status === 'available' &amp;&amp; (</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;ChevronRight className="h-4 w-4 text-gray-400" /&gt;</span>
+                  )}
+<span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/CardContent&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/Card&gt;</span>
+<span class="cstat-no" title="statement not covered" >          ))}</span>
+<span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
+&nbsp;
+        {/* 統計情報 */}
+<span class="cstat-no" title="statement not covered" >        &lt;div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;Card&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;CardHeader&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;CardTitle className="text-lg"&gt;設定項目&lt;/CardTitle&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/CardHeader&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;CardContent&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;div className="text-3xl font-bold text-emerald-600"&gt;{settingsItems.length}&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;p className="text-sm text-gray-600"&gt;総設定項目数&lt;/p&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/CardContent&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;/Card&gt;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >          &lt;Card&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;CardHeader&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;CardTitle className="text-lg"&gt;利用可能&lt;/CardTitle&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/CardHeader&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;CardContent&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;div className="text-3xl font-bold text-blue-600"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                {settingsItems.filter((item) =&gt; item.status === 'available').length}</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;p className="text-sm text-gray-600"&gt;設定可能な項目&lt;/p&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/CardContent&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;/Card&gt;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >          &lt;Card&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;CardHeader&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;CardTitle className="text-lg"&gt;準備中&lt;/CardTitle&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/CardHeader&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;CardContent&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;div className="text-3xl font-bold text-orange-600"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                {settingsItems.filter((item) =&gt; item.status === 'coming-soon').length}</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;p className="text-sm text-gray-600"&gt;準備中の項目&lt;/p&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/CardContent&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;/Card&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../../../prettify.js"></script>
         <script>

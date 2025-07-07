@@ -29,14 +29,12 @@ export function MyPageContent({ store }: MyPageContentProps) {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="mx-auto max-w-7xl px-4 py-8">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
+      <div className="mb-6 rounded-lg bg-white p-6 shadow">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold mb-2">
-              {user.nickname}さんのマイページ
-            </h1>
+            <h1 className="mb-2 text-2xl font-bold">{user.nickname}さんのマイページ</h1>
             <p className="text-gray-600">
               会員ランク: {user.memberType === 'vip' ? 'VIP会員' : '通常会員'}
             </p>
@@ -45,7 +43,7 @@ export function MyPageContent({ store }: MyPageContentProps) {
             <p className="text-sm text-gray-500">保有ポイント</p>
             <p className="text-3xl font-bold text-purple-600">
               {user.points.toLocaleString()}
-              <span className="text-sm ml-1">pt</span>
+              <span className="ml-1 text-sm">pt</span>
             </p>
           </div>
         </div>
@@ -53,7 +51,7 @@ export function MyPageContent({ store }: MyPageContentProps) {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-4 w-full mb-6">
+        <TabsList className="mb-6 grid w-full grid-cols-4">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             <span className="hidden sm:inline">プロフィール</span>

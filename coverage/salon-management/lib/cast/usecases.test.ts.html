@@ -143,7 +143,8 @@
 <a name='L78'></a><a href='#L78'>78</a>
 <a name='L79'></a><a href='#L79'>79</a>
 <a name='L80'></a><a href='#L80'>80</a>
-<a name='L81'></a><a href='#L81'>81</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -223,10 +224,11 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span></td><td class="text"><pre class="prettyprint lang-js">import { describe, it, expect, vi, Mock, beforeEach } from "vitest";
-import { CastUseCases } from "./usecases";
-import { CastRepository } from "./repository";
-import { Cast, CastSchedule } from "./types";
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { describe, it, expect, vi, Mock, beforeEach } from 'vitest'
+import { CastUseCases } from './usecases'
+import { CastRepository } from './repository'
+import { Cast, CastSchedule } from './types'
 &nbsp;
 // Mock CastRepository
 const mockCastRepository: CastRepository = {
@@ -237,80 +239,81 @@ const mockCastRepository: CastRepository = {
   delete: vi.fn(),
   getCastSchedule: vi.fn(),
   updateCastSchedule: vi.fn(),
-};
+}
 &nbsp;
-describe("CastUseCases", () =&gt; {
-  let castUseCases: CastUseCases;
+describe('CastUseCases', () =&gt; {
+  let castUseCases: CastUseCases
 &nbsp;
   beforeEach(() =&gt; {
-    castUseCases = new CastUseCases(mockCastRepository);
-    vi.clearAllMocks();
-  });
+    castUseCases = new CastUseCases(mockCastRepository)
+    vi.clearAllMocks()
+  })
 &nbsp;
-  describe("getCastSchedule", () =&gt; {
+  describe('getCastSchedule', () =&gt; {
     it("should call repository's getCastSchedule and return the schedule", async () =&gt; {
-      const castId = "cast1";
-      const startDate = new Date("2024-01-01");
-      const endDate = new Date("2024-01-07");
+      const castId = 'cast1'
+      const startDate = new Date('2024-01-01')
+      const endDate = new Date('2024-01-07')
       const mockSchedule: CastSchedule[] = [
         {
           castId: castId,
-          date: new Date("2024-01-01T00:00:00Z"),
-          startTime: new Date("2024-01-01T10:00:00Z"),
-          endTime: new Date("2024-01-01T18:00:00Z"),
+          date: new Date('2024-01-01T00:00:00Z'),
+          startTime: new Date('2024-01-01T10:00:00Z'),
+          endTime: new Date('2024-01-01T18:00:00Z'),
         },
-      ];
+      ]
 &nbsp;
-      (mockCastRepository.getCastSchedule as Mock).mockResolvedValue(mockSchedule);
+      ;(mockCastRepository.getCastSchedule as Mock).mockResolvedValue(mockSchedule)
 &nbsp;
-      const result = await castUseCases.getCastSchedule(castId, startDate, endDate);
+      const result = await castUseCases.getCastSchedule(castId, startDate, endDate)
 &nbsp;
-      expect(mockCastRepository.getCastSchedule).toHaveBeenCalledWith(castId, startDate, endDate);
-      expect(result).toEqual(mockSchedule);
-    });
-  });
+      expect(mockCastRepository.getCastSchedule).toHaveBeenCalledWith(castId, startDate, endDate)
+      expect(result).toEqual(mockSchedule)
+    })
+  })
 &nbsp;
-  describe("updateCastSchedule", () =&gt; {
+  describe('updateCastSchedule', () =&gt; {
     it("should call repository's updateCastSchedule with correct arguments", async () =&gt; {
-        const castId = "cast1";
-        const scheduleToUpdate: CastSchedule[] = [
-          {
-            castId: castId,
-            date: new Date("2024-01-01T00:00:00Z"),
-            startTime: new Date("2024-01-01T12:00:00Z"),
-            endTime: new Date("2024-01-01T20:00:00Z"),
-          },
-        ];
-  
-        (mockCastRepository.updateCastSchedule as Mock).mockResolvedValue(undefined);
-  
-        await castUseCases.updateCastSchedule(castId, scheduleToUpdate);
-  
-        expect(mockCastRepository.updateCastSchedule).toHaveBeenCalledWith(castId, scheduleToUpdate);
-      });
-  });
+      const castId = 'cast1'
+      const scheduleToUpdate: CastSchedule[] = [
+        {
+          castId: castId,
+          date: new Date('2024-01-01T00:00:00Z'),
+          startTime: new Date('2024-01-01T12:00:00Z'),
+          endTime: new Date('2024-01-01T20:00:00Z'),
+        },
+      ]
 &nbsp;
-  describe("getById (from BaseUseCasesImpl)", () =&gt; {
+      ;(mockCastRepository.updateCastSchedule as Mock).mockResolvedValue(undefined)
+&nbsp;
+      await castUseCases.updateCastSchedule(castId, scheduleToUpdate)
+&nbsp;
+      expect(mockCastRepository.updateCastSchedule).toHaveBeenCalledWith(castId, scheduleToUpdate)
+    })
+  })
+&nbsp;
+  describe('getById (from BaseUseCasesImpl)', () =&gt; {
     it("should call repository's getById and return a cast", async () =&gt; {
-      const castId = "cast1";
-      const mockCast: Partial&lt;Cast&gt; = { id: castId, name: "Test Cast" };
-      
-      (mockCastRepository.getById as Mock).mockResolvedValue(mockCast as Cast);
+      const castId = 'cast1'
+      const mockCast: Partial&lt;Cast&gt; = { id: castId, name: 'Test Cast' }
 &nbsp;
-      const result = await castUseCases.getById(castId);
+      ;(mockCastRepository.getById as Mock).mockResolvedValue(mockCast as Cast)
 &nbsp;
-      expect(mockCastRepository.getById).toHaveBeenCalledWith(castId);
-      expect(result).toEqual(mockCast);
-    });
-  });
-}); </pre></td></tr></table></pre>
+      const result = await castUseCases.getById(castId)
+&nbsp;
+      expect(mockCastRepository.getById).toHaveBeenCalledWith(castId)
+      expect(result).toEqual(mockCast)
+    })
+  })
+})
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

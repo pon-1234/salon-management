@@ -4,11 +4,7 @@ import { MyPageContent } from '@/components/mypage/mypage-content'
 import { StoreNavigation } from '@/components/store-navigation'
 import { StoreFooter } from '@/components/store-footer'
 
-export default async function MyPage({ 
-  params 
-}: { 
-  params: Promise<{ store: string }> 
-}) {
+export default async function MyPage({ params }: { params: Promise<{ store: string }> }) {
   const { store: storeSlug } = await params
   const store = getStoreBySlug(storeSlug)
 
@@ -22,10 +18,10 @@ export default async function MyPage({
   return (
     <>
       <StoreNavigation />
-      
+
       <main className="min-h-screen bg-gray-50">
         <MyPageContent store={store} />
-        
+
         <StoreFooter store={store} />
       </main>
     </>

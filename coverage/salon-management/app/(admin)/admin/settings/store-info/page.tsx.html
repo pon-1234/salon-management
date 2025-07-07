@@ -294,7 +294,8 @@
 <a name='L229'></a><a href='#L229'>229</a>
 <a name='L230'></a><a href='#L230'>230</a>
 <a name='L231'></a><a href='#L231'>231</a>
-<a name='L232'></a><a href='#L232'>232</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L232'></a><a href='#L232'>232</a>
+<a name='L233'></a><a href='#L233'>233</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -525,60 +526,61 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >"use client"</span></span></span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >'use client'</span></span></span>
 &nbsp;
-import { useState } from "react"
-import { Header } from "@/components/header"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
+import { useState } from 'react'
+import { Header } from '@/components/header'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
 import { ArrowLeft, Store, MapPin, Phone, Mail, Clock, Globe } from 'lucide-react'
-import Link from "next/link"
+import Link from 'next/link'
 &nbsp;
 <span class="cstat-no" title="statement not covered" >export default function StoreInfoPage() {</span>
 <span class="cstat-no" title="statement not covered" >  const [formData, setFormData] = useState({</span>
-<span class="cstat-no" title="statement not covered" >    storeName: "金の玉クラブ(池袋)",</span>
-<span class="cstat-no" title="statement not covered" >    address: "東京都豊島区池袋2-1-1",</span>
-<span class="cstat-no" title="statement not covered" >    phone: "03-1234-5678",</span>
-<span class="cstat-no" title="statement not covered" >    email: "info@example.com",</span>
-<span class="cstat-no" title="statement not covered" >    website: "https://example.com",</span>
-<span class="cstat-no" title="statement not covered" >    businessHours: "10:00 - 24:00",</span>
-<span class="cstat-no" title="statement not covered" >    description: "池袋エリアの高級メンズエステサロンです。",</span>
-<span class="cstat-no" title="statement not covered" >    zipCode: "171-0014",</span>
-<span class="cstat-no" title="statement not covered" >    prefecture: "東京都",</span>
-<span class="cstat-no" title="statement not covered" >    city: "豊島区",</span>
-<span class="cstat-no" title="statement not covered" >    building: "池袋ビル3F",</span>
-<span class="cstat-no" title="statement not covered" >    businessDays: "年中無休",</span>
-<span class="cstat-no" title="statement not covered" >    lastOrder: "23:30",</span>
-<span class="cstat-no" title="statement not covered" >    parkingInfo: "近隣にコインパーキングあり",</span>
+<span class="cstat-no" title="statement not covered" >    storeName: '金の玉クラブ(池袋)',</span>
+<span class="cstat-no" title="statement not covered" >    address: '東京都豊島区池袋2-1-1',</span>
+<span class="cstat-no" title="statement not covered" >    phone: '03-1234-5678',</span>
+<span class="cstat-no" title="statement not covered" >    email: 'info@example.com',</span>
+<span class="cstat-no" title="statement not covered" >    website: 'https://example.com',</span>
+<span class="cstat-no" title="statement not covered" >    businessHours: '10:00 - 24:00',</span>
+<span class="cstat-no" title="statement not covered" >    description: '池袋エリアの高級メンズエステサロンです。',</span>
+<span class="cstat-no" title="statement not covered" >    zipCode: '171-0014',</span>
+<span class="cstat-no" title="statement not covered" >    prefecture: '東京都',</span>
+<span class="cstat-no" title="statement not covered" >    city: '豊島区',</span>
+<span class="cstat-no" title="statement not covered" >    building: '池袋ビル3F',</span>
+<span class="cstat-no" title="statement not covered" >    businessDays: '年中無休',</span>
+<span class="cstat-no" title="statement not covered" >    lastOrder: '23:30',</span>
+<span class="cstat-no" title="statement not covered" >    parkingInfo: '近隣にコインパーキングあり',</span>
 <span class="cstat-no" title="statement not covered" >  })</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const handleInputChange = (field: string, value: string) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    setFormData(prev =&gt; ({ ...prev, [field]: value }))</span>
+<span class="cstat-no" title="statement not covered" >    setFormData((prev) =&gt; ({ ...prev, [field]: value }))</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  const handleSave = () =&gt; {</span>
     // TODO: 実際の保存処理を実装
-<span class="cstat-no" title="statement not covered" >    console.log("Store info saved:", formData)</span>
-<span class="cstat-no" title="statement not covered" >    alert("店舗情報を保存しました")</span>
+<span class="cstat-no" title="statement not covered" >    console.log('Store info saved:', formData)</span>
+<span class="cstat-no" title="statement not covered" >    alert('店舗情報を保存しました')</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;div className="min-h-screen bg-gray-50"&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;Header /&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;main className="p-8"&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;div className="max-w-4xl mx-auto"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="mx-auto max-w-4xl"&gt;</span>
           {/* ヘッダー */}
-<span class="cstat-no" title="statement not covered" >          &lt;div className="flex items-center gap-4 mb-6"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="mb-6 flex items-center gap-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;Link href="/admin/settings"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;Button variant="ghost" size="icon"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;ArrowLeft className="w-5 h-5" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;ArrowLeft className="h-5 w-5" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/Link&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;Store className="w-8 h-8 text-emerald-600" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Store className="h-8 w-8 text-emerald-600" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;h1 className="text-3xl font-bold text-gray-900"&gt;店舗情報設定&lt;/h1&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 &nbsp;
@@ -587,12 +589,12 @@ import Link from "next/link"
 <span class="cstat-no" title="statement not covered" >            &lt;Card&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;CardTitle className="flex items-center gap-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;Store className="w-5 h-5 text-emerald-600" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;Store className="h-5 w-5 text-emerald-600" /&gt;</span>
                   基本情報
 <span class="cstat-no" title="statement not covered" >                &lt;/CardTitle&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;CardContent className="space-y-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="grid md:grid-cols-2 gap-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="grid gap-4 md:grid-cols-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div className="space-y-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;Label htmlFor="storeName"&gt;店舗名&lt;/Label&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;Input</span>
@@ -643,12 +645,12 @@ import Link from "next/link"
 <span class="cstat-no" title="statement not covered" >            &lt;Card&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;CardTitle className="flex items-center gap-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;MapPin className="w-5 h-5 text-emerald-600" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;MapPin className="h-5 w-5 text-emerald-600" /&gt;</span>
                   住所情報
 <span class="cstat-no" title="statement not covered" >                &lt;/CardTitle&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;CardContent className="space-y-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="grid md:grid-cols-3 gap-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="grid gap-4 md:grid-cols-3"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div className="space-y-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;Label htmlFor="zipCode"&gt;郵便番号&lt;/Label&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;Input</span>
@@ -675,7 +677,7 @@ import Link from "next/link"
 <span class="cstat-no" title="statement not covered" >                    /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="grid md:grid-cols-2 gap-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="grid gap-4 md:grid-cols-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div className="space-y-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;Label htmlFor="address"&gt;住所&lt;/Label&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;Input</span>
@@ -708,12 +710,12 @@ import Link from "next/link"
 <span class="cstat-no" title="statement not covered" >            &lt;Card&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;CardTitle className="flex items-center gap-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;Clock className="w-5 h-5 text-emerald-600" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;Clock className="h-5 w-5 text-emerald-600" /&gt;</span>
                   営業時間
 <span class="cstat-no" title="statement not covered" >                &lt;/CardTitle&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;CardContent className="space-y-4"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="grid md:grid-cols-3 gap-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="grid gap-4 md:grid-cols-3"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div className="space-y-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;Label htmlFor="businessHours"&gt;営業時間&lt;/Label&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;Input</span>
@@ -756,14 +758,15 @@ import Link from "next/link"
 <span class="cstat-no" title="statement not covered" >      &lt;/main&gt;</span>
 <span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
   )
-<span class="cstat-no" title="statement not covered" >}</span></pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-07T04:47:27.096Z
+                at 2025-07-07T05:33:18.371Z
             </div>
         <script src="../../../../../../prettify.js"></script>
         <script>
