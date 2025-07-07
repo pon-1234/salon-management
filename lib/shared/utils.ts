@@ -37,7 +37,9 @@ export function formatDateTime(date: Date | string): string {
 }
 
 export function formatPercentage(value: number, decimals: number = 1): string {
-  return `${value.toFixed(decimals)}%`;
+  const multiplier = Math.pow(10, decimals);
+  const roundedValue = Math.round((value + Number.EPSILON) * multiplier) / multiplier;
+  return `${roundedValue.toFixed(decimals)}%`;
 }
 
 export function formatDuration(hours: number): string {

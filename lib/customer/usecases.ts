@@ -4,27 +4,27 @@ import { CustomerRepository } from './repository';
 export class CustomerUseCases {
   constructor(private repository: CustomerRepository) {}
 
-  async getCustomer(id: string): Promise<Customer | null> {
-    return this.repository.getCustomer(id);
+  async getById(id: string): Promise<Customer | null> {
+    return this.repository.getById(id);
   }
 
   async getCustomerByPhone(phone: string): Promise<Customer | null> {
     return this.repository.getCustomerByPhone(phone);
   }
 
-  async getAllCustomers(): Promise<Customer[]> {
-    return this.repository.getAllCustomers();
+  async getAll(): Promise<Customer[]> {
+    return this.repository.getAll();
   }
 
-  async createCustomer(customer: Omit<Customer, 'id'>): Promise<Customer> {
-    return this.repository.createCustomer(customer);
+  async create(customer: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>): Promise<Customer> {
+    return this.repository.create(customer);
   }
 
-  async updateCustomer(id: string, customer: Partial<Customer>): Promise<Customer> {
-    return this.repository.updateCustomer(id, customer);
+  async update(id: string, customer: Partial<Customer>): Promise<Customer | null> {
+    return this.repository.update(id, customer);
   }
 
-  async deleteCustomer(id: string): Promise<void> {
-    return this.repository.deleteCustomer(id);
+  async delete(id: string): Promise<boolean> {
+    return this.repository.delete(id);
   }
 }

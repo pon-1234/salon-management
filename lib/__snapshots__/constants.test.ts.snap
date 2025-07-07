@@ -1,0 +1,69 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Constants > should match the snapshot for all exported constants 1`] = `
+{
+  "AREAS": [
+    "池袋",
+    "新宿",
+    "渋谷",
+    "品川",
+    "銀座",
+    "上野",
+    "秋葉原",
+    "六本木",
+    "恵比寿",
+    "中野",
+  ],
+  "BUSINESS_HOURS": {
+    "CLOSE": 24,
+    "LAST_ORDER": 23.5,
+    "OPEN": 10,
+  },
+  "CUSTOMER_TYPES": {
+    "NG": "NG顧客",
+    "REGULAR": "通常顧客",
+    "VIP": "VIP顧客",
+  },
+  "DEFAULT_VALUES": {
+    "CUSTOMER_POINTS": 100,
+    "DESIGNATION_FEE": 3000,
+    "MODIFICATION_TIMEOUT_MINUTES": 30,
+    "PHONE_NUMBER": "090-1234-5678",
+  },
+  "MARKETING_CHANNELS": [
+    "WEB",
+    "電話",
+    "紹介",
+    "リピート",
+    "SNS",
+  ],
+  "PAYMENT_METHODS": {
+    "CARD": "カード",
+    "CASH": "現金",
+    "TRANSFER": "振込",
+  },
+  "PREFECTURES": [
+    "東京都",
+    "神奈川県",
+    "埼玉県",
+    "千葉県",
+  ],
+  "RESERVATION_STATUS": {
+    "CANCELLED": "cancelled",
+    "CONFIRMED": "confirmed",
+    "MODIFIABLE": "modifiable",
+    "PENDING": "pending",
+  },
+  "UI_CONSTANTS": {
+    "DIALOG_MAX_HEIGHT": "90vh",
+    "DIALOG_Z_INDEX": 50,
+    "HEADER_HEIGHT": 73,
+  },
+  "WORK_STATUS": {
+    "NOT_SET": "未設定",
+    "NOT_WORKING": "未出勤",
+    "REST": "休み",
+    "WORKING": "出勤",
+  },
+}
+`;

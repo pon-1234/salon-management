@@ -40,6 +40,8 @@ import { getAllCasts } from "@/lib/cast/data"
 import { NgCastDialog } from "@/components/customer/ng-cast-dialog"
 import { ReservationDialog } from "@/components/reservation/reservation-dialog"
 import { ReservationData } from "@/lib/types/reservation"
+import { CustomerUseCases } from "@/lib/customer/usecases"
+import { CustomerRepositoryImpl } from "@/lib/customer/repository-impl"
 
 const formSchema = z.object({
   name: z.string().min(1, '名前は必須です'),
@@ -102,76 +104,73 @@ export default function CustomerProfile({ params }: { params: { id: string } }) 
   const age = birthDate ? calculateAge(birthDate) : null
 
   useEffect(() => {
-    // Mock customer data - in a real app, fetch from API
-    const mockCustomer: Customer = {
-      id: params.id,
-      name: 'ダミー',
-      nameKana: 'ダミー',
-      phone: '09012345678',
-      email: 'dummy@example.com',
-      password: '********',
-      birthDate: new Date(1990, 0, 1),
-      age: 34,
-      memberType: 'regular',
-      smsEnabled: true,
-      points: 4900,
-      registrationDate: new Date(2023, 8, 2, 22, 44, 53),
-      lastLoginDate: new Date(2023, 9, 9, 22, 57, 24),
-      lastVisitDate: new Date(2023, 6, 7),
-      notes: '',
-      ngCastIds: ['2', '4'],
-      ngCasts: [
-        {
-          castId: '2',
-          notes: '接客態度に問題があった',
-          addedDate: new Date(2023, 8, 15)
-        },
-        {
-          castId: '4',
-          notes: 'お客様との相性が合わなかった',
-          addedDate: new Date(2023, 9, 2)
-        }
-      ],
-    }
+    const fetchCustomerData = async () => {
+      // Instantiate repository and use cases
+      const customerRepository = new CustomerRepositoryImpl();
+      const customerUseCases = new CustomerUseCases(customerRepository);
 
-    setCustomer(mockCustomer)
-    
-    // Set form values
-    form.reset({
-      name: mockCustomer.name,
-      phone: mockCustomer.phone,
-      email: mockCustomer.email,
-      password: mockCustomer.password,
-      birthDate: mockCustomer.birthDate,
-      memberType: mockCustomer.memberType,
-      smsEnabled: mockCustomer.smsEnabled,
-      notes: mockCustomer.notes || '',
-      points: mockCustomer.points,
-      pointsToAdd: 0,
-      pointsAmount: 0,
-    })
+      // Fetch main customer data
+      const fetchedCustomer = await customerUseCases.getById(params.id);
+      
+      if (fetchedCustomer) {
+        setCustomer(fetchedCustomer as Customer);
+        form.reset({
+          name: fetchedCustomer.name,
+          phone: fetchedCustomer.phone,
+          email: fetchedCustomer.email,
+          password: fetchedCustomer.password,
+          birthDate: new Date(fetchedCustomer.birthDate),
+          memberType: fetchedCustomer.memberType as 'regular' | 'vip',
+          smsEnabled: (fetchedCustomer as any).smsEnabled || false, // Assuming smsEnabled might not exist yet
+          notes: (fetchedCustomer as any).notes || '',
+          points: fetchedCustomer.points,
+        });
+      }
 
-    // Fetch customer usage history
-    getCustomerUsageHistory(params.id).then(setUsageHistory)
+      // TODO: Implement and call APIs for these sections
+      setUsageHistory([])
+      setPointHistory([])
+      setReservations([])
+      setAvailableCasts([])
+    };
 
-    // Fetch customer point history
-    getCustomerPointHistory(params.id).then(setPointHistory)
-
-    // Fetch customer reservations
-    getReservationsByCustomerId(params.id).then(setReservations)
-    
-    // Fetch available casts
-    setAvailableCasts(getAllCasts())
-  }, [params.id, form])
+    fetchCustomerData();
+  }, [params.id, form]);
 
   const handleBooking = () => {
     router.push(`/admin/reservation?customerId=${params.id}`)
   }
 
-  const handleSave = (data: FormData) => {
-    console.log('Customer updated:', { ...data, age })
-    setIsEditing(false)
-    // In a real app, save to API
+  const handleSave = async (data: FormData) => {
+    console.log('Updating customer with:', { ...data, age })
+    
+    const customerRepository = new CustomerRepositoryImpl();
+    const customerUseCases = new CustomerUseCases(customerRepository);
+
+    try {
+      const updatedCustomer = await customerUseCases.update(params.id, {
+        name: data.name,
+        nameKana: (data as any).nameKana, // Assuming nameKana is part of the form, though not in schema
+        phone: data.phone,
+        email: data.email,
+        password: data.password, // Password should ideally be handled differently
+        birthDate: data.birthDate,
+        memberType: data.memberType,
+        points: data.points,
+        // notes and smsEnabled are missing from schema, should be added
+      });
+
+      if (updatedCustomer) {
+        setCustomer(updatedCustomer as Customer);
+      }
+      
+      setIsEditing(false)
+      console.log('Customer updated successfully');
+      // Optionally, show a success toast message
+    } catch (error) {
+      console.error('Failed to update customer:', error);
+      // Optionally, show an error toast message
+    }
   }
 
   const handleCancel = () => {

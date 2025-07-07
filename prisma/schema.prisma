@@ -1,0 +1,146 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  nameKana  String
+  phone     String   @unique
+  email     String   @unique
+  password  String
+  birthDate DateTime
+  memberType String @default("regular") // 'regular' | 'vip'
+  points    Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  ngCasts      NgCastEntry[]
+  reservations Reservation[]
+  reviews      Review[]
+}
+
+model Cast {
+  id            String   @id @default(cuid())
+  name          String
+  age           Int
+  height        Int
+  bust          String
+  waist         Int
+  hip           Int
+  type          String
+  image         String
+  images        String[]
+  description   String
+  netReservation Boolean
+  specialDesignationFee Int?
+  regularDesignationFee Int?
+  panelDesignationRank Int
+  regularDesignationRank Int
+  workStatus    String // "出勤" | "未出勤"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  ngByCustomers NgCastEntry[]
+  reservations  Reservation[]
+  reviews       Review[]
+  schedules     CastSchedule[]
+}
+
+// Intermediate table for the many-to-many relationship between Customer and Cast (for NG list)
+model NgCastEntry {
+  customerId String
+  castId     String
+  assignedAt DateTime @default(now())
+  
+  customer Customer @relation(fields: [customerId], references: [id])
+  cast     Cast     @relation(fields: [castId], references: [id])
+
+  @@id([customerId, castId])
+}
+
+
+model Reservation {
+  id        String   @id @default(cuid())
+  customerId String
+  castId     String
+  courseId   String
+  startTime DateTime
+  endTime   DateTime
+  status    String // 'confirmed' | 'pending' | 'cancelled'
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  cast     Cast     @relation(fields: [castId], references: [id])
+  course   CoursePrice @relation(fields: [courseId], references: [id])
+  options  ReservationOption[]
+}
+
+model CoursePrice {
+  id          String   @id @default(cuid())
+  name        String
+  duration    Int
+  price       Int
+  description String
+  reservations Reservation[]
+}
+
+model OptionPrice {
+  id    String @id @default(cuid())
+  name  String
+  price Int
+  
+  reservations ReservationOption[]
+}
+
+// Intermediate table for Reservation and OptionPrice many-to-many relationship
+model ReservationOption {
+  reservationId String
+  optionId      String
+
+  reservation Reservation @relation(fields: [reservationId], references: [id])
+  option      OptionPrice @relation(fields: [optionId], references: [id])
+  
+  @@id([reservationId, optionId])
+}
+
+
+model Review {
+  id         String   @id @default(cuid())
+  customerId String
+  castId     String
+  rating     Int
+  comment    String
+  createdAt  DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  cast     Cast     @relation(fields: [castId], references: [id])
+}
+
+model CastSchedule {
+  id        String   @id @default(cuid())
+  castId    String
+  date      DateTime
+  startTime DateTime
+  endTime   DateTime
+  isAvailable Boolean
+  
+  cast Cast @relation(fields: [castId], references: [id])
+  
+  @@unique([castId, date])
+}

@@ -4,11 +4,11 @@ export class BaseUseCasesImpl<T extends BaseEntity> implements UseCases<T> {
   constructor(private repository: Repository<T>) {}
 
   async getAll(): Promise<T[]> {
-    return this.repository.findAll();
+    return this.repository.getAll();
   }
 
   async getById(id: string): Promise<T | null> {
-    return this.repository.findById(id);
+    return this.repository.getById(id);
   }
 
   async create(entity: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T> {
