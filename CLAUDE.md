@@ -63,29 +63,38 @@ Your workflow is monitored by Code Hooks.
 
 ---
 
-### Ⅳ. Project Architecture Overview
+### Ⅳ. Project Overview
 
+#### Development Commands
+- `pnpm dev` - Start development server
+- `pnpm build` - Build for production
+- `pnpm start` - Start production server
+- `pnpm lint` - Run linting
+- `pnpm test` - Run tests
+
+#### Architecture Overview
 This is a Next.js salon management application built with React 19, TypeScript, and Tailwind CSS. The codebase follows a clean architecture pattern with clear separation of concerns.
 
-#### Core Domains
-- **Cast Management (`lib/cast/`)**: Manages cast/staff members with appointment scheduling.
-- **Customer Management (`lib/customer/`)**: Customer profiles, usage records, and member types.
-- **Reservations (`lib/reservation/`)**: Booking system with service management.
-- **Analytics (`lib/analytics/`)**: Sales reports, performance tracking, and business metrics.
-- **Chat (`lib/chat/`)**: Customer communication system.
-
-#### Data Layer
-Each domain follows a repository pattern: `types.ts`, `repository.ts`, `repository-impl.ts`, `usecases.ts`, `data.ts`.
-
-#### UI Components
-Components are in `components/`. Domain-specific components (e.g., `cast/`, `reservation/`), and shared UI components in `ui/` (shadcn/ui based).
-
-#### Page Structure
-App Router pages in `app/`. Feature-based routing (e.g., `/cast/`, `/customers/`, `/analytics/`).
+- **Core Domains**: The application is organized around business domains like `Cast Management`, `Customer Management`, `Reservations`, `Analytics`, and `Chat`, located in the `lib/` directory.
+- **Data Layer**: Each domain follows a repository pattern:
+    - `types.ts`: Domain models and interfaces.
+    - `repository.ts`: Abstract repository interface.
+    - `repository-impl.ts`: Concrete implementation (currently with mock data).
+    - `usecases.ts`: Business logic layer.
+    - `data.ts`: Mock data generators.
+- **UI Components**: Components are in `components/`. Domain-specific components (e.g., `cast/`, `reservation/`) and shared UI components in `ui/` (shadcn/ui based).
+- **Page Structure**: Next.js App Router in `app/`. Routing is feature-based (e.g., `/cast/`, `/customers/`, `/analytics/`).
 
 #### Key Technologies
 - **UI Framework**: Next.js 15 with App Router
-- **Styling**: Tailwind CSS with shadcn/ui
+- **Styling**: Tailwind CSS with shadcn/ui components
 - **Forms**: React Hook Form with Zod validation
-- **Charts**: Recharts
+- **Charts**: Recharts for analytics
 - **Date Handling**: date-fns
+- **Icons**: Lucide React
+
+#### Data Patterns & Development Notes
+- All data is currently mocked but follows realistic business patterns.
+- The codebase uses TypeScript strict mode.
+- Components use modern React patterns (hooks, functional components).
+- State management is primarily handled locally with React state and Contexts.
