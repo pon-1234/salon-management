@@ -36,10 +36,21 @@ export class ReservationRepositoryImpl implements ReservationRepository {
       },
       body: JSON.stringify(data),
     })
+
+    const responseData = await response.json()
+
     if (!response.ok) {
-      throw new Error(`Failed to create reservation: ${response.statusText}`)
+      // Include conflict information if available
+      if (response.status === 409 && responseData.conflicts) {
+        const error = new Error(responseData.error || 'Time slot is not available')
+        ;(error as any).conflicts = responseData.conflicts
+        ;(error as any).status = 409
+        throw error
+      }
+      throw new Error(responseData.error || `Failed to create reservation: ${response.statusText}`)
     }
-    return response.json()
+
+    return responseData
   }
 
   async update(id: string, data: Partial<Reservation>): Promise<Reservation> {
@@ -50,19 +61,34 @@ export class ReservationRepositoryImpl implements ReservationRepository {
       },
       body: JSON.stringify({ id, ...data }),
     })
+
+    const responseData = await response.json()
+
     if (!response.ok) {
-      throw new Error(`Failed to update reservation: ${response.statusText}`)
+      // Include conflict information if available
+      if (response.status === 409 && responseData.conflicts) {
+        const error = new Error(responseData.error || 'Time slot is not available')
+        ;(error as any).conflicts = responseData.conflicts
+        ;(error as any).status = 409
+        throw error
+      }
+      throw new Error(responseData.error || `Failed to update reservation: ${response.statusText}`)
     }
-    return response.json()
+
+    return responseData
   }
 
   async delete(id: string): Promise<boolean> {
     const response = await fetch(`${this.baseUrl}/reservation?id=${id}`, {
       method: 'DELETE',
     })
+
     if (!response.ok) {
-      throw new Error(`Failed to delete reservation: ${response.statusText}`)
+      const responseData = await response.json()
+      throw new Error(responseData.error || `Failed to delete reservation: ${response.statusText}`)
     }
+
+    // The API now returns the cancelled reservation, but we return true for backward compatibility
     return true
   }
 
@@ -126,5 +152,43 @@ export class ReservationRepositoryImpl implements ReservationRepository {
     ]
 
     return services
+  }
+
+  async checkAvailability(
+    castId: string,
+    startTime: Date,
+    endTime: Date
+  ): Promise<{ available: boolean; conflicts?: any[] }> {
+    const params = new URLSearchParams({
+      castId,
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
+    })
+
+    const response = await fetch(`${this.baseUrl}/reservation/availability/check?${params}`)
+    if (!response.ok) {
+      throw new Error(`Failed to check availability: ${response.statusText}`)
+    }
+    return response.json()
+  }
+
+  async getAvailableSlots(
+    castId: string,
+    date: Date,
+    duration: number
+  ): Promise<{ startTime: string; endTime: string }[]> {
+    const params = new URLSearchParams({
+      castId,
+      date: date.toISOString(),
+      duration: duration.toString(),
+    })
+
+    const response = await fetch(`${this.baseUrl}/reservation/availability?${params}`)
+    if (!response.ok) {
+      throw new Error(`Failed to get available slots: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    return data.availableSlots || []
   }
 }

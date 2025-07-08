@@ -29,10 +29,14 @@ import {
   Check,
   Calendar,
   Users,
+  Loader2,
 } from 'lucide-react'
 import { Customer } from '@/lib/customer/types'
 import { Cast } from '@/lib/cast/types'
 import { usePricing } from '@/hooks/use-pricing'
+import { useAvailability } from '@/hooks/use-availability'
+import { TimeSlotPicker } from './time-slot-picker'
+import { toast } from '@/hooks/use-toast'
 
 interface QuickBookingDialogProps {
   open: boolean
@@ -163,10 +167,84 @@ export function QuickBookingDialog({
     }
   }
 
-  const handleSubmit = () => {
-    // Handle form submission
-    console.log('Booking submitted:', bookingDetails)
-    onOpenChange(false)
+  const { checkAvailability } = useAvailability()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const handleSubmit = async () => {
+    try {
+      setIsSubmitting(true)
+
+      // Parse selected time and course duration
+      const [hours, minutes] = bookingDetails.time.split(':').map(Number)
+      const startTime = new Date(bookingDetails.date)
+      startTime.setHours(hours, minutes, 0, 0)
+
+      // Extract duration from course (e.g., "60分コース" -> 60)
+      const durationMatch = bookingDetails.course.match(/(\d+)分/)
+      const duration = durationMatch ? parseInt(durationMatch[1]) : 60
+
+      const endTime = new Date(startTime)
+      endTime.setMinutes(endTime.getMinutes() + duration)
+
+      // Check availability before submitting
+      const availability = await checkAvailability(selectedStaff?.id || '', startTime, endTime)
+
+      if (!availability.available) {
+        toast({
+          title: '予約不可',
+          description: 'この時間帯は既に予約が入っています。別の時間を選択してください。',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      // Create reservation
+      const response = await fetch('/api/reservation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerId: selectedCustomer?.id,
+          castId: selectedStaff?.id,
+          courseId: bookingDetails.course, // This should be the course ID
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+          status: bookingDetails.bookingStatus === '確定済' ? 'confirmed' : 'pending',
+          options: Object.entries(bookingDetails.options)
+            .filter(([_, selected]) => selected)
+            .map(([optionId]) => optionId),
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (response.status === 409) {
+          toast({
+            title: '予約不可',
+            description: data.error || 'この時間帯は予約できません。',
+            variant: 'destructive',
+          })
+        } else {
+          throw new Error(data.error || '予約の作成に失敗しました')
+        }
+        return
+      }
+
+      toast({
+        title: '予約完了',
+        description: '予約が正常に作成されました。',
+      })
+
+      onOpenChange(false)
+    } catch (error) {
+      toast({
+        title: 'エラー',
+        description: error instanceof Error ? error.message : '予約の作成に失敗しました',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const StepIndicator = () => (
@@ -260,14 +338,25 @@ export function QuickBookingDialog({
                         className="bg-gray-50"
                       />
                     </div>
-                    <div>
-                      <Label>時間</Label>
-                      <Input
-                        type="time"
-                        value={bookingDetails.time}
-                        readOnly
-                        className="bg-gray-50"
-                      />
+                    <div className="col-span-2">
+                      <Label>時間選択</Label>
+                      {selectedStaff && bookingDetails.date ? (
+                        <TimeSlotPicker
+                          castId={selectedStaff.id}
+                          date={new Date(bookingDetails.date)}
+                          duration={60} // Default 60 minutes, should be from selected course
+                          selectedTime={bookingDetails.time}
+                          onTimeSelect={(time) => {
+                            const date = new Date(time)
+                            const timeStr = format(date, 'HH:mm')
+                            handleInputChange({ target: { name: 'time', value: timeStr } } as any)
+                          }}
+                        />
+                      ) : (
+                        <div className="rounded-lg bg-gray-50 p-4 text-center text-gray-500">
+                          担当者と日付を選択してください
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -570,9 +659,18 @@ export function QuickBookingDialog({
                 <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
             ) : (
-              <Button onClick={handleSubmit}>
-                <Check className="mr-1 h-4 w-4" />
-                予約を確定
+              <Button onClick={handleSubmit} disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                    処理中...
+                  </>
+                ) : (
+                  <>
+                    <Check className="mr-1 h-4 w-4" />
+                    予約を確定
+                  </>
+                )}
               </Button>
             )}
           </div>

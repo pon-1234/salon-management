@@ -3,6 +3,8 @@ import { vi } from 'vitest'
 
 // Set up test environment variables
 process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/salon_test?schema=public'
+process.env.JWT_SECRET = 'test-jwt-secret-for-testing'
+process.env.RESEND_API_KEY = 'test-api-key'
 
 // Mock the database module
 vi.mock('./lib/db', () => ({
@@ -65,7 +67,15 @@ vi.mock('./lib/db', () => ({
           deleteMany: vi.fn(() => Promise.resolve()),
         },
         reservation: {
+          findMany: vi.fn(() => Promise.resolve([])),
+          create: vi.fn(() => Promise.resolve({ id: 'test-id' })),
           update: vi.fn(() => Promise.resolve({ id: 'test-id' })),
+        },
+        customer: {
+          findUnique: vi.fn(() => Promise.resolve(null)),
+        },
+        castSchedule: {
+          findMany: vi.fn(() => Promise.resolve([])),
         },
       })
     ),
@@ -116,3 +126,40 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: vi.fn(),
   })),
 })
+
+// Mock email client
+vi.mock('./lib/email/client', () => ({
+  emailClient: {
+    send: vi.fn(() => Promise.resolve({ error: null })),
+  },
+}))
+
+// Mock logger
+vi.mock('./lib/logger', () => ({
+  logger: {
+    error: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+  },
+}))
+
+// Mock bcrypt
+vi.mock('bcrypt', () => ({
+  default: {
+    compare: vi.fn(),
+    hash: vi.fn(),
+  },
+  compare: vi.fn(),
+  hash: vi.fn(),
+}))
+
+// Mock jsonwebtoken
+vi.mock('jsonwebtoken', () => ({
+  default: {
+    sign: vi.fn(),
+    verify: vi.fn(),
+  },
+  sign: vi.fn(),
+  verify: vi.fn(),
+}))

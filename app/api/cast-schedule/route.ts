@@ -5,6 +5,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import logger from '@/lib/logger'
 
 export async function GET(request: NextRequest) {
   try {
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(schedules)
   } catch (error) {
-    console.error('Error fetching cast schedule data:', error)
+    logger.error({ err: error }, 'Error fetching cast schedule data')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -76,8 +77,11 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(newSchedule, { status: 201 })
-  } catch (error) {
-    console.error('Error creating cast schedule:', error)
+  } catch (error: any) {
+    logger.error({ err: error }, 'Error creating cast schedule')
+    if (error?.code === 'P2002') {
+      return NextResponse.json({ error: 'Schedule conflict detected' }, { status: 409 })
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -105,9 +109,9 @@ export async function PUT(request: NextRequest) {
     })
 
     return NextResponse.json(updatedSchedule)
-  } catch (error) {
-    console.error('Error updating cast schedule:', error)
-    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
+  } catch (error: any) {
+    logger.error({ err: error }, 'Error updating cast schedule')
+    if (error?.code === 'P2025') {
       return NextResponse.json({ error: 'Schedule not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -128,9 +132,9 @@ export async function DELETE(request: NextRequest) {
     })
 
     return new NextResponse(null, { status: 204 })
-  } catch (error) {
-    console.error('Error deleting cast schedule:', error)
-    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
+  } catch (error: any) {
+    logger.error({ err: error }, 'Error deleting cast schedule')
+    if (error?.code === 'P2025') {
       return NextResponse.json({ error: 'Schedule not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

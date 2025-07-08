@@ -5,6 +5,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import logger from '@/lib/logger'
 
 export async function GET(request: NextRequest) {
   try {
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(reviews)
   } catch (error) {
-    console.error('Error fetching review data:', error)
+    logger.error({ err: error }, 'Error fetching review data')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(newReview, { status: 201 })
   } catch (error) {
-    console.error('Error creating review:', error)
+    logger.error({ err: error }, 'Error creating review')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -99,9 +100,9 @@ export async function PUT(request: NextRequest) {
     })
 
     return NextResponse.json(updatedReview)
-  } catch (error) {
-    console.error('Error updating review:', error)
-    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
+  } catch (error: any) {
+    logger.error({ err: error }, 'Error updating review')
+    if (error?.code === 'P2025') {
       return NextResponse.json({ error: 'Review not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -122,9 +123,9 @@ export async function DELETE(request: NextRequest) {
     })
 
     return new NextResponse(null, { status: 204 })
-  } catch (error) {
-    console.error('Error deleting review:', error)
-    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
+  } catch (error: any) {
+    logger.error({ err: error }, 'Error deleting review')
+    if (error?.code === 'P2025') {
       return NextResponse.json({ error: 'Review not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

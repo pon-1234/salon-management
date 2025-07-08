@@ -5,6 +5,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import logger from '@/lib/logger'
 
 export async function GET(request: NextRequest) {
   try {
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(options)
   } catch (error) {
-    console.error('Error fetching option data:', error)
+    logger.error({ err: error }, 'Error fetching option data')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(newOption, { status: 201 })
   } catch (error) {
-    console.error('Error creating option:', error)
+    logger.error({ err: error }, 'Error creating option')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -111,9 +112,9 @@ export async function PUT(request: NextRequest) {
     })
 
     return NextResponse.json(updatedOption)
-  } catch (error) {
-    console.error('Error updating option:', error)
-    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
+  } catch (error: any) {
+    logger.error({ err: error }, 'Error updating option')
+    if (error?.code === 'P2025') {
       return NextResponse.json({ error: 'Option not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -134,9 +135,9 @@ export async function DELETE(request: NextRequest) {
     })
 
     return new NextResponse(null, { status: 204 })
-  } catch (error) {
-    console.error('Error deleting option:', error)
-    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
+  } catch (error: any) {
+    logger.error({ err: error }, 'Error deleting option')
+    if (error?.code === 'P2025') {
       return NextResponse.json({ error: 'Option not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
