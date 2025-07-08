@@ -26,10 +26,10 @@ export default defineConfig({
         'lib/utils.ts', // utility functions
       ],
       thresholds: {
-        branches: 5,
-        functions: 5,
-        lines: 5,
-        statements: 5,
+        branches: 30,
+        functions: 30,
+        lines: 30,
+        statements: 30,
       },
     },
   },
