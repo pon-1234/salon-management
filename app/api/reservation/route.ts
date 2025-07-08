@@ -5,6 +5,10 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { checkCastAvailability } from './availability/route'
+import { NotificationService } from '@/lib/notification/service'
+
+const notificationService = new NotificationService()
 
 export async function GET(request: NextRequest) {
   try {
@@ -77,14 +81,48 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
 
+    // Validate required fields
+    if (!data.customerId || !data.castId || !data.courseId || !data.startTime || !data.endTime) {
+      return NextResponse.json(
+        { error: 'Missing required fields: customerId, castId, courseId, startTime, endTime' },
+        { status: 400 }
+      )
+    }
+
+    // Validate date formats
+    const startTime = new Date(data.startTime)
+    const endTime = new Date(data.endTime)
+
+    if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+      return NextResponse.json({ error: 'Invalid date format' }, { status: 400 })
+    }
+
+    // Validate end time is after start time
+    if (endTime <= startTime) {
+      return NextResponse.json({ error: 'End time must be after start time' }, { status: 400 })
+    }
+
+    // Check availability
+    const availability = await checkCastAvailability(data.castId, startTime, endTime)
+
+    if (!availability.available) {
+      return NextResponse.json(
+        {
+          error: 'Time slot is not available',
+          conflicts: availability.conflicts,
+        },
+        { status: 409 }
+      )
+    }
+
     const newReservation = await db.reservation.create({
       data: {
         customerId: data.customerId,
         castId: data.castId,
         courseId: data.courseId,
-        startTime: new Date(data.startTime),
-        endTime: new Date(data.endTime),
-        status: data.status || 'pending',
+        startTime: startTime,
+        endTime: endTime,
+        status: data.status || 'confirmed',
         options: data.options
           ? {
               create: data.options.map((optionId: string) => ({
@@ -105,6 +143,14 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Send confirmation notification
+    try {
+      await notificationService.sendReservationConfirmation(newReservation)
+    } catch (notificationError) {
+      console.error('Failed to send notification:', notificationError)
+      // Don't fail the request if notification fails
+    }
+
     return NextResponse.json(newReservation, { status: 201 })
   } catch (error) {
     console.error('Error creating reservation:', error)
@@ -119,6 +165,53 @@ export async function PUT(request: NextRequest) {
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+    }
+
+    // Get existing reservation
+    const existingReservation = await db.reservation.findUnique({
+      where: { id },
+    })
+
+    if (!existingReservation) {
+      return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
+    }
+
+    // Check if reservation is cancelled
+    if (existingReservation.status === 'cancelled') {
+      return NextResponse.json({ error: 'Cannot modify cancelled reservation' }, { status: 400 })
+    }
+
+    // If updating time, validate dates and check availability
+    if (updates.startTime || updates.endTime) {
+      const startTime = updates.startTime
+        ? new Date(updates.startTime)
+        : existingReservation.startTime
+      const endTime = updates.endTime ? new Date(updates.endTime) : existingReservation.endTime
+
+      if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+        return NextResponse.json({ error: 'Invalid date format' }, { status: 400 })
+      }
+
+      if (endTime <= startTime) {
+        return NextResponse.json({ error: 'End time must be after start time' }, { status: 400 })
+      }
+
+      // Check availability if time is being changed
+      const castId = updates.castId || existingReservation.castId
+      const availability = await checkCastAvailability(castId, startTime, endTime)
+
+      // Exclude current reservation from conflicts
+      const filteredConflicts = availability.conflicts.filter((c) => c.id !== id)
+
+      if (filteredConflicts.length > 0) {
+        return NextResponse.json(
+          {
+            error: 'Time slot is not available',
+            conflicts: filteredConflicts,
+          },
+          { status: 409 }
+        )
+      }
     }
 
     // Update reservation within a transaction
@@ -159,6 +252,18 @@ export async function PUT(request: NextRequest) {
       })
     })
 
+    // Send modification notification if time was changed
+    if (updates.startTime || updates.endTime) {
+      try {
+        await notificationService.sendReservationModification(updatedReservation, {
+          startTime: existingReservation.startTime,
+          endTime: existingReservation.endTime,
+        })
+      } catch (notificationError) {
+        console.error('Failed to send notification:', notificationError)
+      }
+    }
+
     return NextResponse.json(updatedReservation)
   } catch (error) {
     console.error('Error updating reservation:', error)
@@ -178,11 +283,44 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 })
     }
 
-    await db.reservation.delete({
+    // Get existing reservation
+    const existingReservation = await db.reservation.findUnique({
       where: { id },
     })
 
-    return new NextResponse(null, { status: 204 })
+    if (!existingReservation) {
+      return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
+    }
+
+    // Check if already cancelled
+    if (existingReservation.status === 'cancelled') {
+      return NextResponse.json({ error: 'Reservation is already cancelled' }, { status: 400 })
+    }
+
+    // Check if reservation is in the past
+    if (existingReservation.startTime < new Date()) {
+      return NextResponse.json({ error: 'Cannot cancel past reservations' }, { status: 400 })
+    }
+
+    // Soft delete by updating status to cancelled
+    const cancelledReservation = await db.reservation.update({
+      where: { id },
+      data: { status: 'cancelled' },
+      include: {
+        customer: true,
+        cast: true,
+        course: true,
+      },
+    })
+
+    // Send cancellation notification
+    try {
+      await notificationService.sendReservationCancellation(cancelledReservation)
+    } catch (notificationError) {
+      console.error('Failed to send notification:', notificationError)
+    }
+
+    return NextResponse.json(cancelledReservation)
   } catch (error) {
     console.error('Error deleting reservation:', error)
     if (error instanceof Error && 'code' in error && error.code === 'P2025') {
