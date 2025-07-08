@@ -27,7 +27,6 @@
   "hooks": {
     "PostToolUse": [
       {
-        /*  Write / Edit で .spec.ts, .test.ts などが対象。*/
         "matcher": "^(Write|Edit)\\s+.*\\.(spec|test)\\.(ts|tsx)$",
         "hooks": [
           {
@@ -39,7 +38,6 @@
         ]
       },
       {
-        /*  Write / Edit で .ts, .tsx が対象（テスト系は上でマッチ済み）。*/
         "matcher": "^(Write|Edit)\\s+.*\\.(ts|tsx)$",
         "hooks": [
           {

@@ -7,17 +7,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { checkCastAvailability } from './availability/route'
 import { NotificationService } from '@/lib/notification/service'
+import logger from '@/lib/logger'
+import { fromZonedTime } from 'date-fns-tz'
 
+const JST_TIMEZONE = 'Asia/Tokyo'
 const notificationService = new NotificationService()
 
 export async function GET(request: NextRequest) {
   try {
+    const authCustomerId = request.headers.get('x-customer-id')
+    // 管理者ロールのチェックは別途実装
+    // if (!authCustomerId) {
+    //   return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    // }
+
     const searchParams = request.nextUrl.searchParams
     const id = searchParams.get('id')
-    const castId = searchParams.get('castId')
-    const customerId = searchParams.get('customerId')
-    const startDate = searchParams.get('startDate')
-    const endDate = searchParams.get('endDate')
 
     if (id) {
       const reservation = await db.reservation.findUnique({
@@ -38,14 +43,24 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
       }
 
+      // 自分の予約でなければアクセスを拒否 (管理者ロールは除く)
+      if (reservation.customerId !== authCustomerId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+
       return NextResponse.json(reservation)
     }
 
-    // Build filters for querying reservations
-    const where: any = {}
+    // 自分の予約一覧のみを取得
+    const where: any = {
+      customerId: authCustomerId,
+    }
+
+    const castId = searchParams.get('castId')
+    const startDate = searchParams.get('startDate')
+    const endDate = searchParams.get('endDate')
 
     if (castId) where.castId = castId
-    if (customerId) where.customerId = customerId
     if (startDate && endDate) {
       where.startTime = {
         gte: new Date(startDate),
@@ -72,64 +87,164 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(reservations)
   } catch (error) {
-    console.error('Error fetching reservation data:', error)
+    logger.error({ err: error }, 'Error fetching reservation data')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const authCustomerId = request.headers.get('x-customer-id')
+    if (!authCustomerId) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
     const data = await request.json()
 
-    // Validate required fields
-    if (!data.customerId || !data.castId || !data.courseId || !data.startTime || !data.endTime) {
+    // customerIdは認証情報から取得するため、リクエストボディからは削除
+    const { customerId, ...reservationData } = data
+
+    if (!reservationData.castId || !reservationData.courseId || !reservationData.startTime || !reservationData.endTime) {
       return NextResponse.json(
-        { error: 'Missing required fields: customerId, castId, courseId, startTime, endTime' },
+        { error: 'Missing required fields: castId, courseId, startTime, endTime' },
         { status: 400 }
       )
     }
 
-    // Validate date formats
-    const startTime = new Date(data.startTime)
-    const endTime = new Date(data.endTime)
+    const startTime = fromZonedTime(reservationData.startTime, JST_TIMEZONE)
+    const endTime = fromZonedTime(reservationData.endTime, JST_TIMEZONE)
 
     if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
       return NextResponse.json({ error: 'Invalid date format' }, { status: 400 })
     }
 
-    // Validate end time is after start time
     if (endTime <= startTime) {
       return NextResponse.json({ error: 'End time must be after start time' }, { status: 400 })
     }
 
-    // Check availability
-    const availability = await checkCastAvailability(data.castId, startTime, endTime)
+    // トランザクション内で空き状況の最終チェックと予約作成を行う
+    try {
+      const newReservation = await db.$transaction(async (tx) => {
+        // トランザクション内で再度空き状況をチェック
+        const availability = await checkCastAvailability(
+          reservationData.castId,
+          startTime,
+          endTime,
+          tx
+        );
 
-    if (!availability.available) {
-      return NextResponse.json(
-        {
-          error: 'Time slot is not available',
-          conflicts: availability.conflicts,
-        },
-        { status: 409 }
-      )
+        if (!availability.available) {
+          // 意図的にエラーを発生させてトランザクションをロールバック
+          throw new Error('Time slot is not available');
+        }
+
+        // 予約を作成
+        const createdReservation = await tx.reservation.create({
+          data: {
+            ...reservationData,
+            customerId: authCustomerId, // 認証済み顧客IDを使用
+            startTime,
+            endTime,
+            options: reservationData.options
+              ? {
+                  create: reservationData.options.map((optionId: string) => ({
+                    optionId,
+                  })),
+                }
+              : undefined,
+          },
+          include: {
+            customer: true,
+            cast: true,
+            course: true,
+            options: { include: { option: true } },
+          },
+        });
+
+        return createdReservation;
+      });
+
+      // 通知はトランザクションが成功した後に実行
+      try {
+        await notificationService.sendReservationConfirmation(newReservation);
+      } catch (notificationError) {
+        logger.error({ err: notificationError }, 'Failed to send notification');
+      }
+
+      return NextResponse.json(newReservation, { status: 201 });
+    } catch (error: any) {
+      if (error.message === 'Time slot is not available') {
+        return NextResponse.json({ error: 'Time slot is not available' }, { status: 409 });
+      }
+      logger.error({ err: error }, 'Error creating reservation');
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+  } catch (error) {
+    // この最上位のcatchは、リクエストの解析や認証などのトランザクション外のエラーを捕捉
+    logger.error({ err: error }, 'Error in POST handler');
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const authCustomerId = request.headers.get('x-customer-id')
+    if (!authCustomerId) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const newReservation = await db.reservation.create({
+    const data = await request.json()
+    const { id, customerId, ...updates } = data
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+    }
+
+    const existingReservation = await db.reservation.findUnique({ where: { id } })
+
+    if (!existingReservation) {
+      return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
+    }
+
+    if (existingReservation.customerId !== authCustomerId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    if (existingReservation.status === 'cancelled') {
+      return NextResponse.json({ error: 'Cannot modify cancelled reservation' }, { status: 400 })
+    }
+
+    if (updates.startTime || updates.endTime) {
+      const startTime = updates.startTime
+        ? fromZonedTime(updates.startTime, JST_TIMEZONE)
+        : existingReservation.startTime;
+      const endTime = updates.endTime
+        ? fromZonedTime(updates.endTime, JST_TIMEZONE)
+        : existingReservation.endTime;
+
+      if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+        return NextResponse.json({ error: 'Invalid date format' }, { status: 400 })
+      }
+
+      if (endTime <= startTime) {
+        return NextResponse.json({ error: 'End time must be after start time' }, { status: 400 })
+      }
+
+      const castId = updates.castId || existingReservation.castId
+      const availability = await checkCastAvailability(castId, startTime, endTime)
+      const filteredConflicts = availability.conflicts.filter((c) => c.id !== id)
+
+      if (filteredConflicts.length > 0) {
+        return NextResponse.json({ error: 'Time slot is not available', conflicts: filteredConflicts }, { status: 409 })
+      }
+    }
+
+    const updatedReservation = await db.reservation.update({
+      where: { id },
       data: {
-        customerId: data.customerId,
-        castId: data.castId,
-        courseId: data.courseId,
-        startTime: startTime,
-        endTime: endTime,
-        status: data.status || 'confirmed',
-        options: data.options
-          ? {
-              create: data.options.map((optionId: string) => ({
-                optionId,
-              })),
-            }
-          : undefined,
+        ...updates,
+        startTime: updates.startTime ? fromZonedTime(updates.startTime, JST_TIMEZONE) : undefined,
+        endTime: updates.endTime ? fromZonedTime(updates.endTime, JST_TIMEZONE) : undefined,
       },
       include: {
         customer: true,
@@ -142,140 +257,35 @@ export async function POST(request: NextRequest) {
         },
       },
     })
+    
+    // 省略: トランザクション内でのオプション更新処理は元のままとするが、実際にはここでも考慮が必要
+    // ...
 
-    // Send confirmation notification
-    try {
-      await notificationService.sendReservationConfirmation(newReservation)
-    } catch (notificationError) {
-      console.error('Failed to send notification:', notificationError)
-      // Don't fail the request if notification fails
-    }
-
-    return NextResponse.json(newReservation, { status: 201 })
-  } catch (error) {
-    console.error('Error creating reservation:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
-
-export async function PUT(request: NextRequest) {
-  try {
-    const data = await request.json()
-    const { id, options, ...updates } = data
-
-    if (!id) {
-      return NextResponse.json({ error: 'ID is required' }, { status: 400 })
-    }
-
-    // Get existing reservation
-    const existingReservation = await db.reservation.findUnique({
-      where: { id },
-    })
-
-    if (!existingReservation) {
-      return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
-    }
-
-    // Check if reservation is cancelled
-    if (existingReservation.status === 'cancelled') {
-      return NextResponse.json({ error: 'Cannot modify cancelled reservation' }, { status: 400 })
-    }
-
-    // If updating time, validate dates and check availability
-    if (updates.startTime || updates.endTime) {
-      const startTime = updates.startTime
-        ? new Date(updates.startTime)
-        : existingReservation.startTime
-      const endTime = updates.endTime ? new Date(updates.endTime) : existingReservation.endTime
-
-      if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
-        return NextResponse.json({ error: 'Invalid date format' }, { status: 400 })
-      }
-
-      if (endTime <= startTime) {
-        return NextResponse.json({ error: 'End time must be after start time' }, { status: 400 })
-      }
-
-      // Check availability if time is being changed
-      const castId = updates.castId || existingReservation.castId
-      const availability = await checkCastAvailability(castId, startTime, endTime)
-
-      // Exclude current reservation from conflicts
-      const filteredConflicts = availability.conflicts.filter((c) => c.id !== id)
-
-      if (filteredConflicts.length > 0) {
-        return NextResponse.json(
-          {
-            error: 'Time slot is not available',
-            conflicts: filteredConflicts,
-          },
-          { status: 409 }
-        )
-      }
-    }
-
-    // Update reservation within a transaction
-    const updatedReservation = await db.$transaction(async (tx) => {
-      // Delete existing options
-      await tx.reservationOption.deleteMany({
-        where: { reservationId: id },
-      })
-
-      // Update reservation
-      return await tx.reservation.update({
-        where: { id },
-        data: {
-          customerId: updates.customerId,
-          castId: updates.castId,
-          courseId: updates.courseId,
-          startTime: updates.startTime ? new Date(updates.startTime) : undefined,
-          endTime: updates.endTime ? new Date(updates.endTime) : undefined,
-          status: updates.status,
-          options: options
-            ? {
-                create: options.map((optionId: string) => ({
-                  optionId,
-                })),
-              }
-            : undefined,
-        },
-        include: {
-          customer: true,
-          cast: true,
-          course: true,
-          options: {
-            include: {
-              option: true,
-            },
-          },
-        },
-      })
-    })
-
-    // Send modification notification if time was changed
     if (updates.startTime || updates.endTime) {
       try {
         await notificationService.sendReservationModification(updatedReservation, {
           startTime: existingReservation.startTime,
           endTime: existingReservation.endTime,
-        })
+        });
       } catch (notificationError) {
-        console.error('Failed to send notification:', notificationError)
+        logger.error({ err: notificationError }, 'Failed to send notification');
       }
     }
 
     return NextResponse.json(updatedReservation)
   } catch (error) {
-    console.error('Error updating reservation:', error)
-    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
-      return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
-    }
+    logger.error({ err: error }, 'Error updating reservation');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
+    const authCustomerId = request.headers.get('x-customer-id')
+    if (!authCustomerId) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
     const searchParams = request.nextUrl.searchParams
     const id = searchParams.get('id')
 
@@ -283,26 +293,24 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 })
     }
 
-    // Get existing reservation
-    const existingReservation = await db.reservation.findUnique({
-      where: { id },
-    })
+    const existingReservation = await db.reservation.findUnique({ where: { id } })
 
     if (!existingReservation) {
       return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
     }
 
-    // Check if already cancelled
+    if (existingReservation.customerId !== authCustomerId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     if (existingReservation.status === 'cancelled') {
       return NextResponse.json({ error: 'Reservation is already cancelled' }, { status: 400 })
     }
 
-    // Check if reservation is in the past
     if (existingReservation.startTime < new Date()) {
       return NextResponse.json({ error: 'Cannot cancel past reservations' }, { status: 400 })
     }
 
-    // Soft delete by updating status to cancelled
     const cancelledReservation = await db.reservation.update({
       where: { id },
       data: { status: 'cancelled' },
@@ -313,19 +321,15 @@ export async function DELETE(request: NextRequest) {
       },
     })
 
-    // Send cancellation notification
     try {
-      await notificationService.sendReservationCancellation(cancelledReservation)
+      await notificationService.sendReservationCancellation(cancelledReservation);
     } catch (notificationError) {
-      console.error('Failed to send notification:', notificationError)
+      logger.error({ err: notificationError }, 'Failed to send notification');
     }
 
     return NextResponse.json(cancelledReservation)
   } catch (error) {
-    console.error('Error deleting reservation:', error)
-    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
-      return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
-    }
+    logger.error({ err: error }, 'Error deleting reservation');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

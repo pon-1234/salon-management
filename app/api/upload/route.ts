@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
+import logger from '@/lib/logger'
 
 const UPLOAD_DIR = join(process.cwd(), 'public/uploads')
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
       filename: fileName,
     })
   } catch (error) {
-    console.error('Upload error:', error)
+    logger.error({ err: error }, 'Upload error')
     return NextResponse.json({ error: 'アップロードに失敗しました' }, { status: 500 })
   }
 }

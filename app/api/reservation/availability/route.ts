@@ -5,6 +5,11 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import type { PrismaClient } from '@prisma/client'
+import logger from '@/lib/logger'
+import { toZonedTime, fromZonedTime } from 'date-fns-tz'
+
+const JST_TIMEZONE = 'Asia/Tokyo'
 
 interface TimeSlot {
   startTime: string
@@ -33,7 +38,7 @@ export async function GET(request: NextRequest) {
     // Otherwise, return available time slots
     return handleAvailableSlots(searchParams)
   } catch (error) {
-    console.error('Error checking availability:', error)
+    logger.error({ err: error }, 'Error checking availability')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -85,13 +90,19 @@ async function handleConflictCheck(searchParams: URLSearchParams): Promise<NextR
   return NextResponse.json(availability)
 }
 
+type PrismaTransactionClient = Omit<
+  PrismaClient,
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+>
+
 export async function checkCastAvailability(
   castId: string,
   startTime: Date,
-  endTime: Date
+  endTime: Date,
+  tx: PrismaTransactionClient | PrismaClient = db
 ): Promise<AvailabilityCheck> {
   // Find overlapping reservations
-  const conflicts = await db.reservation.findMany({
+  const conflicts = await tx.reservation.findMany({
     where: {
       castId,
       status: {
@@ -136,7 +147,7 @@ export async function checkCastAvailability(
 
   return {
     available: conflicts.length === 0,
-    conflicts: conflicts.map((reservation) => ({
+    conflicts: conflicts.map((reservation: { id: string; startTime: Date; endTime: Date }) => ({
       id: reservation.id,
       startTime: reservation.startTime.toISOString(),
       endTime: reservation.endTime.toISOString(),
@@ -176,15 +187,21 @@ async function handleAvailableSlots(searchParams: URLSearchParams): Promise<Next
     return NextResponse.json({ error: 'Cast not found' }, { status: 404 })
   }
 
-  // Default working hours for all casts
-  // In the future, this could be stored in a separate table or settings
-  const parsedWorkingHours = { start: '09:00', end: '18:00' }
+  const businessHourStart = process.env.BUSINESS_HOUR_START || '09:00'
+  const businessHourEnd = process.env.BUSINESS_HOUR_END || '23:00'
 
-  // Get all reservations for the cast on the specified date
-  const startOfDay = new Date(date)
-  startOfDay.setHours(0, 0, 0, 0)
-  const endOfDay = new Date(date)
-  endOfDay.setHours(23, 59, 59, 999)
+  // JSTでその日の一日を定義
+  const dateInJst = toZonedTime(date, JST_TIMEZONE)
+  
+  const startOfDayInJst = new Date(dateInJst)
+  startOfDayInJst.setHours(0, 0, 0, 0)
+  
+  const endOfDayInJst = new Date(dateInJst)
+  endOfDayInJst.setHours(23, 59, 59, 999)
+
+  // DBクエリのためにUTCに変換
+  const startOfDayInUtc = fromZonedTime(startOfDayInJst, JST_TIMEZONE)
+  const endOfDayInUtc = fromZonedTime(endOfDayInJst, JST_TIMEZONE)
 
   const reservations = await db.reservation.findMany({
     where: {
@@ -193,8 +210,8 @@ async function handleAvailableSlots(searchParams: URLSearchParams): Promise<Next
         not: 'cancelled',
       },
       startTime: {
-        gte: startOfDay,
-        lte: endOfDay,
+        gte: startOfDayInUtc,
+        lte: endOfDayInUtc,
       },
     },
     orderBy: {
@@ -208,32 +225,35 @@ async function handleAvailableSlots(searchParams: URLSearchParams): Promise<Next
 
   // Calculate available slots
   const availableSlots: TimeSlot[] = []
-  const workStart = new Date(date)
-  const [startHour, startMinute] = parsedWorkingHours.start.split(':').map(Number)
-  workStart.setUTCHours(startHour, startMinute, 0, 0)
+  
+  const [startHour, startMinute] = businessHourStart.split(':').map(Number)
+  const workStartInJst = new Date(dateInJst)
+  workStartInJst.setHours(startHour, startMinute, 0, 0)
 
-  const workEnd = new Date(date)
-  const [endHour, endMinute] = parsedWorkingHours.end.split(':').map(Number)
-  workEnd.setUTCHours(endHour, endMinute, 0, 0)
+  const [endHour, endMinute] = businessHourEnd.split(':').map(Number)
+  const workEndInJst = new Date(dateInJst)
+  workEndInJst.setHours(endHour, endMinute, 0, 0)
 
-  let currentTime = new Date(workStart)
+  let currentTimeInJst = new Date(workStartInJst)
 
   for (const reservation of reservations) {
-    // If there's a gap before this reservation that fits the duration
-    if (reservation.startTime.getTime() - currentTime.getTime() >= duration * 60 * 1000) {
+    const reservationStartTimeInJst = toZonedTime(reservation.startTime, JST_TIMEZONE)
+    const reservationEndTimeInJst = toZonedTime(reservation.endTime, JST_TIMEZONE)
+
+    if (reservationStartTimeInJst.getTime() - currentTimeInJst.getTime() >= duration * 60 * 1000) {
       availableSlots.push({
-        startTime: currentTime.toISOString(),
-        endTime: reservation.startTime.toISOString(),
+        startTime: fromZonedTime(currentTimeInJst, JST_TIMEZONE).toISOString(),
+        endTime: fromZonedTime(reservationStartTimeInJst, JST_TIMEZONE).toISOString(),
       })
     }
-    currentTime = new Date(reservation.endTime)
+    currentTimeInJst = new Date(reservationEndTimeInJst)
   }
 
   // Check if there's time after the last reservation
-  if (workEnd.getTime() - currentTime.getTime() >= duration * 60 * 1000) {
+  if (workEndInJst.getTime() - currentTimeInJst.getTime() >= duration * 60 * 1000) {
     availableSlots.push({
-      startTime: currentTime.toISOString(),
-      endTime: workEnd.toISOString(),
+      startTime: fromZonedTime(currentTimeInJst, JST_TIMEZONE).toISOString(),
+      endTime: fromZonedTime(workEndInJst, JST_TIMEZONE).toISOString(),
     })
   }
 
