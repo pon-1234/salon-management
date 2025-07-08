@@ -21,34 +21,24 @@
       "Read",
       "Glob"
     ],
-    "deny": ["Bash(git push:*)", "Bash(git commit:*)", "Bash(rm:*)", "Bash(mv:*)"]
+    "deny": [
+      "Bash(git push:*)",
+      "Bash(git commit:*)",
+      "Bash(rm:*)",
+      "Bash(mv:*)"
+    ]
   },
   "enableAllProjectMcpServers": false,
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "^(Write|Edit)\\s+.*\\.(spec|test)\\.(ts|tsx)$",
+        "matcher": "Write|Edit|MultiEdit",
         "hooks": [
           {
             "type": "command",
-            "command": "pnpm vitest run --related '%(file_path)s'",
+            "command": "JSON=$(cat) && FILES=$(echo \"$JSON\" | jq -r 'if .tool_name==\"MultiEdit\" then .tool_input.changes[].file_path elif .tool_input.file_path? then .tool_input.file_path else empty end') && for FILE in $FILES; do case \"$FILE\" in *.spec.ts|*.spec.tsx|*.test.ts|*.test.tsx) pnpm vitest run --related \"$FILE\" ;; *.ts|*.tsx) pnpm prettier --write \"$FILE\" && pnpm eslint --fix \"$FILE\" ;; esac; done",
             "blocking": false,
-            "timeout": 30
-          }
-        ]
-      },
-      {
-        "matcher": "^(Write|Edit)\\s+.*\\.(ts|tsx)$",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "pnpm prettier --write '%(file_path)s'",
-            "blocking": false
-          },
-          {
-            "type": "command",
-            "command": "pnpm eslint --fix '%(file_path)s'",
-            "blocking": false
+            "timeout": 120
           }
         ]
       }
@@ -61,7 +51,7 @@
             "type": "command",
             "command": "echo 'Running final checks...' && pnpm lint && pnpm typecheck && pnpm vitest run",
             "blocking": true,
-            "timeout": 120
+            "timeout": 300
           },
           {
             "type": "command",
