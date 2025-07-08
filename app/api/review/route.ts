@@ -100,9 +100,9 @@ export async function PUT(request: NextRequest) {
     })
 
     return NextResponse.json(updatedReview)
-  } catch (error) {
+  } catch (error: any) {
     logger.error({ err: error }, 'Error updating review')
-    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
+    if (error?.code === 'P2025') {
       return NextResponse.json({ error: 'Review not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -123,9 +123,9 @@ export async function DELETE(request: NextRequest) {
     })
 
     return new NextResponse(null, { status: 204 })
-  } catch (error) {
+  } catch (error: any) {
     logger.error({ err: error }, 'Error deleting review')
-    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
+    if (error?.code === 'P2025') {
       return NextResponse.json({ error: 'Review not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

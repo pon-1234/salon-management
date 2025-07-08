@@ -56,17 +56,32 @@ export async function GET(request: NextRequest) {
       customerId: authCustomerId,
     }
 
+    // フィルタリング
     const castId = searchParams.get('castId')
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
+    const status = searchParams.get('status')
 
     if (castId) where.castId = castId
+    if (status) where.status = status
     if (startDate && endDate) {
       where.startTime = {
         gte: new Date(startDate),
         lte: new Date(endDate),
       }
     }
+
+    // ページネーション
+    const limit = searchParams.get('limit')
+    const offset = searchParams.get('offset')
+    const take = limit ? parseInt(limit, 10) : undefined
+    const skip = offset ? parseInt(offset, 10) : undefined
+
+    // ソート
+    const sortBy = searchParams.get('sortBy') || 'startTime'
+    const sortOrder = searchParams.get('sortOrder') || 'asc'
+    const orderBy: any = {}
+    orderBy[sortBy] = sortOrder
 
     const reservations = await db.reservation.findMany({
       where,
@@ -80,9 +95,9 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: {
-        startTime: 'asc',
-      },
+      orderBy,
+      take,
+      skip,
     })
 
     return NextResponse.json(reservations)
@@ -215,11 +230,12 @@ export async function PUT(request: NextRequest) {
     }
 
     if (updates.startTime || updates.endTime) {
+      // 日付文字列を直接Dateオブジェクトに変換（タイムゾーン処理を簡略化）
       const startTime = updates.startTime
-        ? fromZonedTime(updates.startTime, JST_TIMEZONE)
+        ? new Date(updates.startTime)
         : existingReservation.startTime;
       const endTime = updates.endTime
-        ? fromZonedTime(updates.endTime, JST_TIMEZONE)
+        ? new Date(updates.endTime)
         : existingReservation.endTime;
 
       if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
@@ -231,7 +247,7 @@ export async function PUT(request: NextRequest) {
       }
 
       const castId = updates.castId || existingReservation.castId
-      const availability = await checkCastAvailability(castId, startTime, endTime)
+      const availability = await checkCastAvailability(castId, startTime, endTime, db)
       const filteredConflicts = availability.conflicts.filter((c) => c.id !== id)
 
       if (filteredConflicts.length > 0) {
@@ -239,27 +255,42 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    const updatedReservation = await db.reservation.update({
-      where: { id },
-      data: {
-        ...updates,
-        startTime: updates.startTime ? fromZonedTime(updates.startTime, JST_TIMEZONE) : undefined,
-        endTime: updates.endTime ? fromZonedTime(updates.endTime, JST_TIMEZONE) : undefined,
-      },
-      include: {
-        customer: true,
-        cast: true,
-        course: true,
-        options: {
-          include: {
-            option: true,
+    // トランザクション内で予約更新とオプション更新を実行
+    const updatedReservation = await db.$transaction(async (tx) => {
+      // オプションが変更される場合は既存オプションを削除
+      if (updates.options) {
+        await tx.reservationOption.deleteMany({
+          where: { reservationId: id },
+        })
+      }
+
+      // 予約を更新
+      return await tx.reservation.update({
+        where: { id },
+        data: {
+          ...updates,
+          startTime: updates.startTime ? new Date(updates.startTime) : undefined,
+          endTime: updates.endTime ? new Date(updates.endTime) : undefined,
+          options: updates.options
+            ? {
+                create: updates.options.map((optionId: string) => ({
+                  optionId,
+                })),
+              }
+            : undefined,
+        },
+        include: {
+          customer: true,
+          cast: true,
+          course: true,
+          options: {
+            include: {
+              option: true,
+            },
           },
         },
-      },
+      })
     })
-    
-    // 省略: トランザクション内でのオプション更新処理は元のままとするが、実際にはここでも考慮が必要
-    // ...
 
     if (updates.startTime || updates.endTime) {
       try {

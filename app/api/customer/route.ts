@@ -106,9 +106,9 @@ export async function POST(request: NextRequest) {
 
     const { password: _, ...customerData } = newCustomer
     return NextResponse.json(customerData, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     logger.error({ err: error }, 'Error creating customer')
-    if (error instanceof Error && 'code' in error && error.code === 'P2002') {
+    if (error?.code === 'P2002') {
       return NextResponse.json({ error: 'Email or phone already exists' }, { status: 409 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -157,9 +157,9 @@ export async function PUT(request: NextRequest) {
 
     const { password: _, ...customerData } = updatedCustomer
     return NextResponse.json(customerData)
-  } catch (error) {
+  } catch (error: any) {
     logger.error({ err: error }, 'Error updating customer')
-    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
+    if (error?.code === 'P2025') {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

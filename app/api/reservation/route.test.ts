@@ -465,6 +465,9 @@ describe('PUT /api/reservation - Enhanced Modification', () => {
   })
 
   it('should check availability when modifying time', async () => {
+    // モックをリセットして明示的に設定
+    vi.mocked(checkCastAvailability).mockReset()
+    
     const existingReservation = {
       id: 'reservation1',
       customerId: 'customer1',  // 認証されたユーザーと同じ
@@ -476,13 +479,13 @@ describe('PUT /api/reservation - Enhanced Modification', () => {
 
     vi.mocked(db.reservation.findUnique).mockResolvedValueOnce(existingReservation as any)
     // checkCastAvailabilityはPUTで呼ばれる際、現在の予約IDをフィルタリングした後の結果を確認する
-    vi.mocked(checkCastAvailability).mockResolvedValueOnce({
+    vi.mocked(checkCastAvailability).mockImplementation(async () => ({
       available: false,
       conflicts: [
         { id: 'reservation1', startTime: '', endTime: '' }, // 現在の予約（フィルタされる）
         { id: 'other-reservation', startTime: '', endTime: '' } // 他の予約（コンフリクト）
       ],
-    })
+    }))
 
     const updateData = {
       id: 'reservation1',
@@ -501,6 +504,7 @@ describe('PUT /api/reservation - Enhanced Modification', () => {
     const response = await PUT(request)
     const data = await response.json()
 
+
     expect(response.status).toBe(409)
     expect(data.error).toBe('Time slot is not available')
     // filteredConflictsには現在の予約を除いた他の予約のみが含まれる
@@ -509,6 +513,9 @@ describe('PUT /api/reservation - Enhanced Modification', () => {
   })
 
   it('should allow modification when no conflicts', async () => {
+    // モックをリセットして明示的に設定
+    vi.mocked(checkCastAvailability).mockReset()
+    
     const existingReservation = {
       id: 'reservation1',
       customerId: 'customer1',  // 認証されたユーザーと同じ
@@ -531,10 +538,10 @@ describe('PUT /api/reservation - Enhanced Modification', () => {
     vi.mocked(db.reservation.findUnique).mockResolvedValueOnce(existingReservation as any)
     // APIは現在の予約自身を含む全てのコンフリクトを返すが、
     // 後でfilterされるので、ここでは現在の予約を含めても構わない
-    vi.mocked(checkCastAvailability).mockResolvedValueOnce({
+    vi.mocked(checkCastAvailability).mockImplementation(async () => ({
       available: false, // 実際には現在の予約が含まれているため
       conflicts: [{ id: 'reservation1', startTime: '', endTime: '' }], // 現在の予約のみ
-    })
+    }))
 
     const mockTx = {
       reservationOption: {
@@ -887,5 +894,214 @@ describe('DELETE /api/reservation - Authorization', () => {
 
     expect(response.status).toBe(403)
     expect(data.error).toBe('Forbidden')
+  })
+})
+
+describe('GET /api/reservation - List with Pagination, Filtering, and Sorting', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('should support pagination with limit and offset', async () => {
+    const mockReservations = Array.from({ length: 20 }, (_, i) => ({
+      id: `reservation${i + 1}`,
+      customerId: 'customer1',
+      castId: `cast${(i % 3) + 1}`,
+      courseId: 'course1',
+      startTime: new Date(`2025-07-${10 + i}T10:00:00Z`),
+      endTime: new Date(`2025-07-${10 + i}T11:00:00Z`),
+      status: 'confirmed',
+      customer: { id: 'customer1', name: 'Test Customer' },
+      cast: { id: `cast${(i % 3) + 1}`, name: `Cast ${(i % 3) + 1}` },
+      course: { id: 'course1', name: '60-minute Course' },
+      options: [],
+    }))
+
+    // Mock for pagination test
+    vi.mocked(db.reservation.findMany).mockImplementation(async (args: any) => {
+      const limit = args?.take || 10
+      const offset = args?.skip || 0
+      return mockReservations.slice(offset, offset + limit) as any
+    })
+
+    const request = new NextRequest('http://localhost:3000/api/reservation?limit=10&offset=5', {
+      method: 'GET',
+      headers: {
+        'x-customer-id': 'customer1',
+      },
+    })
+
+    const response = await GET(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data).toHaveLength(10)
+    expect(data[0].id).toBe('reservation6')
+    expect(vi.mocked(db.reservation.findMany)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 10,
+        skip: 5,
+      })
+    )
+  })
+
+  it('should filter by date range', async () => {
+    const mockReservations = [
+      {
+        id: 'reservation1',
+        customerId: 'customer1',
+        castId: 'cast1',
+        courseId: 'course1',
+        startTime: new Date('2025-07-15T10:00:00Z'),
+        endTime: new Date('2025-07-15T11:00:00Z'),
+        status: 'confirmed',
+        customer: { id: 'customer1', name: 'Test Customer' },
+        cast: { id: 'cast1', name: 'Test Cast' },
+        course: { id: 'course1', name: '60-minute Course' },
+        options: [],
+      },
+    ]
+
+    vi.mocked(db.reservation.findMany).mockResolvedValueOnce(mockReservations as any)
+
+    const request = new NextRequest(
+      'http://localhost:3000/api/reservation?startDate=2025-07-14&endDate=2025-07-16',
+      {
+        method: 'GET',
+        headers: {
+          'x-customer-id': 'customer1',
+        },
+      }
+    )
+
+    const response = await GET(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(vi.mocked(db.reservation.findMany)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          customerId: 'customer1',
+          startTime: {
+            gte: new Date('2025-07-14'),
+            lte: new Date('2025-07-16'),
+          },
+        },
+      })
+    )
+  })
+
+  it('should filter by status', async () => {
+    const mockReservations = [
+      {
+        id: 'reservation1',
+        customerId: 'customer1',
+        castId: 'cast1',
+        courseId: 'course1',
+        startTime: new Date('2025-07-15T10:00:00Z'),
+        endTime: new Date('2025-07-15T11:00:00Z'),
+        status: 'pending',
+        customer: { id: 'customer1', name: 'Test Customer' },
+        cast: { id: 'cast1', name: 'Test Cast' },
+        course: { id: 'course1', name: '60-minute Course' },
+        options: [],
+      },
+    ]
+
+    vi.mocked(db.reservation.findMany).mockResolvedValueOnce(mockReservations as any)
+
+    const request = new NextRequest('http://localhost:3000/api/reservation?status=pending', {
+      method: 'GET',
+      headers: {
+        'x-customer-id': 'customer1',
+      },
+    })
+
+    const response = await GET(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(vi.mocked(db.reservation.findMany)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          customerId: 'customer1',
+          status: 'pending',
+        },
+      })
+    )
+  })
+
+  it('should sort by specified field and order', async () => {
+    const mockReservations = [
+      {
+        id: 'reservation1',
+        customerId: 'customer1',
+        castId: 'cast1',
+        courseId: 'course1',
+        startTime: new Date('2025-07-15T10:00:00Z'),
+        endTime: new Date('2025-07-15T11:00:00Z'),
+        status: 'confirmed',
+        customer: { id: 'customer1', name: 'Test Customer' },
+        cast: { id: 'cast1', name: 'Test Cast' },
+        course: { id: 'course1', name: '60-minute Course' },
+        options: [],
+      },
+    ]
+
+    vi.mocked(db.reservation.findMany).mockResolvedValueOnce(mockReservations as any)
+
+    const request = new NextRequest('http://localhost:3000/api/reservation?sortBy=startTime&sortOrder=desc', {
+      method: 'GET',
+      headers: {
+        'x-customer-id': 'customer1',
+      },
+    })
+
+    const response = await GET(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(vi.mocked(db.reservation.findMany)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: {
+          startTime: 'desc',
+        },
+      })
+    )
+  })
+
+  it('should combine multiple filters', async () => {
+    const mockReservations = []
+
+    vi.mocked(db.reservation.findMany).mockResolvedValueOnce(mockReservations as any)
+
+    const request = new NextRequest(
+      'http://localhost:3000/api/reservation?castId=cast1&status=confirmed&startDate=2025-07-14&endDate=2025-07-16&limit=5',
+      {
+        method: 'GET',
+        headers: {
+          'x-customer-id': 'customer1',
+        },
+      }
+    )
+
+    const response = await GET(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(vi.mocked(db.reservation.findMany)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          customerId: 'customer1',
+          castId: 'cast1',
+          status: 'confirmed',
+          startTime: {
+            gte: new Date('2025-07-14'),
+            lte: new Date('2025-07-16'),
+          },
+        },
+        take: 5,
+      })
+    )
   })
 })

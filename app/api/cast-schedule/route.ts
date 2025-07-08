@@ -77,8 +77,11 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(newSchedule, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     logger.error({ err: error }, 'Error creating cast schedule')
+    if (error?.code === 'P2002') {
+      return NextResponse.json({ error: 'Schedule conflict detected' }, { status: 409 })
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -106,9 +109,9 @@ export async function PUT(request: NextRequest) {
     })
 
     return NextResponse.json(updatedSchedule)
-  } catch (error) {
+  } catch (error: any) {
     logger.error({ err: error }, 'Error updating cast schedule')
-    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
+    if (error?.code === 'P2025') {
       return NextResponse.json({ error: 'Schedule not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -129,9 +132,9 @@ export async function DELETE(request: NextRequest) {
     })
 
     return new NextResponse(null, { status: 204 })
-  } catch (error) {
+  } catch (error: any) {
     logger.error({ err: error }, 'Error deleting cast schedule')
-    if (error instanceof Error && 'code' in error && error.code === 'P2025') {
+    if (error?.code === 'P2025') {
       return NextResponse.json({ error: 'Schedule not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
