@@ -20,6 +20,13 @@ vi.mock('@/lib/db', () => ({
   },
 }))
 
+// Mock logger
+vi.mock('@/lib/logger', () => ({
+  default: {
+    error: vi.fn(),
+  },
+}))
+
 describe('GET /api/reservation/availability', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -245,7 +252,7 @@ describe('GET /api/reservation/availability', () => {
     })
   })
 
-  it.skip('should handle database errors gracefully', async () => {
+  it('should handle database errors gracefully', async () => {
     const dbError = new Error('Database error')
     vi.mocked(db.reservation.findMany).mockRejectedValueOnce(dbError)
 
