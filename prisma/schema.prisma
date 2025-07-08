@@ -144,3 +144,21 @@ model CastSchedule {
   
   @@unique([castId, date])
 }
+
+model Notification {
+  id              String   @id @default(cuid())
+  recipientId     String
+  recipientEmail  String?
+  recipientPhone  String?
+  type            String   // 'email' | 'sms' | 'push'
+  templateId      String?
+  subject         String?
+  content         String
+  status          String   // 'pending' | 'sent' | 'failed' | 'delivered'
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  failureReason   String?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
