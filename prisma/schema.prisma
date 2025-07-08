@@ -31,6 +31,7 @@ model Customer {
   ngCasts      NgCastEntry[]
   reservations Reservation[]
   reviews      Review[]
+  payments     PaymentTransaction[]
 }
 
 model Cast {
@@ -89,6 +90,7 @@ model Reservation {
   cast     Cast     @relation(fields: [castId], references: [id])
   course   CoursePrice @relation(fields: [courseId], references: [id])
   options  ReservationOption[]
+  payments PaymentTransaction[]
 }
 
 model CoursePrice {
@@ -143,4 +145,52 @@ model CastSchedule {
   cast Cast @relation(fields: [castId], references: [id])
   
   @@unique([castId, date])
+}
+
+model PaymentIntent {
+  id              String   @id @default(cuid())
+  providerId      String   @unique
+  provider        String   // 'stripe' | 'payjp'
+  amount          Int
+  currency        String
+  status          String   // 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'
+  paymentMethod   String   // 'card' | 'bank_transfer' | 'cash'
+  clientSecret    String?
+  metadata        Json?
+  errorMessage    String?
+  processedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  transactions PaymentTransaction[]
+}
+
+model PaymentTransaction {
+  id                    String   @id @default(cuid())
+  reservationId         String
+  customerId           String
+  amount               Int
+  currency             String
+  provider             String   // 'stripe' | 'payjp'
+  paymentMethod        String   // 'card' | 'bank_transfer' | 'cash'
+  status               String   // 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'refunded'
+  intentId             String?
+  providerTransactionId String?
+  metadata             Json?
+  errorMessage         String?
+  processedAt          DateTime?
+  refundedAt           DateTime?
+  refundAmount         Int?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  // Relations
+  reservation Reservation @relation(fields: [reservationId], references: [id])
+  customer    Customer    @relation(fields: [customerId], references: [id])
+  intent      PaymentIntent? @relation(fields: [intentId], references: [id])
+  
+  @@index([reservationId])
+  @@index([customerId])
+  @@index([status])
 }
