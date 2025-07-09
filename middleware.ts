@@ -1,48 +1,118 @@
+/**
+ * @design_doc   Authentication middleware using NextAuth.js
+ * @related_to   authOptions in lib/auth/config.ts, NextAuth API routes
+ * @known_issues None currently
+ */
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 
-export function middleware(request: NextRequest) {
+// Public routes that don't require authentication
+const publicRoutes = [
+  '/',
+  '/api',
+  '/_next',
+  '/favicon.ico',
+]
+
+// Auth routes that should be accessible without authentication
+const authRoutes = [
+  '/login',
+  '/register',
+  '/admin/login',
+  '/auth',
+]
+
+// Routes that require admin role
+const adminRoutes = [
+  '/admin',
+]
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // /admin にアクセスした場合、/admin/dashboard にリダイレクト
-  if (pathname === '/admin') {
-    return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+  // Check if route is public
+  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route)) ||
+    authRoutes.some(route => pathname.startsWith(route)) ||
+    pathname.match(/^\/((?!admin|mypage).)*$/) // All non-admin, non-mypage routes
+
+  // Get session token
+  const token = await getToken({ 
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+  })
+
+  // Handle authentication routes
+  if (authRoutes.some(route => pathname.startsWith(route))) {
+    // If already authenticated, redirect to appropriate dashboard
+    if (token) {
+      if (token.role === 'admin' && pathname.startsWith('/admin')) {
+        return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+      } else if (token.role === 'customer') {
+        const store = pathname.split('/')[1]
+        return NextResponse.redirect(new URL(`/${store}`, request.url))
+      }
+    }
+    return undefined
   }
 
-  // 管理画面へのアクセス制御
+  // Handle admin routes
   if (pathname.startsWith('/admin')) {
-    // ここで認証チェックを行う
-    // 現在はモックなので、常に通過させる
-    // 実際の実装では、JWTトークンやセッションをチェック
-    // 例: 認証されていない場合のリダイレクト
-    // const token = request.cookies.get('auth-token')
-    // if (!token) {
-    //   return NextResponse.redirect(new URL('/login', request.url))
-    // }
+    if (!token) {
+      // Redirect to admin login if not authenticated
+      const url = new URL('/admin/login', request.url)
+      url.searchParams.set('callbackUrl', pathname)
+      return NextResponse.redirect(url, { status: 307 })
+    }
+
+    if (token.role !== 'admin') {
+      // Return 403 if authenticated but not admin
+      return new NextResponse('Forbidden', { status: 403 })
+    }
+
+    return undefined
   }
 
-  // エンドユーザー向けページは認証不要（一部除く）
-  if (pathname.startsWith('/mypage')) {
-    // マイページは認証が必要
-    // const userToken = request.cookies.get('user-token')
-    // if (!userToken) {
-    //   return NextResponse.redirect(new URL('/login', request.url))
-    // }
+  // Handle protected customer routes (e.g., mypage)
+  if (pathname.includes('/mypage')) {
+    if (!token) {
+      // Extract store from URL and redirect to store-specific login
+      const pathParts = pathname.split('/')
+      const store = pathParts[1]
+      const url = new URL(`/${store}/login`, request.url)
+      url.searchParams.set('callbackUrl', pathname)
+      return NextResponse.redirect(url, { status: 307 })
+    }
+
+    return undefined
   }
 
-  return NextResponse.next()
+  // Allow all other public routes
+  if (isPublicRoute) {
+    return undefined
+  }
+
+  // Default: require authentication
+  if (!token) {
+    const url = new URL('/login', request.url)
+    url.searchParams.set('callbackUrl', pathname)
+    return NextResponse.redirect(url, { status: 307 })
+  }
+
+  return undefined
 }
 
 export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
+     *
+     * APIルートもミドルウェアの対象に含めるため、'api'の除外を削除
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*|public).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\..*|public).*)',
   ],
 }

@@ -13,7 +13,7 @@ export class CustomerRepositoryImpl implements CustomerRepository {
   }
 
   async getById(id: string): Promise<Customer | null> {
-    const response = await fetch(`${API_BASE_URL}/${id}`)
+    const response = await fetch(`${API_BASE_URL}?id=${id}`)
     if (!response.ok) {
       if (response.status === 404) return null
       throw new Error('Failed to fetch customer')
@@ -26,6 +26,15 @@ export class CustomerRepositoryImpl implements CustomerRepository {
     // For now, we'll return a placeholder.
     console.warn('getCustomerByPhone is not implemented on the API yet.')
     return null
+  }
+
+  async findByEmail(email: string): Promise<Customer | null> {
+    const response = await fetch(`${API_BASE_URL}/by-email/${encodeURIComponent(email)}`)
+    if (!response.ok) {
+      if (response.status === 404) return null
+      throw new Error('Failed to fetch customer by email')
+    }
+    return response.json()
   }
 
   async create(data: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>): Promise<Customer> {
@@ -41,10 +50,10 @@ export class CustomerRepositoryImpl implements CustomerRepository {
   }
 
   async update(id: string, data: Partial<Customer>): Promise<Customer | null> {
-    const response = await fetch(`${API_BASE_URL}/${id}`, {
+    const response = await fetch(API_BASE_URL, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: JSON.stringify({ id, ...data }),
     })
     if (!response.ok) {
       throw new Error('Failed to update customer')
@@ -53,7 +62,7 @@ export class CustomerRepositoryImpl implements CustomerRepository {
   }
 
   async delete(id: string): Promise<boolean> {
-    const response = await fetch(`${API_BASE_URL}/${id}`, {
+    const response = await fetch(`${API_BASE_URL}?id=${id}`, {
       method: 'DELETE',
     })
     return response.ok

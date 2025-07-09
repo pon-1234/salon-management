@@ -147,6 +147,7 @@ model CastSchedule {
   @@unique([castId, date])
 }
 
+<<<<<<< HEAD
 model PaymentIntent {
   id              String   @id @default(cuid())
   providerId      String   @unique
@@ -193,4 +194,13 @@ model PaymentTransaction {
   @@index([reservationId])
   @@index([customerId])
   @@index([status])
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

@@ -1,6 +1,12 @@
+/**
+ * @design_doc   MyPage content component with session integration
+ * @related_to   NextAuth.js configuration, customer authentication
+ * @known_issues None currently
+ */
 'use client'
 
 import { useState } from 'react'
+import { useSession } from 'next-auth/react'
 import { Store } from '@/lib/store/types'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ProfileSection } from './profile-section'
@@ -15,17 +21,43 @@ interface MyPageContentProps {
 
 export function MyPageContent({ store }: MyPageContentProps) {
   const [activeTab, setActiveTab] = useState('profile')
+  const { data: session, status } = useSession()
 
-  // Mock user data - in a real app, this would come from authentication/API
+  // Show loading state while session is loading
+  if (status === 'loading') {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-8">
+        <div className="rounded-lg bg-white p-6 shadow">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // This should not happen due to server-side auth check, but just in case
+  if (!session?.user) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-8">
+        <div className="rounded-lg bg-white p-6 shadow">
+          <p>認証が必要です。ログインしてください。</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Use session data, with fallbacks for missing data
   const user = {
-    nickname: '太郎',
-    email: 'test@example.com',
-    phone: '090-1234-5678',
-    birthMonth: 5,
-    memberType: 'regular' as const,
-    points: 2500,
-    registeredAt: new Date('2024-01-15'),
-    smsEnabled: true,
+    nickname: session.user.name || 'ゲスト',
+    email: session.user.email || '',
+    phone: '090-1234-5678', // This would come from user profile API
+    birthMonth: 5, // This would come from user profile API
+    memberType: 'regular' as const, // This would come from user profile API
+    points: 2500, // This would come from user profile API
+    registeredAt: new Date('2024-01-15'), // This would come from user profile API
+    smsEnabled: true, // This would come from user profile API
   }
 
   return (
