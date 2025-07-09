@@ -6,54 +6,7 @@
 
 import { PaymentProvider } from './base'
 import { PaymentIntent, PaymentTransaction, ProcessPaymentRequest, ProcessPaymentResult, RefundRequest, RefundResult } from '../types'
-// Mock Stripe import for testing without actual dependency
-interface MockStripe {
-  paymentIntents: {
-    create: (params: any) => Promise<any>
-    confirm: (id: string) => Promise<any>
-    retrieve: (id: string) => Promise<any>
-  }
-  refunds: {
-    create: (params: any) => Promise<any>
-  }
-}
-
-class MockStripeClass implements MockStripe {
-  paymentIntents = {
-    create: async (params: any) => ({
-      id: 'pi_mock_123',
-      status: 'succeeded',
-      amount: params.amount,
-      currency: params.currency,
-      client_secret: 'pi_mock_secret',
-      metadata: params.metadata
-    }),
-    confirm: async (id: string) => ({
-      id,
-      status: 'succeeded',
-      amount: 10000,
-      currency: 'jpy',
-      metadata: { reservationId: 'res_123', customerId: 'cust_123' }
-    }),
-    retrieve: async (id: string) => ({
-      id,
-      status: 'succeeded',
-      amount: 10000,
-      currency: 'jpy',
-      metadata: { reservationId: 'res_123', customerId: 'cust_123' }
-    })
-  }
-  refunds = {
-    create: async (params: any) => ({
-      id: 'rf_mock_123',
-      amount: params.amount,
-      currency: 'jpy',
-      status: 'succeeded'
-    })
-  }
-}
-
-const Stripe = MockStripeClass
+import Stripe from 'stripe'
 
 export interface StripeConfig {
   secretKey: string
@@ -63,11 +16,20 @@ export interface StripeConfig {
 export class StripeProvider extends PaymentProvider {
   readonly name = 'stripe'
   readonly supportedMethods = ['card']
-  private stripe: MockStripe
+  private stripe: Stripe
 
   constructor(config: StripeConfig) {
     super()
-    this.stripe = new Stripe() as MockStripe
+    
+    // Validate config
+    if (!config.secretKey) {
+      throw new Error('Stripe secret key is required')
+    }
+    
+    this.stripe = new Stripe(config.secretKey, {
+      apiVersion: '2024-12-18.acacia',
+      typescript: true
+    })
   }
 
   async processPayment(request: ProcessPaymentRequest): Promise<ProcessPaymentResult> {
@@ -246,6 +208,7 @@ export class StripeProvider extends PaymentProvider {
       case 'requires_payment_method':
       case 'requires_confirmation':
       case 'requires_action':
+      case 'requires_capture':
         return 'pending'
       case 'canceled':
         return 'cancelled'

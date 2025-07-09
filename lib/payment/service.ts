@@ -7,6 +7,8 @@
 import { PaymentProvider } from './providers/base'
 import { PaymentTransaction, ProcessPaymentRequest, ProcessPaymentResult, PaymentIntent, RefundRequest, RefundResult } from './types'
 import { prisma } from '@/lib/generated/prisma'
+import logger from '@/lib/logger'
+import { validatePaymentRequest, sanitizeMetadata } from './validators'
 
 export class PaymentService {
   private providers: Record<string, PaymentProvider>
@@ -16,19 +18,78 @@ export class PaymentService {
   }
 
   async processPayment(request: ProcessPaymentRequest): Promise<ProcessPaymentResult> {
-    const provider = this.providers[request.provider]
+    const startTime = Date.now()
+    const { provider: providerName, amount, customerId, reservationId } = request
+
+    // Validate request
+    const validation = validatePaymentRequest(request)
+    if (!validation.valid) {
+      const error = `Payment validation failed: ${validation.errors.join(', ')}`
+      logger.error({ validationErrors: validation.errors }, error)
+      return {
+        success: false,
+        error
+      }
+    }
+
+    // Sanitize metadata
+    const sanitizedRequest = {
+      ...request,
+      metadata: sanitizeMetadata(request.metadata)
+    }
+
+    logger.info({
+      action: 'process_payment_start',
+      provider: providerName,
+      amount,
+      customerId,
+      reservationId
+    }, 'Starting payment processing')
+
+    const provider = this.providers[providerName]
     if (!provider) {
-      throw new Error(`Payment provider ${request.provider} not supported`)
+      const error = `Payment provider ${providerName} not supported`
+      logger.error({ provider: providerName }, error)
+      throw new Error(error)
     }
 
-    const result = await provider.processPayment(request)
-    
-    if (result.success && result.transaction) {
-      // Save transaction to database
-      await this.saveTransaction(result.transaction)
-    }
+    try {
+      const result = await provider.processPayment(sanitizedRequest)
+      
+      if (result.success && result.transaction) {
+        // Save transaction to database
+        await this.saveTransaction(result.transaction)
+        
+        const duration = Date.now() - startTime
+        logger.info({
+          action: 'process_payment_success',
+          provider: providerName,
+          amount,
+          transactionId: result.transaction.id,
+          duration
+        }, 'Payment processed successfully')
+      } else {
+        logger.warn({
+          action: 'process_payment_failed',
+          provider: providerName,
+          amount,
+          error: result.error,
+          duration: Date.now() - startTime
+        }, 'Payment processing failed')
+      }
 
-    return result
+      return result
+    } catch (error) {
+      const duration = Date.now() - startTime
+      logger.error({
+        action: 'process_payment_error',
+        provider: providerName,
+        amount,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        duration
+      }, 'Payment processing error')
+      throw error
+    }
   }
 
   async createPaymentIntent(request: ProcessPaymentRequest): Promise<PaymentIntent> {
@@ -71,29 +132,69 @@ export class PaymentService {
   }
 
   async refundPayment(request: RefundRequest): Promise<RefundResult> {
-    // Get transaction from database to determine provider
-    const transaction = await this.getTransaction(request.transactionId)
-    if (!transaction) {
-      throw new Error(`Transaction ${request.transactionId} not found`)
-    }
+    const startTime = Date.now()
+    const { transactionId, amount, reason } = request
 
-    const provider = this.providers[transaction.provider]
-    if (!provider) {
-      throw new Error(`Payment provider ${transaction.provider} not supported`)
-    }
+    logger.info({
+      action: 'refund_payment_start',
+      transactionId,
+      amount,
+      reason
+    }, 'Starting refund processing')
 
-    const result = await provider.refundPayment(request)
-    
-    if (result.success) {
-      // Update transaction in database
-      await this.updateTransaction(request.transactionId, {
-        status: 'refunded',
-        refundedAt: new Date(),
-        refundAmount: result.refundAmount
-      })
-    }
+    try {
+      // Get transaction from database to determine provider
+      const transaction = await this.getTransaction(transactionId)
+      if (!transaction) {
+        const error = `Transaction ${transactionId} not found`
+        logger.error({ transactionId }, error)
+        throw new Error(error)
+      }
 
-    return result
+      const provider = this.providers[transaction.provider]
+      if (!provider) {
+        const error = `Payment provider ${transaction.provider} not supported`
+        logger.error({ provider: transaction.provider }, error)
+        throw new Error(error)
+      }
+
+      const result = await provider.refundPayment(request)
+      
+      if (result.success) {
+        // Update transaction in database
+        await this.updateTransaction(transactionId, {
+          status: 'refunded',
+          refundedAt: new Date(),
+          refundAmount: result.refundAmount
+        })
+
+        const duration = Date.now() - startTime
+        logger.info({
+          action: 'refund_payment_success',
+          transactionId,
+          refundAmount: result.refundAmount,
+          duration
+        }, 'Refund processed successfully')
+      } else {
+        logger.warn({
+          action: 'refund_payment_failed',
+          transactionId,
+          error: result.error,
+          duration: Date.now() - startTime
+        }, 'Refund processing failed')
+      }
+
+      return result
+    } catch (error) {
+      const duration = Date.now() - startTime
+      logger.error({
+        action: 'refund_payment_error',
+        transactionId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        duration
+      }, 'Refund processing error')
+      throw error
+    }
   }
 
   async getPaymentStatus(transactionId: string): Promise<PaymentTransaction> {
@@ -128,25 +229,40 @@ export class PaymentService {
   }
 
   private async saveTransaction(transaction: PaymentTransaction): Promise<void> {
-    await prisma.paymentTransaction.create({ 
-      data: {
-        id: transaction.id,
-        reservationId: transaction.reservationId,
-        customerId: transaction.customerId,
-        amount: transaction.amount,
-        currency: transaction.currency,
-        provider: transaction.provider,
-        paymentMethod: transaction.paymentMethod,
-        status: transaction.status,
-        intentId: transaction.intentId,
-        providerTransactionId: transaction.providerTransactionId,
-        metadata: transaction.metadata,
-        errorMessage: transaction.errorMessage,
-        processedAt: transaction.processedAt,
-        refundedAt: transaction.refundedAt,
-        refundAmount: transaction.refundAmount
-      }
-    })
+    try {
+      await prisma.paymentTransaction.create({ 
+        data: {
+          id: transaction.id,
+          reservationId: transaction.reservationId,
+          customerId: transaction.customerId,
+          amount: transaction.amount,
+          currency: transaction.currency,
+          provider: transaction.provider,
+          paymentMethod: transaction.paymentMethod,
+          status: transaction.status,
+          intentId: transaction.intentId,
+          providerTransactionId: transaction.providerTransactionId,
+          metadata: transaction.metadata,
+          errorMessage: transaction.errorMessage,
+          processedAt: transaction.processedAt,
+          refundedAt: transaction.refundedAt,
+          refundAmount: transaction.refundAmount
+        }
+      })
+      
+      logger.debug({
+        action: 'save_transaction',
+        transactionId: transaction.id,
+        status: transaction.status
+      }, 'Transaction saved to database')
+    } catch (error) {
+      logger.error({
+        action: 'save_transaction_error',
+        transactionId: transaction.id,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }, 'Failed to save transaction')
+      throw error
+    }
   }
 
   private async saveIntent(intent: PaymentIntent): Promise<void> {

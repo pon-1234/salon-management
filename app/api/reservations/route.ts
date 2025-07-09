@@ -9,12 +9,24 @@ import { ReservationService } from '@/lib/reservation/service'
 import { PaymentService } from '@/lib/payment/service'
 import { StripeProvider } from '@/lib/payment/providers/stripe'
 
-const paymentService = new PaymentService({
-  stripe: new StripeProvider({
-    secretKey: process.env.STRIPE_SECRET_KEY || '',
-    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || ''
-  })
-})
+// Initialize payment service with environment validation
+const stripeConfig = {
+  secretKey: process.env.STRIPE_SECRET_KEY || (() => {
+    console.error('STRIPE_SECRET_KEY is not set in environment variables')
+    return ''
+  })(),
+  publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || (() => {
+    console.error('STRIPE_PUBLISHABLE_KEY is not set in environment variables')
+    return ''
+  })()
+}
+
+// Only initialize Stripe provider if keys are available
+const paymentProviders = stripeConfig.secretKey ? {
+  stripe: new StripeProvider(stripeConfig)
+} : {}
+
+const paymentService = new PaymentService(paymentProviders)
 
 const reservationService = new ReservationService(paymentService)
 
