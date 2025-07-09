@@ -161,13 +161,3 @@ vi.mock('bcryptjs', () => ({
   compare: vi.fn(),
   hash: vi.fn(),
 }))
-
-// Mock jsonwebtoken
-vi.mock('jsonwebtoken', () => ({
-  default: {
-    sign: vi.fn(),
-    verify: vi.fn(),
-  },
-  sign: vi.fn(),
-  verify: vi.fn(),
-}))
