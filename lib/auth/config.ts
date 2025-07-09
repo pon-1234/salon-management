@@ -5,10 +5,9 @@
  */
 import type { NextAuthOptions, User } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { PrismaClient } from '@/lib/generated/prisma'
+import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
-
-const db = new PrismaClient()
+import { checkRateLimit, recordLoginAttempt } from './rate-limit'
 
 // Extend the default session interface
 declare module 'next-auth' {
@@ -50,19 +49,44 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        // Check if this is an admin user
-        // In a real application, you would have an Admin table
-        // For now, we'll use a hardcoded admin check
-        if (credentials.email === 'admin@example.com' && credentials.password === 'admin123') {
-          return {
-            id: '1',
-            email: credentials.email,
-            name: 'Admin User',
-            role: 'admin'
-          } as User
+        // Check rate limiting
+        const rateLimitResult = checkRateLimit(`admin:${credentials.email}`)
+        if (!rateLimitResult.allowed) {
+          throw new Error(`Too many login attempts. Please try again in ${rateLimitResult.retryAfter} seconds.`)
         }
 
-        return null
+        try {
+          const admin = await db.admin.findUnique({
+            where: { email: credentials.email }
+          })
+
+          if (!admin) {
+            recordLoginAttempt(`admin:${credentials.email}`, false)
+            return null
+          }
+
+          // Compare password with bcrypt
+          const isPasswordValid = await bcrypt.compare(credentials.password, admin.password)
+
+          if (!isPasswordValid) {
+            recordLoginAttempt(`admin:${credentials.email}`, false)
+            return null
+          }
+
+          // Success - clear rate limit
+          recordLoginAttempt(`admin:${credentials.email}`, true)
+
+          return {
+            id: admin.id,
+            email: admin.email,
+            name: admin.name,
+            role: 'admin'
+          } as User
+        } catch (error) {
+          console.error('Error during admin authentication:', error)
+          recordLoginAttempt(`admin:${credentials.email}`, false)
+          return null
+        }
       }
     }),
     CredentialsProvider({
@@ -77,12 +101,19 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        // Check rate limiting
+        const rateLimitResult = checkRateLimit(`customer:${credentials.email}`)
+        if (!rateLimitResult.allowed) {
+          throw new Error(`Too many login attempts. Please try again in ${rateLimitResult.retryAfter} seconds.`)
+        }
+
         try {
           const customer = await db.customer.findUnique({
             where: { email: credentials.email }
           })
 
           if (!customer) {
+            recordLoginAttempt(`customer:${credentials.email}`, false)
             return null
           }
 
@@ -90,8 +121,12 @@ export const authOptions: NextAuthOptions = {
           const isPasswordValid = await bcrypt.compare(credentials.password, customer.password)
 
           if (!isPasswordValid) {
+            recordLoginAttempt(`customer:${credentials.email}`, false)
             return null
           }
+
+          // Success - clear rate limit
+          recordLoginAttempt(`customer:${credentials.email}`, true)
 
           return {
             id: customer.id,
@@ -101,6 +136,7 @@ export const authOptions: NextAuthOptions = {
           } as User
         } catch (error) {
           console.error('Error during authentication:', error)
+          recordLoginAttempt(`customer:${credentials.email}`, false)
           return null
         }
       }
@@ -128,7 +164,10 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 2 * 60 * 60, // 2 hours
+    updateAge: 30 * 60, // Update session every 30 minutes
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || (() => {
+    throw new Error('NEXTAUTH_SECRET is required in production')
+  })(),
 }
