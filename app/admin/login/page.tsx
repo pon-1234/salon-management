@@ -1,137 +1,93 @@
-/**
- * @design_doc   Admin login page component
- * @related_to   NextAuth.js configuration, middleware authentication
- * @known_issues None currently
- */
 'use client'
 
 import { useState } from 'react'
-import { signIn, useSession } from 'next-auth/react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2 } from 'lucide-react'
-
-const loginSchema = z.object({
-  email: z.string().email('正しいメールアドレスを入力してください').min(1, 'メールアドレスを入力してください'),
-  password: z.string().min(1, 'パスワードを入力してください'),
-})
-
-type LoginFormData = z.infer<typeof loginSchema>
+import { AlertCircle } from 'lucide-react'
 
 export default function AdminLoginPage() {
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const { data: session, status } = useSession()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-  })
-
-  // Redirect if already authenticated
-  if (status === 'authenticated' && session?.user?.role === 'admin') {
-    router.push('/admin/dashboard')
-    return null
-  }
-
-  const onSubmit = async (data: LoginFormData) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
     setIsLoading(true)
-    setError(null)
 
     try {
-      const result = await signIn('admin-credentials', {
-        email: data.email,
-        password: data.password,
-        redirect: false,
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
       })
 
-      if (result?.error) {
-        setError('ログインに失敗しました。メールアドレスとパスワードを確認してください。')
-      } else {
-        // Redirect to callback URL or default admin dashboard
-        const callbackUrl = searchParams.get('callbackUrl') || '/admin/dashboard'
-        router.push(callbackUrl)
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'ログインに失敗しました')
       }
+
+      // ログイン成功後、管理画面ダッシュボードへリダイレクト
+      router.push('/admin/dashboard')
     } catch (err) {
-      setError('ログインに失敗しました。しばらく時間をおいて再度お試しください。')
+      setError(err instanceof Error ? err.message : 'ログインに失敗しました')
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">管理者ログイン</CardTitle>
-          <CardDescription className="text-center">
-            管理者アカウントでログインしてください
-          </CardDescription>
+          <CardTitle className="text-2xl font-bold">管理者ログイン</CardTitle>
+          <CardDescription>管理画面にアクセスするにはログインしてください</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email">メールアドレス</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="admin@example.com"
-                {...register('email')}
-                disabled={isLoading}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
               />
-              {errors.email && (
-                <p className="text-sm text-red-600">{errors.email.message}</p>
-              )}
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="password">パスワード</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="パスワードを入力"
-                {...register('password')}
-                disabled={isLoading}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
               />
-              {errors.password && (
-                <p className="text-sm text-red-600">{errors.password.message}</p>
-              )}
             </div>
-
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-            >
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              ログイン
+          </CardContent>
+          <CardFooter>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'ログイン中...' : 'ログイン'}
             </Button>
-          </form>
-
-          <div className="mt-6 text-center text-sm text-gray-600">
-            <p>デモ用アカウント:</p>
-            <p>メール: admin@example.com</p>
-            <p>パスワード: admin123</p>
-          </div>
-        </CardContent>
+          </CardFooter>
+        </form>
       </Card>
     </div>
   )

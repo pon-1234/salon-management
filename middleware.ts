@@ -1,105 +1,84 @@
-/**
- * @design_doc   Authentication middleware using NextAuth.js
- * @related_to   authOptions in lib/auth/config.ts, NextAuth API routes
- * @known_issues None currently
- */
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { getToken } from 'next-auth/jwt'
+import { jwtVerify } from 'jose'
 
-// Public routes that don't require authentication
-const publicRoutes = [
-  '/',
-  '/api',
-  '/_next',
-  '/favicon.ico',
-]
-
-// Auth routes that should be accessible without authentication
-const authRoutes = [
-  '/login',
-  '/register',
-  '/admin/login',
-  '/auth',
-]
-
-// Routes that require admin role
-const adminRoutes = [
-  '/admin',
-]
+const getJwtSecret = () => {
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    throw new Error('JWT_SECRET is not defined in environment variables')
+  }
+  return new TextEncoder().encode(secret)
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const tokenCookie = request.cookies.get('auth-token')
+  const token = tokenCookie?.value
 
-  // Check if route is public
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route)) ||
-    authRoutes.some(route => pathname.startsWith(route)) ||
-    pathname.match(/^\/((?!admin|mypage).)*$/) // All non-admin, non-mypage routes
+  // 保護対象のパスプレフィックス
+  const protectedPaths = ['/admin', '/mypage', '/api/reservation', '/api/cast']
 
-  // Get session token
-  const token = await getToken({ 
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET,
-  })
+  // 現在のパスが保護対象かどうかをチェック
+  const isProtected = protectedPaths.some((path) => pathname.startsWith(path))
 
-  // Handle authentication routes
-  if (authRoutes.some(route => pathname.startsWith(route))) {
-    // If already authenticated, redirect to appropriate dashboard
-    if (token) {
-      if (token.role === 'admin' && pathname.startsWith('/admin')) {
-        return NextResponse.redirect(new URL('/admin/dashboard', request.url))
-      } else if (token.role === 'customer') {
-        const store = pathname.split('/')[1]
-        return NextResponse.redirect(new URL(`/${store}`, request.url))
+  if (isProtected) {
+    if (!token) {
+      if (pathname.startsWith('/api')) {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
       }
-    }
-    return undefined
-  }
-
-  // Handle admin routes
-  if (pathname.startsWith('/admin')) {
-    if (!token) {
-      // Redirect to admin login if not authenticated
-      const url = new URL('/admin/login', request.url)
-      url.searchParams.set('callbackUrl', pathname)
-      return NextResponse.redirect(url, { status: 307 })
+      // ページアクセスの場合はログインページにリダイレクト
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin/login'
+      return NextResponse.redirect(url)
     }
 
-    if (token.role !== 'admin') {
-      // Return 403 if authenticated but not admin
-      return new NextResponse('Forbidden', { status: 403 })
+    try {
+      // JWTの検証
+      const { payload } = await jwtVerify(token, await getJwtSecret())
+      const customerId = payload.customerId as string
+
+      if (!customerId) {
+        throw new Error('Customer ID not found in token')
+      }
+
+      // リクエストヘッダーをコピーして新しいヘッダーを作成
+      const requestHeaders = new Headers(request.headers)
+      // カスタムヘッダーに顧客IDを追加
+      requestHeaders.set('x-customer-id', customerId)
+
+      // 新しいヘッダーでリクエストを続行
+      return NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      })
+    } catch (error) {
+      console.error('JWT Verification Error:', error)
+      if (pathname.startsWith('/api')) {
+        return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 })
+      }
+      // ページアクセスの場合はログインページにリダイレクト
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin/login'
+      return NextResponse.redirect(url)
     }
-
-    return undefined
   }
 
-  // Handle protected customer routes (e.g., mypage)
-  if (pathname.includes('/mypage')) {
-    if (!token) {
-      // Extract store from URL and redirect to store-specific login
-      const pathParts = pathname.split('/')
-      const store = pathParts[1]
-      const url = new URL(`/${store}/login`, request.url)
-      url.searchParams.set('callbackUrl', pathname)
-      return NextResponse.redirect(url, { status: 307 })
-    }
-
-    return undefined
+  // /admin にアクセスした場合、/admin/dashboard にリダイレクト (認証チェック後に行うべきだが、一旦残す)
+  if (pathname === '/admin') {
+    return NextResponse.redirect(new URL('/admin/dashboard', request.url))
   }
 
-  // Allow all other public routes
-  if (isPublicRoute) {
-    return undefined
+  // エンドユーザー向けページは認証不要（一部除く）
+  if (pathname.startsWith('/mypage')) {
+    // マイページは認証が必要
+    // const userToken = request.cookies.get('user-token')
+    // if (!userToken) {
+    //   return NextResponse.redirect(new URL('/login', request.url))
+    // }
   }
 
-  // Default: require authentication
-  if (!token) {
-    const url = new URL('/login', request.url)
-    url.searchParams.set('callbackUrl', pathname)
-    return NextResponse.redirect(url, { status: 307 })
-  }
-
-  return undefined
+  return NextResponse.next()
 }
 
 export const config = {
