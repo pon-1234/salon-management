@@ -28,30 +28,30 @@ export async function middleware(request: NextRequest) {
       }
       // ページアクセスの場合はログインページにリダイレクト
       const url = request.nextUrl.clone()
-      url.pathname = '/login'
+      url.pathname = '/admin/login'
       return NextResponse.redirect(url)
     }
 
     try {
       // JWTの検証
-      const { payload } = await jwtVerify(token, await getJwtSecret());
-      const customerId = payload.customerId as string;
+      const { payload } = await jwtVerify(token, await getJwtSecret())
+      const customerId = payload.customerId as string
 
       if (!customerId) {
-        throw new Error('Customer ID not found in token');
+        throw new Error('Customer ID not found in token')
       }
 
       // リクエストヘッダーをコピーして新しいヘッダーを作成
-      const requestHeaders = new Headers(request.headers);
+      const requestHeaders = new Headers(request.headers)
       // カスタムヘッダーに顧客IDを追加
-      requestHeaders.set('x-customer-id', customerId);
+      requestHeaders.set('x-customer-id', customerId)
 
       // 新しいヘッダーでリクエストを続行
       return NextResponse.next({
         request: {
           headers: requestHeaders,
         },
-      });
+      })
     } catch (error) {
       console.error('JWT Verification Error:', error)
       if (pathname.startsWith('/api')) {
@@ -59,11 +59,11 @@ export async function middleware(request: NextRequest) {
       }
       // ページアクセスの場合はログインページにリダイレクト
       const url = request.nextUrl.clone()
-      url.pathname = '/login'
+      url.pathname = '/admin/login'
       return NextResponse.redirect(url)
     }
   }
-  
+
   // /admin にアクセスした場合、/admin/dashboard にリダイレクト (認証チェック後に行うべきだが、一旦残す)
   if (pathname === '/admin') {
     return NextResponse.redirect(new URL('/admin/dashboard', request.url))
