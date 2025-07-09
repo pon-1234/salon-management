@@ -22,7 +22,7 @@ const stripeConfig = {
 }
 
 // Only initialize Stripe provider if keys are available
-const paymentProviders = stripeConfig.secretKey ? {
+const paymentProviders: Record<string, any> = stripeConfig.secretKey ? {
   stripe: new StripeProvider(stripeConfig)
 } : {}
 

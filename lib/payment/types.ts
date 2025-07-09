@@ -7,14 +7,14 @@
 import { BaseEntity } from '../shared'
 
 // Payment provider types
-export type PaymentProvider = 'stripe' | 'payjp'
+export type PaymentProviderType = 'stripe' | 'payjp'
 export type PaymentMethod = 'card' | 'bank_transfer' | 'cash'
 export type PaymentStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'refunded'
 
 // Payment intent for external providers
 export interface PaymentIntent extends BaseEntity {
   providerId: string
-  provider: PaymentProvider
+  provider: PaymentProviderType
   amount: number
   currency: string
   status: PaymentStatus
@@ -31,7 +31,7 @@ export interface PaymentTransaction extends BaseEntity {
   customerId: string
   amount: number
   currency: string
-  provider: PaymentProvider
+  provider: PaymentProviderType
   paymentMethod: PaymentMethod
   status: PaymentStatus
   intentId?: string
@@ -50,7 +50,7 @@ export interface ProcessPaymentRequest {
   amount: number
   currency: string
   paymentMethod: PaymentMethod
-  provider: PaymentProvider
+  provider: PaymentProviderType
   metadata?: Record<string, any>
 }
 
@@ -74,7 +74,7 @@ export interface RefundRequest {
 // Refund result
 export interface RefundResult {
   success: boolean
-  refundAmount: number
-  transaction: PaymentTransaction
+  refundAmount?: number
+  transaction?: PaymentTransaction
   error?: string
 }
