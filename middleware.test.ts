@@ -1,180 +1,236 @@
+/**
+ * @design_doc   Middleware authentication tests
+ * @related_to   middleware.ts, NextAuth.js
+ * @known_issues None currently
+ */
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
 import { middleware } from './middleware'
-import { jwtVerify } from 'jose'
-import { vi, describe, it, expect, beforeEach } from 'vitest'
 
-// モックの設定
-vi.mock('jose')
+// Mock NextAuth JWT
+vi.mock('next-auth/jwt', () => ({
+  getToken: vi.fn(),
+}))
 
-describe('middleware', () => {
+describe('Middleware Authentication', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // JWT_SECRETを設定
-    process.env.JWT_SECRET = 'test-jwt-secret-for-testing'
   })
 
-  describe('保護されていないパス', () => {
-    it('認証なしでアクセスできる', async () => {
-      const request = new NextRequest('http://localhost:3000/')
-      const response = await middleware(request)
+  describe('Admin Routes Protection', () => {
+    it('should redirect to /admin/login when accessing admin routes without authentication', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValueOnce(null)
       
-      expect(response).toBeDefined()
-      expect(response?.status).toBe(200)
-    })
-
-    it('静的ファイルは認証チェックをスキップする', async () => {
-      const request = new NextRequest('http://localhost:3000/images/logo.png')
-      const response = await middleware(request)
-      
-      expect(response).toBeDefined()
-      expect(response?.status).toBe(200)
-    })
-  })
-
-  describe('保護されたAPIパス', () => {
-    it('トークンなしでアクセスすると401エラーを返す', async () => {
-      const request = new NextRequest('http://localhost:3000/api/reservation')
-      const response = await middleware(request)
-      
-      expect(response?.status).toBe(401)
-      const data = await response?.json()
-      expect(data).toEqual({ error: 'Authentication required' })
-    })
-
-    it('有効なトークンでアクセスできる', async () => {
-      const mockPayload = { customerId: 'customer-123' }
-      ;(jwtVerify as any).mockResolvedValue({ payload: mockPayload })
-
-      const request = new NextRequest('http://localhost:3000/api/reservation')
-      request.cookies.set('auth-token', 'valid-token')
+      const request = new NextRequest(new URL('http://localhost:3000/admin/dashboard'))
       
       const response = await middleware(request)
       
-      expect(response).toBeDefined()
-      // NextResponse.next() の戻り値は特殊なため、jwtVerifyが呼ばれたことを確認
-      expect(jwtVerify).toHaveBeenCalled()
-      const callArgs = (jwtVerify as any).mock.calls[0]
-      expect(callArgs[0]).toBe('valid-token')
-      // Uint8ArrayのチェックはVitestでは特殊な扱いになるためスキップ
+      expect(response).toBeInstanceOf(NextResponse)
+      expect(response?.status).toBe(307) // Temporary redirect
+      expect(response?.headers.get('location')).toContain('/admin/login')
     })
 
-    it('無効なトークンで401エラーを返す', async () => {
-      ;(jwtVerify as any).mockRejectedValue(new Error('Invalid token'))
-
-      const request = new NextRequest('http://localhost:3000/api/reservation')
-      request.cookies.set('auth-token', 'invalid-token')
-      
-      const response = await middleware(request)
-      
-      expect(response?.status).toBe(401)
-      const data = await response?.json()
-      expect(data).toEqual({ error: 'Invalid or expired token' })
-    })
-
-    it('トークンにcustomerIdがない場合は401エラーを返す', async () => {
-      const mockPayload = {} // customerIdがない
-      ;(jwtVerify as any).mockResolvedValue({ payload: mockPayload })
-
-      const request = new NextRequest('http://localhost:3000/api/reservation')
-      request.cookies.set('auth-token', 'token-without-customerid')
-      
-      const response = await middleware(request)
-      
-      expect(response?.status).toBe(401)
-      const data = await response?.json()
-      expect(data).toEqual({ error: 'Invalid or expired token' })
-    })
-  })
-
-  describe('保護されたページパス', () => {
-    it('トークンなしでログインページにリダイレクトする', async () => {
-      const request = new NextRequest('http://localhost:3000/mypage')
-      const response = await middleware(request)
-      
-      expect(response?.status).toBe(307) // リダイレクトステータス
-      expect(response?.headers.get('location')).toBe('http://localhost:3000/login')
-    })
-
-    it('有効なトークンでアクセスできる', async () => {
-      const mockPayload = { customerId: 'customer-123' }
-      ;(jwtVerify as any).mockResolvedValue({ payload: mockPayload })
-
-      const request = new NextRequest('http://localhost:3000/mypage')
-      request.cookies.set('auth-token', 'valid-token')
-      
-      const response = await middleware(request)
-      
-      expect(response).toBeDefined()
-      // 認証が成功したことを確認
-      expect(jwtVerify).toHaveBeenCalled()
-    })
-
-    it('無効なトークンでログインページにリダイレクトする', async () => {
-      ;(jwtVerify as any).mockRejectedValue(new Error('Invalid token'))
-
-      const request = new NextRequest('http://localhost:3000/mypage')
-      request.cookies.set('auth-token', 'invalid-token')
-      
-      const response = await middleware(request)
-      
-      expect(response?.status).toBe(307)
-      expect(response?.headers.get('location')).toBe('http://localhost:3000/login')
-    })
-  })
-
-  describe('adminパスの処理', () => {
-    it('/adminにアクセスすると認証後にNextResponse.next()を返す', async () => {
-      const mockPayload = { customerId: 'customer-123' }
-      ;(jwtVerify as any).mockResolvedValue({ payload: mockPayload })
-
-      const request = new NextRequest('http://localhost:3000/admin')
-      request.cookies.set('auth-token', 'valid-token')
-      
-      const response = await middleware(request)
-      
-      // 認証が成功したことを確認
-      expect(jwtVerify).toHaveBeenCalled()
-      // /adminは保護されたパスなので、認証後はNextResponse.next()を返す
-      // 実際のリダイレクトロジックは到達しない（line 67-70はデッドコード）
-      expect(response).toBeDefined()
-      // NextResponse.next()の戻り値の検証
-      const callArgs = (jwtVerify as any).mock.calls[0]
-      expect(callArgs[0]).toBe('valid-token')
-    })
-
-    it('トークンなしで/adminにアクセスするとログインページにリダイレクトする', async () => {
-      const request = new NextRequest('http://localhost:3000/admin')
-      const response = await middleware(request)
-      
-      expect(response?.status).toBe(307)
-      expect(response?.headers.get('location')).toBe('http://localhost:3000/login')
-    })
-  })
-
-  describe('JWT_SECRETが設定されていない場合', () => {
-    it('エラーをスローする', async () => {
-      delete process.env.JWT_SECRET
-      
-      const mockPayload = { customerId: 'customer-123' }
-      ;(jwtVerify as any).mockImplementation(async (token, secret) => {
-        // getJwtSecret が呼ばれてエラーになることを再現
-        if (!process.env.JWT_SECRET) {
-          throw new Error('JWT_SECRET is not defined in environment variables')
-        }
-        return { payload: mockPayload }
+    it('should allow access to admin routes with valid admin session', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValueOnce({
+        id: '1',
+        email: 'admin@example.com',
+        role: 'admin',
+        sub: '1',
+        iat: Date.now() / 1000,
+        exp: (Date.now() + 86400000) / 1000,
+        jti: 'test-jwt-id'
       })
 
-      const request = new NextRequest('http://localhost:3000/api/reservation')
-      request.cookies.set('auth-token', 'valid-token')
+      const request = new NextRequest(new URL('http://localhost:3000/admin/dashboard'))
       
+      const response = await middleware(request)
+      
+      expect(response?.status).toBe(200) // NextResponse.next() returns status 200
+    })
+
+    it('should deny access to admin routes for non-admin users', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValueOnce({
+        id: '2',
+        email: 'customer@example.com',
+        role: 'customer',
+        sub: '2',
+        iat: Date.now() / 1000,
+        exp: (Date.now() + 86400000) / 1000,
+        jti: 'test-jwt-id-2'
+      })
+
+      const request = new NextRequest(new URL('http://localhost:3000/admin/dashboard'))
+      
+      const response = await middleware(request)
+      
+      expect(response).toBeInstanceOf(NextResponse)
+      expect(response?.status).toBe(403) // Forbidden
+    })
+  })
+
+  describe('Customer Routes Protection', () => {
+    it('should redirect to login when accessing protected customer routes without authentication', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValueOnce(null)
+      
+      const request = new NextRequest(new URL('http://localhost:3000/store1/mypage'))
+      
+      const response = await middleware(request)
+      
+      expect(response).toBeInstanceOf(NextResponse)
+      expect(response?.status).toBe(307)
+      expect(response?.headers.get('location')).toContain('/store1/login')
+    })
+
+    it('should allow access to protected customer routes with valid session', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValueOnce({
+        id: '2',
+        email: 'customer@example.com',
+        role: 'customer',
+        sub: '2',
+        iat: Date.now() / 1000,
+        exp: (Date.now() + 86400000) / 1000,
+        jti: 'test-jwt-id-2'
+      })
+
+      const request = new NextRequest(new URL('http://localhost:3000/store1/mypage'))
+      
+      const response = await middleware(request)
+      
+      expect(response?.status).toBe(200) // NextResponse.next() returns status 200
+    })
+  })
+
+  describe('Public Routes', () => {
+    it('should allow access to public routes without authentication', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValue(null)
+      
+      const publicRoutes = [
+        '/',
+        '/store1',
+        '/store1/cast',
+        '/store1/services',
+        '/store1/pricing',
+      ]
+
+      for (const route of publicRoutes) {
+        const request = new NextRequest(new URL(`http://localhost:3000${route}`))
+        const response = await middleware(request)
+        
+        expect(response?.status).toBe(200) // NextResponse.next() returns status 200
+      }
+    })
+
+    it('should allow access to login and register pages without authentication', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValue(null)
+      
+      const authRoutes = [
+        '/admin/login',
+        '/store1/login',
+        '/store1/register',
+      ]
+
+      for (const route of authRoutes) {
+        const request = new NextRequest(new URL(`http://localhost:3000${route}`))
+        const response = await middleware(request)
+        
+        expect(response?.status).toBe(200) // NextResponse.next() returns status 200
+      }
+    })
+  })
+
+  describe('API Routes Protection', () => {
+    it('should protect reservation API endpoints', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValueOnce(null)
+      
+      const request = new NextRequest(new URL('http://localhost:3000/api/reservation/create'))
       const response = await middleware(request)
       
       expect(response?.status).toBe(401)
       const data = await response?.json()
-      expect(data).toEqual({ error: 'Invalid or expired token' })
+      expect(data.error).toBe('Authentication required')
+    })
+
+    it('should protect cast API endpoints', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValueOnce(null)
       
-      // 環境変数を元に戻す
-      process.env.JWT_SECRET = 'test-jwt-secret-for-testing'
+      const request = new NextRequest(new URL('http://localhost:3000/api/cast/update'))
+      const response = await middleware(request)
+      
+      expect(response?.status).toBe(401)
+      const data = await response?.json()
+      expect(data.error).toBe('Authentication required')
+    })
+
+    it('should allow authenticated users to access protected API routes', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValueOnce({
+        id: '1',
+        email: 'user@example.com',
+        role: 'customer',
+        sub: '1',
+        iat: Date.now() / 1000,
+        exp: (Date.now() + 86400000) / 1000,
+        jti: 'test-jwt-id'
+      })
+
+      const request = new NextRequest(new URL('http://localhost:3000/api/reservation/create'))
+      const response = await middleware(request)
+      
+      expect(response?.status).toBe(200) // NextResponse.next() returns status 200
+    })
+  })
+
+  describe('Session Management', () => {
+    it('should redirect authenticated admin to dashboard from login page', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      const mockToken = {
+        id: '1',
+        email: 'admin@example.com',
+        role: 'admin' as const,
+        sub: '1',
+        iat: Date.now() / 1000,
+        exp: (Date.now() + 86400000) / 1000,
+        jti: 'test-jwt-id'
+      }
+      vi.mocked(getToken).mockResolvedValueOnce(mockToken)
+
+      const request = new NextRequest(new URL('http://localhost:3000/admin/login'))
+      
+      const response = await middleware(request)
+      
+      expect(response).toBeInstanceOf(NextResponse)
+      expect(response?.status).toBe(307)
+      expect(response?.headers.get('location')).toContain('/admin/dashboard')
+    })
+
+    it('should redirect /admin to /admin/dashboard for authenticated admin', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValueOnce({
+        id: '1',
+        email: 'admin@example.com',
+        role: 'admin',
+        sub: '1',
+        iat: Date.now() / 1000,
+        exp: (Date.now() + 86400000) / 1000,
+        jti: 'test-jwt-id'
+      })
+
+      const request = new NextRequest(new URL('http://localhost:3000/admin'))
+      
+      const response = await middleware(request)
+      
+      expect(response).toBeInstanceOf(NextResponse)
+      expect(response?.status).toBe(307)
+      expect(response?.headers.get('location')).toContain('/admin/dashboard')
     })
   })
 })

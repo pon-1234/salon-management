@@ -1,6 +1,12 @@
+/**
+ * @design_doc   Admin login page using NextAuth.js
+ * @related_to   NextAuth.js configuration, admin credentials provider
+ * @known_issues None currently
+ */
 'use client'
 
 import { useState } from 'react'
+import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,24 +28,20 @@ export default function AdminLoginPage() {
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
+      const result = await signIn('admin-credentials', {
+        email,
+        password,
+        redirect: false,
       })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'ログインに失敗しました')
+      if (result?.error) {
+        setError('ログインに失敗しました。メールアドレスとパスワードを確認してください。')
+      } else if (result?.ok) {
+        router.push('/admin/dashboard')
+        router.refresh()
       }
-
-      // ログイン成功後、管理画面ダッシュボードへリダイレクト
-      router.push('/admin/dashboard')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'ログインに失敗しました')
+      setError('ログインに失敗しました。しばらく時間をおいて再度お試しください。')
     } finally {
       setIsLoading(false)
     }

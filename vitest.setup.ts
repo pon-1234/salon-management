@@ -2,7 +2,9 @@ import '@testing-library/jest-dom'
 import { vi } from 'vitest'
 
 // Set up test environment variables
-process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/salon_test?schema=public'
+process.env.DATABASE_URL = "postgresql://test:test@localhost:5432/salon_test?schema=public"
+process.env.NEXTAUTH_SECRET = "test-secret-key-for-testing"
+process.env.NEXTAUTH_URL = "http://localhost:3000"
 process.env.JWT_SECRET = 'test-jwt-secret-for-testing'
 process.env.RESEND_API_KEY = 'test-api-key'
 
@@ -61,6 +63,13 @@ vi.mock('./lib/db', () => ({
     reservationOption: {
       deleteMany: vi.fn(() => Promise.resolve()),
     },
+    admin: {
+      findMany: vi.fn(() => Promise.resolve([])),
+      findUnique: vi.fn(() => Promise.resolve(null)),
+      create: vi.fn(() => Promise.resolve({ id: 'test-id' })),
+      update: vi.fn(() => Promise.resolve({ id: 'test-id' })),
+      delete: vi.fn(() => Promise.resolve()),
+    },
     $transaction: vi.fn((fn) =>
       fn({
         reservationOption: {
@@ -90,7 +99,6 @@ global.fetch = vi.fn(() =>
     json: () => Promise.resolve([]),
   })
 ) as any
-
 // Mock Next.js router
 vi.mock('next/navigation', () => ({
   useRouter() {
@@ -144,8 +152,8 @@ vi.mock('./lib/logger', () => ({
   },
 }))
 
-// Mock bcrypt
-vi.mock('bcrypt', () => ({
+// Mock bcryptjs
+vi.mock('bcryptjs', () => ({
   default: {
     compare: vi.fn(),
     hash: vi.fn(),

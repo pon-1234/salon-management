@@ -28,6 +28,15 @@ export class CustomerRepositoryImpl implements CustomerRepository {
     return null
   }
 
+  async findByEmail(email: string): Promise<Customer | null> {
+    const response = await fetch(`${API_BASE_URL}/by-email/${encodeURIComponent(email)}`)
+    if (!response.ok) {
+      if (response.status === 404) return null
+      throw new Error('Failed to fetch customer by email')
+    }
+    return response.json()
+  }
+
   async create(data: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>): Promise<Customer> {
     const response = await fetch(API_BASE_URL, {
       method: 'POST',

@@ -1,23 +1,20 @@
 /**
- * @design_doc   Database client configuration for Prisma
- * @related_to   PrismaClient, all repository implementations
+ * @design_doc   Database connection and Prisma client setup
+ * @related_to   Prisma ORM, database operations
  * @known_issues None currently
  */
-import { PrismaClient } from './generated/prisma'
 
-declare global {
-  var prisma: PrismaClient | undefined
+import { PrismaClient } from '@prisma/client'
+
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined
 }
 
-export const db =
-  globalThis.prisma ||
-  new PrismaClient({
-    log:
-      process.env.NODE_ENV === 'development'
-        ? ['query', 'info', 'warn', 'error']
-        : ['error'],
-  })
+export const db = globalForPrisma.prisma ?? new PrismaClient({
+  log:
+    process.env.NODE_ENV === 'development'
+      ? ['query', 'info', 'warn', 'error']
+      : ['error'],
+})
 
-if (process.env.NODE_ENV !== 'production') {
-  globalThis.prisma = db
-}
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db

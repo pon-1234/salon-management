@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Logging utility for application monitoring
+ * @related_to   Payment processing, error tracking
+ * @known_issues None currently
+ */
 import pino from 'pino';
 
 const isDevelopment = process.env.NODE_ENV === 'development';
@@ -16,4 +21,4 @@ const logger = pino({
     : undefined,
 });
 
-export default logger; 
+export default logger;
