@@ -147,7 +147,6 @@ model CastSchedule {
   @@unique([castId, date])
 }
 
-<<<<<<< HEAD
 model PaymentIntent {
   id              String   @id @default(cuid())
   providerId      String   @unique
