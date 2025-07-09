@@ -1,141 +1,124 @@
 /**
- * @design_doc   Role-based access control middleware
- * @related_to   Admin and Customer authentication, JWT tokens
+ * @design_doc   Authentication middleware using NextAuth.js
+ * @related_to   authOptions in lib/auth/config.ts, NextAuth API routes
  * @known_issues None currently
  */
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { jwtVerify } from 'jose'
+import { getToken } from 'next-auth/jwt'
 
-const getJwtSecret = () => {
-  const secret = process.env.JWT_SECRET
-  if (!secret) {
-    throw new Error('JWT_SECRET is not defined in environment variables')
-  }
-  return new TextEncoder().encode(secret)
-}
+// Public routes that don't require authentication
+const publicRoutes = [
+  '/',
+  '/api',
+  '/_next',
+  '/favicon.ico',
+]
+
+// Auth routes that should be accessible without authentication
+const authRoutes = [
+  '/login',
+  '/register',
+  '/admin/login',
+  '/auth',
+]
+
+// Routes that require admin role
+const adminRoutes = [
+  '/admin',
+]
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const tokenCookie = request.cookies.get('auth-token')
-  const token = tokenCookie?.value
-
-  // Public routes that don't require authentication
-  const publicRoutes = [
-    '/',
-    '/_next',
-    '/favicon.ico',
-    '/login',
-    '/register',
-    '/admin/login',
-  ]
 
   // Check if route is public
-  const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))
-  
-  // Allow public routes
+  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route)) ||
+    authRoutes.some(route => pathname.startsWith(route)) ||
+    pathname.match(/^\/((?!admin|mypage).)*$/) // All non-admin, non-mypage routes
+
+  // Get session token
+  const token = await getToken({ 
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+  })
+
+  // Handle authentication routes
+  if (authRoutes.some(route => pathname.startsWith(route))) {
+    // If already authenticated, redirect to appropriate dashboard
+    if (token) {
+      if (token.role === 'admin' && pathname.startsWith('/admin')) {
+        return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+      } else if (token.role === 'customer') {
+        const store = pathname.split('/')[1]
+        return NextResponse.redirect(new URL(`/${store}`, request.url))
+      }
+    }
+    return NextResponse.next()
+  }
+
+  // Handle admin routes
+  if (pathname.startsWith('/admin')) {
+    if (!token) {
+      // Redirect to admin login if not authenticated
+      const url = new URL('/admin/login', request.url)
+      url.searchParams.set('callbackUrl', pathname)
+      return NextResponse.redirect(url, { status: 307 })
+    }
+
+    if (token.role !== 'admin') {
+      // Return 403 if authenticated but not admin
+      return new NextResponse('Forbidden', { status: 403 })
+    }
+
+    // Special redirect for /admin to /admin/dashboard
+    if (pathname === '/admin') {
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+    }
+
+    return NextResponse.next()
+  }
+
+  // Handle protected customer routes (e.g., mypage)
+  if (pathname.includes('/mypage')) {
+    if (!token) {
+      // Extract store from URL and redirect to store-specific login
+      const pathParts = pathname.split('/')
+      const store = pathParts[1]
+      const url = new URL(`/${store}/login`, request.url)
+      url.searchParams.set('callbackUrl', pathname)
+      return NextResponse.redirect(url, { status: 307 })
+    }
+
+    return NextResponse.next()
+  }
+
+  // Handle protected API routes
+  if (pathname.startsWith('/api/reservation') || pathname.startsWith('/api/cast')) {
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+    
+    // For admin-only API routes
+    if (pathname.startsWith('/api/admin') && token.role !== 'admin') {
+      return NextResponse.json({ error: 'Access denied. Admin role required.' }, { status: 403 })
+    }
+    
+    return NextResponse.next()
+  }
+
+  // Allow all other public routes
   if (isPublicRoute) {
     return NextResponse.next()
   }
 
-  // Protected paths
-  const isAdminPath = pathname.startsWith('/admin')
-  const isCustomerPath = pathname.includes('/mypage')
-  const isProtectedApiPath = pathname.startsWith('/api/reservation') || pathname.startsWith('/api/cast')
-
-  // No token - redirect to login
+  // Default: require authentication
   if (!token) {
-    if (pathname.startsWith('/api')) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
-    }
-    
-    // Redirect to appropriate login page
-    if (isAdminPath) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/admin/login'
-      return NextResponse.redirect(url, { status: 307 })
-    } else if (isCustomerPath) {
-      // Extract store from URL for customer routes
-      const pathParts = pathname.split('/')
-      const store = pathParts[1]
-      const url = request.nextUrl.clone()
-      url.pathname = `/${store}/login`
-      return NextResponse.redirect(url, { status: 307 })
-    }
-    
-    return NextResponse.next()
-  }
-
-  // Verify JWT token
-  try {
-    const { payload } = await jwtVerify(token, await getJwtSecret())
-    
-    // Validate token structure based on role
-    if (payload.role === 'admin') {
-      if (!payload.adminId) {
-        throw new Error('Invalid admin token structure')
-      }
-    } else if (payload.role === 'customer') {
-      if (!payload.customerId) {
-        throw new Error('Invalid customer token structure')
-      }
-    } else {
-      throw new Error('Invalid role in token')
-    }
-
-    // Check role-based access
-    if (isAdminPath) {
-      if (payload.role !== 'admin') {
-        if (pathname.startsWith('/api')) {
-          return NextResponse.json({ error: 'Access denied. Admin role required.' }, { status: 403 })
-        }
-        return NextResponse.json({ error: 'Access denied. Admin role required.' }, { status: 403 })
-      }
-      
-      // Special redirect for /admin to /admin/dashboard
-      if (pathname === '/admin') {
-        return NextResponse.redirect(new URL('/admin/dashboard', request.url))
-      }
-    }
-
-    // Add user info to request headers
-    const requestHeaders = new Headers(request.headers)
-    if (payload.role === 'admin') {
-      requestHeaders.set('x-customer-id', payload.adminId as string)
-    } else if (payload.role === 'customer') {
-      requestHeaders.set('x-customer-id', payload.customerId as string)
-    }
-
-    // Continue with modified headers
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    })
-  } catch (error) {
-    console.error('JWT Verification Error:', error)
-    
-    if (pathname.startsWith('/api')) {
-      const errorMessage = error instanceof Error && error.message.includes('token structure') 
-        ? 'Invalid token structure' 
-        : 'Invalid or expired token'
-      return NextResponse.json({ error: errorMessage }, { status: 401 })
-    }
-    
-    // Redirect to appropriate login page
-    const url = request.nextUrl.clone()
-    if (isAdminPath) {
-      url.pathname = '/admin/login'
-    } else if (isCustomerPath) {
-      const pathParts = pathname.split('/')
-      const store = pathParts[1]
-      url.pathname = `/${store}/login`
-    } else {
-      url.pathname = '/login'
-    }
-    
+    const url = new URL('/login', request.url)
+    url.searchParams.set('callbackUrl', pathname)
     return NextResponse.redirect(url, { status: 307 })
   }
+
+  return NextResponse.next()
 }
 
 export const config = {
@@ -146,6 +129,8 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
+     *
+     * APIルートもミドルウェアの対象に含めるため、'api'の除外を削除
      */
     '/((?!_next/static|_next/image|favicon.ico|.*\\..*|public).*)',
   ],

@@ -17,6 +17,8 @@ declare module 'next-auth' {
       email: string
       name: string
       role: 'admin' | 'customer'
+      adminRole?: string
+      permissions?: string[]
     }
   }
   
@@ -25,6 +27,8 @@ declare module 'next-auth' {
     email: string
     name: string
     role: 'admin' | 'customer'
+    adminRole?: string
+    permissions?: string[]
   }
 }
 
@@ -32,6 +36,8 @@ declare module 'next-auth/jwt' {
   interface JWT {
     id: string
     role: 'admin' | 'customer'
+    adminRole?: string
+    permissions?: string[]
   }
 }
 
@@ -65,6 +71,12 @@ export const authOptions: NextAuthOptions = {
             return null
           }
 
+          // Check if account is active
+          if (!admin.isActive) {
+            recordLoginAttempt(`admin:${credentials.email}`, false)
+            throw new Error('Account is not active. Please contact administrator.')
+          }
+
           // Compare password with bcrypt
           const isPasswordValid = await bcrypt.compare(credentials.password, admin.password)
 
@@ -73,6 +85,22 @@ export const authOptions: NextAuthOptions = {
             return null
           }
 
+          // Parse permissions if stored as JSON string
+          let permissions: string[] = []
+          if (admin.permissions) {
+            try {
+              permissions = JSON.parse(admin.permissions as string)
+            } catch {
+              permissions = []
+            }
+          }
+
+          // Update last login timestamp
+          await db.admin.update({
+            where: { id: admin.id },
+            data: { lastLogin: new Date() }
+          })
+
           // Success - clear rate limit
           recordLoginAttempt(`admin:${credentials.email}`, true)
 
@@ -80,7 +108,9 @@ export const authOptions: NextAuthOptions = {
             id: admin.id,
             email: admin.email,
             name: admin.name,
-            role: 'admin'
+            role: 'admin',
+            adminRole: admin.role,
+            permissions
           } as User
         } catch (error) {
           console.error('Error during admin authentication:', error)
@@ -147,6 +177,12 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id
         token.role = user.role
+        if (user.adminRole) {
+          token.adminRole = user.adminRole
+        }
+        if (user.permissions) {
+          token.permissions = user.permissions
+        }
       }
       return token
     },
@@ -154,6 +190,12 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id
         session.user.role = token.role
+        if (token.adminRole) {
+          session.user.adminRole = token.adminRole
+        }
+        if (token.permissions) {
+          session.user.permissions = token.permissions
+        }
       }
       return session
     }
