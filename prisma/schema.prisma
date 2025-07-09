@@ -200,6 +200,10 @@ model Admin {
   email     String   @unique
   password  String
   name      String
+  role      String   @default("staff") // 'staff' | 'manager' | 'super_admin'
+  permissions Json?  // Array of permission strings
+  isActive  Boolean  @default(true)
+  lastLogin DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
