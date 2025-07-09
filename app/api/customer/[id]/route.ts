@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@/lib/generated/prisma'
-
-const prisma = new PrismaClient()
+import { db } from '@/lib/db'
+import logger from '@/lib/logger'
 
 interface Params {
   id: string
@@ -11,7 +10,7 @@ interface Params {
 export async function GET(request: Request, context: { params: Promise<Params> }) {
   try {
     const { id } = await context.params
-    const customer = await prisma.customer.findUnique({
+    const customer = await db.customer.findUnique({
       where: { id },
     })
     if (!customer) {
@@ -19,7 +18,7 @@ export async function GET(request: Request, context: { params: Promise<Params> }
     }
     return NextResponse.json(customer)
   } catch (error) {
-    console.error('Failed to fetch customer:', error)
+    logger.error({ err: error, customerId: (await context.params).id }, 'Failed to fetch customer')
     return NextResponse.json({ error: 'Failed to fetch customer' }, { status: 500 })
   }
 }
@@ -29,7 +28,7 @@ export async function PUT(request: Request, context: { params: Promise<Params> }
   try {
     const { id } = await context.params
     const data = await request.json()
-    const updatedCustomer = await prisma.customer.update({
+    const updatedCustomer = await db.customer.update({
       where: { id },
       data: {
         ...data,
@@ -39,7 +38,7 @@ export async function PUT(request: Request, context: { params: Promise<Params> }
     })
     return NextResponse.json(updatedCustomer)
   } catch (error) {
-    console.error('Failed to update customer:', error)
+    logger.error({ err: error, customerId: (await context.params).id }, 'Failed to update customer')
     return NextResponse.json({ error: 'Failed to update customer' }, { status: 500 })
   }
 }
@@ -48,12 +47,12 @@ export async function PUT(request: Request, context: { params: Promise<Params> }
 export async function DELETE(request: Request, context: { params: Promise<Params> }) {
   try {
     const { id } = await context.params
-    await prisma.customer.delete({
+    await db.customer.delete({
       where: { id },
     })
     return new NextResponse(null, { status: 204 }) // No Content
   } catch (error) {
-    console.error('Failed to delete customer:', error)
+    logger.error({ err: error, customerId: (await context.params).id }, 'Failed to delete customer')
     return NextResponse.json({ error: 'Failed to delete customer' }, { status: 500 })
   }
 }

@@ -1,55 +1,127 @@
-import { MockRepository, generateMockData } from '../shared'
+/**
+ * @design_doc   Cast repository implementation using API client
+ * @related_to   CastRepository, Cast API endpoints, fetch API
+ * @known_issues None currently
+ */
 import { Cast, CastSchedule } from './types'
 import { CastRepository } from './repository'
 
-const generateCastData = (index: number): Omit<Cast, 'id' | 'createdAt' | 'updatedAt'> => ({
-  name: index === 0 ? 'みるく' : `キャスト${index + 1}`,
-  nameKana: index === 0 ? 'みるく' : `キャスト${index + 1}`,
-  age: 18 + Math.floor(Math.random() * 15),
-  height: 150 + Math.floor(Math.random() * 20),
-  bust: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'][Math.floor(Math.random() * 8)],
-  waist: 55 + Math.floor(Math.random() * 15),
-  hip: 80 + Math.floor(Math.random() * 20),
-  type: ['カワイイ系', 'セクシー系', 'お姉さん系', '癒し系'][Math.floor(Math.random() * 4)],
-  image: 'https://rimane.net/images/tyrano-move-image01.jpg',
-  description:
-    '明るく元気な性格で、お客様を楽しませることが得意です。マッサージの技術も高く、リピーターの多いキャストです。',
-  netReservation: Math.random() > 0.3,
-  specialDesignationFee: Math.random() > 0.7 ? 3000 + Math.floor(Math.random() * 7000) : null,
-  regularDesignationFee: Math.random() > 0.5 ? 1000 + Math.floor(Math.random() * 4000) : null,
-  workStatus: Math.random() > 0.3 ? '出勤' : '未出勤',
-  workStart: new Date(2023, 0, 1, 10, 0),
-  workEnd: new Date(2023, 0, 1, 22, 0),
-  appointments: [],
-  availableOptions: [],
-  images: [],
-  panelDesignationRank: Math.floor(Math.random() * 5) + 1,
-  regularDesignationRank: Math.floor(Math.random() * 5) + 1,
-})
+export class CastRepositoryImpl implements CastRepository {
+  private baseUrl = '/api'
 
-export class CastRepositoryImpl extends MockRepository<Cast> implements CastRepository {
-  constructor() {
-    super(generateMockData(5, generateCastData))
+  async getAll(): Promise<Cast[]> {
+    const response = await fetch(`${this.baseUrl}/cast`)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch casts: ${response.statusText}`)
+    }
+    return response.json()
+  }
+
+  async getById(id: string): Promise<Cast | null> {
+    const response = await fetch(`${this.baseUrl}/cast?id=${id}`)
+    if (response.status === 404) {
+      return null
+    }
+    if (!response.ok) {
+      throw new Error(`Failed to fetch cast: ${response.statusText}`)
+    }
+    return response.json()
+  }
+
+  async create(data: Omit<Cast, 'id' | 'createdAt' | 'updatedAt'>): Promise<Cast> {
+    const response = await fetch(`${this.baseUrl}/cast`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    })
+    if (!response.ok) {
+      throw new Error(`Failed to create cast: ${response.statusText}`)
+    }
+    return response.json()
+  }
+
+  async update(id: string, data: Partial<Cast>): Promise<Cast> {
+    const response = await fetch(`${this.baseUrl}/cast`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ id, ...data }),
+    })
+    if (!response.ok) {
+      throw new Error(`Failed to update cast: ${response.statusText}`)
+    }
+    return response.json()
+  }
+
+  async delete(id: string): Promise<boolean> {
+    const response = await fetch(`${this.baseUrl}/cast?id=${id}`, {
+      method: 'DELETE',
+    })
+    if (!response.ok) {
+      throw new Error(`Failed to delete cast: ${response.statusText}`)
+    }
+    return true
   }
 
   async getCastSchedule(castId: string, startDate: Date, endDate: Date): Promise<CastSchedule[]> {
-    // This is a mock implementation. In a real application, this would fetch the actual schedule from a database.
-    const schedule: CastSchedule[] = []
-    let currentDate = new Date(startDate)
-    while (currentDate <= endDate) {
-      schedule.push({
-        castId,
-        date: new Date(currentDate),
-        startTime: new Date(currentDate.setHours(10, 0, 0, 0)),
-        endTime: new Date(currentDate.setHours(22, 0, 0, 0)),
-      })
-      currentDate.setDate(currentDate.getDate() + 1)
+    const params = new URLSearchParams({
+      castId,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+    })
+
+    const response = await fetch(`${this.baseUrl}/cast-schedule?${params}`)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch cast schedule: ${response.statusText}`)
     }
-    return schedule
+    return response.json()
   }
 
   async updateCastSchedule(castId: string, schedule: CastSchedule[]): Promise<void> {
-    // In a real application, this would update the schedule in a database
-    console.log(`Updating schedule for cast ${castId}`, schedule)
+    // First, get existing schedules to update/create/delete
+    const existingSchedules = await this.getCastSchedule(
+      castId,
+      new Date(Math.min(...schedule.map((s) => s.date.getTime()))),
+      new Date(Math.max(...schedule.map((s) => s.date.getTime())))
+    )
+
+    // Update each schedule item
+    for (const item of schedule) {
+      const existing = existingSchedules.find(
+        (s) => s.castId === item.castId && s.date.toDateString() === item.date.toDateString()
+      )
+
+      if (existing) {
+        // Update existing schedule
+        const response = await fetch(`${this.baseUrl}/cast-schedule`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: (existing as any).id,
+            ...item,
+          }),
+        })
+        if (!response.ok) {
+          throw new Error(`Failed to update cast schedule: ${response.statusText}`)
+        }
+      } else {
+        // Create new schedule
+        const response = await fetch(`${this.baseUrl}/cast-schedule`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(item),
+        })
+        if (!response.ok) {
+          throw new Error(`Failed to create cast schedule: ${response.statusText}`)
+        }
+      }
+    }
   }
 }

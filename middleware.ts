@@ -31,11 +31,6 @@ const adminRoutes = [
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // /admin にアクセスした場合、/admin/dashboard にリダイレクト
-  if (pathname === '/admin') {
-    return NextResponse.redirect(new URL('/admin/dashboard', request.url))
-  }
-
   // Check if route is public
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route)) ||
     authRoutes.some(route => pathname.startsWith(route)) ||
@@ -111,12 +106,13 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
+     *
+     * APIルートもミドルウェアの対象に含めるため、'api'の除外を削除
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*|public).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\..*|public).*)',
   ],
 }

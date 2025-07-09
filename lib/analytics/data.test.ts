@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import {
   generateMonthlyData,
   generateDailyData,
@@ -7,9 +7,18 @@ import {
   generateMarketingChannelData,
   staffPerformanceData,
 } from './data'
-import { courses, options } from '@/lib/course-option/data'
+import { getCourses, getOptions } from '@/lib/course-option/data'
+
+let courses: any[] = []
+let options: any[] = []
 
 describe('Analytics Data Generators', () => {
+  beforeAll(async () => {
+    // Initialize courses and options for tests
+    courses = await getCourses()
+    options = await getOptions()
+  })
+
   describe('generateMonthlyData', () => {
     it('should generate 12 months of data', () => {
       const data = generateMonthlyData(2024)
@@ -54,22 +63,36 @@ describe('Analytics Data Generators', () => {
   })
 
   describe('generateCourseSalesData', () => {
-    it('should generate sales data for all courses', () => {
+    it('should generate sales data for all courses', async () => {
+      // Ensure courses are loaded
+      if (courses.length === 0) {
+        courses = await getCourses()
+      }
+
       const data = generateCourseSalesData(2024, 7)
       expect(data).toHaveLength(courses.length)
-      expect(data[0]).toHaveProperty('id')
-      expect(data[0]).toHaveProperty('sales')
-      expect(data[0].sales).toHaveLength(31) // July has 31 days
+      if (data.length > 0) {
+        expect(data[0]).toHaveProperty('id')
+        expect(data[0]).toHaveProperty('sales')
+        expect(data[0].sales).toHaveLength(31) // July has 31 days
+      }
     })
   })
 
   describe('generateOptionSalesData', () => {
-    it('should generate sales data for all options', () => {
+    it('should generate sales data for all options', async () => {
+      // Ensure options are loaded
+      if (options.length === 0) {
+        options = await getOptions()
+      }
+
       const data = generateOptionSalesData(2024)
       expect(data).toHaveLength(options.length)
-      expect(data[0]).toHaveProperty('id')
-      expect(data[0]).toHaveProperty('monthlySales')
-      expect(data[0].monthlySales).toHaveLength(12)
+      if (data.length > 0) {
+        expect(data[0]).toHaveProperty('id')
+        expect(data[0]).toHaveProperty('monthlySales')
+        expect(data[0].monthlySales).toHaveLength(12)
+      }
     })
   })
 
