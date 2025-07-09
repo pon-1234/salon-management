@@ -1,6 +1,6 @@
 /**
- * @design_doc   Customer login API endpoint with role-based JWT
- * @related_to   Customer model, JWT authentication, middleware.ts
+ * @design_doc   Admin login API endpoint with role-based authentication
+ * @related_to   Admin model, JWT authentication, middleware.ts
  * @known_issues None currently
  */
 import { NextRequest, NextResponse } from 'next/server'
@@ -16,18 +16,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
     }
 
-    const customer = await db.customer.findUnique({
+    const admin = await db.admin.findUnique({
       where: { email },
     })
 
-    if (!customer) {
+    if (!admin) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
     }
 
-    const isPasswordValid = await bcrypt.compare(password, customer.password)
+    const isPasswordValid = await bcrypt.compare(password, admin.password)
 
     if (!isPasswordValid) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+    }
+
+    // Check if account is active
+    if (!admin.isActive) {
+      return NextResponse.json({ error: 'Account is not active' }, { status: 403 })
     }
 
     // Get JWT secret
@@ -37,40 +42,55 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 
-    // Generate JWT with customer-specific payload including role
+    // Parse permissions if stored as JSON string
+    let permissions = []
+    if (admin.permissions) {
+      try {
+        permissions = JSON.parse(admin.permissions as string)
+      } catch {
+        permissions = []
+      }
+    }
+
+    // Generate JWT with admin-specific payload
     const token = jwt.sign(
       {
-        customerId: customer.id,
-        storeId: 'default', // TODO: Get actual store ID from request
-        role: 'customer',
+        adminId: admin.id,
+        role: 'admin',
+        permissions,
       },
       jwtSecret,
-      { expiresIn: '2h' }
+      { expiresIn: '8h' } // Longer expiration for admin sessions
     )
 
-    // Create response with customer info
+    // Update last login timestamp
+    await db.admin.update({
+      where: { id: admin.id },
+      data: { lastLogin: new Date() },
+    })
+
+    // Create response with token in cookie
     const response = NextResponse.json({
       message: 'Login successful',
-      customer: {
-        id: customer.id,
-        email: customer.email,
-        name: customer.name,
-        memberType: customer.memberType,
+      admin: {
+        id: admin.id,
+        email: admin.email,
+        name: admin.name,
+        role: admin.role,
       },
     })
 
-    // Set token in cookie
     response.cookies.set('auth-token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV !== 'development',
       path: '/',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 2, // 2 hours
+      maxAge: 60 * 60 * 8, // 8 hours
     })
 
     return response
   } catch (error) {
-    console.error('Login error:', error)
+    console.error('Admin login error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

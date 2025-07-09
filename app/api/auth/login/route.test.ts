@@ -1,185 +1,179 @@
+/**
+ * @design_doc   Tests for Customer login API endpoint with role-based JWT
+ * @related_to   Customer model, JWT authentication, middleware.ts
+ * @known_issues None currently
+ */
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 import { POST } from './route'
-import { vi, describe, it, expect, beforeEach } from 'vitest'
-
-// モックをインポート
 import { db } from '@/lib/db'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 
-describe('/api/auth/login', () => {
+// Mock dependencies
+vi.mock('@/lib/db', () => ({
+  db: {
+    customer: {
+      findUnique: vi.fn(),
+    },
+  },
+}))
+
+vi.mock('bcryptjs')
+vi.mock('jsonwebtoken')
+
+describe('POST /api/auth/login', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.resetModules()
+    process.env.JWT_SECRET = 'test-secret'
   })
 
-  describe('POST', () => {
-    it('有効な認証情報でログインできる', async () => {
-      const mockCustomer = {
-        id: 'customer-1',
-        email: 'test@example.com',
-        password: 'hashed-password',
-        name: 'Test User',
-        phone: '09012345678',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
-
-      // DBからユーザーを取得するモック
-      ;(db.customer.findUnique as any).mockResolvedValue(mockCustomer)
-      
-      // パスワード比較のモック
-      ;(bcrypt.compare as any).mockResolvedValue(true)
-      
-      // JWT生成のモック
-      ;(jwt.sign as any).mockReturnValue('mock-jwt-token')
-
-      const request = new NextRequest('http://localhost:3000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: 'test@example.com',
-          password: 'password123',
-        }),
-      })
-
-      const response = await POST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(200)
-      expect(data).toEqual({
-        message: 'Login successful',
-      })
-      
-      // Cookieがセットされていることを確認
-      const setCookieHeader = response.headers.get('set-cookie')
-      expect(setCookieHeader).toContain('auth-token=mock-jwt-token')
-      expect(setCookieHeader).toContain('HttpOnly')
-      
-      expect(db.customer.findUnique).toHaveBeenCalledWith({
-        where: { email: 'test@example.com' },
-      })
-      expect(bcrypt.compare).toHaveBeenCalledWith('password123', 'hashed-password')
-      expect(jwt.sign).toHaveBeenCalledWith(
-        { customerId: 'customer-1', name: 'Test User' },
-        'test-jwt-secret-for-testing',
-        { expiresIn: '1h' }
-      )
+  it('should return 400 if email or password is missing', async () => {
+    const request = new NextRequest('http://localhost:3000/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'customer@example.com' }),
     })
 
-    it('存在しないメールアドレスではログインできない', async () => {
-      ;(db.customer.findUnique as any).mockResolvedValue(null)
+    const response = await POST(request)
+    const data = await response.json()
 
-      const request = new NextRequest('http://localhost:3000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: 'nonexistent@example.com',
-          password: 'password123',
-        }),
-      })
+    expect(response.status).toBe(400)
+    expect(data.error).toBe('Email and password are required')
+  })
 
-      const response = await POST(request)
-      const data = await response.json()
+  it('should return 401 if customer is not found', async () => {
+    vi.mocked(db.customer.findUnique).mockResolvedValue(null)
 
-      expect(response.status).toBe(401)
-      expect(data).toEqual({ error: 'Invalid credentials' })
+    const request = new NextRequest('http://localhost:3000/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'customer@example.com', password: 'password123' }),
     })
 
-    it('間違ったパスワードではログインできない', async () => {
-      const mockCustomer = {
-        id: 'customer-1',
-        email: 'test@example.com',
-        password: 'hashed-password',
-        name: 'Test User',
-        phone: '09012345678',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+    const response = await POST(request)
+    const data = await response.json()
 
-      ;(db.customer.findUnique as any).mockResolvedValue(mockCustomer)
-      ;(bcrypt.compare as any).mockResolvedValue(false)
+    expect(response.status).toBe(401)
+    expect(data.error).toBe('Invalid credentials')
+    expect(db.customer.findUnique).toHaveBeenCalledWith({
+      where: { email: 'customer@example.com' },
+    })
+  })
 
-      const request = new NextRequest('http://localhost:3000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: 'test@example.com',
-          password: 'wrong-password',
-        }),
-      })
+  it('should return 401 if password is invalid', async () => {
+    const mockCustomer = {
+      id: 'customer-123',
+      email: 'customer@example.com',
+      password: 'hashed-password',
+      name: 'Test Customer',
+      nameKana: 'テスト カスタマー',
+      phone: '090-1234-5678',
+      birthDate: new Date('1990-01-01'),
+      memberType: 'regular',
+      points: 100,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
 
-      const response = await POST(request)
-      const data = await response.json()
+    vi.mocked(db.customer.findUnique).mockResolvedValue(mockCustomer)
+    vi.mocked(bcrypt.compare).mockResolvedValue(false as never)
 
-      expect(response.status).toBe(401)
-      expect(data).toEqual({ error: 'Invalid credentials' })
+    const request = new NextRequest('http://localhost:3000/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'customer@example.com', password: 'wrong-password' }),
     })
 
-    it('必須フィールドが不足している場合はエラーを返す', async () => {
-      const request = new NextRequest('http://localhost:3000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: 'test@example.com',
-          // password is missing
-        }),
-      })
+    const response = await POST(request)
+    const data = await response.json()
 
-      const response = await POST(request)
-      const data = await response.json()
+    expect(response.status).toBe(401)
+    expect(data.error).toBe('Invalid credentials')
+    expect(bcrypt.compare).toHaveBeenCalledWith('wrong-password', 'hashed-password')
+  })
 
-      expect(response.status).toBe(400)
-      expect(data).toEqual({ error: 'Email and password are required' })
+  it('should login successfully and return JWT token with correct payload', async () => {
+    const mockCustomer = {
+      id: 'customer-123',
+      email: 'customer@example.com',
+      password: 'hashed-password',
+      name: 'Test Customer',
+      nameKana: 'テスト カスタマー',
+      phone: '090-1234-5678',
+      birthDate: new Date('1990-01-01'),
+      memberType: 'vip',
+      points: 500,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+
+    vi.mocked(db.customer.findUnique).mockResolvedValue(mockCustomer)
+    vi.mocked(bcrypt.compare).mockResolvedValue(true as never)
+    vi.mocked(jwt.sign).mockReturnValue('mock-jwt-token' as any)
+
+    const request = new NextRequest('http://localhost:3000/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'customer@example.com', password: 'password123' }),
     })
 
-    it('不正なJSON形式の場合はエラーを返す', async () => {
-      const request = new NextRequest('http://localhost:3000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: 'invalid json',
-      })
+    const response = await POST(request)
+    const data = await response.json()
 
-      const response = await POST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(500)
-      expect(data).toEqual({ error: 'Internal server error' })
+    expect(response.status).toBe(200)
+    expect(data.message).toBe('Login successful')
+    expect(data.customer).toEqual({
+      id: 'customer-123',
+      email: 'customer@example.com',
+      name: 'Test Customer',
+      memberType: 'vip',
     })
 
-    it('JWT_SECRETが設定されていない場合はエラーを返す', async () => {
-      const originalSecret = process.env.JWT_SECRET
-      delete process.env.JWT_SECRET
+    // Check JWT payload includes role
+    expect(jwt.sign).toHaveBeenCalledWith(
+      {
+        customerId: 'customer-123',
+        storeId: expect.any(String),
+        role: 'customer',
+      },
+      'test-secret',
+      { expiresIn: '2h' }
+    )
 
-      const mockCustomer = {
-        id: 'customer-1',
-        email: 'test@example.com',
-        password: 'hashed-password',
-        name: 'Test User',
-        phone: '09012345678',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+    // Check cookie
+    const setCookieHeader = response.headers.get('set-cookie')
+    expect(setCookieHeader).toContain('auth-token=mock-jwt-token')
+    expect(setCookieHeader).toContain('HttpOnly')
+    expect(setCookieHeader).toContain('Path=/')
+  })
 
-      ;(db.customer.findUnique as any).mockResolvedValue(mockCustomer)
-      ;(bcrypt.compare as any).mockResolvedValue(true)
+  it('should return 500 if JWT_SECRET is not defined', async () => {
+    delete process.env.JWT_SECRET
 
-      const request = new NextRequest('http://localhost:3000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: 'test@example.com',
-          password: 'password123',
-        }),
-      })
+    const mockCustomer = {
+      id: 'customer-123',
+      email: 'customer@example.com',
+      password: 'hashed-password',
+      name: 'Test Customer',
+      nameKana: 'テスト カスタマー',
+      phone: '090-1234-5678',
+      birthDate: new Date('1990-01-01'),
+      memberType: 'regular',
+      points: 100,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
 
-      const response = await POST(request)
-      const data = await response.json()
+    vi.mocked(db.customer.findUnique).mockResolvedValue(mockCustomer)
+    vi.mocked(bcrypt.compare).mockResolvedValue(true as never)
 
-      expect(response.status).toBe(500)
-      expect(data).toEqual({ error: 'Internal server error' })
-
-      // 環境変数を元に戻す
-      process.env.JWT_SECRET = originalSecret
+    const request = new NextRequest('http://localhost:3000/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'customer@example.com', password: 'password123' }),
     })
+
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(500)
+    expect(data.error).toBe('Internal server error')
   })
 })

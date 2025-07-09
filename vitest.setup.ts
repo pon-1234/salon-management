@@ -63,6 +63,13 @@ vi.mock('./lib/db', () => ({
     reservationOption: {
       deleteMany: vi.fn(() => Promise.resolve()),
     },
+    admin: {
+      findMany: vi.fn(() => Promise.resolve([])),
+      findUnique: vi.fn(() => Promise.resolve(null)),
+      create: vi.fn(() => Promise.resolve({ id: 'test-id' })),
+      update: vi.fn(() => Promise.resolve({ id: 'test-id' })),
+      delete: vi.fn(() => Promise.resolve()),
+    },
     $transaction: vi.fn((fn) =>
       fn({
         reservationOption: {
@@ -145,8 +152,8 @@ vi.mock('./lib/logger', () => ({
   },
 }))
 
-// Mock bcrypt
-vi.mock('bcrypt', () => ({
+// Mock bcryptjs
+vi.mock('bcryptjs', () => ({
   default: {
     compare: vi.fn(),
     hash: vi.fn(),

@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Role-based access control middleware
+ * @related_to   Admin and Customer authentication, JWT tokens
+ * @known_issues None currently
+ */
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
@@ -15,70 +20,122 @@ export async function middleware(request: NextRequest) {
   const tokenCookie = request.cookies.get('auth-token')
   const token = tokenCookie?.value
 
-  // 保護対象のパスプレフィックス
-  const protectedPaths = ['/admin', '/mypage', '/api/reservation', '/api/cast']
+  // Public routes that don't require authentication
+  const publicRoutes = [
+    '/',
+    '/_next',
+    '/favicon.ico',
+    '/login',
+    '/register',
+    '/admin/login',
+  ]
 
-  // 現在のパスが保護対象かどうかをチェック
-  const isProtected = protectedPaths.some((path) => pathname.startsWith(path))
+  // Check if route is public
+  const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))
+  
+  // Allow public routes
+  if (isPublicRoute) {
+    return NextResponse.next()
+  }
 
-  if (isProtected) {
-    if (!token) {
-      if (pathname.startsWith('/api')) {
-        return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
-      }
-      // ページアクセスの場合はログインページにリダイレクト
+  // Protected paths
+  const isAdminPath = pathname.startsWith('/admin')
+  const isCustomerPath = pathname.includes('/mypage')
+  const isProtectedApiPath = pathname.startsWith('/api/reservation') || pathname.startsWith('/api/cast')
+
+  // No token - redirect to login
+  if (!token) {
+    if (pathname.startsWith('/api')) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+    
+    // Redirect to appropriate login page
+    if (isAdminPath) {
       const url = request.nextUrl.clone()
       url.pathname = '/admin/login'
-      return NextResponse.redirect(url)
-    }
-
-    try {
-      // JWTの検証
-      const { payload } = await jwtVerify(token, await getJwtSecret())
-      const customerId = payload.customerId as string
-
-      if (!customerId) {
-        throw new Error('Customer ID not found in token')
-      }
-
-      // リクエストヘッダーをコピーして新しいヘッダーを作成
-      const requestHeaders = new Headers(request.headers)
-      // カスタムヘッダーに顧客IDを追加
-      requestHeaders.set('x-customer-id', customerId)
-
-      // 新しいヘッダーでリクエストを続行
-      return NextResponse.next({
-        request: {
-          headers: requestHeaders,
-        },
-      })
-    } catch (error) {
-      console.error('JWT Verification Error:', error)
-      if (pathname.startsWith('/api')) {
-        return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 })
-      }
-      // ページアクセスの場合はログインページにリダイレクト
+      return NextResponse.redirect(url, { status: 307 })
+    } else if (isCustomerPath) {
+      // Extract store from URL for customer routes
+      const pathParts = pathname.split('/')
+      const store = pathParts[1]
       const url = request.nextUrl.clone()
-      url.pathname = '/admin/login'
-      return NextResponse.redirect(url)
+      url.pathname = `/${store}/login`
+      return NextResponse.redirect(url, { status: 307 })
     }
+    
+    return NextResponse.next()
   }
 
-  // /admin にアクセスした場合、/admin/dashboard にリダイレクト (認証チェック後に行うべきだが、一旦残す)
-  if (pathname === '/admin') {
-    return NextResponse.redirect(new URL('/admin/dashboard', request.url))
-  }
+  // Verify JWT token
+  try {
+    const { payload } = await jwtVerify(token, await getJwtSecret())
+    
+    // Validate token structure based on role
+    if (payload.role === 'admin') {
+      if (!payload.adminId) {
+        throw new Error('Invalid admin token structure')
+      }
+    } else if (payload.role === 'customer') {
+      if (!payload.customerId) {
+        throw new Error('Invalid customer token structure')
+      }
+    } else {
+      throw new Error('Invalid role in token')
+    }
 
-  // エンドユーザー向けページは認証不要（一部除く）
-  if (pathname.startsWith('/mypage')) {
-    // マイページは認証が必要
-    // const userToken = request.cookies.get('user-token')
-    // if (!userToken) {
-    //   return NextResponse.redirect(new URL('/login', request.url))
-    // }
-  }
+    // Check role-based access
+    if (isAdminPath) {
+      if (payload.role !== 'admin') {
+        if (pathname.startsWith('/api')) {
+          return NextResponse.json({ error: 'Access denied. Admin role required.' }, { status: 403 })
+        }
+        return NextResponse.json({ error: 'Access denied. Admin role required.' }, { status: 403 })
+      }
+      
+      // Special redirect for /admin to /admin/dashboard
+      if (pathname === '/admin') {
+        return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+      }
+    }
 
-  return NextResponse.next()
+    // Add user info to request headers
+    const requestHeaders = new Headers(request.headers)
+    if (payload.role === 'admin') {
+      requestHeaders.set('x-customer-id', payload.adminId as string)
+    } else if (payload.role === 'customer') {
+      requestHeaders.set('x-customer-id', payload.customerId as string)
+    }
+
+    // Continue with modified headers
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    })
+  } catch (error) {
+    console.error('JWT Verification Error:', error)
+    
+    if (pathname.startsWith('/api')) {
+      const errorMessage = error instanceof Error && error.message.includes('token structure') 
+        ? 'Invalid token structure' 
+        : 'Invalid or expired token'
+      return NextResponse.json({ error: errorMessage }, { status: 401 })
+    }
+    
+    // Redirect to appropriate login page
+    const url = request.nextUrl.clone()
+    if (isAdminPath) {
+      url.pathname = '/admin/login'
+    } else if (isCustomerPath) {
+      const pathParts = pathname.split('/')
+      const store = pathParts[1]
+      url.pathname = `/${store}/login`
+    } else {
+      url.pathname = '/login'
+    }
+    
+    return NextResponse.redirect(url, { status: 307 })
+  }
 }
 
 export const config = {
@@ -89,8 +146,6 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
-     *
-     * APIルートもミドルウェアの対象に含めるため、'api'の除外を削除
      */
     '/((?!_next/static|_next/image|favicon.ico|.*\\..*|public).*)',
   ],
