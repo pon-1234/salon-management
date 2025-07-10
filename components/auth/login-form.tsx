@@ -92,9 +92,9 @@ export function LoginForm({ store }: LoginFormProps) {
           <p className="text-sm text-blue-800">
             <strong>デモ用ログイン情報:</strong>
             <br />
-            メール: customer@example.com
+            メール: tanaka@example.com
             <br />
-            パスワード: customer123
+            パスワード: password123
           </p>
         </div>
 

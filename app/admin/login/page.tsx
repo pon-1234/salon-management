@@ -56,6 +56,16 @@ export default function AdminLoginPage() {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
+            {/* Demo Credentials */}
+            <div className="rounded-lg bg-blue-50 p-4">
+              <p className="text-sm text-blue-800">
+                <strong>デモ用ログイン情報:</strong>
+                <br />
+                メール: admin@example.com
+                <br />
+                パスワード: admin123
+              </p>
+            </div>
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
