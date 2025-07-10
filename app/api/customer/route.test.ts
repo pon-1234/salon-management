@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import { GET, POST, PUT, DELETE } from './route'
 import { db } from '@/lib/db'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 
 // Mock the database
 vi.mock('@/lib/db', () => ({
@@ -21,8 +21,8 @@ vi.mock('@/lib/db', () => ({
   },
 }))
 
-// Mock bcrypt
-vi.mock('bcrypt', () => ({
+// Mock bcryptjs
+vi.mock('bcryptjs', () => ({
   default: {
     hash: vi.fn(),
     compare: vi.fn(),

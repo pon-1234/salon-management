@@ -58,14 +58,14 @@ vi.mock('@/lib/logger', () => ({
   },
 }))
 
-vi.mock('bcrypt', () => ({
+vi.mock('bcryptjs', () => ({
   default: {
     hash: vi.fn(),
   },
 }))
 
 import { checkCastAvailability } from './reservation/availability/route'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 
 describe('Customer Journey Integration Tests', () => {
   beforeEach(() => {

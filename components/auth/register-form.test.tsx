@@ -75,13 +75,13 @@ describe('RegisterForm', () => {
     // Test that password hashing is implemented by checking the API route
     const bcrypt = await import('bcryptjs')
     const testPassword = 'testpassword123'
-    const hashedPassword = await bcrypt.hash(testPassword, 12)
+    const hashedPassword = await bcrypt.default.hash(testPassword, 12)
     
     // Verify that the hash is different from the original password
     expect(hashedPassword).not.toBe(testPassword)
     
     // Verify that the hash can be compared with the original password
-    const isValid = await bcrypt.compare(testPassword, hashedPassword)
+    const isValid = await bcrypt.default.compare(testPassword, hashedPassword)
     expect(isValid).toBe(true)
   })
 })
