@@ -1,4 +1,4 @@
-import { PrismaClient } from '../lib/generated/prisma/index.js';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -7,7 +7,23 @@ const SALT_ROUNDS = 10;
 async function main() {
   console.log('Start seeding...');
 
-  // 1. Create a customer
+  // 1. Create initial admin user
+  const adminPassword = await bcrypt.hash(process.env.INITIAL_ADMIN_PASSWORD || 'admin123', SALT_ROUNDS);
+  const admin = await prisma.admin.upsert({
+    where: { email: 'admin@example.com' },
+    update: {},
+    create: {
+      email: 'admin@example.com',
+      password: adminPassword,
+      name: '初期管理者',
+      role: 'super_admin',
+      permissions: JSON.stringify(['*']),
+      isActive: true,
+    },
+  });
+  console.log(`Created/Updated admin: ${admin.email} (Please change the password!)`);
+
+  // 2. Create a customer
   const hashedPassword = await bcrypt.hash('password123', SALT_ROUNDS);
   const customer = await prisma.customer.create({
     data: {
@@ -42,7 +58,38 @@ async function main() {
   });
   console.log(`Created cast: ${cast.name} (ID: ${cast.id})`);
 
-  // 3. Create a course
+  // 3. Create more admin users with different roles
+  const managerPassword = await bcrypt.hash('manager123', SALT_ROUNDS);
+  const manager = await prisma.admin.upsert({
+    where: { email: 'manager@example.com' },
+    update: {},
+    create: {
+      email: 'manager@example.com',
+      password: managerPassword,
+      name: '店舗マネージャー',
+      role: 'manager',
+      permissions: JSON.stringify(['cast:*', 'customer:read', 'reservation:*', 'analytics:read']),
+      isActive: true,
+    },
+  });
+  console.log(`Created/Updated manager: ${manager.email}`);
+
+  const staffPassword = await bcrypt.hash('staff123', SALT_ROUNDS);
+  const staff = await prisma.admin.upsert({
+    where: { email: 'staff@example.com' },
+    update: {},
+    create: {
+      email: 'staff@example.com',
+      password: staffPassword,
+      name: 'スタッフ',
+      role: 'staff',
+      permissions: JSON.stringify(['cast:read', 'customer:read', 'reservation:read']),
+      isActive: true,
+    },
+  });
+  console.log(`Created/Updated staff: ${staff.email}`);
+
+  // 4. Create a course
   const course = await prisma.coursePrice.create({
     data: {
       name: 'スタンダードコース',
