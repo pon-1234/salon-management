@@ -168,11 +168,10 @@ export default function CastListPage() {
               </div>
               <p className="text-sm italic text-gray-600">&ldquo;{cast.message}&rdquo;</p>
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" asChild>
-                  <Link href={`/cast/${cast.id}`}>詳細を見る</Link>
-                </Button>
-                <Button className="flex-1" disabled={!cast.available} asChild>
-                  <Link href={`/booking?cast=${cast.id}`}>予約する</Link>
+                <Button className="w-full" disabled={!cast.available} asChild>
+                  <Link href={`/booking?cast=${cast.id}`}>
+                    {cast.available ? '予約する' : '本日予約不可'}
+                  </Link>
                 </Button>
               </div>
             </CardContent>
