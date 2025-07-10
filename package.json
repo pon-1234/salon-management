@@ -14,6 +14,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "setup:admin": "tsx scripts/setup-admin.ts",
+    "create:admin": "node scripts/create-admin.js",
+    "seed:full": "tsx prisma/seed-full.ts",
     "postinstall": "npx prisma generate"
   },
   "dependencies": {
