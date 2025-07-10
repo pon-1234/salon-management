@@ -307,7 +307,7 @@ export function CastPerformanceTable({ analyticsUseCases }: CastPerformanceTable
                     <TableCell className="font-medium">
                       <div>
                         <Link
-                          href={`/cast/manage/${row.id}`}
+                          href={`/admin/cast/manage/${row.id}`}
                           className="font-medium text-blue-600 hover:underline"
                         >
                           {row.name}

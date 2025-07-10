@@ -181,7 +181,7 @@ export function Header() {
                       onSelect={(currentValue) => {
                         setValue(currentValue === value ? '' : currentValue)
                         setOpen(false)
-                        router.push(`/admin/cast/${cast.id}`)
+                        router.push(`/admin/cast/manage/${cast.id}`)
                       }}
                     >
                       {cast.name}
