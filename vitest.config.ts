@@ -8,6 +8,16 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
+    // ワーカー数を制限してメモリ使用量を削減
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        singleThread: true, // シングルスレッドで実行
+      },
+    },
+    // または以下のオプションでワーカー数を制限
+    // maxWorkers: 1,
+    // minWorkers: 1,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
