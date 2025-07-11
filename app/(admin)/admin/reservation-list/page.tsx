@@ -12,7 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { getAllReservations } from '@/lib/reservation/data'
+import { ReservationRepositoryImpl } from '@/lib/reservation/repository-impl'
+import { toast } from '@/hooks/use-toast'
 import { ReservationDialog } from '@/components/reservation/reservation-dialog'
 import { Reservation, ReservationData } from '@/lib/types/reservation'
 import { format } from 'date-fns'
@@ -20,15 +21,29 @@ import { format } from 'date-fns'
 export default function ReservationListPage() {
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
   const [reservations, setReservations] = useState<Reservation[]>([])
+  const [loading, setLoading] = useState(true)
+  const reservationRepository = new ReservationRepositoryImpl()
 
   useEffect(() => {
-    const fetchReservations = async () => {
-      const fetchedReservations = await getAllReservations()
-      setReservations(fetchedReservations)
-    }
-
     fetchReservations()
   }, [])
+
+  const fetchReservations = async () => {
+    setLoading(true)
+    try {
+      const fetchedReservations = await reservationRepository.getAll()
+      setReservations(fetchedReservations)
+    } catch (error) {
+      console.error('Error fetching reservations:', error)
+      toast({
+        title: 'エラー',
+        description: '予約一覧の取得に失敗しました',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // 予約データをダイアログ用に変換
   const convertToReservationData = (reservation: Reservation): ReservationData | null => {
@@ -97,15 +112,21 @@ export default function ReservationListPage() {
           </div>
         </div>
 
-        <ReservationList
-          reservations={reservations
-            .map((r) => convertToReservationData(r))
-            .filter((r): r is ReservationData => r !== null)}
-          onOpenReservation={(reservationData) => {
-            const reservation = reservations.find((r) => r.id === reservationData.id)
-            if (reservation) setSelectedReservation(reservation)
-          }}
-        />
+        {loading ? (
+          <div className="flex justify-center items-center min-h-[400px]">
+            <div className="text-gray-500">読み込み中...</div>
+          </div>
+        ) : (
+          <ReservationList
+            reservations={reservations
+              .map((r) => convertToReservationData(r))
+              .filter((r): r is ReservationData => r !== null)}
+            onOpenReservation={(reservationData) => {
+              const reservation = reservations.find((r) => r.id === reservationData.id)
+              if (reservation) setSelectedReservation(reservation)
+            }}
+          />
+        )}
       </main>
       <ReservationDialog
         open={!!selectedReservation}

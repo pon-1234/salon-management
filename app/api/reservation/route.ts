@@ -4,6 +4,8 @@
  * @known_issues None currently
  */
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
 import { checkCastAvailability } from './availability/route'
 import { NotificationService } from '@/lib/notification/service'
@@ -15,11 +17,9 @@ const notificationService = new NotificationService()
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
     const authCustomerId = request.headers.get('x-customer-id')
-    // 管理者ロールのチェックは別途実装
-    // if (!authCustomerId) {
-    //   return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
-    // }
+    const isAdmin = session?.user?.role === 'admin'
 
     const searchParams = request.nextUrl.searchParams
     const id = searchParams.get('id')
@@ -43,17 +43,21 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
       }
 
-      // 自分の予約でなければアクセスを拒否 (管理者ロールは除く)
-      if (reservation.customerId !== authCustomerId) {
+      // 管理者または自分の予約のみアクセス可能
+      if (!isAdmin && reservation.customerId !== authCustomerId) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
 
       return NextResponse.json(reservation)
     }
 
-    // 自分の予約一覧のみを取得
-    const where: any = {
-      customerId: authCustomerId,
+    // 管理者は全予約を、顧客は自分の予約のみを取得
+    const where: any = {}
+    if (!isAdmin) {
+      if (!authCustomerId) {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+      }
+      where.customerId = authCustomerId
     }
 
     // フィルタリング
@@ -109,14 +113,22 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
     const authCustomerId = request.headers.get('x-customer-id')
-    if (!authCustomerId) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
-    }
+    const isAdmin = session?.user?.role === 'admin'
 
     const data = await request.json()
 
-    // customerIdは認証情報から取得するため、リクエストボディからは削除
+    // 管理者は顧客IDを指定可能、顧客は自分のIDのみ
+    let targetCustomerId: string
+    if (isAdmin && data.customerId) {
+      targetCustomerId = data.customerId
+    } else if (authCustomerId) {
+      targetCustomerId = authCustomerId
+    } else {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
     const { customerId, ...reservationData } = data
 
     if (
@@ -162,7 +174,7 @@ export async function POST(request: NextRequest) {
         const createdReservation = await tx.reservation.create({
           data: {
             ...reservationData,
-            customerId: authCustomerId, // 認証済み顧客IDを使用
+            customerId: targetCustomerId, // 対象顧客IDを使用
             startTime,
             endTime,
             options: reservationData.options
@@ -208,10 +220,9 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
     const authCustomerId = request.headers.get('x-customer-id')
-    if (!authCustomerId) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
-    }
+    const isAdmin = session?.user?.role === 'admin'
 
     const data = await request.json()
     const { id, customerId, ...updates } = data
@@ -226,7 +237,8 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
     }
 
-    if (existingReservation.customerId !== authCustomerId) {
+    // 管理者または予約の所有者のみ編集可能
+    if (!isAdmin && existingReservation.customerId !== authCustomerId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -318,10 +330,9 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
     const authCustomerId = request.headers.get('x-customer-id')
-    if (!authCustomerId) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
-    }
+    const isAdmin = session?.user?.role === 'admin'
 
     const searchParams = request.nextUrl.searchParams
     const id = searchParams.get('id')
@@ -336,7 +347,8 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
     }
 
-    if (existingReservation.customerId !== authCustomerId) {
+    // 管理者または予約の所有者のみキャンセル可能
+    if (!isAdmin && existingReservation.customerId !== authCustomerId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -344,7 +356,8 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Reservation is already cancelled' }, { status: 400 })
     }
 
-    if (existingReservation.startTime < new Date()) {
+    // 管理者は過去の予約もキャンセル可能
+    if (!isAdmin && existingReservation.startTime < new Date()) {
       return NextResponse.json({ error: 'Cannot cancel past reservations' }, { status: 400 })
     }
 
