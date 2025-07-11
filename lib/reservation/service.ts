@@ -5,7 +5,12 @@
  */
 
 import { PaymentService } from '@/lib/payment/service'
-import { ProcessPaymentRequest, ProcessPaymentResult, PaymentIntent, PaymentTransaction } from '@/lib/payment/types'
+import {
+  ProcessPaymentRequest,
+  ProcessPaymentResult,
+  PaymentIntent,
+  PaymentTransaction,
+} from '@/lib/payment/types'
 import { prisma } from '@/lib/generated/prisma'
 
 export interface CreateReservationWithPaymentData {
@@ -41,7 +46,9 @@ export interface CancelReservationResult {
 export class ReservationService {
   constructor(private paymentService: PaymentService) {}
 
-  async createReservationWithPayment(data: CreateReservationWithPaymentData): Promise<ReservationWithPaymentResult> {
+  async createReservationWithPayment(
+    data: CreateReservationWithPaymentData
+  ): Promise<ReservationWithPaymentResult> {
     try {
       // First create the reservation
       const reservation = await this.createReservation({
@@ -50,7 +57,7 @@ export class ReservationService {
         courseId: data.courseId,
         startTime: data.startTime,
         endTime: data.endTime,
-        status: 'pending' // Start as pending until payment succeeds
+        status: 'pending', // Start as pending until payment succeeds
       })
 
       // Then process the payment
@@ -60,7 +67,7 @@ export class ReservationService {
         amount: data.amount,
         currency: 'jpy',
         paymentMethod: data.paymentMethod,
-        provider: data.paymentProvider
+        provider: data.paymentProvider,
       }
 
       const paymentResult = await this.paymentService.processPayment(paymentRequest)
@@ -68,30 +75,32 @@ export class ReservationService {
       if (paymentResult.success) {
         // Update reservation status to confirmed
         await this.updateReservationStatus(reservation.id, 'confirmed')
-        
+
         return {
           success: true,
           reservation: { ...reservation, status: 'confirmed' },
-          paymentResult
+          paymentResult,
         }
       } else {
         // Payment failed, cancel the reservation
         await this.updateReservationStatus(reservation.id, 'cancelled')
-        
+
         return {
           success: false,
-          error: `Payment failed: ${paymentResult.error}`
+          error: `Payment failed: ${paymentResult.error}`,
         }
       }
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       }
     }
   }
 
-  async createReservationWithPaymentIntent(data: CreateReservationWithPaymentData): Promise<ReservationWithPaymentResult> {
+  async createReservationWithPaymentIntent(
+    data: CreateReservationWithPaymentData
+  ): Promise<ReservationWithPaymentResult> {
     try {
       // Create the reservation first (will be confirmed later after payment)
       const reservation = await this.createReservation({
@@ -100,7 +109,7 @@ export class ReservationService {
         courseId: data.courseId,
         startTime: data.startTime,
         endTime: data.endTime,
-        status: 'pending'
+        status: 'pending',
       })
 
       // Create payment intent for client-side processing
@@ -110,7 +119,7 @@ export class ReservationService {
         amount: data.amount,
         currency: 'jpy',
         paymentMethod: data.paymentMethod,
-        provider: data.paymentProvider
+        provider: data.paymentProvider,
       }
 
       const paymentIntent = await this.paymentService.createPaymentIntent(paymentRequest)
@@ -118,12 +127,12 @@ export class ReservationService {
       return {
         success: true,
         reservation,
-        paymentIntent
+        paymentIntent,
       }
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       }
     }
   }
@@ -131,53 +140,56 @@ export class ReservationService {
   async getReservationWithPayments(reservationId: string): Promise<ReservationWithPayments> {
     const reservation = await this.getReservation(reservationId)
     const payments = await this.paymentService.getPaymentHistoryByReservation(reservationId)
-    
+
     return {
       reservation,
-      payments
+      payments,
     }
   }
 
-  async cancelReservationWithRefund(reservationId: string, refundAmount?: number): Promise<CancelReservationResult> {
+  async cancelReservationWithRefund(
+    reservationId: string,
+    refundAmount?: number
+  ): Promise<CancelReservationResult> {
     try {
       // Get payment transactions for this reservation
       const payments = await this.paymentService.getPaymentHistoryByReservation(reservationId)
-      const completedPayment = payments.find(p => p.status === 'completed')
+      const completedPayment = payments.find((p) => p.status === 'completed')
 
       if (completedPayment && refundAmount) {
         // Process refund
         const refundResult = await this.paymentService.refundPayment({
           transactionId: completedPayment.id,
           amount: refundAmount,
-          reason: 'reservation_cancelled'
+          reason: 'reservation_cancelled',
         })
 
         if (refundResult.success) {
           // Update reservation status
           await this.updateReservationStatus(reservationId, 'cancelled')
-          
+
           return {
             success: true,
-            refundResult
+            refundResult,
           }
         } else {
           return {
             success: false,
-            error: `Refund failed: ${refundResult.error}`
+            error: `Refund failed: ${refundResult.error}`,
           }
         }
       } else {
         // No payment or refund amount, just cancel the reservation
         await this.updateReservationStatus(reservationId, 'cancelled')
-        
+
         return {
-          success: true
+          success: true,
         }
       }
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       }
     }
   }
@@ -195,7 +207,7 @@ export class ReservationService {
       id: `res_${Date.now()}`,
       ...data,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     }
   }
 
@@ -210,7 +222,7 @@ export class ReservationService {
       endTime: new Date(),
       status: 'confirmed',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     }
   }
 

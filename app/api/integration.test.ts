@@ -134,7 +134,7 @@ describe('Customer Journey Integration Tests', () => {
       conflicts: [],
     })
 
-    vi.mocked(db.reservation.$transaction).mockImplementationOnce(async (fn: any) => {
+    vi.mocked(db.$transaction).mockImplementationOnce(async (fn: any) => {
       const txDb = {
         reservation: {
           create: vi.fn().mockResolvedValue(mockReservation),
@@ -253,7 +253,8 @@ describe('Customer Journey Integration Tests', () => {
     const selectedCourse = courses.find((c: any) => c.id === 'course1')
     const selectedOptions = options.filter((o: any) => ['option1', 'option2'].includes(o.id))
 
-    const totalPrice = selectedCourse.price + selectedOptions.reduce((sum: number, opt: any) => sum + opt.price, 0)
+    const totalPrice =
+      selectedCourse.price + selectedOptions.reduce((sum: number, opt: any) => sum + opt.price, 0)
 
     expect(courseResponse.status).toBe(200)
     expect(optionResponse.status).toBe(200)
@@ -283,7 +284,7 @@ describe('Customer Journey Integration Tests', () => {
       ],
     })
 
-    vi.mocked(db.reservation.$transaction).mockImplementationOnce(async (fn: any) => {
+    vi.mocked(db.$transaction).mockImplementationOnce(async (fn: any) => {
       const txDb = {
         reservation: {
           create: vi.fn(),
@@ -377,9 +378,12 @@ describe('Customer Journey Integration Tests', () => {
     const reservations = await reservationResponse.json()
 
     // Get customer reviews
-    const reviewRequest = new NextRequest(`http://localhost:3000/api/review?customerId=${customerId}`, {
-      method: 'GET',
-    })
+    const reviewRequest = new NextRequest(
+      `http://localhost:3000/api/review?customerId=${customerId}`,
+      {
+        method: 'GET',
+      }
+    )
 
     const reviewResponse = await ReviewGET(reviewRequest)
     const reviews = await reviewResponse.json()
@@ -392,7 +396,8 @@ describe('Customer Journey Integration Tests', () => {
 
     // Calculate customer statistics
     const totalReservations = reservations.length
-    const averageRating = reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length
+    const averageRating =
+      reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length
     const uniqueCasts = new Set(reservations.map((r: any) => r.castId)).size
 
     expect(totalReservations).toBe(2)
@@ -463,12 +468,15 @@ describe('Cast Performance Analytics Integration', () => {
     vi.mocked(db.review.findMany).mockResolvedValueOnce(mockCastReviews as any)
 
     // Get cast reservations
-    const reservationRequest = new NextRequest(`http://localhost:3000/api/reservation?castId=${castId}`, {
-      method: 'GET',
-      headers: {
-        'x-customer-id': 'admin', // Assuming admin can see all reservations
-      },
-    })
+    const reservationRequest = new NextRequest(
+      `http://localhost:3000/api/reservation?castId=${castId}`,
+      {
+        method: 'GET',
+        headers: {
+          'x-customer-id': 'admin', // Assuming admin can see all reservations
+        },
+      }
+    )
 
     const reservationResponse = await ReservationGET(reservationRequest)
     const reservations = await reservationResponse.json()
@@ -485,7 +493,8 @@ describe('Cast Performance Analytics Integration', () => {
     const totalReservations = reservations.length
     const confirmedReservations = reservations.filter((r: any) => r.status === 'confirmed').length
     const cancellationRate = ((totalReservations - confirmedReservations) / totalReservations) * 100
-    const averageRating = reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length
+    const averageRating =
+      reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length
     const reviewCount = reviews.length
 
     expect(reservationResponse.status).toBe(200)

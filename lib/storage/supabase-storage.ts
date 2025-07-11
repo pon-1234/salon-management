@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
-import type { 
-  StorageService, 
-  UploadResult, 
-  DeleteResult, 
+import type {
+  StorageService,
+  UploadResult,
+  DeleteResult,
   UploadOptions,
-  StorageConfig 
+  StorageConfig,
 } from './types'
 
 export class SupabaseStorageService implements StorageService {
@@ -13,22 +13,24 @@ export class SupabaseStorageService implements StorageService {
 
   constructor(config: StorageConfig) {
     this.config = config
-    
+
     // Supabase接続情報を環境変数から取得
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    
+
     if (!supabaseUrl || !supabaseAnonKey) {
       throw new Error('Supabase環境変数が設定されていません')
     }
-    
+
     this.supabase = createClient(supabaseUrl, supabaseAnonKey)
   }
 
   async upload(file: File, options?: UploadOptions): Promise<UploadResult> {
     // ファイルサイズチェック
     if (file.size > this.config.maxFileSize) {
-      throw new Error(`ファイルサイズが大きすぎます（最大${this.config.maxFileSize / 1024 / 1024}MB）`)
+      throw new Error(
+        `ファイルサイズが大きすぎます（最大${this.config.maxFileSize / 1024 / 1024}MB）`
+      )
     }
 
     // ファイルタイプチェック
@@ -68,9 +70,7 @@ export class SupabaseStorageService implements StorageService {
   }
 
   async delete(path: string): Promise<DeleteResult> {
-    const { error } = await this.supabase.storage
-      .from(this.config.bucket)
-      .remove([path])
+    const { error } = await this.supabase.storage.from(this.config.bucket).remove([path])
 
     if (error) {
       return {
@@ -85,10 +85,8 @@ export class SupabaseStorageService implements StorageService {
   }
 
   getPublicUrl(path: string): string {
-    const { data } = this.supabase.storage
-      .from(this.config.bucket)
-      .getPublicUrl(path)
-    
+    const { data } = this.supabase.storage.from(this.config.bucket).getPublicUrl(path)
+
     return data.publicUrl
   }
 

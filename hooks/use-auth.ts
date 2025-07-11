@@ -14,14 +14,17 @@ export function useAuth() {
   const isAuthenticated = status === 'authenticated'
   const user = session?.user
 
-  const login = async (credentials: { email: string; password: string }, providerId: string = 'customer-credentials') => {
+  const login = async (
+    credentials: { email: string; password: string },
+    providerId: string = 'customer-credentials'
+  ) => {
     try {
       const result = await signIn(providerId, {
         email: credentials.email,
         password: credentials.password,
         redirect: false,
       })
-      
+
       return result
     } catch (error) {
       console.error('Login error:', error)
@@ -31,9 +34,9 @@ export function useAuth() {
 
   const logout = async (callbackUrl?: string) => {
     try {
-      await signOut({ 
-        redirect: true, 
-        callbackUrl: callbackUrl || '/' 
+      await signOut({
+        redirect: true,
+        callbackUrl: callbackUrl || '/',
       })
     } catch (error) {
       console.error('Logout error:', error)
@@ -55,14 +58,14 @@ export function useAuth() {
     if (!requireAuth(redirectTo)) {
       return false
     }
-    
+
     if (user?.role !== role) {
       const currentPath = window.location.pathname
       const redirectPath = redirectTo || `/login?callbackUrl=${encodeURIComponent(currentPath)}`
       router.push(redirectPath)
       return false
     }
-    
+
     return true
   }
 
@@ -80,7 +83,7 @@ export function useAuth() {
 
 export function useAdminAuth() {
   const auth = useAuth()
-  
+
   return {
     ...auth,
     isAdmin: auth.user?.role === 'admin',
@@ -90,7 +93,7 @@ export function useAdminAuth() {
 
 export function useCustomerAuth() {
   const auth = useAuth()
-  
+
   return {
     ...auth,
     isCustomer: auth.user?.role === 'customer',

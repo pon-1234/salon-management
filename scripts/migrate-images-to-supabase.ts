@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 /**
  * 既存の画像をSupabase Storageに移行するスクリプト
- * 
+ *
  * 使用方法:
  * 1. 環境変数を設定 (.env.localまたは環境変数)
  * 2. スクリプトを実行: pnpm tsx scripts/migrate-images-to-blob.ts
@@ -39,8 +39,8 @@ async function migrateImages() {
   try {
     // ディレクトリ内のファイル一覧を取得
     const files = await readdir(UPLOAD_DIR)
-    const imageFiles = files.filter(file => 
-      IMAGE_EXTENSIONS.some(ext => file.toLowerCase().endsWith(ext))
+    const imageFiles = files.filter((file) =>
+      IMAGE_EXTENSIONS.some((ext) => file.toLowerCase().endsWith(ext))
     )
 
     console.log(`📁 ${imageFiles.length}個の画像ファイルが見つかりました`)
@@ -51,37 +51,38 @@ async function migrateImages() {
     }
 
     // 各画像をSupabaseにアップロード
-    const results = []
+    const results: {
+      oldPath: string
+      newUrl: string
+      path: string
+      filename: string
+    }[] = []
     for (const filename of imageFiles) {
       try {
         const filePath = join(UPLOAD_DIR, filename)
         const buffer = await readFile(filePath)
-        
+
         console.log(`📤 アップロード中: ${filename}`)
-        
+
         // ファイルパスの生成
         const timestamp = Date.now()
         const randomString = Math.random().toString(36).substring(2, 15)
         const extension = filename.split('.').pop()
         const newFilename = `${timestamp}-${randomString}.${extension}`
         const path = `uploads/${newFilename}`
-        
+
         // Supabaseにアップロード
-        const { data, error } = await supabase.storage
-          .from(BUCKET_NAME)
-          .upload(path, buffer, {
-            contentType: `image/${extension}`,
-            upsert: false,
-          })
-        
+        const { data, error } = await supabase.storage.from(BUCKET_NAME).upload(path, buffer, {
+          contentType: `image/${extension}`,
+          upsert: false,
+        })
+
         if (error) {
           throw error
         }
-        
+
         // 公開URLを取得
-        const { data: publicUrlData } = supabase.storage
-          .from(BUCKET_NAME)
-          .getPublicUrl(path)
+        const { data: publicUrlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(path)
 
         results.push({
           oldPath: `/uploads/${filename}`,
@@ -98,29 +99,26 @@ async function migrateImages() {
 
     // データベースのURL更新
     console.log('\n📝 データベースのURL更新を開始します...')
-    
+
     for (const result of results) {
       // Castテーブルのimage, imagesフィールドを更新
       const casts = await prisma.cast.findMany({
         where: {
-          OR: [
-            { image: result.oldPath },
-            { images: { has: result.oldPath } }
-          ]
-        }
+          OR: [{ image: result.oldPath }, { images: { has: result.oldPath } }],
+        },
       })
 
       for (const cast of casts) {
         const updateData: any = {}
-        
+
         // メイン画像の更新
         if (cast.image === result.oldPath) {
           updateData.image = result.newUrl
         }
-        
+
         // 追加画像の更新
         if (cast.images.includes(result.oldPath)) {
-          updateData.images = cast.images.map((img: string) => 
+          updateData.images = cast.images.map((img: string) =>
             img === result.oldPath ? result.newUrl : img
           )
         }
@@ -139,17 +137,16 @@ async function migrateImages() {
     console.log('\n📊 移行結果:')
     console.log(`✅ 成功: ${results.length}個の画像`)
     console.log('\n移行した画像:')
-    results.forEach(r => {
+    results.forEach((r) => {
       console.log(`  ${r.filename}: ${r.newUrl}`)
     })
 
     // マッピングファイルを保存（バックアップ用）
     const mappingFile = join(process.cwd(), 'image-migration-mapping.json')
-    await import('fs/promises').then(fs => 
+    await import('fs/promises').then((fs) =>
       fs.writeFile(mappingFile, JSON.stringify(results, null, 2))
     )
     console.log(`\n💾 マッピング情報を保存しました: ${mappingFile}`)
-
   } catch (error) {
     console.error('❌ 移行中にエラーが発生しました:', error)
   } finally {

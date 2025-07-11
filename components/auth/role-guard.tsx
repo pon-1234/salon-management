@@ -15,11 +15,11 @@ interface RoleGuardProps {
   requireAuth?: boolean
 }
 
-export function RoleGuard({ 
-  children, 
-  allowedRoles, 
-  fallback = null, 
-  requireAuth = true 
+export function RoleGuard({
+  children,
+  allowedRoles,
+  fallback = null,
+  requireAuth = true,
 }: RoleGuardProps) {
   const { data: session, status } = useSession()
 

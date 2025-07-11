@@ -5,7 +5,14 @@
  */
 
 import { PaymentProvider } from './providers/base'
-import { PaymentTransaction, ProcessPaymentRequest, ProcessPaymentResult, PaymentIntent, RefundRequest, RefundResult } from './types'
+import {
+  PaymentTransaction,
+  ProcessPaymentRequest,
+  ProcessPaymentResult,
+  PaymentIntent,
+  RefundRequest,
+  RefundResult,
+} from './types'
 import { prisma } from '@/lib/generated/prisma'
 import logger from '@/lib/logger'
 import { validatePaymentRequest, sanitizeMetadata } from './validators'
@@ -28,23 +35,26 @@ export class PaymentService {
       logger.error({ validationErrors: validation.errors }, error)
       return {
         success: false,
-        error
+        error,
       }
     }
 
     // Sanitize metadata
     const sanitizedRequest = {
       ...request,
-      metadata: sanitizeMetadata(request.metadata)
+      metadata: sanitizeMetadata(request.metadata),
     }
 
-    logger.info({
-      action: 'process_payment_start',
-      provider: providerName,
-      amount,
-      customerId,
-      reservationId
-    }, 'Starting payment processing')
+    logger.info(
+      {
+        action: 'process_payment_start',
+        provider: providerName,
+        amount,
+        customerId,
+        reservationId,
+      },
+      'Starting payment processing'
+    )
 
     const provider = this.providers[providerName]
     if (!provider) {
@@ -55,39 +65,48 @@ export class PaymentService {
 
     try {
       const result = await provider.processPayment(sanitizedRequest)
-      
+
       if (result.success && result.transaction) {
         // Save transaction to database
         await this.saveTransaction(result.transaction)
-        
+
         const duration = Date.now() - startTime
-        logger.info({
-          action: 'process_payment_success',
-          provider: providerName,
-          amount,
-          transactionId: result.transaction.id,
-          duration
-        }, 'Payment processed successfully')
+        logger.info(
+          {
+            action: 'process_payment_success',
+            provider: providerName,
+            amount,
+            transactionId: result.transaction.id,
+            duration,
+          },
+          'Payment processed successfully'
+        )
       } else {
-        logger.warn({
-          action: 'process_payment_failed',
-          provider: providerName,
-          amount,
-          error: result.error,
-          duration: Date.now() - startTime
-        }, 'Payment processing failed')
+        logger.warn(
+          {
+            action: 'process_payment_failed',
+            provider: providerName,
+            amount,
+            error: result.error,
+            duration: Date.now() - startTime,
+          },
+          'Payment processing failed'
+        )
       }
 
       return result
     } catch (error) {
       const duration = Date.now() - startTime
-      logger.error({
-        action: 'process_payment_error',
-        provider: providerName,
-        amount,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        duration
-      }, 'Payment processing error')
+      logger.error(
+        {
+          action: 'process_payment_error',
+          provider: providerName,
+          amount,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          duration,
+        },
+        'Payment processing error'
+      )
       throw error
     }
   }
@@ -99,7 +118,7 @@ export class PaymentService {
     }
 
     const intent = await provider.createPaymentIntent(request)
-    
+
     // Save intent to database
     await this.saveIntent(intent)
 
@@ -119,11 +138,11 @@ export class PaymentService {
     }
 
     const result = await provider.confirmPaymentIntent(intent.providerId)
-    
+
     if (result.success && result.transaction) {
       // Save transaction to database
       await this.saveTransaction(result.transaction)
-      
+
       // Update intent status
       await this.updateIntent(intentId, { status: 'completed' })
     }
@@ -135,12 +154,15 @@ export class PaymentService {
     const startTime = Date.now()
     const { transactionId, amount, reason } = request
 
-    logger.info({
-      action: 'refund_payment_start',
-      transactionId,
-      amount,
-      reason
-    }, 'Starting refund processing')
+    logger.info(
+      {
+        action: 'refund_payment_start',
+        transactionId,
+        amount,
+        reason,
+      },
+      'Starting refund processing'
+    )
 
     try {
       // Get transaction from database to determine provider
@@ -159,40 +181,49 @@ export class PaymentService {
       }
 
       const result = await provider.refundPayment(request)
-      
+
       if (result.success) {
         // Update transaction in database
         await this.updateTransaction(transactionId, {
           status: 'refunded',
           refundedAt: new Date(),
-          refundAmount: result.refundAmount
+          refundAmount: result.refundAmount,
         })
 
         const duration = Date.now() - startTime
-        logger.info({
-          action: 'refund_payment_success',
-          transactionId,
-          refundAmount: result.refundAmount,
-          duration
-        }, 'Refund processed successfully')
+        logger.info(
+          {
+            action: 'refund_payment_success',
+            transactionId,
+            refundAmount: result.refundAmount,
+            duration,
+          },
+          'Refund processed successfully'
+        )
       } else {
-        logger.warn({
-          action: 'refund_payment_failed',
-          transactionId,
-          error: result.error,
-          duration: Date.now() - startTime
-        }, 'Refund processing failed')
+        logger.warn(
+          {
+            action: 'refund_payment_failed',
+            transactionId,
+            error: result.error,
+            duration: Date.now() - startTime,
+          },
+          'Refund processing failed'
+        )
       }
 
       return result
     } catch (error) {
       const duration = Date.now() - startTime
-      logger.error({
-        action: 'refund_payment_error',
-        transactionId,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        duration
-      }, 'Refund processing error')
+      logger.error(
+        {
+          action: 'refund_payment_error',
+          transactionId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          duration,
+        },
+        'Refund processing error'
+      )
       throw error
     }
   }
@@ -215,7 +246,7 @@ export class PaymentService {
   async getPaymentHistory(customerId: string): Promise<PaymentTransaction[]> {
     const transactions = await prisma.paymentTransaction.findMany({
       where: { customerId },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     })
     return transactions as PaymentTransaction[]
   }
@@ -223,14 +254,14 @@ export class PaymentService {
   async getPaymentHistoryByReservation(reservationId: string): Promise<PaymentTransaction[]> {
     const transactions = await prisma.paymentTransaction.findMany({
       where: { reservationId },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     })
     return transactions as PaymentTransaction[]
   }
 
   private async saveTransaction(transaction: PaymentTransaction): Promise<void> {
     try {
-      await prisma.paymentTransaction.create({ 
+      await prisma.paymentTransaction.create({
         data: {
           id: transaction.id,
           reservationId: transaction.reservationId,
@@ -246,27 +277,33 @@ export class PaymentService {
           errorMessage: transaction.errorMessage,
           processedAt: transaction.processedAt,
           refundedAt: transaction.refundedAt,
-          refundAmount: transaction.refundAmount
-        }
+          refundAmount: transaction.refundAmount,
+        },
       })
-      
-      logger.debug({
-        action: 'save_transaction',
-        transactionId: transaction.id,
-        status: transaction.status
-      }, 'Transaction saved to database')
+
+      logger.debug(
+        {
+          action: 'save_transaction',
+          transactionId: transaction.id,
+          status: transaction.status,
+        },
+        'Transaction saved to database'
+      )
     } catch (error) {
-      logger.error({
-        action: 'save_transaction_error',
-        transactionId: transaction.id,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }, 'Failed to save transaction')
+      logger.error(
+        {
+          action: 'save_transaction_error',
+          transactionId: transaction.id,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+        'Failed to save transaction'
+      )
       throw error
     }
   }
 
   private async saveIntent(intent: PaymentIntent): Promise<void> {
-    await prisma.paymentIntent.create({ 
+    await prisma.paymentIntent.create({
       data: {
         id: intent.id,
         providerId: intent.providerId,
@@ -278,46 +315,49 @@ export class PaymentService {
         clientSecret: intent.clientSecret,
         metadata: intent.metadata,
         errorMessage: intent.errorMessage,
-        processedAt: intent.processedAt
-      }
+        processedAt: intent.processedAt,
+      },
     })
   }
 
   private async getIntent(intentId: string): Promise<PaymentIntent | null> {
     const intent = await prisma.paymentIntent.findUnique({
-      where: { id: intentId }
+      where: { id: intentId },
     })
     return intent as PaymentIntent | null
   }
 
   private async updateIntent(intentId: string, data: Partial<PaymentIntent>): Promise<void> {
-    await prisma.paymentIntent.update({ 
-      where: { id: intentId }, 
+    await prisma.paymentIntent.update({
+      where: { id: intentId },
       data: {
         status: data.status,
         errorMessage: data.errorMessage,
-        processedAt: data.processedAt
-      }
+        processedAt: data.processedAt,
+      },
     })
   }
 
   private async getTransaction(transactionId: string): Promise<PaymentTransaction | null> {
     const transaction = await prisma.paymentTransaction.findUnique({
-      where: { id: transactionId }
+      where: { id: transactionId },
     })
     return transaction as PaymentTransaction | null
   }
 
-  private async updateTransaction(transactionId: string, data: Partial<PaymentTransaction>): Promise<void> {
-    await prisma.paymentTransaction.update({ 
-      where: { id: transactionId }, 
+  private async updateTransaction(
+    transactionId: string,
+    data: Partial<PaymentTransaction>
+  ): Promise<void> {
+    await prisma.paymentTransaction.update({
+      where: { id: transactionId },
       data: {
         status: data.status,
         errorMessage: data.errorMessage,
         processedAt: data.processedAt,
         refundedAt: data.refundedAt,
-        refundAmount: data.refundAmount
-      }
+        refundAmount: data.refundAmount,
+      },
     })
   }
 }

@@ -21,11 +21,11 @@ describe('Middleware Authentication', () => {
     it('should redirect to /admin/login when accessing admin routes without authentication', async () => {
       const { getToken } = await import('next-auth/jwt')
       vi.mocked(getToken).mockResolvedValueOnce(null)
-      
+
       const request = new NextRequest(new URL('http://localhost:3000/admin/dashboard'))
-      
+
       const response = await middleware(request)
-      
+
       expect(response).toBeInstanceOf(NextResponse)
       expect(response?.status).toBe(307) // Temporary redirect
       expect(response?.headers.get('location')).toContain('/admin/login')
@@ -40,13 +40,13 @@ describe('Middleware Authentication', () => {
         sub: '1',
         iat: Date.now() / 1000,
         exp: (Date.now() + 86400000) / 1000,
-        jti: 'test-jwt-id'
+        jti: 'test-jwt-id',
       })
 
       const request = new NextRequest(new URL('http://localhost:3000/admin/dashboard'))
-      
+
       const response = await middleware(request)
-      
+
       expect(response?.status).toBe(200) // NextResponse.next() returns status 200
     })
 
@@ -59,13 +59,13 @@ describe('Middleware Authentication', () => {
         sub: '2',
         iat: Date.now() / 1000,
         exp: (Date.now() + 86400000) / 1000,
-        jti: 'test-jwt-id-2'
+        jti: 'test-jwt-id-2',
       })
 
       const request = new NextRequest(new URL('http://localhost:3000/admin/dashboard'))
-      
+
       const response = await middleware(request)
-      
+
       expect(response).toBeInstanceOf(NextResponse)
       expect(response?.status).toBe(403) // Forbidden
     })
@@ -75,11 +75,11 @@ describe('Middleware Authentication', () => {
     it('should redirect to login when accessing protected customer routes without authentication', async () => {
       const { getToken } = await import('next-auth/jwt')
       vi.mocked(getToken).mockResolvedValueOnce(null)
-      
+
       const request = new NextRequest(new URL('http://localhost:3000/store1/mypage'))
-      
+
       const response = await middleware(request)
-      
+
       expect(response).toBeInstanceOf(NextResponse)
       expect(response?.status).toBe(307)
       expect(response?.headers.get('location')).toContain('/store1/login')
@@ -94,13 +94,13 @@ describe('Middleware Authentication', () => {
         sub: '2',
         iat: Date.now() / 1000,
         exp: (Date.now() + 86400000) / 1000,
-        jti: 'test-jwt-id-2'
+        jti: 'test-jwt-id-2',
       })
 
       const request = new NextRequest(new URL('http://localhost:3000/store1/mypage'))
-      
+
       const response = await middleware(request)
-      
+
       expect(response?.status).toBe(200) // NextResponse.next() returns status 200
     })
   })
@@ -109,19 +109,13 @@ describe('Middleware Authentication', () => {
     it('should allow access to public routes without authentication', async () => {
       const { getToken } = await import('next-auth/jwt')
       vi.mocked(getToken).mockResolvedValue(null)
-      
-      const publicRoutes = [
-        '/',
-        '/store1',
-        '/store1/cast',
-        '/store1/services',
-        '/store1/pricing',
-      ]
+
+      const publicRoutes = ['/', '/store1', '/store1/cast', '/store1/services', '/store1/pricing']
 
       for (const route of publicRoutes) {
         const request = new NextRequest(new URL(`http://localhost:3000${route}`))
         const response = await middleware(request)
-        
+
         expect(response?.status).toBe(200) // NextResponse.next() returns status 200
       }
     })
@@ -129,17 +123,13 @@ describe('Middleware Authentication', () => {
     it('should allow access to login and register pages without authentication', async () => {
       const { getToken } = await import('next-auth/jwt')
       vi.mocked(getToken).mockResolvedValue(null)
-      
-      const authRoutes = [
-        '/admin/login',
-        '/store1/login',
-        '/store1/register',
-      ]
+
+      const authRoutes = ['/admin/login', '/store1/login', '/store1/register']
 
       for (const route of authRoutes) {
         const request = new NextRequest(new URL(`http://localhost:3000${route}`))
         const response = await middleware(request)
-        
+
         expect(response?.status).toBe(200) // NextResponse.next() returns status 200
       }
     })
@@ -149,10 +139,10 @@ describe('Middleware Authentication', () => {
     it('should protect reservation API endpoints', async () => {
       const { getToken } = await import('next-auth/jwt')
       vi.mocked(getToken).mockResolvedValueOnce(null)
-      
+
       const request = new NextRequest(new URL('http://localhost:3000/api/reservation/create'))
       const response = await middleware(request)
-      
+
       expect(response?.status).toBe(401)
       const data = await response?.json()
       expect(data.error).toBe('Authentication required')
@@ -161,10 +151,10 @@ describe('Middleware Authentication', () => {
     it('should protect cast API endpoints', async () => {
       const { getToken } = await import('next-auth/jwt')
       vi.mocked(getToken).mockResolvedValueOnce(null)
-      
+
       const request = new NextRequest(new URL('http://localhost:3000/api/cast/update'))
       const response = await middleware(request)
-      
+
       expect(response?.status).toBe(401)
       const data = await response?.json()
       expect(data.error).toBe('Authentication required')
@@ -179,12 +169,12 @@ describe('Middleware Authentication', () => {
         sub: '1',
         iat: Date.now() / 1000,
         exp: (Date.now() + 86400000) / 1000,
-        jti: 'test-jwt-id'
+        jti: 'test-jwt-id',
       })
 
       const request = new NextRequest(new URL('http://localhost:3000/api/reservation/create'))
       const response = await middleware(request)
-      
+
       expect(response?.status).toBe(200) // NextResponse.next() returns status 200
     })
   })
@@ -199,14 +189,14 @@ describe('Middleware Authentication', () => {
         sub: '1',
         iat: Date.now() / 1000,
         exp: (Date.now() + 86400000) / 1000,
-        jti: 'test-jwt-id'
+        jti: 'test-jwt-id',
       }
       vi.mocked(getToken).mockResolvedValueOnce(mockToken)
 
       const request = new NextRequest(new URL('http://localhost:3000/admin/login'))
-      
+
       const response = await middleware(request)
-      
+
       expect(response).toBeInstanceOf(NextResponse)
       expect(response?.status).toBe(307)
       expect(response?.headers.get('location')).toContain('/admin/dashboard')
@@ -221,13 +211,13 @@ describe('Middleware Authentication', () => {
         sub: '1',
         iat: Date.now() / 1000,
         exp: (Date.now() + 86400000) / 1000,
-        jti: 'test-jwt-id'
+        jti: 'test-jwt-id',
       })
 
       const request = new NextRequest(new URL('http://localhost:3000/admin'))
-      
+
       const response = await middleware(request)
-      
+
       expect(response).toBeInstanceOf(NextResponse)
       expect(response?.status).toBe(307)
       expect(response?.headers.get('location')).toContain('/admin/dashboard')

@@ -22,7 +22,7 @@ export default async function MyPage({ params }: { params: Promise<{ store: stri
 
   // Check authentication
   const session = await getServerSession(authOptions)
-  
+
   if (!session) {
     redirect(`/${storeSlug}/login?callbackUrl=${encodeURIComponent(`/${storeSlug}/mypage`)}`)
   }

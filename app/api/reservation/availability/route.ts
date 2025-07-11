@@ -198,10 +198,10 @@ async function handleAvailableSlots(searchParams: URLSearchParams): Promise<Next
 
     // JSTでその日の一日を定義
     const dateInJst = toZonedTime(date, JST_TIMEZONE)
-    
+
     const startOfDayInJst = new Date(dateInJst)
     startOfDayInJst.setHours(0, 0, 0, 0)
-    
+
     const endOfDayInJst = new Date(dateInJst)
     endOfDayInJst.setHours(23, 59, 59, 999)
 
@@ -231,7 +231,7 @@ async function handleAvailableSlots(searchParams: URLSearchParams): Promise<Next
 
     // Calculate available slots
     const availableSlots: TimeSlot[] = []
-    
+
     const [startHour, startMinute] = businessHourStart.split(':').map(Number)
     const workStartInJst = new Date(dateInJst)
     workStartInJst.setHours(startHour, startMinute, 0, 0)
@@ -246,7 +246,10 @@ async function handleAvailableSlots(searchParams: URLSearchParams): Promise<Next
       const reservationStartTimeInJst = toZonedTime(reservation.startTime, JST_TIMEZONE)
       const reservationEndTimeInJst = toZonedTime(reservation.endTime, JST_TIMEZONE)
 
-      if (reservationStartTimeInJst.getTime() - currentTimeInJst.getTime() >= duration * 60 * 1000) {
+      if (
+        reservationStartTimeInJst.getTime() - currentTimeInJst.getTime() >=
+        duration * 60 * 1000
+      ) {
         availableSlots.push({
           startTime: fromZonedTime(currentTimeInJst, JST_TIMEZONE).toISOString(),
           endTime: fromZonedTime(reservationStartTimeInJst, JST_TIMEZONE).toISOString(),

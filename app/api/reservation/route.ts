@@ -119,7 +119,12 @@ export async function POST(request: NextRequest) {
     // customerIdは認証情報から取得するため、リクエストボディからは削除
     const { customerId, ...reservationData } = data
 
-    if (!reservationData.castId || !reservationData.courseId || !reservationData.startTime || !reservationData.endTime) {
+    if (
+      !reservationData.castId ||
+      !reservationData.courseId ||
+      !reservationData.startTime ||
+      !reservationData.endTime
+    ) {
       return NextResponse.json(
         { error: 'Missing required fields: castId, courseId, startTime, endTime' },
         { status: 400 }
@@ -146,11 +151,11 @@ export async function POST(request: NextRequest) {
           startTime,
           endTime,
           tx
-        );
+        )
 
         if (!availability.available) {
           // 意図的にエラーを発生させてトランザクションをロールバック
-          throw new Error('Time slot is not available');
+          throw new Error('Time slot is not available')
         }
 
         // 予約を作成
@@ -174,30 +179,30 @@ export async function POST(request: NextRequest) {
             course: true,
             options: { include: { option: true } },
           },
-        });
+        })
 
-        return createdReservation;
-      });
+        return createdReservation
+      })
 
       // 通知はトランザクションが成功した後に実行
       try {
-        await notificationService.sendReservationConfirmation(newReservation);
+        await notificationService.sendReservationConfirmation(newReservation)
       } catch (notificationError) {
-        logger.error({ err: notificationError }, 'Failed to send notification');
+        logger.error({ err: notificationError }, 'Failed to send notification')
       }
 
-      return NextResponse.json(newReservation, { status: 201 });
+      return NextResponse.json(newReservation, { status: 201 })
     } catch (error: any) {
       if (error.message === 'Time slot is not available') {
-        return NextResponse.json({ error: 'Time slot is not available' }, { status: 409 });
+        return NextResponse.json({ error: 'Time slot is not available' }, { status: 409 })
       }
-      logger.error({ err: error }, 'Error creating reservation');
-      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+      logger.error({ err: error }, 'Error creating reservation')
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
   } catch (error) {
     // この最上位のcatchは、リクエストの解析や認証などのトランザクション外のエラーを捕捉
-    logger.error({ err: error }, 'Error in POST handler');
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    logger.error({ err: error }, 'Error in POST handler')
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -233,10 +238,8 @@ export async function PUT(request: NextRequest) {
       // 日付文字列を直接Dateオブジェクトに変換（タイムゾーン処理を簡略化）
       const startTime = updates.startTime
         ? new Date(updates.startTime)
-        : existingReservation.startTime;
-      const endTime = updates.endTime
-        ? new Date(updates.endTime)
-        : existingReservation.endTime;
+        : existingReservation.startTime
+      const endTime = updates.endTime ? new Date(updates.endTime) : existingReservation.endTime
 
       if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
         return NextResponse.json({ error: 'Invalid date format' }, { status: 400 })
@@ -251,7 +254,10 @@ export async function PUT(request: NextRequest) {
       const filteredConflicts = availability.conflicts.filter((c) => c.id !== id)
 
       if (filteredConflicts.length > 0) {
-        return NextResponse.json({ error: 'Time slot is not available', conflicts: filteredConflicts }, { status: 409 })
+        return NextResponse.json(
+          { error: 'Time slot is not available', conflicts: filteredConflicts },
+          { status: 409 }
+        )
       }
     }
 
@@ -297,15 +303,15 @@ export async function PUT(request: NextRequest) {
         await notificationService.sendReservationModification(updatedReservation, {
           startTime: existingReservation.startTime,
           endTime: existingReservation.endTime,
-        });
+        })
       } catch (notificationError) {
-        logger.error({ err: notificationError }, 'Failed to send notification');
+        logger.error({ err: notificationError }, 'Failed to send notification')
       }
     }
 
     return NextResponse.json(updatedReservation)
   } catch (error) {
-    logger.error({ err: error }, 'Error updating reservation');
+    logger.error({ err: error }, 'Error updating reservation')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -353,14 +359,14 @@ export async function DELETE(request: NextRequest) {
     })
 
     try {
-      await notificationService.sendReservationCancellation(cancelledReservation);
+      await notificationService.sendReservationCancellation(cancelledReservation)
     } catch (notificationError) {
-      logger.error({ err: notificationError }, 'Failed to send notification');
+      logger.error({ err: notificationError }, 'Failed to send notification')
     }
 
     return NextResponse.json(cancelledReservation)
   } catch (error) {
-    logger.error({ err: error }, 'Error deleting reservation');
+    logger.error({ err: error }, 'Error deleting reservation')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

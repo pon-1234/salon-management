@@ -107,7 +107,7 @@ describe('GET /api/cast-schedule', () => {
   })
 
   it('should filter schedules by specific date', async () => {
-    const mockSchedules = []
+    const mockSchedules: any[] = []
 
     vi.mocked(db.castSchedule.findMany).mockResolvedValueOnce(mockSchedules as any)
 
@@ -127,7 +127,7 @@ describe('GET /api/cast-schedule', () => {
   })
 
   it('should filter schedules by date range', async () => {
-    const mockSchedules = []
+    const mockSchedules: any[] = []
 
     vi.mocked(db.castSchedule.findMany).mockResolvedValueOnce(mockSchedules as any)
 
@@ -155,7 +155,7 @@ describe('GET /api/cast-schedule', () => {
   })
 
   it('should combine multiple filters', async () => {
-    const mockSchedules = []
+    const mockSchedules: any[] = []
 
     vi.mocked(db.castSchedule.findMany).mockResolvedValueOnce(mockSchedules as any)
 

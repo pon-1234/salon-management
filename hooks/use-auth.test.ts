@@ -53,9 +53,9 @@ describe('useAuth hook', () => {
           email: 'test@example.com',
           name: 'Test User',
           role: 'customer',
-        }
+        },
       },
-      status: 'authenticated'
+      status: 'authenticated',
     })
 
     const { result } = renderHook(() => useAuth())
@@ -69,7 +69,7 @@ describe('useAuth hook', () => {
     const { useSession } = await import('next-auth/react')
     vi.mocked(useSession).mockReturnValue({
       data: null,
-      status: 'loading'
+      status: 'loading',
     })
 
     const { result } = renderHook(() => useAuth())
@@ -82,9 +82,9 @@ describe('useAuth hook', () => {
     const { useSession, signIn } = await import('next-auth/react')
     vi.mocked(useSession).mockReturnValue({
       data: null,
-      status: 'unauthenticated'
+      status: 'unauthenticated',
     })
-    
+
     vi.mocked(signIn).mockResolvedValue({ ok: true })
 
     const { result } = renderHook(() => useAuth())
@@ -115,9 +115,9 @@ describe('useAdminAuth hook', () => {
           email: 'admin@example.com',
           name: 'Admin User',
           role: 'admin',
-        }
+        },
       },
-      status: 'authenticated'
+      status: 'authenticated',
     })
 
     const { result } = renderHook(() => useAdminAuth())
@@ -135,9 +135,9 @@ describe('useAdminAuth hook', () => {
           email: 'user@example.com',
           name: 'Regular User',
           role: 'customer',
-        }
+        },
       },
-      status: 'authenticated'
+      status: 'authenticated',
     })
 
     const { result } = renderHook(() => useAdminAuth())
@@ -161,9 +161,9 @@ describe('useCustomerAuth hook', () => {
           email: 'customer@example.com',
           name: 'Customer User',
           role: 'customer',
-        }
+        },
       },
-      status: 'authenticated'
+      status: 'authenticated',
     })
 
     const { result } = renderHook(() => useCustomerAuth())
@@ -181,9 +181,9 @@ describe('useCustomerAuth hook', () => {
           email: 'admin@example.com',
           name: 'Admin User',
           role: 'admin',
-        }
+        },
       },
-      status: 'authenticated'
+      status: 'authenticated',
     })
 
     const { result } = renderHook(() => useCustomerAuth())

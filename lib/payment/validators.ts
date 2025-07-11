@@ -25,7 +25,10 @@ export function validatePaymentAmount(amount: number): { valid: boolean; error?:
   return { valid: true }
 }
 
-export function validatePaymentRequest(request: ProcessPaymentRequest): { valid: boolean; errors: string[] } {
+export function validatePaymentRequest(request: ProcessPaymentRequest): {
+  valid: boolean
+  errors: string[]
+} {
   const errors: string[] = []
 
   // Validate amount
@@ -66,7 +69,7 @@ export function validatePaymentRequest(request: ProcessPaymentRequest): { valid:
 
   return {
     valid: errors.length === 0,
-    errors
+    errors,
   }
 }
 
@@ -76,7 +79,7 @@ export function sanitizeMetadata(metadata: any): Record<string, string> {
   }
 
   const sanitized: Record<string, string> = {}
-  
+
   for (const [key, value] of Object.entries(metadata)) {
     // Only allow string keys and values
     if (typeof key === 'string' && key.length <= 40) {

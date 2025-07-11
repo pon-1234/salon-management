@@ -22,4 +22,10 @@ export function getStorageService(config?: Partial<StorageConfig>): StorageServi
 }
 
 // 型とインターフェースのエクスポート
-export type { StorageService, UploadResult, DeleteResult, UploadOptions, StorageConfig } from './types'
+export type {
+  StorageService,
+  UploadResult,
+  DeleteResult,
+  UploadOptions,
+  StorageConfig,
+} from './types'

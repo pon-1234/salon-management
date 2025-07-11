@@ -22,7 +22,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Mail, Lock, AlertCircle, Loader2 } from 'lucide-react'
 
 const loginSchema = z.object({
-  email: z.string().email('正しいメールアドレスを入力してください').min(1, 'メールアドレスを入力してください'),
+  email: z
+    .string()
+    .email('正しいメールアドレスを入力してください')
+    .min(1, 'メールアドレスを入力してください'),
   password: z.string().min(1, 'パスワードを入力してください'),
 })
 
@@ -120,9 +123,7 @@ export function LoginForm({ store }: LoginFormProps) {
                 disabled={isLoading}
               />
             </div>
-            {errors.email && (
-              <p className="text-sm text-red-600">{errors.email.message}</p>
-            )}
+            {errors.email && <p className="text-sm text-red-600">{errors.email.message}</p>}
           </div>
 
           {/* Password */}
@@ -139,9 +140,7 @@ export function LoginForm({ store }: LoginFormProps) {
                 disabled={isLoading}
               />
             </div>
-            {errors.password && (
-              <p className="text-sm text-red-600">{errors.password.message}</p>
-            )}
+            {errors.password && <p className="text-sm text-red-600">{errors.password.message}</p>}
           </div>
 
           {/* Forgot Password */}

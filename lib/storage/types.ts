@@ -20,17 +20,17 @@ export interface StorageService {
    * ファイルをアップロード
    */
   upload(file: File, options?: UploadOptions): Promise<UploadResult>
-  
+
   /**
    * ファイルを削除
    */
   delete(path: string): Promise<DeleteResult>
-  
+
   /**
    * ファイルの公開URLを取得
    */
   getPublicUrl(path: string): string
-  
+
   /**
    * ファイルが存在するか確認
    */
@@ -42,17 +42,17 @@ export interface UploadOptions {
    * アップロード先のフォルダ
    */
   folder?: string
-  
+
   /**
    * ファイル名（指定しない場合は自動生成）
    */
   filename?: string
-  
+
   /**
    * ファイルを上書きするか
    */
   upsert?: boolean
-  
+
   /**
    * コンテンツタイプを指定
    */
@@ -64,12 +64,12 @@ export interface StorageConfig {
    * ストレージのバケット名
    */
   bucket: string
-  
+
   /**
    * 最大ファイルサイズ（バイト）
    */
   maxFileSize: number
-  
+
   /**
    * 許可するファイルタイプ
    */

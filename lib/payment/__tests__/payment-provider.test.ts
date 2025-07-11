@@ -1,12 +1,19 @@
 /**
- * @design_doc   Issue #5 - Payment System Integration  
+ * @design_doc   Issue #5 - Payment System Integration
  * @related_to   PaymentProvider (abstract base class)
  * @known_issues None identified
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { PaymentProvider } from '../providers/base'
-import { ProcessPaymentRequest, ProcessPaymentResult, PaymentIntent, RefundRequest } from '../types'
+import {
+  ProcessPaymentRequest,
+  ProcessPaymentResult,
+  PaymentIntent,
+  RefundRequest,
+  RefundResult,
+  PaymentTransaction,
+} from '../types'
 
 // Mock implementation for testing
 class TestPaymentProvider extends PaymentProvider {
@@ -25,11 +32,11 @@ class TestPaymentProvider extends PaymentProvider {
     throw new Error('Not implemented')
   }
 
-  async refundPayment(request: RefundRequest) {
+  async refundPayment(request: RefundRequest): Promise<RefundResult> {
     throw new Error('Not implemented')
   }
 
-  async getPaymentStatus(transactionId: string) {
+  async getPaymentStatus(transactionId: string): Promise<PaymentTransaction> {
     throw new Error('Not implemented')
   }
 
@@ -58,7 +65,7 @@ describe('PaymentProvider', () => {
         amount: 10000,
         currency: 'JPY',
         paymentMethod: 'card',
-        provider: 'stripe'
+        provider: 'stripe',
       }
 
       await expect(provider.processPayment(request)).rejects.toThrow('Not implemented')
@@ -71,7 +78,7 @@ describe('PaymentProvider', () => {
         amount: 10000,
         currency: 'JPY',
         paymentMethod: 'card',
-        provider: 'stripe'
+        provider: 'stripe',
       }
 
       await expect(provider.createPaymentIntent(request)).rejects.toThrow('Not implemented')
@@ -85,7 +92,7 @@ describe('PaymentProvider', () => {
       const request: RefundRequest = {
         transactionId: 'txn_123',
         amount: 5000,
-        reason: 'customer request'
+        reason: 'customer request',
       }
 
       await expect(provider.refundPayment(request)).rejects.toThrow('Not implemented')

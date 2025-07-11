@@ -5,7 +5,14 @@
  */
 
 import { PaymentProvider } from './base'
-import { PaymentIntent, PaymentTransaction, ProcessPaymentRequest, ProcessPaymentResult, RefundRequest, RefundResult } from '../types'
+import {
+  PaymentIntent,
+  PaymentTransaction,
+  ProcessPaymentRequest,
+  ProcessPaymentResult,
+  RefundRequest,
+  RefundResult,
+} from '../types'
 import Stripe from 'stripe'
 
 export interface StripeConfig {
@@ -20,15 +27,15 @@ export class StripeProvider extends PaymentProvider {
 
   constructor(config: StripeConfig) {
     super()
-    
+
     // Validate config
     if (!config.secretKey) {
       throw new Error('Stripe secret key is required')
     }
-    
+
     this.stripe = new Stripe(config.secretKey, {
       apiVersion: '2025-06-30.basil',
-      typescript: true
+      typescript: true,
     })
   }
 
@@ -40,8 +47,8 @@ export class StripeProvider extends PaymentProvider {
         confirm: true,
         metadata: {
           reservationId: request.reservationId,
-          customerId: request.customerId
-        }
+          customerId: request.customerId,
+        },
       })
 
       const transaction: PaymentTransaction = {
@@ -58,17 +65,17 @@ export class StripeProvider extends PaymentProvider {
         metadata: request.metadata,
         processedAt: new Date(),
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       }
 
       return {
         success: true,
-        transaction
+        transaction,
       }
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       }
     }
   }
@@ -80,8 +87,8 @@ export class StripeProvider extends PaymentProvider {
       metadata: {
         reservationId: request.reservationId,
         customerId: request.customerId,
-        ...request.metadata
-      }
+        ...request.metadata,
+      },
     })
 
     return {
@@ -95,7 +102,7 @@ export class StripeProvider extends PaymentProvider {
       metadata: request.metadata,
       clientSecret: stripeIntent.client_secret || undefined,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     }
   }
 
@@ -117,17 +124,17 @@ export class StripeProvider extends PaymentProvider {
         metadata: confirmedIntent.metadata,
         processedAt: new Date(),
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       }
 
       return {
         success: true,
-        transaction
+        transaction,
       }
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       }
     }
   }
@@ -137,7 +144,7 @@ export class StripeProvider extends PaymentProvider {
       const refund = await this.stripe.refunds.create({
         payment_intent: request.transactionId,
         amount: request.amount,
-        reason: 'requested_by_customer'
+        reason: 'requested_by_customer',
       })
 
       const transaction: PaymentTransaction = {
@@ -152,20 +159,20 @@ export class StripeProvider extends PaymentProvider {
         refundedAt: new Date(),
         refundAmount: refund.amount,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       }
 
       return {
         success: true,
         refundAmount: refund.amount,
-        transaction
+        transaction,
       }
     } catch (error) {
       return {
         success: false,
         refundAmount: 0,
         transaction: {} as PaymentTransaction,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       }
     }
   }
@@ -186,7 +193,7 @@ export class StripeProvider extends PaymentProvider {
       providerTransactionId: paymentIntent.id,
       metadata: paymentIntent.metadata,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     }
   }
 

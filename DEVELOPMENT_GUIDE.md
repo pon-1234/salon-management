@@ -230,12 +230,12 @@ _(注意: 他のエンティティについても同様に定義を追記する�
 
 ## 7. APIエンドポイント
 
-| エンドポイント | メソッド | 説明                                                                                                |
-| :------------- | :------- | :-------------------------------------------------------------------------------------------------- |
-| `/api/upload`  | `POST`   | 画像アップロード用のAPI。アップロードされたファイルを`/public/uploads`に保存し、ファイルURLを返す。 |
-| `/api/auth/[...nextauth]` | `GET/POST` | NextAuth.js認証エンドポイント。ログイン、ログアウト、セッション管理を処理。 |
-| `/api/auth/register` | `POST` | 顧客の新規会員登録API。パスワードハッシュ化、メール重複チェック、顧客情報の作成を行う。 |
-| `/api/customer/by-email/[email]` | `GET` | メールアドレスによる顧客検索API。認証時の顧客情報取得に使用。 |
+| エンドポイント                   | メソッド   | 説明                                                                                                |
+| :------------------------------- | :--------- | :-------------------------------------------------------------------------------------------------- |
+| `/api/upload`                    | `POST`     | 画像アップロード用のAPI。アップロードされたファイルを`/public/uploads`に保存し、ファイルURLを返す。 |
+| `/api/auth/[...nextauth]`        | `GET/POST` | NextAuth.js認証エンドポイント。ログイン、ログアウト、セッション管理を処理。                         |
+| `/api/auth/register`             | `POST`     | 顧客の新規会員登録API。パスワードハッシュ化、メール重複チェック、顧客情報の作成を行う。             |
+| `/api/customer/by-email/[email]` | `GET`      | メールアドレスによる顧客検索API。認証時の顧客情報取得に使用。                                       |
 
 **注記**: 現在のシステムでは、認証関連のAPIが実装済みです。その他のデータ操作はクライアントサイドのリポジトリ実装（モック）で行われています。本番環境では、キャスト、予約などの残りのCRUD操作を行うためのAPIエンドポイントを別途設計・実装する必要があります。
 
@@ -378,14 +378,14 @@ Claudeがタスクを完了したと見なすためには、以下の条件を�
 
 ### 認証機能実装状況
 
-| 機能 | 状況 | 実装ファイル |
-|------|------|-------------|
-| NextAuth.js設定 | ✅ 完了 | `lib/auth/config.ts` |
-| 管理者ログイン | ✅ 完了 | `app/admin/login/page.tsx` |
-| 顧客ログイン | ✅ 完了 | `app/[store]/login/page.tsx` |
-| 顧客登録 | ✅ 完了 | `app/[store]/register/page.tsx` |
-| セッション管理 | ✅ 完了 | `contexts/auth-context.tsx` |
-| ルート保護 | ✅ 完了 | `middleware.ts` |
-| 認証フック | ✅ 完了 | `hooks/use-auth.ts` |
-| ロールガード | ✅ 完了 | `components/auth/role-guard.tsx` |
-| マイページ保護 | ✅ 完了 | `app/[store]/mypage/page.tsx` |
+| 機能            | 状況    | 実装ファイル                     |
+| --------------- | ------- | -------------------------------- |
+| NextAuth.js設定 | ✅ 完了 | `lib/auth/config.ts`             |
+| 管理者ログイン  | ✅ 完了 | `app/admin/login/page.tsx`       |
+| 顧客ログイン    | ✅ 完了 | `app/[store]/login/page.tsx`     |
+| 顧客登録        | ✅ 完了 | `app/[store]/register/page.tsx`  |
+| セッション管理  | ✅ 完了 | `contexts/auth-context.tsx`      |
+| ルート保護      | ✅ 完了 | `middleware.ts`                  |
+| 認証フック      | ✅ 完了 | `hooks/use-auth.ts`              |
+| ロールガード    | ✅ 完了 | `components/auth/role-guard.tsx` |
+| マイページ保護  | ✅ 完了 | `app/[store]/mypage/page.tsx`    |

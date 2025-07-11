@@ -9,7 +9,7 @@ import readline from 'readline'
 
 const rl = readline.createInterface({
   input: process.stdin,
-  output: process.stdout
+  output: process.stdout,
 })
 
 const question = (query: string): Promise<string> => {
@@ -63,7 +63,7 @@ async function setupAdmin() {
       console.log('  - At least one lowercase letter')
       console.log('  - At least one number')
       console.log('  - At least one special character')
-      
+
       const proceed = await question('\nDo you want to proceed with this password? (y/N): ')
       if (proceed.toLowerCase() !== 'y') {
         console.log('Setup cancelled.')
@@ -81,8 +81,8 @@ async function setupAdmin() {
       data: {
         email,
         name,
-        password: hashedPassword
-      }
+        password: hashedPassword,
+      },
     })
 
     console.log('\n✅ Admin user created successfully!')
@@ -94,7 +94,6 @@ async function setupAdmin() {
     console.log('\n📝 Important: Make sure to set the following environment variables:')
     console.log('   NEXTAUTH_SECRET=<your-secret-key-at-least-32-characters>')
     console.log('   NEXTAUTH_URL=<your-application-url>')
-
   } catch (error) {
     console.error('\n❌ Error creating admin:', error instanceof Error ? error.message : error)
     process.exit(1)

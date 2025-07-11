@@ -9,7 +9,13 @@
 import { useEffect, useState } from 'react'
 import { PaymentStatusTable } from '@/components/analytics/payment-status-table'
 import { PaymentTransaction } from '@/lib/payment/types'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -44,7 +50,7 @@ export default function PaymentStatusPage() {
           status: 'completed',
           processedAt: new Date('2024-01-15T10:30:00'),
           createdAt: new Date('2024-01-15T10:25:00'),
-          updatedAt: new Date('2024-01-15T10:30:00')
+          updatedAt: new Date('2024-01-15T10:30:00'),
         },
         {
           id: 'txn_002',
@@ -56,7 +62,7 @@ export default function PaymentStatusPage() {
           paymentMethod: 'card',
           status: 'pending',
           createdAt: new Date('2024-01-15T11:00:00'),
-          updatedAt: new Date('2024-01-15T11:00:00')
+          updatedAt: new Date('2024-01-15T11:00:00'),
         },
         {
           id: 'txn_003',
@@ -69,7 +75,7 @@ export default function PaymentStatusPage() {
           status: 'failed',
           errorMessage: 'Card declined',
           createdAt: new Date('2024-01-15T12:00:00'),
-          updatedAt: new Date('2024-01-15T12:01:00')
+          updatedAt: new Date('2024-01-15T12:01:00'),
         },
         {
           id: 'txn_004',
@@ -84,7 +90,7 @@ export default function PaymentStatusPage() {
           processedAt: new Date('2024-01-14T14:00:00'),
           refundedAt: new Date('2024-01-15T09:00:00'),
           createdAt: new Date('2024-01-14T14:00:00'),
-          updatedAt: new Date('2024-01-15T09:00:00')
+          updatedAt: new Date('2024-01-15T09:00:00'),
         },
         {
           id: 'txn_005',
@@ -96,23 +102,23 @@ export default function PaymentStatusPage() {
           paymentMethod: 'card',
           status: 'processing',
           createdAt: new Date('2024-01-15T13:30:00'),
-          updatedAt: new Date('2024-01-15T13:30:00')
-        }
+          updatedAt: new Date('2024-01-15T13:30:00'),
+        },
       ]
 
       // Apply filters
       let filteredPayments = mockPayments
 
       if (statusFilter !== 'all') {
-        filteredPayments = filteredPayments.filter(p => p.status === statusFilter)
+        filteredPayments = filteredPayments.filter((p) => p.status === statusFilter)
       }
 
       if (providerFilter !== 'all') {
-        filteredPayments = filteredPayments.filter(p => p.provider === providerFilter)
+        filteredPayments = filteredPayments.filter((p) => p.provider === providerFilter)
       }
 
       if (startDate && endDate) {
-        filteredPayments = filteredPayments.filter(p => {
+        filteredPayments = filteredPayments.filter((p) => {
           const paymentDate = new Date(p.createdAt)
           return paymentDate >= startDate && paymentDate <= endDate
         })
@@ -131,7 +137,7 @@ export default function PaymentStatusPage() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto space-y-6 py-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">決済ステータス管理</h1>
@@ -149,12 +155,10 @@ export default function PaymentStatusPage() {
             <CalendarIcon className="h-5 w-5" />
             フィルター設定
           </CardTitle>
-          <CardDescription>
-            表示する決済データの条件を設定してください
-          </CardDescription>
+          <CardDescription>表示する決済データの条件を設定してください</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
             <div className="space-y-2">
               <label className="text-sm font-medium">開始日</label>
               <DatePicker selected={startDate} onSelect={(date) => date && setStartDate(date)} />
@@ -213,8 +217,8 @@ export default function PaymentStatusPage() {
           <CardDescription>
             {startDate && endDate
               ? `${format(startDate, 'yyyy/MM/dd')} - ${format(endDate, 'yyyy/MM/dd')}`
-              : '全期間'
-            } の決済取引データ
+              : '全期間'}{' '}
+            の決済取引データ
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -8,42 +8,31 @@ import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
 // Public routes that don't require authentication
-const publicRoutes = [
-  '/',
-  '/api',
-  '/_next',
-  '/favicon.ico',
-]
+const publicRoutes = ['/', '/api', '/_next', '/favicon.ico']
 
 // Auth routes that should be accessible without authentication
-const authRoutes = [
-  '/login',
-  '/register',
-  '/admin/login',
-  '/auth',
-]
+const authRoutes = ['/login', '/register', '/admin/login', '/auth']
 
 // Routes that require admin role
-const adminRoutes = [
-  '/admin',
-]
+const adminRoutes = ['/admin']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Check if route is public
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route)) ||
-    authRoutes.some(route => pathname.startsWith(route)) ||
+  const isPublicRoute =
+    publicRoutes.some((route) => pathname.startsWith(route)) ||
+    authRoutes.some((route) => pathname.startsWith(route)) ||
     pathname.match(/^\/((?!admin|mypage).)*$/) // All non-admin, non-mypage routes
 
   // Get session token
-  const token = await getToken({ 
+  const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
   })
 
   // Handle authentication routes
-  if (authRoutes.some(route => pathname.startsWith(route))) {
+  if (authRoutes.some((route) => pathname.startsWith(route))) {
     // If already authenticated, redirect to appropriate dashboard
     if (token) {
       if (token.role === 'admin' && pathname.startsWith('/admin')) {
@@ -97,12 +86,12 @@ export async function middleware(request: NextRequest) {
     if (!token) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
-    
+
     // For admin-only API routes
     if (pathname.startsWith('/api/admin') && token.role !== 'admin') {
       return NextResponse.json({ error: 'Access denied. Admin role required.' }, { status: 403 })
     }
-    
+
     return NextResponse.next()
   }
 

@@ -62,7 +62,7 @@ export class NotificationService {
         Date: ${this.formatDateTime(reservation.startTime)}
         
         Thank you for your booking.
-      `;
+      `
 
       notifications.push(
         this.sendEmail({
@@ -78,8 +78,8 @@ export class NotificationService {
             reservationId: reservation.id,
           },
         }).catch((error) => {
-          logger.error({ err: error }, 'sendReservationConfirmation: Failed to send email');
-          return { success: false, error: 'Failed to send email' };
+          logger.error({ err: error }, 'sendReservationConfirmation: Failed to send email')
+          return { success: false, error: 'Failed to send email' }
         })
       )
     }
@@ -91,8 +91,8 @@ export class NotificationService {
           to: reservation.customer.phone,
           message: `Your reservation with ${reservation.cast.name} has been confirmed for ${this.formatDateTime(reservation.startTime)}.`,
         }).catch((error) => {
-          logger.error({ err: error }, 'sendReservationConfirmation: Failed to send SMS');
-          return { success: false, error: 'Failed to send SMS' };
+          logger.error({ err: error }, 'sendReservationConfirmation: Failed to send SMS')
+          return { success: false, error: 'Failed to send SMS' }
         })
       )
     }
@@ -109,8 +109,11 @@ export class NotificationService {
             type: 'reservation_confirmation',
           },
         }).catch((error) => {
-          logger.error({ err: error }, 'sendReservationConfirmation: Failed to send push notification');
-          return { success: false, error: 'Failed to send push notification' };
+          logger.error(
+            { err: error },
+            'sendReservationConfirmation: Failed to send push notification'
+          )
+          return { success: false, error: 'Failed to send push notification' }
         })
       )
     }
@@ -132,7 +135,7 @@ export class NotificationService {
         New Time: ${this.formatDateTime(reservation.startTime)}
         
         Please check the updated details.
-      `;
+      `
       notifications.push(
         this.sendEmail({
           to: reservation.customer.email,
@@ -148,8 +151,8 @@ export class NotificationService {
             reservationId: reservation.id,
           },
         }).catch((error) => {
-          logger.error({ err: error }, 'sendReservationModification: Failed to send email');
-          return { success: false, error: 'Failed to send email' };
+          logger.error({ err: error }, 'sendReservationModification: Failed to send email')
+          return { success: false, error: 'Failed to send email' }
         })
       )
     }
@@ -161,8 +164,8 @@ export class NotificationService {
           to: reservation.customer.phone,
           message: `Your reservation has been modified. New time: ${this.formatDateTime(reservation.startTime)}.`,
         }).catch((error) => {
-          logger.error({ err: error }, 'sendReservationModification: Failed to send SMS');
-          return { success: false, error: 'Failed to send SMS' };
+          logger.error({ err: error }, 'sendReservationModification: Failed to send SMS')
+          return { success: false, error: 'Failed to send SMS' }
         })
       )
     }
@@ -179,8 +182,11 @@ export class NotificationService {
             type: 'reservation_modification',
           },
         }).catch((error) => {
-          logger.error({ err: error }, 'sendReservationModification: Failed to send push notification');
-          return { success: false, error: 'Failed to send push notification' };
+          logger.error(
+            { err: error },
+            'sendReservationModification: Failed to send push notification'
+          )
+          return { success: false, error: 'Failed to send push notification' }
         })
       )
     }
@@ -199,7 +205,7 @@ export class NotificationService {
         Your reservation (ID: ${reservation.id}) with ${reservation.cast.name} on ${this.formatDateTime(reservation.startTime)} has been successfully cancelled.
         
         We hope to see you again soon.
-      `;
+      `
       notifications.push(
         this.sendEmail({
           to: reservation.customer.email,
@@ -213,8 +219,8 @@ export class NotificationService {
             reservationId: reservation.id,
           },
         }).catch((error) => {
-          logger.error({ err: error }, 'sendReservationCancellation: Failed to send email');
-          return { success: false, error: 'Failed to send email' };
+          logger.error({ err: error }, 'sendReservationCancellation: Failed to send email')
+          return { success: false, error: 'Failed to send email' }
         })
       )
     }
@@ -226,8 +232,8 @@ export class NotificationService {
           to: reservation.customer.phone,
           message: `Your reservation with ${reservation.cast.name} on ${this.formatDateTime(reservation.startTime)} has been cancelled.`,
         }).catch((error) => {
-          logger.error({ err: error }, 'sendReservationCancellation: Failed to send SMS');
-          return { success: false, error: 'Failed to send SMS' };
+          logger.error({ err: error }, 'sendReservationCancellation: Failed to send SMS')
+          return { success: false, error: 'Failed to send SMS' }
         })
       )
     }
@@ -244,8 +250,11 @@ export class NotificationService {
             type: 'reservation_cancellation',
           },
         }).catch((error) => {
-          logger.error({ err: error }, 'sendReservationCancellation: Failed to send push notification');
-          return { success: false, error: 'Failed to send push notification' };
+          logger.error(
+            { err: error },
+            'sendReservationCancellation: Failed to send push notification'
+          )
+          return { success: false, error: 'Failed to send push notification' }
         })
       )
     }
@@ -345,21 +354,21 @@ export class NotificationService {
   private async sendEmail(data: any): Promise<NotificationResult> {
     // APIキーが設定されていない場合は、何もせずに成功として返す
     if (!process.env.RESEND_API_KEY) {
-      logger.warn('RESEND_API_KEY is not set. Skipping email sending.');
-      return { success: true, notificationId: 'dummy-email-id-no-key' };
+      logger.warn('RESEND_API_KEY is not set. Skipping email sending.')
+      return { success: true, notificationId: 'dummy-email-id-no-key' }
     }
 
     try {
-      const result = await emailClient.send(data);
+      const result = await emailClient.send(data)
       // emailClientがエラーをオブジェクトとして返す仕様に変更したため、ここでハンドリング
       if (!result.success) {
-        throw new Error(result.error || 'Failed to send email');
+        throw new Error(result.error || 'Failed to send email')
       }
-      return { success: true, notificationId: result.id };
+      return { success: true, notificationId: result.id }
     } catch (error) {
       // エラーをスローするのではなく、ロギングして失敗として扱う
-      logger.error({ err: error }, 'Failed to send email via emailClient');
-      throw error; // 上位のサービスでエラーを捕捉できるように再スロー
+      logger.error({ err: error }, 'Failed to send email via emailClient')
+      throw error // 上位のサービスでエラーを捕捉できるように再スロー
     }
   }
 

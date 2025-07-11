@@ -19,13 +19,13 @@ vi.mock('@/lib/generated/prisma', () => ({
       create: vi.fn(),
       update: vi.fn(),
       findUnique: vi.fn(),
-      findMany: vi.fn()
+      findMany: vi.fn(),
     },
     paymentTransaction: {
       create: vi.fn(),
-      findMany: vi.fn()
-    }
-  }
+      findMany: vi.fn(),
+    },
+  },
 }))
 
 describe('Reservation-Payment Integration', () => {
@@ -36,7 +36,7 @@ describe('Reservation-Payment Integration', () => {
     mockPaymentService = {
       processPayment: vi.fn(),
       createPaymentIntent: vi.fn(),
-      getPaymentHistoryByReservation: vi.fn()
+      getPaymentHistoryByReservation: vi.fn(),
     }
     MockPaymentService.mockImplementation(() => mockPaymentService)
     reservationService = new ReservationService(mockPaymentService)
@@ -52,7 +52,7 @@ describe('Reservation-Payment Integration', () => {
         endTime: new Date('2024-01-01T11:00:00Z'),
         amount: 10000,
         paymentMethod: 'card' as const,
-        paymentProvider: 'stripe' as const
+        paymentProvider: 'stripe' as const,
       }
 
       const mockReservation = {
@@ -64,7 +64,7 @@ describe('Reservation-Payment Integration', () => {
         endTime: reservationData.endTime,
         status: 'confirmed',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       }
 
       const mockPaymentResult = {
@@ -79,8 +79,8 @@ describe('Reservation-Payment Integration', () => {
           paymentMethod: 'card',
           status: 'completed',
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       }
 
       mockPaymentService.processPayment.mockResolvedValue(mockPaymentResult)
@@ -97,7 +97,7 @@ describe('Reservation-Payment Integration', () => {
         amount: 10000,
         currency: 'jpy',
         paymentMethod: 'card',
-        provider: 'stripe'
+        provider: 'stripe',
       })
     })
 
@@ -110,12 +110,12 @@ describe('Reservation-Payment Integration', () => {
         endTime: new Date('2024-01-01T11:00:00Z'),
         amount: 10000,
         paymentMethod: 'card' as const,
-        paymentProvider: 'stripe' as const
+        paymentProvider: 'stripe' as const,
       }
 
       const mockPaymentResult = {
         success: false,
-        error: 'Card declined'
+        error: 'Card declined',
       }
 
       mockPaymentService.processPayment.mockResolvedValue(mockPaymentResult)
@@ -137,7 +137,7 @@ describe('Reservation-Payment Integration', () => {
         endTime: new Date('2024-01-01T11:00:00Z'),
         amount: 10000,
         paymentMethod: 'card' as const,
-        paymentProvider: 'stripe' as const
+        paymentProvider: 'stripe' as const,
       }
 
       const mockIntent = {
@@ -150,7 +150,7 @@ describe('Reservation-Payment Integration', () => {
         paymentMethod: 'card',
         clientSecret: 'pi_123_secret',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       }
 
       mockPaymentService.createPaymentIntent.mockResolvedValue(mockIntent)
@@ -167,7 +167,7 @@ describe('Reservation-Payment Integration', () => {
         amount: 10000,
         currency: 'jpy',
         paymentMethod: 'card',
-        provider: 'stripe'
+        provider: 'stripe',
       })
     })
   })
@@ -175,7 +175,7 @@ describe('Reservation-Payment Integration', () => {
   describe('getReservationWithPayments', () => {
     it('should get reservation with payment history', async () => {
       const reservationId = 'res_123'
-      
+
       const mockPayments = [
         {
           id: 'txn_123',
@@ -187,8 +187,8 @@ describe('Reservation-Payment Integration', () => {
           paymentMethod: 'card',
           status: 'completed',
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       ]
 
       mockPaymentService.getPaymentHistoryByReservation.mockResolvedValue(mockPayments)
@@ -207,18 +207,20 @@ describe('Reservation-Payment Integration', () => {
       const refundAmount = 5000
 
       // Mock payment history to return a completed payment
-      const mockPayments = [{
-        id: 'txn_123',
-        reservationId: 'res_123',
-        customerId: 'cust_123',
-        amount: 10000,
-        currency: 'jpy',
-        provider: 'stripe',
-        paymentMethod: 'card',
-        status: 'completed',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }]
+      const mockPayments = [
+        {
+          id: 'txn_123',
+          reservationId: 'res_123',
+          customerId: 'cust_123',
+          amount: 10000,
+          currency: 'jpy',
+          provider: 'stripe',
+          paymentMethod: 'card',
+          status: 'completed',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]
 
       mockPaymentService.getPaymentHistoryByReservation.mockResolvedValue(mockPayments)
 
@@ -237,13 +239,16 @@ describe('Reservation-Payment Integration', () => {
           refundedAt: new Date(),
           refundAmount: 5000,
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       }
 
       mockPaymentService.refundPayment = vi.fn().mockResolvedValue(mockRefundResult)
 
-      const result = await reservationService.cancelReservationWithRefund(reservationId, refundAmount)
+      const result = await reservationService.cancelReservationWithRefund(
+        reservationId,
+        refundAmount
+      )
 
       expect(result.success).toBe(true)
       expect(result.refundResult).toBeDefined()

@@ -90,18 +90,18 @@ import { glob } from 'glob'
 
 async function migrateImages() {
   const files = await glob('public/uploads/**/*.{jpg,jpeg,png,webp}')
-  
+
   for (const filePath of files) {
     const buffer = await readFile(filePath)
     const filename = filePath.split('/').pop()!
-    
+
     const blob = await put(filename, buffer, {
       access: 'public',
       contentType: `image/${filename.split('.').pop()}`,
     })
-    
+
     console.log(`Migrated: ${filename} -> ${blob.url}`)
-    
+
     // データベースのURL更新処理をここに追加
   }
 }
@@ -118,10 +118,10 @@ BLOB_READ_WRITE_TOKEN=vercel_blob_xxxxx
 
 ## コスト見積もり
 
-| プラン | ストレージ | 帯域幅 | 料金 |
-|--------|-----------|--------|------|
-| 無料 | 1GB | 1GB/月 | $0 |
-| Pro | 100GB | 100GB/月 | $20/月〜 |
+| プラン | ストレージ | 帯域幅   | 料金     |
+| ------ | ---------- | -------- | -------- |
+| 無料   | 1GB        | 1GB/月   | $0       |
+| Pro    | 100GB      | 100GB/月 | $20/月〜 |
 
 ## メリット
 

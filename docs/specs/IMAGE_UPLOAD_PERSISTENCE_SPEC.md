@@ -7,6 +7,7 @@
 ## 2. 現状の分析
 
 ### 2.1 現在の実装
+
 - **保存先**: `/public/uploads`（ローカルファイルシステム）
 - **エンドポイント**: `/api/upload`
 - **ファイル制限**:
@@ -16,6 +17,7 @@
 - **使用箇所**: キャストプロフィール画像（最大10枚）
 
 ### 2.2 データベース構造
+
 ```prisma
 model Cast {
   image    String    // メイン画像URL
@@ -27,15 +29,16 @@ model Cast {
 
 ### 3.1 比較検討
 
-| サービス | AWS S3 | Google Cloud Storage | Cloudflare R2 |
-|---------|--------|---------------------|---------------|
-| **料金** | $0.023/GB/月 | $0.020/GB/月 | $0.015/GB/月 |
-| **転送料金** | $0.09/GB | $0.12/GB | 無料 |
-| **API互換性** | S3 API | 独自API | S3 API互換 |
-| **CDN統合** | CloudFront（別料金） | Cloud CDN（別料金） | 無料CDN付属 |
-| **Next.js対応** | 良好 | 良好 | 良好 |
+| サービス        | AWS S3               | Google Cloud Storage | Cloudflare R2 |
+| --------------- | -------------------- | -------------------- | ------------- |
+| **料金**        | $0.023/GB/月         | $0.020/GB/月         | $0.015/GB/月  |
+| **転送料金**    | $0.09/GB             | $0.12/GB             | 無料          |
+| **API互換性**   | S3 API               | 独自API              | S3 API互換    |
+| **CDN統合**     | CloudFront（別料金） | Cloud CDN（別料金）  | 無料CDN付属   |
+| **Next.js対応** | 良好                 | 良好                 | 良好          |
 
 ### 3.2 推奨サービス: Cloudflare R2
+
 - **理由**:
   1. 転送料金無料（エグレス料金なし）
   2. S3 API互換で移行が容易
@@ -45,6 +48,7 @@ model Cast {
 ## 4. 実装仕様
 
 ### 4.1 環境変数
+
 ```env
 # Cloudflare R2
 R2_ACCOUNT_ID=your_account_id
@@ -62,6 +66,7 @@ R2_PUBLIC_URL=https://your-bucket.r2.cloudflarestorage.com
 ```
 
 ### 4.2 新しいデータベーススキーマ
+
 ```prisma
 // 画像メタデータを管理するテーブル
 model Image {
@@ -75,7 +80,7 @@ model Image {
   height     Int?     // 画像の高さ（オプション）
   uploadedBy String?  // アップロードユーザーID（将来用）
   createdAt  DateTime @default(now())
-  
+
   // リレーション
   castMainImages    Cast[] @relation("MainImage")
   castAdditionalImages CastImage[]
@@ -97,7 +102,7 @@ model CastImage {
   order    Int      // 表示順序
   cast     Cast     @relation(fields: [castId], references: [id], onDelete: Cascade)
   image    Image    @relation(fields: [imageId], references: [id])
-  
+
   @@id([castId, imageId])
   @@index([castId])
 }
@@ -106,6 +111,7 @@ model CastImage {
 ### 4.3 API実装
 
 #### 4.3.1 ストレージサービスインターフェース
+
 ```typescript
 // lib/storage/types.ts
 export interface StorageService {
@@ -122,6 +128,7 @@ export interface UploadResult {
 ```
 
 #### 4.3.2 Cloudflare R2実装
+
 ```typescript
 // lib/storage/r2.ts
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
@@ -146,13 +153,15 @@ export class R2StorageService implements StorageService {
 
   async upload(file: File, key: string): Promise<UploadResult> {
     const buffer = Buffer.from(await file.arrayBuffer())
-    
-    await this.client.send(new PutObjectCommand({
-      Bucket: this.bucketName,
-      Key: key,
-      Body: buffer,
-      ContentType: file.type,
-    }))
+
+    await this.client.send(
+      new PutObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+        Body: buffer,
+        ContentType: file.type,
+      })
+    )
 
     return {
       key,
@@ -162,10 +171,12 @@ export class R2StorageService implements StorageService {
   }
 
   async delete(key: string): Promise<void> {
-    await this.client.send(new DeleteObjectCommand({
-      Bucket: this.bucketName,
-      Key: key,
-    }))
+    await this.client.send(
+      new DeleteObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+      })
+    )
   }
 
   getUrl(key: string): string {
@@ -175,6 +186,7 @@ export class R2StorageService implements StorageService {
 ```
 
 #### 4.3.3 更新されたアップロードAPI
+
 ```typescript
 // app/api/upload/route.ts
 import { NextRequest, NextResponse } from 'next/server'
@@ -197,7 +209,7 @@ export async function POST(request: NextRequest) {
     const validated = uploadSchema.parse({ file, type })
 
     // ファイルサイズとタイプチェック（既存のロジック）
-    
+
     // ストレージキーの生成
     const timestamp = Date.now()
     const randomString = Math.random().toString(36).substring(2, 15)
@@ -234,16 +246,18 @@ export async function POST(request: NextRequest) {
 ### 4.4 マイグレーション戦略
 
 #### 4.4.1 段階的移行
+
 1. **Phase 1**: 新規アップロードをクラウドストレージに保存
 2. **Phase 2**: 既存画像の移行スクリプト実行
 3. **Phase 3**: ローカルストレージのクリーンアップ
 
 #### 4.4.2 移行スクリプト
+
 ```typescript
 // scripts/migrate-images.ts
 async function migrateExistingImages() {
   const casts = await prisma.cast.findMany()
-  
+
   for (const cast of casts) {
     // メイン画像の移行
     if (cast.image && cast.image.startsWith('/uploads/')) {
@@ -253,7 +267,7 @@ async function migrateExistingImages() {
         data: { mainImageId: newImage.id },
       })
     }
-    
+
     // 追加画像の移行
     for (let i = 0; i < cast.images.length; i++) {
       const imageUrl = cast.images[i]
@@ -275,11 +289,13 @@ async function migrateExistingImages() {
 ## 5. セキュリティ考慮事項
 
 ### 5.1 アクセス制御
+
 - バケットは非公開設定
 - 署名付きURLまたはCDN経由でのみアクセス可能
 - アップロード時の認証チェック
 
 ### 5.2 ファイル検証
+
 - MIMEタイプの検証
 - ファイルヘッダーの検証（マジックナンバー）
 - ウイルススキャン（オプション）
@@ -287,11 +303,13 @@ async function migrateExistingImages() {
 ## 6. パフォーマンス最適化
 
 ### 6.1 画像最適化
+
 - アップロード時の自動リサイズ（サムネイル生成）
 - WebP形式への自動変換
 - CDNキャッシュの活用
 
 ### 6.2 非同期処理
+
 - 大きなファイルは非同期でアップロード
 - ジョブキューの導入検討
 
@@ -305,11 +323,13 @@ async function migrateExistingImages() {
 ## 8. テスト計画
 
 ### 8.1 単体テスト
+
 - ストレージサービスのモック
 - アップロードAPIのテスト
 - バリデーションロジックのテスト
 
 ### 8.2 統合テスト
+
 - 実際のストレージサービスとの連携
 - エンドツーエンドのアップロードフロー
 - 移行スクリプトのテスト

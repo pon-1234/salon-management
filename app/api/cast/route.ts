@@ -60,17 +60,17 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   // キャストの作成は管理者のみ可能
   // TODO: 管理者ロールのチェックを実装
-  return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 }
 
 export async function PUT(request: NextRequest) {
   // キャストの更新は管理者のみ可能
   // TODO: 管理者ロールのチェックを実装
-  return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 }
 
 export async function DELETE(request: NextRequest) {
   // キャストの削除は管理者のみ可能
   // TODO: 管理者ロールのチェックを実装
-  return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 }

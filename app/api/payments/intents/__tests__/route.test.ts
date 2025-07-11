@@ -12,13 +12,13 @@ import { NextRequest } from 'next/server'
 vi.mock('@/lib/payment/service', () => ({
   PaymentService: vi.fn().mockImplementation(() => ({
     createPaymentIntent: vi.fn(),
-    confirmPaymentIntent: vi.fn()
-  }))
+    confirmPaymentIntent: vi.fn(),
+  })),
 }))
 
 const mockPaymentService = {
   createPaymentIntent: vi.fn(),
-  confirmPaymentIntent: vi.fn()
+  confirmPaymentIntent: vi.fn(),
 }
 
 describe('/api/payments/intents', () => {
@@ -34,7 +34,7 @@ describe('/api/payments/intents', () => {
         amount: 10000,
         currency: 'jpy',
         paymentMethod: 'card',
-        provider: 'stripe'
+        provider: 'stripe',
       }
 
       const mockIntent = {
@@ -47,14 +47,14 @@ describe('/api/payments/intents', () => {
         paymentMethod: 'card',
         clientSecret: 'pi_123_secret',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       }
 
       mockPaymentService.createPaymentIntent.mockResolvedValue(mockIntent)
 
       const request = new NextRequest('http://localhost:3000/api/payments/intents', {
         method: 'POST',
-        body: JSON.stringify(intentData)
+        body: JSON.stringify(intentData),
       })
 
       const response = await POST(request)
@@ -73,7 +73,7 @@ describe('/api/payments/intents', () => {
 
       const request = new NextRequest('http://localhost:3000/api/payments/intents', {
         method: 'POST',
-        body: JSON.stringify(invalidData)
+        body: JSON.stringify(invalidData),
       })
 
       const response = await POST(request)
@@ -90,14 +90,14 @@ describe('/api/payments/intents', () => {
         amount: 10000,
         currency: 'jpy',
         paymentMethod: 'card',
-        provider: 'stripe'
+        provider: 'stripe',
       }
 
       mockPaymentService.createPaymentIntent.mockRejectedValue(new Error('Provider error'))
 
       const request = new NextRequest('http://localhost:3000/api/payments/intents', {
         method: 'POST',
-        body: JSON.stringify(intentData)
+        body: JSON.stringify(intentData),
       })
 
       const response = await POST(request)
@@ -111,7 +111,7 @@ describe('/api/payments/intents', () => {
   describe('PATCH /api/payments/intents', () => {
     it('should confirm payment intent successfully', async () => {
       const confirmData = {
-        intentId: 'pi_123'
+        intentId: 'pi_123',
       }
 
       const mockResult = {
@@ -126,15 +126,15 @@ describe('/api/payments/intents', () => {
           paymentMethod: 'card',
           status: 'completed',
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       }
 
       mockPaymentService.confirmPaymentIntent.mockResolvedValue(mockResult)
 
       const request = new NextRequest('http://localhost:3000/api/payments/intents', {
         method: 'PATCH',
-        body: JSON.stringify(confirmData)
+        body: JSON.stringify(confirmData),
       })
 
       const response = await PATCH(request)
@@ -149,7 +149,7 @@ describe('/api/payments/intents', () => {
     it('should return 400 for missing intentId', async () => {
       const request = new NextRequest('http://localhost:3000/api/payments/intents', {
         method: 'PATCH',
-        body: JSON.stringify({})
+        body: JSON.stringify({}),
       })
 
       const response = await PATCH(request)
@@ -161,17 +161,17 @@ describe('/api/payments/intents', () => {
 
     it('should handle confirmation failure', async () => {
       const confirmData = {
-        intentId: 'pi_123'
+        intentId: 'pi_123',
       }
 
       mockPaymentService.confirmPaymentIntent.mockResolvedValue({
         success: false,
-        error: 'Payment failed'
+        error: 'Payment failed',
       })
 
       const request = new NextRequest('http://localhost:3000/api/payments/intents', {
         method: 'PATCH',
-        body: JSON.stringify(confirmData)
+        body: JSON.stringify(confirmData),
       })
 
       const response = await PATCH(request)

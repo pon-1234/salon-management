@@ -33,11 +33,13 @@ Continue building your app on:
 Try the live demo with these credentials:
 
 ### Admin Access
+
 - **URL**: `/admin/login`
 - **Email**: `admin@example.com`
 - **Password**: `admin123`
 
 ### Customer Access
+
 - **URL**: `/[store]/login` (e.g., `/store1/login`)
 - **Email**: `customer@example.com`
 - **Password**: `customer123`
@@ -52,11 +54,13 @@ npm run dev
 ## Environment Setup
 
 1. Copy the environment variables:
+
 ```bash
 cp env.example .env.local
 ```
 
 2. Configure the required variables:
+
 - **Database**: Set your PostgreSQL connection string
 - **NextAuth**: Generate a secret with `openssl rand -base64 32`
 - **Supabase**: Set your Supabase URL and anon key
@@ -71,6 +75,7 @@ This application uses Supabase Storage for persistent image storage:
 - **Integrated**: Works seamlessly with your existing Supabase database
 
 To enable image uploads:
+
 1. Create a storage bucket named "images" in your Supabase dashboard
 2. Add the following to your environment variables:
    - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL

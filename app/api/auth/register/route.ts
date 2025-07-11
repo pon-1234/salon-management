@@ -16,10 +16,7 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!nickname || !email || !phone || !password || !storeId) {
-      return NextResponse.json(
-        { error: '必須項目が入力されていません' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: '必須項目が入力されていません' }, { status: 400 })
     }
 
     // Check if user already exists
@@ -52,17 +49,14 @@ export async function POST(request: NextRequest) {
     const { password: _, ...customerWithoutPassword } = customer
 
     return NextResponse.json(
-      { 
+      {
         message: '会員登録が完了しました',
-        customer: customerWithoutPassword 
+        customer: customerWithoutPassword,
       },
       { status: 201 }
     )
   } catch (error) {
     console.error('Registration error:', error)
-    return NextResponse.json(
-      { error: '登録中にエラーが発生しました' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: '登録中にエラーが発生しました' }, { status: 500 })
   }
 }

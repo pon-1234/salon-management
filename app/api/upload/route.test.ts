@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { POST } from './route'
-import { vi } from 'vitest'
+import { vi, describe, it, expect, beforeEach } from 'vitest'
 import type { StorageService } from '@/lib/storage'
 
 const mockStorageService: StorageService = {
@@ -81,9 +81,10 @@ describe('POST /api/upload', () => {
   })
 
   it('正常にファイルをアップロードできる', async () => {
-    const mockPublicUrl = 'https://example.supabase.co/storage/v1/object/public/images/test-image.jpg'
+    const mockPublicUrl =
+      'https://example.supabase.co/storage/v1/object/public/images/test-image.jpg'
     const mockPath = 'uploads/test-image.jpg'
-    
+
     vi.mocked(mockStorageService.upload).mockResolvedValue({
       url: mockPath,
       filename: 'test.jpg',

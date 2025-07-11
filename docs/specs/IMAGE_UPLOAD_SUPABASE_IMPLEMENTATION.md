@@ -41,12 +41,14 @@ const result = await storage.upload(file, { folder: 'uploads' })
 ### 4. Configuration
 
 Required environment variables:
+
 - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anon key
 
 ### 5. Migration Script
 
 The migration script (`scripts/migrate-images-to-blob.ts`) has been updated to:
+
 1. Upload existing images from `/public/uploads` to Supabase Storage
 2. Update database references to use the new Supabase URLs
 3. Create a backup mapping file for rollback purposes
@@ -63,6 +65,7 @@ The migration script (`scripts/migrate-images-to-blob.ts`) has been updated to:
 ## Testing
 
 All existing tests have been updated and are passing:
+
 - Upload API tests verify proper validation and error handling
 - Mock storage service allows for isolated testing
 - Integration tests ensure end-to-end functionality
@@ -70,6 +73,7 @@ All existing tests have been updated and are passing:
 ## Future Considerations
 
 The storage abstraction layer allows for easy switching between providers if needed:
+
 - AWS S3
 - Google Cloud Storage
 - Cloudflare R2

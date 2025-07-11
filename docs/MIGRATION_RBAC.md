@@ -7,11 +7,13 @@ This guide explains how to migrate to the new role-based access control (RBAC) s
 ## Changes Made
 
 ### 1. Authentication System
+
 - **Unified to NextAuth.js**: All authentication now uses NextAuth.js instead of custom JWT implementation
 - **Removed custom JWT endpoints**: `/api/auth/login` and `/api/auth/admin/login` have been removed
 - **Session-based authentication**: Uses NextAuth.js session management with JWT strategy
 
 ### 2. Admin Model Updates
+
 The Admin model in Prisma schema has been updated with new fields:
 
 ```prisma
@@ -30,6 +32,7 @@ model Admin {
 ```
 
 ### 3. Role Structure
+
 - **Customer**: Standard customer role with access to store features
 - **Admin Roles**:
   - `staff`: Basic admin access
@@ -37,7 +40,9 @@ model Admin {
   - `super_admin`: Full system access
 
 ### 4. Permission System
+
 Permissions are stored as JSON array in the admin table. Example permissions:
+
 - `cast:read` - View cast members
 - `cast:write` - Create/update cast members
 - `cast:delete` - Delete cast members
@@ -61,8 +66,8 @@ For existing admin users, you need to update their records with the new fields:
 
 ```sql
 -- Set default values for existing admins
-UPDATE "Admin" 
-SET 
+UPDATE "Admin"
+SET
   role = 'staff',
   permissions = '[]',
   "isActive" = true
@@ -82,6 +87,7 @@ DATABASE_URL=your-database-url
 ### 4. Update Frontend Code
 
 #### Admin Login
+
 Update admin login to use NextAuth:
 
 ```typescript
@@ -95,6 +101,7 @@ const result = await signIn('admin-credentials', {
 ```
 
 #### Check Admin Permissions
+
 Use the session to check permissions:
 
 ```typescript
@@ -121,16 +128,16 @@ import { authOptions } from '@/lib/auth/config'
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
-  
+
   if (!session || session.user.role !== 'admin') {
     return new Response('Unauthorized', { status: 401 })
   }
-  
+
   // Check specific permission
   if (!session.user.permissions?.includes('cast:write')) {
     return new Response('Forbidden', { status: 403 })
   }
-  
+
   // Process request...
 }
 ```
@@ -163,5 +170,6 @@ If you need to rollback:
 ## Support
 
 For questions or issues with the migration, please refer to:
+
 - NextAuth.js documentation: https://next-auth.js.org/
 - Project documentation: `/docs/DEVELOPMENT_GUIDE.md`

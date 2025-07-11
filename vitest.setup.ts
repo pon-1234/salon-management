@@ -2,9 +2,9 @@ import '@testing-library/jest-dom'
 import { vi } from 'vitest'
 
 // Set up test environment variables
-process.env.DATABASE_URL = "postgresql://test:test@localhost:5432/salon_test?schema=public"
-process.env.NEXTAUTH_SECRET = "test-secret-key-for-testing"
-process.env.NEXTAUTH_URL = "http://localhost:3000"
+process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/salon_test?schema=public'
+process.env.NEXTAUTH_SECRET = 'test-secret-key-for-testing'
+process.env.NEXTAUTH_URL = 'http://localhost:3000'
 process.env.JWT_SECRET = 'test-jwt-secret-for-testing'
 process.env.RESEND_API_KEY = 'test-api-key'
 
