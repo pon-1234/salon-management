@@ -16,7 +16,7 @@
     "setup:admin": "tsx scripts/setup-admin.ts",
     "create:admin": "node scripts/create-admin.js",
     "seed:full": "tsx prisma/seed-full.ts",
-    "migrate:images": "tsx scripts/migrate-images-to-blob.ts",
+    "migrate:images": "tsx scripts/migrate-images-to-supabase.ts",
     "postinstall": "npx prisma generate"
   },
   "dependencies": {
