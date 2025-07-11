@@ -301,6 +301,67 @@ describe('CastScheduleUseCases', () => {
       expect(updatedSchedule?.isHoliday).toBe(true)
       expect(updatedSchedule?.shifts).toHaveLength(0)
     })
+
+    it('should check permissions when handling leave request', async () => {
+      const cast = await castRepository.create({
+        name: '権限テストキャスト',
+        nameKana: '権限テストキャスト',
+        age: 25,
+        height: 165,
+        bust: 'C',
+        waist: 58,
+        hip: 85,
+        type: 'スタンダード',
+        image: '/images/cast1.jpg',
+        images: [],
+        description: 'テスト',
+        netReservation: true,
+        specialDesignationFee: 5000,
+        regularDesignationFee: 3000,
+        panelDesignationRank: 1,
+        regularDesignationRank: 1,
+        workStatus: '出勤',
+        appointments: [],
+        availableOptions: [],
+      })
+
+      const leaveRequest = await scheduleRepository.createLeaveRequest({
+        castId: cast.id,
+        startDate: new Date('2024-01-20'),
+        endDate: new Date('2024-01-22'),
+        reason: '私用のため',
+        status: 'pending',
+        approvedBy: null,
+        approvedAt: null,
+      })
+
+      // Test with admin user (should succeed)
+      const adminUser = { id: 'admin-1', role: 'admin' as const }
+      const result = await useCases.handleLeaveRequest(
+        leaveRequest.id,
+        'approved',
+        'admin-1',
+        adminUser
+      )
+      expect(result.status).toBe('approved')
+
+      // Create another leave request for rejection test
+      const leaveRequest2 = await scheduleRepository.createLeaveRequest({
+        castId: cast.id,
+        startDate: new Date('2024-02-01'),
+        endDate: new Date('2024-02-03'),
+        reason: '体調不良',
+        status: 'pending',
+        approvedBy: null,
+        approvedAt: null,
+      })
+
+      // Test with unauthorized user (should fail)
+      const castUser = { id: 'cast-2', role: 'cast' as const }
+      await expect(
+        useCases.handleLeaveRequest(leaveRequest2.id, 'approved', 'cast-2', castUser)
+      ).rejects.toThrow('User does not have permission to approve/reject leave requests')
+    })
   })
 
   describe('checkScheduleConflicts', () => {
@@ -358,6 +419,127 @@ describe('CastScheduleUseCases', () => {
         '20:00'
       )
 
+      expect(noConflict).toBe(false)
+    })
+
+    it('should handle overnight shifts (crossing midnight)', async () => {
+      const cast = await castRepository.create({
+        name: '深夜勤務テストキャスト',
+        nameKana: '深夜勤務テストキャスト',
+        age: 25,
+        height: 165,
+        bust: 'C',
+        waist: 58,
+        hip: 85,
+        type: 'スタンダード',
+        image: '/images/cast1.jpg',
+        images: [],
+        description: 'テスト',
+        netReservation: true,
+        specialDesignationFee: 5000,
+        regularDesignationFee: 3000,
+        panelDesignationRank: 1,
+        regularDesignationRank: 1,
+        workStatus: '出勤',
+        appointments: [],
+        availableOptions: [],
+      })
+
+      const schedule = await scheduleRepository.createSchedule({
+        castId: cast.id,
+        date: new Date('2024-01-15'),
+        shifts: [],
+        isHoliday: false,
+      })
+
+      // Create overnight shift from 22:00 to 02:00
+      await scheduleRepository.createShift(schedule.id, {
+        startTime: '22:00',
+        endTime: '02:00',
+        status: 'confirmed',
+      })
+
+      // Check for conflict with late night shift
+      const hasConflict1 = await useCases.checkScheduleConflicts(
+        cast.id,
+        new Date('2024-01-15'),
+        '23:00',
+        '01:00'
+      )
+      expect(hasConflict1).toBe(true)
+
+      // Check for conflict with early morning shift
+      const hasConflict2 = await useCases.checkScheduleConflicts(
+        cast.id,
+        new Date('2024-01-15'),
+        '01:00',
+        '03:00'
+      )
+      expect(hasConflict2).toBe(true)
+
+      // Check for no conflict with afternoon shift
+      const noConflict = await useCases.checkScheduleConflicts(
+        cast.id,
+        new Date('2024-01-15'),
+        '14:00',
+        '20:00'
+      )
+      expect(noConflict).toBe(false)
+    })
+
+    it('should detect conflicts between multiple overnight shifts', async () => {
+      const cast = await castRepository.create({
+        name: '複数深夜勤務テストキャスト',
+        nameKana: '複数深夜勤務テストキャスト',
+        age: 25,
+        height: 165,
+        bust: 'C',
+        waist: 58,
+        hip: 85,
+        type: 'スタンダード',
+        image: '/images/cast1.jpg',
+        images: [],
+        description: 'テスト',
+        netReservation: true,
+        specialDesignationFee: 5000,
+        regularDesignationFee: 3000,
+        panelDesignationRank: 1,
+        regularDesignationRank: 1,
+        workStatus: '出勤',
+        appointments: [],
+        availableOptions: [],
+      })
+
+      const schedule = await scheduleRepository.createSchedule({
+        castId: cast.id,
+        date: new Date('2024-01-15'),
+        shifts: [],
+        isHoliday: false,
+      })
+
+      // Create first overnight shift
+      await scheduleRepository.createShift(schedule.id, {
+        startTime: '21:00',
+        endTime: '01:00',
+        status: 'confirmed',
+      })
+
+      // Check for conflict with another overnight shift
+      const hasConflict = await useCases.checkScheduleConflicts(
+        cast.id,
+        new Date('2024-01-15'),
+        '23:00',
+        '03:00'
+      )
+      expect(hasConflict).toBe(true)
+
+      // Check for no conflict with non-overlapping overnight shift
+      const noConflict = await useCases.checkScheduleConflicts(
+        cast.id,
+        new Date('2024-01-15'),
+        '02:00',
+        '05:00'
+      )
       expect(noConflict).toBe(false)
     })
   })

@@ -7,10 +7,19 @@
 
 import type { CastScheduleRepository } from './repository'
 import type { CastRepository } from '../cast/repository'
-import type { WeeklyScheduleView, ScheduleStats, Schedule, LeaveRequest } from './types'
+import type {
+  WeeklyScheduleView,
+  ScheduleStats,
+  Schedule,
+  LeaveRequest,
+  ScheduleUser,
+} from './types'
 import type { WeeklySchedule, ScheduleFilters } from './old-types'
 import { generateMockWeeklySchedule } from './old-data'
 import { addDays, startOfWeek, endOfWeek } from 'date-fns'
+import { isTimeOverlapping } from './utils'
+import { UnauthorizedScheduleOperationError } from './errors'
+import { schedulePermissions } from './permissions'
 
 export class CastScheduleUseCases {
   constructor(
@@ -155,11 +164,21 @@ export class CastScheduleUseCases {
   async handleLeaveRequest(
     leaveRequestId: string,
     action: 'approved' | 'rejected',
-    handledBy: string
+    handledBy: string,
+    user?: ScheduleUser
   ): Promise<LeaveRequest> {
     if (!this.scheduleRepository) {
       throw new Error('Schedule repository is required for this method')
     }
+
+    // Check permissions if user is provided
+    if (user && !schedulePermissions.canApproveLeaveRequest(user)) {
+      throw new UnauthorizedScheduleOperationError(
+        'handleLeaveRequest',
+        'User does not have permission to approve/reject leave requests'
+      )
+    }
+
     let result: LeaveRequest
 
     if (action === 'approved') {
@@ -214,17 +233,8 @@ export class CastScheduleUseCases {
     for (const shift of schedule.shifts) {
       if (shift.status === 'cancelled') continue
 
-      const [startHour, startMin] = shift.startTime.split(':').map(Number)
-      const [endHour, endMin] = shift.endTime.split(':').map(Number)
-      const startMinutes = startHour * 60 + startMin
-      const endMinutes = endHour * 60 + endMin
-
-      // Check for overlap
-      if (
-        (newStartMinutes >= startMinutes && newStartMinutes < endMinutes) ||
-        (newEndMinutes > startMinutes && newEndMinutes <= endMinutes) ||
-        (newStartMinutes <= startMinutes && newEndMinutes >= endMinutes)
-      ) {
+      // Use utility function to handle overnight shifts
+      if (isTimeOverlapping(startTime, endTime, shift.startTime, shift.endTime)) {
         return true
       }
     }

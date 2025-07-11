@@ -7,6 +7,12 @@
 import type { CastScheduleRepository } from './repository'
 import type { Schedule, Shift, SchedulePattern, LeaveRequest } from './types'
 import { generateId } from '../shared'
+import {
+  ScheduleNotFoundError,
+  ShiftNotFoundError,
+  PatternNotFoundError,
+  LeaveRequestNotFoundError,
+} from './errors'
 
 export class CastScheduleRepositoryImpl implements CastScheduleRepository {
   private schedules: Map<string, Schedule> = new Map()
@@ -197,40 +203,47 @@ export class CastScheduleRepositoryImpl implements CastScheduleRepository {
   ): Promise<Schedule[]> {
     const pattern = this.patterns.get(patternId)
     if (!pattern) {
-      throw new Error(`Pattern with id ${patternId} not found`)
+      throw new PatternNotFoundError(patternId)
     }
+
+    // Batch fetch existing schedules to avoid N+1
+    const existingSchedules = await this.findSchedulesByCastId(pattern.castId, startDate, endDate)
+    const existingDatesSet = new Set(existingSchedules.map((s) => s.date.toDateString()))
 
     const schedules: Schedule[] = []
     const currentDate = new Date(startDate)
+    const datesToCreate: Date[] = []
 
+    // Collect all dates that need schedules
     while (currentDate <= endDate) {
       if (currentDate.getDay() === pattern.dayOfWeek) {
-        // Check if schedule already exists for this date
-        const existingSchedule = Array.from(this.schedules.values()).find(
-          (s) => s.castId === pattern.castId && s.date.toDateString() === currentDate.toDateString()
-        )
-
-        if (!existingSchedule) {
-          const schedule = await this.createSchedule({
-            castId: pattern.castId,
-            date: new Date(currentDate),
-            shifts: [],
-            isHoliday: false,
-            notes: `Applied from pattern: ${pattern.name}`,
-          })
-
-          const shift = await this.createShift(schedule.id, {
-            startTime: pattern.startTime,
-            endTime: pattern.endTime,
-            breakStartTime: pattern.breakStartTime,
-            breakEndTime: pattern.breakEndTime,
-            status: 'confirmed',
-          })
-
-          schedules.push((await this.findScheduleById(schedule.id)) as Schedule)
+        const dateString = currentDate.toDateString()
+        if (!existingDatesSet.has(dateString)) {
+          datesToCreate.push(new Date(currentDate))
         }
       }
       currentDate.setDate(currentDate.getDate() + 1)
+    }
+
+    // Batch create schedules and shifts
+    for (const date of datesToCreate) {
+      const schedule = await this.createSchedule({
+        castId: pattern.castId,
+        date,
+        shifts: [],
+        isHoliday: false,
+        notes: `Applied from pattern: ${pattern.name}`,
+      })
+
+      await this.createShift(schedule.id, {
+        startTime: pattern.startTime,
+        endTime: pattern.endTime,
+        breakStartTime: pattern.breakStartTime,
+        breakEndTime: pattern.breakEndTime,
+        status: 'confirmed',
+      })
+
+      schedules.push(schedule)
     }
 
     return schedules
@@ -266,7 +279,7 @@ export class CastScheduleRepositoryImpl implements CastScheduleRepository {
   async updateLeaveRequest(id: string, request: Partial<LeaveRequest>): Promise<LeaveRequest> {
     const existing = this.leaveRequests.get(id)
     if (!existing) {
-      throw new Error(`Leave request with id ${id} not found`)
+      throw new LeaveRequestNotFoundError(id)
     }
 
     const updated: LeaveRequest = {

@@ -74,3 +74,19 @@ export interface ScheduleStats {
   averageWorkHoursPerDay: number
   holidayCount: number
 }
+
+// Authorization
+export type UserRole = 'admin' | 'manager' | 'cast' | 'staff'
+
+export interface ScheduleUser {
+  id: string
+  role: UserRole
+  permissions?: string[]
+}
+
+export interface SchedulePermissions {
+  canApproveLeaveRequest: (user: ScheduleUser) => boolean
+  canCreateSchedule: (user: ScheduleUser) => boolean
+  canEditSchedule: (user: ScheduleUser, schedule: Schedule) => boolean
+  canDeleteSchedule: (user: ScheduleUser) => boolean
+}
