@@ -1,36 +1,76 @@
-export interface CastScheduleStatus {
-  type: '休日' | '出勤予定' | '未入力'
-  startTime?: string
-  endTime?: string
-  note?: string
+/**
+ * @design_doc   https://github.com/pon-1234/salon-management/issues/9
+ * @related_to   Cast (lib/cast/types.ts) - キャスト基本情報との連携
+ * @known_issues None
+ */
+
+import { BaseEntity } from '../shared'
+
+export type ShiftStatus = 'draft' | 'confirmed' | 'cancelled'
+
+export interface Shift extends BaseEntity {
+  scheduleId: string
+  startTime: string // HH:mm format
+  endTime: string // HH:mm format
+  breakStartTime?: string // HH:mm format
+  breakEndTime?: string // HH:mm format
+  status: ShiftStatus
 }
 
-export interface CastScheduleEntry {
+export interface Schedule extends BaseEntity {
+  castId: string
+  date: Date
+  shifts: Shift[]
+  isHoliday: boolean
+  notes?: string
+}
+
+export interface SchedulePattern extends BaseEntity {
   castId: string
   name: string
-  nameKana: string
-  age: number
-  image: string
-  hasPhone: boolean
-  hasBusinessContact: boolean
-  schedule: {
-    [date: string]: CastScheduleStatus
-  }
+  dayOfWeek: number // 0-6 (Sunday to Saturday)
+  startTime: string // HH:mm format
+  endTime: string // HH:mm format
+  breakStartTime?: string // HH:mm format
+  breakEndTime?: string // HH:mm format
+  isActive: boolean
 }
 
-export interface WeeklySchedule {
+export type LeaveRequestStatus = 'pending' | 'approved' | 'rejected'
+
+export interface LeaveRequest extends BaseEntity {
+  castId: string
   startDate: Date
   endDate: Date
-  entries: CastScheduleEntry[]
-  stats: {
-    totalCast: number
-    workingCast: number
-    averageWorkingHours: number
-    averageWorkingCast: number
-  }
+  reason: string
+  status: LeaveRequestStatus
+  approvedBy: string | null
+  approvedAt: Date | null
 }
 
-export interface ScheduleFilters {
-  date: Date
-  castFilter: string
+// For UI display
+export interface WeeklyScheduleView {
+  weekStartDate: Date
+  schedules: {
+    castId: string
+    castName: string
+    dailySchedules: {
+      date: Date
+      shifts: Shift[]
+      isHoliday: boolean
+    }[]
+  }[]
+}
+
+// For statistics
+export interface ScheduleStats {
+  castId: string
+  period: {
+    from: Date
+    to: Date
+  }
+  totalWorkDays: number
+  totalWorkHours: number
+  averageWorkHoursPerDay: number
+  holidayCount: number
 }

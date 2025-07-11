@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { ScheduleGrid } from '@/components/cast-schedule/schedule-grid'
 import { CastScheduleUseCases } from '@/lib/cast-schedule/usecases'
-import { WeeklySchedule } from '@/lib/cast-schedule/types'
+import { WeeklySchedule } from '@/lib/cast-schedule/old-types'
 import { Header } from '@/components/header'
 import { ScheduleInfoBar } from '@/components/cast-schedule/schedule-info-bar'
 import { ScheduleActionButtons } from '@/components/cast-schedule/schedule-action-buttons'

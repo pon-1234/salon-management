@@ -1,136 +1,128 @@
-import { CastScheduleEntry, WeeklySchedule } from './types'
-import { format, addDays } from 'date-fns'
+/**
+ * @design_doc   https://github.com/pon-1234/salon-management/issues/9
+ * @related_to   Schedule, Shift, SchedulePattern (lib/cast-schedule/types.ts) - モックデータ生成
+ * @known_issues None
+ */
 
-export function generateMockWeeklySchedule(startDate: Date): WeeklySchedule {
-  // Generate dates for the week (Monday to Sunday)
-  const weekDates = Array.from({ length: 7 }, (_, i) => {
-    const date = addDays(startDate, i)
-    return format(date, 'yyyy-MM-dd')
-  })
+import type { Schedule, Shift, SchedulePattern, LeaveRequest } from './types'
+import { generateId } from '../shared'
+import { addDays, startOfWeek } from 'date-fns'
 
-  const mockEntries: CastScheduleEntry[] = [
-    {
-      castId: '1',
-      name: 'あい',
-      nameKana: 'あい',
-      age: 27,
-      image: '/placeholder-user.jpg',
-      hasPhone: true,
-      hasBusinessContact: true,
-      schedule: {
-        [weekDates[0]]: { type: '休日' },
-        [weekDates[1]]: { type: '出勤予定', startTime: '12:00', endTime: '18:00' },
-        [weekDates[2]]: { type: '出勤予定', startTime: '14:00', endTime: '22:00' },
-        [weekDates[3]]: { type: '出勤予定', startTime: '10:00', endTime: '15:00' },
-        [weekDates[4]]: { type: '休日' },
-        [weekDates[5]]: { type: '出勤予定', startTime: '16:00', endTime: '24:00' },
-        [weekDates[6]]: {
-          type: '出勤予定',
-          startTime: '18:00',
-          endTime: '01:00',
-          note: '遅番シフト',
-        },
-      },
-    },
-    {
-      castId: '2',
-      name: 'あやみ',
-      nameKana: 'あやみ',
-      age: 27,
-      image: '/placeholder-user.jpg',
-      hasPhone: true,
-      hasBusinessContact: true,
-      schedule: {
-        [weekDates[0]]: { type: '休日' },
-        [weekDates[1]]: { type: '休日' },
-        [weekDates[2]]: { type: '休日', note: '※休みに変更' },
-        [weekDates[3]]: { type: '出勤予定', startTime: '20:00', endTime: '02:00' },
-        [weekDates[4]]: {
-          type: '出勤予定',
-          startTime: '17:30',
-          endTime: '23:00',
-          note: '※来週出勤（17：30〜22：45分）',
-        },
-        [weekDates[5]]: { type: '出勤予定', startTime: '19:00', endTime: '01:00' },
-        [weekDates[6]]: { type: '未入力' },
-      },
-    },
-    {
-      castId: '3',
-      name: 'いずみ',
-      nameKana: 'いずみ',
-      age: 32,
-      image: '/placeholder-user.jpg',
-      hasPhone: true,
-      hasBusinessContact: true,
-      schedule: {
-        [weekDates[0]]: { type: '出勤予定', startTime: '15:00', endTime: '23:00' },
-        [weekDates[1]]: { type: '出勤予定', startTime: '15:00', endTime: '24:00' },
-        [weekDates[2]]: { type: '休日' },
-        [weekDates[3]]: { type: '出勤予定', startTime: '15:00', endTime: '24:00' },
-        [weekDates[4]]: { type: '休日' },
-        [weekDates[5]]: { type: '出勤予定', startTime: '15:00', endTime: '24:00' },
-        [weekDates[6]]: { type: '休日' },
-      },
-    },
-    {
-      castId: '4',
-      name: 'えみか',
-      nameKana: 'えみか',
-      age: 24,
-      image: '/placeholder-user.jpg',
-      hasPhone: false,
-      hasBusinessContact: true,
-      schedule: {
-        [weekDates[0]]: {
-          type: '出勤予定',
-          startTime: '11:00',
-          endTime: '17:00',
-          note: '昼シフト',
-        },
-        [weekDates[1]]: { type: '出勤予定', startTime: '11:00', endTime: '17:00' },
-        [weekDates[2]]: { type: '出勤予定', startTime: '14:00', endTime: '20:00' },
-        [weekDates[3]]: { type: '休日' },
-        [weekDates[4]]: { type: '出勤予定', startTime: '18:00', endTime: '24:00' },
-        [weekDates[5]]: { type: '出勤予定', startTime: '20:00', endTime: '02:00' },
-        [weekDates[6]]: { type: '休日' },
-      },
-    },
-    {
-      castId: '5',
-      name: 'かおり',
-      nameKana: 'かおり',
-      age: 29,
-      image: '/placeholder-user.jpg',
-      hasPhone: true,
-      hasBusinessContact: true,
-      schedule: {
-        [weekDates[0]]: { type: '未入力' },
-        [weekDates[1]]: { type: '出勤予定', startTime: '16:00', endTime: '22:00' },
-        [weekDates[2]]: { type: '出勤予定', startTime: '18:00', endTime: '01:00' },
-        [weekDates[3]]: { type: '出勤予定', startTime: '20:00', endTime: '03:00' },
-        [weekDates[4]]: { type: '休日' },
-        [weekDates[5]]: { type: '休日' },
-        [weekDates[6]]: { type: '出勤予定', startTime: '19:00', endTime: '02:00' },
-      },
-    },
-  ]
-
-  const workingStaff = mockEntries.length
-  const totalHours = mockEntries.reduce((acc, entry) => {
-    const workingDays = Object.values(entry.schedule).filter((s) => s.type === '出勤予定').length
-    return acc + workingDays * 8 // Assuming 8 hours per working day
-  }, 0)
+export function generateMockSchedule(castId: string, date: Date): Schedule {
+  const now = new Date()
 
   return {
+    id: generateId(),
+    castId,
+    date,
+    shifts: [],
+    isHoliday: false,
+    createdAt: now,
+    updatedAt: now,
+  }
+}
+
+export function generateMockShift(scheduleId: string): Shift {
+  const now = new Date()
+
+  return {
+    id: generateId(),
+    scheduleId,
+    startTime: '10:00',
+    endTime: '18:00',
+    breakStartTime: '14:00',
+    breakEndTime: '15:00',
+    status: 'confirmed',
+    createdAt: now,
+    updatedAt: now,
+  }
+}
+
+export function generateMockWeeklySchedules(castId: string, weekStart: Date): Schedule[] {
+  const schedules: Schedule[] = []
+
+  // Create schedules for Monday, Wednesday, Friday
+  const workDays = [1, 3, 5] // Monday = 1, Wednesday = 3, Friday = 5
+
+  for (let i = 0; i < 7; i++) {
+    const currentDate = addDays(weekStart, i)
+    const dayOfWeek = currentDate.getDay()
+
+    if (workDays.includes(dayOfWeek === 0 ? 7 : dayOfWeek)) {
+      const schedule = generateMockSchedule(castId, currentDate)
+      const shift = generateMockShift(schedule.id)
+      schedule.shifts = [shift]
+      schedules.push(schedule)
+    }
+  }
+
+  return schedules
+}
+
+export function generateMockSchedulePattern(castId: string, dayOfWeek: number): SchedulePattern {
+  const now = new Date()
+
+  return {
+    id: generateId(),
+    castId,
+    name: `${['日', '月', '火', '水', '木', '金', '土'][dayOfWeek]}曜日シフト`,
+    dayOfWeek,
+    startTime: '10:00',
+    endTime: '18:00',
+    breakStartTime: '14:00',
+    breakEndTime: '15:00',
+    isActive: true,
+    createdAt: now,
+    updatedAt: now,
+  }
+}
+
+export function generateMockLeaveRequest(castId: string): LeaveRequest {
+  const now = new Date()
+  const startDate = addDays(now, 7)
+  const endDate = addDays(now, 9)
+
+  return {
+    id: generateId(),
+    castId,
     startDate,
-    endDate: new Date(startDate.getTime() + 6 * 24 * 60 * 60 * 1000),
-    entries: mockEntries,
-    stats: {
-      totalCast: 32,
-      workingCast: 14,
-      averageWorkingHours: 68.5,
-      averageWorkingCast: 11,
-    },
+    endDate,
+    reason: '私用のため',
+    status: 'pending',
+    approvedBy: null,
+    approvedAt: null,
+    createdAt: now,
+    updatedAt: now,
+  }
+}
+
+// Generate sample data for multiple casts
+export function generateSampleScheduleData() {
+  const castIds = ['cast-1', 'cast-2', 'cast-3', 'cast-4', 'cast-5']
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
+
+  const schedules: Schedule[] = []
+  const patterns: SchedulePattern[] = []
+  const leaveRequests: LeaveRequest[] = []
+
+  castIds.forEach((castId, index) => {
+    // Generate weekly schedules
+    const castSchedules = generateMockWeeklySchedules(castId, weekStart)
+    schedules.push(...castSchedules)
+
+    // Generate patterns (different days for each cast)
+    const pattern = generateMockSchedulePattern(castId, (index + 1) % 7)
+    patterns.push(pattern)
+
+    // Generate leave requests for some casts
+    if (index % 2 === 0) {
+      leaveRequests.push(generateMockLeaveRequest(castId))
+    }
+  })
+
+  return {
+    schedules,
+    patterns,
+    leaveRequests,
   }
 }
