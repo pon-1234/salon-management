@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const authCustomerId = request.headers.get('x-customer-id')
     const searchParams = request.nextUrl.searchParams
     const id = searchParams.get('id')
-    
+
     const isAdmin = session?.user?.role === 'admin'
 
     if (id) {
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     if (!isAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
-    
+
     const customers = await db.customer.findMany({
       orderBy: { createdAt: 'desc' },
       select: {
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
         updatedAt: true,
       },
     })
-    
+
     return NextResponse.json(customers)
   } catch (error) {
     logger.error({ err: error }, 'Error fetching customer data')
@@ -146,7 +146,7 @@ export async function PUT(request: NextRequest) {
     const authCustomerId = request.headers.get('x-customer-id')
     const data = await request.json()
     const { id, password, ...updates } = data
-    
+
     const isAdmin = session?.user?.role === 'admin'
 
     // Allow admin or the customer themselves

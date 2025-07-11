@@ -35,11 +35,11 @@ const castSchema = z.object({
 // Helper function to check admin permissions
 async function requireAdmin() {
   const session = await getServerSession(authOptions)
-  
+
   if (!session || session.user.role !== 'admin') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  
+
   return null
 }
 
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Transform database results to match frontend expectations
-    const transformedCasts = casts.map(cast => ({
+    const transformedCasts = casts.map((cast) => ({
       ...cast,
       nameKana: cast.name, // Temporary: use name as nameKana
       images: typeof cast.images === 'string' ? JSON.parse(cast.images) : cast.images,
@@ -118,13 +118,13 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    
+
     // Validate request body
     const validatedData = castSchema.parse(body)
-    
+
     // Remove fields that don't exist in DB
     const { nameKana, availableOptions, ...dbData } = validatedData
-    
+
     // Create cast in database
     const cast = await db.cast.create({
       data: {
@@ -132,9 +132,9 @@ export async function POST(request: NextRequest) {
         images: validatedData.images || [],
       },
     })
-    
+
     logger.info({ castId: cast.id }, 'Cast created successfully')
-    
+
     return NextResponse.json(cast, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    
+
     logger.error({ err: error }, 'Error creating cast')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -157,34 +157,34 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
     const { id, ...updateData } = body
-    
+
     if (!id) {
       return NextResponse.json({ error: 'Cast ID is required' }, { status: 400 })
     }
-    
+
     // Validate update data
     const validatedData = castSchema.partial().parse(updateData)
-    
+
     // Check if cast exists
     const existingCast = await db.cast.findUnique({
       where: { id },
     })
-    
+
     if (!existingCast) {
       return NextResponse.json({ error: 'Cast not found' }, { status: 404 })
     }
-    
+
     // Remove fields that don't exist in DB
     const { nameKana, availableOptions, ...dbData } = validatedData
-    
+
     // Update cast in database
     const cast = await db.cast.update({
       where: { id },
       data: dbData,
     })
-    
+
     logger.info({ castId: cast.id }, 'Cast updated successfully')
-    
+
     return NextResponse.json(cast)
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -193,7 +193,7 @@ export async function PUT(request: NextRequest) {
         { status: 400 }
       )
     }
-    
+
     logger.error({ err: error }, 'Error updating cast')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -207,27 +207,27 @@ export async function DELETE(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const id = searchParams.get('id')
-    
+
     if (!id) {
       return NextResponse.json({ error: 'Cast ID is required' }, { status: 400 })
     }
-    
+
     // Check if cast exists
     const existingCast = await db.cast.findUnique({
       where: { id },
     })
-    
+
     if (!existingCast) {
       return NextResponse.json({ error: 'Cast not found' }, { status: 404 })
     }
-    
+
     // Delete cast from database
     await db.cast.delete({
       where: { id },
     })
-    
+
     logger.info({ castId: id }, 'Cast deleted successfully')
-    
+
     return NextResponse.json({ message: 'Cast deleted successfully' })
   } catch (error) {
     logger.error({ err: error }, 'Error deleting cast')

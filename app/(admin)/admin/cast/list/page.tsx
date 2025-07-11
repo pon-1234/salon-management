@@ -126,7 +126,7 @@ export default function CastListPage() {
 
       <main className="p-4">
         {loading ? (
-          <div className="flex justify-center items-center min-h-[400px]">
+          <div className="flex min-h-[400px] items-center justify-center">
             <div className="text-gray-500">読み込み中...</div>
           </div>
         ) : (
