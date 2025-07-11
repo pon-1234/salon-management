@@ -49,6 +49,43 @@ npm install
 npm run dev
 ```
 
+## Environment Setup
+
+1. Copy the environment variables:
+```bash
+cp env.example .env.local
+```
+
+2. Configure the required variables:
+- **Database**: Set your PostgreSQL connection string
+- **NextAuth**: Generate a secret with `openssl rand -base64 32`
+- **Vercel Blob**: Get your token from [Vercel Dashboard](https://vercel.com/dashboard/stores)
+
+### Image Upload Feature
+
+This application uses Vercel Blob Storage for persistent image storage:
+
+- **Automatic**: Images are uploaded directly to cloud storage
+- **CDN**: Global distribution for fast loading
+- **Persistent**: Images remain available across deployments
+
+To enable image uploads:
+1. Create a Blob store in your Vercel dashboard
+2. Add the `BLOB_READ_WRITE_TOKEN` to your environment variables
+3. Deploy or run locally
+
+### Database Seeding
+
+Initialize your database with demo data:
+
+```bash
+# Create admin users
+npm run create:admin
+
+# Create full demo data (casts, customers, reservations)
+npm run seed:full
+```
+
 ## Development
 
 For detailed development information, see [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md)

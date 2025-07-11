@@ -16,6 +16,7 @@
     "setup:admin": "tsx scripts/setup-admin.ts",
     "create:admin": "node scripts/create-admin.js",
     "seed:full": "tsx prisma/seed-full.ts",
+    "migrate:images": "tsx scripts/migrate-images-to-blob.ts",
     "postinstall": "npx prisma generate"
   },
   "dependencies": {
@@ -49,6 +50,7 @@
     "@radix-ui/react-toggle-group": "1.1.1",
     "@radix-ui/react-tooltip": "1.1.6",
     "@types/bcryptjs": "^2.4.6",
+    "@vercel/blob": "^1.1.1",
     "autoprefixer": "^10.4.20",
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
