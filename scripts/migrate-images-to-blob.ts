@@ -1,13 +1,13 @@
 #!/usr/bin/env tsx
 /**
- * 既存の画像をVercel Blob Storageに移行するスクリプト
+ * 既存の画像をSupabase Storageに移行するスクリプト
  * 
  * 使用方法:
  * 1. 環境変数を設定 (.env.localまたは環境変数)
  * 2. スクリプトを実行: pnpm tsx scripts/migrate-images-to-blob.ts
  */
 
-import { put } from '@vercel/blob'
+import { createClient } from '@supabase/supabase-js'
 import { readFile, readdir } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
@@ -21,8 +21,14 @@ const UPLOAD_DIR = join(process.cwd(), 'public/uploads')
 // 画像ファイルの拡張子
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp']
 
+// Supabaseクライアントの初期化
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabase = createClient(supabaseUrl, supabaseAnonKey)
+const BUCKET_NAME = 'images'
+
 async function migrateImages() {
-  console.log('🚀 画像移行を開始します...')
+  console.log('🚀 Supabase Storageへの画像移行を開始します...')
 
   // ディレクトリが存在するか確認
   if (!existsSync(UPLOAD_DIR)) {
@@ -44,7 +50,7 @@ async function migrateImages() {
       return
     }
 
-    // 各画像をBlobにアップロード
+    // 各画像をSupabaseにアップロード
     const results = []
     for (const filename of imageFiles) {
       try {
@@ -53,20 +59,38 @@ async function migrateImages() {
         
         console.log(`📤 アップロード中: ${filename}`)
         
-        // Blobにアップロード
-        const blob = await put(filename, buffer, {
-          access: 'public',
-          addRandomSuffix: true,
-          contentType: `image/${filename.split('.').pop()}`,
-        })
+        // ファイルパスの生成
+        const timestamp = Date.now()
+        const randomString = Math.random().toString(36).substring(2, 15)
+        const extension = filename.split('.').pop()
+        const newFilename = `${timestamp}-${randomString}.${extension}`
+        const path = `uploads/${newFilename}`
+        
+        // Supabaseにアップロード
+        const { data, error } = await supabase.storage
+          .from(BUCKET_NAME)
+          .upload(path, buffer, {
+            contentType: `image/${extension}`,
+            upsert: false,
+          })
+        
+        if (error) {
+          throw error
+        }
+        
+        // 公開URLを取得
+        const { data: publicUrlData } = supabase.storage
+          .from(BUCKET_NAME)
+          .getPublicUrl(path)
 
         results.push({
           oldPath: `/uploads/${filename}`,
-          newUrl: blob.url,
+          newUrl: publicUrlData.publicUrl,
+          path: path,
           filename: filename,
         })
 
-        console.log(`✅ 完了: ${filename} -> ${blob.url}`)
+        console.log(`✅ 完了: ${filename} -> ${publicUrlData.publicUrl}`)
       } catch (error) {
         console.error(`❌ エラー: ${filename}`, error)
       }
@@ -134,10 +158,11 @@ async function migrateImages() {
 }
 
 // 環境変数チェック
-if (!process.env.BLOB_READ_WRITE_TOKEN) {
-  console.error('❌ BLOB_READ_WRITE_TOKEN環境変数が設定されていません')
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  console.error('❌ Supabase環境変数が設定されていません')
   console.log('💡 .env.localファイルに以下を追加してください:')
-  console.log('BLOB_READ_WRITE_TOKEN=your_token_here')
+  console.log('NEXT_PUBLIC_SUPABASE_URL=your_supabase_url')
+  console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key')
   process.exit(1)
 }
 

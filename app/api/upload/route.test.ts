@@ -1,10 +1,17 @@
 import { NextRequest } from 'next/server'
 import { POST } from './route'
-import { put } from '@vercel/blob'
 import { vi } from 'vitest'
+import type { StorageService } from '@/lib/storage'
 
-vi.mock('@vercel/blob', () => ({
-  put: vi.fn(),
+const mockStorageService: StorageService = {
+  upload: vi.fn(),
+  delete: vi.fn(),
+  getPublicUrl: vi.fn(),
+  exists: vi.fn(),
+}
+
+vi.mock('@/lib/storage', () => ({
+  getStorageService: () => mockStorageService,
 }))
 
 vi.mock('@/lib/logger', () => ({
@@ -16,8 +23,6 @@ vi.mock('@/lib/logger', () => ({
 describe('POST /api/upload', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // 環境変数のモック
-    process.env.BLOB_READ_WRITE_TOKEN = 'test-token'
   })
 
   it('ファイルが選択されていない場合はエラーを返す', async () => {
@@ -42,6 +47,11 @@ describe('POST /api/upload', () => {
       formData: vi.fn().mockResolvedValue(formData),
     } as unknown as NextRequest
 
+    // ストレージサービスがサイズエラーを投げるようにモック
+    vi.mocked(mockStorageService.upload).mockRejectedValue(
+      new Error('ファイルサイズが大きすぎます（最大5MB）')
+    )
+
     const response = await POST(request)
     const data = await response.json()
 
@@ -58,6 +68,11 @@ describe('POST /api/upload', () => {
       formData: vi.fn().mockResolvedValue(formData),
     } as unknown as NextRequest
 
+    // ストレージサービスがファイル形式エラーを投げるようにモック
+    vi.mocked(mockStorageService.upload).mockRejectedValue(
+      new Error('対応していないファイル形式です')
+    )
+
     const response = await POST(request)
     const data = await response.json()
 
@@ -66,13 +81,14 @@ describe('POST /api/upload', () => {
   })
 
   it('正常にファイルをアップロードできる', async () => {
-    const mockBlobUrl = 'https://example.vercel-storage.com/test-image.jpg'
-    vi.mocked(put).mockResolvedValue({
-      url: mockBlobUrl,
-      downloadUrl: mockBlobUrl,
-      pathname: 'test-image.jpg',
-      contentType: 'image/jpeg',
-      contentDisposition: 'inline',
+    const mockPublicUrl = 'https://example.supabase.co/storage/v1/object/public/images/test-image.jpg'
+    const mockPath = 'uploads/test-image.jpg'
+    
+    vi.mocked(mockStorageService.upload).mockResolvedValue({
+      url: mockPath,
+      filename: 'test.jpg',
+      size: 1000,
+      publicUrl: mockPublicUrl,
     })
 
     const file = new File(['test image content'], 'test.jpg', { type: 'image/jpeg' })
@@ -88,21 +104,20 @@ describe('POST /api/upload', () => {
 
     expect(response.status).toBe(200)
     expect(data.success).toBe(true)
-    expect(data.url).toBe(mockBlobUrl)
+    expect(data.url).toBe(mockPublicUrl)
     expect(data.filename).toBe('test.jpg')
+    expect(data.path).toBe(mockPath)
 
-    expect(put).toHaveBeenCalledWith(
-      expect.stringContaining('test.jpg'),
+    expect(mockStorageService.upload).toHaveBeenCalledWith(
       file,
       expect.objectContaining({
-        access: 'public',
-        addRandomSuffix: true,
+        folder: 'uploads',
       })
     )
   })
 
   it('アップロードエラーの場合は500エラーを返す', async () => {
-    vi.mocked(put).mockRejectedValue(new Error('Upload failed'))
+    vi.mocked(mockStorageService.upload).mockRejectedValue(new Error('Upload failed'))
 
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
     const formData = new FormData()
