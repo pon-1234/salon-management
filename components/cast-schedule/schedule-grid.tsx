@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { CastScheduleEntry, CastScheduleStatus } from '@/lib/cast-schedule/types'
+import { CastScheduleEntry, CastScheduleStatus } from '@/lib/cast-schedule/old-types'
 import {
   getWeekDates,
   formatScheduleDate,

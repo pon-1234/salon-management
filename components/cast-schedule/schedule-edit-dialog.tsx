@@ -17,7 +17,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Calendar, Save, X, Clock, User } from 'lucide-react'
-import { CastScheduleStatus } from '@/lib/cast-schedule/types'
+import { CastScheduleStatus } from '@/lib/cast-schedule/old-types'
 
 export interface DaySchedule {
   date: string // yyyy-mm-dd format
