@@ -47,7 +47,7 @@ export default function AuthErrorPage() {
   const errorInfo = errorMessages[error || 'Default'] || errorMessages.Default
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 dark:bg-gray-900 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-red-600 dark:text-red-400">
@@ -72,10 +72,8 @@ export default function AuthErrorPage() {
           </div>
 
           {error && (
-            <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                エラーコード: {error}
-              </p>
+            <div className="mt-4 rounded-md bg-gray-100 p-3 dark:bg-gray-800">
+              <p className="text-xs text-gray-600 dark:text-gray-400">エラーコード: {error}</p>
             </div>
           )}
         </CardContent>

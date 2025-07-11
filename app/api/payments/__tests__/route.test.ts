@@ -16,8 +16,8 @@ vi.mock('@/lib/payment/service', () => ({
     getPaymentHistory: vi.fn(),
     getPaymentHistoryByReservation: vi.fn(),
     refundPayment: vi.fn(),
-    getPaymentStatus: vi.fn()
-  }))
+    getPaymentStatus: vi.fn(),
+  })),
 }))
 
 const mockPaymentService = {
@@ -26,7 +26,7 @@ const mockPaymentService = {
   getPaymentHistory: vi.fn(),
   getPaymentHistoryByReservation: vi.fn(),
   refundPayment: vi.fn(),
-  getPaymentStatus: vi.fn()
+  getPaymentStatus: vi.fn(),
 }
 
 describe('/api/payments', () => {
@@ -42,7 +42,7 @@ describe('/api/payments', () => {
         amount: 10000,
         currency: 'jpy',
         paymentMethod: 'card',
-        provider: 'stripe'
+        provider: 'stripe',
       }
 
       mockPaymentService.processPayment.mockResolvedValue({
@@ -52,13 +52,13 @@ describe('/api/payments', () => {
           ...paymentData,
           status: 'completed',
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       })
 
       const request = new NextRequest('http://localhost:3000/api/payments', {
         method: 'POST',
-        body: JSON.stringify(paymentData)
+        body: JSON.stringify(paymentData),
       })
 
       const response = await POST(request)
@@ -78,7 +78,7 @@ describe('/api/payments', () => {
 
       const request = new NextRequest('http://localhost:3000/api/payments', {
         method: 'POST',
-        body: JSON.stringify(invalidData)
+        body: JSON.stringify(invalidData),
       })
 
       const response = await POST(request)
@@ -95,17 +95,17 @@ describe('/api/payments', () => {
         amount: 10000,
         currency: 'jpy',
         paymentMethod: 'card',
-        provider: 'stripe'
+        provider: 'stripe',
       }
 
       mockPaymentService.processPayment.mockResolvedValue({
         success: false,
-        error: 'Card declined'
+        error: 'Card declined',
       })
 
       const request = new NextRequest('http://localhost:3000/api/payments', {
         method: 'POST',
-        body: JSON.stringify(paymentData)
+        body: JSON.stringify(paymentData),
       })
 
       const response = await POST(request)
@@ -125,8 +125,8 @@ describe('/api/payments', () => {
           reservationId: 'res_123',
           customerId: 'cust_123',
           amount: 10000,
-          status: 'completed'
-        }
+          status: 'completed',
+        },
       ]
 
       mockPaymentService.getPaymentHistory.mockResolvedValue(mockTransactions)
@@ -148,8 +148,8 @@ describe('/api/payments', () => {
           reservationId: 'res_123',
           customerId: 'cust_123',
           amount: 10000,
-          status: 'completed'
-        }
+          status: 'completed',
+        },
       ]
 
       mockPaymentService.getPaymentHistoryByReservation.mockResolvedValue(mockTransactions)

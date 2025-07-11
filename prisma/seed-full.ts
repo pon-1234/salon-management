@@ -1,15 +1,15 @@
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
-const prisma = new PrismaClient();
-const SALT_ROUNDS = 10;
+const prisma = new PrismaClient()
+const SALT_ROUNDS = 10
 
 async function main() {
-  console.log('🌱 開始: フルデモデータのシード...');
+  console.log('🌱 開始: フルデモデータのシード...')
 
   // 1. 管理者ユーザー
-  console.log('\n👥 管理者ユーザーを作成中...');
-  const adminPassword = await bcrypt.hash('admin123', SALT_ROUNDS);
+  console.log('\n👥 管理者ユーザーを作成中...')
+  const adminPassword = await bcrypt.hash('admin123', SALT_ROUNDS)
   await prisma.admin.upsert({
     where: { email: 'admin@example.com' },
     update: {},
@@ -21,10 +21,10 @@ async function main() {
       permissions: JSON.stringify(['*']),
       isActive: true,
     },
-  });
+  })
 
   // 2. コース料金
-  console.log('\n💴 コース料金を作成中...');
+  console.log('\n💴 コース料金を作成中...')
   const courses = await Promise.all([
     prisma.coursePrice.create({
       data: {
@@ -58,10 +58,10 @@ async function main() {
         description: '特別な時間をお過ごしいただける最高級コース',
       },
     }),
-  ]);
+  ])
 
   // 3. オプション
-  console.log('\n🎁 オプションを作成中...');
+  console.log('\n🎁 オプションを作成中...')
   const options = await Promise.all([
     prisma.optionPrice.create({
       data: {
@@ -87,10 +87,10 @@ async function main() {
         price: 3000,
       },
     }),
-  ]);
+  ])
 
   // 4. キャスト
-  console.log('\n👩 キャストを作成中...');
+  console.log('\n👩 キャストを作成中...')
   const castData = [
     {
       name: '佐藤 はなこ',
@@ -167,15 +167,15 @@ async function main() {
       panelDesignationRank: 4,
       regularDesignationRank: 5,
     },
-  ];
+  ]
 
   const casts = await Promise.all(
-    castData.map(data => prisma.cast.create({ data: { ...data, images: [] } }))
-  );
+    castData.map((data) => prisma.cast.create({ data: { ...data, images: [] } }))
+  )
 
   // 5. 顧客
-  console.log('\n👤 顧客を作成中...');
-  const customerPassword = await bcrypt.hash('password123', SALT_ROUNDS);
+  console.log('\n👤 顧客を作成中...')
+  const customerPassword = await bcrypt.hash('password123', SALT_ROUNDS)
   const customers = await Promise.all([
     prisma.customer.create({
       data: {
@@ -213,22 +213,22 @@ async function main() {
         points: 300,
       },
     }),
-  ]);
+  ])
 
   // 6. 予約
-  console.log('\n📅 予約を作成中...');
-  const now = new Date();
-  const reservations = [];
+  console.log('\n📅 予約を作成中...')
+  const now = new Date()
+  const reservations = []
 
   // 過去の予約
   for (let i = 0; i < 10; i++) {
-    const startTime = new Date(now);
-    startTime.setDate(startTime.getDate() - (i + 1));
-    startTime.setHours(14 + (i % 8), 0, 0, 0);
-    
-    const course = courses[i % courses.length];
-    const endTime = new Date(startTime.getTime() + course.duration * 60000);
-    
+    const startTime = new Date(now)
+    startTime.setDate(startTime.getDate() - (i + 1))
+    startTime.setHours(14 + (i % 8), 0, 0, 0)
+
+    const course = courses[i % courses.length]
+    const endTime = new Date(startTime.getTime() + course.duration * 60000)
+
     const reservation = await prisma.reservation.create({
       data: {
         customerId: customers[i % customers.length].id,
@@ -238,24 +238,29 @@ async function main() {
         endTime,
         status: 'completed',
         options: {
-          create: i % 2 === 0 ? [{
-            optionId: options[0].id, // 指名料
-          }] : undefined,
+          create:
+            i % 2 === 0
+              ? [
+                  {
+                    optionId: options[0].id, // 指名料
+                  },
+                ]
+              : undefined,
         },
       },
-    });
-    reservations.push(reservation);
+    })
+    reservations.push(reservation)
   }
 
   // 今後の予約
   for (let i = 0; i < 5; i++) {
-    const startTime = new Date(now);
-    startTime.setDate(startTime.getDate() + (i + 1));
-    startTime.setHours(15 + (i % 6), 0, 0, 0);
-    
-    const course = courses[i % courses.length];
-    const endTime = new Date(startTime.getTime() + course.duration * 60000);
-    
+    const startTime = new Date(now)
+    startTime.setDate(startTime.getDate() + (i + 1))
+    startTime.setHours(15 + (i % 6), 0, 0, 0)
+
+    const course = courses[i % courses.length]
+    const endTime = new Date(startTime.getTime() + course.duration * 60000)
+
     await prisma.reservation.create({
       data: {
         customerId: customers[i % customers.length].id,
@@ -265,11 +270,11 @@ async function main() {
         endTime,
         status: 'confirmed',
       },
-    });
+    })
   }
 
   // 7. レビュー
-  console.log('\n⭐ レビューを作成中...');
+  console.log('\n⭐ レビューを作成中...')
   for (let i = 0; i < 5; i++) {
     await prisma.review.create({
       data: {
@@ -284,23 +289,23 @@ async function main() {
           'リラックスできる雰囲気でした。',
         ][i],
       },
-    });
+    })
   }
 
   // 8. キャストのスケジュール
-  console.log('\n📆 キャストスケジュールを作成中...');
+  console.log('\n📆 キャストスケジュールを作成中...')
   for (const cast of casts) {
     for (let i = 0; i < 7; i++) {
-      const date = new Date(now);
-      date.setDate(date.getDate() + i);
-      date.setHours(0, 0, 0, 0);
-      
-      const startTime = new Date(date);
-      startTime.setHours(10, 0, 0, 0);
-      
-      const endTime = new Date(date);
-      endTime.setHours(22, 0, 0, 0);
-      
+      const date = new Date(now)
+      date.setDate(date.getDate() + i)
+      date.setHours(0, 0, 0, 0)
+
+      const startTime = new Date(date)
+      startTime.setHours(10, 0, 0, 0)
+
+      const endTime = new Date(date)
+      endTime.setHours(22, 0, 0, 0)
+
       await prisma.castSchedule.create({
         data: {
           castId: cast.id,
@@ -309,30 +314,30 @@ async function main() {
           endTime,
           isAvailable: cast.workStatus === '出勤' && i < 5, // 平日のみ出勤
         },
-      });
+      })
     }
   }
 
-  console.log('\n✅ シード完了！');
-  console.log('\n📊 作成されたデータ:');
-  console.log(`- 管理者: 3名`);
-  console.log(`- キャスト: ${casts.length}名`);
-  console.log(`- 顧客: ${customers.length}名`);
-  console.log(`- コース: ${courses.length}種類`);
-  console.log(`- オプション: ${options.length}種類`);
-  console.log(`- 予約: 15件`);
-  console.log(`- レビュー: 5件`);
-  
-  console.log('\n🔑 ログイン情報:');
-  console.log('管理者: admin@example.com / admin123');
-  console.log('顧客: tanaka@example.com / password123');
+  console.log('\n✅ シード完了！')
+  console.log('\n📊 作成されたデータ:')
+  console.log(`- 管理者: 3名`)
+  console.log(`- キャスト: ${casts.length}名`)
+  console.log(`- 顧客: ${customers.length}名`)
+  console.log(`- コース: ${courses.length}種類`)
+  console.log(`- オプション: ${options.length}種類`)
+  console.log(`- 予約: 15件`)
+  console.log(`- レビュー: 5件`)
+
+  console.log('\n🔑 ログイン情報:')
+  console.log('管理者: admin@example.com / admin123')
+  console.log('顧客: tanaka@example.com / password123')
 }
 
 main()
   .catch((e) => {
-    console.error('❌ エラー:', e);
-    process.exit(1);
+    console.error('❌ エラー:', e)
+    process.exit(1)
   })
   .finally(async () => {
-    await prisma.$disconnect();
-  });
+    await prisma.$disconnect()
+  })

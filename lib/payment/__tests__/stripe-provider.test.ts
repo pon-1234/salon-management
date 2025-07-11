@@ -14,7 +14,7 @@ describe('StripeProvider', () => {
   beforeEach(() => {
     provider = new StripeProvider({
       secretKey: 'sk_test_123',
-      publishableKey: 'pk_test_123'
+      publishableKey: 'pk_test_123',
     })
   })
 
@@ -33,7 +33,7 @@ describe('StripeProvider', () => {
         amount: 10000,
         currency: 'jpy',
         paymentMethod: 'card',
-        provider: 'stripe'
+        provider: 'stripe',
       }
 
       const result = await provider.processPayment(request)
@@ -54,7 +54,7 @@ describe('StripeProvider', () => {
         amount: 10000,
         currency: 'jpy',
         paymentMethod: 'card',
-        provider: 'stripe'
+        provider: 'stripe',
       }
 
       const intent = await provider.createPaymentIntent(request)
@@ -81,14 +81,14 @@ describe('StripeProvider', () => {
       const request: RefundRequest = {
         transactionId: 'txn_123',
         amount: 5000,
-        reason: 'customer request'
+        reason: 'customer request',
       }
 
       const result = await provider.refundPayment(request)
 
       expect(result.success).toBe(true)
       expect(result.refundAmount).toBe(5000)
-      expect(result.transaction.status).toBe('refunded')
+      expect(result.transaction!.status).toBe('refunded')
     })
   })
 
@@ -111,7 +111,7 @@ describe('StripeProvider', () => {
     it('should validate configuration with any config', async () => {
       const invalidProvider = new StripeProvider({
         secretKey: '',
-        publishableKey: ''
+        publishableKey: '',
       })
 
       const isValid = await invalidProvider.validateConfig()

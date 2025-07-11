@@ -15,15 +15,15 @@ export async function GET(
   try {
     const { email } = await params
     const decodedEmail = decodeURIComponent(email)
-    
+
     const customer = await prisma.customer.findUnique({
-      where: { email: decodedEmail }
+      where: { email: decodedEmail },
     })
-    
+
     if (!customer) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
     }
-    
+
     return NextResponse.json(customer)
   } catch (error) {
     console.error('Failed to fetch customer by email:', error)

@@ -9,7 +9,13 @@ import { BaseEntity } from '../shared'
 // Payment provider types
 export type PaymentProviderType = 'stripe' | 'payjp'
 export type PaymentMethod = 'card' | 'bank_transfer' | 'cash'
-export type PaymentStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'refunded'
+export type PaymentStatus =
+  | 'pending'
+  | 'processing'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
+  | 'refunded'
 
 // Payment intent for external providers
 export interface PaymentIntent extends BaseEntity {

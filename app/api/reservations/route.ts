@@ -11,20 +11,26 @@ import { StripeProvider } from '@/lib/payment/providers/stripe'
 
 // Initialize payment service with environment validation
 const stripeConfig = {
-  secretKey: process.env.STRIPE_SECRET_KEY || (() => {
-    console.error('STRIPE_SECRET_KEY is not set in environment variables')
-    return ''
-  })(),
-  publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || (() => {
-    console.error('STRIPE_PUBLISHABLE_KEY is not set in environment variables')
-    return ''
-  })()
+  secretKey:
+    process.env.STRIPE_SECRET_KEY ||
+    (() => {
+      console.error('STRIPE_SECRET_KEY is not set in environment variables')
+      return ''
+    })(),
+  publishableKey:
+    process.env.STRIPE_PUBLISHABLE_KEY ||
+    (() => {
+      console.error('STRIPE_PUBLISHABLE_KEY is not set in environment variables')
+      return ''
+    })(),
 }
 
 // Only initialize Stripe provider if keys are available
-const paymentProviders: Record<string, any> = stripeConfig.secretKey ? {
-  stripe: new StripeProvider(stripeConfig)
-} : {}
+const paymentProviders: Record<string, any> = stripeConfig.secretKey
+  ? {
+      stripe: new StripeProvider(stripeConfig),
+    }
+  : {}
 
 const paymentService = new PaymentService(paymentProviders)
 
@@ -33,24 +39,30 @@ const reservationService = new ReservationService(paymentService)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { 
-      customerId, 
-      castId, 
-      courseId, 
-      startTime, 
-      endTime, 
-      amount, 
-      paymentMethod, 
+    const {
+      customerId,
+      castId,
+      courseId,
+      startTime,
+      endTime,
+      amount,
+      paymentMethod,
       paymentProvider,
-      usePaymentIntent = false 
+      usePaymentIntent = false,
     } = body
-    
+
     // Validate required fields
-    if (!customerId || !castId || !courseId || !startTime || !endTime || !amount || !paymentMethod || !paymentProvider) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
+    if (
+      !customerId ||
+      !castId ||
+      !courseId ||
+      !startTime ||
+      !endTime ||
+      !amount ||
+      !paymentMethod ||
+      !paymentProvider
+    ) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     const reservationData = {
@@ -61,7 +73,7 @@ export async function POST(request: NextRequest) {
       endTime: new Date(endTime),
       amount,
       paymentMethod,
-      paymentProvider
+      paymentProvider,
     }
 
     let result
@@ -72,7 +84,7 @@ export async function POST(request: NextRequest) {
       // Create reservation and process payment immediately
       result = await reservationService.createReservationWithPayment(reservationData)
     }
-    
+
     if (result.success) {
       return NextResponse.json(result)
     } else {
@@ -92,10 +104,7 @@ export async function GET(request: NextRequest) {
     const reservationId = searchParams.get('id')
 
     if (!reservationId) {
-      return NextResponse.json(
-        { error: 'Reservation ID is required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Reservation ID is required' }, { status: 400 })
     }
 
     const result = await reservationService.getReservationWithPayments(reservationId)

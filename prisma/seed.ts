@@ -1,14 +1,17 @@
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
-const prisma = new PrismaClient();
-const SALT_ROUNDS = 10;
+const prisma = new PrismaClient()
+const SALT_ROUNDS = 10
 
 async function main() {
-  console.log('Start seeding...');
+  console.log('Start seeding...')
 
   // 1. Create initial admin user
-  const adminPassword = await bcrypt.hash(process.env.INITIAL_ADMIN_PASSWORD || 'admin123', SALT_ROUNDS);
+  const adminPassword = await bcrypt.hash(
+    process.env.INITIAL_ADMIN_PASSWORD || 'admin123',
+    SALT_ROUNDS
+  )
   const admin = await prisma.admin.upsert({
     where: { email: 'admin@example.com' },
     update: {},
@@ -20,11 +23,11 @@ async function main() {
       permissions: JSON.stringify(['*']),
       isActive: true,
     },
-  });
-  console.log(`Created/Updated admin: ${admin.email} (Please change the password!)`);
+  })
+  console.log(`Created/Updated admin: ${admin.email} (Please change the password!)`)
 
   // 2. Create a customer
-  const hashedPassword = await bcrypt.hash('password123', SALT_ROUNDS);
+  const hashedPassword = await bcrypt.hash('password123', SALT_ROUNDS)
   const customer = await prisma.customer.create({
     data: {
       email: 'customer1@example.com',
@@ -34,8 +37,8 @@ async function main() {
       phone: '09012345678',
       birthDate: new Date('1990-01-01T00:00:00Z'),
     },
-  });
-  console.log(`Created customer: ${customer.name} (ID: ${customer.id})`);
+  })
+  console.log(`Created customer: ${customer.name} (ID: ${customer.id})`)
 
   // 2. Create a cast
   const cast = await prisma.cast.create({
@@ -55,11 +58,11 @@ async function main() {
       panelDesignationRank: 1,
       regularDesignationRank: 1,
     },
-  });
-  console.log(`Created cast: ${cast.name} (ID: ${cast.id})`);
+  })
+  console.log(`Created cast: ${cast.name} (ID: ${cast.id})`)
 
   // 3. Create more admin users with different roles
-  const managerPassword = await bcrypt.hash('manager123', SALT_ROUNDS);
+  const managerPassword = await bcrypt.hash('manager123', SALT_ROUNDS)
   const manager = await prisma.admin.upsert({
     where: { email: 'manager@example.com' },
     update: {},
@@ -71,10 +74,10 @@ async function main() {
       permissions: JSON.stringify(['cast:*', 'customer:read', 'reservation:*', 'analytics:read']),
       isActive: true,
     },
-  });
-  console.log(`Created/Updated manager: ${manager.email}`);
+  })
+  console.log(`Created/Updated manager: ${manager.email}`)
 
-  const staffPassword = await bcrypt.hash('staff123', SALT_ROUNDS);
+  const staffPassword = await bcrypt.hash('staff123', SALT_ROUNDS)
   const staff = await prisma.admin.upsert({
     where: { email: 'staff@example.com' },
     update: {},
@@ -86,8 +89,8 @@ async function main() {
       permissions: JSON.stringify(['cast:read', 'customer:read', 'reservation:read']),
       isActive: true,
     },
-  });
-  console.log(`Created/Updated staff: ${staff.email}`);
+  })
+  console.log(`Created/Updated staff: ${staff.email}`)
 
   // 4. Create a course
   const course = await prisma.coursePrice.create({
@@ -97,13 +100,13 @@ async function main() {
       price: 10000,
       description: '基本的なコースです。',
     },
-  });
-  console.log(`Created course: ${course.name} (ID: ${course.id})`);
+  })
+  console.log(`Created course: ${course.name} (ID: ${course.id})`)
 
   // 4. Create a reservation
-  const startTime = new Date();
-  startTime.setHours(startTime.getHours() + 1, 0, 0, 0); // Start in 1 hour
-  const endTime = new Date(startTime.getTime() + course.duration * 60000);
+  const startTime = new Date()
+  startTime.setHours(startTime.getHours() + 1, 0, 0, 0) // Start in 1 hour
+  const endTime = new Date(startTime.getTime() + course.duration * 60000)
 
   const reservation = await prisma.reservation.create({
     data: {
@@ -114,17 +117,17 @@ async function main() {
       endTime: endTime,
       status: 'confirmed',
     },
-  });
-  console.log(`Created reservation for ${customer.name} with ${cast.name}`);
+  })
+  console.log(`Created reservation for ${customer.name} with ${cast.name}`)
 
-  console.log('Seeding finished.');
+  console.log('Seeding finished.')
 }
 
 main()
   .catch((e) => {
-    console.error(e);
-    process.exit(1);
+    console.error(e)
+    process.exit(1)
   })
   .finally(async () => {
-    await prisma.$disconnect();
-  }); 
+    await prisma.$disconnect()
+  })

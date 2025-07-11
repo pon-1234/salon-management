@@ -3,9 +3,9 @@
  * @related_to   Payment processing, error tracking
  * @known_issues None currently
  */
-import pino from 'pino';
+import pino from 'pino'
 
-const isDevelopment = process.env.NODE_ENV === 'development';
+const isDevelopment = process.env.NODE_ENV === 'development'
 
 const logger = pino({
   level: isDevelopment ? 'trace' : 'info',
@@ -19,6 +19,6 @@ const logger = pino({
         },
       }
     : undefined,
-});
+})
 
-export default logger;
+export default logger

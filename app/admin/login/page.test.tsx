@@ -29,5 +29,4 @@ describe('Admin Login Page', () => {
     expect(typeof AdminLoginPage).toBe('function')
     expect(AdminLoginPage.name).toBe('AdminLoginPage')
   })
-
 })

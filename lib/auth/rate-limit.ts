@@ -38,7 +38,7 @@ export function checkRateLimit(identifier: string): { allowed: boolean; retryAft
     if (now < lockoutEnd) {
       return {
         allowed: false,
-        retryAfter: Math.ceil((lockoutEnd - now) / 1000)
+        retryAfter: Math.ceil((lockoutEnd - now) / 1000),
       }
     }
     // Lockout expired, reset
@@ -64,7 +64,7 @@ export function recordLoginAttempt(identifier: string, success: boolean): void {
     loginAttempts.set(identifier, {
       count: 1,
       firstAttempt: now,
-      lastAttempt: now
+      lastAttempt: now,
     })
   } else {
     // Reset if window expired
@@ -72,7 +72,7 @@ export function recordLoginAttempt(identifier: string, success: boolean): void {
       loginAttempts.set(identifier, {
         count: 1,
         firstAttempt: now,
-        lastAttempt: now
+        lastAttempt: now,
       })
     } else {
       attempt.count++

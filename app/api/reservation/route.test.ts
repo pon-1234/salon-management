@@ -369,11 +369,13 @@ describe('POST /api/reservation - Transaction Control', () => {
     // First check returns available, but inside transaction it returns unavailable
     vi.mocked(checkCastAvailability).mockResolvedValueOnce({
       available: false,
-      conflicts: [{
-        id: 'conflict-123',
-        startTime: '2025-07-10T10:00:00.000Z',
-        endTime: '2025-07-10T11:00:00.000Z',
-      }],
+      conflicts: [
+        {
+          id: 'conflict-123',
+          startTime: '2025-07-10T10:00:00.000Z',
+          endTime: '2025-07-10T11:00:00.000Z',
+        },
+      ],
     })
 
     let transactionRolledBack = false
@@ -467,10 +469,10 @@ describe('PUT /api/reservation - Enhanced Modification', () => {
   it('should check availability when modifying time', async () => {
     // モックをリセットして明示的に設定
     vi.mocked(checkCastAvailability).mockReset()
-    
+
     const existingReservation = {
       id: 'reservation1',
-      customerId: 'customer1',  // 認証されたユーザーと同じ
+      customerId: 'customer1', // 認証されたユーザーと同じ
       castId: 'cast1',
       status: 'confirmed',
       startTime: new Date('2025-07-10T09:00:00Z'),
@@ -483,7 +485,7 @@ describe('PUT /api/reservation - Enhanced Modification', () => {
       available: false,
       conflicts: [
         { id: 'reservation1', startTime: '', endTime: '' }, // 現在の予約（フィルタされる）
-        { id: 'other-reservation', startTime: '', endTime: '' } // 他の予約（コンフリクト）
+        { id: 'other-reservation', startTime: '', endTime: '' }, // 他の予約（コンフリクト）
       ],
     }))
 
@@ -504,7 +506,6 @@ describe('PUT /api/reservation - Enhanced Modification', () => {
     const response = await PUT(request)
     const data = await response.json()
 
-
     expect(response.status).toBe(409)
     expect(data.error).toBe('Time slot is not available')
     // filteredConflictsには現在の予約を除いた他の予約のみが含まれる
@@ -515,10 +516,10 @@ describe('PUT /api/reservation - Enhanced Modification', () => {
   it('should allow modification when no conflicts', async () => {
     // モックをリセットして明示的に設定
     vi.mocked(checkCastAvailability).mockReset()
-    
+
     const existingReservation = {
       id: 'reservation1',
-      customerId: 'customer1',  // 認証されたユーザーと同じ
+      customerId: 'customer1', // 認証されたユーザーと同じ
       castId: 'cast1',
       status: 'confirmed',
       startTime: new Date('2025-07-10T09:00:00Z'),
@@ -578,7 +579,7 @@ describe('PUT /api/reservation - Enhanced Modification', () => {
   it('should validate status transitions', async () => {
     const cancelledReservation = {
       id: 'reservation1',
-      customerId: 'customer1',  // 認証されたユーザーと同じ
+      customerId: 'customer1', // 認証されたユーザーと同じ
       status: 'cancelled',
       castId: 'cast1',
       startTime: new Date('2025-07-10T09:00:00Z'),
@@ -628,7 +629,7 @@ describe('DELETE /api/reservation - Enhanced Cancellation', () => {
   it('should soft-delete by updating status to cancelled', async () => {
     const existingReservation = {
       id: 'reservation1',
-      customerId: 'customer1',  // 認証されたユーザーと同じ
+      customerId: 'customer1', // 認証されたユーザーと同じ
       status: 'confirmed',
       startTime: new Date('2025-07-10T10:00:00Z'),
       endTime: new Date('2025-07-10T11:00:00Z'),
@@ -666,7 +667,7 @@ describe('DELETE /api/reservation - Enhanced Cancellation', () => {
   it('should prevent cancellation of past reservations', async () => {
     const pastReservation = {
       id: 'reservation1',
-      customerId: 'customer1',  // 認証されたユーザーと同じ
+      customerId: 'customer1', // 認証されたユーザーと同じ
       status: 'confirmed',
       startTime: new Date('2024-01-01T10:00:00Z'),
       endTime: new Date('2024-01-01T11:00:00Z'),
@@ -691,7 +692,7 @@ describe('DELETE /api/reservation - Enhanced Cancellation', () => {
   it('should prevent double cancellation', async () => {
     const cancelledReservation = {
       id: 'reservation1',
-      customerId: 'customer1',  // 認証されたユーザーと同じ
+      customerId: 'customer1', // 認証されたユーザーと同じ
       status: 'cancelled',
       startTime: new Date('2025-07-10T10:00:00Z'),
       endTime: new Date('2025-07-10T11:00:00Z'),
@@ -1050,12 +1051,15 @@ describe('GET /api/reservation - List with Pagination, Filtering, and Sorting', 
 
     vi.mocked(db.reservation.findMany).mockResolvedValueOnce(mockReservations as any)
 
-    const request = new NextRequest('http://localhost:3000/api/reservation?sortBy=startTime&sortOrder=desc', {
-      method: 'GET',
-      headers: {
-        'x-customer-id': 'customer1',
-      },
-    })
+    const request = new NextRequest(
+      'http://localhost:3000/api/reservation?sortBy=startTime&sortOrder=desc',
+      {
+        method: 'GET',
+        headers: {
+          'x-customer-id': 'customer1',
+        },
+      }
+    )
 
     const response = await GET(request)
     const data = await response.json()
@@ -1071,7 +1075,7 @@ describe('GET /api/reservation - List with Pagination, Filtering, and Sorting', 
   })
 
   it('should combine multiple filters', async () => {
-    const mockReservations = []
+    const mockReservations: any[] = []
 
     vi.mocked(db.reservation.findMany).mockResolvedValueOnce(mockReservations as any)
 

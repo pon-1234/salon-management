@@ -7,7 +7,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { PaymentService } from '../service'
 import { PaymentProvider } from '../providers/base'
-import { ProcessPaymentRequest, ProcessPaymentResult, PaymentTransaction, RefundRequest } from '../types'
+import {
+  ProcessPaymentRequest,
+  ProcessPaymentResult,
+  PaymentTransaction,
+  RefundRequest,
+  PaymentProviderType,
+  PaymentIntent,
+  PaymentMethod,
+} from '../types'
 
 // Mock Prisma
 vi.mock('@/lib/generated/prisma', () => ({
@@ -16,14 +24,14 @@ vi.mock('@/lib/generated/prisma', () => ({
       create: vi.fn(),
       update: vi.fn(),
       findUnique: vi.fn(),
-      findMany: vi.fn()
+      findMany: vi.fn(),
     },
     paymentIntent: {
       create: vi.fn(),
       update: vi.fn(),
-      findUnique: vi.fn()
-    }
-  }
+      findUnique: vi.fn(),
+    },
+  },
 }))
 
 import { prisma } from '@/lib/generated/prisma'
@@ -43,27 +51,27 @@ class MockPaymentProvider extends PaymentProvider {
         customerId: request.customerId,
         amount: request.amount,
         currency: request.currency,
-        provider: 'stripe',
+        provider: 'stripe' as PaymentProviderType,
         paymentMethod: request.paymentMethod,
         status: 'completed',
         createdAt: new Date(),
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     }
   }
 
-  async createPaymentIntent(request: ProcessPaymentRequest) {
+  async createPaymentIntent(request: ProcessPaymentRequest): Promise<PaymentIntent> {
     return {
       id: 'pi_mock_123',
       providerId: 'pi_123',
-      provider: 'stripe',
+      provider: 'stripe' as PaymentProviderType,
       amount: request.amount,
       currency: request.currency,
-      status: 'pending' as const,
+      status: 'pending',
       paymentMethod: request.paymentMethod,
       clientSecret: 'pi_123_secret',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     }
   }
 
@@ -76,12 +84,12 @@ class MockPaymentProvider extends PaymentProvider {
         customerId: 'cust_123',
         amount: 10000,
         currency: 'jpy',
-        provider: 'stripe',
-        paymentMethod: 'card',
+        provider: 'stripe' as PaymentProviderType,
+        paymentMethod: 'card' as PaymentMethod,
         status: 'completed',
         createdAt: new Date(),
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     }
   }
 
@@ -95,18 +103,18 @@ class MockPaymentProvider extends PaymentProvider {
         customerId: 'cust_123',
         amount: 10000,
         currency: 'jpy',
-        provider: 'stripe',
-        paymentMethod: 'card',
+        provider: 'stripe' as PaymentProviderType,
+        paymentMethod: 'card' as PaymentMethod,
         status: 'refunded' as const,
         refundedAt: new Date(),
         refundAmount: request.amount || 10000,
         createdAt: new Date(),
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     }
   }
 
-  async getPaymentStatus(transactionId: string) {
+  async getPaymentStatus(transactionId: string): Promise<PaymentTransaction> {
     return {
       id: transactionId,
       reservationId: 'res_123',
@@ -117,7 +125,7 @@ class MockPaymentProvider extends PaymentProvider {
       paymentMethod: 'card',
       status: 'completed' as const,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     }
   }
 
@@ -134,12 +142,12 @@ describe('PaymentService', () => {
     vi.clearAllMocks()
     mockProvider = new MockPaymentProvider()
     service = new PaymentService({
-      stripe: mockProvider
+      stripe: mockProvider,
     })
-    
+
     // Setup default mock responses
-    mockPrisma.paymentTransaction.findMany.mockResolvedValue([])
-    mockPrisma.paymentTransaction.findUnique.mockResolvedValue({
+    vi.mocked(mockPrisma.paymentTransaction.findMany).mockResolvedValue([])
+    vi.mocked(mockPrisma.paymentTransaction.findUnique).mockResolvedValue({
       id: 'txn_123',
       reservationId: 'res_123',
       customerId: 'cust_123',
@@ -148,10 +156,19 @@ describe('PaymentService', () => {
       provider: 'stripe',
       paymentMethod: 'card',
       status: 'completed',
+      paymentIntentId: null,
+      intentId: null,
+      providerTransactionId: null,
+      stripePaymentId: null,
+      refundedAt: null,
+      refundAmount: null,
+      metadata: null,
+      processedAt: null,
+      errorMessage: null,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     })
-    mockPrisma.paymentIntent.findUnique.mockResolvedValue({
+    vi.mocked(mockPrisma.paymentIntent.findUnique).mockResolvedValue({
       id: 'pi_123',
       providerId: 'pi_stripe_123',
       provider: 'stripe',
@@ -159,8 +176,12 @@ describe('PaymentService', () => {
       currency: 'jpy',
       status: 'pending',
       paymentMethod: 'card',
+      clientSecret: 'pi_123_secret',
+      metadata: null,
+      processedAt: null,
+      errorMessage: null,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     })
   })
 
@@ -171,8 +192,8 @@ describe('PaymentService', () => {
         customerId: 'cust_123',
         amount: 10000,
         currency: 'jpy',
-        paymentMethod: 'card',
-        provider: 'stripe'
+        paymentMethod: 'card' as PaymentMethod,
+        provider: 'stripe',
       }
 
       const result = await service.processPayment(request)
@@ -189,11 +210,13 @@ describe('PaymentService', () => {
         customerId: 'cust_123',
         amount: 10000,
         currency: 'jpy',
-        paymentMethod: 'card',
-        provider: 'payjp'
+        paymentMethod: 'card' as PaymentMethod,
+        provider: 'payjp',
       }
 
-      await expect(service.processPayment(request)).rejects.toThrow('Payment provider payjp not supported')
+      await expect(service.processPayment(request)).rejects.toThrow(
+        'Payment provider payjp not supported'
+      )
     })
   })
 
@@ -204,8 +227,8 @@ describe('PaymentService', () => {
         customerId: 'cust_123',
         amount: 10000,
         currency: 'jpy',
-        paymentMethod: 'card',
-        provider: 'stripe'
+        paymentMethod: 'card' as PaymentMethod,
+        provider: 'stripe',
       }
 
       const intent = await service.createPaymentIntent(request)
@@ -236,14 +259,14 @@ describe('PaymentService', () => {
       const request: RefundRequest = {
         transactionId: 'txn_123',
         amount: 5000,
-        reason: 'customer request'
+        reason: 'customer request',
       }
 
       const result = await service.refundPayment(request)
 
       expect(result.success).toBe(true)
       expect(result.refundAmount).toBe(5000)
-      expect(result.transaction.status).toBe('refunded')
+      expect(result.transaction!.status).toBe('refunded')
     })
   })
 

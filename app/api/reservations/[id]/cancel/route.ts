@@ -12,23 +12,20 @@ import { StripeProvider } from '@/lib/payment/providers/stripe'
 const paymentService = new PaymentService({
   stripe: new StripeProvider({
     secretKey: process.env.STRIPE_SECRET_KEY || '',
-    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || ''
-  })
+    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
+  }),
 })
 
 const reservationService = new ReservationService(paymentService)
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const reservationId = params.id
     const body = await request.json()
     const { refundAmount } = body
 
     const result = await reservationService.cancelReservationWithRefund(reservationId, refundAmount)
-    
+
     if (result.success) {
       return NextResponse.json(result)
     } else {

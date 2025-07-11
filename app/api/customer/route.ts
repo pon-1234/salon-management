@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     if (!data.password) {
       return NextResponse.json({ error: 'Password is required' }, { status: 400 })
     }
-    
+
     const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS)
 
     const newCustomer = await db.customer.create({
@@ -124,7 +124,7 @@ export async function PUT(request: NextRequest) {
     if (!authCustomerId || id !== authCustomerId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
-    
+
     if (password) {
       updates.password = await bcrypt.hash(password, SALT_ROUNDS)
     }

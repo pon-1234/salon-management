@@ -136,3 +136,43 @@ model Admin {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
+
+model PaymentIntent {
+  id             String                @id @default(cuid())
+  providerId     String                @unique
+  provider       String
+  amount         Int
+  currency       String
+  status         String
+  paymentMethod  String
+  clientSecret   String
+  metadata       Json?
+  processedAt    DateTime?
+  errorMessage   String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  transactions   PaymentTransaction[]
+}
+
+model PaymentTransaction {
+  id                    String        @id @default(cuid())
+  paymentIntentId       String?
+  intentId              String?       @unique
+  providerTransactionId String?       @unique
+  reservationId         String        @unique
+  customerId            String
+  amount                Int
+  currency              String
+  provider              String
+  paymentMethod         String
+  status                String
+  stripePaymentId       String?       @unique
+  refundedAt            DateTime?
+  refundAmount          Int?
+  metadata              Json?
+  processedAt           DateTime?
+  errorMessage          String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  paymentIntent         PaymentIntent? @relation(fields: [paymentIntentId], references: [id])
+}

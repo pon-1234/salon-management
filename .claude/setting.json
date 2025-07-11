@@ -21,12 +21,7 @@
       "Read",
       "Glob"
     ],
-    "deny": [
-      "Bash(git push:*)",
-      "Bash(git commit:*)",
-      "Bash(rm:*)",
-      "Bash(mv:*)"
-    ]
+    "deny": ["Bash(git push:*)", "Bash(git commit:*)", "Bash(rm:*)", "Bash(mv:*)"]
   },
   "enableAllProjectMcpServers": false,
   "hooks": {

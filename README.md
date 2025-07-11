@@ -33,11 +33,13 @@ Continue building your app on:
 Try the live demo with these credentials:
 
 ### Admin Access
+
 - **URL**: `/admin/login`
 - **Email**: `admin@example.com`
 - **Password**: `admin123`
 
 ### Customer Access
+
 - **URL**: `/[store]/login` (e.g., `/store1/login`)
 - **Email**: `customer@example.com`
 - **Password**: `customer123`
@@ -47,6 +49,49 @@ Try the live demo with these credentials:
 ```bash
 npm install
 npm run dev
+```
+
+## Environment Setup
+
+1. Copy the environment variables:
+
+```bash
+cp env.example .env.local
+```
+
+2. Configure the required variables:
+
+- **Database**: Set your PostgreSQL connection string
+- **NextAuth**: Generate a secret with `openssl rand -base64 32`
+- **Supabase**: Set your Supabase URL and anon key
+
+### Image Upload Feature
+
+This application uses Supabase Storage for persistent image storage:
+
+- **Automatic**: Images are uploaded directly to cloud storage
+- **CDN**: Global distribution for fast loading
+- **Persistent**: Images remain available across deployments
+- **Integrated**: Works seamlessly with your existing Supabase database
+
+To enable image uploads:
+
+1. Create a storage bucket named "images" in your Supabase dashboard
+2. Add the following to your environment variables:
+   - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anon key
+3. Deploy or run locally
+
+### Database Seeding
+
+Initialize your database with demo data:
+
+```bash
+# Create admin users
+npm run create:admin
+
+# Create full demo data (casts, customers, reservations)
+npm run seed:full
 ```
 
 ## Development

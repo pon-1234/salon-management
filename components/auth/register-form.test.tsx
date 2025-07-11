@@ -60,7 +60,7 @@ describe('RegisterForm', () => {
     // In a real test, we would render the component and test form submission
     // For now, we'll just verify the mock exists
     expect(mockFetch).toBeDefined()
-    
+
     mockFetch.mockRestore()
   })
 
@@ -76,10 +76,10 @@ describe('RegisterForm', () => {
     const bcrypt = await import('bcryptjs')
     const testPassword = 'testpassword123'
     const hashedPassword = await bcrypt.default.hash(testPassword, 12)
-    
+
     // Verify that the hash is different from the original password
     expect(hashedPassword).not.toBe(testPassword)
-    
+
     // Verify that the hash can be compared with the original password
     const isValid = await bcrypt.default.compare(testPassword, hashedPassword)
     expect(isValid).toBe(true)

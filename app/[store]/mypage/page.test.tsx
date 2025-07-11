@@ -8,14 +8,16 @@ import MyPage from './page'
 
 // Mock NextAuth
 vi.mock('next-auth', () => ({
-  getServerSession: vi.fn(() => Promise.resolve({
-    user: {
-      id: 'customer1',
-      email: 'customer@example.com',
-      name: 'Test Customer',
-      role: 'customer',
-    }
-  })),
+  getServerSession: vi.fn(() =>
+    Promise.resolve({
+      user: {
+        id: 'customer1',
+        email: 'customer@example.com',
+        name: 'Test Customer',
+        role: 'customer',
+      },
+    })
+  ),
 }))
 
 // Mock next/navigation

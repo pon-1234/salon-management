@@ -21,7 +21,7 @@ declare module 'next-auth' {
       permissions?: string[]
     }
   }
-  
+
   interface User {
     id: string
     email: string
@@ -47,8 +47,8 @@ export const authOptions: NextAuthOptions = {
       id: 'admin-credentials',
       name: 'Admin Login',
       credentials: {
-        email: { label: "Email", type: "email", placeholder: "admin@example.com" },
-        password: { label: "Password", type: "password" }
+        email: { label: 'Email', type: 'email', placeholder: 'admin@example.com' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -58,12 +58,14 @@ export const authOptions: NextAuthOptions = {
         // Check rate limiting
         const rateLimitResult = checkRateLimit(`admin:${credentials.email}`)
         if (!rateLimitResult.allowed) {
-          throw new Error(`Too many login attempts. Please try again in ${rateLimitResult.retryAfter} seconds.`)
+          throw new Error(
+            `Too many login attempts. Please try again in ${rateLimitResult.retryAfter} seconds.`
+          )
         }
 
         try {
           const admin = await db.admin.findUnique({
-            where: { email: credentials.email }
+            where: { email: credentials.email },
           })
 
           if (!admin) {
@@ -98,7 +100,7 @@ export const authOptions: NextAuthOptions = {
           // Update last login timestamp
           await db.admin.update({
             where: { id: admin.id },
-            data: { lastLogin: new Date() }
+            data: { lastLogin: new Date() },
           })
 
           // Success - clear rate limit
@@ -110,21 +112,21 @@ export const authOptions: NextAuthOptions = {
             name: admin.name,
             role: 'admin',
             adminRole: admin.role,
-            permissions
+            permissions,
           } as User
         } catch (error) {
           console.error('Error during admin authentication:', error)
           recordLoginAttempt(`admin:${credentials.email}`, false)
           return null
         }
-      }
+      },
     }),
     CredentialsProvider({
       id: 'customer-credentials',
       name: 'Customer Login',
       credentials: {
-        email: { label: "Email", type: "email", placeholder: "customer@example.com" },
-        password: { label: "Password", type: "password" }
+        email: { label: 'Email', type: 'email', placeholder: 'customer@example.com' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -134,12 +136,14 @@ export const authOptions: NextAuthOptions = {
         // Check rate limiting
         const rateLimitResult = checkRateLimit(`customer:${credentials.email}`)
         if (!rateLimitResult.allowed) {
-          throw new Error(`Too many login attempts. Please try again in ${rateLimitResult.retryAfter} seconds.`)
+          throw new Error(
+            `Too many login attempts. Please try again in ${rateLimitResult.retryAfter} seconds.`
+          )
         }
 
         try {
           const customer = await db.customer.findUnique({
-            where: { email: credentials.email }
+            where: { email: credentials.email },
           })
 
           if (!customer) {
@@ -162,15 +166,15 @@ export const authOptions: NextAuthOptions = {
             id: customer.id,
             email: customer.email,
             name: customer.name || 'Customer',
-            role: 'customer'
+            role: 'customer',
           } as User
         } catch (error) {
           console.error('Error during authentication:', error)
           recordLoginAttempt(`customer:${credentials.email}`, false)
           return null
         }
-      }
-    })
+      },
+    }),
   ],
   callbacks: {
     async jwt({ token, user }) {
@@ -198,7 +202,7 @@ export const authOptions: NextAuthOptions = {
         }
       }
       return session
-    }
+    },
   },
   pages: {
     signIn: '/login',
@@ -209,7 +213,11 @@ export const authOptions: NextAuthOptions = {
     maxAge: 2 * 60 * 60, // 2 hours
     updateAge: 30 * 60, // Update session every 30 minutes
   },
-  secret: process.env.NEXTAUTH_SECRET || (process.env.NODE_ENV === 'production' ? (() => {
-    throw new Error('NEXTAUTH_SECRET is required in production')
-  })() : 'development-secret-key-not-for-production'),
+  secret:
+    process.env.NEXTAUTH_SECRET ||
+    (process.env.NODE_ENV === 'production'
+      ? (() => {
+          throw new Error('NEXTAUTH_SECRET is required in production')
+        })()
+      : 'development-secret-key-not-for-production'),
 }

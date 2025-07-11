@@ -540,15 +540,10 @@ describe('Review API - Business Logic and Validation', () => {
   })
 
   it('should calculate average rating for cast correctly', async () => {
-    const castReviews = [
-      { rating: 5 },
-      { rating: 4 },
-      { rating: 5 },
-      { rating: 3 },
-      { rating: 4 },
-    ]
+    const castReviews = [{ rating: 5 }, { rating: 4 }, { rating: 5 }, { rating: 3 }, { rating: 4 }]
 
-    const averageRating = castReviews.reduce((sum, review) => sum + review.rating, 0) / castReviews.length
+    const averageRating =
+      castReviews.reduce((sum, review) => sum + review.rating, 0) / castReviews.length
     expect(averageRating).toBe(4.2)
 
     // Test API maintains rating integrity
@@ -573,7 +568,8 @@ describe('Review API - Business Logic and Validation', () => {
     const data = await response.json()
 
     expect(response.status).toBe(200)
-    const apiAverageRating = data.reduce((sum: number, review: any) => sum + review.rating, 0) / data.length
+    const apiAverageRating =
+      data.reduce((sum: number, review: any) => sum + review.rating, 0) / data.length
     expect(apiAverageRating).toBe(averageRating)
   })
 

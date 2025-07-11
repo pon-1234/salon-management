@@ -15,9 +15,9 @@ vi.mock('next-auth/react', () => ({
         email: 'test@example.com',
         name: 'Test User',
         role: 'customer',
-      }
+      },
     },
-    status: 'authenticated'
+    status: 'authenticated',
   })),
 }))
 

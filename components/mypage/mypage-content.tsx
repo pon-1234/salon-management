@@ -29,8 +29,8 @@ export function MyPageContent({ store }: MyPageContentProps) {
       <div className="mx-auto max-w-7xl px-4 py-8">
         <div className="rounded-lg bg-white p-6 shadow">
           <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+            <div className="mb-4 h-8 w-1/3 rounded bg-gray-200"></div>
+            <div className="h-4 w-1/4 rounded bg-gray-200"></div>
           </div>
         </div>
       </div>

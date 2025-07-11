@@ -11,35 +11,38 @@ import { ProcessPaymentRequest } from '@/lib/payment/types'
 
 // Initialize payment service with environment validation
 const stripeConfig = {
-  secretKey: process.env.STRIPE_SECRET_KEY || (() => {
-    console.error('STRIPE_SECRET_KEY is not set in environment variables')
-    return ''
-  })(),
-  publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || (() => {
-    console.error('STRIPE_PUBLISHABLE_KEY is not set in environment variables')
-    return ''
-  })()
+  secretKey:
+    process.env.STRIPE_SECRET_KEY ||
+    (() => {
+      console.error('STRIPE_SECRET_KEY is not set in environment variables')
+      return ''
+    })(),
+  publishableKey:
+    process.env.STRIPE_PUBLISHABLE_KEY ||
+    (() => {
+      console.error('STRIPE_PUBLISHABLE_KEY is not set in environment variables')
+      return ''
+    })(),
 }
 
 // Only initialize Stripe provider if keys are available
-const paymentProviders: Record<string, any> = stripeConfig.secretKey ? {
-  stripe: new StripeProvider(stripeConfig)
-} : {}
+const paymentProviders: Record<string, any> = stripeConfig.secretKey
+  ? {
+      stripe: new StripeProvider(stripeConfig),
+    }
+  : {}
 
 const paymentService = new PaymentService(paymentProviders)
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    
+
     // Validate required fields
     const { reservationId, customerId, amount, currency, paymentMethod, provider } = body
-    
+
     if (!reservationId || !customerId || !amount || !currency || !paymentMethod || !provider) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     const paymentRequest: ProcessPaymentRequest = {
@@ -49,11 +52,11 @@ export async function POST(request: NextRequest) {
       currency,
       paymentMethod,
       provider,
-      metadata: body.metadata
+      metadata: body.metadata,
     }
 
     const result = await paymentService.processPayment(paymentRequest)
-    
+
     if (result.success) {
       return NextResponse.json(result)
     } else {

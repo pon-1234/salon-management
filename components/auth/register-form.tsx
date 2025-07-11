@@ -33,19 +33,26 @@ import { ja } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
-const registerSchema = z.object({
-  nickname: z.string().min(1, 'ニックネームを入力してください'),
-  email: z.string().email('正しいメールアドレスを入力してください').min(1, 'メールアドレスを入力してください'),
-  phone: z.string().regex(/^[0-9]{3}-[0-9]{4}-[0-9]{4}$/, '090-1234-5678の形式で入力してください'),
-  password: z.string().min(8, 'パスワードは8文字以上で入力してください'),
-  confirmPassword: z.string().min(8, 'パスワードを再入力してください'),
-  birthDate: z.date().optional(),
-  smsNotifications: z.boolean().optional(),
-  agreed: z.boolean().refine(val => val === true, '利用規約に同意してください'),
-}).refine(data => data.password === data.confirmPassword, {
-  message: 'パスワードが一致しません',
-  path: ['confirmPassword'],
-})
+const registerSchema = z
+  .object({
+    nickname: z.string().min(1, 'ニックネームを入力してください'),
+    email: z
+      .string()
+      .email('正しいメールアドレスを入力してください')
+      .min(1, 'メールアドレスを入力してください'),
+    phone: z
+      .string()
+      .regex(/^[0-9]{3}-[0-9]{4}-[0-9]{4}$/, '090-1234-5678の形式で入力してください'),
+    password: z.string().min(8, 'パスワードは8文字以上で入力してください'),
+    confirmPassword: z.string().min(8, 'パスワードを再入力してください'),
+    birthDate: z.date().optional(),
+    smsNotifications: z.boolean().optional(),
+    agreed: z.boolean().refine((val) => val === true, '利用規約に同意してください'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'パスワードが一致しません',
+    path: ['confirmPassword'],
+  })
 
 type RegisterFormData = z.infer<typeof registerSchema>
 
@@ -60,7 +67,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [birthDate, setBirthDate] = useState<Date>()
-  
+
   const {
     register,
     handleSubmit,
@@ -167,17 +174,15 @@ export function RegisterForm({ store }: RegisterFormProps) {
             <Label htmlFor="nickname">ニックネーム</Label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
-              <Input 
-                id="nickname" 
-                placeholder="お好きなニックネーム" 
-                className="pl-10" 
+              <Input
+                id="nickname"
+                placeholder="お好きなニックネーム"
+                className="pl-10"
                 {...register('nickname')}
                 disabled={loading}
               />
             </div>
-            {errors.nickname && (
-              <p className="text-sm text-red-600">{errors.nickname.message}</p>
-            )}
+            {errors.nickname && <p className="text-sm text-red-600">{errors.nickname.message}</p>}
             <p className="text-xs text-gray-500">サイト内で表示される名前です</p>
           </div>
 
@@ -195,9 +200,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
                 disabled={loading}
               />
             </div>
-            {errors.email && (
-              <p className="text-sm text-red-600">{errors.email.message}</p>
-            )}
+            {errors.email && <p className="text-sm text-red-600">{errors.email.message}</p>}
           </div>
 
           {/* Phone */}
@@ -214,9 +217,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
                 disabled={loading}
               />
             </div>
-            {errors.phone && (
-              <p className="text-sm text-red-600">{errors.phone.message}</p>
-            )}
+            {errors.phone && <p className="text-sm text-red-600">{errors.phone.message}</p>}
           </div>
 
           {/* Birth Date */}
@@ -285,9 +286,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
                 disabled={loading}
               />
             </div>
-            {errors.password && (
-              <p className="text-sm text-red-600">{errors.password.message}</p>
-            )}
+            {errors.password && <p className="text-sm text-red-600">{errors.password.message}</p>}
           </div>
 
           {/* Confirm Password */}
@@ -311,11 +310,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
 
           {/* SMS Notifications */}
           <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="sms" 
-              {...register('smsNotifications')}
-              disabled={loading}
-            />
+            <Checkbox id="sms" {...register('smsNotifications')} disabled={loading} />
             <Label htmlFor="sms" className="cursor-pointer text-sm font-normal">
               お得な情報をSMSで受け取る
             </Label>
@@ -323,11 +318,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
 
           {/* Terms Agreement */}
           <div className="flex items-start space-x-2">
-            <Checkbox
-              id="terms"
-              {...register('agreed')}
-              disabled={loading}
-            />
+            <Checkbox id="terms" {...register('agreed')} disabled={loading} />
             <Label htmlFor="terms" className="cursor-pointer text-sm font-normal">
               <Link href="/terms" className="text-blue-600 hover:underline">
                 利用規約
@@ -338,9 +329,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
               </Link>
               に同意します
             </Label>
-            {errors.agreed && (
-              <p className="text-sm text-red-600">{errors.agreed.message}</p>
-            )}
+            {errors.agreed && <p className="text-sm text-red-600">{errors.agreed.message}</p>}
           </div>
 
           {/* Submit Button */}

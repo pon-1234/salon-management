@@ -4,7 +4,14 @@
  * @known_issues None identified
  */
 
-import { PaymentIntent, PaymentTransaction, ProcessPaymentRequest, ProcessPaymentResult, RefundRequest, RefundResult } from '../types'
+import {
+  PaymentIntent,
+  PaymentTransaction,
+  ProcessPaymentRequest,
+  ProcessPaymentResult,
+  RefundRequest,
+  RefundResult,
+} from '../types'
 
 /**
  * Abstract base class for payment providers
