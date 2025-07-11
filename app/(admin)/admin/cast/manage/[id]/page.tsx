@@ -19,7 +19,8 @@ import {
   Calculator,
   BarChart3,
 } from 'lucide-react'
-import { getAllCasts } from '@/lib/cast/data'
+import { CastRepositoryImpl } from '@/lib/cast/repository-impl'
+import { toast } from '@/hooks/use-toast'
 import { CastProfile } from '@/components/cast/cast-profile'
 import { PublicProfileForm } from '@/components/cast/public-profile-form'
 import { SalesManagementTab } from '@/components/cast/sales-management-tab'
@@ -31,7 +32,9 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
   const [cast, setCast] = useState<Cast | null>(null)
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [id, setId] = useState<string>('')
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const castRepository = new CastRepositoryImpl()
   const isNewCast = id === 'new'
 
   useEffect(() => {
@@ -43,28 +46,92 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
   useEffect(() => {
     if (!id) return
     const fetchCast = async () => {
-      const castList = getAllCasts()
-      const foundCast = castList.find((c) => c.id === id)
-      setCast(foundCast || null)
+      setLoading(true)
+      try {
+        if (!isNewCast) {
+          const foundCast = await castRepository.getById(id)
+          if (foundCast) {
+            setCast(foundCast)
+          } else {
+            toast({
+              title: 'エラー',
+              description: 'キャストが見つかりませんでした',
+              variant: 'destructive',
+            })
+            router.push('/admin/cast/list')
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching cast:', error)
+        toast({
+          title: 'エラー',
+          description: 'キャスト情報の取得に失敗しました',
+          variant: 'destructive',
+        })
+      } finally {
+        setLoading(false)
+      }
     }
 
     fetchCast()
   }, [id, isNewCast])
 
   const handleSubmit = async (data: Partial<Cast>) => {
-    // In a real application, this would make an API call
-    console.log('Submitting cast data:', data)
-    router.push('/admin/cast/list')
+    try {
+      if (isNewCast) {
+        // Create new cast
+        const { id, createdAt, updatedAt, ...createData } = data as Cast
+        await castRepository.create(createData)
+        toast({
+          title: '成功',
+          description: 'キャストを作成しました',
+        })
+      } else {
+        // Update existing cast
+        await castRepository.update(id, data)
+        toast({
+          title: '成功',
+          description: 'キャスト情報を更新しました',
+        })
+      }
+      router.push('/admin/cast/list')
+    } catch (error) {
+      console.error('Error saving cast:', error)
+      toast({
+        title: 'エラー',
+        description: 'キャスト情報の保存に失敗しました',
+        variant: 'destructive',
+      })
+    }
   }
 
   const handlePublicProfileSubmit = async (data: any) => {
-    // In a real application, this would make an API call
-    console.log('Submitting public profile data:', data)
-    if (cast) {
-      setCast({
-        ...cast,
+    try {
+      const updateData = {
         ...data.basicInfo,
         publicProfile: data.publicProfile,
+      }
+      await castRepository.update(id, updateData)
+      
+      // Update local state
+      if (cast) {
+        setCast({
+          ...cast,
+          ...updateData,
+        })
+      }
+      
+      toast({
+        title: '成功',
+        description: '公開プロフィールを更新しました',
+      })
+      setIsEditingProfile(false)
+    } catch (error) {
+      console.error('Error updating public profile:', error)
+      toast({
+        title: 'エラー',
+        description: '公開プロフィールの更新に失敗しました',
+        variant: 'destructive',
       })
     }
   }

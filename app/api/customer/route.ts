@@ -4,6 +4,8 @@
  * @known_issues None currently
  */
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import logger from '@/lib/logger'
@@ -12,12 +14,16 @@ const SALT_ROUNDS = 10
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
     const authCustomerId = request.headers.get('x-customer-id')
     const searchParams = request.nextUrl.searchParams
     const id = searchParams.get('id')
+    
+    const isAdmin = session?.user?.role === 'admin'
 
     if (id) {
-      if (!authCustomerId || id !== authCustomerId) {
+      // Allow admin or the customer themselves
+      if (!isAdmin && (!authCustomerId || id !== authCustomerId)) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
 
@@ -56,7 +62,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(customerData)
     }
 
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    // Get all customers - admin only
+    if (!isAdmin) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+    
+    const customers = await db.customer.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        nameKana: true,
+        phone: true,
+        email: true,
+        memberNumber: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    })
+    
+    return NextResponse.json(customers)
   } catch (error) {
     logger.error({ err: error }, 'Error fetching customer data')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -117,11 +142,15 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
     const authCustomerId = request.headers.get('x-customer-id')
     const data = await request.json()
     const { id, password, ...updates } = data
+    
+    const isAdmin = session?.user?.role === 'admin'
 
-    if (!authCustomerId || id !== authCustomerId) {
+    // Allow admin or the customer themselves
+    if (!isAdmin && (!authCustomerId || id !== authCustomerId)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

@@ -4,16 +4,20 @@ import { useState, useEffect } from 'react'
 import { Header } from '@/components/header'
 import { CastListView } from '@/components/cast/cast-list-view'
 import { Cast } from '@/lib/cast/types'
-import { getAllCasts } from '@/lib/cast/data'
+import { CastRepositoryImpl } from '@/lib/cast/repository-impl'
+import { toast } from '@/hooks/use-toast'
 import { CastListActionButtons } from '@/components/cast/cast-list-action-buttons'
 import { CastListViewToggle } from '@/components/cast/cast-list-view-toggle'
 import { CastListInfoBar } from '@/components/cast/cast-list-info-bar'
 
 export default function CastListPage() {
   const [castList, setCastList] = useState<Cast[]>([])
+  const [allCasts, setAllCasts] = useState<Cast[]>([])
   const [view, setView] = useState<'grid' | 'list'>('grid')
   const [workStatus, setWorkStatus] = useState('就業中(公開)')
   const [nameSearch, setNameSearch] = useState('')
+  const [loading, setLoading] = useState(true)
+  const castRepository = new CastRepositoryImpl()
 
   useEffect(() => {
     // ページ遷移時にスクロール位置をリセット
@@ -21,9 +25,26 @@ export default function CastListPage() {
   }, [])
 
   useEffect(() => {
-    const casts = getAllCasts()
-    setCastList(casts)
+    fetchCasts()
   }, [])
+
+  const fetchCasts = async () => {
+    setLoading(true)
+    try {
+      const casts = await castRepository.getAll()
+      setAllCasts(casts)
+      setCastList(casts)
+    } catch (error) {
+      console.error('Error fetching casts:', error)
+      toast({
+        title: 'エラー',
+        description: 'キャスト一覧の取得に失敗しました',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const filteredCasts = castList.filter((cast) => {
     const matchesName =
@@ -33,14 +54,12 @@ export default function CastListPage() {
   })
 
   const handleRefresh = () => {
-    const casts = getAllCasts()
-    setCastList(casts)
+    fetchCasts()
   }
 
   const handleFilterCharacter = (char: string) => {
     if (char === '全') {
-      const casts = getAllCasts()
-      setCastList(casts)
+      setCastList(allCasts)
       return
     }
 
@@ -69,7 +88,6 @@ export default function CastListPage() {
     }
 
     if (char === 'その他') {
-      const allCasts = getAllCasts()
       const filtered = allCasts.filter((cast) => {
         const firstChar = cast.nameKana.charAt(0)
         const isOther = !Object.values(rowMap).some((row) => row.includes(firstChar))
@@ -80,7 +98,6 @@ export default function CastListPage() {
     }
 
     const targetRow = rowMap[char] || []
-    const allCasts = getAllCasts()
     const filtered = allCasts.filter((cast) => {
       const firstChar = cast.nameKana.charAt(0)
       return targetRow.includes(firstChar)
@@ -108,7 +125,13 @@ export default function CastListPage() {
       />
 
       <main className="p-4">
-        <CastListView casts={filteredCasts} view={view} />
+        {loading ? (
+          <div className="flex justify-center items-center min-h-[400px]">
+            <div className="text-gray-500">読み込み中...</div>
+          </div>
+        ) : (
+          <CastListView casts={filteredCasts} view={view} />
+        )}
       </main>
     </div>
   )
