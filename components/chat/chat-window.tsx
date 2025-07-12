@@ -8,8 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Send, Check, CheckCheck } from 'lucide-react'
 import { Message } from '@/lib/types/chat'
-import { getMessages, addMessage } from '@/lib/chat/utils'
-import { getCustomers } from '@/lib/chat/utils'
+import { toast } from '@/hooks/use-toast'
 
 interface ChatWindowProps {
   customerId: string | undefined
@@ -19,14 +18,52 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const [customer, setCustomer] = useState<any>(null)
+  const [loading, setLoading] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (customerId) {
-      const customerMessages = getMessages(customerId)
-      setMessages(customerMessages)
+      fetchMessages()
+      fetchCustomer()
     }
   }, [customerId])
+
+  const fetchMessages = async () => {
+    if (!customerId) return
+
+    setLoading(true)
+    try {
+      const response = await fetch(`/api/chat?customerId=${customerId}`)
+      if (!response.ok) throw new Error('Failed to fetch messages')
+
+      const data = await response.json()
+      setMessages(data)
+    } catch (error) {
+      console.error('Error fetching messages:', error)
+      toast({
+        title: 'エラー',
+        description: 'メッセージの取得に失敗しました',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchCustomer = async () => {
+    if (!customerId) return
+
+    try {
+      const response = await fetch(`/api/chat/customers?id=${customerId}`)
+      if (!response.ok) throw new Error('Failed to fetch customer')
+
+      const data = await response.json()
+      setCustomer(data)
+    } catch (error) {
+      console.error('Error fetching customer:', error)
+    }
+  }
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -34,20 +71,36 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
     }
   }, [messages])
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (newMessage.trim() && customerId) {
-      const newMsg = addMessage({
-        sender: 'staff',
-        content: newMessage.trim(),
-        timestamp: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-        customerId: customerId,
-      })
-      setMessages([...messages, newMsg])
-      setNewMessage('')
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            customerId,
+            sender: 'staff',
+            content: newMessage.trim(),
+          }),
+        })
+
+        if (!response.ok) throw new Error('Failed to send message')
+
+        const newMsg = await response.json()
+        setMessages([...messages, newMsg])
+        setNewMessage('')
+      } catch (error) {
+        console.error('Error sending message:', error)
+        toast({
+          title: 'エラー',
+          description: 'メッセージの送信に失敗しました',
+          variant: 'destructive',
+        })
+      }
     }
   }
-
-  const customer = customerId ? getCustomers().find((c) => c.id === customerId) : null
 
   if (!customerId) {
     return (
@@ -83,144 +136,150 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
     <div className="flex flex-1 flex-col bg-gradient-to-b from-white to-gray-50/30">
       {/* Messages Area */}
       <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
-        <div className="mx-auto max-w-4xl space-y-6">
-          {messages.map((message, index) => {
-            const showAvatar = index === 0 || messages[index - 1]?.sender !== message.sender
-            const isStaff = message.sender === 'staff'
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-gray-500">読み込み中...</div>
+          </div>
+        ) : (
+          <div className="mx-auto max-w-4xl space-y-6">
+            {messages.map((message, index) => {
+              const showAvatar = index === 0 || messages[index - 1]?.sender !== message.sender
+              const isStaff = message.sender === 'staff'
 
-            return (
-              <div
-                key={message.id}
-                className={`flex ${isStaff ? 'justify-end' : 'justify-start'} ${
-                  message.isReservationInfo ? 'justify-center' : ''
-                }`}
-              >
+              return (
                 <div
-                  className={`flex max-w-[80%] gap-3 ${
-                    isStaff ? 'flex-row-reverse' : 'flex-row'
-                  } ${message.isReservationInfo ? 'w-full max-w-md' : ''}`}
+                  key={message.id}
+                  className={`flex ${isStaff ? 'justify-end' : 'justify-start'} ${
+                    message.isReservationInfo ? 'justify-center' : ''
+                  }`}
                 >
-                  {/* Avatar */}
-                  {showAvatar && !message.isReservationInfo && (
-                    <Avatar className="mt-1 h-8 w-8">
-                      {isStaff ? (
-                        <AvatarFallback className="bg-emerald-600 text-xs text-white">
-                          Staff
-                        </AvatarFallback>
-                      ) : (
-                        <AvatarImage src={customer?.avatar} alt={customer?.name} />
-                      )}
-                      {!isStaff && (
-                        <AvatarFallback className="bg-gray-400 text-xs text-white">
-                          {customer?.name?.[0] || 'G'}
-                        </AvatarFallback>
-                      )}
-                    </Avatar>
-                  )}
-
-                  {!showAvatar && !message.isReservationInfo && <div className="w-8" />}
-
-                  <div className="flex-1">
-                    {/* Message Bubble */}
-                    <div
-                      className={`relative whitespace-pre-wrap rounded-2xl px-4 py-3 shadow-sm ${
-                        message.isReservationInfo
-                          ? 'border border-blue-200 bg-blue-50 text-center text-blue-800'
-                          : isStaff
-                            ? 'bg-emerald-500 text-white'
-                            : 'border border-gray-200 bg-white'
-                      }`}
-                    >
-                      {message.content}
-
-                      {/* Message tail */}
-                      {!message.isReservationInfo && (
-                        <>
-                          {isStaff && showAvatar ? (
-                            <div className="absolute right-[-8px] top-3 h-0 w-0 border-b-[8px] border-l-[8px] border-t-[8px] border-b-transparent border-l-emerald-500 border-t-transparent" />
-                          ) : !isStaff && showAvatar ? (
-                            <>
-                              {/* Main arrow */}
-                              <div className="absolute left-[-8px] top-3 h-0 w-0 border-b-[8px] border-r-[8px] border-t-[8px] border-b-transparent border-r-white border-t-transparent" />
-                              {/* Border arrow for outline effect */}
-                              <div className="absolute left-[-9px] top-3 h-0 w-0 border-b-[9px] border-r-[9px] border-t-[9px] border-b-transparent border-r-gray-200 border-t-transparent" />
-                            </>
-                          ) : null}
-                        </>
-                      )}
-                    </div>
-
-                    {/* Timestamp and Status */}
-                    <div
-                      className={`mt-1 flex items-center gap-2 ${
-                        isStaff ? 'justify-end' : 'justify-start'
-                      }`}
-                    >
-                      <span className="text-xs text-gray-500">{message.timestamp}</span>
-                      {isStaff && (
-                        <div className="text-xs text-gray-500">
-                          {message.readStatus === '既読' ? (
-                            <CheckCheck className="h-3 w-3 text-emerald-600" />
-                          ) : (
-                            <Check className="h-3 w-3" />
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Reservation Info */}
-                    {message.isReservationInfo && (
-                      <div className="mt-3 flex flex-col items-center gap-2">
-                        <Badge
-                          variant="secondary"
-                          className="border-blue-200 bg-blue-100 text-blue-800"
-                        >
-                          予約が確定に変更されました
-                        </Badge>
-                        <div className="text-sm font-medium text-blue-700">
-                          {message.reservationInfo?.date} {message.reservationInfo?.time}
-                        </div>
-                        <div className="text-xs text-blue-600">
-                          確定日時: {message.reservationInfo?.confirmedDate}
-                        </div>
-                      </div>
+                  <div
+                    className={`flex max-w-[80%] gap-3 ${
+                      isStaff ? 'flex-row-reverse' : 'flex-row'
+                    } ${message.isReservationInfo ? 'w-full max-w-md' : ''}`}
+                  >
+                    {/* Avatar */}
+                    {showAvatar && !message.isReservationInfo && (
+                      <Avatar className="mt-1 h-8 w-8">
+                        {isStaff ? (
+                          <AvatarFallback className="bg-emerald-600 text-xs text-white">
+                            Staff
+                          </AvatarFallback>
+                        ) : (
+                          <AvatarImage src={customer?.avatar} alt={customer?.name} />
+                        )}
+                        {!isStaff && (
+                          <AvatarFallback className="bg-gray-400 text-xs text-white">
+                            {customer?.name?.[0] || 'G'}
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
                     )}
-                  </div>
-                </div>
-              </div>
-            )
-          })}
 
-          {/* Typing Indicator */}
-          {isTyping && (
-            <div className="flex justify-start">
-              <div className="flex max-w-[80%] gap-3">
-                <Avatar className="mt-1 h-8 w-8">
-                  <AvatarImage src={customer?.avatar} alt={customer?.name} />
-                  <AvatarFallback className="bg-gray-400 text-xs text-white">
-                    {customer?.name?.[0] || 'G'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
-                  <div className="flex space-x-1">
-                    <div
-                      className="h-2 w-2 animate-bounce rounded-full bg-gray-400"
-                      style={{ animationDelay: '0ms' }}
-                    ></div>
-                    <div
-                      className="h-2 w-2 animate-bounce rounded-full bg-gray-400"
-                      style={{ animationDelay: '150ms' }}
-                    ></div>
-                    <div
-                      className="h-2 w-2 animate-bounce rounded-full bg-gray-400"
-                      style={{ animationDelay: '300ms' }}
-                    ></div>
+                    {!showAvatar && !message.isReservationInfo && <div className="w-8" />}
+
+                    <div className="flex-1">
+                      {/* Message Bubble */}
+                      <div
+                        className={`relative whitespace-pre-wrap rounded-2xl px-4 py-3 shadow-sm ${
+                          message.isReservationInfo
+                            ? 'border border-blue-200 bg-blue-50 text-center text-blue-800'
+                            : isStaff
+                              ? 'bg-emerald-500 text-white'
+                              : 'border border-gray-200 bg-white'
+                        }`}
+                      >
+                        {message.content}
+
+                        {/* Message tail */}
+                        {!message.isReservationInfo && (
+                          <>
+                            {isStaff && showAvatar ? (
+                              <div className="absolute right-[-8px] top-3 h-0 w-0 border-b-[8px] border-l-[8px] border-t-[8px] border-b-transparent border-l-emerald-500 border-t-transparent" />
+                            ) : !isStaff && showAvatar ? (
+                              <>
+                                {/* Main arrow */}
+                                <div className="absolute left-[-8px] top-3 h-0 w-0 border-b-[8px] border-r-[8px] border-t-[8px] border-b-transparent border-r-white border-t-transparent" />
+                                {/* Border arrow for outline effect */}
+                                <div className="absolute left-[-9px] top-3 h-0 w-0 border-b-[9px] border-r-[9px] border-t-[9px] border-b-transparent border-r-gray-200 border-t-transparent" />
+                              </>
+                            ) : null}
+                          </>
+                        )}
+                      </div>
+
+                      {/* Timestamp and Status */}
+                      <div
+                        className={`mt-1 flex items-center gap-2 ${
+                          isStaff ? 'justify-end' : 'justify-start'
+                        }`}
+                      >
+                        <span className="text-xs text-gray-500">{message.timestamp}</span>
+                        {isStaff && (
+                          <div className="text-xs text-gray-500">
+                            {message.readStatus === '既読' ? (
+                              <CheckCheck className="h-3 w-3 text-emerald-600" />
+                            ) : (
+                              <Check className="h-3 w-3" />
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Reservation Info */}
+                      {message.isReservationInfo && (
+                        <div className="mt-3 flex flex-col items-center gap-2">
+                          <Badge
+                            variant="secondary"
+                            className="border-blue-200 bg-blue-100 text-blue-800"
+                          >
+                            予約が確定に変更されました
+                          </Badge>
+                          <div className="text-sm font-medium text-blue-700">
+                            {message.reservationInfo?.date} {message.reservationInfo?.time}
+                          </div>
+                          <div className="text-xs text-blue-600">
+                            確定日時: {message.reservationInfo?.confirmedDate}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+
+            {/* Typing Indicator */}
+            {isTyping && (
+              <div className="flex justify-start">
+                <div className="flex max-w-[80%] gap-3">
+                  <Avatar className="mt-1 h-8 w-8">
+                    <AvatarImage src={customer?.avatar} alt={customer?.name} />
+                    <AvatarFallback className="bg-gray-400 text-xs text-white">
+                      {customer?.name?.[0] || 'G'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+                    <div className="flex space-x-1">
+                      <div
+                        className="h-2 w-2 animate-bounce rounded-full bg-gray-400"
+                        style={{ animationDelay: '0ms' }}
+                      ></div>
+                      <div
+                        className="h-2 w-2 animate-bounce rounded-full bg-gray-400"
+                        style={{ animationDelay: '150ms' }}
+                      ></div>
+                      <div
+                        className="h-2 w-2 animate-bounce rounded-full bg-gray-400"
+                        style={{ animationDelay: '300ms' }}
+                      ></div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </ScrollArea>
 
       {/* Input Area */}
