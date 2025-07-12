@@ -16,9 +16,10 @@ import { ScheduleEditDialog, WeeklyScheduleEdit } from './schedule-edit-dialog'
 interface ScheduleGridProps {
   startDate: Date
   entries: CastScheduleEntry[]
+  onSaveSchedule?: (castId: string, schedule: WeeklyScheduleEdit) => void
 }
 
-export function ScheduleGrid({ startDate, entries }: ScheduleGridProps) {
+export function ScheduleGrid({ startDate, entries, onSaveSchedule }: ScheduleGridProps) {
   const dates = getWeekDates(startDate)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [selectedCast, setSelectedCast] = useState<CastScheduleEntry | null>(null)
@@ -28,10 +29,10 @@ export function ScheduleGrid({ startDate, entries }: ScheduleGridProps) {
     setEditDialogOpen(true)
   }
 
-  const handleSaveSchedule = (castId: string, schedule: WeeklyScheduleEdit) => {
-    // Here you would normally save to the backend
-    console.log('Saving schedule for cast:', castId, schedule)
-    // For now, just close the dialog
+  const handleSaveSchedule = async (castId: string, schedule: WeeklyScheduleEdit) => {
+    if (onSaveSchedule) {
+      await onSaveSchedule(castId, schedule)
+    }
     setEditDialogOpen(false)
     setSelectedCast(null)
   }
