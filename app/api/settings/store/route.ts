@@ -10,7 +10,22 @@ import { z } from 'zod'
 
 // In-memory storage for demo purposes
 // In production, this should be stored in database
-let storeSettings = {
+let storeSettings: {
+  storeName: string
+  address: string
+  phone: string
+  email: string
+  website: string
+  businessHours: string
+  description: string
+  zipCode: string
+  prefecture: string
+  city: string
+  building: string
+  businessDays: string
+  lastOrder: string
+  parkingInfo: string
+} = {
   storeName: '金の玉クラブ(池袋)',
   address: '東京都豊島区池袋2-1-1',
   phone: '03-1234-5678',
@@ -72,8 +87,13 @@ export async function PUT(request: NextRequest) {
     // Validate request body
     const validatedData = storeSettingsSchema.parse(body)
 
-    // Update settings
-    storeSettings = validatedData
+    // Update settings with defaults for optional fields
+    storeSettings = {
+      ...validatedData,
+      website: validatedData.website || '',
+      building: validatedData.building || '',
+      parkingInfo: validatedData.parkingInfo || '',
+    }
 
     return NextResponse.json(storeSettings)
   } catch (error) {

@@ -10,7 +10,19 @@ import { z } from 'zod'
 
 // In-memory storage for demo purposes
 // In production, this should be stored in database
-let hotelSettings = [
+let hotelSettings: Array<{
+  id: string
+  hotelName: string
+  area: string
+  roomCount: number
+  hourlyRate: number
+  address: string
+  phone: string
+  checkInTime: string
+  checkOutTime: string
+  amenities: string[]
+  notes: string
+}> = [
   {
     id: '1',
     hotelName: 'アパホテル池袋',
@@ -87,8 +99,11 @@ export async function POST(request: NextRequest) {
       id: validatedData.id || Date.now().toString(),
     }
 
-    // Add to list
-    hotelSettings.push(newHotel)
+    // Add to list with default notes if not provided
+    hotelSettings.push({
+      ...newHotel,
+      notes: newHotel.notes || '',
+    })
 
     return NextResponse.json(newHotel, { status: 201 })
   } catch (error) {
@@ -125,7 +140,10 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Hotel not found' }, { status: 404 })
     }
 
-    hotelSettings[hotelIndex] = validatedData
+    hotelSettings[hotelIndex] = {
+      ...validatedData,
+      notes: validatedData.notes || '',
+    }
 
     return NextResponse.json(validatedData)
   } catch (error) {
