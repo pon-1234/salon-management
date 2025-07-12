@@ -112,7 +112,7 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
         publicProfile: data.publicProfile,
       }
       await castRepository.update(id, updateData)
-      
+
       // Update local state
       if (cast) {
         setCast({
@@ -120,7 +120,7 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
           ...updateData,
         })
       }
-      
+
       toast({
         title: '成功',
         description: '公開プロフィールを更新しました',

@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Search, Send, Crown } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Customer } from '@/lib/types/chat'
-import { getCustomers } from '@/lib/chat/utils'
+import { toast } from '@/hooks/use-toast'
 
 interface CustomerListProps {
   selectedCustomerId: string | undefined
@@ -18,11 +18,30 @@ interface CustomerListProps {
 export function CustomerList({ selectedCustomerId, onSelectCustomer }: CustomerListProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [customers, setCustomers] = useState<Customer[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchedCustomers = getCustomers()
-    setCustomers(fetchedCustomers)
+    fetchCustomers()
   }, [])
+
+  const fetchCustomers = async () => {
+    try {
+      const response = await fetch('/api/chat/customers')
+      if (!response.ok) throw new Error('Failed to fetch customers')
+
+      const data = await response.json()
+      setCustomers(data)
+    } catch (error) {
+      console.error('Error fetching customers:', error)
+      toast({
+        title: 'エラー',
+        description: '顧客リストの取得に失敗しました',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const filteredCustomers = customers.filter((customer) =>
     customer.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -62,61 +81,71 @@ export function CustomerList({ selectedCustomerId, onSelectCustomer }: CustomerL
 
       {/* Customer List */}
       <ScrollArea className="flex-1">
-        <div className="p-2">
-          {filteredCustomers.map((customer) => (
-            <button
-              key={customer.id}
-              className={`mb-2 w-full rounded-lg p-3 text-left transition-all duration-200 hover:shadow-sm ${
-                selectedCustomerId === customer.id
-                  ? 'border border-emerald-200 bg-emerald-50 shadow-sm'
-                  : 'hover:bg-white'
-              }`}
-              onClick={() => onSelectCustomer(customer)}
-            >
-              <div className="flex items-start gap-3">
-                {/* Avatar with online indicator */}
-                <div className="relative">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={customer.avatar} alt={customer.name} />
-                    <AvatarFallback className="bg-gradient-to-br from-emerald-400 to-emerald-600 font-medium text-white">
-                      {customer.name[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  {customer.isOnline && (
-                    <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white bg-green-500"></div>
-                  )}
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <div className="mb-1 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate font-medium text-gray-900">{customer.name} 様</span>
-                      {customer.memberType === 'vip' && (
-                        <Crown className="h-3 w-3 text-amber-500" />
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500">{customer.lastMessageTime}</span>
-                      {customer.hasUnread && customer.unreadCount > 0 && (
-                        <Badge className="h-5 min-w-[20px] bg-emerald-600 px-1.5 text-xs text-white hover:bg-emerald-700">
-                          {customer.unreadCount > 99 ? '99+' : customer.unreadCount}
-                        </Badge>
-                      )}
-                    </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-gray-500">読み込み中...</div>
+          </div>
+        ) : (
+          <div className="p-2">
+            {filteredCustomers.map((customer) => (
+              <button
+                key={customer.id}
+                className={`mb-2 w-full rounded-lg p-3 text-left transition-all duration-200 hover:shadow-sm ${
+                  selectedCustomerId === customer.id
+                    ? 'border border-emerald-200 bg-emerald-50 shadow-sm'
+                    : 'hover:bg-white'
+                }`}
+                onClick={() => onSelectCustomer(customer)}
+              >
+                <div className="flex items-start gap-3">
+                  {/* Avatar with online indicator */}
+                  <div className="relative">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={customer.avatar} alt={customer.name} />
+                      <AvatarFallback className="bg-gradient-to-br from-emerald-400 to-emerald-600 font-medium text-white">
+                        {customer.name[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    {customer.isOnline && (
+                      <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white bg-green-500"></div>
+                    )}
                   </div>
 
-                  <p className="line-clamp-2 text-sm leading-relaxed text-gray-600">
-                    {customer.lastMessage}
-                  </p>
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate font-medium text-gray-900">
+                          {customer.name} 様
+                        </span>
+                        {customer.memberType === 'vip' && (
+                          <Crown className="h-3 w-3 text-amber-500" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500">{customer.lastMessageTime}</span>
+                        {customer.hasUnread && customer.unreadCount > 0 && (
+                          <Badge className="h-5 min-w-[20px] bg-emerald-600 px-1.5 text-xs text-white hover:bg-emerald-700">
+                            {customer.unreadCount > 99 ? '99+' : customer.unreadCount}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
 
-                  {!customer.isOnline && customer.lastSeen && (
-                    <p className="mt-1 text-xs text-gray-400">最終ログイン: {customer.lastSeen}</p>
-                  )}
+                    <p className="line-clamp-2 text-sm leading-relaxed text-gray-600">
+                      {customer.lastMessage}
+                    </p>
+
+                    {!customer.isOnline && customer.lastSeen && (
+                      <p className="mt-1 text-xs text-gray-400">
+                        最終ログイン: {customer.lastSeen}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </button>
-          ))}
-        </div>
+              </button>
+            ))}
+          </div>
+        )}
       </ScrollArea>
     </div>
   )
