@@ -1,107 +1,194 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Header } from '@/components/header'
+import { toast } from '@/hooks/use-toast'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Building, MapPin, Phone, Star, Trash2, Plus } from 'lucide-react'
+import { ArrowLeft, Building, MapPin, Phone, Trash2, Plus } from 'lucide-react'
 import Link from 'next/link'
 
 interface Hotel {
   id: string
-  name: string
-  category: string
+  hotelName: string
+  area: string
+  roomCount: number
+  hourlyRate: number
   address: string
   phone: string
-  area: string
-  displayOrder: number
-  isRecommended: boolean
+  checkInTime: string
+  checkOutTime: string
+  amenities: string[]
+  notes?: string
 }
 
 export default function HotelInfoPage() {
-  const [hotels, setHotels] = useState<Hotel[]>([
-    {
-      id: '1',
-      name: 'ホテル マリナーズコート東京',
-      category: 'ビジネスホテル',
-      address: '東京都品川区東品川4-12-8',
-      phone: '03-1234-5678',
-      area: '品川',
-      displayOrder: 1,
-      isRecommended: true,
-    },
-    {
-      id: '2',
-      name: '東京ベイホテル',
-      category: 'シティホテル',
-      address: '東京都港区台場1-9-1',
-      phone: '03-2345-6789',
-      area: 'お台場',
-      displayOrder: 2,
-      isRecommended: false,
-    },
-  ])
+  const [hotels, setHotels] = useState<Hotel[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
 
   const [newHotel, setNewHotel] = useState<Partial<Hotel>>({
-    name: '',
-    category: '',
+    hotelName: '',
+    area: '',
+    roomCount: 0,
+    hourlyRate: 0,
     address: '',
     phone: '',
-    area: '',
-    displayOrder: hotels.length + 1,
-    isRecommended: false,
+    checkInTime: '15:00',
+    checkOutTime: '10:00',
+    amenities: [],
+    notes: '',
   })
 
   const [showAddForm, setShowAddForm] = useState(false)
+  const [amenityInput, setAmenityInput] = useState('')
 
-  const handleAddHotel = () => {
-    if (newHotel.name && newHotel.category && newHotel.address) {
-      const hotel: Hotel = {
-        id: Date.now().toString(),
-        name: newHotel.name,
-        category: newHotel.category,
-        address: newHotel.address,
-        phone: newHotel.phone || '',
-        area: newHotel.area || '',
-        displayOrder: newHotel.displayOrder || hotels.length + 1,
-        isRecommended: newHotel.isRecommended || false,
-      }
-      setHotels([...hotels, hotel])
-      setNewHotel({
-        name: '',
-        category: '',
-        address: '',
-        phone: '',
-        area: '',
-        displayOrder: hotels.length + 2,
-        isRecommended: false,
+  useEffect(() => {
+    fetchHotels()
+  }, [])
+
+  const fetchHotels = async () => {
+    try {
+      const response = await fetch('/api/settings/hotel')
+      if (!response.ok) throw new Error('Failed to fetch hotels')
+
+      const data = await response.json()
+      setHotels(data)
+    } catch (error) {
+      console.error('Error fetching hotels:', error)
+      toast({
+        title: 'エラー',
+        description: 'ホテル情報の取得に失敗しました',
+        variant: 'destructive',
       })
-      setShowAddForm(false)
-      alert('ホテル情報を追加しました')
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleDeleteHotel = (id: string) => {
+  const handleAddHotel = async () => {
+    if (
+      newHotel.hotelName &&
+      newHotel.area &&
+      newHotel.address &&
+      newHotel.roomCount &&
+      newHotel.hourlyRate
+    ) {
+      setSaving(true)
+      try {
+        const response = await fetch('/api/settings/hotel', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newHotel),
+        })
+
+        if (!response.ok) throw new Error('Failed to add hotel')
+
+        const addedHotel = await response.json()
+        setHotels([...hotels, addedHotel])
+
+        setNewHotel({
+          hotelName: '',
+          area: '',
+          roomCount: 0,
+          hourlyRate: 0,
+          address: '',
+          phone: '',
+          checkInTime: '15:00',
+          checkOutTime: '10:00',
+          amenities: [],
+          notes: '',
+        })
+        setShowAddForm(false)
+
+        toast({
+          title: '成功',
+          description: 'ホテル情報を追加しました',
+        })
+      } catch (error) {
+        console.error('Error adding hotel:', error)
+        toast({
+          title: 'エラー',
+          description: 'ホテル情報の追加に失敗しました',
+          variant: 'destructive',
+        })
+      } finally {
+        setSaving(false)
+      }
+    } else {
+      toast({
+        title: 'エラー',
+        description: '必須項目を入力してください',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleDeleteHotel = async (id: string) => {
     if (confirm('このホテル情報を削除しますか？')) {
-      setHotels(hotels.filter((hotel) => hotel.id !== id))
+      try {
+        const response = await fetch(`/api/settings/hotel?id=${id}`, {
+          method: 'DELETE',
+        })
+
+        if (!response.ok) throw new Error('Failed to delete hotel')
+
+        setHotels(hotels.filter((hotel) => hotel.id !== id))
+
+        toast({
+          title: '成功',
+          description: 'ホテル情報を削除しました',
+        })
+      } catch (error) {
+        console.error('Error deleting hotel:', error)
+        toast({
+          title: 'エラー',
+          description: 'ホテル情報の削除に失敗しました',
+          variant: 'destructive',
+        })
+      }
     }
   }
 
-  const toggleRecommended = (id: string) => {
-    setHotels(
-      hotels.map((hotel) =>
-        hotel.id === id ? { ...hotel, isRecommended: !hotel.isRecommended } : hotel
-      )
-    )
+  const handleAddAmenity = () => {
+    if (amenityInput.trim()) {
+      setNewHotel({
+        ...newHotel,
+        amenities: [...(newHotel.amenities || []), amenityInput.trim()],
+      })
+      setAmenityInput('')
+    }
   }
 
-  const handleSave = () => {
-    console.log('Hotel info saved:', hotels)
-    alert('ホテル情報を保存しました')
+  const handleRemoveAmenity = (index: number) => {
+    setNewHotel({
+      ...newHotel,
+      amenities: newHotel.amenities?.filter((_, i) => i !== index) || [],
+    })
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <main className="p-8">
+          <div className="mx-auto max-w-6xl">
+            <div className="flex h-64 items-center justify-center">
+              <div className="text-center">
+                <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-emerald-600"></div>
+                <p className="text-gray-600">読み込み中...</p>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
   }
 
   return (
@@ -145,14 +232,12 @@ export default function HotelInfoPage() {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="mb-2 flex items-center gap-3">
-                            <h3 className="text-lg font-semibold">{hotel.name}</h3>
-                            <Badge variant="outline">{hotel.category}</Badge>
-                            {hotel.isRecommended && (
-                              <Badge className="bg-yellow-100 text-yellow-800">
-                                <Star className="mr-1 h-3 w-3" />
-                                おすすめ
-                              </Badge>
-                            )}
+                            <h3 className="text-lg font-semibold">{hotel.hotelName}</h3>
+                            <Badge variant="outline">{hotel.area}</Badge>
+                            <Badge variant="secondary">{hotel.roomCount}室</Badge>
+                            <Badge className="bg-emerald-100 text-emerald-800">
+                              ¥{hotel.hourlyRate.toLocaleString()}/時間
+                            </Badge>
                           </div>
                           <div className="space-y-1 text-sm text-gray-600">
                             <div className="flex items-center gap-2">
@@ -165,19 +250,25 @@ export default function HotelInfoPage() {
                                 {hotel.phone}
                               </div>
                             )}
-                            {hotel.area && <div className="text-sm">エリア: {hotel.area}</div>}
+                            <div className="text-sm">
+                              チェックイン: {hotel.checkInTime} / チェックアウト:{' '}
+                              {hotel.checkOutTime}
+                            </div>
+                            {hotel.amenities && hotel.amenities.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                {hotel.amenities.map((amenity, idx) => (
+                                  <Badge key={idx} variant="outline" className="text-xs">
+                                    {amenity}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                            {hotel.notes && (
+                              <div className="mt-2 text-sm text-gray-500">備考: {hotel.notes}</div>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => toggleRecommended(hotel.id)}
-                          >
-                            <Star
-                              className={`h-4 w-4 ${hotel.isRecommended ? 'fill-yellow-400 text-yellow-400' : ''}`}
-                            />
-                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
@@ -209,37 +300,78 @@ export default function HotelInfoPage() {
                       <Label htmlFor="hotelName">ホテル名 *</Label>
                       <Input
                         id="hotelName"
-                        value={newHotel.name || ''}
-                        onChange={(e) => setNewHotel({ ...newHotel, name: e.target.value })}
+                        value={newHotel.hotelName || ''}
+                        onChange={(e) => setNewHotel({ ...newHotel, hotelName: e.target.value })}
                         placeholder="ホテル名を入力"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="category">カテゴリ *</Label>
-                      <Input
-                        id="category"
-                        value={newHotel.category || ''}
-                        onChange={(e) => setNewHotel({ ...newHotel, category: e.target.value })}
-                        placeholder="ビジネスホテル、シティホテルなど"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="area">エリア</Label>
+                      <Label htmlFor="area">エリア *</Label>
                       <Input
                         id="area"
                         value={newHotel.area || ''}
                         onChange={(e) => setNewHotel({ ...newHotel, area: e.target.value })}
-                        placeholder="品川、新宿など"
+                        placeholder="池袋、新宿など"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="phone">電話番号</Label>
+                      <Label htmlFor="roomCount">客室数 *</Label>
+                      <Input
+                        id="roomCount"
+                        type="number"
+                        value={newHotel.roomCount || 0}
+                        onChange={(e) =>
+                          setNewHotel({ ...newHotel, roomCount: parseInt(e.target.value) || 0 })
+                        }
+                        placeholder="20"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="hourlyRate">時間料金 *</Label>
+                      <Input
+                        id="hourlyRate"
+                        type="number"
+                        value={newHotel.hourlyRate || 0}
+                        onChange={(e) =>
+                          setNewHotel({ ...newHotel, hourlyRate: parseInt(e.target.value) || 0 })
+                        }
+                        placeholder="3000"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">電話番号 *</Label>
                       <Input
                         id="phone"
                         value={newHotel.phone || ''}
                         onChange={(e) => setNewHotel({ ...newHotel, phone: e.target.value })}
                         placeholder="03-1234-5678"
                       />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="checkInTime">チェックイン</Label>
+                        <Input
+                          id="checkInTime"
+                          value={newHotel.checkInTime || '15:00'}
+                          onChange={(e) =>
+                            setNewHotel({ ...newHotel, checkInTime: e.target.value })
+                          }
+                          placeholder="15:00"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="checkOutTime">チェックアウト</Label>
+                        <Input
+                          id="checkOutTime"
+                          value={newHotel.checkOutTime || '10:00'}
+                          onChange={(e) =>
+                            setNewHotel({ ...newHotel, checkOutTime: e.target.value })
+                          }
+                          placeholder="10:00"
+                        />
+                      </div>
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -252,19 +384,45 @@ export default function HotelInfoPage() {
                       rows={2}
                     />
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="isRecommended"
-                        checked={newHotel.isRecommended || false}
-                        onChange={(e) =>
-                          setNewHotel({ ...newHotel, isRecommended: e.target.checked })
+                  <div className="space-y-2">
+                    <Label>アメニティ</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        value={amenityInput}
+                        onChange={(e) => setAmenityInput(e.target.value)}
+                        placeholder="無料Wi-Fi、アメニティ完備など"
+                        onKeyPress={(e) =>
+                          e.key === 'Enter' && (e.preventDefault(), handleAddAmenity())
                         }
-                        className="rounded"
                       />
-                      <Label htmlFor="isRecommended">おすすめホテルとして設定</Label>
+                      <Button type="button" onClick={handleAddAmenity} variant="outline">
+                        追加
+                      </Button>
                     </div>
+                    {newHotel.amenities && newHotel.amenities.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {newHotel.amenities.map((amenity, idx) => (
+                          <Badge
+                            key={idx}
+                            variant="secondary"
+                            className="cursor-pointer"
+                            onClick={() => handleRemoveAmenity(idx)}
+                          >
+                            {amenity} ×
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">備考</Label>
+                    <Textarea
+                      id="notes"
+                      value={newHotel.notes || ''}
+                      onChange={(e) => setNewHotel({ ...newHotel, notes: e.target.value })}
+                      placeholder="キャスト専用の入口ありなど"
+                      rows={2}
+                    />
                   </div>
                   <div className="flex justify-end gap-4">
                     <Button variant="outline" onClick={() => setShowAddForm(false)}>
@@ -273,22 +431,20 @@ export default function HotelInfoPage() {
                     <Button
                       onClick={handleAddHotel}
                       className="bg-emerald-600 hover:bg-emerald-700"
+                      disabled={saving}
                     >
-                      追加
+                      {saving ? '追加中...' : '追加'}
                     </Button>
                   </div>
                 </CardContent>
               </Card>
             )}
 
-            {/* 保存ボタン */}
-            <div className="flex justify-end gap-4">
+            {/* 戻るボタン */}
+            <div className="flex justify-end">
               <Link href="/admin/settings">
                 <Button variant="outline">戻る</Button>
               </Link>
-              <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700">
-                保存
-              </Button>
             </div>
           </div>
         </div>

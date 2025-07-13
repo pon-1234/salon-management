@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Header } from '@/components/header'
+import { toast } from '@/hooks/use-toast'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,30 +14,96 @@ import Link from 'next/link'
 
 export default function StoreInfoPage() {
   const [formData, setFormData] = useState({
-    storeName: '金の玉クラブ(池袋)',
-    address: '東京都豊島区池袋2-1-1',
-    phone: '03-1234-5678',
-    email: 'info@example.com',
-    website: 'https://example.com',
-    businessHours: '10:00 - 24:00',
-    description: '池袋エリアの高級メンズエステサロンです。',
-    zipCode: '171-0014',
-    prefecture: '東京都',
-    city: '豊島区',
-    building: '池袋ビル3F',
-    businessDays: '年中無休',
-    lastOrder: '23:30',
-    parkingInfo: '近隣にコインパーキングあり',
+    storeName: '',
+    address: '',
+    phone: '',
+    email: '',
+    website: '',
+    businessHours: '',
+    description: '',
+    zipCode: '',
+    prefecture: '',
+    city: '',
+    building: '',
+    businessDays: '',
+    lastOrder: '',
+    parkingInfo: '',
   })
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    fetchStoreSettings()
+  }, [])
+
+  const fetchStoreSettings = async () => {
+    try {
+      const response = await fetch('/api/settings/store')
+      if (!response.ok) throw new Error('Failed to fetch store settings')
+
+      const data = await response.json()
+      setFormData(data)
+    } catch (error) {
+      console.error('Error fetching store settings:', error)
+      toast({
+        title: 'エラー',
+        description: '店舗情報の取得に失敗しました',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const handleSave = () => {
-    // TODO: 実際の保存処理を実装
-    console.log('Store info saved:', formData)
-    alert('店舗情報を保存しました')
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const response = await fetch('/api/settings/store', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+
+      if (!response.ok) throw new Error('Failed to save store settings')
+
+      toast({
+        title: '成功',
+        description: '店舗情報を保存しました',
+      })
+    } catch (error) {
+      console.error('Error saving store settings:', error)
+      toast({
+        title: 'エラー',
+        description: '店舗情報の保存に失敗しました',
+        variant: 'destructive',
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <main className="p-8">
+          <div className="mx-auto max-w-4xl">
+            <div className="flex h-64 items-center justify-center">
+              <div className="text-center">
+                <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-emerald-600"></div>
+                <p className="text-gray-600">読み込み中...</p>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
   }
 
   return (
@@ -220,8 +287,12 @@ export default function StoreInfoPage() {
               <Link href="/admin/settings">
                 <Button variant="outline">キャンセル</Button>
               </Link>
-              <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700">
-                保存
+              <Button
+                onClick={handleSave}
+                className="bg-emerald-600 hover:bg-emerald-700"
+                disabled={saving}
+              >
+                {saving ? '保存中...' : '保存'}
               </Button>
             </div>
           </div>

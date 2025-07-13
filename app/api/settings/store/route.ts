@@ -1,0 +1,89 @@
+/**
+ * @design_doc   Store settings API endpoints
+ * @related_to   Store settings page
+ * @known_issues Store data is stored in memory (not persisted to database)
+ */
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth/config'
+import { z } from 'zod'
+
+// In-memory storage for demo purposes
+// In production, this should be stored in database
+let storeSettings = {
+  storeName: '金の玉クラブ(池袋)',
+  address: '東京都豊島区池袋2-1-1',
+  phone: '03-1234-5678',
+  email: 'info@example.com',
+  website: 'https://example.com',
+  businessHours: '10:00 - 24:00',
+  description: '池袋エリアの高級メンズエステサロンです。',
+  zipCode: '171-0014',
+  prefecture: '東京都',
+  city: '豊島区',
+  building: '池袋ビル3F',
+  businessDays: '年中無休',
+  lastOrder: '23:30',
+  parkingInfo: '近隣にコインパーキングあり',
+}
+
+// Validation schema
+const storeSettingsSchema = z.object({
+  storeName: z.string().min(1),
+  address: z.string().min(1),
+  phone: z.string().min(1),
+  email: z.string().email(),
+  website: z.string().url().optional(),
+  businessHours: z.string(),
+  description: z.string(),
+  zipCode: z.string(),
+  prefecture: z.string(),
+  city: z.string(),
+  building: z.string().optional(),
+  businessDays: z.string(),
+  lastOrder: z.string(),
+  parkingInfo: z.string().optional(),
+})
+
+async function requireAdmin() {
+  const session = await getServerSession(authOptions)
+
+  if (!session || session.user.role !== 'admin') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  return null
+}
+
+export async function GET(request: NextRequest) {
+  const authError = await requireAdmin()
+  if (authError) return authError
+
+  return NextResponse.json(storeSettings)
+}
+
+export async function PUT(request: NextRequest) {
+  const authError = await requireAdmin()
+  if (authError) return authError
+
+  try {
+    const body = await request.json()
+
+    // Validate request body
+    const validatedData = storeSettingsSchema.parse(body)
+
+    // Update settings
+    storeSettings = validatedData
+
+    return NextResponse.json(storeSettings)
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Validation error', details: error.errors },
+        { status: 400 }
+      )
+    }
+
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
