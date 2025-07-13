@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Customer {
@@ -22,6 +23,7 @@ model Customer {
   ngCasts      NgCastEntry[]
   reservations Reservation[]
   reviews      Review[]
+  messages     Message[]
 }
 
 model Cast {
@@ -137,42 +139,18 @@ model Admin {
   updatedAt   DateTime  @updatedAt
 }
 
-model PaymentIntent {
-  id             String                @id @default(cuid())
-  providerId     String                @unique
-  provider       String
-  amount         Int
-  currency       String
-  status         String
-  paymentMethod  String
-  clientSecret   String
-  metadata       Json?
-  processedAt    DateTime?
-  errorMessage   String?
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
-  transactions   PaymentTransaction[]
-}
-
-model PaymentTransaction {
-  id                    String        @id @default(cuid())
-  paymentIntentId       String?
-  intentId              String?       @unique
-  providerTransactionId String?       @unique
-  reservationId         String        @unique
-  customerId            String
-  amount                Int
-  currency              String
-  provider              String
-  paymentMethod         String
-  status                String
-  stripePaymentId       String?       @unique
-  refundedAt            DateTime?
-  refundAmount          Int?
-  metadata              Json?
-  processedAt           DateTime?
-  errorMessage          String?
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
-  paymentIntent         PaymentIntent? @relation(fields: [paymentIntentId], references: [id])
+model Message {
+  id                String   @id @default(cuid())
+  customerId        String
+  sender            String   // 'customer' or 'staff'
+  content           String
+  timestamp         DateTime
+  readStatus        String   @default("未読") // '未読' or '既読'
+  isReservationInfo Boolean  @default(false)
+  reservationInfo   Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  customer          Customer @relation(fields: [customerId], references: [id])
+  
+  @@index([customerId, timestamp])
 }
