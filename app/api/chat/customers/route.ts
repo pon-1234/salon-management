@@ -4,9 +4,10 @@
  * @known_issues None
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth/config'
 import { db as prisma } from '@/lib/db'
+import { requireAdmin } from '@/lib/auth/utils'
+import { handleApiError } from '@/lib/api/errors'
+import { SuccessResponses } from '@/lib/api/responses'
 
 // Customer type for chat
 interface ChatCustomer {
@@ -46,16 +47,6 @@ function formatTimestamp(timestamp: Date | string): string {
       minute: '2-digit',
     })
   }
-}
-
-async function requireAdmin() {
-  const session = await getServerSession(authOptions)
-
-  if (!session || session.user.role !== 'admin') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  return null
 }
 
 // GET /api/chat/customers - Get chat customer list
@@ -156,9 +147,8 @@ export async function GET(request: NextRequest) {
       return new Date(bTime).getTime() - new Date(aTime).getTime()
     })
 
-    return NextResponse.json(chatCustomers)
+    return SuccessResponses.ok(chatCustomers)
   } catch (error) {
-    console.error('Error fetching chat customers:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error)
   }
 }

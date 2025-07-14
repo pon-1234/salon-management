@@ -4,11 +4,12 @@
  * @known_issues None currently
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
 import logger from '@/lib/logger'
 import { z } from 'zod'
+import { requireAdmin } from '@/lib/auth/utils'
+import { handleApiError } from '@/lib/api/errors'
+import { SuccessResponses } from '@/lib/api/responses'
 
 // Validation schema for cast data
 const castSchema = z.object({
@@ -31,17 +32,6 @@ const castSchema = z.object({
   workStatus: z.string().optional().default('出勤'),
   availableOptions: z.array(z.string()).optional().default([]),
 })
-
-// Helper function to check admin permissions
-async function requireAdmin() {
-  const session = await getServerSession(authOptions)
-
-  if (!session || session.user.role !== 'admin') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  return null
-}
 
 export async function GET(request: NextRequest) {
   try {
