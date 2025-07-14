@@ -154,3 +154,32 @@ model Message {
   
   @@index([customerId, timestamp])
 }
+
+model PaymentIntent {
+  id                  String              @id @default(cuid())
+  stripeIntentId      String              @unique
+  amount              Int
+  currency            String              @default("jpy")
+  status              String              // e.g., 'requires_payment_method', 'succeeded', 'canceled'
+  customerId          String?
+  metadata            Json?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  paymentTransactions PaymentTransaction[]
+}
+
+model PaymentTransaction {
+  id              String         @id @default(cuid())
+  paymentIntentId String?
+  amount          Int
+  currency        String         @default("jpy")
+  status          String         // e.g., 'pending', 'completed', 'failed', 'refunded'
+  type            String         // e.g., 'payment', 'refund'
+  customerId      String?
+  reservationId   String?
+  stripePaymentId String?
+  metadata        Json?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  paymentIntent   PaymentIntent? @relation(fields: [paymentIntentId], references: [id])
+}

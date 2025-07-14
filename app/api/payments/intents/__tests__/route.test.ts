@@ -5,8 +5,25 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { POST, PATCH } from '../route'
 import { NextRequest } from 'next/server'
+
+// Set up environment variables before importing route
+process.env.STRIPE_SECRET_KEY = 'sk_test_dummy'
+process.env.STRIPE_PUBLISHABLE_KEY = 'pk_test_dummy'
+
+// Mock StripeProvider before importing route
+vi.mock('@/lib/payment/providers/stripe', () => ({
+  StripeProvider: vi.fn().mockImplementation(() => ({
+    name: 'stripe',
+    supportedMethods: ['card'],
+    processPayment: vi.fn(),
+    createPaymentIntent: vi.fn(),
+    confirmPaymentIntent: vi.fn(),
+    refundPayment: vi.fn(),
+    getPaymentStatus: vi.fn(),
+    validateConfig: vi.fn(),
+  })),
+}))
 
 // Mock PaymentService
 vi.mock('@/lib/payment/service', () => ({
@@ -15,6 +32,9 @@ vi.mock('@/lib/payment/service', () => ({
     confirmPaymentIntent: vi.fn(),
   })),
 }))
+
+// Import route after mocks are set up
+const { POST, PATCH } = await import('../route')
 
 const mockPaymentService = {
   createPaymentIntent: vi.fn(),

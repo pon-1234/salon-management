@@ -7,6 +7,27 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import { GET, POST, PUT, DELETE } from './route'
 import { db } from '@/lib/db'
+import { getServerSession } from 'next-auth'
+
+// Mock next-auth
+vi.mock('next-auth', () => ({
+  getServerSession: vi.fn(),
+}))
+
+// Mock checkCastAvailability
+vi.mock('./availability/route', () => ({
+  checkCastAvailability: vi.fn(),
+}))
+
+// Mock logger
+vi.mock('@/lib/logger', () => ({
+  default: {
+    error: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+  },
+}))
 
 // Mock the database
 vi.mock('@/lib/db', () => ({
@@ -63,6 +84,8 @@ describe('POST /api/reservation - Authentication', () => {
   })
 
   it('should require authentication', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce(null)
+    
     const request = new NextRequest('http://localhost:3000/api/reservation', {
       method: 'POST',
       body: JSON.stringify({
