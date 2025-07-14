@@ -38,7 +38,9 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
       if (!response.ok) throw new Error('Failed to fetch messages')
 
       const data = await response.json()
-      setMessages(data)
+      // SuccessResponse形式からデータを取得
+      const messageData = data.data || data
+      setMessages(Array.isArray(messageData) ? messageData : [])
     } catch (error) {
       console.error('Error fetching messages:', error)
       toast({
@@ -59,7 +61,9 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
       if (!response.ok) throw new Error('Failed to fetch customer')
 
       const data = await response.json()
-      setCustomer(data)
+      // SuccessResponse形式からデータを取得
+      const customerData = data.data || data
+      setCustomer(customerData)
     } catch (error) {
       console.error('Error fetching customer:', error)
     }

@@ -30,7 +30,9 @@ export function CustomerList({ selectedCustomerId, onSelectCustomer }: CustomerL
       if (!response.ok) throw new Error('Failed to fetch customers')
 
       const data = await response.json()
-      setCustomers(data)
+      // SuccessResponse形式からデータを取得
+      const customerData = data.data || data
+      setCustomers(Array.isArray(customerData) ? customerData : [])
     } catch (error) {
       console.error('Error fetching customers:', error)
       toast({
