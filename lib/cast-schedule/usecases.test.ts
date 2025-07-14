@@ -4,6 +4,7 @@ import { CastScheduleRepositoryImpl } from './repository-impl'
 import type { CastRepository } from '../cast/repository'
 import type { Cast } from '../cast/types'
 import { generateId } from '../shared'
+import { startOfWeek } from 'date-fns'
 
 // Mock CastRepository implementation for testing
 class MockCastRepository implements CastRepository {
@@ -541,6 +542,217 @@ describe('CastScheduleUseCases', () => {
         '05:00'
       )
       expect(noConflict).toBe(false)
+    })
+  })
+
+  describe('getWeeklySchedule API integration', () => {
+    beforeEach(() => {
+      // Reset to use CastScheduleUseCases without repositories for API calls
+      useCases = new CastScheduleUseCases()
+      vi.restoreAllMocks()
+    })
+
+    it('should fetch and transform cast and schedule data from API', async () => {
+      const testDate = new Date('2024-01-15') // A Monday
+      const weekStart = startOfWeek(testDate, { weekStartsOn: 1 })
+
+      // Mock cast data
+      const mockCasts = [
+        {
+          id: '1',
+          name: 'Test Cast 1',
+          age: 25,
+          image: '/test1.jpg',
+        },
+        {
+          id: '2',
+          name: 'Test Cast 2',
+          age: 28,
+          image: '/test2.jpg',
+        },
+      ]
+
+      // Mock schedule data
+      const mockSchedules = [
+        {
+          id: 'sched1',
+          castId: '1',
+          date: '2024-01-15T00:00:00.000Z',
+          startTime: '2024-01-15T10:00:00.000Z',
+          endTime: '2024-01-15T18:00:00.000Z',
+          isAvailable: true,
+        },
+        {
+          id: 'sched2',
+          castId: '1',
+          date: '2024-01-17T00:00:00.000Z',
+          startTime: '2024-01-17T14:00:00.000Z',
+          endTime: '2024-01-17T22:00:00.000Z',
+          isAvailable: true,
+        },
+        {
+          id: 'sched3',
+          castId: '2',
+          date: '2024-01-16T00:00:00.000Z',
+          startTime: '2024-01-16T12:00:00.000Z',
+          endTime: '2024-01-16T20:00:00.000Z',
+          isAvailable: true,
+        },
+      ]
+
+      // Mock fetch
+      global.fetch = vi.fn()
+      ;(global.fetch as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockCasts,
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockSchedules,
+        })
+
+      const result = await useCases.getWeeklySchedule({ date: testDate, castFilter: 'all' })
+
+      // Verify API calls
+      expect(fetch).toHaveBeenCalledTimes(2)
+      expect(fetch).toHaveBeenCalledWith('/api/cast')
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/cast-schedule?startDate=')
+      )
+
+      // Verify result structure
+      expect(result).toHaveProperty('startDate')
+      expect(result).toHaveProperty('endDate')
+      expect(result).toHaveProperty('entries')
+      expect(result).toHaveProperty('stats')
+
+      // Verify entries
+      expect(result.entries).toHaveLength(2)
+      
+      const cast1Entry = result.entries.find(e => e.castId === '1')
+      expect(cast1Entry).toBeDefined()
+      expect(cast1Entry?.name).toBe('Test Cast 1')
+      expect(cast1Entry?.schedule['2024-01-15']).toEqual({
+        type: '出勤予定',
+        startTime: '10:00',
+        endTime: '18:00',
+      })
+      expect(cast1Entry?.schedule['2024-01-16']).toEqual({ type: '休日' })
+      expect(cast1Entry?.schedule['2024-01-17']).toEqual({
+        type: '出勤予定',
+        startTime: '14:00',
+        endTime: '22:00',
+      })
+
+      // Verify stats
+      expect(result.stats.totalCast).toBe(2)
+      expect(result.stats.workingCast).toBe(2)
+    })
+
+    it('should handle API errors gracefully and fallback to mock data', async () => {
+      const testDate = new Date('2024-01-15')
+
+      // Mock fetch to fail
+      global.fetch = vi.fn().mockRejectedValueOnce(new Error('Network error'))
+
+      const result = await useCases.getWeeklySchedule({ date: testDate, castFilter: 'all' })
+
+      // Should fallback to mock data
+      expect(result).toBeDefined()
+      expect(result.entries).toBeDefined()
+      expect(result.entries.length).toBeGreaterThan(0)
+    })
+
+    it('should handle empty data correctly', async () => {
+      const testDate = new Date('2024-01-15')
+
+      // Mock empty responses
+      global.fetch = vi.fn()
+      ;(global.fetch as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => [],
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => [],
+        })
+
+      const result = await useCases.getWeeklySchedule({ date: testDate, castFilter: 'all' })
+
+      expect(result.entries).toHaveLength(0)
+      expect(result.stats.totalCast).toBe(0)
+      expect(result.stats.workingCast).toBe(0)
+      expect(result.stats.averageWorkingHours).toBe(0)
+      expect(result.stats.averageWorkingCast).toBe(0)
+    })
+
+    it('should calculate statistics correctly', async () => {
+      const testDate = new Date('2024-01-15')
+
+      const mockCasts = [
+        { id: '1', name: 'Cast 1', age: 25, image: '/test1.jpg' },
+        { id: '2', name: 'Cast 2', age: 28, image: '/test2.jpg' },
+        { id: '3', name: 'Cast 3', age: 30, image: '/test3.jpg' },
+      ]
+
+      const mockSchedules = [
+        // Cast 1: Works 3 days, 8 hours each
+        {
+          castId: '1',
+          date: '2024-01-15T00:00:00.000Z',
+          startTime: '2024-01-15T10:00:00.000Z',
+          endTime: '2024-01-15T18:00:00.000Z',
+        },
+        {
+          castId: '1',
+          date: '2024-01-17T00:00:00.000Z',
+          startTime: '2024-01-17T10:00:00.000Z',
+          endTime: '2024-01-17T18:00:00.000Z',
+        },
+        {
+          castId: '1',
+          date: '2024-01-19T00:00:00.000Z',
+          startTime: '2024-01-19T10:00:00.000Z',
+          endTime: '2024-01-19T18:00:00.000Z',
+        },
+        // Cast 2: Works 2 days, overnight shift
+        {
+          castId: '2',
+          date: '2024-01-16T00:00:00.000Z',
+          startTime: '2024-01-16T20:00:00.000Z',
+          endTime: '2024-01-16T02:00:00.000Z', // Next day
+        },
+        {
+          castId: '2',
+          date: '2024-01-18T00:00:00.000Z',
+          startTime: '2024-01-18T20:00:00.000Z',
+          endTime: '2024-01-18T03:00:00.000Z', // Next day
+        },
+        // Cast 3: No schedule (holiday all week)
+      ]
+
+      global.fetch = vi.fn()
+      ;(global.fetch as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockCasts,
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockSchedules,
+        })
+
+      const result = await useCases.getWeeklySchedule({ date: testDate, castFilter: 'all' })
+
+      expect(result.stats.totalCast).toBe(3)
+      expect(result.stats.workingCast).toBe(2) // Only Cast 1 and 2 work
+      // Cast 1: 3 days * 8 hours = 24 hours
+      // Cast 2: 6 hours + 7 hours = 13 hours
+      // Average: (24 + 13) / 2 = 18.5 hours
+      expect(result.stats.averageWorkingHours).toBeCloseTo(18.5, 1)
+      expect(result.stats.averageWorkingCast).toBeCloseTo(0.7, 1) // 5 working days / 7 days
     })
   })
 })

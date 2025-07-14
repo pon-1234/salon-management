@@ -101,11 +101,16 @@ export default function WeeklySchedulePage() {
             const existingSchedules = await fetch(
               `/api/cast-schedule?castId=${castId}&date=${dateStr}`
             )
+            
+            if (!existingSchedules.ok) {
+              throw new Error(`Failed to check existing schedules: ${existingSchedules.statusText}`)
+            }
+            
             const existing = await existingSchedules.json()
 
             if (existing.length > 0) {
               // Update existing schedule
-              await fetch('/api/cast-schedule', {
+              const updateResponse = await fetch('/api/cast-schedule', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -115,9 +120,13 @@ export default function WeeklySchedulePage() {
                   isAvailable: true,
                 }),
               })
+              
+              if (!updateResponse.ok) {
+                throw new Error(`Failed to update schedule: ${updateResponse.statusText}`)
+              }
             } else {
               // Create new schedule
-              await fetch('/api/cast-schedule', {
+              const createResponse = await fetch('/api/cast-schedule', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -128,18 +137,31 @@ export default function WeeklySchedulePage() {
                   isAvailable: true,
                 }),
               })
+              
+              if (!createResponse.ok) {
+                throw new Error(`Failed to create schedule: ${createResponse.statusText}`)
+              }
             }
           } else if (daySchedule.status === '休日') {
             // Delete existing schedule if any
             const existingSchedules = await fetch(
               `/api/cast-schedule?castId=${castId}&date=${dateStr}`
             )
+            
+            if (!existingSchedules.ok) {
+              throw new Error(`Failed to check existing schedules: ${existingSchedules.statusText}`)
+            }
+            
             const existing = await existingSchedules.json()
 
             if (existing.length > 0) {
-              await fetch(`/api/cast-schedule?id=${existing[0].id}`, {
+              const deleteResponse = await fetch(`/api/cast-schedule?id=${existing[0].id}`, {
                 method: 'DELETE',
               })
+              
+              if (!deleteResponse.ok) {
+                throw new Error(`Failed to delete schedule: ${deleteResponse.statusText}`)
+              }
             }
           }
         }
@@ -153,12 +175,12 @@ export default function WeeklySchedulePage() {
       })
 
       // Refresh the schedule
-      handleRefresh()
+      await handleRefresh()
     } catch (error) {
       console.error('Failed to save schedule:', error)
       toast({
         title: 'エラー',
-        description: 'スケジュールの保存に失敗しました',
+        description: error instanceof Error ? error.message : 'スケジュールの保存に失敗しました',
         variant: 'destructive',
       })
     }
