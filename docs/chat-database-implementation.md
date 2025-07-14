@@ -23,12 +23,13 @@ model Message {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   customer          Customer @relation(fields: [customerId], references: [id])
-  
+
   @@index([customerId, timestamp])
 }
 ```
 
 Also updated the `Customer` model to include the relation:
+
 ```prisma
 messages     Message[]
 ```
@@ -36,6 +37,7 @@ messages     Message[]
 ### 2. API Endpoint Updates
 
 #### `/app/api/chat/route.ts`
+
 - Replaced in-memory `messages` array with Prisma database calls
 - Updated GET endpoint to fetch messages from database with proper ordering
 - Updated POST endpoint to create messages in database
@@ -43,6 +45,7 @@ messages     Message[]
 - Added proper error handling for database operations
 
 #### `/app/api/chat/customers/route.ts`
+
 - Replaced mock customer data with database queries
 - Implemented logic to fetch last message and unread count for each customer
 - Added timestamp formatting for display (e.g., "10:32", "昨日", "2日前")
