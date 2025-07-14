@@ -142,6 +142,7 @@ export async function PUT(request: NextRequest) {
 
     hotelSettings[hotelIndex] = {
       ...validatedData,
+      id: id,
       notes: validatedData.notes || '',
     }
 
