@@ -3,6 +3,16 @@
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Phone,
   MapPin,
@@ -16,26 +26,57 @@ import {
 } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { ModificationHistoryTable } from '@/components/reservation/modification-history-table'
 import { getModificationHistory, getModificationAlerts } from '@/lib/modification-history/data'
 import { ReservationData } from '@/lib/types/reservation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 
 interface ReservationDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   reservation: ReservationData | null | undefined
+  onSave?: (data: Partial<ReservationData>) => void
 }
 
-export function ReservationDialog({ open, onOpenChange, reservation }: ReservationDialogProps) {
+export function ReservationDialog({ open, onOpenChange, reservation, onSave }: ReservationDialogProps) {
   const [activeTab, setActiveTab] = useState('overview')
   const [isEditMode, setIsEditMode] = useState(false)
+  const [formData, setFormData] = useState<Partial<ReservationData>>({})
+  const [statusChangeDialog, setStatusChangeDialog] = useState<{
+    open: boolean
+    newStatus: string
+  }>({ open: false, newStatus: '' })
 
   if (!reservation) return null
 
   const modificationHistory = getModificationHistory(reservation.id)
   const modificationAlerts = getModificationAlerts(reservation.id)
+
+  // Initialize form data when entering edit mode
+  useEffect(() => {
+    if (isEditMode && reservation) {
+      setFormData({
+        date: reservation.date,
+        time: reservation.time,
+        staff: reservation.staff,
+        course: reservation.course,
+        location: reservation.location,
+        options: reservation.options,
+        bookingStatus: reservation.bookingStatus,
+      })
+    }
+  }, [isEditMode, reservation])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -109,7 +150,12 @@ export function ReservationDialog({ open, onOpenChange, reservation }: Reservati
                   <Button
                     size="sm"
                     className="bg-green-600 hover:bg-green-700"
-                    onClick={() => setIsEditMode(false)}
+                    onClick={() => {
+                      if (onSave) {
+                        onSave(formData)
+                      }
+                      setIsEditMode(false)
+                    }}
                   >
                     <Check className="h-4 w-4" />
                     保存
@@ -146,10 +192,47 @@ export function ReservationDialog({ open, onOpenChange, reservation }: Reservati
                     <Calendar className="mt-0.5 h-5 w-5 text-gray-600" />
                     <div className="flex-1">
                       <p className="text-sm text-gray-600">予約日時</p>
-                      <p className="font-medium">
-                        {reservation?.date} {reservation?.time}
-                      </p>
-                      <p className="text-sm text-gray-500">130分コース</p>
+                      {isEditMode ? (
+                        <div className="space-y-2">
+                          <div>
+                            <Label htmlFor="date" className="text-xs">予約日</Label>
+                            <Input
+                              id="date"
+                              type="date"
+                              value={formData.date || ''}
+                              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                              className="mt-1 h-8"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="start-time" className="text-xs">開始時間</Label>
+                            <Input
+                              id="start-time"
+                              type="time"
+                              value={formData.time || ''}
+                              onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                              className="mt-1 h-8"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="end-time" className="text-xs">終了時間</Label>
+                            <Input
+                              id="end-time"
+                              type="time"
+                              value={formData.endTime || ''}
+                              onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                              className="mt-1 h-8"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="font-medium">
+                            {reservation?.date} {reservation?.time}
+                          </p>
+                          <p className="text-sm text-gray-500">130分コース</p>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -160,8 +243,30 @@ export function ReservationDialog({ open, onOpenChange, reservation }: Reservati
                     <MapPin className="mt-0.5 h-5 w-5 text-gray-600" />
                     <div className="flex-1">
                       <p className="text-sm text-gray-600">場所</p>
-                      <p className="font-medium">アパホテル</p>
-                      <p className="text-sm text-gray-500">東京エリア</p>
+                      {isEditMode ? (
+                        <div>
+                          <Label htmlFor="location" className="text-xs">場所</Label>
+                          <Select
+                            value={formData.location || ''}
+                            onValueChange={(value) => setFormData({ ...formData, location: value })}
+                          >
+                            <SelectTrigger id="location" className="mt-1 h-8">
+                              <SelectValue placeholder="場所を選択" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="アパホテル">アパホテル</SelectItem>
+                              <SelectItem value="東横イン">東横イン</SelectItem>
+                              <SelectItem value="ルートイン">ルートイン</SelectItem>
+                              <SelectItem value="その他">その他</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="font-medium">{reservation?.location || 'アパホテル'}</p>
+                          <p className="text-sm text-gray-500">東京エリア</p>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -202,13 +307,32 @@ export function ReservationDialog({ open, onOpenChange, reservation }: Reservati
               {/* キャスト情報 */}
               <div className="rounded-lg border bg-white p-4">
                 <h3 className="mb-3 font-medium">担当キャスト</h3>
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-full bg-gray-200" />
+                {isEditMode ? (
                   <div>
-                    <p className="font-medium">{reservation?.staff || 'キャスト未定'}</p>
-                    <p className="text-sm text-gray-600">指名料: ¥3,000</p>
+                    <Label htmlFor="cast" className="text-sm">キャスト</Label>
+                    <Select
+                      value={formData.staff || ''}
+                      onValueChange={(value) => setFormData({ ...formData, staff: value })}
+                    >
+                      <SelectTrigger id="cast" className="mt-1">
+                        <SelectValue placeholder="キャストを選択" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="山田花子">山田花子</SelectItem>
+                        <SelectItem value="佐藤太郎">佐藤太郎</SelectItem>
+                        <SelectItem value="鈴木美恵">鈴木美恵</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-full bg-gray-200" />
+                    <div>
+                      <p className="font-medium">{reservation?.staff || 'キャスト未定'}</p>
+                      <p className="text-sm text-gray-600">指名料: ¥3,000</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* 連絡先 */}
@@ -261,14 +385,79 @@ export function ReservationDialog({ open, onOpenChange, reservation }: Reservati
                 <div className="space-y-3 text-sm">
                   <div>
                     <p className="text-gray-600">コース</p>
-                    <p className="font-medium">イベントコース（税込）130分</p>
+                    {isEditMode ? (
+                      <div className="mt-1">
+                        <Label htmlFor="course" className="text-xs">コース</Label>
+                        <Select
+                          value={formData.course || ''}
+                          onValueChange={(value) => setFormData({ ...formData, course: value })}
+                        >
+                          <SelectTrigger id="course" className="mt-1">
+                            <SelectValue placeholder="コースを選択" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="スタンダードコース">スタンダードコース</SelectItem>
+                            <SelectItem value="イベントコース（税込）130分">イベントコース（税込）130分</SelectItem>
+                            <SelectItem value="プレミアムコース">プレミアムコース</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ) : (
+                      <p className="font-medium">{reservation?.course || 'イベントコース（税込）130分'}</p>
+                    )}
                   </div>
                   <div>
                     <p className="text-gray-600">オプション</p>
-                    <ul className="mt-1 space-y-1">
-                      <li className="font-medium">• ネックトリートメント</li>
-                      <li className="font-medium">• ホットストーン</li>
-                    </ul>
+                    {isEditMode ? (
+                      <div className="mt-2 space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="neck-treatment"
+                            checked={formData.options?.['ネックトリートメント'] || false}
+                            onCheckedChange={(checked) =>
+                              setFormData({
+                                ...formData,
+                                options: {
+                                  ...formData.options,
+                                  ['ネックトリートメント']: checked as boolean,
+                                },
+                              })
+                            }
+                          />
+                          <Label htmlFor="neck-treatment" className="text-sm font-normal">
+                            ネックトリートメント
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="hot-stone"
+                            checked={formData.options?.['ホットストーン'] || false}
+                            onCheckedChange={(checked) =>
+                              setFormData({
+                                ...formData,
+                                options: {
+                                  ...formData.options,
+                                  ['ホットストーン']: checked as boolean,
+                                },
+                              })
+                            }
+                          />
+                          <Label htmlFor="hot-stone" className="text-sm font-normal">
+                            ホットストーン
+                          </Label>
+                        </div>
+                      </div>
+                    ) : (
+                      <ul className="mt-1 space-y-1">
+                        {Object.entries(reservation?.options || {})
+                          .filter(([_, value]) => value)
+                          .map(([key]) => (
+                            <li key={key} className="font-medium">
+                              • {key}
+                            </li>
+                          ))}
+                      </ul>
+                    )}
                   </div>
                 </div>
               </div>
@@ -381,6 +570,22 @@ export function ReservationDialog({ open, onOpenChange, reservation }: Reservati
                   </div>
                 </div>
               )}
+              
+              {/* 確定済み予約の修正ボタン */}
+              {reservation?.bookingStatus === 'confirmed' && !isEditMode && (
+                <div className="rounded-lg border bg-white p-4">
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => {
+                      // TODO: Implement modification flow
+                      console.log('Modify reservation')
+                    }}
+                  >
+                    予約修正
+                  </Button>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="history" className="p-4">
@@ -398,30 +603,34 @@ export function ReservationDialog({ open, onOpenChange, reservation }: Reservati
             <p className="mb-2 text-xs text-gray-600">ステータスを変更:</p>
             <div className="flex gap-2">
               <Button
-                variant={reservation?.bookingStatus === 'tentative' ? 'default' : 'outline'}
+                variant={formData.bookingStatus === 'tentative' ? 'default' : 'outline'}
                 size="sm"
                 className="flex-1"
+                onClick={() => setStatusChangeDialog({ open: true, newStatus: 'tentative' })}
               >
                 仮予約
               </Button>
               <Button
-                variant={reservation?.bookingStatus === 'confirmed' ? 'default' : 'outline'}
+                variant={formData.bookingStatus === 'confirmed' ? 'default' : 'outline'}
                 size="sm"
                 className="flex-1"
+                onClick={() => setStatusChangeDialog({ open: true, newStatus: 'confirmed' })}
               >
                 確定
               </Button>
               <Button
-                variant={reservation?.bookingStatus === 'completed' ? 'default' : 'outline'}
+                variant={formData.bookingStatus === 'completed' ? 'default' : 'outline'}
                 size="sm"
                 className="flex-1"
+                onClick={() => setStatusChangeDialog({ open: true, newStatus: 'completed' })}
               >
                 完了
               </Button>
               <Button
-                variant={reservation?.bookingStatus === 'cancelled' ? 'destructive' : 'outline'}
+                variant={formData.bookingStatus === 'cancelled' ? 'destructive' : 'outline'}
                 size="sm"
                 className="flex-1 text-red-600 hover:text-red-700"
+                onClick={() => setStatusChangeDialog({ open: true, newStatus: 'cancelled' })}
               >
                 キャンセル
               </Button>
@@ -429,6 +638,32 @@ export function ReservationDialog({ open, onOpenChange, reservation }: Reservati
           </div>
         )}
       </DialogContent>
+
+      {/* ステータス変更確認ダイアログ */}
+      <AlertDialog
+        open={statusChangeDialog.open}
+        onOpenChange={(open) => setStatusChangeDialog({ ...statusChangeDialog, open })}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ステータス変更の確認</AlertDialogTitle>
+            <AlertDialogDescription>
+              ステータスを「{getStatusText(statusChangeDialog.newStatus)}」に変更しますか？
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>キャンセル</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setFormData({ ...formData, bookingStatus: statusChangeDialog.newStatus })
+                setStatusChangeDialog({ open: false, newStatus: '' })
+              }}
+            >
+              変更する
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   )
 }
