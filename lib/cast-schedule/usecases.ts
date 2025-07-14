@@ -21,6 +21,18 @@ import { isTimeOverlapping } from './utils'
 import { UnauthorizedScheduleOperationError } from './errors'
 import { schedulePermissions } from './permissions'
 
+// Utility function for parsing time from ISO string
+function parseTimeFromISO(isoString: string): string {
+  try {
+    const date = new Date(isoString)
+    const hours = date.getUTCHours().toString().padStart(2, '0')
+    const minutes = date.getUTCMinutes().toString().padStart(2, '0')
+    return `${hours}:${minutes}`
+  } catch {
+    return '00:00'
+  }
+}
+
 export class CastScheduleUseCases {
   constructor(
     private scheduleRepository?: CastScheduleRepository,
@@ -300,10 +312,9 @@ export class CastScheduleUseCases {
         })
         
         if (daySchedule) {
-          // Parse the times and extract hours/minutes
-          // The times from DB are in UTC, but we want to display them as-is
-          const startTimeStr = daySchedule.startTime.split('T')[1]?.substring(0, 5) || '00:00'
-          const endTimeStr = daySchedule.endTime.split('T')[1]?.substring(0, 5) || '00:00'
+          // Parse times using utility function
+          const startTimeStr = parseTimeFromISO(daySchedule.startTime)
+          const endTimeStr = parseTimeFromISO(daySchedule.endTime)
           
           weekSchedule[dateStr] = {
             type: '出勤予定',

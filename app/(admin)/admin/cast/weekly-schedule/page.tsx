@@ -87,97 +87,72 @@ export default function WeeklySchedulePage() {
   }
 
   const handleSaveSchedule = async (castId: string, schedule: any) => {
-    try {
-      // Convert the schedule format to match API expectations
-      const promises = Object.entries(schedule).map(
-        async ([dateStr, daySchedule]: [string, any]) => {
-          if (daySchedule.status === '出勤予定' && daySchedule.startTime && daySchedule.endTime) {
-            // Create or update schedule
-            const date = new Date(dateStr)
-            const startDateTime = new Date(`${dateStr}T${daySchedule.startTime}:00`)
-            const endDateTime = new Date(`${dateStr}T${daySchedule.endTime}:00`)
-
-            // Check if schedule exists for this date
-            const existingSchedules = await fetch(
-              `/api/cast-schedule?castId=${castId}&date=${dateStr}`
-            )
-            
-            if (!existingSchedules.ok) {
-              throw new Error(`Failed to check existing schedules: ${existingSchedules.statusText}`)
-            }
-            
-            const existing = await existingSchedules.json()
-
-            if (existing.length > 0) {
-              // Update existing schedule
-              const updateResponse = await fetch('/api/cast-schedule', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  id: existing[0].id,
-                  startTime: startDateTime,
-                  endTime: endDateTime,
-                  isAvailable: true,
-                }),
-              })
-              
-              if (!updateResponse.ok) {
-                throw new Error(`Failed to update schedule: ${updateResponse.statusText}`)
-              }
-            } else {
-              // Create new schedule
-              const createResponse = await fetch('/api/cast-schedule', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  castId,
-                  date,
-                  startTime: startDateTime,
-                  endTime: endDateTime,
-                  isAvailable: true,
-                }),
-              })
-              
-              if (!createResponse.ok) {
-                throw new Error(`Failed to create schedule: ${createResponse.statusText}`)
-              }
-            }
-          } else if (daySchedule.status === '休日') {
-            // Delete existing schedule if any
-            const existingSchedules = await fetch(
-              `/api/cast-schedule?castId=${castId}&date=${dateStr}`
-            )
-            
-            if (!existingSchedules.ok) {
-              throw new Error(`Failed to check existing schedules: ${existingSchedules.statusText}`)
-            }
-            
-            const existing = await existingSchedules.json()
-
-            if (existing.length > 0) {
-              const deleteResponse = await fetch(`/api/cast-schedule?id=${existing[0].id}`, {
-                method: 'DELETE',
-              })
-              
-              if (!deleteResponse.ok) {
-                throw new Error(`Failed to delete schedule: ${deleteResponse.statusText}`)
-              }
+    // Optimistic update - immediately update UI
+    setSchedule((prev) => {
+      if (!prev) return prev
+      
+      return {
+        ...prev,
+        entries: prev.entries.map((entry) => {
+          if (entry.castId === castId) {
+            return {
+              ...entry,
+              schedule,
             }
           }
-        }
-      )
+          return entry
+        }),
+      }
+    })
 
-      await Promise.all(promises)
+    try {
+      // Convert schedule format for batch API
+      const schedules = Object.entries(schedule).map(([dateStr, daySchedule]: [string, any]) => {
+        if (daySchedule.status === '出勤予定' && daySchedule.startTime && daySchedule.endTime) {
+          return {
+            date: dateStr,
+            status: 'working' as const,
+            startTime: daySchedule.startTime,
+            endTime: daySchedule.endTime,
+          }
+        } else {
+          return {
+            date: dateStr,
+            status: 'holiday' as const,
+          }
+        }
+      })
+
+      // Use batch API for better performance
+      const response = await fetch('/api/cast-schedule/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          castId,
+          schedules,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'スケジュールの保存に失敗しました')
+      }
+
+      const result = await response.json()
 
       toast({
         title: '成功',
-        description: 'スケジュールを保存しました',
+        description: result.message || 'スケジュールを保存しました',
       })
 
-      // Refresh the schedule
+      // Refresh the schedule to ensure consistency
       await handleRefresh()
     } catch (error) {
       console.error('Failed to save schedule:', error)
+      
+      // Revert optimistic update on error
+      await handleRefresh()
+      
       toast({
         title: 'エラー',
         description: error instanceof Error ? error.message : 'スケジュールの保存に失敗しました',
