@@ -4,9 +4,45 @@
  * @known_issues None identified
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { StripeProvider } from '../providers/stripe'
 import { ProcessPaymentRequest, RefundRequest } from '../types'
+
+// Mock Stripe module
+vi.mock('stripe', () => {
+  const mockStripe = {
+    paymentIntents: {
+      create: vi.fn().mockResolvedValue({
+        id: 'pi_test123',
+        status: 'succeeded',
+        amount: 5000,
+        currency: 'jpy',
+      }),
+      retrieve: vi.fn().mockResolvedValue({
+        id: 'pi_test123',
+        status: 'succeeded',
+        amount: 5000,
+        currency: 'jpy',
+      }),
+      confirm: vi.fn().mockResolvedValue({
+        id: 'pi_test123',
+        status: 'succeeded',
+      }),
+    },
+    refunds: {
+      create: vi.fn().mockResolvedValue({
+        id: 'refund_test123',
+        status: 'succeeded',
+        amount: 5000,
+      }),
+    },
+  }
+  
+  return {
+    default: vi.fn().mockImplementation(() => mockStripe),
+    Stripe: vi.fn().mockImplementation(() => mockStripe),
+  }
+})
 
 describe('StripeProvider', () => {
   let provider: StripeProvider
@@ -108,14 +144,13 @@ describe('StripeProvider', () => {
       expect(isValid).toBe(true)
     })
 
-    it('should validate configuration with any config', async () => {
-      const invalidProvider = new StripeProvider({
-        secretKey: '',
-        publishableKey: '',
-      })
-
-      const isValid = await invalidProvider.validateConfig()
-      expect(isValid).toBe(true) // Mock always returns true
+    it('should throw error with invalid config', () => {
+      expect(() => {
+        new StripeProvider({
+          secretKey: '',
+          publishableKey: '',
+        })
+      }).toThrow('Stripe secret key is required')
     })
   })
 })

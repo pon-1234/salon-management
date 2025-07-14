@@ -4,9 +4,10 @@
  * @known_issues Hotel data is stored in memory (not persisted to database)
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth/config'
 import { z } from 'zod'
+import { requireAdmin } from '@/lib/auth/utils'
+import { handleApiError, ErrorResponses } from '@/lib/api/errors'
+import { SuccessResponses } from '@/lib/api/responses'
 
 // In-memory storage for demo purposes
 // In production, this should be stored in database
@@ -66,21 +67,12 @@ const hotelSchema = z.object({
   notes: z.string().optional(),
 })
 
-async function requireAdmin() {
-  const session = await getServerSession(authOptions)
-
-  if (!session || session.user.role !== 'admin') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  return null
-}
-
 export async function GET(request: NextRequest) {
   const authError = await requireAdmin()
   if (authError) return authError
 
-  return NextResponse.json(hotelSettings)
+  // TODO: Hotel settings should be persisted to database instead of memory
+  return SuccessResponses.ok(hotelSettings)
 }
 
 export async function POST(request: NextRequest) {
@@ -105,16 +97,10 @@ export async function POST(request: NextRequest) {
       notes: newHotel.notes || '',
     })
 
-    return NextResponse.json(newHotel, { status: 201 })
+    // TODO: Hotel settings should be persisted to database instead of memory
+    return SuccessResponses.created(newHotel, 'ホテル情報が追加されました')
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
-      )
-    }
-
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error)
   }
 }
 
@@ -146,16 +132,10 @@ export async function PUT(request: NextRequest) {
       notes: validatedData.notes || '',
     }
 
-    return NextResponse.json(validatedData)
+    // TODO: Hotel settings should be persisted to database instead of memory
+    return SuccessResponses.updated(hotelSettings[hotelIndex])
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
-      )
-    }
-
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error)
   }
 }
 
@@ -168,21 +148,22 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id')
 
     if (!id) {
-      return NextResponse.json({ error: 'Hotel ID is required' }, { status: 400 })
+      return ErrorResponses.badRequest('ホテルIDが必要です')
     }
 
     // Find hotel index
     const hotelIndex = hotelSettings.findIndex((h) => h.id === id)
 
     if (hotelIndex === -1) {
-      return NextResponse.json({ error: 'Hotel not found' }, { status: 404 })
+      return ErrorResponses.notFound('ホテル')
     }
 
     // Remove hotel
     hotelSettings.splice(hotelIndex, 1)
 
-    return NextResponse.json({ message: 'Hotel deleted successfully' })
+    // TODO: Hotel deletion should be persisted to database
+    return SuccessResponses.deleted()
   } catch (error) {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error)
   }
 }

@@ -4,10 +4,12 @@
  * @known_issues None
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth/config'
 import { z } from 'zod'
 import { db as prisma } from '@/lib/db'
+import { requireAdmin } from '@/lib/auth/utils'
+import { handleApiError, ErrorResponses } from '@/lib/api/errors'
+import { SuccessResponses } from '@/lib/api/responses'
+import { Message } from '@prisma/client'
 
 // Message validation schema
 const messageSchema = z.object({
@@ -24,16 +26,6 @@ const messageSchema = z.object({
     .optional(),
 })
 
-async function requireAdmin() {
-  const session = await getServerSession(authOptions)
-
-  if (!session || session.user.role !== 'admin') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  return null
-}
-
 // GET /api/chat - Get messages for a customer
 export async function GET(request: NextRequest) {
   const authError = await requireAdmin()
@@ -49,7 +41,7 @@ export async function GET(request: NextRequest) {
         where: { customerId },
         orderBy: { timestamp: 'asc' },
       })
-      return NextResponse.json(messages)
+      return SuccessResponses.ok(messages)
     }
 
     // Get all messages grouped by customer
@@ -65,13 +57,12 @@ export async function GET(request: NextRequest) {
         acc[msg.customerId].push(msg)
         return acc
       },
-      {} as Record<string, any[]>
+      {} as Record<string, Message[]>
     )
 
-    return NextResponse.json(messagesByCustomer)
+    return SuccessResponses.ok(messagesByCustomer)
   } catch (error) {
-    console.error('Error fetching messages:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error)
   }
 }
 
@@ -99,17 +90,9 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(newMessage, { status: 201 })
+    return SuccessResponses.created(newMessage, 'メッセージが送信されました')
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
-      )
-    }
-
-    console.error('Error creating message:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error)
   }
 }
 
@@ -123,7 +106,7 @@ export async function PUT(request: NextRequest) {
     const { id, readStatus } = body
 
     if (!id) {
-      return NextResponse.json({ error: 'Message ID is required' }, { status: 400 })
+      return ErrorResponses.badRequest('メッセージIDが必要です')
     }
 
     // Update message in database
@@ -132,13 +115,8 @@ export async function PUT(request: NextRequest) {
       data: { readStatus: readStatus || '既読' },
     })
 
-    return NextResponse.json(updatedMessage)
-  } catch (error: any) {
-    if (error.code === 'P2025' || error.message?.includes('Record to update not found')) {
-      return NextResponse.json({ error: 'Message not found' }, { status: 404 })
-    }
-
-    console.error('Error updating message:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return SuccessResponses.updated(updatedMessage)
+  } catch (error) {
+    return handleApiError(error)
   }
 }

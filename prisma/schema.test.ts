@@ -40,6 +40,6 @@ describe('Prisma schema', () => {
   })
 
   it('should have proper database provider', () => {
-    expect(schemaContent).toContain('provider = "postgresql"')
+    expect(schemaContent).toContain('provider  = "postgresql"')
   })
 })

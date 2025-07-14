@@ -43,16 +43,28 @@ describe('Chat Customers API', () => {
         {
           id: '1',
           name: '山田 太郎',
+          nameKana: 'ヤマダ タロウ',
           email: 'yamada@example.com',
           phone: '090-1234-5678',
+          password: 'hashed',
+          birthDate: new Date('1990-01-01'),
           memberType: 'regular',
+          points: 100,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
         {
           id: '2',
           name: '佐藤 花子',
+          nameKana: 'サトウ ハナコ',
           email: 'sato@example.com',
           phone: '090-8765-4321',
+          password: 'hashed',
+          birthDate: new Date('1985-05-15'),
           memberType: 'vip',
+          points: 500,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
       ]
 
@@ -67,16 +79,24 @@ describe('Chat Customers API', () => {
           customerId: '1',
           content: 'お問い合わせありがとうございます。どのような内容でしょうか？',
           sender: 'staff',
-          timestamp: tenMinutesAgo.toISOString(),
+          timestamp: tenMinutesAgo,
           readStatus: '既読',
+          isReservationInfo: false,
+          reservationInfo: null,
+          createdAt: tenMinutesAgo,
+          updatedAt: tenMinutesAgo,
         },
         {
           id: 'msg2',
           customerId: '2',
           content: '明日の予約を変更したいのですが可能でしょうか？',
           sender: 'customer',
-          timestamp: threeHoursAgo.toISOString(),
+          timestamp: threeHoursAgo,
           readStatus: '未読',
+          isReservationInfo: false,
+          reservationInfo: null,
+          createdAt: threeHoursAgo,
+          updatedAt: threeHoursAgo,
         },
       ]
 
@@ -121,9 +141,15 @@ describe('Chat Customers API', () => {
       const mockCustomer = {
         id: '1',
         name: '山田 太郎',
+        nameKana: 'ヤマダ タロウ',
         email: 'yamada@example.com',
         phone: '090-1234-5678',
+        password: 'hashed',
+        birthDate: new Date('1990-01-01'),
         memberType: 'regular',
+        points: 100,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       }
 
       const now = new Date()
@@ -134,8 +160,12 @@ describe('Chat Customers API', () => {
         customerId: '1',
         content: 'お問い合わせありがとうございます。どのような内容でしょうか？',
         sender: 'staff',
-        timestamp: tenMinutesAgo.toISOString(),
+        timestamp: tenMinutesAgo,
         readStatus: '既読',
+        isReservationInfo: false,
+        reservationInfo: null,
+        createdAt: tenMinutesAgo,
+        updatedAt: tenMinutesAgo,
       }
 
       vi.mocked(prisma.customer.findUnique).mockResolvedValue(mockCustomer)

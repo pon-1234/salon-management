@@ -4,9 +4,10 @@
  * @known_issues Store data is stored in memory (not persisted to database)
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth/config'
 import { z } from 'zod'
+import { requireAdmin } from '@/lib/auth/utils'
+import { handleApiError } from '@/lib/api/errors'
+import { SuccessResponses } from '@/lib/api/responses'
 
 // In-memory storage for demo purposes
 // In production, this should be stored in database
@@ -60,21 +61,12 @@ const storeSettingsSchema = z.object({
   parkingInfo: z.string().optional(),
 })
 
-async function requireAdmin() {
-  const session = await getServerSession(authOptions)
-
-  if (!session || session.user.role !== 'admin') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  return null
-}
-
 export async function GET(request: NextRequest) {
   const authError = await requireAdmin()
   if (authError) return authError
 
-  return NextResponse.json(storeSettings)
+  // TODO: Store settings should be persisted to database instead of memory
+  return SuccessResponses.ok(storeSettings)
 }
 
 export async function PUT(request: NextRequest) {
@@ -95,15 +87,9 @@ export async function PUT(request: NextRequest) {
       parkingInfo: validatedData.parkingInfo || '',
     }
 
-    return NextResponse.json(storeSettings)
+    // TODO: Store settings should be persisted to database instead of memory
+    return SuccessResponses.updated(storeSettings)
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
-      )
-    }
-
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error)
   }
 }

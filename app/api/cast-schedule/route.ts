@@ -6,18 +6,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import logger from '@/lib/logger'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth/config'
-
-async function requireAdmin() {
-  const session = await getServerSession(authOptions)
-
-  if (!session || session.user.role !== 'admin') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  return null
-}
+import { requireAdmin } from '@/lib/auth/utils'
+import { handleApiError, ErrorResponses } from '@/lib/api/errors'
+import { SuccessResponses } from '@/lib/api/responses'
+import { Prisma } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   const authError = await requireAdmin()
@@ -40,14 +32,14 @@ export async function GET(request: NextRequest) {
       })
 
       if (!schedule) {
-        return NextResponse.json({ error: 'Schedule not found' }, { status: 404 })
+        return ErrorResponses.notFound('スケジュール')
       }
 
-      return NextResponse.json(schedule)
+      return SuccessResponses.ok(schedule)
     }
 
     // Build filters for querying schedules
-    const where: any = {}
+    const where: Prisma.CastScheduleWhereInput = {}
 
     if (castId) where.castId = castId
     if (date) {
@@ -67,10 +59,10 @@ export async function GET(request: NextRequest) {
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     })
 
-    return NextResponse.json(schedules)
+    return SuccessResponses.ok(schedules)
   } catch (error) {
     logger.error({ err: error }, 'Error fetching cast schedule data')
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error)
   }
 }
 
@@ -94,13 +86,10 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(newSchedule, { status: 201 })
-  } catch (error: any) {
+    return SuccessResponses.created(newSchedule, 'スケジュールが作成されました')
+  } catch (error) {
     logger.error({ err: error }, 'Error creating cast schedule')
-    if (error?.code === 'P2002') {
-      return NextResponse.json({ error: 'Schedule conflict detected' }, { status: 409 })
-    }
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error)
   }
 }
 
@@ -129,13 +118,10 @@ export async function PUT(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(updatedSchedule)
-  } catch (error: any) {
+    return SuccessResponses.updated(updatedSchedule)
+  } catch (error) {
     logger.error({ err: error }, 'Error updating cast schedule')
-    if (error?.code === 'P2025') {
-      return NextResponse.json({ error: 'Schedule not found' }, { status: 404 })
-    }
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error)
   }
 }
 
@@ -148,19 +134,16 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id')
 
     if (!id) {
-      return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+      return ErrorResponses.badRequest('IDが必要です')
     }
 
     await db.castSchedule.delete({
       where: { id },
     })
 
-    return new NextResponse(null, { status: 204 })
-  } catch (error: any) {
+    return SuccessResponses.noContent()
+  } catch (error) {
     logger.error({ err: error }, 'Error deleting cast schedule')
-    if (error?.code === 'P2025') {
-      return NextResponse.json({ error: 'Schedule not found' }, { status: 404 })
-    }
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error)
   }
 }

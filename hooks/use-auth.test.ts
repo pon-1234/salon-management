@@ -54,6 +54,7 @@ describe('useAuth hook', () => {
           name: 'Test User',
           role: 'customer',
         },
+        expires: new Date(Date.now() + 86400000).toISOString(),
       },
       status: 'authenticated',
     })
@@ -70,6 +71,7 @@ describe('useAuth hook', () => {
     vi.mocked(useSession).mockReturnValue({
       data: null,
       status: 'loading',
+      update: vi.fn(),
     })
 
     const { result } = renderHook(() => useAuth())
@@ -83,9 +85,15 @@ describe('useAuth hook', () => {
     vi.mocked(useSession).mockReturnValue({
       data: null,
       status: 'unauthenticated',
+      update: vi.fn(),
     })
 
-    vi.mocked(signIn).mockResolvedValue({ ok: true })
+    vi.mocked(signIn).mockResolvedValue({ 
+      ok: true,
+      error: null,
+      status: 200,
+      url: null,
+    })
 
     const { result } = renderHook(() => useAuth())
 
@@ -116,8 +124,10 @@ describe('useAdminAuth hook', () => {
           name: 'Admin User',
           role: 'admin',
         },
+        expires: new Date(Date.now() + 86400000).toISOString(),
       },
       status: 'authenticated',
+      update: vi.fn(),
     })
 
     const { result } = renderHook(() => useAdminAuth())
@@ -136,8 +146,10 @@ describe('useAdminAuth hook', () => {
           name: 'Regular User',
           role: 'customer',
         },
+        expires: new Date(Date.now() + 86400000).toISOString(),
       },
       status: 'authenticated',
+      update: vi.fn(),
     })
 
     const { result } = renderHook(() => useAdminAuth())
@@ -162,8 +174,10 @@ describe('useCustomerAuth hook', () => {
           name: 'Customer User',
           role: 'customer',
         },
+        expires: new Date(Date.now() + 86400000).toISOString(),
       },
       status: 'authenticated',
+      update: vi.fn(),
     })
 
     const { result } = renderHook(() => useCustomerAuth())
@@ -182,8 +196,10 @@ describe('useCustomerAuth hook', () => {
           name: 'Admin User',
           role: 'admin',
         },
+        expires: new Date(Date.now() + 86400000).toISOString(),
       },
       status: 'authenticated',
+      update: vi.fn(),
     })
 
     const { result } = renderHook(() => useCustomerAuth())
