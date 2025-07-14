@@ -104,6 +104,15 @@ describe('POST /api/reservation - Authentication', () => {
   })
 
   it('should use authenticated customer ID instead of request body', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { 
+        id: 'auth-customer-123',
+        role: 'customer',
+        email: 'customer@example.com'
+      },
+      expires: new Date(Date.now() + 86400000).toISOString(),
+    })
+    
     vi.mocked(checkCastAvailability).mockResolvedValueOnce({
       available: true,
       conflicts: [],
@@ -157,6 +166,15 @@ describe('POST /api/reservation - Authentication', () => {
 describe('POST /api/reservation - Enhanced Creation', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Default session for authenticated tests
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { 
+        id: 'customer1',
+        role: 'customer',
+        email: 'customer@example.com'
+      },
+      expires: new Date(Date.now() + 86400000).toISOString(),
+    })
   })
 
   it('should validate required fields', async () => {
@@ -386,6 +404,14 @@ describe('POST /api/reservation - Enhanced Creation', () => {
 describe('POST /api/reservation - Transaction Control', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { 
+        id: 'customer1',
+        role: 'customer',
+        email: 'customer@example.com'
+      },
+      expires: new Date(Date.now() + 86400000).toISOString(),
+    })
   })
 
   it('should rollback transaction when availability check fails inside transaction', async () => {
@@ -471,9 +497,19 @@ describe('POST /api/reservation - Transaction Control', () => {
 describe('PUT /api/reservation - Enhanced Modification', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { 
+        id: 'customer1',
+        role: 'customer',
+        email: 'customer@example.com'
+      },
+      expires: new Date(Date.now() + 86400000).toISOString(),
+    })
   })
 
   it('should require authentication', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce(null)
+    
     const request = new NextRequest('http://localhost:3000/api/reservation', {
       method: 'PUT',
       body: JSON.stringify({
@@ -635,9 +671,19 @@ describe('PUT /api/reservation - Enhanced Modification', () => {
 describe('DELETE /api/reservation - Enhanced Cancellation', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { 
+        id: 'customer1',
+        role: 'customer',
+        email: 'customer@example.com'
+      },
+      expires: new Date(Date.now() + 86400000).toISOString(),
+    })
   })
 
   it('should require authentication', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce(null)
+    
     const request = new NextRequest('http://localhost:3000/api/reservation?id=reservation1', {
       method: 'DELETE',
     })
@@ -741,6 +787,14 @@ describe('DELETE /api/reservation - Enhanced Cancellation', () => {
 describe('GET /api/reservation - Authentication and Authorization', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { 
+        id: 'customer1',
+        role: 'customer',
+        email: 'customer@example.com'
+      },
+      expires: new Date(Date.now() + 86400000).toISOString(),
+    })
   })
 
   it('should return only authenticated customer reservations', async () => {
@@ -857,6 +911,14 @@ describe('GET /api/reservation - Authentication and Authorization', () => {
 describe('PUT /api/reservation - Authorization', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { 
+        id: 'customer1',
+        role: 'customer',
+        email: 'customer@example.com'
+      },
+      expires: new Date(Date.now() + 86400000).toISOString(),
+    })
   })
 
   it('should prevent modification of other customer reservations', async () => {
@@ -893,6 +955,14 @@ describe('PUT /api/reservation - Authorization', () => {
 describe('DELETE /api/reservation - Authorization', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { 
+        id: 'customer1',
+        role: 'customer',
+        email: 'customer@example.com'
+      },
+      expires: new Date(Date.now() + 86400000).toISOString(),
+    })
   })
 
   it('should prevent cancellation of other customer reservations', async () => {
@@ -924,6 +994,14 @@ describe('DELETE /api/reservation - Authorization', () => {
 describe('GET /api/reservation - List with Pagination, Filtering, and Sorting', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { 
+        id: 'customer1',
+        role: 'customer',
+        email: 'customer@example.com'
+      },
+      expires: new Date(Date.now() + 86400000).toISOString(),
+    })
   })
 
   it('should support pagination with limit and offset', async () => {

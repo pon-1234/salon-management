@@ -11,8 +11,23 @@ import { POST as ReviewPOST, GET as ReviewGET } from './review/route'
 import { GET as CoursePriceGET } from './course/route'
 import { GET as OptionPriceGET } from './option/route'
 import { db } from '@/lib/db'
+import { getServerSession } from 'next-auth'
+import bcrypt from 'bcrypt'
 
 // Mock all dependencies
+vi.mock('next-auth', () => ({
+  getServerSession: vi.fn(),
+}))
+
+vi.mock('bcrypt', () => ({
+  default: {
+    hash: vi.fn(),
+    compare: vi.fn(),
+  },
+  hash: vi.fn(),
+  compare: vi.fn(),
+}))
+
 vi.mock('@/lib/db', () => ({
   db: {
     customer: {
@@ -22,8 +37,8 @@ vi.mock('@/lib/db', () => ({
     reservation: {
       create: vi.fn(),
       findMany: vi.fn(),
-      $transaction: vi.fn(),
     },
+    $transaction: vi.fn(),
     review: {
       create: vi.fn(),
       findMany: vi.fn(),
@@ -65,7 +80,6 @@ vi.mock('bcryptjs', () => ({
 }))
 
 import { checkCastAvailability } from './reservation/availability/route'
-import bcrypt from 'bcryptjs'
 
 describe('Customer Journey Integration Tests', () => {
   beforeEach(() => {
@@ -73,6 +87,16 @@ describe('Customer Journey Integration Tests', () => {
   })
 
   it('should complete a full customer journey: registration -> reservation -> review', async () => {
+    // Set up authentication for reservation and review APIs
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: {
+        id: 'customer-integration-1',
+        role: 'customer',
+        email: 'integration@test.com',
+      },
+      expires: new Date(Date.now() + 86400000).toISOString(),
+    })
+    
     // Step 1: Customer Registration
     const customerData = {
       name: 'Integration Test Customer',
@@ -264,6 +288,16 @@ describe('Customer Journey Integration Tests', () => {
   })
 
   it('should handle reservation conflicts and availability checking', async () => {
+    // Set up authentication
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: {
+        id: 'customer1',
+        role: 'customer',
+        email: 'customer@example.com',
+      },
+      expires: new Date(Date.now() + 86400000).toISOString(),
+    })
+    
     // Test scenario: Try to book conflicting time slots
     const conflictingReservationData = {
       castId: 'cast1',
@@ -316,6 +350,16 @@ describe('Customer Journey Integration Tests', () => {
 
   it('should aggregate customer data across multiple APIs', async () => {
     const customerId = 'customer-aggregate-test'
+    
+    // Set up authentication
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: {
+        id: customerId,
+        role: 'customer',
+        email: 'aggregate@test.com',
+      },
+      expires: new Date(Date.now() + 86400000).toISOString(),
+    })
 
     // Mock customer reservations
     const mockReservations = [
@@ -413,6 +457,16 @@ describe('Cast Performance Analytics Integration', () => {
 
   it('should calculate cast performance metrics across reservations and reviews', async () => {
     const castId = 'cast-analytics-test'
+    
+    // Set up authentication for admin analytics
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: {
+        id: 'admin1',
+        role: 'admin',
+        email: 'admin@test.com',
+      },
+      expires: new Date(Date.now() + 86400000).toISOString(),
+    })
 
     // Mock cast reservations
     const mockCastReservations = [
@@ -490,8 +544,9 @@ describe('Cast Performance Analytics Integration', () => {
     const reviews = await reviewResponse.json()
 
     // Calculate performance metrics
-    const totalReservations = reservations.length
-    const confirmedReservations = reservations.filter((r: any) => r.status === 'confirmed').length
+    const reservationArray = Array.isArray(reservations) ? reservations : []
+    const totalReservations = reservationArray.length
+    const confirmedReservations = reservationArray.filter((r: any) => r.status === 'confirmed').length
     const cancellationRate = ((totalReservations - confirmedReservations) / totalReservations) * 100
     const averageRating =
       reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length

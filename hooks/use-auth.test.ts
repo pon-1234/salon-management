@@ -124,8 +124,10 @@ describe('useAdminAuth hook', () => {
           name: 'Admin User',
           role: 'admin',
         },
+        expires: new Date(Date.now() + 86400000).toISOString(),
       },
       status: 'authenticated',
+      update: vi.fn(),
     })
 
     const { result } = renderHook(() => useAdminAuth())
@@ -144,8 +146,10 @@ describe('useAdminAuth hook', () => {
           name: 'Regular User',
           role: 'customer',
         },
+        expires: new Date(Date.now() + 86400000).toISOString(),
       },
       status: 'authenticated',
+      update: vi.fn(),
     })
 
     const { result } = renderHook(() => useAdminAuth())
@@ -170,8 +174,10 @@ describe('useCustomerAuth hook', () => {
           name: 'Customer User',
           role: 'customer',
         },
+        expires: new Date(Date.now() + 86400000).toISOString(),
       },
       status: 'authenticated',
+      update: vi.fn(),
     })
 
     const { result } = renderHook(() => useCustomerAuth())
@@ -190,8 +196,10 @@ describe('useCustomerAuth hook', () => {
           name: 'Admin User',
           role: 'admin',
         },
+        expires: new Date(Date.now() + 86400000).toISOString(),
       },
       status: 'authenticated',
+      update: vi.fn(),
     })
 
     const { result } = renderHook(() => useCustomerAuth())
