@@ -3,6 +3,9 @@
 # dependencies
 /node_modules
 
+# testing
+/coverage
+
 # next.js
 /.next/
 /out/
@@ -16,8 +19,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files
+# local env files
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -25,7 +29,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# generated files
 /lib/generated/prisma
+
+# uploads
+/public/uploads
 
 # image migration
 image-migration-mapping.json
+
+# misc
+.DS_Store
