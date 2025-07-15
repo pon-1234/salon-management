@@ -57,6 +57,8 @@ export function ReservationDialog({ open, onOpenChange, reservation, onSave }: R
     open: boolean
     newStatus: string
   }>({ open: false, newStatus: '' })
+  const [modifyDialog, setModifyDialog] = useState(false)
+  const [remainingTime, setRemainingTime] = useState<number | null>(null)
 
   if (!reservation) return null
 
@@ -77,6 +79,34 @@ export function ReservationDialog({ open, onOpenChange, reservation, onSave }: R
       })
     }
   }, [isEditMode, reservation])
+
+  // Handle modifiable timer
+  useEffect(() => {
+    if (reservation?.bookingStatus === 'modifiable' && reservation.modifiableUntil) {
+      const updateTimer = () => {
+        const now = new Date().getTime()
+        const until = new Date(reservation.modifiableUntil!).getTime()
+        const diff = until - now
+
+        if (diff <= 0) {
+          // Timer expired, revert to confirmed
+          if (onSave) {
+            onSave({ bookingStatus: 'confirmed' })
+          }
+          setRemainingTime(null)
+        } else {
+          setRemainingTime(Math.floor(diff / 1000))
+        }
+      }
+
+      updateTimer()
+      const interval = setInterval(updateTimer, 1000)
+
+      return () => clearInterval(interval)
+    } else {
+      setRemainingTime(null)
+    }
+  }, [reservation?.bookingStatus, reservation?.modifiableUntil, onSave])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -106,6 +136,12 @@ export function ReservationDialog({ open, onOpenChange, reservation, onSave }: R
       default:
         return status
     }
+  }
+
+  const formatRemainingTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${minutes}:${secs.toString().padStart(2, '0')}`
   }
 
   return (
@@ -562,8 +598,22 @@ export function ReservationDialog({ open, onOpenChange, reservation, onSave }: R
                     <AlertCircle className="mt-0.5 h-5 w-5 text-orange-600" />
                     <div className="flex-1">
                       <p className="text-sm font-medium text-orange-800">修正可能状態</p>
-                      <p className="mt-1 text-xs text-orange-600">30分間オーダーの修正が可能です</p>
-                      <Button size="sm" className="mt-2 bg-orange-600 hover:bg-orange-700">
+                      <p className="mt-1 text-xs text-orange-600">
+                        修正可能な時間が限られています
+                      </p>
+                      {remainingTime !== null && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <span className="text-sm font-medium text-orange-700">残り時間:</span>
+                          <span className="rounded bg-orange-100 px-2 py-1 text-sm font-mono font-medium text-orange-800">
+                            {formatRemainingTime(remainingTime)}
+                          </span>
+                        </div>
+                      )}
+                      <Button 
+                        size="sm" 
+                        className="mt-3 bg-orange-600 hover:bg-orange-700"
+                        onClick={() => setIsEditMode(true)}
+                      >
                         オーダー修正
                       </Button>
                     </div>
@@ -577,10 +627,7 @@ export function ReservationDialog({ open, onOpenChange, reservation, onSave }: R
                   <Button 
                     variant="outline" 
                     className="w-full"
-                    onClick={() => {
-                      // TODO: Implement modification flow
-                      console.log('Modify reservation')
-                    }}
+                    onClick={() => setModifyDialog(true)}
                   >
                     予約修正
                   </Button>
@@ -660,6 +707,36 @@ export function ReservationDialog({ open, onOpenChange, reservation, onSave }: R
               }}
             >
               変更する
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 予約修正確認ダイアログ */}
+      <AlertDialog open={modifyDialog} onOpenChange={setModifyDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>予約修正の確認</AlertDialogTitle>
+            <AlertDialogDescription>
+              予約を修正可能状態にしますか？修正可能な時間は30分間に制限されます。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>キャンセル</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (onSave) {
+                  const modifiableUntil = new Date()
+                  modifiableUntil.setMinutes(modifiableUntil.getMinutes() + 30)
+                  onSave({
+                    bookingStatus: 'modifiable',
+                    modifiableUntil,
+                  })
+                }
+                setModifyDialog(false)
+              }}
+            >
+              修正可能にする
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

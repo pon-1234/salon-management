@@ -50,6 +50,7 @@ export interface ReservationData {
   startTime: Date
   endTime: Date
   staffImage: string
+  modifiableUntil?: Date
 }
 
 export interface Service extends BaseEntity {
