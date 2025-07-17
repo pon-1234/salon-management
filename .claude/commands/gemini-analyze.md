@@ -5,16 +5,19 @@
 **signature**: gemini-analyze <path> [prompt]
 
 **arguments**:
+
 - path: The file or directory path to analyze (required)
 - prompt: Additional analysis prompt or specific questions (optional)
 
 **behavior**:
+
 1. If a path is provided without a prompt, performs a comprehensive code analysis
 2. If both path and prompt are provided, analyzes the code with the specific prompt in mind
 3. Handles both individual files and entire directories
 4. Returns structured analysis with insights, suggestions, and potential improvements
 
 **examples**:
+
 ```bash
 # Analyze a single file
 gemini-analyze src/components/Button.tsx
@@ -27,6 +30,7 @@ gemini-analyze . "Review the overall architecture and suggest refactoring opport
 ```
 
 **implementation**:
+
 ```bash
 gemini -p "@$1 $2"
 ```

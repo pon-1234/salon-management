@@ -49,7 +49,12 @@ interface ReservationDialogProps {
   onSave?: (data: Partial<ReservationData>) => void
 }
 
-export function ReservationDialog({ open, onOpenChange, reservation, onSave }: ReservationDialogProps) {
+export function ReservationDialog({
+  open,
+  onOpenChange,
+  reservation,
+  onSave,
+}: ReservationDialogProps) {
   const [activeTab, setActiveTab] = useState('overview')
   const [isEditMode, setIsEditMode] = useState(false)
   const [formData, setFormData] = useState<Partial<ReservationData>>({})
@@ -60,10 +65,8 @@ export function ReservationDialog({ open, onOpenChange, reservation, onSave }: R
   const [modifyDialog, setModifyDialog] = useState(false)
   const [remainingTime, setRemainingTime] = useState<number | null>(null)
 
-  if (!reservation) return null
-
-  const modificationHistory = getModificationHistory(reservation.id)
-  const modificationAlerts = getModificationAlerts(reservation.id)
+  const modificationHistory = reservation ? getModificationHistory(reservation.id) : []
+  const modificationAlerts = reservation ? getModificationAlerts(reservation.id) : []
 
   // Initialize form data when entering edit mode
   useEffect(() => {
@@ -143,6 +146,8 @@ export function ReservationDialog({ open, onOpenChange, reservation, onSave }: R
     const secs = seconds % 60
     return `${minutes}:${secs.toString().padStart(2, '0')}`
   }
+
+  if (!reservation) return null
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -231,7 +236,9 @@ export function ReservationDialog({ open, onOpenChange, reservation, onSave }: R
                       {isEditMode ? (
                         <div className="space-y-2">
                           <div>
-                            <Label htmlFor="date" className="text-xs">予約日</Label>
+                            <Label htmlFor="date" className="text-xs">
+                              予約日
+                            </Label>
                             <Input
                               id="date"
                               type="date"
@@ -241,7 +248,9 @@ export function ReservationDialog({ open, onOpenChange, reservation, onSave }: R
                             />
                           </div>
                           <div>
-                            <Label htmlFor="start-time" className="text-xs">開始時間</Label>
+                            <Label htmlFor="start-time" className="text-xs">
+                              開始時間
+                            </Label>
                             <Input
                               id="start-time"
                               type="time"
@@ -251,12 +260,16 @@ export function ReservationDialog({ open, onOpenChange, reservation, onSave }: R
                             />
                           </div>
                           <div>
-                            <Label htmlFor="end-time" className="text-xs">終了時間</Label>
+                            <Label htmlFor="end-time" className="text-xs">
+                              終了時間
+                            </Label>
                             <Input
                               id="end-time"
                               type="time"
                               value={formData.endTime || ''}
-                              onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                              onChange={(e) =>
+                                setFormData({ ...formData, endTime: e.target.value })
+                              }
                               className="mt-1 h-8"
                             />
                           </div>
@@ -281,7 +294,9 @@ export function ReservationDialog({ open, onOpenChange, reservation, onSave }: R
                       <p className="text-sm text-gray-600">場所</p>
                       {isEditMode ? (
                         <div>
-                          <Label htmlFor="location" className="text-xs">場所</Label>
+                          <Label htmlFor="location" className="text-xs">
+                            場所
+                          </Label>
                           <Select
                             value={formData.location || ''}
                             onValueChange={(value) => setFormData({ ...formData, location: value })}
@@ -345,7 +360,9 @@ export function ReservationDialog({ open, onOpenChange, reservation, onSave }: R
                 <h3 className="mb-3 font-medium">担当キャスト</h3>
                 {isEditMode ? (
                   <div>
-                    <Label htmlFor="cast" className="text-sm">キャスト</Label>
+                    <Label htmlFor="cast" className="text-sm">
+                      キャスト
+                    </Label>
                     <Select
                       value={formData.staff || ''}
                       onValueChange={(value) => setFormData({ ...formData, staff: value })}
@@ -423,7 +440,9 @@ export function ReservationDialog({ open, onOpenChange, reservation, onSave }: R
                     <p className="text-gray-600">コース</p>
                     {isEditMode ? (
                       <div className="mt-1">
-                        <Label htmlFor="course" className="text-xs">コース</Label>
+                        <Label htmlFor="course" className="text-xs">
+                          コース
+                        </Label>
                         <Select
                           value={formData.course || ''}
                           onValueChange={(value) => setFormData({ ...formData, course: value })}
@@ -433,13 +452,17 @@ export function ReservationDialog({ open, onOpenChange, reservation, onSave }: R
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="スタンダードコース">スタンダードコース</SelectItem>
-                            <SelectItem value="イベントコース（税込）130分">イベントコース（税込）130分</SelectItem>
+                            <SelectItem value="イベントコース（税込）130分">
+                              イベントコース（税込）130分
+                            </SelectItem>
                             <SelectItem value="プレミアムコース">プレミアムコース</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                     ) : (
-                      <p className="font-medium">{reservation?.course || 'イベントコース（税込）130分'}</p>
+                      <p className="font-medium">
+                        {reservation?.course || 'イベントコース（税込）130分'}
+                      </p>
                     )}
                   </div>
                   <div>
@@ -598,19 +621,17 @@ export function ReservationDialog({ open, onOpenChange, reservation, onSave }: R
                     <AlertCircle className="mt-0.5 h-5 w-5 text-orange-600" />
                     <div className="flex-1">
                       <p className="text-sm font-medium text-orange-800">修正可能状態</p>
-                      <p className="mt-1 text-xs text-orange-600">
-                        修正可能な時間が限られています
-                      </p>
+                      <p className="mt-1 text-xs text-orange-600">修正可能な時間が限られています</p>
                       {remainingTime !== null && (
                         <div className="mt-2 flex items-center gap-2">
                           <span className="text-sm font-medium text-orange-700">残り時間:</span>
-                          <span className="rounded bg-orange-100 px-2 py-1 text-sm font-mono font-medium text-orange-800">
+                          <span className="rounded bg-orange-100 px-2 py-1 font-mono text-sm font-medium text-orange-800">
                             {formatRemainingTime(remainingTime)}
                           </span>
                         </div>
                       )}
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         className="mt-3 bg-orange-600 hover:bg-orange-700"
                         onClick={() => setIsEditMode(true)}
                       >
@@ -620,12 +641,12 @@ export function ReservationDialog({ open, onOpenChange, reservation, onSave }: R
                   </div>
                 </div>
               )}
-              
+
               {/* 確定済み予約の修正ボタン */}
               {reservation?.bookingStatus === 'confirmed' && !isEditMode && (
                 <div className="rounded-lg border bg-white p-4">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="w-full"
                     onClick={() => setModifyDialog(true)}
                   >

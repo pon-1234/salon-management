@@ -61,17 +61,13 @@ export function createPaginatedResponse<T>(
   limit: number,
   message?: string
 ): NextResponse<SuccessResponse<T[]>> {
-  return createSuccessResponse(
-    data,
-    message,
-    {
-      total,
-      page,
-      limit,
-      hasNext: page * limit < total,
-      hasPrevious: page > 1,
-    }
-  )
+  return createSuccessResponse(data, message, {
+    total,
+    page,
+    limit,
+    hasNext: page * limit < total,
+    hasPrevious: page > 1,
+  })
 }
 
 /**
@@ -83,12 +79,8 @@ export const SuccessResponses = {
   updated: <T>(data: T) => createSuccessResponse(data, '更新されました'),
   deleted: () => createSuccessResponse(null, '削除されました'),
   noContent: () => createNoContentResponse(),
-  paginated: <T>(
-    data: T[],
-    total: number,
-    page: number,
-    limit: number
-  ) => createPaginatedResponse(data, total, page, limit),
+  paginated: <T>(data: T[], total: number, page: number, limit: number) =>
+    createPaginatedResponse(data, total, page, limit),
 }
 
 /**

@@ -36,12 +36,7 @@ export function createErrorResponse(
  * Handles Zod validation errors
  */
 export function handleValidationError(error: z.ZodError): NextResponse<ErrorResponse> {
-  return createErrorResponse(
-    'バリデーションエラー',
-    400,
-    error.errors,
-    'VALIDATION_ERROR'
-  )
+  return createErrorResponse('バリデーションエラー', 400, error.errors, 'VALIDATION_ERROR')
 }
 
 /**
@@ -58,12 +53,7 @@ export function handlePrismaError(error: unknown): NextResponse<ErrorResponse> {
           'DUPLICATE_ENTRY'
         )
       case 'P2025':
-        return createErrorResponse(
-          'データが見つかりません',
-          404,
-          undefined,
-          'NOT_FOUND'
-        )
+        return createErrorResponse('データが見つかりません', 404, undefined, 'NOT_FOUND')
       case 'P2003':
         return createErrorResponse(
           '関連データが見つかりません',
@@ -92,12 +82,7 @@ export function handlePrismaError(error: unknown): NextResponse<ErrorResponse> {
     )
   }
 
-  return createErrorResponse(
-    '予期しないエラーが発生しました',
-    500,
-    undefined,
-    'INTERNAL_ERROR'
-  )
+  return createErrorResponse('予期しないエラーが発生しました', 500, undefined, 'INTERNAL_ERROR')
 }
 
 /**
@@ -130,12 +115,7 @@ export function handleApiError(error: unknown): NextResponse<ErrorResponse> {
 
   // Handle unknown errors
   console.error('Unknown error:', error)
-  return createErrorResponse(
-    '予期しないエラーが発生しました',
-    500,
-    undefined,
-    'UNKNOWN_ERROR'
-  )
+  return createErrorResponse('予期しないエラーが発生しました', 500, undefined, 'UNKNOWN_ERROR')
 }
 
 /**
@@ -146,15 +126,9 @@ export const ErrorResponses = {
   forbidden: () => createErrorResponse('権限がありません', 403, undefined, 'FORBIDDEN'),
   notFound: (resource: string) =>
     createErrorResponse(`${resource}が見つかりません`, 404, undefined, 'NOT_FOUND'),
-  badRequest: (message: string) =>
-    createErrorResponse(message, 400, undefined, 'BAD_REQUEST'),
+  badRequest: (message: string) => createErrorResponse(message, 400, undefined, 'BAD_REQUEST'),
   internalError: () =>
     createErrorResponse('内部エラーが発生しました', 500, undefined, 'INTERNAL_ERROR'),
   rateLimited: () =>
-    createErrorResponse(
-      'リクエスト制限に達しました',
-      429,
-      undefined,
-      'RATE_LIMITED'
-    ),
+    createErrorResponse('リクエスト制限に達しました', 429, undefined, 'RATE_LIMITED'),
 }

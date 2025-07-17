@@ -37,7 +37,7 @@ vi.mock('stripe', () => {
       }),
     },
   }
-  
+
   return {
     default: vi.fn().mockImplementation(() => mockStripe),
     Stripe: vi.fn().mockImplementation(() => mockStripe),

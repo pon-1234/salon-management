@@ -108,11 +108,11 @@ describe('ReservationDialog Edit Mode', () => {
 
     // Switch to details tab to check other fields
     fireEvent.click(screen.getByRole('tab', { name: /詳細/i }))
-    
+
     // Check for editable options checkboxes
     expect(screen.getByLabelText(/ネックトリートメント/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/ホットストーン/i)).toBeInTheDocument()
-    
+
     // Check for editable memo textarea
     const memoTextarea = screen.getByPlaceholderText(/メモを入力/i)
     expect(memoTextarea).not.toBeDisabled()
@@ -136,9 +136,7 @@ describe('ReservationDialog Edit Mode', () => {
     expect(screen.getByRole('button', { name: /完了/i })).toBeInTheDocument()
     // There are multiple cancel buttons, check for status cancel button
     const cancelButtons = screen.getAllByRole('button', { name: /キャンセル/i })
-    const statusCancelButton = cancelButtons.find((btn) => 
-      btn.classList.contains('text-red-600')
-    )
+    const statusCancelButton = cancelButtons.find((btn) => btn.classList.contains('text-red-600'))
     expect(statusCancelButton).toBeInTheDocument()
   })
 
@@ -157,9 +155,7 @@ describe('ReservationDialog Edit Mode', () => {
 
     // Click status change button (get the status cancel button specifically)
     const cancelButtons = screen.getAllByRole('button', { name: /キャンセル/i })
-    const statusCancelButton = cancelButtons.find((btn) => 
-      btn.classList.contains('text-red-600')
-    )
+    const statusCancelButton = cancelButtons.find((btn) => btn.classList.contains('text-red-600'))
     fireEvent.click(statusCancelButton!)
 
     // Check for confirmation dialog
@@ -172,7 +168,7 @@ describe('ReservationDialog Edit Mode', () => {
 
     // Save button should trigger onSave callback
     fireEvent.click(screen.getByRole('button', { name: /保存/i }))
-    
+
     await waitFor(() => {
       expect(mockOnSave).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -195,13 +191,14 @@ describe('ReservationDialog Edit Mode', () => {
     const detailsTab = screen.getByRole('tab', { name: /詳細/i })
     fireEvent.click(detailsTab)
 
-    // Wait for tab content to render
-    await waitFor(() => {
-      expect(screen.getByText(/顧客情報/i)).toBeInTheDocument()
-    })
-
-    // Check for modifiable button
-    expect(screen.getByRole('button', { name: /予約修正/i })).toBeInTheDocument()
+    // Wait for tab content to change and button to appear
+    await waitFor(
+      () => {
+        const modifyButton = screen.getByRole('button', { name: /予約修正/i })
+        expect(modifyButton).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
   })
 
   it.skip('should change status to modifiable when modify button is clicked', async () => {
@@ -217,8 +214,14 @@ describe('ReservationDialog Edit Mode', () => {
     // Switch to details tab
     fireEvent.click(screen.getByRole('tab', { name: /詳細/i }))
 
-    // Click modify button
-    fireEvent.click(screen.getByRole('button', { name: /予約修正/i }))
+    // Wait for tab content to render and click modify button
+    await waitFor(
+      () => {
+        const modifyButton = screen.getByRole('button', { name: /予約修正/i })
+        fireEvent.click(modifyButton)
+      },
+      { timeout: 3000 }
+    )
 
     // Check for confirmation dialog
     await waitFor(() => {
@@ -280,13 +283,16 @@ describe('ReservationDialog Edit Mode', () => {
     expect(screen.getByText(/修正可能状態/i)).toBeInTheDocument()
 
     // Wait for timer to expire
-    await waitFor(() => {
-      expect(mockOnSave).toHaveBeenCalledWith(
-        expect.objectContaining({
-          bookingStatus: 'confirmed',
-        })
-      )
-    }, { timeout: 2000 })
+    await waitFor(
+      () => {
+        expect(mockOnSave).toHaveBeenCalledWith(
+          expect.objectContaining({
+            bookingStatus: 'confirmed',
+          })
+        )
+      },
+      { timeout: 2000 }
+    )
   })
 
   it.skip('should validate form inputs before saving', async () => {

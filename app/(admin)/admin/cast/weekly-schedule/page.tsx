@@ -90,7 +90,7 @@ export default function WeeklySchedulePage() {
     // Optimistic update - immediately update UI
     setSchedule((prev) => {
       if (!prev) return prev
-      
+
       return {
         ...prev,
         entries: prev.entries.map((entry) => {
@@ -149,10 +149,10 @@ export default function WeeklySchedulePage() {
       await handleRefresh()
     } catch (error) {
       console.error('Failed to save schedule:', error)
-      
+
       // Revert optimistic update on error
       await handleRefresh()
-      
+
       toast({
         title: 'エラー',
         description: error instanceof Error ? error.message : 'スケジュールの保存に失敗しました',

@@ -246,6 +246,16 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Cannot modify cancelled reservation' }, { status: 400 })
     }
 
+    // Check if reservation is modifiable and if modification period has expired
+    if (existingReservation.status === 'modifiable' && existingReservation.modifiableUntil) {
+      const now = new Date()
+      const modifiableUntil = new Date(existingReservation.modifiableUntil)
+
+      if (now > modifiableUntil && !isAdmin) {
+        return NextResponse.json({ error: 'The modification period has expired' }, { status: 400 })
+      }
+    }
+
     if (updates.startTime || updates.endTime) {
       // 日付文字列を直接Dateオブジェクトに変換（タイムゾーン処理を簡略化）
       const startTime = updates.startTime
@@ -289,6 +299,11 @@ export async function PUT(request: NextRequest) {
           ...updates,
           startTime: updates.startTime ? new Date(updates.startTime) : undefined,
           endTime: updates.endTime ? new Date(updates.endTime) : undefined,
+          modifiableUntil: updates.modifiableUntil
+            ? new Date(updates.modifiableUntil)
+            : updates.modifiableUntil === null
+              ? null
+              : undefined,
           options: updates.options
             ? {
                 create: updates.options.map((optionId: string) => ({

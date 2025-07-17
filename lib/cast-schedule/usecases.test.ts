@@ -617,9 +617,7 @@ describe('CastScheduleUseCases', () => {
       // Verify API calls
       expect(fetch).toHaveBeenCalledTimes(2)
       expect(fetch).toHaveBeenCalledWith('/api/cast')
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/cast-schedule?startDate=')
-      )
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/api/cast-schedule?startDate='))
 
       // Verify result structure
       expect(result).toHaveProperty('startDate')
@@ -629,8 +627,8 @@ describe('CastScheduleUseCases', () => {
 
       // Verify entries
       expect(result.entries).toHaveLength(2)
-      
-      const cast1Entry = result.entries.find(e => e.castId === '1')
+
+      const cast1Entry = result.entries.find((e) => e.castId === '1')
       expect(cast1Entry).toBeDefined()
       expect(cast1Entry?.name).toBe('Test Cast 1')
       expect(cast1Entry?.schedule['2024-01-15']).toEqual({
