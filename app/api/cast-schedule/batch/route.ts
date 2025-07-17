@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
       for (const schedule of schedules) {
         const date = new Date(schedule.date)
-        
+
         // Check if schedule exists
         const existing = await tx.castSchedule.findUnique({
           where: {
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return ErrorResponses.badRequest('入力データが無効です', error.errors)
     }
-    
+
     logger.error({ err: error }, 'Error in batch schedule update')
     return handleApiError(error)
   }

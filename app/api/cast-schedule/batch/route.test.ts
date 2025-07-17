@@ -53,16 +53,16 @@ describe('POST /api/cast-schedule/batch', () => {
           delete: vi.fn(),
         },
       }
-      
+
       // Setup mock for existing schedule
       tx.castSchedule.findUnique
         .mockResolvedValueOnce(null) // First date - no existing
         .mockResolvedValueOnce({ id: 'existing-1' }) // Second date - existing
         .mockResolvedValueOnce({ id: 'existing-2' }) // Third date - for deletion
-      
+
       return callback(tx)
     })
-    
+
     vi.mocked(db.$transaction).mockImplementation(mockTransaction)
 
     const requestBody = {
@@ -153,7 +153,9 @@ describe('POST /api/cast-schedule/batch', () => {
       method: 'POST',
       body: JSON.stringify({
         castId: 'cast-1',
-        schedules: [{ date: '2024-01-15', status: 'working', startTime: '10:00', endTime: '18:00' }],
+        schedules: [
+          { date: '2024-01-15', status: 'working', startTime: '10:00', endTime: '18:00' },
+        ],
       }),
     })
 

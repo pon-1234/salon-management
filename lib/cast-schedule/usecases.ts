@@ -44,7 +44,7 @@ export class CastScheduleUseCases {
     // Ensure we always start from Monday
     const weekStart = startOfWeek(filters.date, { weekStartsOn: 1 })
     const weekEnd = endOfWeek(filters.date, { weekStartsOn: 1 })
-    
+
     try {
       // Fetch cast data
       const castResponse = await fetch('/api/cast')
@@ -52,7 +52,7 @@ export class CastScheduleUseCases {
         throw new Error('Failed to fetch cast data')
       }
       const casts = await castResponse.json()
-      
+
       // Fetch schedule data for the week
       const scheduleResponse = await fetch(
         `/api/cast-schedule?startDate=${weekStart.toISOString()}&endDate=${weekEnd.toISOString()}`
@@ -61,13 +61,13 @@ export class CastScheduleUseCases {
         throw new Error('Failed to fetch schedule data')
       }
       const schedules = await scheduleResponse.json()
-      
+
       // Transform data to match the expected format
       const entries = this.transformToWeeklyScheduleEntries(casts, schedules, weekStart)
-      
+
       // Calculate statistics
       const stats = this.calculateWeeklyStats(entries)
-      
+
       return {
         startDate: weekStart,
         endDate: weekEnd,
@@ -293,29 +293,29 @@ export class CastScheduleUseCases {
     schedules: any[],
     weekStart: Date
   ): CastScheduleEntry[] {
-    return casts.map(cast => {
+    return casts.map((cast) => {
       // Find all schedules for this cast
       const castSchedules = schedules.filter((s: any) => s.castId === cast.id)
-      
+
       // Create schedule object for the week
       const weekSchedule: any = {}
-      
+
       // Initialize all days of the week
       for (let i = 0; i < 7; i++) {
         const date = addDays(weekStart, i)
         const dateStr = format(date, 'yyyy-MM-dd')
-        
+
         // Find schedule for this specific date
         const daySchedule = castSchedules.find((s: any) => {
           const scheduleDate = new Date(s.date)
           return format(scheduleDate, 'yyyy-MM-dd') === dateStr
         })
-        
+
         if (daySchedule) {
           // Parse times using utility function
           const startTimeStr = parseTimeFromISO(daySchedule.startTime)
           const endTimeStr = parseTimeFromISO(daySchedule.endTime)
-          
+
           weekSchedule[dateStr] = {
             type: '出勤予定',
             startTime: startTimeStr,
@@ -326,7 +326,7 @@ export class CastScheduleUseCases {
           weekSchedule[dateStr] = { type: '休日' }
         }
       }
-      
+
       return {
         castId: cast.id,
         name: cast.name,
@@ -350,36 +350,36 @@ export class CastScheduleUseCases {
     let totalWorkingDays = 0
     let totalWorkingHours = 0
     const dailyWorkingCasts: number[] = Array(7).fill(0)
-    
-    entries.forEach(entry => {
+
+    entries.forEach((entry) => {
       Object.entries(entry.schedule).forEach(([dateStr, schedule], dayIndex) => {
         if (schedule.type === '出勤予定' && schedule.startTime && schedule.endTime) {
           // Count working day
           totalWorkingDays++
           dailyWorkingCasts[dayIndex]++
-          
+
           // Calculate hours
           const [startHour, startMin] = schedule.startTime.split(':').map(Number)
           const [endHour, endMin] = schedule.endTime.split(':').map(Number)
-          
+
           let hours = endHour - startHour + (endMin - startMin) / 60
           // Handle overnight shifts
           if (hours <= 0) {
             hours += 24
           }
-          
+
           totalWorkingHours += hours
         }
       })
     })
-    
-    const workingCast = entries.filter(entry => 
-      Object.values(entry.schedule).some(s => s.type === '出勤予定')
+
+    const workingCast = entries.filter((entry) =>
+      Object.values(entry.schedule).some((s) => s.type === '出勤予定')
     ).length
-    
+
     const averageWorkingCast = dailyWorkingCasts.reduce((a, b) => a + b, 0) / 7
     const averageWorkingHours = workingCast > 0 ? totalWorkingHours / workingCast : 0
-    
+
     return {
       totalCast,
       workingCast,

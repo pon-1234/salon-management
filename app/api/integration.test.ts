@@ -96,7 +96,7 @@ describe('Customer Journey Integration Tests', () => {
       },
       expires: new Date(Date.now() + 86400000).toISOString(),
     })
-    
+
     // Step 1: Customer Registration
     const customerData = {
       name: 'Integration Test Customer',
@@ -297,7 +297,7 @@ describe('Customer Journey Integration Tests', () => {
       },
       expires: new Date(Date.now() + 86400000).toISOString(),
     })
-    
+
     // Test scenario: Try to book conflicting time slots
     const conflictingReservationData = {
       castId: 'cast1',
@@ -350,7 +350,7 @@ describe('Customer Journey Integration Tests', () => {
 
   it('should aggregate customer data across multiple APIs', async () => {
     const customerId = 'customer-aggregate-test'
-    
+
     // Set up authentication
     vi.mocked(getServerSession).mockResolvedValue({
       user: {
@@ -457,7 +457,7 @@ describe('Cast Performance Analytics Integration', () => {
 
   it('should calculate cast performance metrics across reservations and reviews', async () => {
     const castId = 'cast-analytics-test'
-    
+
     // Set up authentication for admin analytics
     vi.mocked(getServerSession).mockResolvedValue({
       user: {
@@ -546,7 +546,9 @@ describe('Cast Performance Analytics Integration', () => {
     // Calculate performance metrics
     const reservationArray = Array.isArray(reservations) ? reservations : []
     const totalReservations = reservationArray.length
-    const confirmedReservations = reservationArray.filter((r: any) => r.status === 'confirmed').length
+    const confirmedReservations = reservationArray.filter(
+      (r: any) => r.status === 'confirmed'
+    ).length
     const cancellationRate = ((totalReservations - confirmedReservations) / totalReservations) * 100
     const averageRating =
       reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length

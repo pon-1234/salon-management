@@ -88,7 +88,7 @@ describe('useAuth hook', () => {
       update: vi.fn(),
     })
 
-    vi.mocked(signIn).mockResolvedValue({ 
+    vi.mocked(signIn).mockResolvedValue({
       ok: true,
       error: null,
       status: 200,
