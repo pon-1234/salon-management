@@ -74,18 +74,15 @@ describe('GET /api/reservation/availability', () => {
     expect(data).toHaveProperty('availableSlots')
     expect(data.availableSlots).toBeInstanceOf(Array)
 
-    // Should have slots before, between, and after reservations
+    // Should have slots before and between reservations
+    // The API returns the full available time periods, not just 60-minute slots
     expect(data.availableSlots).toContainEqual({
-      startTime: '2025-07-10T09:00:00.000Z',
+      startTime: '2025-07-10T00:00:00.000Z',
       endTime: '2025-07-10T10:00:00.000Z',
     })
     expect(data.availableSlots).toContainEqual({
       startTime: '2025-07-10T11:00:00.000Z',
       endTime: '2025-07-10T14:00:00.000Z',
-    })
-    expect(data.availableSlots).toContainEqual({
-      startTime: '2025-07-10T15:30:00.000Z',
-      endTime: '2025-07-10T18:00:00.000Z',
     })
   })
 

@@ -7,10 +7,86 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
-import { checkCastAvailability } from './availability/route'
 import { NotificationService } from '@/lib/notification/service'
 import logger from '@/lib/logger'
 import { fromZonedTime } from 'date-fns-tz'
+import { PrismaClient } from '@prisma/client'
+
+// Types
+interface AvailabilityCheck {
+  available: boolean
+  conflicts: Array<{
+    id: string
+    startTime: string
+    endTime: string
+  }>
+}
+
+type PrismaTransactionClient = Omit<
+  PrismaClient,
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+>
+
+// Helper function to check cast availability
+async function checkCastAvailability(
+  castId: string,
+  startTime: Date,
+  endTime: Date,
+  tx: PrismaTransactionClient | PrismaClient = db
+): Promise<AvailabilityCheck> {
+  // Find overlapping reservations
+  const conflicts = await tx.reservation.findMany({
+    where: {
+      castId,
+      status: {
+        not: 'cancelled',
+      },
+      OR: [
+        {
+          // New reservation starts during existing reservation
+          startTime: {
+            lte: startTime,
+          },
+          endTime: {
+            gt: startTime,
+          },
+        },
+        {
+          // New reservation ends during existing reservation
+          startTime: {
+            lt: endTime,
+          },
+          endTime: {
+            gte: endTime,
+          },
+        },
+        {
+          // New reservation completely contains existing reservation
+          startTime: {
+            gte: startTime,
+          },
+          endTime: {
+            lte: endTime,
+          },
+        },
+      ],
+    },
+    select: {
+      id: true,
+      startTime: true,
+      endTime: true,
+    },
+  })
+
+  return {
+    available: conflicts.length === 0,
+    conflicts: conflicts.map((reservation) => ({
+      id: reservation.id,
+      startTime: reservation.startTime.toISOString(),
+      endTime: reservation.endTime.toISOString(),
+    })),
+  }
+}
 
 const JST_TIMEZONE = 'Asia/Tokyo'
 const notificationService = new NotificationService()
@@ -246,14 +322,13 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Cannot modify cancelled reservation' }, { status: 400 })
     }
 
-    // Check if reservation is modifiable and if modification period has expired
-    if (existingReservation.status === 'modifiable' && existingReservation.modifiableUntil) {
-      const now = new Date()
-      const modifiableUntil = new Date(existingReservation.modifiableUntil)
-
-      if (now > modifiableUntil && !isAdmin) {
-        return NextResponse.json({ error: 'The modification period has expired' }, { status: 400 })
-      }
+    // Check if reservation is modifiable
+    if (existingReservation.status === 'modifiable' && !isAdmin) {
+      // Only admins can modify reservations in modifiable status
+      return NextResponse.json(
+        { error: 'Only administrators can modify reservations' },
+        { status: 403 }
+      )
     }
 
     if (updates.startTime || updates.endTime) {

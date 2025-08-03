@@ -8,6 +8,7 @@ import { NextRequest } from 'next/server'
 import { GET, POST, PUT, DELETE } from './route'
 import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
+import { getServerSession } from 'next-auth'
 
 // Mock the database
 vi.mock('@/lib/db', () => ({
@@ -33,7 +34,19 @@ vi.mock('bcryptjs', () => ({
 vi.mock('@/lib/logger', () => ({
   default: {
     error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
   },
+}))
+
+// Mock getServerSession
+vi.mock('next-auth', () => ({
+  getServerSession: vi.fn(),
+}))
+
+// Mock auth config
+vi.mock('@/lib/auth/config', () => ({
+  authOptions: {},
 }))
 
 describe('GET /api/customer', () => {

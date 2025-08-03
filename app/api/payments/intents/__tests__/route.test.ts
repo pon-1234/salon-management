@@ -11,6 +11,14 @@ import { NextRequest } from 'next/server'
 process.env.STRIPE_SECRET_KEY = 'sk_test_dummy'
 process.env.STRIPE_PUBLISHABLE_KEY = 'pk_test_dummy'
 
+// Create mock payment service instance using vi.hoisted
+const { mockPaymentService } = vi.hoisted(() => ({
+  mockPaymentService: {
+    createPaymentIntent: vi.fn(),
+    confirmPaymentIntent: vi.fn(),
+  },
+}))
+
 // Mock StripeProvider before importing route
 vi.mock('@/lib/payment/providers/stripe', () => ({
   StripeProvider: vi.fn().mockImplementation(() => ({
@@ -27,19 +35,11 @@ vi.mock('@/lib/payment/providers/stripe', () => ({
 
 // Mock PaymentService
 vi.mock('@/lib/payment/service', () => ({
-  PaymentService: vi.fn().mockImplementation(() => ({
-    createPaymentIntent: vi.fn(),
-    confirmPaymentIntent: vi.fn(),
-  })),
+  PaymentService: vi.fn().mockImplementation(() => mockPaymentService),
 }))
 
 // Import route after mocks are set up
-const { POST, PATCH } = await import('../route')
-
-const mockPaymentService = {
-  createPaymentIntent: vi.fn(),
-  confirmPaymentIntent: vi.fn(),
-}
+import { POST, PATCH } from '../route'
 
 describe('/api/payments/intents', () => {
   beforeEach(() => {
@@ -57,6 +57,9 @@ describe('/api/payments/intents', () => {
         provider: 'stripe',
       }
 
+      const createdAt = new Date()
+      const updatedAt = new Date()
+
       const mockIntent = {
         id: 'pi_123',
         providerId: 'pi_stripe_123',
@@ -66,8 +69,8 @@ describe('/api/payments/intents', () => {
         status: 'pending',
         paymentMethod: 'card',
         clientSecret: 'pi_123_secret',
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: createdAt.toISOString(),
+        updatedAt: updatedAt.toISOString(),
       }
 
       mockPaymentService.createPaymentIntent.mockResolvedValue(mockIntent)
@@ -134,6 +137,9 @@ describe('/api/payments/intents', () => {
         intentId: 'pi_123',
       }
 
+      const createdAt = new Date()
+      const updatedAt = new Date()
+
       const mockResult = {
         success: true,
         transaction: {
@@ -145,8 +151,8 @@ describe('/api/payments/intents', () => {
           provider: 'stripe',
           paymentMethod: 'card',
           status: 'completed',
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          createdAt: createdAt.toISOString(),
+          updatedAt: updatedAt.toISOString(),
         },
       }
 

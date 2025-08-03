@@ -100,7 +100,7 @@ type PrismaTransactionClient = Omit<
   '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
 >
 
-export async function checkCastAvailability(
+async function checkCastAvailability(
   castId: string,
   startTime: Date,
   endTime: Date,

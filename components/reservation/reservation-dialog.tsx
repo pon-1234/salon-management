@@ -266,9 +266,16 @@ export function ReservationDialog({
                             <Input
                               id="end-time"
                               type="time"
-                              value={formData.endTime || ''}
+                              value={
+                                formData.endTime instanceof Date
+                                  ? formData.endTime.toISOString().slice(11, 16)
+                                  : formData.endTime || ''
+                              }
                               onChange={(e) =>
-                                setFormData({ ...formData, endTime: e.target.value })
+                                setFormData({
+                                  ...formData,
+                                  endTime: new Date(`2000-01-01T${e.target.value}:00`),
+                                })
                               }
                               className="mt-1 h-8"
                             />

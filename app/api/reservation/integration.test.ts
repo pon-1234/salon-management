@@ -7,8 +7,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import { POST } from './route'
 import { db } from '@/lib/db'
-import { checkCastAvailability } from './availability/route'
+// Mock checkCastAvailability since it's now internal to route.ts
 import { NotificationService } from '@/lib/notification/service'
+import { getServerSession } from 'next-auth'
 
 // Mock dependencies
 vi.mock('@/lib/db', () => ({
@@ -16,11 +17,33 @@ vi.mock('@/lib/db', () => ({
     reservation: {
       create: vi.fn(),
     },
+    $transaction: vi.fn((callback) =>
+      callback({
+        reservation: {
+          create: vi.fn(),
+        },
+      })
+    ),
   },
 }))
 
-vi.mock('./availability/route', () => ({
-  checkCastAvailability: vi.fn(),
+// Mock is handled inline in the transaction mock
+
+vi.mock('@/lib/logger', () => ({
+  default: {
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  },
+}))
+
+vi.mock('next-auth', () => ({
+  getServerSession: vi.fn(),
+}))
+
+vi.mock('@/lib/auth/config', () => ({
+  authOptions: {},
 }))
 
 vi.mock('@/lib/notification/service', () => {
@@ -50,11 +73,10 @@ describe('Reservation API - Notification Integration', () => {
   })
 
   it('should send notification when reservation is created successfully', async () => {
-    // Mock availability check to succeed
-    vi.mocked(checkCastAvailability).mockResolvedValueOnce({
-      available: true,
-      conflicts: [],
-    })
+    // Mock session
+    vi.mocked(getServerSession).mockResolvedValueOnce(null)
+
+    // Availability check is handled within the transaction
 
     // Mock customer data with preferences
     const mockReservation = {
@@ -88,7 +110,16 @@ describe('Reservation API - Notification Integration', () => {
       options: [],
     }
 
-    vi.mocked(db.reservation.create).mockResolvedValueOnce(mockReservation as any)
+    // Mock the transaction to return the reservation with includes
+    vi.mocked(db.$transaction).mockImplementationOnce(async (callback: any) => {
+      const tx = {
+        reservation: {
+          create: vi.fn().mockResolvedValueOnce(mockReservation),
+          findMany: vi.fn().mockResolvedValueOnce([]), // No conflicts
+        },
+      }
+      return callback(tx)
+    })
 
     // Get the mocked notification function
     const notificationModule = (await import('@/lib/notification/service')) as any
@@ -105,11 +136,18 @@ describe('Reservation API - Notification Integration', () => {
 
     const request = new NextRequest('http://localhost:3000/api/reservation', {
       method: 'POST',
+      headers: {
+        'x-customer-id': 'customer1',
+      },
       body: JSON.stringify(reservationData),
     })
 
     const response = await POST(request)
     const data = await response.json()
+
+    if (response.status !== 201) {
+      console.error('Response:', data)
+    }
 
     expect(response.status).toBe(201)
     expect(data.id).toBe('reservation1')
@@ -119,11 +157,10 @@ describe('Reservation API - Notification Integration', () => {
   })
 
   it('should not fail reservation creation if notification fails', async () => {
-    // Mock availability check to succeed
-    vi.mocked(checkCastAvailability).mockResolvedValueOnce({
-      available: true,
-      conflicts: [],
-    })
+    // Mock session
+    vi.mocked(getServerSession).mockResolvedValueOnce(null)
+
+    // Availability check is handled within the transaction
 
     const mockReservation = {
       id: 'reservation1',
@@ -139,7 +176,16 @@ describe('Reservation API - Notification Integration', () => {
       options: [],
     }
 
-    vi.mocked(db.reservation.create).mockResolvedValueOnce(mockReservation as any)
+    // Mock the transaction to return the reservation with includes
+    vi.mocked(db.$transaction).mockImplementationOnce(async (callback: any) => {
+      const tx = {
+        reservation: {
+          create: vi.fn().mockResolvedValueOnce(mockReservation),
+          findMany: vi.fn().mockResolvedValueOnce([]), // No conflicts
+        },
+      }
+      return callback(tx)
+    })
 
     // Mock notification service to throw error
     const notificationModule = (await import('@/lib/notification/service')) as any
@@ -156,12 +202,19 @@ describe('Reservation API - Notification Integration', () => {
 
     const request = new NextRequest('http://localhost:3000/api/reservation', {
       method: 'POST',
+      headers: {
+        'x-customer-id': 'customer1',
+      },
       body: JSON.stringify(reservationData),
     })
 
     // Should not throw even if notification fails
     const response = await POST(request)
     const data = await response.json()
+
+    if (response.status !== 201) {
+      console.error('Response:', data)
+    }
 
     expect(response.status).toBe(201)
     expect(data.id).toBe('reservation1')

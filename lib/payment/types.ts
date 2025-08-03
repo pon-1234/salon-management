@@ -40,8 +40,8 @@ export interface PaymentTransaction extends BaseEntity {
   provider: PaymentProviderType
   paymentMethod: PaymentMethod
   status: PaymentStatus
-  intentId?: string
-  providerTransactionId?: string
+  paymentIntentId?: string
+  stripePaymentId?: string
   metadata?: Record<string, any>
   errorMessage?: string
   processedAt?: Date

@@ -18,9 +18,9 @@ const paymentService = new PaymentService({
 
 const reservationService = new ReservationService(paymentService)
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const reservationId = params.id
+    const { id: reservationId } = await params
     const body = await request.json()
     const { refundAmount } = body
 

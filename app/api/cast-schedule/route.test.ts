@@ -28,6 +28,11 @@ vi.mock('@/lib/logger', () => ({
   },
 }))
 
+// Mock auth utils
+vi.mock('@/lib/auth/utils', () => ({
+  requireAdmin: vi.fn().mockResolvedValue(undefined),
+}))
+
 describe('GET /api/cast-schedule', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -54,7 +59,7 @@ describe('GET /api/cast-schedule', () => {
     const data = await response.json()
 
     expect(response.status).toBe(200)
-    expect(data.id).toBe('schedule1')
+    expect(data.data.id).toBe('schedule1')
     expect(vi.mocked(db.castSchedule.findUnique)).toHaveBeenCalledWith({
       where: { id: 'schedule1' },
       include: { cast: true },
@@ -72,7 +77,8 @@ describe('GET /api/cast-schedule', () => {
     const data = await response.json()
 
     expect(response.status).toBe(404)
-    expect(data.error).toBe('Schedule not found')
+    expect(data.error).toBe('Not Found')
+    expect(data.message).toBe('スケジュールが見つかりません')
   })
 
   it('should filter schedules by castId', async () => {
@@ -98,7 +104,7 @@ describe('GET /api/cast-schedule', () => {
     const data = await response.json()
 
     expect(response.status).toBe(200)
-    expect(data).toHaveLength(1)
+    expect(data.data).toHaveLength(1)
     expect(vi.mocked(db.castSchedule.findMany)).toHaveBeenCalledWith({
       where: { castId: 'cast1' },
       include: { cast: true },
@@ -218,7 +224,7 @@ describe('POST /api/cast-schedule', () => {
     const data = await response.json()
 
     expect(response.status).toBe(201)
-    expect(data.id).toBe('new-schedule-id')
+    expect(data.data.id).toBe('new-schedule-id')
     expect(vi.mocked(db.castSchedule.create)).toHaveBeenCalledWith({
       data: {
         castId: 'cast1',
@@ -319,7 +325,7 @@ describe('PUT /api/cast-schedule', () => {
     const data = await response.json()
 
     expect(response.status).toBe(200)
-    expect(data.isAvailable).toBe(false)
+    expect(data.data.isAvailable).toBe(false)
     expect(vi.mocked(db.castSchedule.update)).toHaveBeenCalledWith({
       where: { id: 'schedule1' },
       data: {
@@ -350,7 +356,8 @@ describe('PUT /api/cast-schedule', () => {
     const data = await response.json()
 
     expect(response.status).toBe(404)
-    expect(data.error).toBe('Schedule not found')
+    expect(data.error).toBe('Not Found')
+    expect(data.message).toBe('スケジュールが見つかりません')
   })
 })
 
@@ -368,7 +375,8 @@ describe('DELETE /api/cast-schedule', () => {
     const data = await response.json()
 
     expect(response.status).toBe(400)
-    expect(data.error).toBe('ID is required')
+    expect(data.error).toBe('Bad Request')
+    expect(data.message).toBe('IDが必要です')
   })
 
   it('should delete schedule', async () => {
@@ -400,7 +408,8 @@ describe('DELETE /api/cast-schedule', () => {
     const data = await response.json()
 
     expect(response.status).toBe(404)
-    expect(data.error).toBe('Schedule not found')
+    expect(data.error).toBe('Not Found')
+    expect(data.message).toBe('スケジュールが見つかりません')
   })
 })
 
@@ -432,6 +441,7 @@ describe('Cast Schedule API - Conflict Detection', () => {
     const data = await response.json()
 
     expect(response.status).toBe(409)
-    expect(data.error).toBe('Schedule conflict detected')
+    expect(data.error).toBe('Conflict')
+    expect(data.message).toBe('スケジュールの競合が検出されました')
   })
 })

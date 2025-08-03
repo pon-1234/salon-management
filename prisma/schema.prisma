@@ -19,7 +19,12 @@ model Customer {
   memberType   String        @default("regular")
   points       Int           @default(0)
   createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  updatedAt        DateTime      @updatedAt
+  resetToken           String?
+  resetTokenExpiry     DateTime?
+  emailVerified        Boolean       @default(false)
+  emailVerificationToken String?
+  emailVerificationExpiry DateTime?
   ngCasts      NgCastEntry[]
   reservations Reservation[]
   reviews      Review[]
@@ -163,6 +168,10 @@ model PaymentIntent {
   status              String              // e.g., 'requires_payment_method', 'succeeded', 'canceled'
   customerId          String?
   metadata            Json?
+  providerId          String?             // Provider-specific ID
+  provider            String?             // Payment provider name
+  paymentMethod       String?             // Payment method type
+  errorMessage        String?             // Error message if failed
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
   paymentTransactions PaymentTransaction[]
@@ -175,11 +184,53 @@ model PaymentTransaction {
   currency        String         @default("jpy")
   status          String         // e.g., 'pending', 'completed', 'failed', 'refunded'
   type            String         // e.g., 'payment', 'refund'
+  provider        String         // e.g., 'stripe', 'cash'
+  paymentMethod   String         // e.g., 'card', 'cash'
   customerId      String?
   reservationId   String?
   stripePaymentId String?
   metadata        Json?
+  errorMessage    String?
+  processedAt     DateTime?
+  refundedAt      DateTime?
+  refundAmount    Int?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   paymentIntent   PaymentIntent? @relation(fields: [paymentIntentId], references: [id])
+}
+
+model StoreSettings {
+  id            String   @id @default(cuid())
+  storeName     String
+  address       String
+  phone         String
+  email         String
+  website       String?
+  businessHours String
+  description   String
+  zipCode       String
+  prefecture    String
+  city          String
+  building      String?
+  businessDays  String
+  lastOrder     String
+  parkingInfo   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model HotelSettings {
+  id           String   @id @default(cuid())
+  hotelName    String
+  area         String
+  roomCount    Int
+  hourlyRate   Int
+  address      String
+  phone        String
+  checkInTime  String
+  checkOutTime String
+  amenities    String[]
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }

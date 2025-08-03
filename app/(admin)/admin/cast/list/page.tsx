@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Header } from '@/components/header'
 import { CastListView } from '@/components/cast/cast-list-view'
 import { Cast } from '@/lib/cast/types'
@@ -17,18 +17,14 @@ export default function CastListPage() {
   const [workStatus, setWorkStatus] = useState('就業中(公開)')
   const [nameSearch, setNameSearch] = useState('')
   const [loading, setLoading] = useState(true)
-  const castRepository = new CastRepositoryImpl()
+  const castRepository = useMemo(() => new CastRepositoryImpl(), [])
 
   useEffect(() => {
     // ページ遷移時にスクロール位置をリセット
     window.scrollTo(0, 0)
   }, [])
 
-  useEffect(() => {
-    fetchCasts()
-  }, [])
-
-  const fetchCasts = async () => {
+  const fetchCasts = useCallback(async () => {
     setLoading(true)
     try {
       const casts = await castRepository.getAll()
@@ -44,7 +40,11 @@ export default function CastListPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [castRepository])
+
+  useEffect(() => {
+    fetchCasts()
+  }, [fetchCasts])
 
   const filteredCasts = castList.filter((cast) => {
     const matchesName =

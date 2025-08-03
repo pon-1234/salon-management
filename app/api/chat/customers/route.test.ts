@@ -52,6 +52,11 @@ describe('Chat Customers API', () => {
           points: 100,
           createdAt: new Date(),
           updatedAt: new Date(),
+          resetToken: null,
+          resetTokenExpiry: null,
+          emailVerified: true,
+          emailVerificationToken: null,
+          emailVerificationExpiry: null,
         },
         {
           id: '2',
@@ -65,6 +70,11 @@ describe('Chat Customers API', () => {
           points: 500,
           createdAt: new Date(),
           updatedAt: new Date(),
+          resetToken: null,
+          resetTokenExpiry: null,
+          emailVerified: true,
+          emailVerificationToken: null,
+          emailVerificationExpiry: null,
         },
       ]
 
@@ -110,9 +120,9 @@ describe('Chat Customers API', () => {
       expect(prisma.customer.findMany).toHaveBeenCalled()
       expect(prisma.message.findMany).toHaveBeenCalled()
 
-      expect(data).toHaveLength(2)
+      expect(data.data).toHaveLength(2)
       // Check that we got 2 customers sorted by last message time
-      expect(data[0]).toMatchObject({
+      expect(data.data[0]).toMatchObject({
         id: '1',
         name: '山田 太郎',
         lastMessage: 'お問い合わせありがとうございます。どのような内容でしょうか？',
@@ -121,9 +131,9 @@ describe('Chat Customers API', () => {
         memberType: 'regular',
       })
       // Validate timestamp format is HH:MM for recent messages
-      expect(data[0].lastMessageTime).toMatch(/^\d{1,2}:\d{2}$/)
+      expect(data.data[0].lastMessageTime).toMatch(/^\d{1,2}:\d{2}$/)
 
-      expect(data[1]).toMatchObject({
+      expect(data.data[1]).toMatchObject({
         id: '2',
         name: '佐藤 花子',
         lastMessage: '明日の予約を変更したいのですが可能でしょうか？',
@@ -131,7 +141,7 @@ describe('Chat Customers API', () => {
         unreadCount: 1,
         memberType: 'vip',
       })
-      expect(data[1].lastMessageTime).toMatch(/^\d{1,2}:\d{2}$/)
+      expect(data.data[1].lastMessageTime).toMatch(/^\d{1,2}:\d{2}$/)
     })
 
     it('should fetch specific customer by id', async () => {
@@ -150,6 +160,11 @@ describe('Chat Customers API', () => {
         points: 100,
         createdAt: new Date(),
         updatedAt: new Date(),
+        resetToken: null,
+        resetTokenExpiry: null,
+        emailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationExpiry: null,
       }
 
       const now = new Date()
@@ -222,7 +237,7 @@ describe('Chat Customers API', () => {
       const response = await GET(request)
 
       expect(response.status).toBe(401)
-      expect(await response.json()).toEqual({ error: 'Unauthorized' })
+      expect(await response.json()).toEqual({ error: '認証が必要です' })
     })
   })
 })

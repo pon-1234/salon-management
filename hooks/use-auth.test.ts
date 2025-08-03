@@ -57,6 +57,7 @@ describe('useAuth hook', () => {
         expires: new Date(Date.now() + 86400000).toISOString(),
       },
       status: 'authenticated',
+      update: vi.fn(),
     })
 
     const { result } = renderHook(() => useAuth())

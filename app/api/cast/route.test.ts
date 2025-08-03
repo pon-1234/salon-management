@@ -10,6 +10,20 @@ import { NextRequest } from 'next/server'
 // Import the mocked db
 import { db } from '@/lib/db'
 
+// Mock auth utils
+vi.mock('@/lib/auth/utils', () => ({
+  requireAdmin: vi.fn().mockResolvedValue(null),
+}))
+
+// Mock logger
+vi.mock('@/lib/logger', () => ({
+  default: {
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+  },
+}))
+
 // Type assertion for mocked functions
 const mockedDb = db as any
 
@@ -27,12 +41,46 @@ describe('Cast API endpoints', () => {
           name: 'Test Cast 1',
           schedules: [],
           reservations: [],
+          age: 25,
+          height: 170,
+          bust: 'B',
+          waist: 60,
+          hip: 90,
+          type: 'standard',
+          image: 'https://example.com/image1.jpg',
+          images: [],
+          description: 'Test description',
+          netReservation: true,
+          specialDesignationFee: null,
+          regularDesignationFee: null,
+          panelDesignationRank: 1,
+          regularDesignationRank: 1,
+          workStatus: 'active',
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
         {
           id: '2',
           name: 'Test Cast 2',
           schedules: [],
           reservations: [],
+          age: 28,
+          height: 165,
+          bust: 'C',
+          waist: 58,
+          hip: 88,
+          type: 'standard',
+          image: 'https://example.com/image2.jpg',
+          images: [],
+          description: 'Test description 2',
+          netReservation: true,
+          specialDesignationFee: null,
+          regularDesignationFee: null,
+          panelDesignationRank: 2,
+          regularDesignationRank: 2,
+          workStatus: 'active',
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
       ]
 
@@ -44,7 +92,21 @@ describe('Cast API endpoints', () => {
 
       expect(response.status).toBe(200)
       expect(Array.isArray(data)).toBe(true)
-      expect(data).toEqual(mockCasts)
+      expect(data).toHaveLength(2)
+      expect(data[0]).toMatchObject({
+        id: '1',
+        name: 'Test Cast 1',
+        nameKana: 'Test Cast 1',
+        availableOptions: [],
+        appointments: [],
+      })
+      expect(data[1]).toMatchObject({
+        id: '2',
+        name: 'Test Cast 2',
+        nameKana: 'Test Cast 2',
+        availableOptions: [],
+        appointments: [],
+      })
       expect(mockedDb.cast.findMany).toHaveBeenCalledWith({
         include: {
           schedules: true,
@@ -115,7 +177,7 @@ describe('Cast API endpoints', () => {
         waist: 58,
         hip: 85,
         type: 'カワイイ系',
-        image: '',
+        image: 'https://example.com/test-cast.jpg',
         images: [],
         description: '',
         netReservation: true,
@@ -168,6 +230,8 @@ describe('Cast API endpoints', () => {
         reservations: [],
       }
 
+      // Mock findUnique to return existing cast
+      mockedDb.cast.findUnique.mockResolvedValue({ id: 'test-id', name: 'Old Cast' })
       mockedDb.cast.update.mockResolvedValue(mockUpdatedCast)
 
       const request = new NextRequest('http://localhost:3000/api/cast', {
@@ -189,10 +253,8 @@ describe('Cast API endpoints', () => {
         name: 'Updated Cast',
       }
 
-      // Mock Prisma error for record not found
-      const prismaError = new Error('Record not found')
-      ;(prismaError as any).code = 'P2025'
-      mockedDb.cast.update.mockRejectedValue(prismaError)
+      // Mock findUnique to return null (not found)
+      mockedDb.cast.findUnique.mockResolvedValue(null)
 
       const request = new NextRequest('http://localhost:3000/api/cast', {
         method: 'PUT',
@@ -207,6 +269,8 @@ describe('Cast API endpoints', () => {
 
   describe('DELETE /api/cast', () => {
     it('should delete an existing cast member', async () => {
+      // Mock findUnique to return existing cast
+      mockedDb.cast.findUnique.mockResolvedValue({ id: 'test-id', name: 'Cast to Delete' })
       mockedDb.cast.delete.mockResolvedValue({})
 
       const request = new NextRequest('http://localhost:3000/api/cast?id=test-id', {
@@ -215,17 +279,15 @@ describe('Cast API endpoints', () => {
 
       const response = await DELETE(request)
 
-      expect(response.status).toBe(204)
+      expect(response.status).toBe(200)
       expect(mockedDb.cast.delete).toHaveBeenCalledWith({
         where: { id: 'test-id' },
       })
     })
 
     it('should return 404 for non-existent cast member', async () => {
-      // Mock Prisma error for record not found
-      const prismaError = new Error('Record not found')
-      ;(prismaError as any).code = 'P2025'
-      mockedDb.cast.delete.mockRejectedValue(prismaError)
+      // Mock findUnique to return null (not found)
+      mockedDb.cast.findUnique.mockResolvedValue(null)
 
       const request = new NextRequest('http://localhost:3000/api/cast?id=non-existent-id', {
         method: 'DELETE',

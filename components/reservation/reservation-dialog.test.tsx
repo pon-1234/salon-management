@@ -3,10 +3,10 @@
  * @related_to   ReservationDialog component, reservation editing features
  * @known_issues None currently
  */
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { ReservationDialog } from './reservation-dialog'
 import { ReservationData } from '@/lib/types/reservation'
-import { vi } from 'vitest'
 
 // Mock the modification history data
 vi.mock('@/lib/modification-history/data', () => ({

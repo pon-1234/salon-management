@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return ErrorResponses.badRequest('入力データが無効です', error.errors)
+      return ErrorResponses.badRequest('入力データが無効です')
     }
 
     logger.error({ err: error }, 'Error in batch schedule update')
