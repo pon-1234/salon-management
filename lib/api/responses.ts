@@ -84,6 +84,52 @@ export const SuccessResponses = {
 }
 
 /**
+ * Standard error response interface
+ */
+interface ErrorResponse {
+  error: string
+  message?: string
+  errors?: any[]
+  code?: string
+}
+
+/**
+ * Creates a standardized error response
+ */
+export function createErrorResponse(
+  error: string,
+  status: number,
+  message?: string,
+  errors?: any[]
+): NextResponse<ErrorResponse> {
+  const response: ErrorResponse = { error }
+  if (message) response.message = message
+  if (errors) response.errors = errors
+
+  return NextResponse.json(response, { status })
+}
+
+/**
+ * Common error response builders
+ */
+export const ErrorResponses = {
+  badRequest: (message: string = '不正なリクエストです', errors?: any[]) =>
+    createErrorResponse('Bad Request', 400, message, errors),
+  unauthorized: (message: string = '認証が必要です') =>
+    createErrorResponse('Unauthorized', 401, message),
+  forbidden: (message: string = 'アクセス権限がありません') =>
+    createErrorResponse('Forbidden', 403, message),
+  notFound: (message: string = 'リソースが見つかりません') =>
+    createErrorResponse('Not Found', 404, message),
+  conflict: (message: string = 'リソースの競合が発生しました') =>
+    createErrorResponse('Conflict', 409, message),
+  unprocessableEntity: (message: string = '処理できないエンティティです', errors?: any[]) =>
+    createErrorResponse('Unprocessable Entity', 422, message, errors),
+  internalServerError: (message: string = 'サーバーエラーが発生しました') =>
+    createErrorResponse('Internal Server Error', 500, message),
+}
+
+/**
  * Helper to extract pagination params from request
  */
 export function getPaginationParams(request: Request): {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Header } from '@/components/header'
 import { toast } from '@/hooks/use-toast'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -32,11 +32,7 @@ export default function StoreInfoPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    fetchStoreSettings()
-  }, [])
-
-  const fetchStoreSettings = async () => {
+  const fetchStoreSettings = useCallback(async () => {
     try {
       const response = await fetch('/api/settings/store')
       if (!response.ok) throw new Error('Failed to fetch store settings')
@@ -53,7 +49,11 @@ export default function StoreInfoPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    fetchStoreSettings()
+  }, [fetchStoreSettings])
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))

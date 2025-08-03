@@ -24,11 +24,28 @@ export function ForgotPasswordForm({ store }: ForgotPasswordFormProps) {
     e.preventDefault()
     setLoading(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    const formData = new FormData(e.currentTarget)
+    const email = formData.get('email') as string
 
-    setSubmitted(true)
-    setLoading(false)
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+
+      if (!response.ok) {
+        throw new Error('パスワードリセットの送信に失敗しました')
+      }
+
+      setSubmitted(true)
+    } catch (error) {
+      // Optionally handle error with toast or alert
+      console.error('Error sending reset email:', error)
+      setSubmitted(true) // Still show success to prevent email enumeration
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (submitted) {

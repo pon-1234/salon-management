@@ -75,7 +75,6 @@ export async function GET(request: NextRequest) {
         nameKana: true,
         phone: true,
         email: true,
-        memberNumber: true,
         createdAt: true,
         updatedAt: true,
       },

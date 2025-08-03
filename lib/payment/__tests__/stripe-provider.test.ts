@@ -15,18 +15,32 @@ vi.mock('stripe', () => {
       create: vi.fn().mockResolvedValue({
         id: 'pi_test123',
         status: 'succeeded',
-        amount: 5000,
+        amount: 10000,
         currency: 'jpy',
+        metadata: {
+          reservationId: 'res_123',
+          customerId: 'cust_123',
+        },
       }),
       retrieve: vi.fn().mockResolvedValue({
         id: 'pi_test123',
         status: 'succeeded',
-        amount: 5000,
+        amount: 10000,
         currency: 'jpy',
+        metadata: {
+          reservationId: 'res_123',
+          customerId: 'cust_123',
+        },
       }),
       confirm: vi.fn().mockResolvedValue({
         id: 'pi_test123',
         status: 'succeeded',
+        amount: 10000,
+        currency: 'jpy',
+        metadata: {
+          reservationId: 'res_123',
+          customerId: 'cust_123',
+        },
       }),
     },
     refunds: {
@@ -34,6 +48,7 @@ vi.mock('stripe', () => {
         id: 'refund_test123',
         status: 'succeeded',
         amount: 5000,
+        currency: 'jpy',
       }),
     },
   }

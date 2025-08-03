@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -22,14 +22,7 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
   const [loading, setLoading] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    if (customerId) {
-      fetchMessages()
-      fetchCustomer()
-    }
-  }, [customerId])
-
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     if (!customerId) return
 
     setLoading(true)
@@ -51,9 +44,9 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [customerId])
 
-  const fetchCustomer = async () => {
+  const fetchCustomer = useCallback(async () => {
     if (!customerId) return
 
     try {
@@ -67,7 +60,14 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
     } catch (error) {
       console.error('Error fetching customer:', error)
     }
-  }
+  }, [customerId])
+
+  useEffect(() => {
+    if (customerId) {
+      fetchMessages()
+      fetchCustomer()
+    }
+  }, [customerId, fetchMessages, fetchCustomer])
 
   useEffect(() => {
     if (scrollAreaRef.current) {

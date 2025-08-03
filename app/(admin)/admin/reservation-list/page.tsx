@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Header } from '@/components/header'
 import { ReservationList } from '@/components/reservation/reservation-list'
 import { Button } from '@/components/ui/button'
@@ -22,13 +22,9 @@ export default function ReservationListPage() {
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [loading, setLoading] = useState(true)
-  const reservationRepository = new ReservationRepositoryImpl()
+  const reservationRepository = useMemo(() => new ReservationRepositoryImpl(), [])
 
-  useEffect(() => {
-    fetchReservations()
-  }, [])
-
-  const fetchReservations = async () => {
+  const fetchReservations = useCallback(async () => {
     setLoading(true)
     try {
       const fetchedReservations = await reservationRepository.getAll()
@@ -43,7 +39,11 @@ export default function ReservationListPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [reservationRepository])
+
+  useEffect(() => {
+    fetchReservations()
+  }, [fetchReservations])
 
   // 予約データをダイアログ用に変換
   const convertToReservationData = (reservation: Reservation): ReservationData | null => {

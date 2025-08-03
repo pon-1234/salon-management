@@ -8,8 +8,9 @@ import { Resend } from 'resend'
 // 環境変数からAPIキーを取得
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-// TODO: 'from'アドレスはResendで検証済みのドメインのメールアドレスにする必要があります
-const FROM_EMAIL = 'onboarding@resend.dev'
+// Note: In production, update this to use a verified domain email address
+// For development, 'onboarding@resend.dev' is provided by Resend for testing
+const FROM_EMAIL = process.env.FROM_EMAIL || 'onboarding@resend.dev'
 
 export const emailClient = {
   async send(data: {
@@ -30,10 +31,9 @@ export const emailClient = {
         from: FROM_EMAIL,
         to: data.to,
         subject: data.subject,
-        // 現時点ではプレーンテキストの body を優先的に使用
-        text: data.body || 'This is a default email body.',
-        // 将来的には、template と data を使ってHTMLを生成する
-        // html: `<div>${data.body}</div>`,
+        // Support both text and HTML formats
+        text: data.body?.replace(/<[^>]*>/g, '') || 'This is a default email body.',
+        html: data.body || '<p>This is a default email body.</p>',
       })
 
       if (response.error) {

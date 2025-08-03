@@ -12,7 +12,7 @@ import { GET as CoursePriceGET } from './course/route'
 import { GET as OptionPriceGET } from './option/route'
 import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 
 // Mock all dependencies
 vi.mock('next-auth', () => ({
@@ -79,7 +79,7 @@ vi.mock('bcryptjs', () => ({
   },
 }))
 
-import { checkCastAvailability } from './reservation/availability/route'
+// checkCastAvailability is now internal to route files
 
 describe('Customer Journey Integration Tests', () => {
   beforeEach(() => {
@@ -153,15 +153,13 @@ describe('Customer Journey Integration Tests', () => {
       options: [{ option: { id: 'option1', name: 'Extra Service', price: 2000 } }],
     }
 
-    vi.mocked(checkCastAvailability).mockResolvedValueOnce({
-      available: true,
-      conflicts: [],
-    })
+    // Availability check is handled within route
 
     vi.mocked(db.$transaction).mockImplementationOnce(async (fn: any) => {
       const txDb = {
         reservation: {
           create: vi.fn().mockResolvedValue(mockReservation),
+          findMany: vi.fn().mockResolvedValue([]), // No conflicts
         },
       }
       return await fn(txDb)
@@ -306,22 +304,19 @@ describe('Customer Journey Integration Tests', () => {
       endTime: '2025-07-15T11:00:00+09:00',
     }
 
-    // Mock availability check returning conflicts
-    vi.mocked(checkCastAvailability).mockResolvedValueOnce({
-      available: false,
-      conflicts: [
-        {
-          id: 'existing-reservation',
-          startTime: '2025-07-15T10:30:00Z',
-          endTime: '2025-07-15T11:30:00Z',
-        },
-      ],
-    })
+    // Availability check returning conflicts is handled within transaction mock
 
     vi.mocked(db.$transaction).mockImplementationOnce(async (fn: any) => {
       const txDb = {
         reservation: {
           create: vi.fn(),
+          findMany: vi.fn().mockResolvedValue([
+            {
+              id: 'existing-res-1',
+              startTime: new Date('2025-07-15T01:00:00Z'),
+              endTime: new Date('2025-07-15T02:00:00Z'),
+            },
+          ]), // Has conflicts
         },
       }
       try {

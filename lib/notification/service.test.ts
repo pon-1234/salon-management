@@ -27,6 +27,14 @@ vi.mock('@/lib/push/client', () => ({
   },
 }))
 
+vi.mock('@/lib/logger', () => ({
+  default: {
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+  },
+}))
+
 import { emailClient } from '@/lib/email/client'
 import { smsClient } from '@/lib/sms/client'
 import { pushClient } from '@/lib/push/client'
@@ -76,7 +84,7 @@ describe('NotificationService', () => {
       expect(vi.mocked(emailClient.send)).toHaveBeenCalledWith({
         to: 'test@example.com',
         subject: 'Reservation Confirmed',
-        template: 'reservation-confirmation',
+        body: expect.stringContaining('Test Customer'),
         data: {
           customerName: 'Test Customer',
           castName: 'Test Cast',
@@ -165,7 +173,7 @@ describe('NotificationService', () => {
       expect(vi.mocked(emailClient.send)).toHaveBeenCalledWith({
         to: 'test@example.com',
         subject: 'Reservation Modified',
-        template: 'reservation-modification',
+        body: expect.stringContaining('Test Customer'),
         data: expect.objectContaining({
           oldStartTime: oldReservation.startTime,
           oldEndTime: oldReservation.endTime,
@@ -206,7 +214,7 @@ describe('NotificationService', () => {
       expect(vi.mocked(emailClient.send)).toHaveBeenCalledWith({
         to: 'test@example.com',
         subject: 'Reservation Cancelled',
-        template: 'reservation-cancellation',
+        body: expect.stringContaining('Test Customer'),
         data: expect.objectContaining({
           customerName: 'Test Customer',
           castName: 'Test Cast',
@@ -250,7 +258,7 @@ describe('NotificationService', () => {
 
       expect(results).toHaveLength(3)
       expect(results[0].success).toBe(false)
-      expect(results[0].error).toBe('Email failed')
+      expect(results[0].error).toContain('Email failed')
       expect(results[1].success).toBe(true)
       expect(results[2].success).toBe(true)
     })

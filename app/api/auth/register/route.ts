@@ -5,9 +5,9 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { hash } from 'bcryptjs'
-import { CustomerRepositoryImpl } from '@/lib/customer/repository-impl'
-
-const customerRepository = new CustomerRepositoryImpl()
+import { emailClient } from '@/lib/email/client'
+import { randomBytes } from 'crypto'
+import { db } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +20,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const existingCustomer = await customerRepository.findByEmail(email)
+    const existingCustomer = await db.customer.findUnique({
+      where: { email },
+    })
     if (existingCustomer) {
       return NextResponse.json(
         { error: 'このメールアドレスは既に使用されています' },
@@ -31,27 +33,60 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await hash(password, 12)
 
-    // Create customer
-    const customer = await customerRepository.create({
-      name: nickname, // Map nickname to name field
-      email,
-      phone,
-      password: hashedPassword,
-      birthDate: birthDate ? new Date(birthDate) : new Date(),
-      age: birthDate ? new Date().getFullYear() - new Date(birthDate).getFullYear() : 0,
-      memberType: 'regular' as const,
-      smsEnabled: smsNotifications || false,
-      points: 1000, // Initial signup bonus
-      registrationDate: new Date(),
+    // Generate email verification token
+    const verificationToken = randomBytes(32).toString('hex')
+    const verificationExpiry = new Date(Date.now() + 86400000) // 24 hours from now
+
+    // Create customer with email verification fields
+    const customer = await db.customer.create({
+      data: {
+        name: nickname,
+        nameKana: nickname, // Using nickname as nameKana for now
+        email,
+        phone,
+        password: hashedPassword,
+        birthDate: birthDate ? new Date(birthDate) : new Date(),
+        memberType: 'regular',
+        points: 1000, // Initial signup bonus
+        emailVerified: false,
+        emailVerificationToken: verificationToken,
+        emailVerificationExpiry: verificationExpiry,
+      },
     })
 
-    // Remove password from response
-    const { password: _, ...customerWithoutPassword } = customer
+    // Send verification email
+    try {
+      const verificationUrl = `${process.env.NEXTAUTH_URL}/verify-email?token=${verificationToken}`
+      await emailClient.send({
+        to: email,
+        subject: 'メールアドレスの確認',
+        body: `
+          <h2>メールアドレスの確認</h2>
+          <p>${nickname}様</p>
+          <p>ご登録ありがとうございます。</p>
+          <p>以下のリンクをクリックして、メールアドレスを確認してください：</p>
+          <p><a href="${verificationUrl}">${verificationUrl}</a></p>
+          <p>このリンクは24時間後に無効になります。</p>
+          <p>このメールに心当たりがない場合は、無視してください。</p>
+        `,
+      })
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError)
+      // Continue with registration even if email fails
+    }
+
+    // Remove sensitive fields from response
+    const {
+      password: _,
+      emailVerificationToken: __,
+      resetToken: ___,
+      ...customerWithoutSensitive
+    } = customer
 
     return NextResponse.json(
       {
-        message: '会員登録が完了しました',
-        customer: customerWithoutPassword,
+        message: '会員登録が完了しました。メールアドレスに確認メールを送信しました。',
+        customer: customerWithoutSensitive,
       },
       { status: 201 }
     )

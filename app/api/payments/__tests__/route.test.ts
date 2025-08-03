@@ -5,29 +5,36 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { POST, GET } from '../route'
 import { NextRequest } from 'next/server'
 
-// Mock PaymentService
-vi.mock('@/lib/payment/service', () => ({
-  PaymentService: vi.fn().mockImplementation(() => ({
+// Use vi.hoisted to ensure mocks are set up before imports
+const { mockPaymentService } = vi.hoisted(() => {
+  // Set up environment variables
+  process.env.STRIPE_SECRET_KEY = 'test_secret_key'
+  process.env.STRIPE_PUBLISHABLE_KEY = 'test_publishable_key'
+
+  const mockPaymentService = {
     processPayment: vi.fn(),
     createPaymentIntent: vi.fn(),
     getPaymentHistory: vi.fn(),
     getPaymentHistoryByReservation: vi.fn(),
     refundPayment: vi.fn(),
     getPaymentStatus: vi.fn(),
-  })),
+  }
+
+  return { mockPaymentService }
+})
+
+vi.mock('@/lib/payment/service', () => ({
+  PaymentService: vi.fn(() => mockPaymentService),
 }))
 
-const mockPaymentService = {
-  processPayment: vi.fn(),
-  createPaymentIntent: vi.fn(),
-  getPaymentHistory: vi.fn(),
-  getPaymentHistoryByReservation: vi.fn(),
-  refundPayment: vi.fn(),
-  getPaymentStatus: vi.fn(),
-}
+vi.mock('@/lib/payment/providers/stripe', () => ({
+  StripeProvider: vi.fn(() => ({})),
+}))
+
+// Import route after mocks are set up
+import { POST, GET } from '../route'
 
 describe('/api/payments', () => {
   beforeEach(() => {

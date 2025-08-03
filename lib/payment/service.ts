@@ -271,8 +271,9 @@ export class PaymentService {
           provider: transaction.provider,
           paymentMethod: transaction.paymentMethod,
           status: transaction.status,
-          intentId: transaction.intentId,
-          providerTransactionId: transaction.providerTransactionId,
+          type: 'payment',
+          paymentIntentId: transaction.paymentIntentId,
+          stripePaymentId: transaction.stripePaymentId,
           metadata: transaction.metadata,
           errorMessage: transaction.errorMessage,
           processedAt: transaction.processedAt,
@@ -306,16 +307,16 @@ export class PaymentService {
     await prisma.paymentIntent.create({
       data: {
         id: intent.id,
+        stripeIntentId: intent.providerId, // Use providerId as stripeIntentId
         providerId: intent.providerId,
         provider: intent.provider,
         amount: intent.amount,
         currency: intent.currency,
         status: intent.status,
         paymentMethod: intent.paymentMethod,
-        clientSecret: intent.clientSecret,
+        customerId: undefined, // TODO: Add customerId to intent
         metadata: intent.metadata,
         errorMessage: intent.errorMessage,
-        processedAt: intent.processedAt,
       },
     })
   }
@@ -333,7 +334,6 @@ export class PaymentService {
       data: {
         status: data.status,
         errorMessage: data.errorMessage,
-        processedAt: data.processedAt,
       },
     })
   }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Header } from '@/components/header'
 import { toast } from '@/hooks/use-toast'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -47,11 +47,7 @@ export default function HotelInfoPage() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [amenityInput, setAmenityInput] = useState('')
 
-  useEffect(() => {
-    fetchHotels()
-  }, [])
-
-  const fetchHotels = async () => {
+  const fetchHotels = useCallback(async () => {
     try {
       const response = await fetch('/api/settings/hotel')
       if (!response.ok) throw new Error('Failed to fetch hotels')
@@ -68,7 +64,11 @@ export default function HotelInfoPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    fetchHotels()
+  }, [fetchHotels])
 
   const handleAddHotel = async () => {
     if (

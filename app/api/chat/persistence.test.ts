@@ -39,12 +39,12 @@ describe('Chat Message Persistence', () => {
     const createdMessage = {
       id: 'persisted-msg-1',
       ...newMessage,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date(),
       readStatus: '未読',
       isReservationInfo: false,
       reservationInfo: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     }
 
     vi.mocked(prisma.message.create).mockResolvedValue(createdMessage)
@@ -64,9 +64,9 @@ describe('Chat Message Persistence', () => {
     const getResponse = await GET(getRequest)
     expect(getResponse.status).toBe(200)
 
-    const retrievedMessages = await getResponse.json()
-    expect(retrievedMessages).toHaveLength(1)
-    expect(retrievedMessages[0]).toMatchObject({
+    const responseData = await getResponse.json()
+    expect(responseData.data).toHaveLength(1)
+    expect(responseData.data[0]).toMatchObject({
       id: 'persisted-msg-1',
       content: 'This message should persist across page refreshes',
       customerId: 'test-customer-1',
@@ -99,36 +99,36 @@ describe('Chat Message Persistence', () => {
         customerId: 'customer-1',
         sender: 'customer',
         content: 'Initial customer message',
-        timestamp: new Date('2024-01-01T10:00:00Z').toISOString(),
+        timestamp: new Date('2024-01-01T10:00:00Z'),
         readStatus: '既読',
         isReservationInfo: false,
         reservationInfo: null,
-        createdAt: new Date('2024-01-01T10:00:00Z').toISOString(),
-        updatedAt: new Date('2024-01-01T10:00:00Z').toISOString(),
+        createdAt: new Date('2024-01-01T10:00:00Z'),
+        updatedAt: new Date('2024-01-01T10:00:00Z'),
       },
       {
         id: 'msg-2',
         customerId: 'customer-1',
         sender: 'staff',
         content: 'Staff response',
-        timestamp: new Date('2024-01-01T10:05:00Z').toISOString(),
+        timestamp: new Date('2024-01-01T10:05:00Z'),
         readStatus: '既読',
         isReservationInfo: false,
         reservationInfo: null,
-        createdAt: new Date('2024-01-01T10:05:00Z').toISOString(),
-        updatedAt: new Date('2024-01-01T10:05:00Z').toISOString(),
+        createdAt: new Date('2024-01-01T10:05:00Z'),
+        updatedAt: new Date('2024-01-01T10:05:00Z'),
       },
       {
         id: 'msg-3',
         customerId: 'customer-1',
         sender: 'customer',
         content: 'Follow-up question',
-        timestamp: new Date('2024-01-01T10:10:00Z').toISOString(),
+        timestamp: new Date('2024-01-01T10:10:00Z'),
         readStatus: '未読',
         isReservationInfo: false,
         reservationInfo: null,
-        createdAt: new Date('2024-01-01T10:10:00Z').toISOString(),
-        updatedAt: new Date('2024-01-01T10:10:00Z').toISOString(),
+        createdAt: new Date('2024-01-01T10:10:00Z'),
+        updatedAt: new Date('2024-01-01T10:10:00Z'),
       },
     ]
 
@@ -139,17 +139,17 @@ describe('Chat Message Persistence', () => {
     const response = await GET(request)
     expect(response.status).toBe(200)
 
-    const messages = await response.json()
-    expect(messages).toHaveLength(3)
+    const responseData = await response.json()
+    expect(responseData.data).toHaveLength(3)
 
     // Verify messages are in correct order (oldest first)
-    expect(messages[0].content).toBe('Initial customer message')
-    expect(messages[1].content).toBe('Staff response')
-    expect(messages[2].content).toBe('Follow-up question')
+    expect(responseData.data[0].content).toBe('Initial customer message')
+    expect(responseData.data[1].content).toBe('Staff response')
+    expect(responseData.data[2].content).toBe('Follow-up question')
 
     // Verify read status persists
-    expect(messages[0].readStatus).toBe('既読')
-    expect(messages[1].readStatus).toBe('既読')
-    expect(messages[2].readStatus).toBe('未読')
+    expect(responseData.data[0].readStatus).toBe('既読')
+    expect(responseData.data[1].readStatus).toBe('既読')
+    expect(responseData.data[2].readStatus).toBe('未読')
   })
 })

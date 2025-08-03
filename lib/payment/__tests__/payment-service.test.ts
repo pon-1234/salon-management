@@ -18,6 +18,16 @@ import {
 } from '../types'
 
 // Mock Prisma
+// Mock logger
+vi.mock('@/lib/logger', () => ({
+  default: {
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  },
+}))
+
 vi.mock('@/lib/generated/prisma', () => ({
   prisma: {
     paymentTransaction: {
@@ -156,9 +166,8 @@ describe('PaymentService', () => {
       provider: 'stripe',
       paymentMethod: 'card',
       status: 'completed',
+      type: 'payment',
       paymentIntentId: null,
-      intentId: null,
-      providerTransactionId: null,
       stripePaymentId: null,
       refundedAt: null,
       refundAmount: null,
@@ -170,15 +179,15 @@ describe('PaymentService', () => {
     })
     vi.mocked(mockPrisma.paymentIntent.findUnique).mockResolvedValue({
       id: 'pi_123',
-      providerId: 'pi_stripe_123',
+      stripeIntentId: 'pi_stripe_123',
       provider: 'stripe',
       amount: 10000,
       currency: 'jpy',
       status: 'pending',
       paymentMethod: 'card',
-      clientSecret: 'pi_123_secret',
+      customerId: null,
       metadata: null,
-      processedAt: null,
+      providerId: null,
       errorMessage: null,
       createdAt: new Date(),
       updatedAt: new Date(),

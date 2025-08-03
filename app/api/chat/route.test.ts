@@ -41,12 +41,12 @@ describe('Chat API', () => {
           customerId: 'customer1',
           sender: 'customer',
           content: 'Hello',
-          timestamp: '2024-01-01T10:00:00.000Z',
+          timestamp: new Date('2024-01-01T10:00:00.000Z'),
           readStatus: '既読',
           isReservationInfo: false,
-          reservationInfo: undefined,
-          createdAt: '2024-01-01T10:00:00.000Z',
-          updatedAt: '2024-01-01T10:00:00.000Z',
+          reservationInfo: null,
+          createdAt: new Date('2024-01-01T10:00:00.000Z'),
+          updatedAt: new Date('2024-01-01T10:00:00.000Z'),
         },
       ]
 
@@ -73,24 +73,24 @@ describe('Chat API', () => {
           customerId: 'customer1',
           sender: 'customer',
           content: 'Hello',
-          timestamp: '2024-01-01T10:00:00.000Z',
+          timestamp: new Date('2024-01-01T10:00:00.000Z'),
           readStatus: '既読',
           isReservationInfo: false,
-          reservationInfo: undefined,
-          createdAt: '2024-01-01T10:00:00.000Z',
-          updatedAt: '2024-01-01T10:00:00.000Z',
+          reservationInfo: null,
+          createdAt: new Date('2024-01-01T10:00:00.000Z'),
+          updatedAt: new Date('2024-01-01T10:00:00.000Z'),
         },
         {
           id: '2',
           customerId: 'customer2',
           sender: 'customer',
           content: 'Hi',
-          timestamp: '2024-01-01T11:00:00.000Z',
+          timestamp: new Date('2024-01-01T11:00:00.000Z'),
           readStatus: '未読',
           isReservationInfo: false,
-          reservationInfo: undefined,
-          createdAt: '2024-01-01T11:00:00.000Z',
-          updatedAt: '2024-01-01T11:00:00.000Z',
+          reservationInfo: null,
+          createdAt: new Date('2024-01-01T11:00:00.000Z'),
+          updatedAt: new Date('2024-01-01T11:00:00.000Z'),
         },
       ]
 
@@ -134,12 +134,12 @@ describe('Chat API', () => {
       const createdMessage = {
         id: 'msg123',
         ...newMessage,
-        timestamp: '2024-01-01T12:00:00.000Z',
+        timestamp: new Date('2024-01-01T12:00:00.000Z'),
         readStatus: '未読',
         isReservationInfo: false,
         reservationInfo: null,
-        createdAt: '2024-01-01T12:00:00.000Z',
-        updatedAt: '2024-01-01T12:00:00.000Z',
+        createdAt: new Date('2024-01-01T12:00:00.000Z'),
+        updatedAt: new Date('2024-01-01T12:00:00.000Z'),
       }
 
       vi.mocked(prisma.message.create).mockResolvedValue(createdMessage)
@@ -161,7 +161,7 @@ describe('Chat API', () => {
           timestamp: expect.any(Date),
           readStatus: '未読',
           isReservationInfo: false,
-          reservationInfo: undefined,
+          reservationInfo: null,
         },
       })
       expect(data).toMatchObject({
@@ -191,10 +191,10 @@ describe('Chat API', () => {
       const createdMessage = {
         id: 'msg124',
         ...newMessage,
-        timestamp: '2024-01-01T12:00:00.000Z',
+        timestamp: new Date('2024-01-01T12:00:00.000Z'),
         readStatus: '未読',
-        createdAt: '2024-01-01T12:00:00.000Z',
-        updatedAt: '2024-01-01T12:00:00.000Z',
+        createdAt: new Date('2024-01-01T12:00:00.000Z'),
+        updatedAt: new Date('2024-01-01T12:00:00.000Z'),
       }
 
       vi.mocked(prisma.message.create).mockResolvedValue(createdMessage)
@@ -248,12 +248,12 @@ describe('Chat API', () => {
         customerId: 'customer1',
         sender: 'customer',
         content: 'Hello',
-        timestamp: '2024-01-01T10:00:00.000Z',
+        timestamp: new Date('2024-01-01T10:00:00.000Z'),
         readStatus: '既読',
         isReservationInfo: false,
         reservationInfo: null,
-        createdAt: '2024-01-01T10:00:00.000Z',
-        updatedAt: '2024-01-01T12:00:00.000Z',
+        createdAt: new Date('2024-01-01T10:00:00.000Z'),
+        updatedAt: new Date('2024-01-01T12:00:00.000Z'),
       }
 
       vi.mocked(prisma.message.update).mockResolvedValue(updatedMessage)

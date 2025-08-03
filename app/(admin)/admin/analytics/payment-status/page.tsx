@@ -6,7 +6,7 @@
 
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { PaymentStatusTable } from '@/components/analytics/payment-status-table'
 import { PaymentTransaction } from '@/lib/payment/types'
 import {
@@ -30,11 +30,7 @@ export default function PaymentStatusPage() {
   const [startDate, setStartDate] = useState<Date>(addDays(new Date(), -30))
   const [endDate, setEndDate] = useState<Date>(new Date())
 
-  useEffect(() => {
-    fetchPaymentData()
-  }, [startDate, endDate, statusFilter, providerFilter])
-
-  const fetchPaymentData = async () => {
+  const fetchPaymentData = useCallback(async () => {
     setLoading(true)
     try {
       // Mock data for demonstration - in real implementation, this would fetch from API
@@ -130,7 +126,11 @@ export default function PaymentStatusPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [startDate, endDate, statusFilter, providerFilter])
+
+  useEffect(() => {
+    fetchPaymentData()
+  }, [fetchPaymentData])
 
   const refreshData = () => {
     fetchPaymentData()

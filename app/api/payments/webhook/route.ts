@@ -88,7 +88,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
   // Update payment transaction status
   await db.paymentTransaction.updateMany({
     where: {
-      OR: [{ intentId: id }, { providerTransactionId: id }],
+      OR: [{ paymentIntentId: id }, { stripePaymentId: id }],
     },
     data: {
       status: 'completed',
@@ -104,7 +104,6 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     },
     data: {
       status: 'completed',
-      processedAt: new Date(),
       updatedAt: new Date(),
     },
   })
@@ -129,7 +128,7 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
   // Update payment transaction status
   await db.paymentTransaction.updateMany({
     where: {
-      OR: [{ intentId: id }, { providerTransactionId: id }],
+      OR: [{ paymentIntentId: id }, { stripePaymentId: id }],
     },
     data: {
       status: 'failed',
@@ -160,7 +159,7 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
     // Update payment transaction with refund info
     await db.paymentTransaction.updateMany({
       where: {
-        OR: [{ intentId: payment_intent }, { providerTransactionId: payment_intent }],
+        OR: [{ paymentIntentId: payment_intent }, { stripePaymentId: payment_intent }],
       },
       data: {
         status: 'refunded',
@@ -180,7 +179,7 @@ async function handlePaymentIntentCanceled(paymentIntent: Stripe.PaymentIntent) 
   // Update payment transaction status
   await db.paymentTransaction.updateMany({
     where: {
-      OR: [{ intentId: id }, { providerTransactionId: id }],
+      OR: [{ paymentIntentId: id }, { stripePaymentId: id }],
     },
     data: {
       status: 'cancelled',

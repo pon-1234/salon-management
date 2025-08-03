@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { CastForm } from '@/components/cast/cast-form'
 import { CastDashboard } from '@/components/cast/cast-dashboard'
@@ -34,7 +34,7 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
   const [id, setId] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const router = useRouter()
-  const castRepository = new CastRepositoryImpl()
+  const castRepository = useMemo(() => new CastRepositoryImpl(), [])
   const isNewCast = id === 'new'
 
   useEffect(() => {
@@ -74,7 +74,7 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
     }
 
     fetchCast()
-  }, [id, isNewCast])
+  }, [id, isNewCast, castRepository, router])
 
   const handleSubmit = async (data: Partial<Cast>) => {
     try {
