@@ -51,23 +51,6 @@ export function logError(error: unknown, context?: string): void {
 }
 
 // 非同期関数のエラーをハンドリングするラッパー関数
-export async function handleAsyncError<T>(
-  asyncFn: () => Promise<T>,
-  context?: string
-): Promise<T | null> {
-  try {
-    return await asyncFn()
-  } catch (error) {
-    logError(error, context)
-    return null
-  }
-}
 
-// 配列やオブジェクトの安全なマッピング関数
-export function safeMap<T, U>(array: T[] | undefined | null, mapFn: (item: T) => U): U[] {
-  if (!array || !Array.isArray(array)) {
-    console.warn('Attempted to map over non-array:', array)
-    return []
-  }
-  return array.map(mapFn)
-}
+
+

@@ -43,23 +43,4 @@ export function generateAreaSalesData(_year: number): AreaSalesData[] {
   return areas
 }
 
-export function getTransportationFees(): TransportationFee[] {
-  return [
-    {
-      area: '池袋北口・西口周辺',
-      fee: 0,
-    },
-    {
-      area: '池袋南口・西口一部周辺',
-      fee: 1000,
-    },
-    {
-      area: '池袋東口周辺',
-      fee: 2000,
-    },
-    {
-      area: 'その他',
-      fee: 3000,
-    },
-  ]
-}
+// Function removed as it was unused
