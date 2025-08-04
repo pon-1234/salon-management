@@ -146,8 +146,3 @@ export const getSettlementSummaryByCast = (castId: string): SettlementSummary =>
 }
 
 // 期間指定での売上記録取得
-export const getSalesRecordsByPeriod = (castId: string, from: Date, to: Date): SalesRecord[] => {
-  return mockSalesRecords.filter(
-    (record) => record.castId === castId && record.date >= from && record.date <= to
-  )
-}

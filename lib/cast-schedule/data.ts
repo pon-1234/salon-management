@@ -95,34 +95,3 @@ export function generateMockLeaveRequest(castId: string): LeaveRequest {
     updatedAt: now,
   }
 }
-
-// Generate sample data for multiple casts
-export function generateSampleScheduleData() {
-  const castIds = ['cast-1', 'cast-2', 'cast-3', 'cast-4', 'cast-5']
-  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
-
-  const schedules: Schedule[] = []
-  const patterns: SchedulePattern[] = []
-  const leaveRequests: LeaveRequest[] = []
-
-  castIds.forEach((castId, index) => {
-    // Generate weekly schedules
-    const castSchedules = generateMockWeeklySchedules(castId, weekStart)
-    schedules.push(...castSchedules)
-
-    // Generate patterns (different days for each cast)
-    const pattern = generateMockSchedulePattern(castId, (index + 1) % 7)
-    patterns.push(pattern)
-
-    // Generate leave requests for some casts
-    if (index % 2 === 0) {
-      leaveRequests.push(generateMockLeaveRequest(castId))
-    }
-  })
-
-  return {
-    schedules,
-    patterns,
-    leaveRequests,
-  }
-}

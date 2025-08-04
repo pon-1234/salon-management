@@ -149,18 +149,6 @@ export const getMonthlyPerformanceSummary = (
   return mockMonthlyPerformanceSummary
 }
 
-// 期間指定での就業成績取得
-export const getWorkPerformancesByPeriod = (
-  castId: string,
-  from: Date,
-  to: Date
-): WorkPerformance[] => {
-  return mockWorkPerformances.filter(
-    (performance) =>
-      performance.castId === castId && performance.date >= from && performance.date <= to
-  )
-}
-
 // 日別成績の集計
 export const calculateDailyStats = (performances: WorkPerformance[]) => {
   const totalWorkDays = performances.length
