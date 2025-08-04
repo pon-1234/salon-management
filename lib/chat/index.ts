@@ -1,2 +1,1 @@
-export * from './data'
-export * from './utils'
+export { getCustomers } from './utils'
