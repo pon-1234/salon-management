@@ -43,4 +43,4 @@ export function generateAreaSalesData(_year: number): AreaSalesData[] {
   return areas
 }
 
-// Function removed as it was unused
+

@@ -50,7 +50,7 @@ export function logError(error: unknown, context?: string): void {
   console.dir(error, { depth: null })
 }
 
-// 非同期関数のエラーをハンドリングするラッパー関数
+
 
 
 

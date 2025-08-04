@@ -129,9 +129,6 @@ export const ErrorResponses = {
     createErrorResponse('Internal Server Error', 500, message),
 }
 
-/**
- * Helper to extract pagination params from request
- */
-// Function removed as it was unused
+
 
 
