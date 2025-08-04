@@ -6,6 +6,7 @@ import {
 } from '../pricing/adapters'
 
 // Cache for courses and options to avoid fetching on every import
+/** @no-test-required reason: Internal cache variables used by exported functions */
 let cachedCourses: Course[] | null = null
 let cachedOptions: Option[] | null = null
 let lastFetchTime: number = 0
@@ -62,15 +63,6 @@ export async function getOptions(): Promise<Option[]> {
 }
 
 /**
- * Clear the cache to force a refresh
- */
-export function clearPricingCache(): void {
-  cachedCourses = null
-  cachedOptions = null
-  lastFetchTime = 0
-}
-
-/**
  * Legacy exports for backward compatibility
  * These will be populated on first access
  */
@@ -82,6 +74,7 @@ courses = getFallbackCourses()
 options = getFallbackOptions()
 
 // Asynchronously update with real data
+/** @no-test-required reason: Self-executing async initialization - tested via the exported arrays */
 ;(async () => {
   courses = await getCourses()
   options = await getOptions()
@@ -89,6 +82,7 @@ options = getFallbackOptions()
 
 /**
  * Fallback data in case the pricing system is unavailable
+ * @no-test-required reason: Internal fallback function called by exported getCourses which handles errors
  */
 function getFallbackCourses(): Course[] {
   return [
@@ -105,6 +99,7 @@ function getFallbackCourses(): Course[] {
   ]
 }
 
+/** @no-test-required reason: Internal fallback function called by exported getOptions which handles errors */
 function getFallbackOptions(): Option[] {
   return [
     { id: '1', name: 'オールヌード', price: 3000 },

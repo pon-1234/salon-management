@@ -30,15 +30,6 @@ export interface Store {
   updatedAt: Date
 }
 
-export interface StoreWithStats extends Store {
-  stats: {
-    totalCast: number
-    totalCustomers: number
-    monthlyRevenue: number
-    averageRating: number
-  }
-}
-
 export interface StoreConfig {
   currentStore: Store
   availableStores: Store[]

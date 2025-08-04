@@ -10,14 +10,6 @@ export function getCourseById(id: string): Course | undefined {
 }
 
 /**
- * Get a course by ID from the pricing system (async, always up-to-date)
- */
-export async function getCourseByIdAsync(id: string): Promise<Course | undefined> {
-  const allCourses = await getCourses()
-  return allCourses.find((course) => course.id === id)
-}
-
-/**
  * Get an option by ID from the static array (for backward compatibility)
  * Note: This uses the cached/fallback data and may not be up-to-date
  */

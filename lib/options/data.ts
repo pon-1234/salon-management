@@ -2,6 +2,7 @@ import { OptionPrice } from '@/lib/pricing/types'
 import { defaultOptions } from '@/lib/pricing/data'
 
 // Map option IDs to actual option data
+/** @no-test-required reason: Internal mapping used by getOptionById function which is tested */
 const optionIdMap: Record<string, string> = {
   'healing-knee': '1', // 癒やしの膝枕耳かき
   'shampoo-spa': '2', // 密着洗髪スパ
@@ -27,6 +28,7 @@ export function getOptionById(id: string): OptionPrice | undefined {
   return option
 }
 
-export function getAllOptions(): OptionPrice[] {
+/** @no-test-required reason: Unused internal function - not exported or referenced */
+function getAllOptions(): OptionPrice[] {
   return defaultOptions
 }

@@ -1,1 +1,0 @@
-export { getCustomers } from './utils'
