@@ -20,26 +20,3 @@ export async function requireAdmin() {
 
   return null
 }
-
-/**
- * Requires the current user to be authenticated.
- * Returns null if authorized, or a NextResponse error if not.
- */
-export async function requireAuth() {
-  const session = await getServerSession(authOptions)
-
-  if (!session) {
-    return NextResponse.json({ error: '認証が必要です' }, { status: 401 })
-  }
-
-  return null
-}
-
-/**
- * Gets the current user's session.
- * Returns the session if authenticated, or null if not.
- */
-export async function getCurrentUser() {
-  const session = await getServerSession(authOptions)
-  return session?.user || null
-}
