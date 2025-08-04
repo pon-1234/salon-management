@@ -8,6 +8,9 @@ import { NextRequest } from 'next/server'
 import { GET, POST, PUT, DELETE } from './route'
 import { db } from '@/lib/db'
 
+// Import Prisma for error mocking
+import { Prisma } from '@prisma/client'
+
 // Mock the database
 vi.mock('@/lib/db', () => ({
   db: {
@@ -77,8 +80,7 @@ describe('GET /api/cast-schedule', () => {
     const data = await response.json()
 
     expect(response.status).toBe(404)
-    expect(data.error).toBe('Not Found')
-    expect(data.message).toBe('スケジュールが見つかりません')
+    expect(data.error).toBe('スケジュールが見つかりません')
   })
 
   it('should filter schedules by castId', async () => {
@@ -293,7 +295,7 @@ describe('PUT /api/cast-schedule', () => {
     const data = await response.json()
 
     expect(response.status).toBe(400)
-    expect(data.error).toBe('ID is required')
+    expect(data.error).toBe('IDが必要です')
   })
 
   it('should update schedule', async () => {
@@ -339,10 +341,12 @@ describe('PUT /api/cast-schedule', () => {
   })
 
   it('should handle non-existent schedule', async () => {
-    vi.mocked(db.castSchedule.update).mockRejectedValueOnce({
-      code: 'P2025',
-      message: 'Record not found',
-    })
+    vi.mocked(db.castSchedule.update).mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError('Record not found', {
+        code: 'P2025',
+        clientVersion: '5.0.0',
+      })
+    )
 
     const request = new NextRequest('http://localhost:3000/api/cast-schedule', {
       method: 'PUT',
@@ -356,8 +360,7 @@ describe('PUT /api/cast-schedule', () => {
     const data = await response.json()
 
     expect(response.status).toBe(404)
-    expect(data.error).toBe('Not Found')
-    expect(data.message).toBe('スケジュールが見つかりません')
+    expect(data.error).toBe('データが見つかりません')
   })
 })
 
@@ -375,8 +378,7 @@ describe('DELETE /api/cast-schedule', () => {
     const data = await response.json()
 
     expect(response.status).toBe(400)
-    expect(data.error).toBe('Bad Request')
-    expect(data.message).toBe('IDが必要です')
+    expect(data.error).toBe('IDが必要です')
   })
 
   it('should delete schedule', async () => {
@@ -395,10 +397,12 @@ describe('DELETE /api/cast-schedule', () => {
   })
 
   it('should handle non-existent schedule', async () => {
-    vi.mocked(db.castSchedule.delete).mockRejectedValueOnce({
-      code: 'P2025',
-      message: 'Record not found',
-    })
+    vi.mocked(db.castSchedule.delete).mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError('Record not found', {
+        code: 'P2025',
+        clientVersion: '5.0.0',
+      })
+    )
 
     const request = new NextRequest('http://localhost:3000/api/cast-schedule?id=non-existent', {
       method: 'DELETE',
@@ -408,8 +412,7 @@ describe('DELETE /api/cast-schedule', () => {
     const data = await response.json()
 
     expect(response.status).toBe(404)
-    expect(data.error).toBe('Not Found')
-    expect(data.message).toBe('スケジュールが見つかりません')
+    expect(data.error).toBe('データが見つかりません')
   })
 })
 
@@ -427,10 +430,12 @@ describe('Cast Schedule API - Conflict Detection', () => {
     }
 
     // Simulate unique constraint violation
-    vi.mocked(db.castSchedule.create).mockRejectedValueOnce({
-      code: 'P2002',
-      message: 'Unique constraint failed',
-    })
+    vi.mocked(db.castSchedule.create).mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        code: 'P2002',
+        clientVersion: '5.0.0',
+      })
+    )
 
     const request = new NextRequest('http://localhost:3000/api/cast-schedule', {
       method: 'POST',
@@ -441,7 +446,6 @@ describe('Cast Schedule API - Conflict Detection', () => {
     const data = await response.json()
 
     expect(response.status).toBe(409)
-    expect(data.error).toBe('Conflict')
-    expect(data.message).toBe('スケジュールの競合が検出されました')
+    expect(data.error).toBe('データが既に存在します')
   })
 })

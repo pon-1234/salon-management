@@ -118,22 +118,3 @@ export function PricingSyncStatusCard({ storeId, storeName }: PricingSyncStatusC
     </Card>
   )
 }
-
-interface AllStoresSyncStatusProps {
-  stores: Array<{ id: string; name: string }>
-}
-
-export function AllStoresSyncStatus({ stores }: AllStoresSyncStatusProps) {
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">店舗別同期状態</h2>
-      </div>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {stores.map((store) => (
-          <PricingSyncStatusCard key={store.id} storeId={store.id} storeName={store.name} />
-        ))}
-      </div>
-    </div>
-  )
-}

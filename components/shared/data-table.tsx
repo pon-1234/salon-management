@@ -56,5 +56,4 @@ export function DataTable<T>({ title, summary, data, columns, className }: DataT
 }
 
 export const currencyCell = (value: number) => `¥${formatCurrency(value)}`
-export const numberCell = (value: number) => value.toLocaleString()
 export const textCell = (value: string) => value

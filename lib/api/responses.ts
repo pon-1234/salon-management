@@ -128,7 +128,3 @@ export const ErrorResponses = {
   internalServerError: (message: string = 'サーバーエラーが発生しました') =>
     createErrorResponse('Internal Server Error', 500, message),
 }
-
-
-
-

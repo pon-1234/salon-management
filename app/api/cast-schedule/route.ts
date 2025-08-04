@@ -102,7 +102,7 @@ export async function PUT(request: NextRequest) {
     const { id, ...updates } = data
 
     if (!id) {
-      return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+      return ErrorResponses.badRequest('IDが必要です')
     }
 
     const updatedSchedule = await db.castSchedule.update({

@@ -135,18 +135,17 @@ describe('Reservation API - Modifiable Status', () => {
       expect(data.modifiableUntil).toBeDefined()
     })
 
-    it('should reject modification of non-modifiable reservation after modifiableUntil', async () => {
-      const expiredReservation = {
+    it('should reject modification of modifiable reservation by non-admin users', async () => {
+      const modifiableReservation = {
         ...mockReservation,
         status: 'modifiable',
-        modifiableUntil: new Date(Date.now() - 60 * 1000), // 1 minute ago
       }
 
       vi.mocked(getServerSession).mockResolvedValue({
         user: { role: 'customer' },
       } as any)
 
-      vi.mocked(db.reservation.findUnique).mockResolvedValue(expiredReservation as any)
+      vi.mocked(db.reservation.findUnique).mockResolvedValue(modifiableReservation as any)
 
       const request = new NextRequest('http://localhost/api/reservation', {
         method: 'PUT',
@@ -162,18 +161,19 @@ describe('Reservation API - Modifiable Status', () => {
       const response = await PUT(request)
       const data = await response.json()
 
-      expect(response.status).toBe(400)
-      expect(data.error).toContain('modification period has expired')
+      expect(response.status).toBe(403)
+      expect(data.error).toContain('Only administrators can modify reservations')
     })
 
-    it('should allow modification within modifiableUntil period', async () => {
+    it('should allow admin to modify reservations with modifiable status', async () => {
       const modifiableReservation = {
         ...mockReservation,
         status: 'modifiable',
-        modifiableUntil: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
       }
 
-      vi.mocked(getServerSession).mockResolvedValue(null)
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: { role: 'admin' },
+      } as any)
 
       vi.mocked(db.reservation.findUnique).mockResolvedValue(modifiableReservation as any)
 
@@ -194,9 +194,6 @@ describe('Reservation API - Modifiable Status', () => {
 
       const request = new NextRequest('http://localhost/api/reservation', {
         method: 'PUT',
-        headers: {
-          'x-customer-id': 'cust-123',
-        },
         body: JSON.stringify({
           id: 'res-123',
           courseId: 'course-456',

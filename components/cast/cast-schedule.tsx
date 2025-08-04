@@ -7,7 +7,7 @@ interface StaffScheduleProps {
   schedule: Schedule[]
 }
 
-export function StaffSchedule({ schedule }: StaffScheduleProps) {
+export function CastSchedule({ schedule }: StaffScheduleProps) {
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">出勤情報</h2>

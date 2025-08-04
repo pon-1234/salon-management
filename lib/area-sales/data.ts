@@ -42,5 +42,3 @@ export function generateAreaSalesData(_year: number): AreaSalesData[] {
 
   return areas
 }
-
-

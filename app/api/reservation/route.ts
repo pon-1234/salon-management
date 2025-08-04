@@ -374,11 +374,7 @@ export async function PUT(request: NextRequest) {
           ...updates,
           startTime: updates.startTime ? new Date(updates.startTime) : undefined,
           endTime: updates.endTime ? new Date(updates.endTime) : undefined,
-          modifiableUntil: updates.modifiableUntil
-            ? new Date(updates.modifiableUntil)
-            : updates.modifiableUntil === null
-              ? null
-              : undefined,
+
           options: updates.options
             ? {
                 create: updates.options.map((optionId: string) => ({

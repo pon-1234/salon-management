@@ -49,8 +49,3 @@ export function logError(error: unknown, context?: string): void {
   // エラーオブジェクトをオリジナルのままコンソールに表示
   console.dir(error, { depth: null })
 }
-
-
-
-
-

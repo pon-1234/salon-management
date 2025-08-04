@@ -9,7 +9,7 @@ import { db as prisma } from '@/lib/db'
 import { requireAdmin } from '@/lib/auth/utils'
 import { handleApiError, ErrorResponses } from '@/lib/api/errors'
 import { SuccessResponses } from '@/lib/api/responses'
-import { Message } from '@prisma/client'
+import { Message, Prisma } from '@prisma/client'
 
 // Message validation schema
 const messageSchema = z.object({
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
         timestamp: new Date(),
         readStatus: validatedData.sender === 'staff' ? '未読' : '既読',
         isReservationInfo: validatedData.isReservationInfo || false,
-        reservationInfo: validatedData.reservationInfo || undefined,
+        reservationInfo: validatedData.reservationInfo || Prisma.JsonNull,
       },
     })
 

@@ -83,26 +83,3 @@ export function usePricing(storeId?: string): UsePricingResult {
     refresh: fetchPricing,
   }
 }
-
-/**
- * Hook to calculate total price based on selections
- */
-export function usePriceCalculation() {
-  const pricingUseCases = getPricingUseCases()
-
-  const calculateTotal = async (
-    courseId: string,
-    duration: number,
-    optionIds: string[],
-    isLateNight: boolean = false
-  ): Promise<number> => {
-    try {
-      return await pricingUseCases.calculateTotalPrice(courseId, duration, optionIds, isLateNight)
-    } catch (error) {
-      console.error('Failed to calculate price:', error)
-      return 0
-    }
-  }
-
-  return { calculateTotal }
-}

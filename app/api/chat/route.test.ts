@@ -9,6 +9,9 @@ import { GET, POST, PUT } from './route'
 import { db as prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 
+// Import Prisma for error mocking
+import { Prisma } from '@prisma/client'
+
 // Mock next-auth
 vi.mock('next-auth', () => ({
   getServerSession: vi.fn(),
@@ -24,6 +27,24 @@ vi.mock('@/lib/db', () => ({
     },
   },
 }))
+
+// Helper to convert Date objects to ISO strings (mimics JSON serialization)
+const toJSON = (obj: any): any => {
+  if (obj instanceof Date) {
+    return obj.toISOString()
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(toJSON)
+  }
+  if (obj && typeof obj === 'object') {
+    const result: any = {}
+    for (const key in obj) {
+      result[key] = toJSON(obj[key])
+    }
+    return result
+  }
+  return obj
+}
 
 describe('Chat API', () => {
   beforeEach(() => {
@@ -60,7 +81,7 @@ describe('Chat API', () => {
         where: { customerId: 'customer1' },
         orderBy: { timestamp: 'asc' },
       })
-      expect(data).toEqual(mockMessages)
+      expect(data).toEqual({ data: toJSON(mockMessages) })
     })
 
     it('should fetch all messages grouped by customer when no customerId provided', async () => {
@@ -104,8 +125,10 @@ describe('Chat API', () => {
         orderBy: { timestamp: 'asc' },
       })
       expect(data).toEqual({
-        customer1: [mockMessages[0]],
-        customer2: [mockMessages[1]],
+        data: {
+          customer1: [toJSON(mockMessages[0])],
+          customer2: [toJSON(mockMessages[1])],
+        },
       })
     })
 
@@ -116,7 +139,7 @@ describe('Chat API', () => {
       const response = await GET(request)
 
       expect(response.status).toBe(401)
-      expect(await response.json()).toEqual({ error: 'Unauthorized' })
+      expect(await response.json()).toEqual({ error: '認証が必要です' })
     })
   })
 
@@ -161,14 +184,17 @@ describe('Chat API', () => {
           timestamp: expect.any(Date),
           readStatus: '未読',
           isReservationInfo: false,
-          reservationInfo: null,
+          reservationInfo: Prisma.JsonNull,
         },
       })
       expect(data).toMatchObject({
-        id: 'msg123',
-        customerId: 'customer1',
-        sender: 'staff',
-        content: 'How can I help you?',
+        data: {
+          id: 'msg123',
+          customerId: 'customer1',
+          sender: 'staff',
+          content: 'How can I help you?',
+        },
+        message: 'メッセージが送信されました',
       })
     })
 
@@ -234,7 +260,7 @@ describe('Chat API', () => {
       const data = await response.json()
 
       expect(response.status).toBe(400)
-      expect(data).toHaveProperty('error', 'Validation error')
+      expect(data).toHaveProperty('error', 'バリデーションエラー')
     })
   })
 
@@ -270,14 +296,22 @@ describe('Chat API', () => {
         where: { id: 'msg123' },
         data: { readStatus: '既読' },
       })
-      expect(data).toEqual(updatedMessage)
+      expect(data).toEqual({
+        data: toJSON(updatedMessage),
+        message: '更新されました',
+      })
     })
 
     it('should return 404 if message not found', async () => {
       const mockSession = { user: { role: 'admin' } }
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
-      vi.mocked(prisma.message.update).mockRejectedValue(new Error('Record to update not found.'))
+      vi.mocked(prisma.message.update).mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Record to update not found.', {
+          code: 'P2025',
+          clientVersion: '5.0.0',
+        })
+      )
 
       const request = new NextRequest('http://localhost/api/chat', {
         method: 'PUT',
@@ -288,7 +322,7 @@ describe('Chat API', () => {
       const data = await response.json()
 
       expect(response.status).toBe(404)
-      expect(data).toEqual({ error: 'Message not found' })
+      expect(data).toEqual({ error: 'データが見つかりません', code: 'NOT_FOUND' })
     })
   })
 })
