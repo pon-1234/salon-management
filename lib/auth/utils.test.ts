@@ -6,8 +6,8 @@ import { requireAdmin } from './utils'
 vi.mock('next-auth')
 vi.mock('next/server', () => ({
   NextResponse: {
-    json: vi.fn((body, init) => ({ body, status: init?.status }))
-  }
+    json: vi.fn((body, init) => ({ body, status: init?.status })),
+  },
 }))
 
 describe('Auth Utils', () => {
@@ -22,9 +22,9 @@ describe('Auth Utils', () => {
           id: '1',
           name: 'Admin User',
           email: 'admin@example.com',
-          role: 'admin'
+          role: 'admin',
         },
-        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       })
 
       const result = await requireAdmin()
@@ -37,9 +37,9 @@ describe('Auth Utils', () => {
           id: '2',
           name: 'Regular User',
           email: 'user@example.com',
-          role: 'user'
+          role: 'user',
         },
-        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       })
 
       const result = await requireAdmin()
@@ -65,7 +65,7 @@ describe('Auth Utils', () => {
           email: 'norole@example.com',
           // role is undefined
         } as any,
-        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       })
 
       const result = await requireAdmin()

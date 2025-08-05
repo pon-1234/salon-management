@@ -7,7 +7,7 @@ global.fetch = vi.fn()
 
 describe('CastRepositoryImpl', () => {
   let repository: CastRepositoryImpl
-  
+
   beforeEach(() => {
     vi.clearAllMocks()
     repository = new CastRepositoryImpl()
@@ -29,7 +29,7 @@ describe('CastRepositoryImpl', () => {
     imageUrl: '/images/cast1.jpg',
     introduction: 'テスト自己紹介',
     createdAt: new Date('2023-01-01'),
-    updatedAt: new Date('2023-01-01')
+    updatedAt: new Date('2023-01-01'),
   }
 
   describe('getAll', () => {
@@ -37,7 +37,7 @@ describe('CastRepositoryImpl', () => {
       const mockCasts = [mockCast]
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockCasts
+        json: async () => mockCasts,
       } as Response)
 
       const result = await repository.getAll()
@@ -49,11 +49,12 @@ describe('CastRepositoryImpl', () => {
     it('should throw error when fetch fails', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
-        statusText: 'Internal Server Error'
+        statusText: 'Internal Server Error',
       } as Response)
 
-      await expect(repository.getAll())
-        .rejects.toThrow('Failed to fetch casts: Internal Server Error')
+      await expect(repository.getAll()).rejects.toThrow(
+        'Failed to fetch casts: Internal Server Error'
+      )
     })
   })
 
@@ -62,7 +63,7 @@ describe('CastRepositoryImpl', () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => mockCast
+        json: async () => mockCast,
       } as Response)
 
       const result = await repository.getById('1')
@@ -74,7 +75,7 @@ describe('CastRepositoryImpl', () => {
     it('should return null for 404 response', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
-        status: 404
+        status: 404,
       } as Response)
 
       const result = await repository.getById('999')
@@ -86,11 +87,12 @@ describe('CastRepositoryImpl', () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
         status: 500,
-        statusText: 'Internal Server Error'
+        statusText: 'Internal Server Error',
       } as Response)
 
-      await expect(repository.getById('1'))
-        .rejects.toThrow('Failed to fetch cast: Internal Server Error')
+      await expect(repository.getById('1')).rejects.toThrow(
+        'Failed to fetch cast: Internal Server Error'
+      )
     })
   })
 
@@ -105,12 +107,17 @@ describe('CastRepositoryImpl', () => {
         status: 'available' as const,
         joinDate: '2024-01-01',
         imageUrl: '/images/new.jpg',
-        introduction: '新規自己紹介'
+        introduction: '新規自己紹介',
       }
 
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ ...newCastData, id: '2', createdAt: new Date(), updatedAt: new Date() })
+        json: async () => ({
+          ...newCastData,
+          id: '2',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
       } as Response)
 
       const result = await repository.create(newCastData)
@@ -120,7 +127,7 @@ describe('CastRepositoryImpl', () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newCastData)
+        body: JSON.stringify(newCastData),
       })
       expect(result).toHaveProperty('id', '2')
     })
@@ -128,20 +135,22 @@ describe('CastRepositoryImpl', () => {
     it('should throw error when create fails', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
-        statusText: 'Bad Request'
+        statusText: 'Bad Request',
       } as Response)
 
-      await expect(repository.create({
-        name: 'Test',
-        nickname: 'Test',
-        birthDate: '1995-01-01',
-        bloodType: 'A',
-        height: 165,
-        status: 'available',
-        joinDate: '2023-01-01',
-        imageUrl: '/test.jpg',
-        introduction: 'Test'
-      })).rejects.toThrow('Failed to create cast: Bad Request')
+      await expect(
+        repository.create({
+          name: 'Test',
+          nickname: 'Test',
+          birthDate: '1995-01-01',
+          bloodType: 'A',
+          height: 165,
+          status: 'available',
+          joinDate: '2023-01-01',
+          imageUrl: '/test.jpg',
+          introduction: 'Test',
+        })
+      ).rejects.toThrow('Failed to create cast: Bad Request')
     })
   })
 
@@ -152,7 +161,7 @@ describe('CastRepositoryImpl', () => {
 
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => updatedCast
+        json: async () => updatedCast,
       } as Response)
 
       const result = await repository.update('1', updateData)
@@ -162,7 +171,7 @@ describe('CastRepositoryImpl', () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ id: '1', ...updateData })
+        body: JSON.stringify({ id: '1', ...updateData }),
       })
       expect(result).toEqual(updatedCast)
     })
@@ -170,11 +179,12 @@ describe('CastRepositoryImpl', () => {
     it('should throw error when update fails', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
-        statusText: 'Not Found'
+        statusText: 'Not Found',
       } as Response)
 
-      await expect(repository.update('999', { name: 'Test' }))
-        .rejects.toThrow('Failed to update cast: Not Found')
+      await expect(repository.update('999', { name: 'Test' })).rejects.toThrow(
+        'Failed to update cast: Not Found'
+      )
     })
   })
 
@@ -182,7 +192,7 @@ describe('CastRepositoryImpl', () => {
     it('should delete cast successfully', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ success: true })
+        json: async () => ({ success: true }),
       } as Response)
 
       const result = await repository.delete('1')
@@ -196,11 +206,10 @@ describe('CastRepositoryImpl', () => {
     it('should throw error when delete fails', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
-        statusText: 'Forbidden'
+        statusText: 'Forbidden',
       } as Response)
 
-      await expect(repository.delete('1'))
-        .rejects.toThrow('Failed to delete cast: Forbidden')
+      await expect(repository.delete('1')).rejects.toThrow('Failed to delete cast: Forbidden')
     })
   })
 
@@ -218,13 +227,13 @@ describe('CastRepositoryImpl', () => {
           status: 'confirmed',
           notes: 'Test note',
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       ]
 
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockSchedules
+        json: async () => mockSchedules,
       } as Response)
 
       const startDate = new Date('2024-01-01')
@@ -240,11 +249,12 @@ describe('CastRepositoryImpl', () => {
     it('should throw error when fetch fails', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
-        statusText: 'Server Error'
+        statusText: 'Server Error',
       } as Response)
 
-      await expect(repository.getCastSchedule('1', new Date(), new Date()))
-        .rejects.toThrow('Failed to fetch cast schedule: Server Error')
+      await expect(repository.getCastSchedule('1', new Date(), new Date())).rejects.toThrow(
+        'Failed to fetch cast schedule: Server Error'
+      )
     })
   })
 
@@ -256,7 +266,7 @@ describe('CastRepositoryImpl', () => {
         date: new Date('2024-01-01'),
         startTime: '10:00',
         endTime: '18:00',
-        status: 'confirmed'
+        status: 'confirmed',
       }
 
       const newSchedule = {
@@ -264,19 +274,19 @@ describe('CastRepositoryImpl', () => {
         date: new Date('2024-01-01'),
         startTime: '11:00',
         endTime: '19:00',
-        status: 'confirmed'
+        status: 'confirmed',
       }
 
       // Mock getCastSchedule call
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => [existingSchedule]
+        json: async () => [existingSchedule],
       } as Response)
 
       // Mock update call
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ success: true })
+        json: async () => ({ success: true }),
       } as Response)
 
       await repository.updateCastSchedule('1', [newSchedule])
@@ -288,8 +298,8 @@ describe('CastRepositoryImpl', () => {
         },
         body: JSON.stringify({
           id: '1',
-          ...newSchedule
-        })
+          ...newSchedule,
+        }),
       })
     })
 
@@ -299,19 +309,19 @@ describe('CastRepositoryImpl', () => {
         date: new Date('2024-01-01'),
         startTime: '10:00',
         endTime: '18:00',
-        status: 'confirmed'
+        status: 'confirmed',
       }
 
       // Mock getCastSchedule to return empty
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => []
+        json: async () => [],
       } as Response)
 
       // Mock create call
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ success: true })
+        json: async () => ({ success: true }),
       } as Response)
 
       await repository.updateCastSchedule('1', [newSchedule])
@@ -321,7 +331,7 @@ describe('CastRepositoryImpl', () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newSchedule)
+        body: JSON.stringify(newSchedule),
       })
     })
 
@@ -331,23 +341,24 @@ describe('CastRepositoryImpl', () => {
         date: new Date('2024-01-01'),
         startTime: '10:00',
         endTime: '18:00',
-        status: 'confirmed'
+        status: 'confirmed',
       }
 
       // Mock getCastSchedule
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => [{ ...schedule, id: '1' }]
+        json: async () => [{ ...schedule, id: '1' }],
       } as Response)
 
       // Mock failed update
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
-        statusText: 'Bad Request'
+        statusText: 'Bad Request',
       } as Response)
 
-      await expect(repository.updateCastSchedule('1', [schedule]))
-        .rejects.toThrow('Failed to update cast schedule: Bad Request')
+      await expect(repository.updateCastSchedule('1', [schedule])).rejects.toThrow(
+        'Failed to update cast schedule: Bad Request'
+      )
     })
   })
 })

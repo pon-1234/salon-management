@@ -11,14 +11,14 @@ describe('Email Client', () => {
       const result = await emailClient.send({
         to: 'test@example.com',
         subject: 'Test Email',
-        body: 'Test body'
+        body: 'Test body',
       })
 
       expect(result).toEqual({ error: null })
       expect(emailClient.send).toHaveBeenCalledWith({
         to: 'test@example.com',
         subject: 'Test Email',
-        body: 'Test body'
+        body: 'Test body',
       })
     })
 
@@ -28,7 +28,7 @@ describe('Email Client', () => {
         subject: 'Test Subject',
         body: 'Email body',
         template: 'welcome',
-        data: { name: 'John' }
+        data: { name: 'John' },
       })
 
       expect(emailClient.send).toHaveBeenCalledWith({
@@ -36,7 +36,7 @@ describe('Email Client', () => {
         subject: 'Test Subject',
         body: 'Email body',
         template: 'welcome',
-        data: { name: 'John' }
+        data: { name: 'John' },
       })
     })
 
@@ -47,11 +47,11 @@ describe('Email Client', () => {
       expect(emailClient.send).toHaveBeenCalledTimes(2)
       expect(emailClient.send).toHaveBeenNthCalledWith(1, {
         to: 'user1@example.com',
-        subject: 'Test 1'
+        subject: 'Test 1',
       })
       expect(emailClient.send).toHaveBeenNthCalledWith(2, {
         to: 'user2@example.com',
-        subject: 'Test 2'
+        subject: 'Test 2',
       })
     })
   })

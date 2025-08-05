@@ -8,7 +8,7 @@ global.fetch = vi.fn()
 describe('CustomerRepositoryImpl', () => {
   let repository: CustomerRepositoryImpl
   let consoleWarnSpy: any
-  
+
   beforeEach(() => {
     vi.clearAllMocks()
     repository = new CustomerRepositoryImpl()
@@ -31,7 +31,7 @@ describe('CustomerRepositoryImpl', () => {
     lastVisit: new Date('2024-01-01'),
     notes: 'VIP顧客',
     createdAt: new Date('2023-01-01'),
-    updatedAt: new Date('2023-01-01')
+    updatedAt: new Date('2023-01-01'),
   }
 
   describe('getAll', () => {
@@ -39,7 +39,7 @@ describe('CustomerRepositoryImpl', () => {
       const mockCustomers = [mockCustomer]
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockCustomers
+        json: async () => mockCustomers,
       } as Response)
 
       const result = await repository.getAll()
@@ -50,11 +50,10 @@ describe('CustomerRepositoryImpl', () => {
 
     it('should throw error when fetch fails', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false
+        ok: false,
       } as Response)
 
-      await expect(repository.getAll())
-        .rejects.toThrow('Failed to fetch customers')
+      await expect(repository.getAll()).rejects.toThrow('Failed to fetch customers')
     })
   })
 
@@ -62,7 +61,7 @@ describe('CustomerRepositoryImpl', () => {
     it('should fetch customer by id successfully', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockCustomer
+        json: async () => mockCustomer,
       } as Response)
 
       const result = await repository.getById('1')
@@ -74,7 +73,7 @@ describe('CustomerRepositoryImpl', () => {
     it('should return null for 404 response', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
-        status: 404
+        status: 404,
       } as Response)
 
       const result = await repository.getById('999')
@@ -85,11 +84,10 @@ describe('CustomerRepositoryImpl', () => {
     it('should throw error for other failures', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
-        status: 500
+        status: 500,
       } as Response)
 
-      await expect(repository.getById('1'))
-        .rejects.toThrow('Failed to fetch customer')
+      await expect(repository.getById('1')).rejects.toThrow('Failed to fetch customer')
     })
   })
 
@@ -108,7 +106,7 @@ describe('CustomerRepositoryImpl', () => {
     it('should fetch customer by email successfully', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockCustomer
+        json: async () => mockCustomer,
       } as Response)
 
       const result = await repository.findByEmail('yamada@example.com')
@@ -120,7 +118,7 @@ describe('CustomerRepositoryImpl', () => {
     it('should return null for 404 response', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
-        status: 404
+        status: 404,
       } as Response)
 
       const result = await repository.findByEmail('notfound@example.com')
@@ -131,17 +129,18 @@ describe('CustomerRepositoryImpl', () => {
     it('should throw error for other failures', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
-        status: 500
+        status: 500,
       } as Response)
 
-      await expect(repository.findByEmail('error@example.com'))
-        .rejects.toThrow('Failed to fetch customer by email')
+      await expect(repository.findByEmail('error@example.com')).rejects.toThrow(
+        'Failed to fetch customer by email'
+      )
     })
 
     it('should properly encode email with special characters', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockCustomer
+        json: async () => mockCustomer,
       } as Response)
 
       await repository.findByEmail('test+tag@example.com')
@@ -161,19 +160,19 @@ describe('CustomerRepositoryImpl', () => {
         loyaltyPoints: 0,
         registrationDate: new Date('2024-01-01'),
         lastVisit: null,
-        notes: ''
+        notes: '',
       }
 
       const createdCustomer = {
         ...newCustomerData,
         id: '2',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       }
 
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => createdCustomer
+        json: async () => createdCustomer,
       } as Response)
 
       const result = await repository.create(newCustomerData)
@@ -181,27 +180,29 @@ describe('CustomerRepositoryImpl', () => {
       expect(fetch).toHaveBeenCalledWith('/api/customer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newCustomerData)
+        body: JSON.stringify(newCustomerData),
       })
       expect(result).toEqual(createdCustomer)
     })
 
     it('should throw error when create fails', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false
+        ok: false,
       } as Response)
 
-      await expect(repository.create({
-        name: 'Test',
-        email: 'test@example.com',
-        phoneNumber: '090-0000-0000',
-        birthDate: '2000-01-01',
-        address: 'Test',
-        loyaltyPoints: 0,
-        registrationDate: new Date(),
-        lastVisit: null,
-        notes: ''
-      })).rejects.toThrow('Failed to create customer')
+      await expect(
+        repository.create({
+          name: 'Test',
+          email: 'test@example.com',
+          phoneNumber: '090-0000-0000',
+          birthDate: '2000-01-01',
+          address: 'Test',
+          loyaltyPoints: 0,
+          registrationDate: new Date(),
+          lastVisit: null,
+          notes: '',
+        })
+      ).rejects.toThrow('Failed to create customer')
     })
   })
 
@@ -212,7 +213,7 @@ describe('CustomerRepositoryImpl', () => {
 
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => updatedCustomer
+        json: async () => updatedCustomer,
       } as Response)
 
       const result = await repository.update('1', updateData)
@@ -220,38 +221,39 @@ describe('CustomerRepositoryImpl', () => {
       expect(fetch).toHaveBeenCalledWith('/api/customer', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: '1', ...updateData })
+        body: JSON.stringify({ id: '1', ...updateData }),
       })
       expect(result).toEqual(updatedCustomer)
     })
 
     it('should throw error when update fails', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false
+        ok: false,
       } as Response)
 
-      await expect(repository.update('1', { name: 'Test' }))
-        .rejects.toThrow('Failed to update customer')
+      await expect(repository.update('1', { name: 'Test' })).rejects.toThrow(
+        'Failed to update customer'
+      )
     })
   })
 
   describe('delete', () => {
     it('should delete customer successfully', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true
+        ok: true,
       } as Response)
 
       const result = await repository.delete('1')
 
       expect(fetch).toHaveBeenCalledWith('/api/customer?id=1', {
-        method: 'DELETE'
+        method: 'DELETE',
       })
       expect(result).toBe(true)
     })
 
     it('should return false when delete fails', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false
+        ok: false,
       } as Response)
 
       const result = await repository.delete('1')

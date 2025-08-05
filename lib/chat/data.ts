@@ -55,6 +55,7 @@ export const customers: Customer[] = [
     hasUnread: true,
     unreadCount: 2,
     isOnline: false,
+    avatar: '/placeholder-user.jpg',
     lastSeen: '1日前',
     memberType: 'regular',
   },

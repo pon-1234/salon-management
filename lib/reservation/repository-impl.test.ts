@@ -7,7 +7,7 @@ global.fetch = vi.fn()
 
 describe('ReservationRepositoryImpl', () => {
   let repository: ReservationRepositoryImpl
-  
+
   beforeEach(() => {
     vi.clearAllMocks()
     repository = new ReservationRepositoryImpl()
@@ -33,15 +33,15 @@ describe('ReservationRepositoryImpl', () => {
         id: 'service1',
         name: 'カット',
         duration: 60,
-        price: 5000
-      }
+        price: 5000,
+      },
     ],
     options: [],
     totalAmount: 5000,
     status: 'confirmed',
     notes: 'テスト予約',
     createdAt: new Date('2023-12-01'),
-    updatedAt: new Date('2023-12-01')
+    updatedAt: new Date('2023-12-01'),
   }
 
   describe('getAll', () => {
@@ -49,7 +49,7 @@ describe('ReservationRepositoryImpl', () => {
       const mockReservations = [mockReservation]
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockReservations
+        json: async () => mockReservations,
       } as Response)
 
       const result = await repository.getAll()
@@ -61,11 +61,12 @@ describe('ReservationRepositoryImpl', () => {
     it('should throw error when fetch fails', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
-        statusText: 'Internal Server Error'
+        statusText: 'Internal Server Error',
       } as Response)
 
-      await expect(repository.getAll())
-        .rejects.toThrow('Failed to fetch reservations: Internal Server Error')
+      await expect(repository.getAll()).rejects.toThrow(
+        'Failed to fetch reservations: Internal Server Error'
+      )
     })
   })
 
@@ -74,7 +75,7 @@ describe('ReservationRepositoryImpl', () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => mockReservation
+        json: async () => mockReservation,
       } as Response)
 
       const result = await repository.getById('1')
@@ -86,7 +87,7 @@ describe('ReservationRepositoryImpl', () => {
     it('should return null for 404 response', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
-        status: 404
+        status: 404,
       } as Response)
 
       const result = await repository.getById('999')
@@ -98,11 +99,12 @@ describe('ReservationRepositoryImpl', () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
         status: 500,
-        statusText: 'Internal Server Error'
+        statusText: 'Internal Server Error',
       } as Response)
 
-      await expect(repository.getById('1'))
-        .rejects.toThrow('Failed to fetch reservation: Internal Server Error')
+      await expect(repository.getById('1')).rejects.toThrow(
+        'Failed to fetch reservation: Internal Server Error'
+      )
     })
   })
 
@@ -123,18 +125,23 @@ describe('ReservationRepositoryImpl', () => {
             id: 'service1',
             name: 'カット',
             duration: 60,
-            price: 5000
-          }
+            price: 5000,
+          },
         ],
         options: [],
         totalAmount: 5000,
         status: 'confirmed' as const,
-        notes: ''
+        notes: '',
       }
 
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ ...newReservationData, id: '2', createdAt: new Date(), updatedAt: new Date() })
+        json: async () => ({
+          ...newReservationData,
+          id: '2',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
       } as Response)
 
       const result = await repository.create(newReservationData)
@@ -144,7 +151,7 @@ describe('ReservationRepositoryImpl', () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newReservationData)
+        body: JSON.stringify(newReservationData),
       })
       expect(result).toHaveProperty('id', '2')
     })
@@ -157,15 +164,15 @@ describe('ReservationRepositoryImpl', () => {
             id: 'conflict1',
             castName: 'Other Cast',
             startTime: '14:00',
-            endTime: '15:00'
-          }
-        ]
+            endTime: '15:00',
+          },
+        ],
       }
 
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
         status: 409,
-        json: async () => conflictData
+        json: async () => conflictData,
       } as Response)
 
       try {
@@ -183,7 +190,7 @@ describe('ReservationRepositoryImpl', () => {
           options: [],
           totalAmount: 0,
           status: 'confirmed',
-          notes: ''
+          notes: '',
         })
         expect.fail('Should have thrown an error')
       } catch (error: any) {
@@ -198,25 +205,27 @@ describe('ReservationRepositoryImpl', () => {
         ok: false,
         status: 400,
         statusText: 'Bad Request',
-        json: async () => ({ error: 'Invalid data' })
+        json: async () => ({ error: 'Invalid data' }),
       } as Response)
 
-      await expect(repository.create({
-        castId: 'cast1',
-        castName: 'テストキャスト',
-        customerId: 'customer1',
-        customerName: '顧客',
-        customerEmail: 'test@example.com',
-        customerPhone: '090-0000-0000',
-        date: new Date(),
-        startTime: '14:00',
-        endTime: '15:00',
-        services: [],
-        options: [],
-        totalAmount: 0,
-        status: 'confirmed',
-        notes: ''
-      })).rejects.toThrow('Invalid data')
+      await expect(
+        repository.create({
+          castId: 'cast1',
+          castName: 'テストキャスト',
+          customerId: 'customer1',
+          customerName: '顧客',
+          customerEmail: 'test@example.com',
+          customerPhone: '090-0000-0000',
+          date: new Date(),
+          startTime: '14:00',
+          endTime: '15:00',
+          services: [],
+          options: [],
+          totalAmount: 0,
+          status: 'confirmed',
+          notes: '',
+        })
+      ).rejects.toThrow('Invalid data')
     })
   })
 
@@ -227,7 +236,7 @@ describe('ReservationRepositoryImpl', () => {
 
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => updatedReservation
+        json: async () => updatedReservation,
       } as Response)
 
       const result = await repository.update('1', updateData)
@@ -237,7 +246,7 @@ describe('ReservationRepositoryImpl', () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ id: '1', ...updateData })
+        body: JSON.stringify({ id: '1', ...updateData }),
       })
       expect(result).toEqual(updatedReservation)
     })
@@ -245,13 +254,13 @@ describe('ReservationRepositoryImpl', () => {
     it('should handle 409 conflict on update', async () => {
       const conflictData = {
         error: 'Time slot is not available',
-        conflicts: [{ id: 'conflict1' }]
+        conflicts: [{ id: 'conflict1' }],
       }
 
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
         status: 409,
-        json: async () => conflictData
+        json: async () => conflictData,
       } as Response)
 
       try {
@@ -268,11 +277,12 @@ describe('ReservationRepositoryImpl', () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
         statusText: 'Not Found',
-        json: async () => ({})
+        json: async () => ({}),
       } as Response)
 
-      await expect(repository.update('999', { status: 'cancelled' }))
-        .rejects.toThrow('Failed to update reservation: Not Found')
+      await expect(repository.update('999', { status: 'cancelled' })).rejects.toThrow(
+        'Failed to update reservation: Not Found'
+      )
     })
   })
 
@@ -280,7 +290,7 @@ describe('ReservationRepositoryImpl', () => {
     it('should delete reservation successfully', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ id: '1', status: 'cancelled' })
+        json: async () => ({ id: '1', status: 'cancelled' }),
       } as Response)
 
       const result = await repository.delete('1')
@@ -295,11 +305,10 @@ describe('ReservationRepositoryImpl', () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
         statusText: 'Forbidden',
-        json: async () => ({ error: 'Access denied' })
+        json: async () => ({ error: 'Access denied' }),
       } as Response)
 
-      await expect(repository.delete('1'))
-        .rejects.toThrow('Access denied')
+      await expect(repository.delete('1')).rejects.toThrow('Access denied')
     })
   })
 
@@ -308,7 +317,7 @@ describe('ReservationRepositoryImpl', () => {
       const mockReservations = [mockReservation]
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockReservations
+        json: async () => mockReservations,
       } as Response)
 
       const result = await repository.getReservationsByCustomer('customer1')
@@ -320,11 +329,12 @@ describe('ReservationRepositoryImpl', () => {
     it('should throw error when fetch fails', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
-        statusText: 'Server Error'
+        statusText: 'Server Error',
       } as Response)
 
-      await expect(repository.getReservationsByCustomer('customer1'))
-        .rejects.toThrow('Failed to fetch customer reservations: Server Error')
+      await expect(repository.getReservationsByCustomer('customer1')).rejects.toThrow(
+        'Failed to fetch customer reservations: Server Error'
+      )
     })
   })
 
@@ -333,10 +343,10 @@ describe('ReservationRepositoryImpl', () => {
       const startDate = new Date('2024-01-01')
       const endDate = new Date('2024-01-31')
       const mockReservations = [mockReservation]
-      
+
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockReservations
+        json: async () => mockReservations,
       } as Response)
 
       const result = await repository.getReservationsByStaff('cast1', startDate, endDate)
@@ -350,11 +360,12 @@ describe('ReservationRepositoryImpl', () => {
     it('should throw error when fetch fails', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
-        statusText: 'Server Error'
+        statusText: 'Server Error',
       } as Response)
 
-      await expect(repository.getReservationsByStaff('cast1', new Date(), new Date()))
-        .rejects.toThrow('Failed to fetch staff reservations: Server Error')
+      await expect(
+        repository.getReservationsByStaff('cast1', new Date(), new Date())
+      ).rejects.toThrow('Failed to fetch staff reservations: Server Error')
     })
   })
 
@@ -366,25 +377,25 @@ describe('ReservationRepositoryImpl', () => {
           name: 'カット',
           duration: 60,
           price: 5000,
-          description: 'カットサービス'
-        }
+          description: 'カットサービス',
+        },
       ]
       const mockOptions = [
         {
           id: 'option1',
           name: 'シャンプー',
-          price: 1000
-        }
+          price: 1000,
+        },
       ]
 
       vi.mocked(fetch)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockCourses
+          json: async () => mockCourses,
         } as Response)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockOptions
+          json: async () => mockOptions,
         } as Response)
 
       const result = await repository.getServices()
@@ -398,7 +409,7 @@ describe('ReservationRepositoryImpl', () => {
           type: 'course',
           duration: 60,
           price: 5000,
-          description: 'カットサービス'
+          description: 'カットサービス',
         },
         {
           id: 'option1',
@@ -406,18 +417,17 @@ describe('ReservationRepositoryImpl', () => {
           type: 'option',
           duration: 0,
           price: 1000,
-          description: ''
-        }
+          description: '',
+        },
       ])
     })
 
     it('should throw error when fetching services fails', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false
+        ok: false,
       } as Response)
 
-      await expect(repository.getServices())
-        .rejects.toThrow('Failed to fetch services')
+      await expect(repository.getServices()).rejects.toThrow('Failed to fetch services')
     })
   })
 
@@ -429,7 +439,7 @@ describe('ReservationRepositoryImpl', () => {
 
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse
+        json: async () => mockResponse,
       } as Response)
 
       const result = await repository.checkAvailability('cast1', startTime, endTime)
@@ -445,12 +455,12 @@ describe('ReservationRepositoryImpl', () => {
       const endTime = new Date('2024-01-01T11:00:00')
       const mockResponse = {
         available: false,
-        conflicts: [{ id: 'conflict1', startTime: '10:00', endTime: '11:00' }]
+        conflicts: [{ id: 'conflict1', startTime: '10:00', endTime: '11:00' }],
       }
 
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse
+        json: async () => mockResponse,
       } as Response)
 
       const result = await repository.checkAvailability('cast1', startTime, endTime)
@@ -461,11 +471,12 @@ describe('ReservationRepositoryImpl', () => {
     it('should throw error when check fails', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
-        statusText: 'Server Error'
+        statusText: 'Server Error',
       } as Response)
 
-      await expect(repository.checkAvailability('cast1', new Date(), new Date()))
-        .rejects.toThrow('Failed to check availability: Server Error')
+      await expect(repository.checkAvailability('cast1', new Date(), new Date())).rejects.toThrow(
+        'Failed to check availability: Server Error'
+      )
     })
   })
 
@@ -475,13 +486,13 @@ describe('ReservationRepositoryImpl', () => {
       const mockSlots = {
         availableSlots: [
           { startTime: '10:00', endTime: '11:00' },
-          { startTime: '14:00', endTime: '15:00' }
-        ]
+          { startTime: '14:00', endTime: '15:00' },
+        ],
       }
 
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockSlots
+        json: async () => mockSlots,
       } as Response)
 
       const result = await repository.getAvailableSlots('cast1', date, 60)
@@ -495,7 +506,7 @@ describe('ReservationRepositoryImpl', () => {
     it('should return empty array when no slots available', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => ({})
+        json: async () => ({}),
       } as Response)
 
       const result = await repository.getAvailableSlots('cast1', new Date(), 60)
@@ -506,11 +517,12 @@ describe('ReservationRepositoryImpl', () => {
     it('should throw error when fetch fails', async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
-        statusText: 'Server Error'
+        statusText: 'Server Error',
       } as Response)
 
-      await expect(repository.getAvailableSlots('cast1', new Date(), 60))
-        .rejects.toThrow('Failed to get available slots: Server Error')
+      await expect(repository.getAvailableSlots('cast1', new Date(), 60)).rejects.toThrow(
+        'Failed to get available slots: Server Error'
+      )
     })
   })
 })

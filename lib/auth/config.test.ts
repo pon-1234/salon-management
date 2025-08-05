@@ -8,23 +8,23 @@ vi.mock('@/lib/db', () => ({
   db: {
     admin: {
       findUnique: vi.fn(),
-      update: vi.fn()
+      update: vi.fn(),
     },
     customer: {
-      findUnique: vi.fn()
-    }
-  }
+      findUnique: vi.fn(),
+    },
+  },
 }))
 
 vi.mock('./rate-limit', () => ({
   checkRateLimit: vi.fn(),
-  recordLoginAttempt: vi.fn()
+  recordLoginAttempt: vi.fn(),
 }))
 
 vi.mock('bcryptjs', () => ({
   default: {
-    compare: vi.fn()
-  }
+    compare: vi.fn(),
+  },
 }))
 
 describe('Auth Config', () => {
@@ -38,12 +38,12 @@ describe('Auth Config', () => {
       expect(authOptions.providers).toHaveLength(2)
       expect(authOptions.pages).toEqual({
         signIn: '/login',
-        error: '/auth/error'
+        error: '/auth/error',
       })
       expect(authOptions.session).toEqual({
         strategy: 'jwt',
         maxAge: 2 * 60 * 60,
-        updateAge: 30 * 60
+        updateAge: 30 * 60,
       })
     })
 
@@ -72,23 +72,23 @@ describe('Auth Config', () => {
     })
 
     it('should handle rate limiting', async () => {
-      vi.mocked(checkRateLimit).mockReturnValueOnce({ 
-        allowed: false, 
-        retryAfter: 300 
+      vi.mocked(checkRateLimit).mockReturnValueOnce({
+        allowed: false,
+        retryAfter: 300,
       })
 
-      await expect(
-        authorize({ email: 'admin@example.com', password: 'password' })
-      ).rejects.toThrow('Too many login attempts. Please try again in 300 seconds.')
+      await expect(authorize({ email: 'admin@example.com', password: 'password' })).rejects.toThrow(
+        'Too many login attempts. Please try again in 300 seconds.'
+      )
     })
 
     it('should return null for non-existent admin', async () => {
       const { db } = await import('@/lib/db')
       vi.mocked(db.admin.findUnique).mockResolvedValueOnce(null)
 
-      const result = await authorize({ 
-        email: 'notfound@example.com', 
-        password: 'password' 
+      const result = await authorize({
+        email: 'notfound@example.com',
+        password: 'password',
       })
 
       expect(result).toBeNull()
@@ -98,7 +98,7 @@ describe('Auth Config', () => {
     it('should handle inactive admin', async () => {
       const { db } = await import('@/lib/db')
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      
+
       vi.mocked(db.admin.findUnique).mockResolvedValueOnce({
         id: '1',
         email: 'admin@example.com',
@@ -109,18 +109,18 @@ describe('Auth Config', () => {
         permissions: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-        lastLogin: null
+        lastLogin: null,
       })
 
       const result = await authorize({ email: 'admin@example.com', password: 'password' })
-      
+
       expect(result).toBeNull()
       expect(recordLoginAttempt).toHaveBeenCalledWith('admin:admin@example.com', false)
       expect(consoleSpy).toHaveBeenCalledWith(
-        'Error during admin authentication:', 
+        'Error during admin authentication:',
         expect.any(Error)
       )
-      
+
       consoleSpy.mockRestore()
     })
 
@@ -136,13 +136,13 @@ describe('Auth Config', () => {
         permissions: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-        lastLogin: null
+        lastLogin: null,
       })
       vi.mocked(bcrypt.compare).mockResolvedValueOnce(false)
 
-      const result = await authorize({ 
-        email: 'admin@example.com', 
-        password: 'wrongpassword' 
+      const result = await authorize({
+        email: 'admin@example.com',
+        password: 'wrongpassword',
       })
 
       expect(result).toBeNull()
@@ -161,16 +161,16 @@ describe('Auth Config', () => {
         permissions: JSON.stringify(['manage_users', 'manage_settings']),
         createdAt: new Date(),
         updatedAt: new Date(),
-        lastLogin: null
+        lastLogin: null,
       }
 
       vi.mocked(db.admin.findUnique).mockResolvedValueOnce(mockAdmin)
       vi.mocked(bcrypt.compare).mockResolvedValueOnce(true)
       vi.mocked(db.admin.update).mockResolvedValueOnce({ ...mockAdmin, lastLogin: new Date() })
 
-      const result = await authorize({ 
-        email: 'admin@example.com', 
-        password: 'correctpassword' 
+      const result = await authorize({
+        email: 'admin@example.com',
+        password: 'correctpassword',
       })
 
       expect(result).toEqual({
@@ -179,12 +179,12 @@ describe('Auth Config', () => {
         name: 'Admin User',
         role: 'admin',
         adminRole: 'super_admin',
-        permissions: ['manage_users', 'manage_settings']
+        permissions: ['manage_users', 'manage_settings'],
       })
 
       expect(db.admin.update).toHaveBeenCalledWith({
         where: { id: '1' },
-        data: { lastLogin: expect.any(Date) }
+        data: { lastLogin: expect.any(Date) },
       })
       expect(recordLoginAttempt).toHaveBeenCalledWith('admin:admin@example.com', true)
     })
@@ -201,13 +201,13 @@ describe('Auth Config', () => {
         permissions: 'invalid-json',
         createdAt: new Date(),
         updatedAt: new Date(),
-        lastLogin: null
+        lastLogin: null,
       })
       vi.mocked(bcrypt.compare).mockResolvedValueOnce(true)
 
-      const result = await authorize({ 
-        email: 'admin@example.com', 
-        password: 'password' 
+      const result = await authorize({
+        email: 'admin@example.com',
+        password: 'password',
       })
 
       expect(result?.permissions).toEqual([])
@@ -217,9 +217,9 @@ describe('Auth Config', () => {
       const { db } = await import('@/lib/db')
       vi.mocked(db.admin.findUnique).mockRejectedValueOnce(new Error('Database error'))
 
-      const result = await authorize({ 
-        email: 'admin@example.com', 
-        password: 'password' 
+      const result = await authorize({
+        email: 'admin@example.com',
+        password: 'password',
       })
 
       expect(result).toBeNull()
@@ -241,9 +241,9 @@ describe('Auth Config', () => {
     })
 
     it('should handle rate limiting', async () => {
-      vi.mocked(checkRateLimit).mockReturnValueOnce({ 
-        allowed: false, 
-        retryAfter: 300 
+      vi.mocked(checkRateLimit).mockReturnValueOnce({
+        allowed: false,
+        retryAfter: 300,
       })
 
       await expect(
@@ -255,9 +255,9 @@ describe('Auth Config', () => {
       const { db } = await import('@/lib/db')
       vi.mocked(db.customer.findUnique).mockResolvedValueOnce(null)
 
-      const result = await authorize({ 
-        email: 'notfound@example.com', 
-        password: 'password' 
+      const result = await authorize({
+        email: 'notfound@example.com',
+        password: 'password',
       })
 
       expect(result).toBeNull()
@@ -279,20 +279,20 @@ describe('Auth Config', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
         lastVisit: null,
-        notes: null
+        notes: null,
       })
       vi.mocked(bcrypt.compare).mockResolvedValueOnce(true)
 
-      const result = await authorize({ 
-        email: 'customer@example.com', 
-        password: 'correctpassword' 
+      const result = await authorize({
+        email: 'customer@example.com',
+        password: 'correctpassword',
       })
 
       expect(result).toEqual({
         id: '2',
         email: 'customer@example.com',
         name: 'Customer Name',
-        role: 'customer'
+        role: 'customer',
       })
       expect(recordLoginAttempt).toHaveBeenCalledWith('customer:customer@example.com', true)
     })
@@ -312,13 +312,13 @@ describe('Auth Config', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
         lastVisit: null,
-        notes: null
+        notes: null,
       })
       vi.mocked(bcrypt.compare).mockResolvedValueOnce(true)
 
-      const result = await authorize({ 
-        email: 'customer@example.com', 
-        password: 'password' 
+      const result = await authorize({
+        email: 'customer@example.com',
+        password: 'password',
       })
 
       expect(result?.name).toBe('Customer')
@@ -334,32 +334,32 @@ describe('Auth Config', () => {
         name: 'Admin',
         role: 'admin' as const,
         adminRole: 'super_admin',
-        permissions: ['manage_users']
+        permissions: ['manage_users'],
       }
 
-      const result = await authOptions.callbacks!.jwt!({ 
-        token, 
+      const result = await authOptions.callbacks!.jwt!({
+        token,
         user,
         account: null,
-        trigger: undefined
+        trigger: undefined,
       })
 
       expect(result).toEqual({
         id: '1',
         role: 'admin',
         adminRole: 'super_admin',
-        permissions: ['manage_users']
+        permissions: ['manage_users'],
       })
     })
 
     it('should handle jwt callback without user', async () => {
       const token = { id: '1', role: 'customer' as const }
 
-      const result = await authOptions.callbacks!.jwt!({ 
-        token, 
+      const result = await authOptions.callbacks!.jwt!({
+        token,
         user: undefined,
         account: null,
-        trigger: undefined
+        trigger: undefined,
       })
 
       expect(result).toEqual(token)
@@ -371,21 +371,21 @@ describe('Auth Config', () => {
           id: '',
           email: 'test@example.com',
           name: 'Test',
-          role: 'customer' as const
+          role: 'customer' as const,
         },
-        expires: new Date().toISOString()
+        expires: new Date().toISOString(),
       }
       const token = {
         id: '1',
         role: 'admin' as const,
         adminRole: 'super_admin',
-        permissions: ['manage_users']
+        permissions: ['manage_users'],
       }
 
-      const result = await authOptions.callbacks!.session!({ 
-        session, 
+      const result = await authOptions.callbacks!.session!({
+        session,
         token,
-        user: undefined as any
+        user: undefined as any,
       })
 
       expect(result.user).toEqual({
@@ -394,7 +394,7 @@ describe('Auth Config', () => {
         name: 'Test',
         role: 'admin',
         adminRole: 'super_admin',
-        permissions: ['manage_users']
+        permissions: ['manage_users'],
       })
     })
   })

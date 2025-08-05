@@ -20,18 +20,18 @@ describe('Push Client', () => {
       const promise = pushClient.send({
         userId: 'user123',
         title: 'Test Notification',
-        body: 'This is a test push notification'
+        body: 'This is a test push notification',
       })
 
       // Advance timers to complete the timeout
       vi.advanceTimersByTime(100)
-      
+
       await promise
 
       expect(consoleLogSpy).toHaveBeenCalledWith('Sending push notification:', {
         userId: 'user123',
         title: 'Test Notification',
-        body: 'This is a test push notification'
+        body: 'This is a test push notification',
       })
     })
 
@@ -39,11 +39,11 @@ describe('Push Client', () => {
       const promise = pushClient.send({
         userId: 'user123',
         title: 'Test',
-        body: 'Test body'
+        body: 'Test body',
       })
 
       vi.advanceTimersByTime(100)
-      
+
       const result = await promise
 
       expect(result.success).toBe(true)
@@ -55,7 +55,7 @@ describe('Push Client', () => {
       const promise1 = pushClient.send({
         userId: 'user1',
         title: 'First',
-        body: 'First notification'
+        body: 'First notification',
       })
 
       vi.advanceTimersByTime(100)
@@ -67,7 +67,7 @@ describe('Push Client', () => {
       const promise2 = pushClient.send({
         userId: 'user2',
         title: 'Second',
-        body: 'Second notification'
+        body: 'Second notification',
       })
 
       vi.advanceTimersByTime(100)
@@ -84,12 +84,12 @@ describe('Push Client', () => {
         data: {
           orderId: 'order123',
           trackingNumber: 'TRACK123',
-          estimatedDelivery: '2023-12-25'
-        }
+          estimatedDelivery: '2023-12-25',
+        },
       })
 
       vi.advanceTimersByTime(100)
-      
+
       const result = await promise
 
       expect(result.success).toBe(true)
@@ -97,7 +97,7 @@ describe('Push Client', () => {
       expect(consoleLogSpy).toHaveBeenCalledWith('Sending push notification:', {
         userId: 'user123',
         title: 'Order Update',
-        body: 'Your order has been shipped'
+        body: 'Your order has been shipped',
       })
     })
 
@@ -105,40 +105,40 @@ describe('Push Client', () => {
       const promise = pushClient.send({
         userId: 'user123',
         title: '',
-        body: ''
+        body: '',
       })
 
       vi.advanceTimersByTime(100)
-      
+
       const result = await promise
 
       expect(result.success).toBe(true)
       expect(consoleLogSpy).toHaveBeenCalledWith('Sending push notification:', {
         userId: 'user123',
         title: '',
-        body: ''
+        body: '',
       })
     })
 
     it('should handle long title and body', async () => {
       const longTitle = 'A'.repeat(100)
       const longBody = 'B'.repeat(500)
-      
+
       const promise = pushClient.send({
         userId: 'user123',
         title: longTitle,
-        body: longBody
+        body: longBody,
       })
 
       vi.advanceTimersByTime(100)
-      
+
       const result = await promise
 
       expect(result.success).toBe(true)
       expect(consoleLogSpy).toHaveBeenCalledWith('Sending push notification:', {
         userId: 'user123',
         title: longTitle,
-        body: longBody
+        body: longBody,
       })
     })
 
@@ -146,18 +146,18 @@ describe('Push Client', () => {
       const promise = pushClient.send({
         userId: 'user123',
         title: '🎉 Special Characters!',
-        body: 'Japanese: こんにちは, Emoji: 🚀'
+        body: 'Japanese: こんにちは, Emoji: 🚀',
       })
 
       vi.advanceTimersByTime(100)
-      
+
       const result = await promise
 
       expect(result.success).toBe(true)
       expect(consoleLogSpy).toHaveBeenCalledWith('Sending push notification:', {
         userId: 'user123',
         title: '🎉 Special Characters!',
-        body: 'Japanese: こんにちは, Emoji: 🚀'
+        body: 'Japanese: こんにちは, Emoji: 🚀',
       })
     })
   })

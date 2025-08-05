@@ -19,28 +19,28 @@ describe('SMS Client', () => {
     it('should log the SMS details', async () => {
       const promise = smsClient.send({
         to: '+1234567890',
-        message: 'Test SMS message'
+        message: 'Test SMS message',
       })
 
       // Advance timers to complete the timeout
       vi.advanceTimersByTime(100)
-      
+
       await promise
 
       expect(consoleLogSpy).toHaveBeenCalledWith('Sending SMS:', {
         to: '+1234567890',
-        message: 'Test SMS message'
+        message: 'Test SMS message',
       })
     })
 
     it('should return success with a unique ID', async () => {
       const promise = smsClient.send({
         to: '+1234567890',
-        message: 'Test message'
+        message: 'Test message',
       })
 
       vi.advanceTimersByTime(100)
-      
+
       const result = await promise
 
       expect(result.success).toBe(true)
@@ -51,7 +51,7 @@ describe('SMS Client', () => {
     it('should generate different IDs for different messages', async () => {
       const promise1 = smsClient.send({
         to: '+1111111111',
-        message: 'First message'
+        message: 'First message',
       })
 
       vi.advanceTimersByTime(100)
@@ -62,7 +62,7 @@ describe('SMS Client', () => {
 
       const promise2 = smsClient.send({
         to: '+2222222222',
-        message: 'Second message'
+        message: 'Second message',
       })
 
       vi.advanceTimersByTime(100)
@@ -74,34 +74,34 @@ describe('SMS Client', () => {
     it('should handle empty message', async () => {
       const promise = smsClient.send({
         to: '+1234567890',
-        message: ''
+        message: '',
       })
 
       vi.advanceTimersByTime(100)
-      
+
       const result = await promise
 
       expect(result.success).toBe(true)
       expect(consoleLogSpy).toHaveBeenCalledWith('Sending SMS:', {
         to: '+1234567890',
-        message: ''
+        message: '',
       })
     })
 
     it('should handle international phone numbers', async () => {
       const promise = smsClient.send({
         to: '+44123456789',
-        message: 'International SMS'
+        message: 'International SMS',
       })
 
       vi.advanceTimersByTime(100)
-      
+
       const result = await promise
 
       expect(result.success).toBe(true)
       expect(consoleLogSpy).toHaveBeenCalledWith('Sending SMS:', {
         to: '+44123456789',
-        message: 'International SMS'
+        message: 'International SMS',
       })
     })
 
@@ -109,17 +109,17 @@ describe('SMS Client', () => {
       const longMessage = 'A'.repeat(500)
       const promise = smsClient.send({
         to: '+1234567890',
-        message: longMessage
+        message: longMessage,
       })
 
       vi.advanceTimersByTime(100)
-      
+
       const result = await promise
 
       expect(result.success).toBe(true)
       expect(consoleLogSpy).toHaveBeenCalledWith('Sending SMS:', {
         to: '+1234567890',
-        message: longMessage
+        message: longMessage,
       })
     })
   })
