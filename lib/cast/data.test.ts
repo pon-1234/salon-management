@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { castMembers, getAllCasts, getCastById, generateCastSchedule } from './data'
+import { castMembers, createDate, getAllCasts, getCastById, generateCastSchedule } from './data'
 
 describe('Cast Data', () => {
   beforeEach(() => {
@@ -63,6 +63,32 @@ describe('Cast Data', () => {
     it('should return undefined for non-existent ID', () => {
       const cast = getCastById('non-existent')
       expect(cast).toBeUndefined()
+    })
+  })
+
+  describe('createDate', () => {
+    it('should create a date with specified hours', () => {
+      const date = createDate(10)
+      expect(date.getHours()).toBe(10)
+      expect(date.getMinutes()).toBe(0)
+      expect(date.getSeconds()).toBe(0)
+      expect(date.getMilliseconds()).toBe(0)
+    })
+
+    it('should create a date with specified hours and minutes', () => {
+      const date = createDate(14, 30)
+      expect(date.getHours()).toBe(14)
+      expect(date.getMinutes()).toBe(30)
+      expect(date.getSeconds()).toBe(0)
+      expect(date.getMilliseconds()).toBe(0)
+    })
+
+    it('should use today as the base date', () => {
+      const date = createDate(12)
+      const today = new Date()
+      expect(date.getFullYear()).toBe(today.getFullYear())
+      expect(date.getMonth()).toBe(today.getMonth())
+      expect(date.getDate()).toBe(today.getDate())
     })
   })
 

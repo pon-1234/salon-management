@@ -9,10 +9,10 @@ describe('Modification History Data', () => {
   describe('getModificationHistory', () => {
     it('should return modification history for a specific reservation', () => {
       const history = getModificationHistory('1')
-      
+
       expect(Array.isArray(history)).toBe(true)
       expect(history.length).toBeGreaterThan(0)
-      
+
       history.forEach((item) => {
         expect(item.reservationId).toBe('1')
         expect(item).toHaveProperty('id')
@@ -38,19 +38,19 @@ describe('Modification History Data', () => {
 
     it('should have valid modification history data', () => {
       const history = getModificationHistory('1')
-      
-      expect(history.some(h => h.fieldName === 'status')).toBe(true)
-      expect(history.some(h => h.fieldName === 'staff')).toBe(true)
+
+      expect(history.some((h) => h.fieldName === 'status')).toBe(true)
+      expect(history.some((h) => h.fieldName === 'staff')).toBe(true)
     })
   })
 
   describe('getModificationAlerts', () => {
     it('should return alerts for a specific reservation', () => {
       const alerts = getModificationAlerts('1')
-      
+
       expect(Array.isArray(alerts)).toBe(true)
       expect(alerts.length).toBeGreaterThan(0)
-      
+
       alerts.forEach((alert) => {
         expect(alert.reservationId).toBe('1')
         expect(alert).toHaveProperty('id')
@@ -71,8 +71,8 @@ describe('Modification History Data', () => {
 
     it('should have different types of alerts', () => {
       const alerts = getModificationAlerts('1')
-      
-      const types = alerts.map(a => a.type)
+
+      const types = alerts.map((a) => a.type)
       expect(types).toContain('warning')
       expect(types).toContain('info')
     })
@@ -185,9 +185,9 @@ describe('Modification History Data', () => {
       }
 
       const history = getModificationHistory('test-reservation-unique')
-      const ids = history.map(h => h.id)
+      const ids = history.map((h) => h.id)
       const uniqueIds = [...new Set(ids)]
-      
+
       expect(ids.length).toBe(uniqueIds.length)
     })
   })

@@ -22,13 +22,17 @@ describe('CustomerRepositoryImpl', () => {
   const mockCustomer: Customer = {
     id: '1',
     name: '山田太郎',
+    nameKana: 'ヤマダタロウ',
     email: 'yamada@example.com',
-    phoneNumber: '090-1234-5678',
-    birthDate: '1990-01-01',
-    address: '東京都渋谷区',
-    loyaltyPoints: 100,
+    phone: '090-1234-5678',
+    password: 'hashedpassword',
+    birthDate: new Date('1990-01-01'),
+    age: 34,
+    memberType: 'vip',
+    smsEnabled: true,
+    points: 100,
     registrationDate: new Date('2023-01-01'),
-    lastVisit: new Date('2024-01-01'),
+    lastVisitDate: new Date('2024-01-01'),
     notes: 'VIP顧客',
     createdAt: new Date('2023-01-01'),
     updatedAt: new Date('2023-01-01'),
@@ -153,13 +157,16 @@ describe('CustomerRepositoryImpl', () => {
     it('should create customer successfully', async () => {
       const newCustomerData = {
         name: '新規顧客',
+        nameKana: 'シンキコキャク',
         email: 'new@example.com',
-        phoneNumber: '090-9876-5432',
-        birthDate: '1995-05-05',
-        address: '大阪府大阪市',
-        loyaltyPoints: 0,
+        phone: '090-9876-5432',
+        password: 'password123',
+        birthDate: new Date('1995-05-05'),
+        age: 29,
+        memberType: 'regular' as const,
+        smsEnabled: false,
+        points: 0,
         registrationDate: new Date('2024-01-01'),
-        lastVisit: null,
         notes: '',
       }
 
@@ -193,13 +200,16 @@ describe('CustomerRepositoryImpl', () => {
       await expect(
         repository.create({
           name: 'Test',
+          nameKana: 'テスト',
           email: 'test@example.com',
-          phoneNumber: '090-0000-0000',
-          birthDate: '2000-01-01',
-          address: 'Test',
-          loyaltyPoints: 0,
+          phone: '090-0000-0000',
+          password: 'password123',
+          birthDate: new Date('2000-01-01'),
+          age: 24,
+          memberType: 'regular',
+          smsEnabled: false,
+          points: 0,
           registrationDate: new Date(),
-          lastVisit: null,
           notes: '',
         })
       ).rejects.toThrow('Failed to create customer')
@@ -208,7 +218,7 @@ describe('CustomerRepositoryImpl', () => {
 
   describe('update', () => {
     it('should update customer successfully', async () => {
-      const updateData = { name: '更新太郎', loyaltyPoints: 200 }
+      const updateData = { name: '更新太郎', points: 200 }
       const updatedCustomer = { ...mockCustomer, ...updateData }
 
       vi.mocked(fetch).mockResolvedValueOnce({

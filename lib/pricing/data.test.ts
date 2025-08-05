@@ -45,12 +45,12 @@ describe('Pricing Data', () => {
           expect(duration).toHaveProperty('price')
           expect(typeof duration.time).toBe('number')
           expect(typeof duration.price).toBe('number')
-          
+
           if (duration.originalPrice !== undefined) {
             expect(typeof duration.originalPrice).toBe('number')
             expect(duration.originalPrice).toBeGreaterThan(duration.price)
           }
-          
+
           if (duration.label !== undefined) {
             expect(typeof duration.label).toBe('string')
           }
@@ -119,7 +119,7 @@ describe('Pricing Data', () => {
     it('should have free and paid options', () => {
       const freeOptions = defaultOptions.filter((o) => o.price === 0)
       const paidOptions = defaultOptions.filter((o) => o.price > 0)
-      
+
       expect(freeOptions.length).toBeGreaterThan(0)
       expect(paidOptions.length).toBeGreaterThan(0)
     })
@@ -134,7 +134,7 @@ describe('Pricing Data', () => {
     it('should have popular options marked', () => {
       const popularOptions = defaultOptions.filter((o) => o.isPopular)
       expect(popularOptions.length).toBeGreaterThan(0)
-      
+
       popularOptions.forEach((option) => {
         expect(option.note).toBeDefined()
         expect(option.note).toMatch(/人気No\.\d/)
@@ -143,7 +143,7 @@ describe('Pricing Data', () => {
 
     it('should have extension option with duration', () => {
       const extensionOptions = defaultOptions.filter((o) => o.category === 'extension')
-      
+
       extensionOptions.forEach((option) => {
         expect(option.duration).toBeDefined()
         expect(typeof option.duration).toBe('number')
@@ -190,9 +190,11 @@ describe('Pricing Data', () => {
           case 'range':
             expect(fee.value).toHaveProperty('min')
             expect(fee.value).toHaveProperty('max')
-            expect(typeof fee.value.min).toBe('number')
-            expect(typeof fee.value.max).toBe('number')
-            expect(fee.value.min).toBeLessThanOrEqual(fee.value.max)
+            if (typeof fee.value === 'object' && fee.value !== null && 'min' in fee.value && 'max' in fee.value) {
+              expect(typeof fee.value.min).toBe('number')
+              expect(typeof fee.value.max).toBe('number')
+              expect(fee.value.min).toBeLessThanOrEqual(fee.value.max)
+            }
             break
           case 'percentage':
             expect(typeof fee.value).toBe('number')
@@ -257,12 +259,10 @@ describe('Pricing Data', () => {
     })
 
     it('should have all active items by default', () => {
-      const allActive = [
-        ...defaultCourses,
-        ...defaultOptions,
-        ...defaultAdditionalFees
-      ].every((item) => item.isActive)
-      
+      const allActive = [...defaultCourses, ...defaultOptions, ...defaultAdditionalFees].every(
+        (item) => item.isActive
+      )
+
       expect(allActive).toBe(true)
     })
   })

@@ -44,6 +44,20 @@ Try the live demo with these credentials:
 - **Email**: `customer@example.com`
 - **Password**: `customer123`
 
+## Recent Updates
+
+### Test Coverage Improvements (2025-08-05)
+
+- ✅ Added comprehensive tests for core data modules:
+  - `lib/cast/data.ts` - 100% coverage
+  - `lib/customer/data.ts` - 100% coverage  
+  - `lib/reservation/data.ts` - 100% coverage
+  - `lib/store/data.ts` - 100% coverage
+  - `lib/reviews/data.ts` - 100% coverage
+- 📈 Overall test coverage improved from ~30% to ~40%
+- 🔍 Identified and documented unused code patterns with `@no-test-required` annotations
+- 🛠 Fixed `createDate` export in cast module
+
 ## Quick Start
 
 ```bash

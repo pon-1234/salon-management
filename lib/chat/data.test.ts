@@ -61,7 +61,7 @@ describe('Chat Data', () => {
     it('should have lastSeen for most offline customers', () => {
       const offlineCustomers = customers.filter((customer) => !customer.isOnline)
       const withLastSeen = offlineCustomers.filter((customer) => customer.lastSeen !== undefined)
-      
+
       // At least some offline customers should have lastSeen
       if (offlineCustomers.length > 0) {
         expect(withLastSeen.length).toBeGreaterThan(0)

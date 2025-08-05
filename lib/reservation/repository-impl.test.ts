@@ -19,26 +19,13 @@ describe('ReservationRepositoryImpl', () => {
 
   const mockReservation: Reservation = {
     id: '1',
-    castId: 'cast1',
-    castName: 'テストキャスト',
     customerId: 'customer1',
-    customerName: '山田太郎',
-    customerEmail: 'yamada@example.com',
-    customerPhone: '090-1234-5678',
-    date: new Date('2024-01-01'),
-    startTime: '10:00',
-    endTime: '11:00',
-    services: [
-      {
-        id: 'service1',
-        name: 'カット',
-        duration: 60,
-        price: 5000,
-      },
-    ],
-    options: [],
-    totalAmount: 5000,
+    staffId: 'cast1',
+    serviceId: 'service1',
+    startTime: new Date('2024-01-01T10:00:00'),
+    endTime: new Date('2024-01-01T11:00:00'),
     status: 'confirmed',
+    price: 5000,
     notes: 'テスト予約',
     createdAt: new Date('2023-12-01'),
     updatedAt: new Date('2023-12-01'),
@@ -111,26 +98,13 @@ describe('ReservationRepositoryImpl', () => {
   describe('create', () => {
     it('should create reservation successfully', async () => {
       const newReservationData = {
-        castId: 'cast1',
-        castName: 'テストキャスト',
         customerId: 'customer1',
-        customerName: '新規顧客',
-        customerEmail: 'new@example.com',
-        customerPhone: '090-9876-5432',
-        date: new Date('2024-01-15'),
-        startTime: '14:00',
-        endTime: '15:00',
-        services: [
-          {
-            id: 'service1',
-            name: 'カット',
-            duration: 60,
-            price: 5000,
-          },
-        ],
-        options: [],
-        totalAmount: 5000,
+        staffId: 'cast1',
+        serviceId: 'service1',
+        startTime: new Date('2024-01-15T14:00:00'),
+        endTime: new Date('2024-01-15T15:00:00'),
         status: 'confirmed' as const,
+        price: 5000,
         notes: '',
       }
 
@@ -177,19 +151,13 @@ describe('ReservationRepositoryImpl', () => {
 
       try {
         await repository.create({
-          castId: 'cast1',
-          castName: 'テストキャスト',
           customerId: 'customer1',
-          customerName: '顧客',
-          customerEmail: 'test@example.com',
-          customerPhone: '090-0000-0000',
-          date: new Date(),
-          startTime: '14:00',
-          endTime: '15:00',
-          services: [],
-          options: [],
-          totalAmount: 0,
+          staffId: 'cast1',
+          serviceId: 'service1',
+          startTime: new Date('2024-01-15T14:00:00'),
+          endTime: new Date('2024-01-15T15:00:00'),
           status: 'confirmed',
+          price: 0,
           notes: '',
         })
         expect.fail('Should have thrown an error')
@@ -210,19 +178,13 @@ describe('ReservationRepositoryImpl', () => {
 
       await expect(
         repository.create({
-          castId: 'cast1',
-          castName: 'テストキャスト',
           customerId: 'customer1',
-          customerName: '顧客',
-          customerEmail: 'test@example.com',
-          customerPhone: '090-0000-0000',
-          date: new Date(),
-          startTime: '14:00',
-          endTime: '15:00',
-          services: [],
-          options: [],
-          totalAmount: 0,
+          staffId: 'cast1',
+          serviceId: 'service1',
+          startTime: new Date('2024-01-15T14:00:00'),
+          endTime: new Date('2024-01-15T15:00:00'),
           status: 'confirmed',
+          price: 0,
           notes: '',
         })
       ).rejects.toThrow('Invalid data')
@@ -264,7 +226,7 @@ describe('ReservationRepositoryImpl', () => {
       } as Response)
 
       try {
-        await repository.update('1', { startTime: '15:00' })
+        await repository.update('1', { startTime: new Date('2024-01-01T15:00:00') })
         expect.fail('Should have thrown an error')
       } catch (error: any) {
         expect(error.message).toBe('Time slot is not available')

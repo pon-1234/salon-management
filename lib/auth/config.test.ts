@@ -109,6 +109,7 @@ describe('Auth Config', () => {
         permissions: null,
         createdAt: new Date(),
         updatedAt: new Date(),
+
         lastLogin: null,
       })
 
@@ -136,9 +137,10 @@ describe('Auth Config', () => {
         permissions: null,
         createdAt: new Date(),
         updatedAt: new Date(),
+
         lastLogin: null,
       })
-      vi.mocked(bcrypt.compare).mockResolvedValueOnce(false)
+      vi.mocked(bcrypt.compare).mockResolvedValueOnce(false as never)
 
       const result = await authorize({
         email: 'admin@example.com',
@@ -161,11 +163,12 @@ describe('Auth Config', () => {
         permissions: JSON.stringify(['manage_users', 'manage_settings']),
         createdAt: new Date(),
         updatedAt: new Date(),
+
         lastLogin: null,
       }
 
       vi.mocked(db.admin.findUnique).mockResolvedValueOnce(mockAdmin)
-      vi.mocked(bcrypt.compare).mockResolvedValueOnce(true)
+      vi.mocked(bcrypt.compare).mockResolvedValueOnce(true as never)
       vi.mocked(db.admin.update).mockResolvedValueOnce({ ...mockAdmin, lastLogin: new Date() })
 
       const result = await authorize({
@@ -201,9 +204,10 @@ describe('Auth Config', () => {
         permissions: 'invalid-json',
         createdAt: new Date(),
         updatedAt: new Date(),
+
         lastLogin: null,
       })
-      vi.mocked(bcrypt.compare).mockResolvedValueOnce(true)
+      vi.mocked(bcrypt.compare).mockResolvedValueOnce(true as never)
 
       const result = await authorize({
         email: 'admin@example.com',
@@ -271,17 +275,24 @@ describe('Auth Config', () => {
         email: 'customer@example.com',
         name: 'Customer Name',
         password: 'hashedpassword',
-        phoneNumber: '1234567890',
-        birthDate: null,
-        address: null,
-        loyaltyPoints: 0,
-        registrationDate: new Date(),
+        phone: '1234567890',
+        birthDate: new Date(),
+
+        nameKana: 'カスタマーネーム',
+
+        memberType: 'regular',
+
+        points: 0,
+
         createdAt: new Date(),
         updatedAt: new Date(),
-        lastVisit: null,
-        notes: null,
+        resetToken: null,
+        resetTokenExpiry: null,
+        emailVerified: false,
+        emailVerificationToken: null,
+        emailVerificationExpiry: null,
       })
-      vi.mocked(bcrypt.compare).mockResolvedValueOnce(true)
+      vi.mocked(bcrypt.compare).mockResolvedValueOnce(true as never)
 
       const result = await authorize({
         email: 'customer@example.com',
@@ -302,19 +313,26 @@ describe('Auth Config', () => {
       vi.mocked(db.customer.findUnique).mockResolvedValueOnce({
         id: '3',
         email: 'customer@example.com',
-        name: null,
+        name: '',
         password: 'hashedpassword',
-        phoneNumber: '1234567890',
-        birthDate: null,
-        address: null,
-        loyaltyPoints: 0,
-        registrationDate: new Date(),
+        phone: '1234567890',
+        birthDate: new Date(),
+
+        nameKana: 'カスタマーネーム',
+
+        memberType: 'regular',
+
+        points: 0,
+
         createdAt: new Date(),
         updatedAt: new Date(),
-        lastVisit: null,
-        notes: null,
+        resetToken: null,
+        resetTokenExpiry: null,
+        emailVerified: false,
+        emailVerificationToken: null,
+        emailVerificationExpiry: null,
       })
-      vi.mocked(bcrypt.compare).mockResolvedValueOnce(true)
+      vi.mocked(bcrypt.compare).mockResolvedValueOnce(true as never)
 
       const result = await authorize({
         email: 'customer@example.com',
@@ -357,7 +375,7 @@ describe('Auth Config', () => {
 
       const result = await authOptions.callbacks!.jwt!({
         token,
-        user: undefined,
+        user: undefined as any,
         account: null,
         trigger: undefined,
       })
@@ -386,7 +404,9 @@ describe('Auth Config', () => {
         session,
         token,
         user: undefined as any,
-      })
+        newSession: undefined,
+        trigger: undefined,
+      } as any)
 
       expect(result.user).toEqual({
         id: '1',

@@ -1,6 +1,6 @@
 import { DailySalesData } from '../types/daily-sales'
 
-const mockDailySalesData: DailySalesData = {
+export const mockDailySalesData: DailySalesData = {
   date: '2024-12-10',
   totalStaff: 14,
   totalWorkingHours: 111,

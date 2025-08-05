@@ -1,6 +1,6 @@
 import { Cast, type CastSchedule, Appointment } from './types'
 
-const createDate = (hours: number, minutes = 0) => {
+export const createDate = (hours: number, minutes = 0) => {
   const date = new Date()
   date.setHours(hours, minutes, 0, 0)
   return date

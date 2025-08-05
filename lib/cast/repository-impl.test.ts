@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { CastRepositoryImpl } from './repository-impl'
-import { Cast, WorkingHours } from './types'
+import { Cast, CastSchedule } from './types'
 
 // Mock fetch globally
 global.fetch = vi.fn()
@@ -20,14 +20,26 @@ describe('CastRepositoryImpl', () => {
   const mockCast: Cast = {
     id: '1',
     name: 'テストキャスト',
-    nickname: 'テスト',
-    birthDate: '1995-01-01',
-    bloodType: 'A',
+    nameKana: 'テストキャスト',
+    age: 28,
     height: 165,
-    status: 'available',
-    joinDate: '2023-01-01',
-    imageUrl: '/images/cast1.jpg',
-    introduction: 'テスト自己紹介',
+    bust: 'C',
+    waist: 58,
+    hip: 88,
+    type: 'スタンダード',
+    image: '/images/cast1.jpg',
+    images: ['/images/cast1.jpg'],
+    description: 'テスト自己紹介',
+    netReservation: true,
+    specialDesignationFee: null,
+    regularDesignationFee: null,
+    panelDesignationRank: 0,
+    regularDesignationRank: 0,
+    workStatus: '出勤',
+    workStart: new Date(),
+    workEnd: new Date(),
+    appointments: [],
+    availableOptions: [],
     createdAt: new Date('2023-01-01'),
     updatedAt: new Date('2023-01-01'),
   }
@@ -100,14 +112,24 @@ describe('CastRepositoryImpl', () => {
     it('should create cast successfully', async () => {
       const newCastData = {
         name: '新規キャスト',
-        nickname: '新規',
-        birthDate: '1998-05-15',
-        bloodType: 'B' as const,
+        nameKana: 'シンキキャスト',
+        age: 25,
         height: 170,
-        status: 'available' as const,
-        joinDate: '2024-01-01',
-        imageUrl: '/images/new.jpg',
-        introduction: '新規自己紹介',
+        bust: 'D',
+        waist: 60,
+        hip: 90,
+        type: 'モデル系',
+        image: '/images/new.jpg',
+        images: ['/images/new.jpg'],
+        description: '新規自己紹介',
+        netReservation: true,
+        specialDesignationFee: null,
+        regularDesignationFee: null,
+        panelDesignationRank: 0,
+        regularDesignationRank: 0,
+        workStatus: '出勤' as const,
+        appointments: [],
+        availableOptions: [],
       }
 
       vi.mocked(fetch).mockResolvedValueOnce({
@@ -141,14 +163,24 @@ describe('CastRepositoryImpl', () => {
       await expect(
         repository.create({
           name: 'Test',
-          nickname: 'Test',
-          birthDate: '1995-01-01',
-          bloodType: 'A',
+          nameKana: 'テスト',
+          age: 28,
           height: 165,
-          status: 'available',
-          joinDate: '2023-01-01',
-          imageUrl: '/test.jpg',
-          introduction: 'Test',
+          bust: 'C',
+          waist: 58,
+          hip: 88,
+          type: 'スタンダード',
+          image: '/test.jpg',
+          images: ['/test.jpg'],
+          description: 'Test',
+          netReservation: true,
+          specialDesignationFee: null,
+          regularDesignationFee: null,
+          panelDesignationRank: 0,
+          regularDesignationRank: 0,
+          workStatus: '出勤',
+          appointments: [],
+          availableOptions: [],
         })
       ).rejects.toThrow('Failed to create cast: Bad Request')
     })
@@ -217,17 +249,11 @@ describe('CastRepositoryImpl', () => {
     it('should fetch schedules successfully', async () => {
       const mockSchedules: CastSchedule[] = [
         {
-          id: '1',
           castId: '1',
-          date: '2024-01-01',
-          startTime: '10:00',
-          endTime: '18:00',
-          breakStartTime: '14:00',
-          breakEndTime: '15:00',
-          status: 'confirmed',
-          notes: 'Test note',
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          date: new Date('2024-01-01'),
+          startTime: new Date('2024-01-01T10:00:00'),
+          endTime: new Date('2024-01-01T18:00:00'),
+          bookings: 3,
         },
       ]
 
@@ -261,20 +287,19 @@ describe('CastRepositoryImpl', () => {
   describe('updateCastSchedule', () => {
     it('should update existing schedule successfully', async () => {
       const existingSchedule = {
-        id: '1',
         castId: '1',
         date: new Date('2024-01-01'),
-        startTime: '10:00',
-        endTime: '18:00',
-        status: 'confirmed',
+        startTime: new Date('2024-01-01T10:00:00'),
+        endTime: new Date('2024-01-01T18:00:00'),
+        bookings: 2,
       }
 
       const newSchedule = {
         castId: '1',
         date: new Date('2024-01-01'),
-        startTime: '11:00',
-        endTime: '19:00',
-        status: 'confirmed',
+        startTime: new Date('2024-01-01T11:00:00'),
+        endTime: new Date('2024-01-01T19:00:00'),
+        bookings: 1,
       }
 
       // Mock getCastSchedule call
@@ -307,9 +332,9 @@ describe('CastRepositoryImpl', () => {
       const newSchedule = {
         castId: '1',
         date: new Date('2024-01-01'),
-        startTime: '10:00',
-        endTime: '18:00',
-        status: 'confirmed',
+        startTime: new Date('2024-01-01T10:00:00'),
+        endTime: new Date('2024-01-01T18:00:00'),
+        bookings: 0,
       }
 
       // Mock getCastSchedule to return empty
@@ -339,9 +364,9 @@ describe('CastRepositoryImpl', () => {
       const schedule = {
         castId: '1',
         date: new Date('2024-01-01'),
-        startTime: '10:00',
-        endTime: '18:00',
-        status: 'confirmed',
+        startTime: new Date('2024-01-01T10:00:00'),
+        endTime: new Date('2024-01-01T18:00:00'),
+        bookings: 1,
       }
 
       // Mock getCastSchedule

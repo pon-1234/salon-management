@@ -44,7 +44,7 @@ describe('Reservation Data', () => {
         expect(reservation).toHaveProperty('price')
         expect(reservation).toHaveProperty('createdAt')
         expect(reservation).toHaveProperty('updatedAt')
-        
+
         expect(reservation.startTime).toBeInstanceOf(Date)
         expect(reservation.endTime).toBeInstanceOf(Date)
         expect(reservation.createdAt).toBeInstanceOf(Date)
@@ -75,12 +75,12 @@ describe('Reservation Data', () => {
       const reservations = await getAllReservations()
       const originalReservation = reservations[0]
       const originalNotes = originalReservation.notes
-      
+
       updateReservation(originalReservation.id, { notes: 'Updated notes' })
-      
+
       const updatedReservations = await getAllReservations()
-      const updatedReservation = updatedReservations.find(r => r.id === originalReservation.id)
-      
+      const updatedReservation = updatedReservations.find((r) => r.id === originalReservation.id)
+
       expect(updatedReservation?.notes).toBe('Updated notes')
     })
 
@@ -115,7 +115,7 @@ describe('Reservation Data', () => {
 
     it('should generate unique IDs for new reservations', () => {
       const reservations = []
-      
+
       for (let i = 0; i < 3; i++) {
         const result = addReservation({
           customerId: '1',
@@ -126,13 +126,13 @@ describe('Reservation Data', () => {
           status: 'confirmed',
           price: 19000,
         })
-        
+
         reservations.push(result)
       }
 
       const ids = reservations.map((r) => r.id)
       const uniqueIds = [...new Set(ids)]
-      
+
       expect(ids.length).toBe(uniqueIds.length)
     })
   })
