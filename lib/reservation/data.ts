@@ -1,6 +1,6 @@
 import { Reservation, Service } from '../types/reservation'
 
-export const services: Service[] = [
+const services: Service[] = [
   // キャンペーンコース
   {
     id: 'campaign70',
