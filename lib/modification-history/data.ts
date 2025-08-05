@@ -61,6 +61,9 @@ export function getModificationAlerts(reservationId: string): ModificationAlert[
   return modificationAlertsData.filter((alert) => alert.reservationId === reservationId)
 }
 
+let modificationCounter = 0
+let alertCounter = 0
+
 export function recordModification(
   reservationId: string,
   userId: string,
@@ -75,7 +78,7 @@ export function recordModification(
   sessionId: string
 ): void {
   const newModification: ModificationHistory = {
-    id: `mod_${Date.now()}`,
+    id: `mod_${Date.now()}_${++modificationCounter}`,
     reservationId,
     userId,
     userName,
@@ -95,7 +98,7 @@ export function recordModification(
   // Add alert if needed
   if (fieldName === 'status' && newValue === 'modifiable') {
     const alert: ModificationAlert = {
-      id: `alert_${Date.now()}`,
+      id: `alert_${Date.now()}_${++alertCounter}`,
       reservationId,
       type: 'info',
       message: '予約が修正可能状態に変更されました',
