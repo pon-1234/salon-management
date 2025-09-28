@@ -5,10 +5,19 @@
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { NextRequest } from 'next/server'
+import { getServerSession } from 'next-auth'
 import { GET, POST, PUT, DELETE } from './route'
 import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import { getServerSession } from 'next-auth'
+
+vi.mock('next-auth', () => ({
+  getServerSession: vi.fn(),
+}))
+
+vi.mock('@/lib/auth/config', () => ({
+  authOptions: {},
+}))
 
 // Mock the database
 vi.mock('@/lib/db', () => ({
@@ -52,6 +61,7 @@ vi.mock('@/lib/auth/config', () => ({
 describe('GET /api/customer', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getServerSession).mockResolvedValue(null as any)
   })
 
   it('should require authentication to get customer by ID', async () => {
@@ -62,16 +72,17 @@ describe('GET /api/customer', () => {
     const response = await GET(request)
     const data = await response.json()
 
-    expect(response.status).toBe(403)
-    expect(data.error).toBe('Forbidden')
+    expect(response.status).toBe(401)
+    expect(data.error).toBe('Authentication required')
   })
 
   it('should prevent access to other customer data', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'customer1', role: 'customer' },
+    } as any)
+
     const request = new NextRequest('http://localhost:3000/api/customer?id=other-customer', {
       method: 'GET',
-      headers: {
-        'x-customer-id': 'customer1',
-      },
     })
 
     const response = await GET(request)
@@ -82,6 +93,10 @@ describe('GET /api/customer', () => {
   })
 
   it('should return customer data for authenticated customer', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'customer1', role: 'customer' },
+    } as any)
+
     const mockCustomer = {
       id: 'customer1',
       name: 'Test Customer',
@@ -101,9 +116,6 @@ describe('GET /api/customer', () => {
 
     const request = new NextRequest('http://localhost:3000/api/customer?id=customer1', {
       method: 'GET',
-      headers: {
-        'x-customer-id': 'customer1',
-      },
     })
 
     const response = await GET(request)
@@ -117,11 +129,12 @@ describe('GET /api/customer', () => {
   it('should return 404 for non-existent customer', async () => {
     vi.mocked(db.customer.findUnique).mockResolvedValueOnce(null)
 
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'customer1', role: 'customer' },
+    } as any)
+
     const request = new NextRequest('http://localhost:3000/api/customer?id=customer1', {
       method: 'GET',
-      headers: {
-        'x-customer-id': 'customer1',
-      },
     })
 
     const response = await GET(request)
@@ -131,12 +144,13 @@ describe('GET /api/customer', () => {
     expect(data.error).toBe('Customer not found')
   })
 
-  it('should return 403 when no id parameter provided', async () => {
+  it('should require admin role when no id parameter provided', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'customer1', role: 'customer' },
+    } as any)
+
     const request = new NextRequest('http://localhost:3000/api/customer', {
       method: 'GET',
-      headers: {
-        'x-customer-id': 'customer1',
-      },
     })
 
     const response = await GET(request)
@@ -244,6 +258,7 @@ describe('POST /api/customer', () => {
 describe('PUT /api/customer', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getServerSession).mockResolvedValue(null as any)
   })
 
   it('should require authentication', async () => {
@@ -258,16 +273,17 @@ describe('PUT /api/customer', () => {
     const response = await PUT(request)
     const data = await response.json()
 
-    expect(response.status).toBe(403)
-    expect(data.error).toBe('Forbidden')
+    expect(response.status).toBe(401)
+    expect(data.error).toBe('Authentication required')
   })
 
   it('should prevent updating other customer data', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'customer1', role: 'customer' },
+    } as any)
+
     const request = new NextRequest('http://localhost:3000/api/customer', {
       method: 'PUT',
-      headers: {
-        'x-customer-id': 'customer1',
-      },
       body: JSON.stringify({
         id: 'other-customer',
         name: 'Updated Name',
@@ -282,6 +298,10 @@ describe('PUT /api/customer', () => {
   })
 
   it('should update customer data', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'customer1', role: 'customer' },
+    } as any)
+
     const updatedCustomerData = {
       id: 'customer1',
       name: 'Updated Customer',
@@ -307,9 +327,6 @@ describe('PUT /api/customer', () => {
 
     const request = new NextRequest('http://localhost:3000/api/customer', {
       method: 'PUT',
-      headers: {
-        'x-customer-id': 'customer1',
-      },
       body: JSON.stringify(updatedCustomerData),
     })
 
@@ -322,6 +339,10 @@ describe('PUT /api/customer', () => {
   })
 
   it('should update password with hashing', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'customer1', role: 'customer' },
+    } as any)
+
     const updateData = {
       id: 'customer1',
       password: 'new-password',
@@ -347,9 +368,6 @@ describe('PUT /api/customer', () => {
 
     const request = new NextRequest('http://localhost:3000/api/customer', {
       method: 'PUT',
-      headers: {
-        'x-customer-id': 'customer1',
-      },
       body: JSON.stringify(updateData),
     })
 
@@ -367,11 +385,12 @@ describe('PUT /api/customer', () => {
       message: 'Record not found',
     })
 
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'customer1', role: 'customer' },
+    } as any)
+
     const request = new NextRequest('http://localhost:3000/api/customer', {
       method: 'PUT',
-      headers: {
-        'x-customer-id': 'customer1',
-      },
       body: JSON.stringify({
         id: 'customer1',
         name: 'Updated Name',
@@ -394,9 +413,6 @@ describe('DELETE /api/customer', () => {
   it('should always return forbidden', async () => {
     const request = new NextRequest('http://localhost:3000/api/customer', {
       method: 'DELETE',
-      headers: {
-        'x-customer-id': 'customer1',
-      },
     })
 
     const response = await DELETE(request)

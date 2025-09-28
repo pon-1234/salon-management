@@ -8,22 +8,21 @@ import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
 // Public routes that don't require authentication
-const publicRoutes = ['/', '/api', '/_next', '/favicon.ico']
+const publicRoutes = ['/', '/_next', '/favicon.ico']
 
 // Auth routes that should be accessible without authentication
-const authRoutes = ['/login', '/register', '/admin/login', '/auth']
-
-// Routes that require admin role
-const adminRoutes = ['/admin']
+const authRoutes = ['/login', '/register', '/admin/login', '/auth', '/api/auth']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const isApiRoute = pathname.startsWith('/api')
 
   // Check if route is public
   const isPublicRoute =
-    publicRoutes.some((route) => pathname.startsWith(route)) ||
-    authRoutes.some((route) => pathname.startsWith(route)) ||
-    pathname.match(/^\/((?!admin|mypage).)*$/) // All non-admin, non-mypage routes
+    !isApiRoute &&
+    (publicRoutes.some((route) => pathname.startsWith(route)) ||
+      authRoutes.some((route) => pathname.startsWith(route)) ||
+      pathname.match(/^\/((?!admin|mypage).)*$/)) // All non-admin, non-mypage page routes
 
   // Get session token
   const token = await getToken({
@@ -31,8 +30,14 @@ export async function middleware(request: NextRequest) {
     secret: process.env.NEXTAUTH_SECRET,
   })
 
+  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route))
+
   // Handle authentication routes
-  if (authRoutes.some((route) => pathname.startsWith(route))) {
+  if (isAuthRoute) {
+    if (pathname.startsWith('/api/auth')) {
+      return NextResponse.next()
+    }
+
     // If already authenticated, redirect to appropriate dashboard
     if (token) {
       if (token.role === 'admin' && pathname.startsWith('/admin')) {
@@ -82,7 +87,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Handle protected API routes
-  if (pathname.startsWith('/api/reservation') || pathname.startsWith('/api/cast')) {
+  if (isApiRoute) {
     if (!token) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }

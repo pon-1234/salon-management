@@ -142,16 +142,13 @@ describe('Reservation API - Modifiable Status', () => {
       }
 
       vi.mocked(getServerSession).mockResolvedValue({
-        user: { role: 'customer' },
+        user: { id: 'cust-123', role: 'customer' },
       } as any)
 
       vi.mocked(db.reservation.findUnique).mockResolvedValue(modifiableReservation as any)
 
       const request = new NextRequest('http://localhost/api/reservation', {
         method: 'PUT',
-        headers: {
-          'x-customer-id': 'cust-123',
-        },
         body: JSON.stringify({
           id: 'res-123',
           courseId: 'course-456',

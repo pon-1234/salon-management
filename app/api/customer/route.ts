@@ -15,15 +15,19 @@ const SALT_ROUNDS = 10
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    const authCustomerId = request.headers.get('x-customer-id')
     const searchParams = request.nextUrl.searchParams
     const id = searchParams.get('id')
 
     const isAdmin = session?.user?.role === 'admin'
+    const sessionCustomerId = session?.user?.id
 
     if (id) {
+      if (!session) {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+      }
+
       // Allow admin or the customer themselves
-      if (!isAdmin && (!authCustomerId || id !== authCustomerId)) {
+      if (!isAdmin && id !== sessionCustomerId) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
 
@@ -63,6 +67,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all customers - admin only
+    if (!session) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
     if (!isAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
@@ -142,14 +150,18 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    const authCustomerId = request.headers.get('x-customer-id')
     const data = await request.json()
     const { id, password, ...updates } = data
 
     const isAdmin = session?.user?.role === 'admin'
+    const sessionCustomerId = session?.user?.id
 
     // Allow admin or the customer themselves
-    if (!isAdmin && (!authCustomerId || id !== authCustomerId)) {
+    if (!session) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    if (!isAdmin && id !== sessionCustomerId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

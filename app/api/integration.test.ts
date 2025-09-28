@@ -167,9 +167,6 @@ describe('Customer Journey Integration Tests', () => {
 
     const reservationRequest = new NextRequest('http://localhost:3000/api/reservation', {
       method: 'POST',
-      headers: {
-        'x-customer-id': 'customer-integration-1',
-      },
       body: JSON.stringify(reservationData),
     })
 
@@ -330,9 +327,6 @@ describe('Customer Journey Integration Tests', () => {
 
     const conflictingRequest = new NextRequest('http://localhost:3000/api/reservation', {
       method: 'POST',
-      headers: {
-        'x-customer-id': 'customer1',
-      },
       body: JSON.stringify(conflictingReservationData),
     })
 
@@ -407,9 +401,6 @@ describe('Customer Journey Integration Tests', () => {
       `http://localhost:3000/api/reservation?customerId=${customerId}`,
       {
         method: 'GET',
-        headers: {
-          'x-customer-id': customerId,
-        },
       }
     )
 
@@ -521,9 +512,6 @@ describe('Cast Performance Analytics Integration', () => {
       `http://localhost:3000/api/reservation?castId=${castId}`,
       {
         method: 'GET',
-        headers: {
-          'x-customer-id': 'admin', // Assuming admin can see all reservations
-        },
       }
     )
 
