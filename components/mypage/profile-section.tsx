@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { User, Mail, Phone, Calendar, Gift, Edit2, Check, X } from 'lucide-react'
+import { isVipMember } from '@/lib/utils'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 
@@ -167,8 +168,8 @@ export function ProfileSection({ user, store }: ProfileSectionProps) {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <span>会員ランク</span>
-            <Badge variant={user.memberType === 'vip' ? 'default' : 'secondary'}>
-              {user.memberType === 'vip' ? 'VIP会員' : '通常会員'}
+            <Badge variant={isVipMember(user.memberType) ? 'default' : 'secondary'}>
+              {isVipMember(user.memberType) ? 'VIP会員' : '通常会員'}
             </Badge>
           </div>
           <div className="flex items-center justify-between">

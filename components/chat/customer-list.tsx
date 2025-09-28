@@ -9,6 +9,7 @@ import { Search, Send, Crown } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Customer } from '@/lib/types/chat'
 import { toast } from '@/hooks/use-toast'
+import { isVipMember } from '@/lib/utils'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 
@@ -150,7 +151,7 @@ export function CustomerList({ selectedCustomerId, onSelectCustomer }: CustomerL
                         <span className="truncate font-medium text-gray-900">
                           {customer.name} 様
                         </span>
-                        {customer.memberType === 'vip' && (
+                        {isVipMember(customer.memberType) && (
                           <Crown className="h-3 w-3 text-amber-500" />
                         )}
                       </div>

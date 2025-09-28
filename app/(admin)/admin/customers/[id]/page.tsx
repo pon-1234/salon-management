@@ -67,6 +67,7 @@ import { ReservationDialog } from '@/components/reservation/reservation-dialog'
 import { ReservationData } from '@/lib/types/reservation'
 import { CustomerUseCases } from '@/lib/customer/usecases'
 import { CustomerRepositoryImpl } from '@/lib/customer/repository-impl'
+import { isVipMember } from '@/lib/utils'
 
 const formSchema = z.object({
   name: z.string().min(1, '名前は必須です'),
@@ -287,7 +288,7 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
       id: reservation.id,
       customerId: reservation.customerId,
       customerName: customer?.name || `顧客${reservation.customerId}`,
-      customerType: customer?.memberType === 'vip' ? 'VIPメンバー' : '通常顧客',
+      customerType: isVipMember(customer?.memberType) ? 'VIPメンバー' : '通常顧客',
       phoneNumber: customer?.phone || '090-1234-5678',
       points: customer?.points || 100,
       bookingStatus: reservation.status,
@@ -335,7 +336,7 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
           <div className="mt-3 flex items-center gap-3">
             <Badge variant="secondary" className="bg-blue-100 text-blue-700">
               <Crown className="mr-1 h-4 w-4" />
-              {customer.memberType === 'vip' ? 'VIPメンバー' : '通常会員'}
+              {isVipMember(customer.memberType) ? 'VIPメンバー' : '通常会員'}
             </Badge>
             <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700">
               レギュラーステージ

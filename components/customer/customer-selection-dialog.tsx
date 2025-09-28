@@ -18,7 +18,7 @@ import { Search, User, Phone, Mail, Crown, Star, ChevronRight, UserPlus } from '
 import { customers as customerData } from '@/lib/customer/data'
 import { Customer } from '@/lib/customer/types'
 import { useRouter } from 'next/navigation'
-import { cn } from '@/lib/utils'
+import { cn, isVipMember } from '@/lib/utils'
 
 interface CustomerSelectionDialogProps {
   open: boolean
@@ -64,7 +64,7 @@ export function CustomerSelectionDialog({ open, onOpenChange }: CustomerSelectio
   }
 
   const getMemberBadge = (type: string) => {
-    if (type === 'vip') {
+    if (isVipMember(type)) {
       return (
         <Badge variant="default" className="bg-gradient-to-r from-yellow-400 to-yellow-600">
           <Crown className="mr-1 h-3 w-3" />

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Customer } from '@/lib/types/chat'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
+import { isVipMember } from '@/lib/utils'
 
 interface CustomerHeaderProps {
   customer?: Customer
@@ -46,7 +47,7 @@ export function CustomerHeader({ customer }: CustomerHeaderProps) {
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold text-gray-900">{customer.name} 様</h2>
-            {customer.memberType === 'vip' && <Crown className="h-4 w-4 text-amber-500" />}
+            {isVipMember(customer.memberType) && <Crown className="h-4 w-4 text-amber-500" />}
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-500">
             {customer.isOnline ? (

@@ -37,6 +37,7 @@ import { usePricing } from '@/hooks/use-pricing'
 import { useAvailability } from '@/hooks/use-availability'
 import { TimeSlotPicker } from './time-slot-picker'
 import { toast } from '@/hooks/use-toast'
+import { isVipMember } from '@/lib/utils'
 
 interface QuickBookingDialogProps {
   open: boolean
@@ -65,7 +66,7 @@ export function QuickBookingDialog({
     : options
   const [bookingDetails, setBookingDetails] = useState({
     customerName: selectedCustomer?.name || '', // 更新
-    customerType: selectedCustomer?.memberType === 'vip' ? 'VIPメンバー' : '通常会員', // 更新
+    customerType: isVipMember(selectedCustomer?.memberType) ? 'VIPメンバー' : '通常会員', // 更新
     phoneNumber: selectedCustomer?.phone || '', // 更新
     points: selectedCustomer?.points || 0, // 更新
     bookingStatus: '仮予約',
@@ -125,7 +126,7 @@ export function QuickBookingDialog({
       setBookingDetails((prev) => ({
         ...prev,
         customerName: selectedCustomer.name,
-        customerType: selectedCustomer.memberType === 'vip' ? 'VIPメンバー' : '通常会員',
+        customerType: isVipMember(selectedCustomer.memberType) ? 'VIPメンバー' : '通常会員',
         phoneNumber: selectedCustomer.phone,
         points: selectedCustomer.points,
       }))

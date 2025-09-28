@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Phone, PhoneOff, User, Calendar, Star, AlertCircle } from 'lucide-react'
 import { Customer } from '@/lib/customer/types'
+import { isVipMember } from '@/lib/utils'
 
 interface IncomingCallPopupProps {
   isOpen: boolean
@@ -60,8 +61,8 @@ export function IncomingCallPopup({
                     </div>
 
                     <div className="flex gap-2">
-                      <Badge variant={customer.memberType === 'vip' ? 'default' : 'secondary'}>
-                        {customer.memberType === 'vip' ? 'VIP会員' : '一般会員'}
+                      <Badge variant={isVipMember(customer.memberType) ? 'default' : 'secondary'}>
+                        {isVipMember(customer.memberType) ? 'VIP会員' : '一般会員'}
                       </Badge>
                       {customer.points && customer.points > 0 && (
                         <Badge variant="outline">
