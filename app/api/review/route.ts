@@ -4,6 +4,8 @@
  * @known_issues None currently
  */
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
 import logger from '@/lib/logger'
 
@@ -56,11 +58,23 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    const isAdmin = session.user.role === 'admin'
     const data = await request.json()
+
+    const customerId = isAdmin && data.customerId ? data.customerId : session.user.id
+
+    if (!customerId) {
+      return NextResponse.json({ error: 'Customer ID is required' }, { status: 400 })
+    }
 
     const newReview = await db.review.create({
       data: {
-        customerId: data.customerId,
+        customerId,
         castId: data.castId,
         rating: data.rating,
         comment: data.comment || '',
@@ -80,11 +94,29 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    const isAdmin = session.user.role === 'admin'
     const data = await request.json()
     const { id, ...updates } = data
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+    }
+
+    const existingReview = await db.review.findUnique({
+      where: { id },
+    })
+
+    if (!existingReview) {
+      return NextResponse.json({ error: 'Review not found' }, { status: 404 })
+    }
+
+    if (!isAdmin && existingReview.customerId !== session.user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const updatedReview = await db.review.update({
@@ -111,11 +143,33 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    const isAdmin = session.user.role === 'admin'
     const searchParams = request.nextUrl.searchParams
     const id = searchParams.get('id')
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+    }
+
+    const existingReview = await db.review.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        customerId: true,
+      },
+    })
+
+    if (!existingReview) {
+      return NextResponse.json({ error: 'Review not found' }, { status: 404 })
+    }
+
+    if (!isAdmin && existingReview.customerId !== session.user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     await db.review.delete({

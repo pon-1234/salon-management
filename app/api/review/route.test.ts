@@ -6,7 +6,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import { GET, POST, PUT, DELETE } from './route'
+import { getServerSession } from 'next-auth'
 import { db } from '@/lib/db'
+
+vi.mock('next-auth', () => ({
+  getServerSession: vi.fn(),
+}))
+
+vi.mock('@/lib/auth/config', () => ({
+  authOptions: {},
+}))
 
 // Mock the database
 vi.mock('@/lib/db', () => ({
@@ -197,6 +206,9 @@ describe('GET /api/review', () => {
 describe('POST /api/review', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { id: 'customer1', role: 'customer' },
+    } as any)
   })
 
   it('should create a new review', async () => {
@@ -305,11 +317,114 @@ describe('POST /api/review', () => {
     expect(response.status).toBe(500)
     expect(data.error).toBe('Internal server error')
   })
+
+  it('should ignore provided customerId for non-admin users', async () => {
+    const mockCreatedReview = {
+      id: 'review1',
+      customerId: 'customer1',
+      castId: 'cast1',
+      rating: 5,
+      comment: 'Great!',
+      customer: { id: 'customer1', name: 'Test Customer' },
+      cast: { id: 'cast1', name: 'Test Cast' },
+    }
+
+    vi.mocked(db.review.create).mockResolvedValueOnce(mockCreatedReview as any)
+
+    const request = new NextRequest('http://localhost:3000/api/review', {
+      method: 'POST',
+      body: JSON.stringify({
+        customerId: 'other-customer',
+        castId: 'cast1',
+        rating: 5,
+        comment: 'Great!',
+      }),
+    })
+
+    await POST(request)
+
+    expect(vi.mocked(db.review.create)).toHaveBeenCalledWith({
+      data: {
+        customerId: 'customer1',
+        castId: 'cast1',
+        rating: 5,
+        comment: 'Great!',
+      },
+      include: {
+        customer: true,
+        cast: true,
+      },
+    })
+  })
+
+  it('should allow admins to specify customerId', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'admin1', role: 'admin' },
+    } as any)
+
+    const mockCreatedReview = {
+      id: 'review1',
+      customerId: 'other-customer',
+      castId: 'cast1',
+      rating: 5,
+      comment: 'Great!',
+      customer: { id: 'other-customer', name: 'Other Customer' },
+      cast: { id: 'cast1', name: 'Test Cast' },
+    }
+
+    vi.mocked(db.review.create).mockResolvedValueOnce(mockCreatedReview as any)
+
+    const request = new NextRequest('http://localhost:3000/api/review', {
+      method: 'POST',
+      body: JSON.stringify({
+        customerId: 'other-customer',
+        castId: 'cast1',
+        rating: 5,
+        comment: 'Great!',
+      }),
+    })
+
+    const response = await POST(request)
+    expect(response.status).toBe(201)
+    expect(vi.mocked(db.review.create)).toHaveBeenCalledWith({
+      data: {
+        customerId: 'other-customer',
+        castId: 'cast1',
+        rating: 5,
+        comment: 'Great!',
+      },
+      include: {
+        customer: true,
+        cast: true,
+      },
+    })
+  })
+
+  it('should require authentication for review creation', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce(null as any)
+
+    const request = new NextRequest('http://localhost:3000/api/review', {
+      method: 'POST',
+      body: JSON.stringify({
+        castId: 'cast1',
+        rating: 5,
+      }),
+    })
+
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(401)
+    expect(data.error).toBe('Authentication required')
+  })
 })
 
 describe('PUT /api/review', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { id: 'customer1', role: 'customer' },
+    } as any)
   })
 
   it('should require ID field', async () => {
@@ -346,6 +461,10 @@ describe('PUT /api/review', () => {
       cast: { id: 'cast1', name: 'Test Cast' },
     }
 
+    vi.mocked(db.review.findUnique).mockResolvedValueOnce({
+      id: 'review1',
+      customerId: 'customer1',
+    } as any)
     vi.mocked(db.review.update).mockResolvedValueOnce(mockUpdatedReview as any)
 
     const request = new NextRequest('http://localhost:3000/api/review', {
@@ -373,10 +492,7 @@ describe('PUT /api/review', () => {
   })
 
   it('should handle non-existent review', async () => {
-    vi.mocked(db.review.update).mockRejectedValueOnce({
-      code: 'P2025',
-      message: 'Record not found',
-    })
+    vi.mocked(db.review.findUnique).mockResolvedValueOnce(null)
 
     const request = new NextRequest('http://localhost:3000/api/review', {
       method: 'PUT',
@@ -410,6 +526,10 @@ describe('PUT /api/review', () => {
       cast: { id: 'cast1', name: 'Test Cast' },
     }
 
+    vi.mocked(db.review.findUnique).mockResolvedValueOnce({
+      id: 'review1',
+      customerId: 'customer1',
+    } as any)
     vi.mocked(db.review.update).mockResolvedValueOnce(mockUpdatedReview as any)
 
     const request = new NextRequest('http://localhost:3000/api/review', {
@@ -434,11 +554,85 @@ describe('PUT /api/review', () => {
       },
     })
   })
+
+  it('should reject updates from other customers', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'customer2', role: 'customer' },
+    } as any)
+    vi.mocked(db.review.findUnique).mockResolvedValueOnce({
+      id: 'review1',
+      customerId: 'customer1',
+    } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/review', {
+      method: 'PUT',
+      body: JSON.stringify({
+        id: 'review1',
+        rating: 2,
+      }),
+    })
+
+    const response = await PUT(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(403)
+    expect(data.error).toBe('Forbidden')
+  })
+
+  it('should allow admin to update any review', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'admin1', role: 'admin' },
+    } as any)
+    vi.mocked(db.review.findUnique).mockResolvedValueOnce({
+      id: 'review1',
+      customerId: 'customer1',
+    } as any)
+    vi.mocked(db.review.update).mockResolvedValueOnce({
+      id: 'review1',
+      rating: 4,
+      comment: 'Updated',
+      customer: { id: 'customer1' },
+      cast: { id: 'cast1' },
+    } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/review', {
+      method: 'PUT',
+      body: JSON.stringify({
+        id: 'review1',
+        rating: 4,
+      }),
+    })
+
+    const response = await PUT(request)
+
+    expect(response.status).toBe(200)
+  })
+
+  it('should require authentication for updates', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce(null as any)
+
+    const request = new NextRequest('http://localhost:3000/api/review', {
+      method: 'PUT',
+      body: JSON.stringify({
+        id: 'review1',
+        rating: 4,
+      }),
+    })
+
+    const response = await PUT(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(401)
+    expect(data.error).toBe('Authentication required')
+  })
 })
 
 describe('DELETE /api/review', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { id: 'customer1', role: 'customer' },
+    } as any)
   })
 
   it('should require ID parameter', async () => {
@@ -454,6 +648,10 @@ describe('DELETE /api/review', () => {
   })
 
   it('should delete review', async () => {
+    vi.mocked(db.review.findUnique).mockResolvedValueOnce({
+      id: 'review1',
+      customerId: 'customer1',
+    } as any)
     vi.mocked(db.review.delete).mockResolvedValueOnce({} as any)
 
     const request = new NextRequest('http://localhost:3000/api/review?id=review1', {
@@ -469,10 +667,7 @@ describe('DELETE /api/review', () => {
   })
 
   it('should handle non-existent review', async () => {
-    vi.mocked(db.review.delete).mockRejectedValueOnce({
-      code: 'P2025',
-      message: 'Record not found',
-    })
+    vi.mocked(db.review.findUnique).mockResolvedValueOnce(null)
 
     const request = new NextRequest('http://localhost:3000/api/review?id=non-existent', {
       method: 'DELETE',
@@ -483,6 +678,59 @@ describe('DELETE /api/review', () => {
 
     expect(response.status).toBe(404)
     expect(data.error).toBe('Review not found')
+  })
+
+  it('should reject deletion by other customers', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'customer2', role: 'customer' },
+    } as any)
+    vi.mocked(db.review.findUnique).mockResolvedValueOnce({
+      id: 'review1',
+      customerId: 'customer1',
+    } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/review?id=review1', {
+      method: 'DELETE',
+    })
+
+    const response = await DELETE(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(403)
+    expect(data.error).toBe('Forbidden')
+  })
+
+  it('should allow admin deletion', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'admin1', role: 'admin' },
+    } as any)
+    vi.mocked(db.review.findUnique).mockResolvedValueOnce({
+      id: 'review1',
+      customerId: 'customer1',
+    } as any)
+    vi.mocked(db.review.delete).mockResolvedValueOnce({} as any)
+
+    const request = new NextRequest('http://localhost:3000/api/review?id=review1', {
+      method: 'DELETE',
+    })
+
+    const response = await DELETE(request)
+
+    expect(response.status).toBe(204)
+  })
+
+  it('should require authentication for deletion', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce(null as any)
+
+    const request = new NextRequest('http://localhost:3000/api/review?id=review1', {
+      method: 'DELETE',
+    })
+
+    const response = await DELETE(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(401)
+    expect(data.error).toBe('Authentication required')
   })
 })
 

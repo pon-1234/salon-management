@@ -6,7 +6,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import { GET, POST, PUT, DELETE } from './route'
+import { getServerSession } from 'next-auth'
 import { db } from '@/lib/db'
+
+vi.mock('next-auth', () => ({
+  getServerSession: vi.fn(),
+}))
+
+vi.mock('@/lib/auth/config', () => ({
+  authOptions: {},
+}))
 
 // Mock the database
 vi.mock('@/lib/db', () => ({
@@ -31,6 +40,9 @@ vi.mock('@/lib/logger', () => ({
 describe('GET /api/option', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { id: 'admin1', role: 'admin' },
+    } as any)
   })
 
   it('should get option by ID', async () => {
@@ -73,6 +85,10 @@ describe('GET /api/option', () => {
 
   it('should return 404 for non-existent option', async () => {
     vi.mocked(db.optionPrice.findUnique).mockResolvedValueOnce(null)
+
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'admin1', role: 'admin' },
+    } as any)
 
     const request = new NextRequest('http://localhost:3000/api/option?id=non-existent', {
       method: 'GET',
@@ -162,11 +178,61 @@ describe('GET /api/option', () => {
     expect(data.reservations).toHaveLength(1)
     expect(data.reservations[0].reservation.customer.name).toBe('Test Customer')
   })
+
+  it('should strip reservation data for non-admin users', async () => {
+    const mockOption = {
+      id: 'option1',
+      name: 'Service',
+      price: 2000,
+      reservations: [
+        {
+          reservation: {
+            id: 'res1',
+            customer: { id: 'cust1' },
+            cast: { id: 'cast1' },
+          },
+        },
+      ],
+    }
+
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'customer1', role: 'customer' },
+    } as any)
+    vi.mocked(db.optionPrice.findUnique).mockResolvedValueOnce(mockOption as any)
+
+    const request = new NextRequest('http://localhost:3000/api/option?id=option1', {
+      method: 'GET',
+    })
+
+    const response = await GET(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.reservations).toBeUndefined()
+    expect(data.id).toBe('option1')
+  })
+
+  it('should require authentication', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce(null as any)
+
+    const request = new NextRequest('http://localhost:3000/api/option', {
+      method: 'GET',
+    })
+
+    const response = await GET(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(401)
+    expect(data.error).toBe('Authentication required')
+  })
 })
 
 describe('POST /api/option', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { id: 'admin1', role: 'admin' },
+    } as any)
   })
 
   it('should create a new option', async () => {
@@ -245,11 +311,52 @@ describe('POST /api/option', () => {
     expect(response.status).toBe(500)
     expect(data.error).toBe('Internal server error')
   })
+
+  it('should reject non-admin users', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'customer1', role: 'customer' },
+    } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/option', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: 'Option',
+        price: 1000,
+      }),
+    })
+
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(403)
+    expect(data.error).toBe('Forbidden')
+  })
+
+  it('should require authentication', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce(null as any)
+
+    const request = new NextRequest('http://localhost:3000/api/option', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: 'Option',
+        price: 1000,
+      }),
+    })
+
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(401)
+    expect(data.error).toBe('Authentication required')
+  })
 })
 
 describe('PUT /api/option', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { id: 'admin1', role: 'admin' },
+    } as any)
   })
 
   it('should require ID field', async () => {
@@ -322,6 +429,10 @@ describe('PUT /api/option', () => {
       message: 'Record not found',
     })
 
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'admin1', role: 'admin' },
+    } as any)
+
     const request = new NextRequest('http://localhost:3000/api/option', {
       method: 'PUT',
       body: JSON.stringify({
@@ -382,11 +493,34 @@ describe('PUT /api/option', () => {
       },
     })
   })
+
+  it('should reject updates from non-admin users', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'customer1', role: 'customer' },
+    } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/option', {
+      method: 'PUT',
+      body: JSON.stringify({
+        id: 'option1',
+        price: 2000,
+      }),
+    })
+
+    const response = await PUT(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(403)
+    expect(data.error).toBe('Forbidden')
+  })
 })
 
 describe('DELETE /api/option', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { id: 'admin1', role: 'admin' },
+    } as any)
   })
 
   it('should require ID parameter', async () => {
@@ -422,6 +556,10 @@ describe('DELETE /api/option', () => {
       message: 'Record not found',
     })
 
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'admin1', role: 'admin' },
+    } as any)
+
     const request = new NextRequest('http://localhost:3000/api/option?id=non-existent', {
       method: 'DELETE',
     })
@@ -431,6 +569,36 @@ describe('DELETE /api/option', () => {
 
     expect(response.status).toBe(404)
     expect(data.error).toBe('Option not found')
+  })
+
+  it('should reject delete from non-admin users', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'customer1', role: 'customer' },
+    } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/option?id=option1', {
+      method: 'DELETE',
+    })
+
+    const response = await DELETE(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(403)
+    expect(data.error).toBe('Forbidden')
+  })
+
+  it('should require authentication', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce(null as any)
+
+    const request = new NextRequest('http://localhost:3000/api/option?id=option1', {
+      method: 'DELETE',
+    })
+
+    const response = await DELETE(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(401)
+    expect(data.error).toBe('Authentication required')
   })
 })
 
