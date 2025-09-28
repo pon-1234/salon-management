@@ -54,6 +54,28 @@ export function CustomerList({ selectedCustomerId, onSelectCustomer }: CustomerL
     fetchCustomers()
   }, [fetchCustomers])
 
+  useEffect(() => {
+    const handleMessagesRead = (event: Event) => {
+      const customEvent = event as CustomEvent<{ customerId?: string }>
+      const customerId = customEvent.detail?.customerId
+      if (!customerId) return
+
+      setCustomers((prev) =>
+        prev.map((customer) =>
+          customer.id === customerId
+            ? { ...customer, hasUnread: false, unreadCount: 0 }
+            : customer
+        )
+      )
+    }
+
+    window.addEventListener('chat:messagesRead', handleMessagesRead as EventListener)
+
+    return () => {
+      window.removeEventListener('chat:messagesRead', handleMessagesRead as EventListener)
+    }
+  }, [])
+
   const filteredCustomers = customers.filter((customer) =>
     customer.name.toLowerCase().includes(searchQuery.toLowerCase())
   )

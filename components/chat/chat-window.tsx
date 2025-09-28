@@ -31,6 +31,57 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
     return format(date, 'yyyy-MM-dd HH:mm', { locale: ja })
   }, [])
 
+  const markMessagesAsRead = useCallback(
+    async (messageList: Message[]) => {
+      if (!customerId) return messageList
+
+      const unreadMessages = messageList.filter(
+        (message) => message.sender === 'customer' && message.readStatus === '未読'
+      )
+
+      if (unreadMessages.length === 0) {
+        return messageList
+      }
+
+      try {
+        await Promise.all(
+          unreadMessages.map((message) =>
+            fetch('/api/chat', {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                id: message.id,
+                readStatus: '既読',
+              }),
+            })
+          )
+        )
+
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('chat:messagesRead', {
+              detail: { customerId },
+            })
+          )
+        }
+
+        const updatedMessages = messageList.map((message) =>
+          unreadMessages.some((unread) => unread.id === message.id)
+            ? { ...message, readStatus: '既読' as const }
+            : message
+        )
+
+        return updatedMessages
+      } catch (error) {
+        console.error('Error marking messages as read:', error)
+        return messageList
+      }
+    },
+    [customerId]
+  )
+
   const fetchMessages = useCallback(async () => {
     if (!customerId) return
 
@@ -42,18 +93,20 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
       const data = await response.json()
       // SuccessResponse形式からデータを取得
       const messageData = data.data || data
-      setMessages(Array.isArray(messageData) ? messageData : [])
+      const initialMessages = Array.isArray(messageData) ? messageData : []
+      const updatedMessages = await markMessagesAsRead(initialMessages)
+      setMessages(updatedMessages)
     } catch (error) {
       console.error('Error fetching messages:', error)
       toast({
         title: 'エラー',
         description: 'メッセージの取得に失敗しました',
-        variant: 'destructive',
+      variant: 'destructive',
       })
     } finally {
       setLoading(false)
     }
-  }, [customerId])
+  }, [customerId, markMessagesAsRead])
 
   const fetchCustomer = useCallback(async () => {
     if (!customerId) return
