@@ -4,12 +4,21 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { UserCircle, Phone, Crown } from 'lucide-react'
 import Link from 'next/link'
 import { Customer } from '@/lib/types/chat'
+import { format } from 'date-fns'
+import { ja } from 'date-fns/locale'
 
 interface CustomerHeaderProps {
   customer?: Customer
 }
 
 export function CustomerHeader({ customer }: CustomerHeaderProps) {
+  const formatTimestamp = (value?: string) => {
+    if (!value) return ''
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return value
+    return format(date, 'yyyy-MM-dd HH:mm', { locale: ja })
+  }
+
   if (!customer) {
     return (
       <div className="flex h-[70px] items-center border-b bg-white/80 px-6 backdrop-blur-sm">
@@ -43,7 +52,7 @@ export function CustomerHeader({ customer }: CustomerHeaderProps) {
             {customer.isOnline ? (
               <span className="font-medium text-green-600">オンライン</span>
             ) : (
-              <span>最終ログイン: {customer.lastSeen}</span>
+              <span>最終ログイン: {formatTimestamp(customer.lastSeen)}</span>
             )}
             {customer.hasUnread && customer.unreadCount > 0 && (
               <Badge variant="secondary" className="bg-emerald-100 text-xs text-emerald-700">
@@ -64,7 +73,7 @@ export function CustomerHeader({ customer }: CustomerHeaderProps) {
           <Phone className="h-4 w-4" />
         </Button>
 
-        <Link href={`/customers/${customer.id}`}>
+        <Link href={`/admin/customers/${customer.id}`}>
           <Button
             variant="ghost"
             size="sm"
