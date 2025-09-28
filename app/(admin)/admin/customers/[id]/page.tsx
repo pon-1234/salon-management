@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -90,8 +90,12 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>
 
-export default function CustomerProfile({ params }: { params: Promise<{ id: string }> }) {
-  const [id, setId] = useState<string>('')
+export default function CustomerProfile() {
+  const router = useRouter()
+  const params = useParams<{ id: string }>()
+  const idParam = params?.id
+  const id = Array.isArray(idParam) ? idParam[0] : idParam ?? ''
+
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [usageHistory, setUsageHistory] = useState<CustomerUsageRecord[]>([])
   const [pointHistory, setPointHistory] = useState<CustomerPointHistory[]>([])
@@ -102,7 +106,6 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
   const [ngCastDialogOpen, setNgCastDialogOpen] = useState(false)
   const [editingNgCast, setEditingNgCast] = useState<NgCastEntry | null>(null)
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
-  const router = useRouter()
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -132,12 +135,6 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
 
   const birthDate = form.watch('birthDate')
   const age = birthDate ? calculateAge(birthDate) : null
-
-  useEffect(() => {
-    params.then(({ id: paramId }) => {
-      setId(paramId)
-    })
-  }, [params])
 
   useEffect(() => {
     if (!id) return
