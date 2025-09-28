@@ -92,8 +92,10 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
 
         if (!response.ok) throw new Error('Failed to send message')
 
-        const newMsg = await response.json()
-        setMessages([...messages, newMsg])
+        const payload = await response.json()
+        const createdMessage = (payload?.data ?? payload) as Message
+
+        setMessages((prev) => [...prev, createdMessage])
         setNewMessage('')
       } catch (error) {
         console.error('Error sending message:', error)
