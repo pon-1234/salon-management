@@ -9,6 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Send, Check, CheckCheck } from 'lucide-react'
 import { Message } from '@/lib/types/chat'
 import { toast } from '@/hooks/use-toast'
+import { format } from 'date-fns'
+import { ja } from 'date-fns/locale'
 
 interface ChatWindowProps {
   customerId: string | undefined
@@ -21,6 +23,13 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
   const [customer, setCustomer] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+
+  const formatTimestamp = useCallback((value?: string) => {
+    if (!value) return ''
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return value
+    return format(date, 'yyyy-MM-dd HH:mm', { locale: ja })
+  }, [])
 
   const fetchMessages = useCallback(async () => {
     if (!customerId) return
@@ -169,7 +178,7 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
                       <Avatar className="mt-1 h-8 w-8">
                         {isStaff ? (
                           <AvatarFallback className="bg-emerald-600 text-xs text-white">
-                            Staff
+                            ス
                           </AvatarFallback>
                         ) : (
                           <AvatarImage src={customer?.avatar} alt={customer?.name} />
@@ -220,7 +229,9 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
                           isStaff ? 'justify-end' : 'justify-start'
                         }`}
                       >
-                        <span className="text-xs text-gray-500">{message.timestamp}</span>
+                        <span className="text-xs text-gray-500">
+                          {formatTimestamp(message.timestamp)}
+                        </span>
                         {isStaff && (
                           <div className="text-xs text-gray-500">
                             {message.readStatus === '既読' ? (
@@ -245,7 +256,7 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
                             {message.reservationInfo?.date} {message.reservationInfo?.time}
                           </div>
                           <div className="text-xs text-blue-600">
-                            確定日時: {message.reservationInfo?.confirmedDate}
+                            確定日時: {formatTimestamp(message.reservationInfo?.confirmedDate)}
                           </div>
                         </div>
                       )}
@@ -298,12 +309,6 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
                 placeholder="メッセージを入力..."
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    handleSendMessage()
-                  }
-                }}
                 className="max-h-[120px] min-h-[44px] resize-none border-gray-200 focus:border-emerald-300 focus:ring-emerald-200"
               />
             </div>

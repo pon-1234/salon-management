@@ -9,6 +9,8 @@ import { Search, Send, Crown } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Customer } from '@/lib/types/chat'
 import { toast } from '@/hooks/use-toast'
+import { format } from 'date-fns'
+import { ja } from 'date-fns/locale'
 
 interface CustomerListProps {
   selectedCustomerId: string | undefined
@@ -19,6 +21,13 @@ export function CustomerList({ selectedCustomerId, onSelectCustomer }: CustomerL
   const [searchQuery, setSearchQuery] = useState('')
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
+
+  const formatTimestamp = useCallback((value?: string) => {
+    if (!value) return ''
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return value
+    return format(date, 'yyyy-MM-dd HH:mm', { locale: ja })
+  }, [])
 
   const fetchCustomers = useCallback(async () => {
     try {
@@ -124,7 +133,9 @@ export function CustomerList({ selectedCustomerId, onSelectCustomer }: CustomerL
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500">{customer.lastMessageTime}</span>
+                        <span className="text-xs text-gray-500">
+                          {formatTimestamp(customer.lastMessageTime)}
+                        </span>
                         {customer.hasUnread && customer.unreadCount > 0 && (
                           <Badge className="h-5 min-w-[20px] bg-emerald-600 px-1.5 text-xs text-white hover:bg-emerald-700">
                             {customer.unreadCount > 99 ? '99+' : customer.unreadCount}
@@ -139,7 +150,7 @@ export function CustomerList({ selectedCustomerId, onSelectCustomer }: CustomerL
 
                     {!customer.isOnline && customer.lastSeen && (
                       <p className="mt-1 text-xs text-gray-400">
-                        最終ログイン: {customer.lastSeen}
+                        最終ログイン: {formatTimestamp(customer.lastSeen)}
                       </p>
                     )}
                   </div>
