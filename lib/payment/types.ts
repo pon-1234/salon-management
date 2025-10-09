@@ -25,6 +25,8 @@ export interface PaymentIntent extends BaseEntity {
   currency: string
   status: PaymentStatus
   paymentMethod: PaymentMethod
+  reservationId?: string
+  customerId?: string
   metadata?: Record<string, any>
   clientSecret?: string
   errorMessage?: string
@@ -75,6 +77,8 @@ export interface RefundRequest {
   transactionId: string
   amount?: number // partial refund if specified
   reason?: string
+  providerPaymentId?: string
+  metadata?: Record<string, any>
 }
 
 // Refund result

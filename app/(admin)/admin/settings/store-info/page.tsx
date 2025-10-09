@@ -37,8 +37,9 @@ export default function StoreInfoPage() {
       const response = await fetch('/api/settings/store')
       if (!response.ok) throw new Error('Failed to fetch store settings')
 
-      const data = await response.json()
-      setFormData(data)
+      const payload = await response.json()
+      const settings = payload?.data ?? payload
+      setFormData((prev) => ({ ...prev, ...settings }))
     } catch (error) {
       console.error('Error fetching store settings:', error)
       toast({
@@ -71,6 +72,12 @@ export default function StoreInfoPage() {
       })
 
       if (!response.ok) throw new Error('Failed to save store settings')
+
+      const payload = await response.json().catch(() => null)
+      const updated = payload?.data ?? payload
+      if (updated && typeof updated === 'object') {
+        setFormData((prev) => ({ ...prev, ...updated }))
+      }
 
       toast({
         title: '成功',

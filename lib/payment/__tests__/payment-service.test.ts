@@ -16,6 +16,7 @@ import {
   PaymentIntent,
   PaymentMethod,
 } from '../types'
+import { PaymentProviderNotFoundError } from '../errors'
 
 // Mock Prisma
 // Mock logger
@@ -64,6 +65,9 @@ class MockPaymentProvider extends PaymentProvider {
         provider: 'stripe' as PaymentProviderType,
         paymentMethod: request.paymentMethod,
         status: 'completed',
+        paymentIntentId: 'pi_mock_123',
+        stripePaymentId: 'pi_mock_123',
+        metadata: request.metadata,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -79,6 +83,9 @@ class MockPaymentProvider extends PaymentProvider {
       currency: request.currency,
       status: 'pending',
       paymentMethod: request.paymentMethod,
+      reservationId: request.reservationId,
+      customerId: request.customerId,
+      metadata: request.metadata,
       clientSecret: 'pi_123_secret',
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -97,6 +104,8 @@ class MockPaymentProvider extends PaymentProvider {
         provider: 'stripe' as PaymentProviderType,
         paymentMethod: 'card' as PaymentMethod,
         status: 'completed',
+        paymentIntentId: intentId,
+        stripePaymentId: intentId,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -118,6 +127,8 @@ class MockPaymentProvider extends PaymentProvider {
         status: 'refunded' as const,
         refundedAt: new Date(),
         refundAmount: request.amount || 10000,
+        paymentIntentId: request.providerPaymentId,
+        stripePaymentId: request.providerPaymentId,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -134,6 +145,8 @@ class MockPaymentProvider extends PaymentProvider {
       provider: 'stripe',
       paymentMethod: 'card',
       status: 'completed' as const,
+      paymentIntentId: transactionId,
+      stripePaymentId: transactionId,
       createdAt: new Date(),
       updatedAt: new Date(),
     }
@@ -167,11 +180,11 @@ describe('PaymentService', () => {
       paymentMethod: 'card',
       status: 'completed',
       type: 'payment',
-      paymentIntentId: null,
-      stripePaymentId: null,
+      paymentIntentId: 'pi_123',
+      stripePaymentId: 'pi_123',
       refundedAt: null,
       refundAmount: null,
-      metadata: null,
+      metadata: { reservationId: 'res_123', customerId: 'cust_123' },
       processedAt: null,
       errorMessage: null,
       createdAt: new Date(),
@@ -185,9 +198,9 @@ describe('PaymentService', () => {
       currency: 'jpy',
       status: 'pending',
       paymentMethod: 'card',
-      customerId: null,
-      metadata: null,
-      providerId: null,
+      customerId: 'cust_123',
+      metadata: { reservationId: 'res_123' },
+      providerId: 'pi_stripe_123',
       errorMessage: null,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -223,8 +236,8 @@ describe('PaymentService', () => {
         provider: 'payjp',
       }
 
-      await expect(service.processPayment(request)).rejects.toThrow(
-        'Payment provider payjp not supported'
+      await expect(service.processPayment(request)).rejects.toBeInstanceOf(
+        PaymentProviderNotFoundError
       )
     })
   })
@@ -246,6 +259,29 @@ describe('PaymentService', () => {
       expect(intent.amount).toBe(10000)
       expect(intent.status).toBe('pending')
       expect(intent.clientSecret).toBe('pi_123_secret')
+    })
+
+    it('should persist intent metadata and customerId', async () => {
+      const request: ProcessPaymentRequest = {
+        reservationId: 'res_456',
+        customerId: 'cust_456',
+        amount: 8000,
+        currency: 'jpy',
+        paymentMethod: 'card' as PaymentMethod,
+        provider: 'stripe',
+        metadata: { promoCode: 'WINTER' },
+      }
+
+      await service.createPaymentIntent(request)
+
+      expect(mockPrisma.paymentIntent.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            customerId: 'cust_456',
+            metadata: expect.objectContaining({ promoCode: 'WINTER' }),
+          }),
+        })
+      )
     })
   })
 
@@ -271,20 +307,29 @@ describe('PaymentService', () => {
         reason: 'customer request',
       }
 
+      const refundSpy = vi.spyOn(mockProvider, 'refundPayment')
+
       const result = await service.refundPayment(request)
 
       expect(result.success).toBe(true)
       expect(result.refundAmount).toBe(5000)
       expect(result.transaction!.status).toBe('refunded')
+      expect(refundSpy).toHaveBeenCalledWith({
+        ...request,
+        providerPaymentId: 'pi_123',
+        metadata: { reservationId: 'res_123', customerId: 'cust_123' },
+      })
     })
   })
 
   describe('getPaymentStatus', () => {
     it('should get payment status successfully', async () => {
+      const statusSpy = vi.spyOn(mockProvider, 'getPaymentStatus')
       const transaction = await service.getPaymentStatus('txn_123')
 
-      expect(transaction.id).toBe('txn_123')
+      expect(transaction.id).toBe('pi_123')
       expect(transaction.status).toBe('completed')
+      expect(statusSpy).toHaveBeenCalledWith('pi_123')
     })
   })
 })

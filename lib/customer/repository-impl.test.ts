@@ -2,17 +2,17 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { CustomerRepositoryImpl } from './repository-impl'
 import { Customer } from './types'
 
-// Mock fetch globally
-global.fetch = vi.fn()
+vi.mock('@/lib/http/base-url', () => ({
+  resolveApiUrl: (path: string) => path,
+}))
 
 describe('CustomerRepositoryImpl', () => {
   let repository: CustomerRepositoryImpl
-  let consoleWarnSpy: any
 
   beforeEach(() => {
     vi.clearAllMocks()
+    global.fetch = vi.fn()
     repository = new CustomerRepositoryImpl()
-    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
   })
 
   afterEach(() => {
@@ -48,7 +48,9 @@ describe('CustomerRepositoryImpl', () => {
 
       const result = await repository.getAll()
 
-      expect(fetch).toHaveBeenCalledWith('/api/customer')
+      expect(fetch).toHaveBeenCalledWith('/api/customer', {
+        credentials: 'include',
+      })
       expect(result).toEqual(mockCustomers)
     })
 
@@ -70,7 +72,9 @@ describe('CustomerRepositoryImpl', () => {
 
       const result = await repository.getById('1')
 
-      expect(fetch).toHaveBeenCalledWith('/api/customer?id=1')
+      expect(fetch).toHaveBeenCalledWith('/api/customer?id=1', {
+        credentials: 'include',
+      })
       expect(result).toEqual(mockCustomer)
     })
 
@@ -96,12 +100,39 @@ describe('CustomerRepositoryImpl', () => {
   })
 
   describe('getCustomerByPhone', () => {
-    it('should return null and log warning', async () => {
+    it('should fetch customer by phone successfully', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockCustomer,
+      } as Response)
+
       const result = await repository.getCustomerByPhone('090-1234-5678')
 
+      expect(fetch).toHaveBeenCalledWith('/api/customer/by-phone/090-1234-5678', {
+        credentials: 'include',
+      })
+      expect(result).toEqual(mockCustomer)
+    })
+
+    it('should return null for 404 response', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+      } as Response)
+
+      const result = await repository.getCustomerByPhone('000-000-0000')
+
       expect(result).toBeNull()
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        'getCustomerByPhone is not implemented on the API yet.'
+    })
+
+    it('should throw error on other failures', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+      } as Response)
+
+      await expect(repository.getCustomerByPhone('090-1234-5678')).rejects.toThrow(
+        'Failed to fetch customer by phone'
       )
     })
   })
@@ -115,7 +146,9 @@ describe('CustomerRepositoryImpl', () => {
 
       const result = await repository.findByEmail('yamada@example.com')
 
-      expect(fetch).toHaveBeenCalledWith('/api/customer/by-email/yamada%40example.com')
+      expect(fetch).toHaveBeenCalledWith('/api/customer/by-email/yamada%40example.com', {
+        credentials: 'include',
+      })
       expect(result).toEqual(mockCustomer)
     })
 
@@ -149,7 +182,9 @@ describe('CustomerRepositoryImpl', () => {
 
       await repository.findByEmail('test+tag@example.com')
 
-      expect(fetch).toHaveBeenCalledWith('/api/customer/by-email/test%2Btag%40example.com')
+      expect(fetch).toHaveBeenCalledWith('/api/customer/by-email/test%2Btag%40example.com', {
+        credentials: 'include',
+      })
     })
   })
 
@@ -187,6 +222,7 @@ describe('CustomerRepositoryImpl', () => {
       expect(fetch).toHaveBeenCalledWith('/api/customer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(newCustomerData),
       })
       expect(result).toEqual(createdCustomer)
@@ -231,6 +267,7 @@ describe('CustomerRepositoryImpl', () => {
       expect(fetch).toHaveBeenCalledWith('/api/customer', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ id: '1', ...updateData }),
       })
       expect(result).toEqual(updatedCustomer)
@@ -257,6 +294,7 @@ describe('CustomerRepositoryImpl', () => {
 
       expect(fetch).toHaveBeenCalledWith('/api/customer?id=1', {
         method: 'DELETE',
+        credentials: 'include',
       })
       expect(result).toBe(true)
     })
@@ -268,6 +306,10 @@ describe('CustomerRepositoryImpl', () => {
 
       const result = await repository.delete('1')
 
+      expect(fetch).toHaveBeenCalledWith('/api/customer?id=1', {
+        method: 'DELETE',
+        credentials: 'include',
+      })
       expect(result).toBe(false)
     })
   })

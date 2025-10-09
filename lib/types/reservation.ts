@@ -11,6 +11,9 @@ export interface Reservation extends BaseEntity {
   notes?: string
   modifiableUntil?: Date
   lastModified?: Date
+  customerName?: string
+  staffName?: string
+  serviceName?: string
 }
 
 export interface ReservationData {

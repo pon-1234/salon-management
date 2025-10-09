@@ -4,6 +4,8 @@
  * @known_issues None identified
  */
 
+import { randomUUID } from 'crypto'
+import Stripe from 'stripe'
 import { PaymentProvider } from './base'
 import {
   PaymentIntent,
@@ -13,60 +15,107 @@ import {
   RefundRequest,
   RefundResult,
 } from '../types'
-import Stripe from 'stripe'
 
 export interface StripeConfig {
   secretKey: string
   publishableKey: string
 }
 
+const STRIPE_API_VERSION: Stripe.LatestApiVersion = '2023-10-16'
+
 export class StripeProvider extends PaymentProvider {
   readonly name = 'stripe'
   readonly supportedMethods = ['card']
-  private stripe: Stripe
+
+  private stripe: Stripe | null = null
+  private readonly config: StripeConfig
 
   constructor(config: StripeConfig) {
     super()
 
-    // Validate config
     if (!config.secretKey) {
       throw new Error('Stripe secret key is required')
     }
 
-    this.stripe = new Stripe(config.secretKey, {
-      apiVersion: '2025-06-30.basil',
-      typescript: true,
-    })
+    this.config = config
+  }
+
+  private get client(): Stripe {
+    if (!this.stripe) {
+      this.stripe = new Stripe(this.config.secretKey, {
+        apiVersion: STRIPE_API_VERSION,
+        typescript: true,
+      })
+    }
+    return this.stripe
+  }
+
+  private generateInternalId(prefix: string): string {
+    return `${prefix}_${randomUUID()}`
+  }
+
+  private buildMetadata(request: ProcessPaymentRequest): Record<string, string> {
+    const metadata: Record<string, string> = {
+      reservationId: request.reservationId,
+      customerId: request.customerId,
+      paymentMethod: request.paymentMethod,
+    }
+
+    if (request.metadata) {
+      for (const [key, value] of Object.entries(request.metadata)) {
+        if (value !== undefined && value !== null) {
+          metadata[key] = String(value)
+        }
+      }
+    }
+
+    return metadata
+  }
+
+  private buildTransactionFromIntent(
+    intent: Stripe.Response<Stripe.PaymentIntent>,
+    overrides: Partial<PaymentTransaction> = {}
+  ): PaymentTransaction {
+    const metadata = intent.metadata || {}
+    const now = new Date()
+
+    return {
+      id: overrides.id || this.generateInternalId('txn'),
+      reservationId: overrides.reservationId || (metadata.reservationId ?? ''),
+      customerId: overrides.customerId || (metadata.customerId ?? ''),
+      amount: overrides.amount || intent.amount,
+      currency: overrides.currency || intent.currency,
+      provider: 'stripe',
+      paymentMethod: overrides.paymentMethod || (metadata.paymentMethod as any) || 'card',
+      status: overrides.status || this.mapStripeStatusToPaymentStatus(intent.status),
+      paymentIntentId: intent.id,
+      stripePaymentId: intent.id,
+      metadata: { ...metadata },
+      processedAt: overrides.processedAt || now,
+      refundedAt: overrides.refundedAt,
+      refundAmount: overrides.refundAmount,
+      createdAt: overrides.createdAt || now,
+      updatedAt: overrides.updatedAt || now,
+      errorMessage: overrides.errorMessage,
+    }
   }
 
   async processPayment(request: ProcessPaymentRequest): Promise<ProcessPaymentResult> {
     try {
-      const paymentIntent = await this.stripe.paymentIntents.create({
+      const metadata = this.buildMetadata(request)
+      const intent = await this.client.paymentIntents.create({
         amount: request.amount,
         currency: request.currency,
         confirm: true,
-        metadata: {
-          reservationId: request.reservationId,
-          customerId: request.customerId,
-        },
+        metadata,
       })
 
-      const transaction: PaymentTransaction = {
-        id: `txn_${Date.now()}`,
+      const transaction = this.buildTransactionFromIntent(intent, {
         reservationId: request.reservationId,
         customerId: request.customerId,
-        amount: request.amount,
-        currency: request.currency,
-        provider: 'stripe',
         paymentMethod: request.paymentMethod,
-        status: this.mapStripeStatusToPaymentStatus(paymentIntent.status),
-        paymentIntentId: paymentIntent.id,
-        stripePaymentId: paymentIntent.id,
-        metadata: request.metadata,
-        processedAt: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+        metadata,
+      })
 
       return {
         success: true,
@@ -81,51 +130,36 @@ export class StripeProvider extends PaymentProvider {
   }
 
   async createPaymentIntent(request: ProcessPaymentRequest): Promise<PaymentIntent> {
-    const stripeIntent = await this.stripe.paymentIntents.create({
+    const metadata = this.buildMetadata(request)
+    const stripeIntent = await this.client.paymentIntents.create({
       amount: request.amount,
       currency: request.currency,
-      metadata: {
-        reservationId: request.reservationId,
-        customerId: request.customerId,
-        ...request.metadata,
-      },
+      metadata,
     })
 
+    const now = new Date()
+
     return {
-      id: `pi_${Date.now()}`,
+      id: this.generateInternalId('pi'),
       providerId: stripeIntent.id,
       provider: 'stripe',
-      amount: request.amount,
-      currency: request.currency,
+      amount: stripeIntent.amount,
+      currency: stripeIntent.currency,
       status: this.mapStripeStatusToPaymentStatus(stripeIntent.status),
       paymentMethod: request.paymentMethod,
-      metadata: request.metadata,
+      reservationId: request.reservationId,
+      customerId: request.customerId,
+      metadata,
       clientSecret: stripeIntent.client_secret || undefined,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
     }
   }
 
   async confirmPaymentIntent(intentId: string): Promise<ProcessPaymentResult> {
     try {
-      const confirmedIntent = await this.stripe.paymentIntents.confirm(intentId)
-
-      const transaction: PaymentTransaction = {
-        id: `txn_${Date.now()}`,
-        reservationId: confirmedIntent.metadata.reservationId || '',
-        customerId: confirmedIntent.metadata.customerId || '',
-        amount: confirmedIntent.amount,
-        currency: confirmedIntent.currency,
-        provider: 'stripe',
-        paymentMethod: 'card',
-        status: this.mapStripeStatusToPaymentStatus(confirmedIntent.status),
-        paymentIntentId: confirmedIntent.id,
-        stripePaymentId: confirmedIntent.id,
-        metadata: confirmedIntent.metadata,
-        processedAt: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
+      const intent = await this.client.paymentIntents.confirm(intentId)
+      const transaction = this.buildTransactionFromIntent(intent)
 
       return {
         success: true,
@@ -141,30 +175,29 @@ export class StripeProvider extends PaymentProvider {
 
   async refundPayment(request: RefundRequest): Promise<RefundResult> {
     try {
-      const refund = await this.stripe.refunds.create({
-        payment_intent: request.transactionId,
+      const intentId = request.providerPaymentId || request.transactionId
+      const paymentIntent = await this.client.paymentIntents.retrieve(intentId)
+      const refund = await this.client.refunds.create({
+        payment_intent: paymentIntent.id,
         amount: request.amount,
-        reason: 'requested_by_customer',
+        reason: request.reason || 'requested_by_customer',
       })
 
-      const transaction: PaymentTransaction = {
-        id: request.transactionId,
-        reservationId: 'res_123', // This would be retrieved from database
-        customerId: 'cust_123', // This would be retrieved from database
-        amount: refund.amount,
-        currency: refund.currency,
-        provider: 'stripe',
-        paymentMethod: 'card',
+      const transaction = this.buildTransactionFromIntent(paymentIntent, {
+        id: request.transactionId || this.generateInternalId('txn_refund'),
         status: 'refunded',
+        refundAmount: refund.amount ?? request.amount,
         refundedAt: new Date(),
-        refundAmount: refund.amount,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+      })
+
+      transaction.metadata = {
+        ...(paymentIntent.metadata || {}),
+        refundId: refund.id,
       }
 
       return {
         success: true,
-        refundAmount: refund.amount,
+        refundAmount: refund.amount ?? request.amount,
         transaction,
       }
     } catch (error) {
@@ -178,32 +211,12 @@ export class StripeProvider extends PaymentProvider {
   }
 
   async getPaymentStatus(transactionId: string): Promise<PaymentTransaction> {
-    const paymentIntent = await this.stripe.paymentIntents.retrieve(transactionId)
-
-    return {
-      id: transactionId,
-      reservationId: paymentIntent.metadata.reservationId || '',
-      customerId: paymentIntent.metadata.customerId || '',
-      amount: paymentIntent.amount,
-      currency: paymentIntent.currency,
-      provider: 'stripe',
-      paymentMethod: 'card',
-      status: this.mapStripeStatusToPaymentStatus(paymentIntent.status),
-      paymentIntentId: paymentIntent.id,
-      stripePaymentId: paymentIntent.id,
-      metadata: paymentIntent.metadata,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }
+    const intent = await this.client.paymentIntents.retrieve(transactionId)
+    return this.buildTransactionFromIntent(intent, { id: transactionId })
   }
 
   async validateConfig(): Promise<boolean> {
-    try {
-      // Simple validation by checking if we can create a Stripe instance
-      return this.stripe !== null
-    } catch {
-      return false
-    }
+    return Boolean(this.config.secretKey)
   }
 
   private mapStripeStatusToPaymentStatus(stripeStatus: string): PaymentTransaction['status'] {

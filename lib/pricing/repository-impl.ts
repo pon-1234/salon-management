@@ -1,6 +1,10 @@
 import { PricingRepository } from './repository'
 import { CoursePrice, OptionPrice, AdditionalFee, StorePricing, PricingSyncStatus } from './types'
 import { defaultCourses, defaultOptions, defaultAdditionalFees, defaultPricingNotes } from './data'
+import { resolveApiUrl } from '@/lib/http/base-url'
+
+const COURSE_API_PATH = '/api/course'
+const OPTION_API_PATH = '/api/option'
 
 export class PricingRepositoryImpl implements PricingRepository {
   private courses: Map<string, CoursePrice> = new Map()
@@ -16,128 +20,106 @@ export class PricingRepositoryImpl implements PricingRepository {
     defaultAdditionalFees.forEach((fee) => this.additionalFees.set(fee.id, fee))
   }
 
+  private async fetchJson<T>(
+    path: string,
+    init?: RequestInit,
+    options?: { allowNotFound?: boolean }
+  ): Promise<T> {
+    const response = await fetch(resolveApiUrl(path), {
+      credentials: 'include',
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(init?.headers || {}),
+      },
+      ...init,
+    })
+
+    if (!response.ok) {
+      if (options?.allowNotFound && response.status === 404) {
+        return null as T
+      }
+      const body = await response.text().catch(() => '')
+      throw new Error(body || `Failed request to ${path}: ${response.statusText}`)
+    }
+
+    if (response.status === 204) {
+      return undefined as T
+    }
+
+    return response.json()
+  }
+
   // Course pricing methods
   async getCourses(storeId?: string): Promise<CoursePrice[]> {
-    const response = await fetch('/api/course')
-    if (!response.ok) {
-      throw new Error(`Failed to fetch courses: ${response.statusText}`)
-    }
-    const courses = await response.json()
+    const courses = await this.fetchJson<CoursePrice[]>(COURSE_API_PATH)
     return courses
       .filter((course: any) => course.isActive !== false)
       .sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
   }
 
   async getCourseById(id: string): Promise<CoursePrice | null> {
-    const response = await fetch(`/api/course?id=${id}`)
-    if (response.status === 404) {
-      return null
-    }
-    if (!response.ok) {
-      throw new Error(`Failed to fetch course: ${response.statusText}`)
-    }
-    return response.json()
+    return this.fetchJson<CoursePrice>(`${COURSE_API_PATH}?id=${id}`, undefined, {
+      allowNotFound: true,
+    })
   }
 
   async createCourse(
     course: Omit<CoursePrice, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<CoursePrice> {
-    const response = await fetch('/api/course', {
+    return this.fetchJson<CoursePrice>(COURSE_API_PATH, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(course),
     })
-    if (!response.ok) {
-      throw new Error(`Failed to create course: ${response.statusText}`)
-    }
-    return response.json()
   }
 
   async updateCourse(id: string, course: Partial<CoursePrice>): Promise<CoursePrice> {
-    const response = await fetch('/api/course', {
+    return this.fetchJson<CoursePrice>(COURSE_API_PATH, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({ id, ...course }),
     })
-    if (!response.ok) {
-      throw new Error(`Failed to update course: ${response.statusText}`)
-    }
-    return response.json()
   }
 
   async deleteCourse(id: string): Promise<void> {
-    const response = await fetch(`/api/course?id=${id}`, {
+    await this.fetchJson(`${COURSE_API_PATH}?id=${id}`, {
       method: 'DELETE',
     })
-    if (!response.ok) {
-      throw new Error(`Failed to delete course: ${response.statusText}`)
-    }
   }
 
   // Option pricing methods
   async getOptions(storeId?: string): Promise<OptionPrice[]> {
-    const response = await fetch('/api/option')
-    if (!response.ok) {
-      throw new Error(`Failed to fetch options: ${response.statusText}`)
-    }
-    const options = await response.json()
+    const options = await this.fetchJson<OptionPrice[]>(OPTION_API_PATH)
     return options
       .filter((option: any) => option.isActive !== false)
       .sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
   }
 
   async getOptionById(id: string): Promise<OptionPrice | null> {
-    const response = await fetch(`/api/option?id=${id}`)
-    if (response.status === 404) {
-      return null
-    }
-    if (!response.ok) {
-      throw new Error(`Failed to fetch option: ${response.statusText}`)
-    }
-    return response.json()
+    return this.fetchJson<OptionPrice>(`${OPTION_API_PATH}?id=${id}`, undefined, {
+      allowNotFound: true,
+    })
   }
 
   async createOption(
     option: Omit<OptionPrice, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<OptionPrice> {
-    const response = await fetch('/api/option', {
+    return this.fetchJson<OptionPrice>(OPTION_API_PATH, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(option),
     })
-    if (!response.ok) {
-      throw new Error(`Failed to create option: ${response.statusText}`)
-    }
-    return response.json()
   }
 
   async updateOption(id: string, option: Partial<OptionPrice>): Promise<OptionPrice> {
-    const response = await fetch('/api/option', {
+    return this.fetchJson<OptionPrice>(OPTION_API_PATH, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({ id, ...option }),
     })
-    if (!response.ok) {
-      throw new Error(`Failed to update option: ${response.statusText}`)
-    }
-    return response.json()
   }
 
   async deleteOption(id: string): Promise<void> {
-    const response = await fetch(`/api/option?id=${id}`, {
+    await this.fetchJson(`${OPTION_API_PATH}?id=${id}`, {
       method: 'DELETE',
     })
-    if (!response.ok) {
-      throw new Error(`Failed to delete option: ${response.statusText}`)
-    }
   }
 
   // Additional fees methods

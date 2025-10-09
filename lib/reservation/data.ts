@@ -1,276 +1,142 @@
-import { Reservation, Service } from '../types/reservation'
+import { Reservation } from '@/lib/types/reservation'
+import { resolveApiUrl } from '@/lib/http/base-url'
+import logger from '@/lib/logger'
+import {
+  addMockReservation,
+  getAllMockReservations,
+  getMockReservationsByCustomerId,
+  updateMockReservation,
+} from './mock-data'
 
-const services: Service[] = [
-  // キャンペーンコース
-  {
-    id: 'campaign70',
-    name: '70分お試しフリー限定',
-    duration: 70,
-    price: 13000,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'campaign90',
-    name: '90分コース',
-    duration: 90,
-    price: 19000,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'campaign110',
-    name: '110分人気No.2コース',
-    duration: 110,
-    price: 25000,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'campaign130',
-    name: '130分人気No.1コース',
-    duration: 130,
-    price: 30000,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'campaign160',
-    name: '160分コース',
-    duration: 160,
-    price: 36000,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'campaign190',
-    name: '190分コース',
-    duration: 190,
-    price: 42000,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  // 密着睾丸コース
-  {
-    id: '60min',
-    name: '60分お試しフリー限定',
-    duration: 60,
-    price: 16000,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '80min',
-    name: '80分コース',
-    duration: 80,
-    price: 21000,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '100min',
-    name: '100分コース',
-    duration: 100,
-    price: 26000,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '120min',
-    name: '120分オススメコース',
-    duration: 120,
-    price: 32000,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '150min',
-    name: '150分コース',
-    duration: 150,
-    price: 39000,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '180min',
-    name: '180分コース',
-    duration: 180,
-    price: 46000,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'extension30',
-    name: '延長30分',
-    duration: 30,
-    price: 8000,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-]
+const RESERVATION_API_PATH = '/api/reservation'
 
-let reservations: Reservation[] = [
-  {
-    id: '1',
-    customerId: '1',
-    staffId: '1',
-    serviceId: '60min',
-    startTime: new Date(2024, 11, 15, 14, 0),
-    endTime: new Date(2024, 11, 15, 15, 0),
-    status: 'confirmed',
-    price: 13000,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '2',
-    customerId: '2',
-    staffId: '2',
-    serviceId: '90min',
-    startTime: new Date(2024, 11, 15, 16, 0),
-    endTime: new Date(2024, 11, 15, 17, 30),
-    status: 'pending',
-    price: 18000,
-    notes: '初めてのご利用です。丁寧な対応をお願いします。',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '3',
-    customerId: '3',
-    staffId: '3',
-    serviceId: '120min',
-    startTime: new Date(2024, 11, 16, 10, 0),
-    endTime: new Date(2024, 11, 16, 12, 0),
-    status: 'confirmed',
-    price: 22000,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '4',
-    customerId: '4',
-    staffId: '4',
-    serviceId: '150min',
-    startTime: new Date(2024, 11, 16, 14, 0),
-    endTime: new Date(2024, 11, 16, 16, 30),
-    status: 'confirmed',
-    price: 26000,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '5',
-    customerId: '5',
-    staffId: '1',
-    serviceId: 'event70',
-    startTime: new Date(2024, 11, 17, 18, 0),
-    endTime: new Date(2024, 11, 17, 19, 10),
-    status: 'pending',
-    price: 15000,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '6',
-    customerId: '6',
-    staffId: '2',
-    serviceId: 'event110',
-    startTime: new Date(2024, 11, 17, 20, 0),
-    endTime: new Date(2024, 11, 17, 21, 50),
-    status: 'confirmed',
-    price: 21000,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '7',
-    customerId: '7',
-    staffId: '3',
-    serviceId: '80min',
-    startTime: new Date(2024, 11, 18, 12, 0),
-    endTime: new Date(2024, 11, 18, 13, 20),
-    status: 'confirmed',
-    price: 16000,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '8',
-    customerId: '8',
-    staffId: '4',
-    serviceId: '100min',
-    startTime: new Date(2024, 11, 18, 15, 0),
-    endTime: new Date(2024, 11, 18, 16, 40),
-    status: 'pending',
-    price: 19000,
-    notes: 'アロマオイルマッサージをリクエスト',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '9',
-    customerId: '9',
-    staffId: '1',
-    serviceId: '180min',
-    startTime: new Date(2024, 11, 19, 19, 0),
-    endTime: new Date(2024, 11, 19, 22, 0),
-    status: 'confirmed',
-    price: 30000,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '10',
-    customerId: '10',
-    staffId: '2',
-    serviceId: 'extension30',
-    startTime: new Date(2024, 11, 19, 22, 30),
-    endTime: new Date(2024, 11, 19, 23, 0),
-    status: 'confirmed',
-    price: 5000,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-]
+interface ReservationQuery {
+  customerId?: string
+  limit?: number
+  offset?: number
+  status?: string
+  castId?: string
+  startDate?: string
+  endDate?: string
+}
+
+function normalizeReservation(entry: any): Reservation {
+  return {
+    id: entry.id,
+    customerId: entry.customerId,
+    staffId: entry.staffId || entry.castId || '',
+    serviceId: entry.serviceId || entry.courseId || '',
+    startTime: new Date(entry.startTime),
+    endTime: new Date(entry.endTime),
+    status: entry.status as Reservation['status'],
+    price: entry.price ?? entry.course?.price ?? 0,
+    notes: entry.notes ?? undefined,
+    modifiableUntil: entry.modifiableUntil ? new Date(entry.modifiableUntil) : undefined,
+    lastModified: entry.updatedAt ? new Date(entry.updatedAt) : undefined,
+    createdAt: entry.createdAt ? new Date(entry.createdAt) : new Date(),
+    updatedAt: entry.updatedAt ? new Date(entry.updatedAt) : new Date(),
+    customerName: entry.customer?.name,
+    staffName: entry.cast?.name || entry.staffName,
+    serviceName: entry.course?.name || entry.service?.name,
+  }
+}
+
+async function requestReservations(query: ReservationQuery = {}): Promise<Reservation[]> {
+  const url = new URL(resolveApiUrl(RESERVATION_API_PATH))
+
+  Object.entries(query).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      url.searchParams.append(key, String(value))
+    }
+  })
+
+  const response = await fetch(url.toString(), {
+    credentials: 'include',
+    cache: 'no-store',
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch reservations: ${response.statusText}`)
+  }
+
+  const payload = await response.json()
+  if (Array.isArray(payload)) {
+    return payload.map(normalizeReservation)
+  }
+  return []
+}
+
+async function requestReservationMutation(
+  method: 'POST' | 'PUT' | 'DELETE',
+  body?: Record<string, unknown>,
+  id?: string
+): Promise<Reservation | null> {
+  const targetUrl = id ? `${RESERVATION_API_PATH}?id=${id}` : RESERVATION_API_PATH
+  const response = await fetch(resolveApiUrl(targetUrl), {
+    method,
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  })
+
+  if (!response.ok) {
+    const message = await response.text().catch(() => response.statusText)
+    throw new Error(message || 'Reservation API request failed')
+  }
+
+  if (response.status === 204) {
+    return null
+  }
+
+  const payload = await response.json()
+  return payload ? normalizeReservation(payload) : null
+}
 
 export async function getReservationsByCustomerId(customerId: string): Promise<Reservation[]> {
-  // This is a mock implementation. In the future, replace this with an API call.
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const customerReservations = reservations.filter(
-        (reservation) => reservation.customerId === customerId
-      )
-      resolve(customerReservations)
-    }, 100) // Simulate network delay
-  })
-}
-
-export async function getAllReservations(): Promise<Reservation[]> {
-  // This is a mock implementation. In the future, replace this with an API call.
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(reservations)
-    }, 100) // Simulate network delay
-  })
-}
-
-export function updateReservation(id: string, updates: Partial<Reservation>): void {
-  const index = reservations.findIndex((r) => r.id === id)
-  if (index !== -1) {
-    reservations[index] = { ...reservations[index], ...updates, updatedAt: new Date() }
+  try {
+    return await requestReservations({ customerId })
+  } catch (error) {
+    logger.warn({ err: error }, 'Falling back to mock reservations for customer')
+    return getMockReservationsByCustomerId(customerId)
   }
 }
 
-export function addReservation(
+export async function getAllReservations(params?: ReservationQuery): Promise<Reservation[]> {
+  try {
+    return await requestReservations(params)
+  } catch (error) {
+    logger.warn({ err: error }, 'Falling back to mock reservations list')
+    return getAllMockReservations()
+  }
+}
+
+export async function updateReservation(
+  id: string,
+  updates: Partial<Reservation>
+): Promise<Reservation | null> {
+  try {
+    return await requestReservationMutation('PUT', { id, ...updates })
+  } catch (error) {
+    logger.warn({ err: error }, 'Falling back to mock reservation update')
+    updateMockReservation(id, updates)
+    const reservations = await getAllMockReservations()
+    return reservations.find((reservation) => reservation.id === id) || null
+  }
+}
+
+export async function addReservation(
   reservation: Omit<Reservation, 'id' | 'createdAt' | 'updatedAt'>
-): Reservation {
-  const newReservation: Reservation = {
-    ...reservation,
-    id: (reservations.length + 1).toString(),
-    createdAt: new Date(),
-    updatedAt: new Date(),
+): Promise<Reservation> {
+  try {
+    const created = await requestReservationMutation('POST', reservation)
+    if (!created) {
+      throw new Error('Reservation API returned empty response')
+    }
+    return created
+  } catch (error) {
+    logger.warn({ err: error }, 'Falling back to mock reservation creation')
+    return addMockReservation(reservation)
   }
-  reservations.push(newReservation)
-  return newReservation
 }

@@ -239,7 +239,7 @@ export default function DashboardPage() {
     return {
       id: reservation.id,
       customerId: reservation.customerId,
-      customerName: `顧客${reservation.customerId}`, // 実際のデータから取得
+      customerName: reservation.customerName || `顧客${reservation.customerId}`,
       customerType: '通常顧客',
       phoneNumber: '090-1234-5678', // 実際のデータから取得
       points: 100,
@@ -251,12 +251,12 @@ export default function DashboardPage() {
       location: 'アパホテル',
       locationType: 'ホテル',
       specificLocation: '502号室',
-      staff: `スタッフ${reservation.staffId}`,
+      staff: reservation.staffName || `スタッフ${reservation.staffId}`,
       marketingChannel: 'WEB',
       date: format(reservation.startTime, 'yyyy-MM-dd'),
       time: format(reservation.startTime, 'HH:mm'),
       inOutTime: `${format(reservation.startTime, 'HH:mm')}-${format(reservation.endTime, 'HH:mm')}`,
-      course: 'リラクゼーションコース',
+      course: reservation.serviceName || reservation.serviceId,
       freeExtension: 'なし',
       designation: '指名',
       designationFee: '3,000円',

@@ -8,61 +8,68 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { StripeProvider } from '../providers/stripe'
 import { ProcessPaymentRequest, RefundRequest } from '../types'
 
-// Mock Stripe module
-vi.mock('stripe', () => {
-  const mockStripe = {
-    paymentIntents: {
-      create: vi.fn().mockResolvedValue({
-        id: 'pi_test123',
-        status: 'succeeded',
-        amount: 10000,
-        currency: 'jpy',
-        metadata: {
-          reservationId: 'res_123',
-          customerId: 'cust_123',
-        },
-      }),
-      retrieve: vi.fn().mockResolvedValue({
-        id: 'pi_test123',
-        status: 'succeeded',
-        amount: 10000,
-        currency: 'jpy',
-        metadata: {
-          reservationId: 'res_123',
-          customerId: 'cust_123',
-        },
-      }),
-      confirm: vi.fn().mockResolvedValue({
-        id: 'pi_test123',
-        status: 'succeeded',
-        amount: 10000,
-        currency: 'jpy',
-        metadata: {
-          reservationId: 'res_123',
-          customerId: 'cust_123',
-        },
-      }),
-    },
-    refunds: {
-      create: vi.fn().mockResolvedValue({
-        id: 'refund_test123',
-        status: 'succeeded',
-        amount: 5000,
-        currency: 'jpy',
-      }),
-    },
-  }
+const mockStripeInstance = {
+  paymentIntents: {
+    create: vi.fn(),
+    retrieve: vi.fn(),
+    confirm: vi.fn(),
+  },
+  refunds: {
+    create: vi.fn(),
+  },
+}
 
-  return {
-    default: vi.fn().mockImplementation(() => mockStripe),
-    Stripe: vi.fn().mockImplementation(() => mockStripe),
-  }
-})
+vi.mock('stripe', () => ({
+  default: vi.fn(() => mockStripeInstance),
+  Stripe: vi.fn(() => mockStripeInstance),
+}))
 
 describe('StripeProvider', () => {
   let provider: StripeProvider
 
   beforeEach(() => {
+    vi.clearAllMocks()
+    mockStripeInstance.paymentIntents.create.mockResolvedValue({
+      id: 'pi_test123',
+      status: 'succeeded',
+      amount: 10000,
+      currency: 'jpy',
+      client_secret: 'secret',
+      metadata: {
+        reservationId: 'res_123',
+        customerId: 'cust_123',
+        paymentMethod: 'card',
+      },
+    })
+    mockStripeInstance.paymentIntents.retrieve.mockResolvedValue({
+      id: 'pi_test123',
+      status: 'succeeded',
+      amount: 10000,
+      currency: 'jpy',
+      metadata: {
+        reservationId: 'res_123',
+        customerId: 'cust_123',
+        paymentMethod: 'card',
+      },
+    })
+    mockStripeInstance.paymentIntents.confirm.mockResolvedValue({
+      id: 'pi_test123',
+      status: 'succeeded',
+      amount: 10000,
+      currency: 'jpy',
+      metadata: {
+        reservationId: 'res_123',
+        customerId: 'cust_123',
+        paymentMethod: 'card',
+      },
+    })
+    mockStripeInstance.refunds.create.mockResolvedValue({
+      id: 'refund_test123',
+      status: 'succeeded',
+      amount: 5000,
+      currency: 'jpy',
+    })
+
     provider = new StripeProvider({
       secretKey: 'sk_test_123',
       publishableKey: 'pk_test_123',
@@ -94,6 +101,7 @@ describe('StripeProvider', () => {
       expect(result.transaction?.status).toBe('completed')
       expect(result.transaction?.amount).toBe(10000)
       expect(result.transaction?.reservationId).toBe('res_123')
+      expect(mockStripeInstance.paymentIntents.create).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -114,6 +122,8 @@ describe('StripeProvider', () => {
       expect(intent.status).toBe('completed')
       expect(intent.amount).toBe(10000)
       expect(intent.provider).toBe('stripe')
+      expect(intent.clientSecret).toBe('secret')
+      expect(intent.reservationId).toBe('res_123')
     })
   })
 
@@ -133,6 +143,7 @@ describe('StripeProvider', () => {
         transactionId: 'txn_123',
         amount: 5000,
         reason: 'customer request',
+        providerPaymentId: 'pi_test123',
       }
 
       const result = await provider.refundPayment(request)
@@ -140,14 +151,20 @@ describe('StripeProvider', () => {
       expect(result.success).toBe(true)
       expect(result.refundAmount).toBe(5000)
       expect(result.transaction!.status).toBe('refunded')
+      expect(result.transaction?.reservationId).toBe('res_123')
+      expect(mockStripeInstance.refunds.create).toHaveBeenCalledWith({
+        payment_intent: 'pi_test123',
+        amount: 5000,
+        reason: 'customer request',
+      })
     })
   })
 
   describe('getPaymentStatus', () => {
     it('should get payment status successfully', async () => {
-      const transaction = await provider.getPaymentStatus('txn_123')
+      const transaction = await provider.getPaymentStatus('pi_test123')
 
-      expect(transaction.id).toBe('txn_123')
+      expect(transaction.id).toBe('pi_test123')
       expect(transaction.status).toBe('completed')
       expect(transaction.amount).toBe(10000)
     })

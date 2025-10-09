@@ -5,34 +5,15 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { PaymentService } from '@/lib/payment/service'
-import { StripeProvider } from '@/lib/payment/providers/stripe'
 import { ProcessPaymentRequest } from '@/lib/payment/types'
+import {
+  getPaymentProviderDisabledReason,
+  getPaymentService,
+  isPaymentProviderEnabled,
+} from '@/lib/payment/providers/registry'
+import { PaymentProviderNotFoundError } from '@/lib/payment/errors'
 
-// Initialize payment service with environment validation
-const stripeConfig = {
-  secretKey:
-    process.env.STRIPE_SECRET_KEY ||
-    (() => {
-      console.error('STRIPE_SECRET_KEY is not set in environment variables')
-      return ''
-    })(),
-  publishableKey:
-    process.env.STRIPE_PUBLISHABLE_KEY ||
-    (() => {
-      console.error('STRIPE_PUBLISHABLE_KEY is not set in environment variables')
-      return ''
-    })(),
-}
-
-// Only initialize Stripe provider if keys are available
-const paymentProviders: Record<string, any> = stripeConfig.secretKey
-  ? {
-      stripe: new StripeProvider(stripeConfig),
-    }
-  : {}
-
-const paymentService = new PaymentService(paymentProviders)
+const paymentService = getPaymentService()
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,6 +24,17 @@ export async function POST(request: NextRequest) {
 
     if (!reservationId || !customerId || !amount || !currency || !paymentMethod || !provider) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+
+    if (!isPaymentProviderEnabled(provider)) {
+      return NextResponse.json(
+        {
+          error:
+            getPaymentProviderDisabledReason(provider) ||
+            `Payment provider ${provider} is not available`,
+        },
+        { status: 503 }
+      )
     }
 
     const paymentRequest: ProcessPaymentRequest = {
@@ -63,6 +55,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(result, { status: 400 })
     }
   } catch (error) {
+    if (error instanceof PaymentProviderNotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 503 })
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
@@ -92,6 +87,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ transactions })
   } catch (error) {
+    if (error instanceof PaymentProviderNotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 503 })
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

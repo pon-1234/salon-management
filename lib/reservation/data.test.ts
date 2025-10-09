@@ -1,139 +1,173 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import {
-  getReservationsByCustomerId,
-  getAllReservations,
-  updateReservation,
-  addReservation,
-} from './data'
+import { getAllReservations, getReservationsByCustomerId, addReservation, updateReservation } from './data'
 
-describe('Reservation Data', () => {
+vi.mock('@/lib/http/base-url', () => ({
+  resolveApiUrl: (path: string) => `http://localhost:3000${path}`,
+}))
+
+const mockReservations = [
+  {
+    id: '1',
+    customerId: 'cust_1',
+    staffId: 'staff_1',
+    serviceId: 'service_1',
+    startTime: '2024-01-01T10:00:00Z',
+    endTime: '2024-01-01T11:00:00Z',
+    status: 'confirmed',
+    price: 12000,
+  },
+  {
+    id: '2',
+    customerId: 'cust_2',
+    staffId: 'staff_2',
+    serviceId: 'service_2',
+    startTime: '2024-01-02T10:00:00Z',
+    endTime: '2024-01-02T11:30:00Z',
+    status: 'pending',
+    price: 15000,
+  },
+]
+
+vi.mock('./mock-data', () => ({
+  getAllMockReservations: vi.fn(async () => mockReservations),
+  getMockReservationsByCustomerId: vi.fn(async (customerId: string) =>
+    mockReservations.filter((r) => r.customerId === customerId)
+  ),
+  addMockReservation: vi.fn((reservation) => ({ id: 'mock', ...reservation })),
+  updateMockReservation: vi.fn(),
+}))
+
+vi.mock('@/lib/logger', () => ({
+  default: {
+    warn: vi.fn(),
+  },
+}))
+
+global.fetch = vi.fn()
+
+describe('reservation data (API-backed)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    global.fetch = vi.fn()
   })
 
-  // Note: services array is not exported as it's only used internally
-  // The test for services has been removed as it's not part of the public API
+  it('fetches all reservations via API', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => mockReservations,
+    } as Response)
 
-  describe('getReservationsByCustomerId', () => {
-    it('should return reservations for a specific customer', async () => {
-      const reservations = await getReservationsByCustomerId('1')
+    const result = await getAllReservations()
 
-      expect(Array.isArray(reservations)).toBe(true)
-      reservations.forEach((reservation) => {
-        expect(reservation.customerId).toBe('1')
-      })
+    expect(fetch).toHaveBeenCalledWith('http://localhost:3000/api/reservation', {
+      credentials: 'include',
+      cache: 'no-store',
     })
-
-    it('should return empty array for non-existent customer', async () => {
-      const reservations = await getReservationsByCustomerId('non-existent')
-      expect(reservations).toEqual([])
-    })
-
-    it('should have valid reservation structure', async () => {
-      const reservations = await getReservationsByCustomerId('1')
-
-      if (reservations.length > 0) {
-        const reservation = reservations[0]
-        expect(reservation).toHaveProperty('id')
-        expect(reservation).toHaveProperty('customerId')
-        expect(reservation).toHaveProperty('staffId')
-        expect(reservation).toHaveProperty('serviceId')
-        expect(reservation).toHaveProperty('startTime')
-        expect(reservation).toHaveProperty('endTime')
-        expect(reservation).toHaveProperty('status')
-        expect(reservation).toHaveProperty('price')
-        expect(reservation).toHaveProperty('createdAt')
-        expect(reservation).toHaveProperty('updatedAt')
-
-        expect(reservation.startTime).toBeInstanceOf(Date)
-        expect(reservation.endTime).toBeInstanceOf(Date)
-        expect(reservation.createdAt).toBeInstanceOf(Date)
-        expect(reservation.updatedAt).toBeInstanceOf(Date)
-      }
-    })
+    expect(result).toHaveLength(2)
+    expect(result[0].customerId).toBe('cust_1')
+    expect(result[0].startTime).toBeInstanceOf(Date)
   })
 
-  describe('getAllReservations', () => {
-    it('should return all reservations', async () => {
-      const reservations = await getAllReservations()
+  it('falls back to mock data when API fails', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: 'Server Error',
+      text: async () => 'error',
+    } as Response)
 
-      expect(Array.isArray(reservations)).toBe(true)
-      expect(reservations.length).toBeGreaterThan(0)
-    })
+    const result = await getAllReservations()
 
-    it('should have different statuses in reservations', async () => {
-      const reservations = await getAllReservations()
-      const statuses = [...new Set(reservations.map((r) => r.status))]
-
-      expect(statuses.length).toBeGreaterThan(1)
-      expect(statuses).toContain('confirmed')
-    })
+    expect(result).toEqual(mockReservations)
   })
 
-  describe('updateReservation', () => {
-    it('should update a reservation', async () => {
-      const reservations = await getAllReservations()
-      const originalReservation = reservations[0]
-      const originalNotes = originalReservation.notes
+  it('fetches reservations by customer', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => [mockReservations[0]],
+    } as Response)
 
-      updateReservation(originalReservation.id, { notes: 'Updated notes' })
+    const result = await getReservationsByCustomerId('cust_1')
 
-      const updatedReservations = await getAllReservations()
-      const updatedReservation = updatedReservations.find((r) => r.id === originalReservation.id)
-
-      expect(updatedReservation?.notes).toBe('Updated notes')
+    expect(fetch).toHaveBeenCalledWith('http://localhost:3000/api/reservation?customerId=cust_1', {
+      credentials: 'include',
+      cache: 'no-store',
     })
-
-    it('should handle non-existent reservation ID', () => {
-      // The function doesn't return anything or throw, so we just ensure it doesn't crash
-      expect(() => {
-        updateReservation('non-existent', { notes: 'Test' })
-      }).not.toThrow()
-    })
+    expect(result).toHaveLength(1)
+    expect(result[0].customerId).toBe('cust_1')
   })
 
-  describe('addReservation', () => {
-    it('should add a new reservation', () => {
-      const newReservation = {
-        customerId: '1',
-        staffId: '1',
-        serviceId: 'campaign90',
-        startTime: new Date('2024-01-15T10:00:00'),
-        endTime: new Date('2024-01-15T11:30:00'),
-        status: 'confirmed' as const,
-        price: 19000,
-      }
+  it('fallbacks to mock customer reservations on failure', async () => {
+    vi.mocked(fetch).mockRejectedValueOnce(new Error('network'))
 
-      const result = addReservation(newReservation)
+    const result = await getReservationsByCustomerId('cust_1')
 
-      expect(result).toBeDefined()
-      expect(result.customerId).toBe('1')
-      expect(result.id).toBeDefined()
-      expect(result.createdAt).toBeInstanceOf(Date)
-      expect(result.updatedAt).toBeInstanceOf(Date)
+    expect(result).toEqual([mockReservations[0]])
+  })
+
+  it('creates reservation via API', async () => {
+    const payload = {
+      customerId: 'cust_3',
+      staffId: 'staff_1',
+      serviceId: 'service',
+      startTime: new Date(),
+      endTime: new Date(),
+      status: 'confirmed',
+      price: 1000,
+    }
+
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      status: 201,
+      json: async () => ({ id: 'created', ...payload }),
+    } as Response)
+
+    const result = await addReservation(payload as any)
+
+    expect(fetch).toHaveBeenCalledWith('http://localhost:3000/api/reservation', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     })
+    expect(result?.id).toBe('created')
+  })
 
-    it('should generate unique IDs for new reservations', () => {
-      const reservations = []
+  it('updates reservation via API', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ id: '1', status: 'completed' }),
+    } as Response)
 
-      for (let i = 0; i < 3; i++) {
-        const result = addReservation({
-          customerId: '1',
-          staffId: '1',
-          serviceId: 'campaign90',
-          startTime: new Date('2024-01-15T10:00:00'),
-          endTime: new Date('2024-01-15T11:30:00'),
-          status: 'confirmed',
-          price: 19000,
-        })
+    const result = await updateReservation('1', { status: 'completed' } as any)
 
-        reservations.push(result)
-      }
-
-      const ids = reservations.map((r) => r.id)
-      const uniqueIds = [...new Set(ids)]
-
-      expect(ids.length).toBe(uniqueIds.length)
+    expect(fetch).toHaveBeenCalledWith('http://localhost:3000/api/reservation', {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: '1', status: 'completed' }),
     })
+    expect(result?.status).toBe('completed')
+  })
+
+  it('falls back to mock reservation creation on failure', async () => {
+    vi.mocked(fetch).mockRejectedValueOnce(new Error('network'))
+
+    const payload = {
+      customerId: 'cust_4',
+      staffId: 'staff_2',
+      serviceId: 'svc',
+      startTime: new Date(),
+      endTime: new Date(),
+      status: 'pending',
+      price: 2000,
+    }
+
+    const result = await addReservation(payload as any)
+
+    expect(result.id).toBe('mock')
   })
 })

@@ -5,16 +5,28 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { PaymentService } from '@/lib/payment/service'
-import { StripeProvider } from '@/lib/payment/providers/stripe'
 import { ProcessPaymentRequest } from '@/lib/payment/types'
+import {
+  getPaymentProviderDisabledReason,
+  getPaymentService,
+  isPaymentProviderEnabled,
+} from '@/lib/payment/providers/registry'
+import { PaymentProviderNotFoundError } from '@/lib/payment/errors'
 
-const paymentService = new PaymentService({
-  stripe: new StripeProvider({
-    secretKey: process.env.STRIPE_SECRET_KEY || '',
-    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
-  }),
-})
+const paymentService = getPaymentService()
+
+function ensureProvider(provider: string) {
+  if (!isPaymentProviderEnabled(provider)) {
+    const reason = getPaymentProviderDisabledReason(provider)
+    return NextResponse.json(
+      {
+        error: reason || `Payment provider ${provider} is not available`,
+      },
+      { status: 503 }
+    )
+  }
+  return null
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,6 +47,11 @@ export async function POST(request: NextRequest) {
       paymentMethod,
       provider,
       metadata: body.metadata,
+    }
+
+    const providerErrorResponse = ensureProvider(paymentRequest.provider)
+    if (providerErrorResponse) {
+      return providerErrorResponse
     }
 
     const intent = await paymentService.createPaymentIntent(paymentRequest)
@@ -65,6 +82,9 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json(result, { status: 400 })
     }
   } catch (error) {
+    if (error instanceof PaymentProviderNotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 503 })
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

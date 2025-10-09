@@ -16,6 +16,7 @@ import {
 import { prisma } from '@/lib/generated/prisma'
 import logger from '@/lib/logger'
 import { validatePaymentRequest, sanitizeMetadata } from './validators'
+import { PaymentProviderNotFoundError } from './errors'
 
 export class PaymentService {
   private providers: Record<string, PaymentProvider>
@@ -56,12 +57,7 @@ export class PaymentService {
       'Starting payment processing'
     )
 
-    const provider = this.providers[providerName]
-    if (!provider) {
-      const error = `Payment provider ${providerName} not supported`
-      logger.error({ provider: providerName }, error)
-      throw new Error(error)
-    }
+    const provider = this.getProvider(providerName)
 
     try {
       const result = await provider.processPayment(sanitizedRequest)
@@ -112,10 +108,7 @@ export class PaymentService {
   }
 
   async createPaymentIntent(request: ProcessPaymentRequest): Promise<PaymentIntent> {
-    const provider = this.providers[request.provider]
-    if (!provider) {
-      throw new Error(`Payment provider ${request.provider} not supported`)
-    }
+    const provider = this.getProvider(request.provider)
 
     const intent = await provider.createPaymentIntent(request)
 
@@ -132,10 +125,7 @@ export class PaymentService {
       throw new Error(`Payment intent ${intentId} not found`)
     }
 
-    const provider = this.providers[intent.provider]
-    if (!provider) {
-      throw new Error(`Payment provider ${intent.provider} not supported`)
-    }
+    const provider = this.getProvider(intent.provider)
 
     const result = await provider.confirmPaymentIntent(intent.providerId)
 
@@ -173,14 +163,17 @@ export class PaymentService {
         throw new Error(error)
       }
 
-      const provider = this.providers[transaction.provider]
-      if (!provider) {
-        const error = `Payment provider ${transaction.provider} not supported`
-        logger.error({ provider: transaction.provider }, error)
-        throw new Error(error)
+      const provider = this.getProvider(transaction.provider)
+      const providerPaymentId =
+        transaction.stripePaymentId || transaction.paymentIntentId || transaction.id
+
+      const providerRequest: RefundRequest = {
+        ...request,
+        providerPaymentId,
+        metadata: transaction.metadata || undefined,
       }
 
-      const result = await provider.refundPayment(request)
+      const result = await provider.refundPayment(providerRequest)
 
       if (result.success) {
         // Update transaction in database
@@ -235,12 +228,11 @@ export class PaymentService {
       throw new Error(`Transaction ${transactionId} not found`)
     }
 
-    const provider = this.providers[transaction.provider]
-    if (!provider) {
-      throw new Error(`Payment provider ${transaction.provider} not supported`)
-    }
+    const provider = this.getProvider(transaction.provider)
+    const providerTransactionId =
+      transaction.stripePaymentId || transaction.paymentIntentId || transaction.id
 
-    return provider.getPaymentStatus(transactionId)
+    return provider.getPaymentStatus(providerTransactionId)
   }
 
   async getPaymentHistory(customerId: string): Promise<PaymentTransaction[]> {
@@ -314,11 +306,20 @@ export class PaymentService {
         currency: intent.currency,
         status: intent.status,
         paymentMethod: intent.paymentMethod,
-        customerId: undefined, // TODO: Add customerId to intent
+        customerId: intent.customerId,
         metadata: intent.metadata,
         errorMessage: intent.errorMessage,
       },
     })
+  }
+
+  private getProvider(providerName: string): PaymentProvider {
+    const provider = this.providers[providerName]
+    if (!provider) {
+      logger.error({ provider: providerName }, 'Payment provider not configured')
+      throw new PaymentProviderNotFoundError(providerName)
+    }
+    return provider
   }
 
   private async getIntent(intentId: string): Promise<PaymentIntent | null> {
