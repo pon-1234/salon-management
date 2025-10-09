@@ -18,20 +18,28 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     }
 
     const rawEmail = params.email ? decodeURIComponent(params.email) : ''
-    const normalizedEmail = rawEmail.trim().toLowerCase()
-    if (!normalizedEmail) {
+    const trimmedEmail = rawEmail.trim()
+    if (!trimmedEmail) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 })
     }
 
+    const normalizedEmail = trimmedEmail.toLowerCase()
+
     const isAdmin = session.user?.role === 'admin'
-    const isSelfLookup = (session.user?.email || '').toLowerCase() === normalizedEmail
+    const sessionEmail = session.user?.email || ''
+    const isSelfLookup = sessionEmail.toLowerCase() === normalizedEmail
 
     if (!isAdmin && !isSelfLookup) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const customer = await db.customer.findUnique({
-      where: { email: normalizedEmail },
+    const customer = await db.customer.findFirst({
+      where: {
+        email: {
+          equals: trimmedEmail,
+          mode: 'insensitive',
+        },
+      },
       include: {
         reservations: true,
         reviews: true,

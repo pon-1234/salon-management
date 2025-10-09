@@ -1,8 +1,27 @@
 const FALLBACK_BASE_URL = 'http://localhost:3000'
 
-function normalizeBaseUrl(url?: string | null): string {
-  if (!url) return FALLBACK_BASE_URL
-  return url.endsWith('/') ? url.slice(0, -1) : url
+function normalizeBaseUrl(url?: string | null): string | null {
+  if (!url) return null
+  const trimmed = url.trim()
+  if (!trimmed) return null
+  return trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed
+}
+
+function resolveServerBaseUrl(): string {
+  const candidates = [
+    process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.NEXTAUTH_URL,
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
+  ]
+
+  for (const candidate of candidates) {
+    const normalized = normalizeBaseUrl(candidate)
+    if (normalized) {
+      return normalized
+    }
+  }
+
+  return FALLBACK_BASE_URL
 }
 
 export function resolveApiUrl(path: string): string {
@@ -14,11 +33,7 @@ export function resolveApiUrl(path: string): string {
     return path
   }
 
-  const baseUrl =
-    normalizeBaseUrl(process.env.NEXT_PUBLIC_SITE_URL) ||
-    normalizeBaseUrl(process.env.NEXTAUTH_URL) ||
-    normalizeBaseUrl(process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined)
-
+  const baseUrl = resolveServerBaseUrl()
   const sanitizedPath = path.startsWith('/') ? path : `/${path}`
   return `${baseUrl}${sanitizedPath}`
 }

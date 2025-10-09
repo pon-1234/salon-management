@@ -15,7 +15,7 @@ vi.mock('@/lib/auth/config', () => ({
 vi.mock('@/lib/db', () => ({
   db: {
     customer: {
-      findUnique: vi.fn(),
+      findFirst: vi.fn(),
     },
   },
 }))
@@ -63,7 +63,7 @@ describe('GET /api/customer/by-email/[email]', () => {
       user: { email: 'admin@example.com', role: 'admin' },
     } as any)
 
-    vi.mocked(db.customer.findUnique).mockResolvedValueOnce({
+    vi.mocked(db.customer.findFirst).mockResolvedValueOnce({
       id: '1',
       email: 'test@example.com',
       phone: '09012345678',
@@ -84,12 +84,44 @@ describe('GET /api/customer/by-email/[email]', () => {
     vi.mocked(getServerSession).mockResolvedValueOnce({
       user: { email: 'admin@example.com', role: 'admin' },
     } as any)
-    vi.mocked(db.customer.findUnique).mockResolvedValueOnce(null)
+    vi.mocked(db.customer.findFirst).mockResolvedValueOnce(null)
 
     const response = await GET(buildRequest('missing@example.com'), {
       params: { email: 'missing@example.com' },
     })
 
     expect(response.status).toBe(404)
+  })
+
+  it('matches customer email case-insensitively', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { email: 'ADMIN@example.com', role: 'admin' },
+    } as any)
+
+    const findFirstMock = vi.mocked(db.customer.findFirst)
+    findFirstMock.mockResolvedValueOnce({
+      id: '1',
+      email: 'Customer@Example.COM',
+      password: 'hashed',
+    } as any)
+
+    const response = await GET(buildRequest('CUSTOMER@example.com'), {
+      params: { email: 'CUSTOMER@example.com' },
+    })
+
+    const data = await response.json()
+
+    expect(findFirstMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          email: {
+            equals: 'CUSTOMER@example.com',
+            mode: 'insensitive',
+          },
+        },
+      })
+    )
+    expect(response.status).toBe(200)
+    expect(data.email).toBe('Customer@Example.COM')
   })
 })
