@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { format, addDays, startOfWeek } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import {
@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -48,18 +49,22 @@ interface ScheduleEditDialogProps {
 
 export function ScheduleEditDialog({
   castName,
-  initialSchedule = {},
+  initialSchedule,
   startDate = new Date(),
   onSave,
 }: ScheduleEditDialogProps) {
   const [open, setOpen] = useState(false)
-  const [schedule, setSchedule] = useState<WeeklySchedule>(initialSchedule)
+  const normalizedInitialSchedule = useMemo<WeeklySchedule>(
+    () => initialSchedule ?? {},
+    [initialSchedule]
+  )
+  const [schedule, setSchedule] = useState<WeeklySchedule>(normalizedInitialSchedule)
 
   useEffect(() => {
     if (open) {
-      setSchedule(initialSchedule)
+      setSchedule(normalizedInitialSchedule)
     }
-  }, [open, initialSchedule])
+  }, [open, normalizedInitialSchedule])
 
   // Generate 7 days starting from the given start date
   const weekStart = startOfWeek(startDate, { weekStartsOn: 1 }) // Monday start
@@ -123,6 +128,7 @@ export function ScheduleEditDialog({
     }
 
     const result = onSave(validatedSchedule)
+    setSchedule(validatedSchedule)
 
     if (result && typeof (result as Promise<void>).then === 'function') {
       ;(result as Promise<void>)
@@ -165,10 +171,10 @@ export function ScheduleEditDialog({
             <User className="h-5 w-5" />
             {castName} - 週間スケジュール編集
           </DialogTitle>
-          <p className="text-sm text-muted-foreground">
+          <DialogDescription>
             {format(weekStart, 'yyyy年M月d日', { locale: ja })} 〜{' '}
             {format(addDays(weekStart, 6), 'M月d日', { locale: ja })}
-          </p>
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

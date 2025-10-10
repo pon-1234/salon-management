@@ -259,6 +259,28 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
     })
   }, [scheduleMap, weekDays])
 
+  const initialWeeklySchedule = useMemo<WeeklySchedule>(() => {
+    const schedule: WeeklySchedule = {}
+    weekDays.forEach((date) => {
+      const key = format(date, 'yyyy-MM-dd')
+      const record = scheduleMap[key]
+      if (!record) return
+
+      const status = (record.status as WorkStatus | undefined) ??
+        (record.isAvailable !== false ? '出勤予定' : '休日')
+
+      schedule[key] = {
+        date: key,
+        status,
+        startTime: record.startTime ? format(record.startTime, 'HH:mm') : undefined,
+        endTime: record.endTime ? format(record.endTime, 'HH:mm') : undefined,
+        note: record.note,
+        isAvailableForBooking: record.isAvailable ?? true,
+      }
+    })
+    return schedule
+  }, [scheduleMap, weekDays])
+
   // 予約データをダイアログ用に変換
   const convertToReservationData = (reservation: Reservation): ReservationData | null => {
     if (!reservation) return null
@@ -471,9 +493,9 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
               </CardTitle>
               <ScheduleEditDialog
                 castName={cast.name}
-                onSave={(schedule) => {
-                  console.log('スケジュール更新:', schedule)
-                }}
+                initialSchedule={initialWeeklySchedule}
+                startDate={weekStart}
+                onSave={handleScheduleSave}
               />
             </div>
           </CardHeader>
