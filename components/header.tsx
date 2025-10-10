@@ -119,7 +119,7 @@ export function Header() {
             className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
           >
             <Calendar className="h-5 w-5" />
-            <span className="text-xs text-gray-600">予約カレンダー</span>
+            <span className="text-xs text-gray-600">予約作成</span>
           </Button>
         </Link>
 
