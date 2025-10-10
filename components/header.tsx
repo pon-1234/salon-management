@@ -119,7 +119,7 @@ export function Header() {
             className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
           >
             <Calendar className="h-5 w-5" />
-            <span className="text-xs text-gray-600">予約</span>
+            <span className="text-xs text-gray-600">予約カレンダー</span>
           </Button>
         </Link>
 
@@ -129,7 +129,7 @@ export function Header() {
             className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
           >
             <ListChecks className="h-5 w-5" />
-            <span className="text-xs text-gray-600">本日の予約</span>
+            <span className="text-xs text-gray-600">予約一覧</span>
           </Button>
         </Link>
 
