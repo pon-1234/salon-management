@@ -42,7 +42,14 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
   const [scheduleMap, setScheduleMap] = useState<Record<string, CastSchedule>>({})
-  const weekStart = useMemo(() => startOfWeek(new Date(), { weekStartsOn: 1 }), [])
+  const weekStart = useMemo(() => {
+    const now = new Date()
+    const localStart = startOfWeek(now, { weekStartsOn: 1 })
+    if (localStart > now) {
+      return addDays(localStart, -7)
+    }
+    return localStart
+  }, [])
   const weekEnd = useMemo(() => addDays(weekStart, 6), [weekStart])
   const [formData, setFormData] = useState({
     name: cast.name,
