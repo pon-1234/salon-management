@@ -55,6 +55,7 @@ model Cast {
   ngByCustomers          NgCastEntry[]
   reservations           Reservation[]
   reviews                Review[]
+  messages               Message[]
 }
 
 model NgCastEntry {
@@ -145,19 +146,22 @@ model Admin {
 }
 
 model Message {
-  id                String   @id @default(cuid())
-  customerId        String
-  sender            String   // 'customer' or 'staff'
+  id                String    @id @default(cuid())
+  customerId        String?
+  castId            String?
+  sender            String    // 'customer', 'staff', or 'cast'
   content           String
   timestamp         DateTime
-  readStatus        String   @default("未読") // '未読' or '既読'
-  isReservationInfo Boolean  @default(false)
+  readStatus        String    @default("未読") // '未読' or '既読'
+  isReservationInfo Boolean   @default(false)
   reservationInfo   Json?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  customer          Customer @relation(fields: [customerId], references: [id])
-  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  customer          Customer? @relation(fields: [customerId], references: [id])
+  cast              Cast?     @relation(fields: [castId], references: [id])
+
   @@index([customerId, timestamp])
+  @@index([castId, timestamp])
 }
 
 model PaymentIntent {

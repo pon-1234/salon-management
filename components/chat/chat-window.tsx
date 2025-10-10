@@ -4,44 +4,34 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Send, Check, CheckCheck } from 'lucide-react'
 import { Message } from '@/lib/types/chat'
 import { toast } from '@/hooks/use-toast'
-import { format } from 'date-fns'
-import { ja } from 'date-fns/locale'
 
 interface ChatWindowProps {
-  customerId: string | undefined
+  participantType: 'customer' | 'cast'
+  participantId?: string
 }
 
-export function ChatWindow({ customerId }: ChatWindowProps) {
+export function ChatWindow({ participantType, participantId }: ChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
-  const [customer, setCustomer] = useState<any>(null)
+  const [participant, setParticipant] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
 
-  const formatTimestamp = useCallback((value?: string) => {
-    if (!value) return ''
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return value
-    return format(date, 'yyyy-MM-dd HH:mm', { locale: ja })
-  }, [])
-
   const markMessagesAsRead = useCallback(
     async (messageList: Message[]) => {
-      if (!customerId) return messageList
+      if (!participantId) return messageList
 
+      const targetSender = participantType === 'customer' ? 'customer' : 'cast'
       const unreadMessages = messageList.filter(
-        (message) => message.sender === 'customer' && message.readStatus === '未読'
+        (message) => message.sender === targetSender && message.readStatus === '未読'
       )
 
-      if (unreadMessages.length === 0) {
-        return messageList
-      }
+      if (unreadMessages.length === 0) return messageList
 
       try {
         await Promise.all(
@@ -51,10 +41,7 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
               headers: {
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify({
-                id: message.id,
-                readStatus: '既読',
-              }),
+              body: JSON.stringify({ id: message.id, readStatus: '既読' }),
             })
           )
         )
@@ -62,38 +49,43 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
         if (typeof window !== 'undefined') {
           window.dispatchEvent(
             new CustomEvent('chat:messagesRead', {
-              detail: { customerId },
+              detail:
+                participantType === 'customer'
+                  ? { customerId: participantId }
+                  : { castId: participantId },
             })
           )
         }
 
-        const updatedMessages = messageList.map((message) =>
+        return messageList.map((message) =>
           unreadMessages.some((unread) => unread.id === message.id)
             ? { ...message, readStatus: '既読' as const }
             : message
         )
-
-        return updatedMessages
       } catch (error) {
         console.error('Error marking messages as read:', error)
         return messageList
       }
     },
-    [customerId]
+    [participantId, participantType]
   )
 
   const fetchMessages = useCallback(async () => {
-    if (!customerId) return
+    if (!participantId) return
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/chat?customerId=${customerId}`)
+      const queryParam =
+        participantType === 'customer'
+          ? `customerId=${participantId}`
+          : `castId=${participantId}`
+      const response = await fetch(`/api/chat?${queryParam}`, {
+        credentials: 'include',
+      })
       if (!response.ok) throw new Error('Failed to fetch messages')
 
       const data = await response.json()
-      // SuccessResponse形式からデータを取得
-      const messageData = data.data || data
-      const initialMessages = Array.isArray(messageData) ? messageData : []
+      const initialMessages = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []
       const updatedMessages = await markMessagesAsRead(initialMessages)
       setMessages(updatedMessages)
     } catch (error) {
@@ -101,35 +93,42 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
       toast({
         title: 'エラー',
         description: 'メッセージの取得に失敗しました',
-      variant: 'destructive',
+        variant: 'destructive',
       })
     } finally {
       setLoading(false)
     }
-  }, [customerId, markMessagesAsRead])
+  }, [participantId, participantType, markMessagesAsRead])
 
-  const fetchCustomer = useCallback(async () => {
-    if (!customerId) return
+  const fetchParticipant = useCallback(async () => {
+    if (!participantId) return
 
     try {
-      const response = await fetch(`/api/chat/customers?id=${customerId}`)
-      if (!response.ok) throw new Error('Failed to fetch customer')
+      const endpoint =
+        participantType === 'customer'
+          ? `/api/chat/customers?id=${participantId}`
+          : `/api/chat/casts?id=${participantId}`
+      const response = await fetch(endpoint, {
+        credentials: 'include',
+      })
+      if (!response.ok) throw new Error('Failed to fetch participant')
 
       const data = await response.json()
-      // SuccessResponse形式からデータを取得
-      const customerData = data.data || data
-      setCustomer(customerData)
+      setParticipant(data?.data ?? data)
     } catch (error) {
-      console.error('Error fetching customer:', error)
+      console.error('Error fetching participant:', error)
     }
-  }, [customerId])
+  }, [participantId, participantType])
 
   useEffect(() => {
-    if (customerId) {
+    if (participantId) {
       fetchMessages()
-      fetchCustomer()
+      fetchParticipant()
+    } else {
+      setMessages([])
+      setParticipant(null)
     }
-  }, [customerId, fetchMessages, fetchCustomer])
+  }, [participantId, fetchMessages, fetchParticipant])
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -138,49 +137,46 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
   }, [messages])
 
   const handleSendMessage = async () => {
-    if (newMessage.trim() && customerId) {
-      try {
-        const response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            customerId,
-            sender: 'staff',
-            content: newMessage.trim(),
-          }),
-        })
+    if (!participantId || !newMessage.trim()) return
 
-        if (!response.ok) throw new Error('Failed to send message')
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          customerId: participantType === 'customer' ? participantId : undefined,
+          castId: participantType === 'cast' ? participantId : undefined,
+          sender: 'staff',
+          content: newMessage.trim(),
+        }),
+      })
 
-        const payload = await response.json()
-        const createdMessage = (payload?.data ?? payload) as Message
+      if (!response.ok) throw new Error('Failed to send message')
 
-        setMessages((prev) => [...prev, createdMessage])
-        setNewMessage('')
-      } catch (error) {
-        console.error('Error sending message:', error)
-        toast({
-          title: 'エラー',
-          description: 'メッセージの送信に失敗しました',
-          variant: 'destructive',
-        })
-      }
+      const payload = await response.json()
+      const createdMessage = (payload?.data ?? payload) as Message
+
+      setMessages((prev) => [...prev, createdMessage])
+      setNewMessage('')
+    } catch (error) {
+      console.error('Error sending message:', error)
+      toast({
+        title: 'エラー',
+        description: 'メッセージの送信に失敗しました',
+        variant: 'destructive',
+      })
     }
   }
 
-  if (!customerId) {
+  if (!participantId) {
+    const label = participantType === 'customer' ? '顧客' : 'キャスト'
     return (
       <div className="flex flex-1 items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="text-center">
           <div className="mb-4 text-gray-400">
-            <svg
-              className="mx-auto h-16 w-16"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="mx-auto h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -189,9 +185,9 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
               />
             </svg>
           </div>
-          <p className="text-lg font-medium text-gray-600">顧客を選択してください</p>
+          <p className="text-lg font-medium text-gray-600">{label}を選択してください</p>
           <p className="mt-2 text-sm text-gray-500">
-            左側のリストから顧客を選択して
+            左側のリストから{label}を選択して
             <br />
             チャットを開始してください
           </p>
@@ -200,9 +196,10 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
     )
   }
 
+  const participantInitial = participant?.name?.[0] || 'G'
+
   return (
     <div className="flex flex-1 flex-col bg-gradient-to-b from-white to-gray-50/30">
-      {/* Messages Area */}
       <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
         {loading ? (
           <div className="flex items-center justify-center py-8">
@@ -213,6 +210,10 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
             {messages.map((message, index) => {
               const showAvatar = index === 0 || messages[index - 1]?.sender !== message.sender
               const isStaff = message.sender === 'staff'
+              const bubbleLabel =
+                participantType === 'customer'
+                  ? { avatar: participant?.avatar, fallback: participantInitial }
+                  : { avatar: participant?.avatar, fallback: participantInitial }
 
               return (
                 <div
@@ -226,7 +227,6 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
                       isStaff ? 'flex-row-reverse' : 'flex-row'
                     } ${message.isReservationInfo ? 'w-full max-w-md' : ''}`}
                   >
-                    {/* Avatar */}
                     {showAvatar && !message.isReservationInfo && (
                       <Avatar className="mt-1 h-8 w-8">
                         {isStaff ? (
@@ -234,12 +234,12 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
                             ス
                           </AvatarFallback>
                         ) : (
-                          <AvatarImage src={customer?.avatar} alt={customer?.name} />
-                        )}
-                        {!isStaff && (
-                          <AvatarFallback className="bg-gray-400 text-xs text-white">
-                            {customer?.name?.[0] || 'G'}
-                          </AvatarFallback>
+                          <>
+                            <AvatarImage src={bubbleLabel.avatar} alt={participant?.name} />
+                            <AvatarFallback className="bg-gray-400 text-xs text-white">
+                              {bubbleLabel.fallback}
+                            </AvatarFallback>
+                          </>
                         )}
                       </Avatar>
                     )}
@@ -247,135 +247,66 @@ export function ChatWindow({ customerId }: ChatWindowProps) {
                     {!showAvatar && !message.isReservationInfo && <div className="w-8" />}
 
                     <div className="flex-1">
-                      {/* Message Bubble */}
                       <div
                         className={`relative whitespace-pre-wrap rounded-2xl px-4 py-3 shadow-sm ${
                           message.isReservationInfo
                             ? 'border border-blue-200 bg-blue-50 text-center text-blue-800'
                             : isStaff
                               ? 'bg-emerald-500 text-white'
-                              : 'border border-gray-200 bg-white'
+                              : participantType === 'cast'
+                                ? 'border border-purple-200 bg-purple-50'
+                                : 'border border-gray-200 bg-white'
                         }`}
                       >
                         {message.content}
-
-                        {/* Message tail */}
-                        {!message.isReservationInfo && (
-                          <>
-                            {isStaff && showAvatar ? (
-                              <div className="absolute right-[-8px] top-3 h-0 w-0 border-b-[8px] border-l-[8px] border-t-[8px] border-b-transparent border-l-emerald-500 border-t-transparent" />
-                            ) : !isStaff && showAvatar ? (
-                              <>
-                                {/* Main arrow */}
-                                <div className="absolute left-[-8px] top-3 h-0 w-0 border-b-[8px] border-r-[8px] border-t-[8px] border-b-transparent border-r-white border-t-transparent" />
-                                {/* Border arrow for outline effect */}
-                                <div className="absolute left-[-9px] top-3 h-0 w-0 border-b-[9px] border-r-[9px] border-t-[9px] border-b-transparent border-r-gray-200 border-t-transparent" />
-                              </>
-                            ) : null}
-                          </>
-                        )}
-                      </div>
-
-                      {/* Timestamp and Status */}
-                      <div
-                        className={`mt-1 flex items-center gap-2 ${
-                          isStaff ? 'justify-end' : 'justify-start'
-                        }`}
-                      >
-                        <span className="text-xs text-gray-500">
-                          {formatTimestamp(message.timestamp)}
-                        </span>
-                        {isStaff && (
-                          <div className="text-xs text-gray-500">
-                            {message.readStatus === '既読' ? (
-                              <CheckCheck className="h-3 w-3 text-emerald-600" />
+                        <div className="mt-2 flex items-center justify-end gap-1 text-xs">
+                          <span className={`text-gray-400 ${isStaff ? 'text-emerald-50/80' : ''}`}>
+                            {new Date(message.timestamp).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                          {isStaff && (
+                            message.readStatus === '既読' ? (
+                              <CheckCheck className="h-3 w-3 text-emerald-100" />
                             ) : (
-                              <Check className="h-3 w-3" />
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Reservation Info */}
-                      {message.isReservationInfo && (
-                        <div className="mt-3 flex flex-col items-center gap-2">
-                          <Badge
-                            variant="secondary"
-                            className="border-blue-200 bg-blue-100 text-blue-800"
-                          >
-                            予約が確定に変更されました
-                          </Badge>
-                          <div className="text-sm font-medium text-blue-700">
-                            {message.reservationInfo?.date} {message.reservationInfo?.time}
-                          </div>
-                          <div className="text-xs text-blue-600">
-                            確定日時: {formatTimestamp(message.reservationInfo?.confirmedDate)}
-                          </div>
+                              <Check className="h-3 w-3 text-emerald-100" />
+                            )
+                          )}
                         </div>
-                      )}
+                      </div>
                     </div>
                   </div>
                 </div>
               )
             })}
 
-            {/* Typing Indicator */}
-            {isTyping && (
-              <div className="flex justify-start">
-                <div className="flex max-w-[80%] gap-3">
-                  <Avatar className="mt-1 h-8 w-8">
-                    <AvatarImage src={customer?.avatar} alt={customer?.name} />
-                    <AvatarFallback className="bg-gray-400 text-xs text-white">
-                      {customer?.name?.[0] || 'G'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
-                    <div className="flex space-x-1">
-                      <div
-                        className="h-2 w-2 animate-bounce rounded-full bg-gray-400"
-                        style={{ animationDelay: '0ms' }}
-                      ></div>
-                      <div
-                        className="h-2 w-2 animate-bounce rounded-full bg-gray-400"
-                        style={{ animationDelay: '150ms' }}
-                      ></div>
-                      <div
-                        className="h-2 w-2 animate-bounce rounded-full bg-gray-400"
-                        style={{ animationDelay: '300ms' }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
+            {messages.length === 0 && (
+              <div className="py-10 text-center text-sm text-gray-500">
+                まだメッセージはありません。
               </div>
             )}
           </div>
         )}
       </ScrollArea>
 
-      {/* Input Area */}
       <div className="border-t bg-white/80 p-4 backdrop-blur-sm">
-        <div className="mx-auto max-w-4xl">
-          <div className="flex items-end gap-3">
-            {/* Message Input */}
-            <div className="relative flex-1">
-              <Textarea
-                placeholder="メッセージを入力..."
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                className="max-h-[120px] min-h-[44px] resize-none border-gray-200 focus:border-emerald-300 focus:ring-emerald-200"
-              />
-            </div>
-
-            {/* Send Button */}
-            <Button
-              onClick={handleSendMessage}
-              disabled={!newMessage.trim()}
-              className="h-11 bg-emerald-600 px-4 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
+        <div className="flex items-center gap-4">
+          <Textarea
+            placeholder={`${participantType === 'customer' ? '顧客' : 'キャスト'}へメッセージを入力...`}
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onFocus={() => setIsTyping(true)}
+            onBlur={() => setIsTyping(false)}
+            className="min-h-[60px] flex-1 resize-none"
+          />
+          <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
+            <Send className="h-4 w-4" />
+          </Button>
         </div>
+        {isTyping && (
+          <div className="mt-2 text-xs text-gray-400">入力中...</div>
+        )}
       </div>
     </div>
   )

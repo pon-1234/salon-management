@@ -110,6 +110,7 @@ export async function GET(request: NextRequest) {
     const unreadCountByCustomer = new Map<string, number>()
 
     messages.forEach((message) => {
+      if (!message.customerId) return
       if (!lastMessageByCustomer.has(message.customerId)) {
         lastMessageByCustomer.set(message.customerId, message)
       }

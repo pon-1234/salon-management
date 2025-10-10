@@ -13,8 +13,9 @@ import { Message, Prisma } from '@prisma/client'
 
 // Message validation schema
 const messageSchema = z.object({
-  customerId: z.string().min(1),
-  sender: z.enum(['customer', 'staff']),
+  customerId: z.string().min(1).optional(),
+  castId: z.string().min(1).optional(),
+  sender: z.enum(['customer', 'staff', 'cast']),
   content: z.string().min(1),
   isReservationInfo: z.boolean().optional(),
   reservationInfo: z
@@ -24,6 +25,8 @@ const messageSchema = z.object({
       confirmedDate: z.string(),
     })
     .optional(),
+}).refine((data) => data.customerId || data.castId, {
+  message: 'customerId または castId のいずれかを指定してください',
 })
 
 // GET /api/chat - Get messages for a customer
@@ -33,12 +36,21 @@ export async function GET(request: NextRequest) {
 
   const searchParams = request.nextUrl.searchParams
   const customerId = searchParams.get('customerId')
+  const castId = searchParams.get('castId')
 
   try {
     if (customerId) {
       // Get messages for specific customer
       const messages = await prisma.message.findMany({
         where: { customerId },
+        orderBy: { timestamp: 'asc' },
+      })
+      return SuccessResponses.ok(messages)
+    }
+
+    if (castId) {
+      const messages = await prisma.message.findMany({
+        where: { castId },
         orderBy: { timestamp: 'asc' },
       })
       return SuccessResponses.ok(messages)
@@ -51,10 +63,10 @@ export async function GET(request: NextRequest) {
 
     const messagesByCustomer = messages.reduce(
       (acc, msg) => {
-        if (!acc[msg.customerId]) {
-          acc[msg.customerId] = []
+        if (msg.customerId) {
+          acc[msg.customerId] = acc[msg.customerId] || []
+          acc[msg.customerId].push(msg)
         }
-        acc[msg.customerId].push(msg)
         return acc
       },
       {} as Record<string, Message[]>
@@ -81,10 +93,16 @@ export async function POST(request: NextRequest) {
     const newMessage = await prisma.message.create({
       data: {
         customerId: validatedData.customerId,
+        castId: validatedData.castId,
         sender: validatedData.sender,
         content: validatedData.content,
         timestamp: new Date(),
-        readStatus: validatedData.sender === 'staff' ? '未読' : '既読',
+        readStatus:
+          validatedData.sender === 'staff'
+            ? '未読'
+            : validatedData.sender === 'customer'
+              ? '既読'
+              : '既読',
         isReservationInfo: validatedData.isReservationInfo || false,
         reservationInfo: validatedData.reservationInfo || Prisma.JsonNull,
       },

@@ -32,13 +32,17 @@ export function CustomerList({ selectedCustomerId, onSelectCustomer }: CustomerL
 
   const fetchCustomers = useCallback(async () => {
     try {
-      const response = await fetch('/api/chat/customers')
+      const response = await fetch('/api/chat/customers', {
+        credentials: 'include',
+        cache: 'no-store',
+      })
       if (!response.ok) throw new Error('Failed to fetch customers')
 
       const data = await response.json()
       // SuccessResponse形式からデータを取得
       const customerData = data.data || data
-      setCustomers(Array.isArray(customerData) ? customerData : [])
+      const normalized = Array.isArray(customerData) ? customerData : []
+      setCustomers(normalized)
     } catch (error) {
       console.error('Error fetching customers:', error)
       toast({
