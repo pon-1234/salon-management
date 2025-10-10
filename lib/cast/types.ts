@@ -76,10 +76,14 @@ export interface Appointment {
 }
 
 export interface CastSchedule {
+  id?: string
   castId: string
   date: Date
   startTime: Date
   endTime: Date
+  isAvailable?: boolean
+  note?: string
+  status?: string
   bookings?: number // 予約数
 }
 

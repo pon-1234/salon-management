@@ -29,7 +29,8 @@ export default async function CastDetailPage({
     }
     if (response.ok) {
       const payload = await response.json()
-      cast = normalizeCast(payload)
+      const data = payload?.data ?? payload
+      cast = normalizeCast(data)
     }
   } catch (error) {
     console.error('Failed to load cast data:', error)

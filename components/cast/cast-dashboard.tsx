@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Cast } from '@/lib/cast/types'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { Cast, CastSchedule } from '@/lib/cast/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,11 +20,17 @@ import {
   Plus,
   DollarSign,
 } from 'lucide-react'
-import { ScheduleEditDialog } from '@/components/cast/schedule-edit-dialog'
 import { ReservationDialog } from '@/components/reservation/reservation-dialog'
 import { ReservationData, Reservation } from '@/lib/types/reservation'
 import { getAllReservations } from '@/lib/reservation/data'
-import { format } from 'date-fns'
+import { format, startOfWeek, addDays } from 'date-fns'
+import { ja } from 'date-fns/locale'
+import { useToast } from '@/hooks/use-toast'
+import {
+  ScheduleEditDialog,
+  WeeklySchedule,
+  WorkStatus,
+} from '@/components/cast/schedule-edit-dialog'
 
 interface CastDashboardProps {
   cast: Cast
@@ -35,6 +41,9 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
+  const [scheduleMap, setScheduleMap] = useState<Record<string, CastSchedule>>({})
+  const weekStart = useMemo(() => startOfWeek(new Date(), { weekStartsOn: 1 }), [])
+  const weekEnd = useMemo(() => addDays(weekStart, 6), [weekStart])
   const [formData, setFormData] = useState({
     name: cast.name,
     nameKana: cast.nameKana,
@@ -45,6 +54,11 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
     specialDesignationFee: cast.specialDesignationFee,
     regularDesignationFee: cast.regularDesignationFee,
   })
+  const weekDays = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
+    [weekStart]
+  )
+  const { toast } = useToast()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -65,6 +79,184 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
     }
     fetchReservations()
   }, [cast.id])
+
+  const fetchSchedule = useCallback(async () => {
+    try {
+      const params = new URLSearchParams({
+        castId: cast.id,
+        startDate: weekStart.toISOString(),
+        endDate: weekEnd.toISOString(),
+      })
+
+      const response = await fetch(`/api/cast-schedule?${params.toString()}`, {
+        cache: 'no-store',
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch schedule: ${response.status}`)
+      }
+
+      const payload = await response.json()
+      const data = Array.isArray(payload?.data) ? payload.data : payload
+
+      const map: Record<string, CastSchedule> = {}
+      if (Array.isArray(data)) {
+        data.forEach((item: any) => {
+          const date = new Date(item.date)
+          const key = format(date, 'yyyy-MM-dd')
+          map[key] = {
+            id: item.id,
+            castId: item.castId,
+            date,
+            startTime: new Date(item.startTime),
+            endTime: new Date(item.endTime),
+            isAvailable: item.isAvailable,
+          }
+        })
+      }
+
+      setScheduleMap(map)
+    } catch (error) {
+      console.error('Failed to load cast schedule:', error)
+      toast({
+        title: 'エラー',
+        description: '出勤スケジュールの取得に失敗しました',
+        variant: 'destructive',
+      })
+    }
+  }, [cast.id, toast, weekEnd, weekStart])
+
+  useEffect(() => {
+    fetchSchedule()
+  }, [fetchSchedule])
+
+  const dialogInitialSchedule = useMemo(() => {
+    const initial: WeeklySchedule = {}
+    weekDays.forEach((date) => {
+      const key = format(date, 'yyyy-MM-dd')
+      const record = scheduleMap[key]
+      if (record) {
+        const status: WorkStatus =
+          record.isAvailable === false ? '休日' : '出勤予定'
+        initial[key] = {
+          date: key,
+          status,
+          startTime: format(record.startTime, 'HH:mm'),
+          endTime: format(record.endTime, 'HH:mm'),
+          isAvailableForBooking: record.isAvailable ?? true,
+        }
+      }
+    })
+    return initial
+  }, [scheduleMap, weekDays])
+
+  const handleScheduleSave = useCallback(
+    async (updated: WeeklySchedule) => {
+      try {
+        const operations: Promise<Response>[] = []
+        const activeStatuses: WorkStatus[] = ['出勤予定', '出勤中', '早退', '遅刻']
+
+        for (const [dateKey, daySchedule] of Object.entries(updated)) {
+          const existing = scheduleMap[dateKey]
+          const shouldPersist = activeStatuses.includes(daySchedule.status)
+
+          if (!shouldPersist) {
+            if (existing?.id) {
+              operations.push(
+                fetch(`/api/cast-schedule?id=${existing.id}`, {
+                  method: 'DELETE',
+                })
+              )
+            }
+            continue
+          }
+
+          if (!daySchedule.startTime || !daySchedule.endTime) {
+            throw new Error('勤務予定の時間を入力してください')
+          }
+
+          const startDateTime = new Date(`${dateKey}T${daySchedule.startTime}:00`)
+          const endDateTime = new Date(`${dateKey}T${daySchedule.endTime}:00`)
+          const payload = {
+            startTime: startDateTime.toISOString(),
+            endTime: endDateTime.toISOString(),
+            isAvailable: daySchedule.isAvailableForBooking ?? true,
+          }
+
+          if (existing?.id) {
+            operations.push(
+              fetch('/api/cast-schedule', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  id: existing.id,
+                  ...payload,
+                }),
+              })
+            )
+          } else {
+            operations.push(
+              fetch('/api/cast-schedule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  castId: cast.id,
+                  date: startDateTime.toISOString(),
+                  ...payload,
+                }),
+              })
+            )
+          }
+        }
+
+        if (operations.length > 0) {
+          const responses = await Promise.all(operations)
+          const failed = responses.find((res) => !res.ok)
+          if (failed) {
+            throw new Error('スケジュールの更新に失敗しました')
+          }
+        }
+
+        await fetchSchedule()
+
+        toast({
+          title: 'スケジュールを更新しました',
+        })
+      } catch (error) {
+        console.error('Failed to update schedule:', error)
+        toast({
+          title: 'エラー',
+          description:
+            error instanceof Error ? error.message : 'スケジュールの更新に失敗しました',
+          variant: 'destructive',
+        })
+        throw error
+      }
+    },
+    [cast.id, fetchSchedule, scheduleMap, toast]
+  )
+
+  const scheduleDisplay = useMemo(() => {
+    return weekDays.map((date) => {
+      const key = format(date, 'yyyy-MM-dd')
+      const record = scheduleMap[key]
+      const isAvailable = record ? record.isAvailable !== false : false
+      const isWorking = Boolean(record) && isAvailable
+      const isToday =
+        format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
+
+      return {
+        key,
+        dayLabel: format(date, 'E', { locale: ja }),
+        dateLabel: format(date, 'd'),
+        isToday,
+        isWorking,
+        time: record
+          ? `${format(record.startTime, 'HH:mm')} - ${format(record.endTime, 'HH:mm')}`
+          : '休日',
+      }
+    })
+  }, [scheduleMap, weekDays])
 
   // 予約データをダイアログ用に変換
   const convertToReservationData = (reservation: Reservation): ReservationData | null => {

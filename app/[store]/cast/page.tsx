@@ -26,7 +26,8 @@ export default async function CastListPage({ params }: { params: Promise<{ store
     })
     if (response.ok) {
       const payload = await response.json()
-      casts = normalizeCastList(payload)
+      const data = Array.isArray(payload?.data) ? payload.data : payload
+      casts = normalizeCastList(data)
     }
   } catch (error) {
     console.error('Failed to load cast data:', error)

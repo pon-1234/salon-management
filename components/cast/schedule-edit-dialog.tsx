@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { format, addDays, startOfWeek } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import {
@@ -43,7 +43,7 @@ interface ScheduleEditDialogProps {
   castName: string
   initialSchedule?: WeeklySchedule
   startDate?: Date
-  onSave: (schedule: WeeklySchedule) => void
+  onSave: (schedule: WeeklySchedule) => Promise<void> | void
 }
 
 export function ScheduleEditDialog({
@@ -54,6 +54,12 @@ export function ScheduleEditDialog({
 }: ScheduleEditDialogProps) {
   const [open, setOpen] = useState(false)
   const [schedule, setSchedule] = useState<WeeklySchedule>(initialSchedule)
+
+  useEffect(() => {
+    if (open) {
+      setSchedule(initialSchedule)
+    }
+  }, [open, initialSchedule])
 
   // Generate 7 days starting from the given start date
   const weekStart = startOfWeek(startDate, { weekStartsOn: 1 }) // Monday start
@@ -116,8 +122,19 @@ export function ScheduleEditDialog({
       validatedSchedule[dateKey] = daySchedule
     }
 
-    onSave(validatedSchedule)
-    setOpen(false)
+    const result = onSave(validatedSchedule)
+
+    if (result && typeof (result as Promise<void>).then === 'function') {
+      ;(result as Promise<void>)
+        .then(() => {
+          setOpen(false)
+        })
+        .catch((error) => {
+          console.error('Failed to save schedule:', error)
+        })
+    } else {
+      setOpen(false)
+    }
   }
 
   const getDaySchedule = (dateKey: string): DaySchedule => {

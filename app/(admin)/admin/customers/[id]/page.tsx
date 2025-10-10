@@ -173,7 +173,8 @@ export default function CustomerProfile() {
         })
         if (response.ok) {
           const payload = await response.json()
-          setAvailableCasts(normalizeCastList(payload))
+          const data = Array.isArray(payload?.data) ? payload.data : payload
+          setAvailableCasts(normalizeCastList(data))
         }
       } catch (error) {
         console.error('Failed to load cast list:', error)
