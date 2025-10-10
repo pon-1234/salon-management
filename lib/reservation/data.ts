@@ -1,12 +1,36 @@
 import { Reservation } from '@/lib/types/reservation'
 import { resolveApiUrl } from '@/lib/http/base-url'
-import logger from '@/lib/logger'
 import {
   addMockReservation,
   getAllMockReservations,
   getMockReservationsByCustomerId,
   updateMockReservation,
 } from './mock-data'
+
+let cachedLogger: any = undefined
+
+function logWarning(message: string, details?: unknown) {
+  if (typeof window !== 'undefined') {
+    console.warn(message, details)
+    return
+  }
+
+  if (cachedLogger === undefined) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      cachedLogger = require('@/lib/logger').default
+    } catch (error) {
+      console.warn('Logger unavailable, falling back to console.warn', error)
+      cachedLogger = null
+    }
+  }
+
+  if (cachedLogger) {
+    cachedLogger.warn(details ?? {}, message)
+  } else {
+    console.warn(message, details)
+  }
+}
 
 const RESERVATION_API_PATH = '/api/reservation'
 
@@ -98,7 +122,7 @@ export async function getReservationsByCustomerId(customerId: string): Promise<R
   try {
     return await requestReservations({ customerId })
   } catch (error) {
-    logger.warn({ err: error }, 'Falling back to mock reservations for customer')
+    logWarning('Falling back to mock reservations for customer', { err: error })
     return getMockReservationsByCustomerId(customerId)
   }
 }
@@ -107,7 +131,7 @@ export async function getAllReservations(params?: ReservationQuery): Promise<Res
   try {
     return await requestReservations(params)
   } catch (error) {
-    logger.warn({ err: error }, 'Falling back to mock reservations list')
+    logWarning('Falling back to mock reservations list', { err: error })
     return getAllMockReservations()
   }
 }
@@ -119,7 +143,7 @@ export async function updateReservation(
   try {
     return await requestReservationMutation('PUT', { id, ...updates })
   } catch (error) {
-    logger.warn({ err: error }, 'Falling back to mock reservation update')
+    logWarning('Falling back to mock reservation update', { err: error })
     updateMockReservation(id, updates)
     const reservations = await getAllMockReservations()
     return reservations.find((reservation) => reservation.id === id) || null
@@ -136,7 +160,7 @@ export async function addReservation(
     }
     return created
   } catch (error) {
-    logger.warn({ err: error }, 'Falling back to mock reservation creation')
+    logWarning('Falling back to mock reservation creation', { err: error })
     return addMockReservation(reservation)
   }
 }
