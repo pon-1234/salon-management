@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,13 +17,13 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
-import { ja } from 'date-fns/locale'
 import {
   Phone,
   Clock,
   User,
   MapPin,
   CreditCard,
+  DollarSign,
   ChevronRight,
   ChevronLeft,
   Check,
@@ -38,6 +38,66 @@ import { useAvailability } from '@/hooks/use-availability'
 import { TimeSlotPicker } from './time-slot-picker'
 import { toast } from '@/hooks/use-toast'
 import { isVipMember } from '@/lib/utils'
+
+type DesignationType = 'none' | 'regular' | 'special'
+
+type PriceBreakdown = {
+  basePrice: number
+  designationFee: number
+  optionsTotal: number
+  transportationFee: number
+  additionalFee: number
+  total: number
+}
+
+const formatYen = (amount: number) => `${amount.toLocaleString()}円`
+
+const getDesignationFeeAmount = (type: DesignationType, cast?: Cast) => {
+  if (!cast) return 0
+  if (type === 'special') {
+    return cast.specialDesignationFee ?? 0
+  }
+  if (type === 'regular') {
+    return cast.regularDesignationFee ?? 0
+  }
+  return 0
+}
+
+const getDesignationLabel = (type: DesignationType, cast?: Cast) => {
+  if (!cast) return 'フリー'
+  if (type === 'special' && cast.specialDesignationFee) {
+    return '特別指名'
+  }
+  if (type === 'regular' && cast.regularDesignationFee) {
+    return '本指名'
+  }
+  return 'フリー'
+}
+
+interface BookingDetails {
+  customerName: string
+  customerType: string
+  phoneNumber: string
+  points: number
+  bookingStatus: string
+  staffConfirmation: string
+  customerConfirmation: string
+  prefecture: string
+  district: string
+  location: string
+  locationType: string
+  specificLocation: string
+  staff: string
+  marketingChannel: string
+  date: string
+  time: string
+  inOutTime: string
+  freeExtension: string
+  options: Record<string, boolean>
+  transportationFee: number
+  paymentMethod: string
+  additionalFee: number
+}
 
 interface QuickBookingDialogProps {
   open: boolean
@@ -64,7 +124,7 @@ export function QuickBookingDialog({
   const availableOptions = selectedStaff?.availableOptions
     ? options.filter((option) => selectedStaff.availableOptions.includes(option.id))
     : options
-  const [bookingDetails, setBookingDetails] = useState({
+  const [bookingDetails, setBookingDetails] = useState<BookingDetails>({
     customerName: selectedCustomer?.name || '', // 更新
     customerType: isVipMember(selectedCustomer?.memberType) ? 'VIPメンバー' : '通常会員', // 更新
     phoneNumber: selectedCustomer?.phone || '', // 更新
@@ -82,44 +142,149 @@ export function QuickBookingDialog({
     date: selectedTime ? format(selectedTime, 'yyyy-MM-dd') : '',
     time: selectedTime ? format(selectedTime, 'HH:mm') : '',
     inOutTime: '',
-    course: 'イベント70分 16,000円',
     freeExtension: '0',
-    designation: '本指名 (2,000円)',
-    designationFee: '0円',
-    options: {
-      回春増し増し: true,
-    } as Record<string, boolean>,
+    options: {},
     transportationFee: 0,
     paymentMethod: '現金',
-    discount: 'お店イベント 3,000円',
     additionalFee: 0,
-    totalPayment: 17000,
-    storeRevenue: 5000,
-    staffRevenue: 12000,
-    staffBonusFee: 0,
   })
+  const [selectedCourseId, setSelectedCourseId] = useState<string>('')
+  const [designationType, setDesignationType] = useState<DesignationType>('none')
 
-  const [totalPrice, setTotalPrice] = useState(17000)
+  const selectedCourse = useMemo(
+    () => courses.find((course) => course.id === selectedCourseId),
+    [courses, selectedCourseId]
+  )
+
+  const designationOptions = useMemo(
+    () => {
+      const candidates: Array<{ type: DesignationType; label: string; fee: number }> = [
+        { type: 'none', label: 'フリー', fee: 0 },
+      ]
+
+      if (selectedStaff?.regularDesignationFee) {
+        candidates.push({
+          type: 'regular',
+          label: '本指名',
+          fee: selectedStaff.regularDesignationFee,
+        })
+      }
+
+      if (selectedStaff?.specialDesignationFee) {
+        candidates.push({
+          type: 'special',
+          label: '特別指名',
+          fee: selectedStaff.specialDesignationFee,
+        })
+      }
+
+      return candidates
+    },
+    [selectedStaff]
+  )
+
+  const priceBreakdown = useMemo<PriceBreakdown>(
+    () => {
+      const basePrice = selectedCourse?.price ?? 0
+      const designationFeeAmount = getDesignationFeeAmount(designationType, selectedStaff)
+      const optionsTotal = availableOptions.reduce((sum, option) => {
+        return bookingDetails.options[option.id] ? sum + option.price : sum
+      }, 0)
+      const transportationFee = bookingDetails.transportationFee || 0
+      const additionalFee = bookingDetails.additionalFee || 0
+
+      const total =
+        basePrice + designationFeeAmount + optionsTotal + transportationFee + additionalFee
+
+      return {
+        basePrice,
+        designationFee: designationFeeAmount,
+        optionsTotal,
+        transportationFee,
+        additionalFee,
+        total,
+      }
+    },
+    [
+      selectedCourse,
+      designationType,
+      selectedStaff,
+      availableOptions,
+      bookingDetails.options,
+      bookingDetails.transportationFee,
+      bookingDetails.additionalFee,
+    ]
+  )
 
   useEffect(() => {
-    calculateTotalPrice()
-  }, [bookingDetails])
+    if (courses.length === 0) {
+      return
+    }
+
+    const hasSelectedCourse = courses.some((course) => course.id === selectedCourseId)
+    if (!selectedCourseId || !hasSelectedCourse) {
+      setSelectedCourseId(courses[0].id)
+    }
+  }, [courses, selectedCourseId])
 
   useEffect(() => {
-    if (selectedTime) {
-      setBookingDetails((prev) => ({
+    setBookingDetails((prev) => {
+      if (Object.keys(prev.options).length === 0) {
+        return prev
+      }
+
+      const validOptionIds = new Set(availableOptions.map((option) => option.id))
+      const filteredEntries = Object.entries(prev.options).filter(([optionId]) =>
+        validOptionIds.has(optionId)
+      )
+
+      if (filteredEntries.length === Object.keys(prev.options).length) {
+        return prev
+      }
+
+      return {
         ...prev,
-        date: format(selectedTime, 'yyyy-MM-dd'),
-        time: format(selectedTime, 'HH:mm'),
-      }))
+        options: Object.fromEntries(filteredEntries),
+      }
+    })
+  }, [availableOptions])
+
+  useEffect(() => {
+    if (!selectedTime) return
+    setBookingDetails((prev) => ({
+      ...prev,
+      date: format(selectedTime, 'yyyy-MM-dd'),
+      time: format(selectedTime, 'HH:mm'),
+    }))
+  }, [selectedTime])
+
+  useEffect(() => {
+    if (!selectedStaff) {
+      setDesignationType('none')
+      return
     }
-    if (selectedStaff) {
-      setBookingDetails((prev) => ({
-        ...prev,
-        staff: selectedStaff.name,
-      }))
-    }
-  }, [selectedTime, selectedStaff])
+
+    setBookingDetails((prev) => ({
+      ...prev,
+      staff: selectedStaff.name,
+    }))
+
+    setDesignationType((prev) => {
+      if (prev === 'special' && selectedStaff.specialDesignationFee) {
+        return prev
+      }
+      if (prev === 'regular' && selectedStaff.regularDesignationFee) {
+        return prev
+      }
+      if (selectedStaff.regularDesignationFee) {
+        return 'regular'
+      }
+      if (selectedStaff.specialDesignationFee) {
+        return 'special'
+      }
+      return 'none'
+    })
+  }, [selectedStaff])
 
   useEffect(() => {
     if (selectedCustomer) {
@@ -132,15 +297,6 @@ export function QuickBookingDialog({
       }))
     }
   }, [selectedCustomer])
-
-  const calculateTotalPrice = () => {
-    // Implement the price calculation logic here
-    // This is a placeholder calculation
-    let total = 16000 // Base course price
-    total += 2000 // Designation fee
-    total -= 3000 // Store event discount
-    setTotalPrice(total)
-  }
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -172,23 +328,49 @@ export function QuickBookingDialog({
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async () => {
+    if (!selectedStaff) {
+      toast({
+        title: '担当者未選択',
+        description: '担当キャストを選択してください。',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (!selectedCourse) {
+      toast({
+        title: 'コース未選択',
+        description: 'コースを選択してください。',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (!bookingDetails.date || !bookingDetails.time) {
+      toast({
+        title: '日時未設定',
+        description: '予約日時を選択してください。',
+        variant: 'destructive',
+      })
+      return
+    }
+
     try {
       setIsSubmitting(true)
 
       // Parse selected time and course duration
       const [hours, minutes] = bookingDetails.time.split(':').map(Number)
+      if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+        throw new Error('予約時間の形式が正しくありません。')
+      }
       const startTime = new Date(bookingDetails.date)
       startTime.setHours(hours, minutes, 0, 0)
 
-      // Extract duration from course (e.g., "60分コース" -> 60)
-      const durationMatch = bookingDetails.course.match(/(\d+)分/)
-      const duration = durationMatch ? parseInt(durationMatch[1]) : 60
-
       const endTime = new Date(startTime)
-      endTime.setMinutes(endTime.getMinutes() + duration)
+      endTime.setMinutes(endTime.getMinutes() + selectedCourse.duration)
 
       // Check availability before submitting
-      const availability = await checkAvailability(selectedStaff?.id || '', startTime, endTime)
+      const availability = await checkAvailability(selectedStaff.id, startTime, endTime)
 
       if (!availability.available) {
         toast({
@@ -205,8 +387,8 @@ export function QuickBookingDialog({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           customerId: selectedCustomer?.id,
-          castId: selectedStaff?.id,
-          courseId: bookingDetails.course, // This should be the course ID
+          castId: selectedStaff.id,
+          courseId: selectedCourseId,
           startTime: startTime.toISOString(),
           endTime: endTime.toISOString(),
           status: bookingDetails.bookingStatus === '確定済' ? 'confirmed' : 'pending',
@@ -341,11 +523,11 @@ export function QuickBookingDialog({
                     </div>
                     <div className="col-span-2">
                       <Label>時間選択</Label>
-                      {selectedStaff && bookingDetails.date ? (
+                      {selectedStaff && bookingDetails.date && selectedCourse ? (
                         <TimeSlotPicker
                           castId={selectedStaff.id}
                           date={new Date(bookingDetails.date)}
-                          duration={60} // Default 60 minutes, should be from selected course
+                          duration={selectedCourse.duration}
                           selectedTime={bookingDetails.time}
                           onTimeSelect={(time) => {
                             const date = new Date(time)
@@ -355,7 +537,7 @@ export function QuickBookingDialog({
                         />
                       ) : (
                         <div className="rounded-lg bg-gray-50 p-4 text-center text-gray-500">
-                          担当者と日付を選択してください
+                          担当者・日付・コースを選択してください
                         </div>
                       )}
                     </div>
@@ -369,13 +551,11 @@ export function QuickBookingDialog({
                   <div>
                     <Label>コース選択</Label>
                     <Select
-                      value={bookingDetails.course}
-                      onValueChange={(value) =>
-                        handleInputChange({ target: { name: 'course', value } } as any)
-                      }
+                      value={selectedCourseId}
+                      onValueChange={(value) => setSelectedCourseId(value)}
                     >
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="コースを選択" />
                       </SelectTrigger>
                       <SelectContent>
                         {pricingLoading ? (
@@ -386,10 +566,7 @@ export function QuickBookingDialog({
                           </div>
                         ) : (
                           courses.map((course) => (
-                            <SelectItem
-                              key={course.id}
-                              value={`${course.name} ${course.price.toLocaleString()}円`}
-                            >
+                            <SelectItem key={course.id} value={course.id}>
                               {course.name} {course.duration}分 {course.price.toLocaleString()}円
                             </SelectItem>
                           ))
@@ -397,6 +574,40 @@ export function QuickBookingDialog({
                       </SelectContent>
                     </Select>
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Designation Settings */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center">
+                    <DollarSign className="mr-2 h-5 w-5" />
+                    指名設定
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    {designationOptions.map((option) => (
+                      <Button
+                        key={option.type}
+                        type="button"
+                        size="sm"
+                        variant={designationType === option.type ? 'default' : 'outline'}
+                        onClick={() => setDesignationType(option.type)}
+                      >
+                        {option.label}
+                        <span className="ml-2 text-xs text-gray-500">
+                          {option.fee > 0 ? formatYen(option.fee) : '0円'}
+                        </span>
+                      </Button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    選択中: {getDesignationLabel(designationType, selectedStaff)}
+                    {priceBreakdown.designationFee > 0
+                      ? `（${formatYen(priceBreakdown.designationFee)}）`
+                      : ''}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -598,7 +809,11 @@ export function QuickBookingDialog({
                     <div className="space-y-2">
                       <div>
                         <span className="text-gray-600">コース:</span>
-                        <span className="ml-2 font-semibold">{bookingDetails.course}</span>
+                        <span className="ml-2 font-semibold">
+                          {selectedCourse
+                            ? `${selectedCourse.name} ${selectedCourse.duration}分 ${formatYen(selectedCourse.price)}`
+                            : '未選択'}
+                        </span>
                       </div>
                       <div>
                         <span className="text-gray-600">場所:</span>
@@ -624,20 +839,34 @@ export function QuickBookingDialog({
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span>基本料金</span>
-                      <span>16,000円</span>
+                      <span>{formatYen(priceBreakdown.basePrice)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>本指名料</span>
-                      <span>2,000円</span>
+                      <span>{`${getDesignationLabel(designationType, selectedStaff)}料`}</span>
+                      <span>{formatYen(priceBreakdown.designationFee)}</span>
                     </div>
-                    <div className="flex justify-between text-green-600">
-                      <span>店舗イベント割引</span>
-                      <span>-3,000円</span>
-                    </div>
+                    {priceBreakdown.optionsTotal > 0 && (
+                      <div className="flex justify-between">
+                        <span>オプション</span>
+                        <span>{formatYen(priceBreakdown.optionsTotal)}</span>
+                      </div>
+                    )}
+                    {priceBreakdown.transportationFee > 0 && (
+                      <div className="flex justify-between">
+                        <span>交通費</span>
+                        <span>{formatYen(priceBreakdown.transportationFee)}</span>
+                      </div>
+                    )}
+                    {priceBreakdown.additionalFee > 0 && (
+                      <div className="flex justify-between">
+                        <span>追加料金</span>
+                        <span>{formatYen(priceBreakdown.additionalFee)}</span>
+                      </div>
+                    )}
                     <hr className="my-2" />
                     <div className="flex justify-between text-lg font-bold">
                       <span>合計</span>
-                      <span className="font-bold">{totalPrice.toLocaleString()}円</span>
+                      <span className="font-bold">{formatYen(priceBreakdown.total)}</span>
                     </div>
                   </div>
                 </CardContent>
