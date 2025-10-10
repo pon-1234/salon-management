@@ -14,7 +14,7 @@ import { getAllReservations } from '@/lib/reservation/data'
 import { getCourseById } from '@/lib/course-option/utils'
 import { ReservationTable } from '@/components/reservation/reservation-table'
 import { ReservationData } from '@/lib/types/reservation'
-import { format } from 'date-fns'
+import { format, startOfDay, endOfDay } from 'date-fns'
 import { customers as customerList, Customer } from '@/lib/customer/data' // Import customer data
 import { ReservationDialog } from '@/components/reservation/reservation-dialog'
 import { InfoBar } from '@/components/reservation/info-bar'
@@ -82,8 +82,11 @@ export function ReservationPageContent() {
 
     const allReservations = await getAllReservations()
 
+    const dayStart = startOfDay(selectedDate)
+    const dayEnd = endOfDay(selectedDate)
+
     const scheduleResponse = await fetch(
-      `/api/cast-schedule?date=${selectedDate.toISOString()}`,
+      `/api/cast-schedule?startDate=${dayStart.toISOString()}&endDate=${dayEnd.toISOString()}`,
       {
         credentials: 'include',
         cache: 'no-store',
@@ -91,7 +94,8 @@ export function ReservationPageContent() {
     )
 
     let schedulesByCast = new Map<string, any>()
-    if (scheduleResponse.ok) {
+    const hasScheduleData = scheduleResponse.ok
+    if (hasScheduleData) {
       const payload = await scheduleResponse.json()
       const data = Array.isArray(payload?.data) ? payload.data : payload
       if (Array.isArray(data)) {
@@ -105,24 +109,27 @@ export function ReservationPageContent() {
       isSameDay(new Date(reservation.startTime), selectedDate)
     )
 
-    let updatedCastData = allCasts
-      .map((member) => {
-        const scheduleEntry = schedulesByCast.get(member.id)
-        if (!scheduleEntry || scheduleEntry.isAvailable === false) {
-          return null
-        }
+    let updatedCastData = allCasts.map((member) => {
+      const scheduleEntry = schedulesByCast.get(member.id)
+      if (!scheduleEntry) {
+        return hasScheduleData ? null : { ...member, appointments: [], workStart: undefined, workEnd: undefined }
+      }
 
-        const workStart = scheduleEntry.startTime ? new Date(scheduleEntry.startTime) : undefined
-        const workEnd = scheduleEntry.endTime ? new Date(scheduleEntry.endTime) : undefined
-        if (!workStart || !workEnd) {
-          return null
-        }
+      if (scheduleEntry.isAvailable === false) {
+        return null
+      }
 
-        const appointments: Appointment[] = filteredReservations
-          .filter((reservation) => reservation.staffId === member.id)
-          .map((reservation) => {
-            const customer = customerList.find((c) => c.id === reservation.customerId)
-            const course = getCourseById(reservation.serviceId)
+      const workStart = scheduleEntry.startTime ? new Date(scheduleEntry.startTime) : undefined
+      const workEnd = scheduleEntry.endTime ? new Date(scheduleEntry.endTime) : undefined
+      if (!workStart || !workEnd) {
+        return null
+      }
+
+      const appointments: Appointment[] = filteredReservations
+        .filter((reservation) => reservation.staffId === member.id)
+        .map((reservation) => {
+          const customer = customerList.find((c) => c.id === reservation.customerId)
+          const course = getCourseById(reservation.serviceId)
 
           return {
             id: reservation.id,
@@ -137,16 +144,15 @@ export function ReservationPageContent() {
             location: '東京エリア',
             price: reservation.price,
           } as Appointment
-          })
+        })
 
-        return {
-          ...member,
-          appointments,
-          workStart,
-          workEnd,
-        }
-      })
-      .filter((member): member is Cast & { appointments: Appointment[] } => member !== null)
+      return {
+        ...member,
+        appointments,
+        workStart,
+        workEnd,
+      }
+    }).filter((member): member is Cast & { appointments: Appointment[] } => member !== null)
 
     if (selectedCustomer) {
       const ngCastIds =

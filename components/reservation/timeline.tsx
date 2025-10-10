@@ -60,13 +60,23 @@ export function Timeline({
   const SLOT_DURATION = 30 // 30分単位
   const HOUR_WIDTH = 120 * zoomLevel // ズームに応じた幅
 
-  // staffが存在しない場合、早期return
-  if (!staff || staff.length === 0) {
+  if (!staff) {
     return (
       <div className="flex h-64 items-center justify-center text-gray-500">
         <div className="text-center">
           <AlertCircle className="mx-auto mb-2 h-12 w-12 text-gray-400" />
           <p>スタッフ情報を読み込んでいます...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (staff.length === 0) {
+    return (
+      <div className="flex h-64 items-center justify-center text-gray-500">
+        <div className="text-center">
+          <AlertCircle className="mx-auto mb-2 h-12 w-12 text-gray-400" />
+          <p>本日出勤予定のスタッフはいません。</p>
         </div>
       </div>
     )
