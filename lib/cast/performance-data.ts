@@ -15,6 +15,7 @@ export const mockWorkPerformances: WorkPerformance[] = [
     totalCount: 5,
     newFreeCount: 1,
     newPanelCount: 1,
+    storeRepeatCount: 2,
     regularDesignationCount: 2,
     totalDesignationCount: 3,
     repeatRate: 60,
@@ -37,6 +38,7 @@ export const mockWorkPerformances: WorkPerformance[] = [
     totalCount: 5,
     newFreeCount: 0,
     newPanelCount: 2,
+    storeRepeatCount: 1,
     regularDesignationCount: 3,
     totalDesignationCount: 3,
     repeatRate: 80,
@@ -59,6 +61,7 @@ export const mockWorkPerformances: WorkPerformance[] = [
     totalCount: 5,
     newFreeCount: 2,
     newPanelCount: 0,
+    storeRepeatCount: 3,
     regularDesignationCount: 2,
     totalDesignationCount: 3,
     repeatRate: 40,
@@ -81,6 +84,7 @@ export const mockWorkPerformances: WorkPerformance[] = [
     totalCount: 5,
     newFreeCount: 1,
     newPanelCount: 1,
+    storeRepeatCount: 1,
     regularDesignationCount: 3,
     totalDesignationCount: 3,
     repeatRate: 75,
@@ -103,6 +107,7 @@ export const mockWorkPerformances: WorkPerformance[] = [
     totalCount: 6,
     newFreeCount: 1,
     newPanelCount: 2,
+    storeRepeatCount: 2,
     regularDesignationCount: 4,
     totalDesignationCount: 5,
     repeatRate: 83,
@@ -128,7 +133,9 @@ export const mockMonthlyPerformanceSummary: MonthlyPerformanceSummary = {
   totalServiceCount: 100,
   totalNewCustomers: 18,
   totalDesignations: 65,
+  totalStoreRepeats: 28,
   averageRepeatRate: 65.8,
+  storeRepeatShare: 28,
   totalRevenue: 1596000,
   totalCastShare: 957600,
   averageServiceAmount: 15960,
@@ -164,6 +171,7 @@ export const calculateDailyStats = (performances: WorkPerformance[]) => {
     0
   )
   const totalDesignations = performances.reduce((sum, p) => sum + p.totalDesignationCount, 0)
+  const totalStoreRepeats = performances.reduce((sum, p) => sum + p.storeRepeatCount, 0)
   const averageRepeatRate =
     performances.length > 0
       ? performances.reduce((sum, p) => sum + p.repeatRate, 0) / performances.length
@@ -186,6 +194,8 @@ export const calculateDailyStats = (performances: WorkPerformance[]) => {
     newCustomerRate: totalServiceCount > 0 ? (totalNewCustomers / totalServiceCount) * 100 : 0,
     totalDesignations,
     designationRate: totalServiceCount > 0 ? (totalDesignations / totalServiceCount) * 100 : 0,
+    totalStoreRepeats,
+    storeRepeatRate: totalServiceCount > 0 ? (totalStoreRepeats / totalServiceCount) * 100 : 0,
     averageRepeatRate,
   }
 }

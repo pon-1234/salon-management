@@ -19,7 +19,9 @@ import { Reservation, ReservationData, ReservationUpdatePayload } from '@/lib/ty
 import { mapReservationToReservationData } from '@/lib/reservation/transformers'
 import { recordModification } from '@/lib/modification-history/data'
 import { useSession } from 'next-auth/react'
-import { format, isSameDay } from 'date-fns'
+import { format, isSameDay, startOfWeek, addDays } from 'date-fns'
+import { ja } from 'date-fns/locale'
+import { cn } from '@/lib/utils'
 
 export default function ReservationListPage() {
   const [selectedReservation, setSelectedReservation] = useState<ReservationData | null>(null)
@@ -109,6 +111,35 @@ export default function ReservationListPage() {
   )
 
   const totalCount = dailyReservations.length
+
+  const weekOverview = useMemo(() => {
+    const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 })
+
+    return Array.from({ length: 7 }).map((_, index) => {
+      const date = addDays(weekStart, index)
+      const dayReservations = rawReservations.filter((reservation) =>
+        isSameDay(reservation.startTime, date)
+      )
+
+      const uniqueCustomers = new Set(
+        dayReservations.map((reservation) => {
+          const customer = (reservation as any).customer
+          return (
+            reservation.customerId ||
+            (customer && (customer.id || customer.email)) ||
+            (reservation as any).customerName ||
+            reservation.id
+          )
+        })
+      )
+
+      return {
+        date,
+        reservationCount: dayReservations.length,
+        customerCount: uniqueCustomers.size,
+      }
+    })
+  }, [rawReservations, selectedDate])
 
   const handleDateChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value
@@ -220,6 +251,35 @@ export default function ReservationListPage() {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="container mx-auto px-4 py-8">
+        <div className="mb-6 overflow-x-auto">
+          <div className="flex min-w-max gap-3">
+            {weekOverview.map(({ date, reservationCount, customerCount }) => {
+              const isActive = isSameDay(date, selectedDate)
+              return (
+                <button
+                  key={date.toISOString()}
+                  type="button"
+                  onClick={() => setSelectedDate(new Date(date))}
+                  className={cn(
+                    'min-w-[140px] rounded-xl border px-4 py-3 text-left shadow-sm transition',
+                    isActive
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                      : 'border-transparent bg-white hover:border-emerald-200 hover:bg-emerald-50/40'
+                  )}
+                >
+                  <div className="text-sm font-semibold">
+                    {format(date, 'M/d(E)', { locale: ja })}
+                  </div>
+                  <div className="mt-2 text-xs text-gray-500">
+                    <span className="font-medium text-gray-700">{customerCount}人</span>/
+                    {reservationCount}件
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-2xl font-bold">本日の予約</h1>

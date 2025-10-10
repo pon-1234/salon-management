@@ -118,7 +118,7 @@ function PerformanceOverview({ title, period, stats }: PerformanceOverviewProps)
       </div>
 
       {/* メインKPI */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
@@ -178,10 +178,25 @@ function PerformanceOverview({ title, period, stats }: PerformanceOverviewProps)
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Repeat className="h-4 w-4 text-emerald-600" />
+              <div>
+                <p className="text-sm font-medium text-gray-600">店リピート</p>
+                <p className="text-2xl font-bold">{stats.totalStoreRepeats}件</p>
+                <p className="text-xs text-gray-500">
+                  店舗貢献率 {stats.storeRepeatRate.toFixed(1)}%
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* 詳細指標 */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         {/* 決済方法別 */}
         <Card>
           <CardHeader className="pb-3">
@@ -269,6 +284,30 @@ function PerformanceOverview({ title, period, stats }: PerformanceOverviewProps)
             </div>
           </CardContent>
         </Card>
+
+        {/* 店リピート */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Repeat className="h-4 w-4" />
+              店リピート
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm">貢献件数</span>
+              <div className="text-right">
+                <div className="font-medium">{stats.totalStoreRepeats}件</div>
+                <div className="text-sm text-gray-500">
+                  前回他キャスト→自店舗 {stats.storeRepeatRate.toFixed(1)}%
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500">
+              直前来店のキャストと異なる場合のみ前回キャストへ付与。二重付与防止済み。
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </>
   )
@@ -286,6 +325,7 @@ function MonthlyTargetProgress({ monthlyStats }: MonthlyTargetProgressProps) {
     revenue: 1800000,
     designationRate: 70,
     repeatRate: 70,
+    storeRepeatShare: 25,
   }
 
   const workDaysProgress = (monthlyStats.totalWorkDays / targets.workDays) * 100
@@ -296,6 +336,8 @@ function MonthlyTargetProgress({ monthlyStats }: MonthlyTargetProgressProps) {
       targets.designationRate) *
     100
   const repeatProgress = (monthlyStats.averageRepeatRate / targets.repeatRate) * 100
+  const storeRepeatProgress =
+    (monthlyStats.storeRepeatShare / targets.storeRepeatShare) * 100
 
   return (
     <Card>
@@ -350,6 +392,19 @@ function MonthlyTargetProgress({ monthlyStats }: MonthlyTargetProgressProps) {
             <Progress value={Math.min(repeatProgress, 100)} className="h-2" />
             <div className="mt-1 text-xs text-gray-500">{repeatProgress.toFixed(1)}% 達成</div>
           </div>
+
+          <div>
+            <div className="mb-2 flex justify-between text-sm">
+              <span>店リピート貢献</span>
+              <span>
+                {monthlyStats.totalStoreRepeats}件 / 目標比 {targets.storeRepeatShare}%
+              </span>
+            </div>
+            <Progress value={Math.min(storeRepeatProgress, 100)} className="h-2" />
+            <div className="mt-1 text-xs text-gray-500">
+              {storeRepeatProgress.toFixed(1)}% 達成（店舗シェア {monthlyStats.storeRepeatShare.toFixed(1)}%）
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -379,6 +434,7 @@ function PerformanceDetailTable({ performances }: PerformanceDetailTableProps) {
               <TableHead>合計本数</TableHead>
               <TableHead>新規</TableHead>
               <TableHead>指名</TableHead>
+              <TableHead>店リピート</TableHead>
               <TableHead>リピート率</TableHead>
               <TableHead>合計金額</TableHead>
             </TableRow>
@@ -420,6 +476,11 @@ function PerformanceDetailTable({ performances }: PerformanceDetailTableProps) {
                     <div>本指名: {performance.regularDesignationCount}</div>
                     <div>合計: {performance.totalDesignationCount}</div>
                   </div>
+                </TableCell>
+                <TableCell className="text-center">
+                  <Badge variant="secondary" className="text-xs">
+                    {performance.storeRepeatCount}件
+                  </Badge>
                 </TableCell>
                 <TableCell className="text-center">
                   <Badge

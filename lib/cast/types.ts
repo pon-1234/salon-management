@@ -158,6 +158,7 @@ export interface WorkPerformance {
 
   // その他指標
   repeatRate: number // リピート率(%)
+  storeRepeatCount: number // 店リピート獲得数
   discountAmount: number // 値引き額
   totalAmount: number // 合計金額
   welfareExpense: number // 厚生費
@@ -179,7 +180,9 @@ export interface MonthlyPerformanceSummary {
   totalServiceCount: number
   totalNewCustomers: number
   totalDesignations: number
+  totalStoreRepeats: number
   averageRepeatRate: number
+  storeRepeatShare: number
   totalRevenue: number
   totalCastShare: number
   averageServiceAmount: number
