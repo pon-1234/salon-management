@@ -51,6 +51,7 @@ export function Header() {
       try {
         const response = await fetch('/api/cast', {
           cache: 'no-store',
+          credentials: 'include',
         })
         if (!response.ok) {
           throw new Error(`Failed to fetch casts: ${response.status}`)

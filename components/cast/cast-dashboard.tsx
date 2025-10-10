@@ -90,6 +90,7 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
 
       const response = await fetch(`/api/cast-schedule?${params.toString()}`, {
         cache: 'no-store',
+        credentials: 'include',
       })
 
       if (!response.ok) {
