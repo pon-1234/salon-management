@@ -21,7 +21,7 @@ export interface CreateReservationWithPaymentData {
   endTime: Date
   amount: number
   paymentMethod: 'card' | 'bank_transfer' | 'cash'
-  paymentProvider: 'stripe' | 'payjp'
+  paymentProvider?: 'manual'
 }
 
 export interface ReservationWithPaymentResult {
@@ -67,7 +67,7 @@ export class ReservationService {
         amount: data.amount,
         currency: 'jpy',
         paymentMethod: data.paymentMethod,
-        provider: data.paymentProvider,
+        provider: data.paymentProvider ?? 'manual',
       }
 
       const paymentResult = await this.paymentService.processPayment(paymentRequest)
@@ -119,7 +119,7 @@ export class ReservationService {
         amount: data.amount,
         currency: 'jpy',
         paymentMethod: data.paymentMethod,
-        provider: data.paymentProvider,
+        provider: data.paymentProvider ?? 'manual',
       }
 
       const paymentIntent = await this.paymentService.createPaymentIntent(paymentRequest)

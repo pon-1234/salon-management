@@ -52,7 +52,7 @@ describe('Reservation-Payment Integration', () => {
         endTime: new Date('2024-01-01T11:00:00Z'),
         amount: 10000,
         paymentMethod: 'card' as const,
-        paymentProvider: 'stripe' as const,
+        paymentProvider: 'manual' as const,
       }
 
       const mockReservation = {
@@ -75,7 +75,7 @@ describe('Reservation-Payment Integration', () => {
           customerId: 'cust_123',
           amount: 10000,
           currency: 'jpy',
-          provider: 'stripe',
+          provider: 'manual',
           paymentMethod: 'card',
           status: 'completed',
           createdAt: new Date(),
@@ -97,7 +97,7 @@ describe('Reservation-Payment Integration', () => {
         amount: 10000,
         currency: 'jpy',
         paymentMethod: 'card',
-        provider: 'stripe',
+        provider: 'manual',
       })
     })
 
@@ -110,7 +110,7 @@ describe('Reservation-Payment Integration', () => {
         endTime: new Date('2024-01-01T11:00:00Z'),
         amount: 10000,
         paymentMethod: 'card' as const,
-        paymentProvider: 'stripe' as const,
+        paymentProvider: 'manual' as const,
       }
 
       const mockPaymentResult = {
@@ -137,13 +137,13 @@ describe('Reservation-Payment Integration', () => {
         endTime: new Date('2024-01-01T11:00:00Z'),
         amount: 10000,
         paymentMethod: 'card' as const,
-        paymentProvider: 'stripe' as const,
+        paymentProvider: 'manual' as const,
       }
 
       const mockIntent = {
         id: 'pi_123',
-        providerId: 'pi_stripe_123',
-        provider: 'stripe',
+        providerId: 'pi_manual_123',
+        provider: 'manual',
         amount: 10000,
         currency: 'jpy',
         status: 'pending',
@@ -167,7 +167,7 @@ describe('Reservation-Payment Integration', () => {
         amount: 10000,
         currency: 'jpy',
         paymentMethod: 'card',
-        provider: 'stripe',
+        provider: 'manual',
       })
     })
   })
@@ -183,7 +183,7 @@ describe('Reservation-Payment Integration', () => {
           customerId: 'cust_123',
           amount: 10000,
           currency: 'jpy',
-          provider: 'stripe',
+          provider: 'manual',
           paymentMethod: 'card',
           status: 'completed',
           createdAt: new Date(),
@@ -214,7 +214,7 @@ describe('Reservation-Payment Integration', () => {
           customerId: 'cust_123',
           amount: 10000,
           currency: 'jpy',
-          provider: 'stripe',
+          provider: 'manual',
           paymentMethod: 'card',
           status: 'completed',
           createdAt: new Date(),
@@ -233,7 +233,7 @@ describe('Reservation-Payment Integration', () => {
           customerId: 'cust_123',
           amount: 10000,
           currency: 'jpy',
-          provider: 'stripe',
+          provider: 'manual',
           paymentMethod: 'card',
           status: 'refunded',
           refundedAt: new Date(),

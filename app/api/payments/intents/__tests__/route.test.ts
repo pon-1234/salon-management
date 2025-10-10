@@ -7,30 +7,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
-// Set up environment variables before importing route
-process.env.STRIPE_SECRET_KEY = 'sk_test_dummy'
-process.env.STRIPE_PUBLISHABLE_KEY = 'pk_test_dummy'
-
 // Create mock payment service instance using vi.hoisted
 const { mockPaymentService } = vi.hoisted(() => ({
   mockPaymentService: {
     createPaymentIntent: vi.fn(),
     confirmPaymentIntent: vi.fn(),
   },
-}))
-
-// Mock StripeProvider before importing route
-vi.mock('@/lib/payment/providers/stripe', () => ({
-  StripeProvider: vi.fn().mockImplementation(() => ({
-    name: 'stripe',
-    supportedMethods: ['card'],
-    processPayment: vi.fn(),
-    createPaymentIntent: vi.fn(),
-    confirmPaymentIntent: vi.fn(),
-    refundPayment: vi.fn(),
-    getPaymentStatus: vi.fn(),
-    validateConfig: vi.fn(),
-  })),
 }))
 
 // Mock PaymentService
@@ -54,7 +36,7 @@ describe('/api/payments/intents', () => {
         amount: 10000,
         currency: 'jpy',
         paymentMethod: 'card',
-        provider: 'stripe',
+        provider: 'manual',
       }
 
       const createdAt = new Date()
@@ -62,8 +44,8 @@ describe('/api/payments/intents', () => {
 
       const mockIntent = {
         id: 'pi_123',
-        providerId: 'pi_stripe_123',
-        provider: 'stripe',
+        providerId: 'manual_intent_123',
+        provider: 'manual',
         amount: 10000,
         currency: 'jpy',
         status: 'pending',
@@ -113,7 +95,7 @@ describe('/api/payments/intents', () => {
         amount: 10000,
         currency: 'jpy',
         paymentMethod: 'card',
-        provider: 'stripe',
+        provider: 'manual',
       }
 
       mockPaymentService.createPaymentIntent.mockRejectedValue(new Error('Provider error'))
@@ -148,7 +130,7 @@ describe('/api/payments/intents', () => {
           customerId: 'cust_123',
           amount: 10000,
           currency: 'jpy',
-          provider: 'stripe',
+          provider: 'manual',
           paymentMethod: 'card',
           status: 'completed',
           createdAt: createdAt.toISOString(),

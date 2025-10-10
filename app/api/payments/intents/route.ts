@@ -33,9 +33,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
 
     // Validate required fields
-    const { reservationId, customerId, amount, currency, paymentMethod, provider } = body
+    const { reservationId, customerId, amount, currency, paymentMethod } = body
+    const provider = body.provider ?? 'manual'
 
-    if (!reservationId || !customerId || !amount || !currency || !paymentMethod || !provider) {
+    if (!reservationId || !customerId || !amount || !currency || !paymentMethod) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 

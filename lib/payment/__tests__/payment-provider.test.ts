@@ -63,9 +63,9 @@ describe('PaymentProvider', () => {
         reservationId: 'res_123',
         customerId: 'cust_123',
         amount: 10000,
-        currency: 'JPY',
+        currency: 'jpy',
         paymentMethod: 'card',
-        provider: 'stripe',
+        provider: 'manual',
       }
 
       await expect(provider.processPayment(request)).rejects.toThrow('Not implemented')
@@ -76,9 +76,9 @@ describe('PaymentProvider', () => {
         reservationId: 'res_123',
         customerId: 'cust_123',
         amount: 10000,
-        currency: 'JPY',
+        currency: 'jpy',
         paymentMethod: 'card',
-        provider: 'stripe',
+        provider: 'manual',
       }
 
       await expect(provider.createPaymentIntent(request)).rejects.toThrow('Not implemented')

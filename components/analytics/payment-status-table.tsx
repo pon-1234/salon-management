@@ -115,8 +115,7 @@ export function PaymentStatusTable({ payments, className }: PaymentStatusTablePr
 
   const getProviderLabel = (provider: string) => {
     const providerLabels: Record<string, string> = {
-      stripe: 'Stripe',
-      payjp: 'PAY.JP',
+      manual: '手動登録',
       cash: '現金',
       bank_transfer: '銀行振込',
     }

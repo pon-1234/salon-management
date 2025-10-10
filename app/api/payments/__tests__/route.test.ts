@@ -9,10 +9,6 @@ import { NextRequest } from 'next/server'
 
 // Use vi.hoisted to ensure mocks are set up before imports
 const { mockPaymentService } = vi.hoisted(() => {
-  // Set up environment variables
-  process.env.STRIPE_SECRET_KEY = 'test_secret_key'
-  process.env.STRIPE_PUBLISHABLE_KEY = 'test_publishable_key'
-
   const mockPaymentService = {
     processPayment: vi.fn(),
     createPaymentIntent: vi.fn(),
@@ -27,10 +23,6 @@ const { mockPaymentService } = vi.hoisted(() => {
 
 vi.mock('@/lib/payment/service', () => ({
   PaymentService: vi.fn(() => mockPaymentService),
-}))
-
-vi.mock('@/lib/payment/providers/stripe', () => ({
-  StripeProvider: vi.fn(() => ({})),
 }))
 
 // Import route after mocks are set up
@@ -49,7 +41,7 @@ describe('/api/payments', () => {
         amount: 10000,
         currency: 'jpy',
         paymentMethod: 'card',
-        provider: 'stripe',
+        provider: 'manual',
       }
 
       mockPaymentService.processPayment.mockResolvedValue({
@@ -102,7 +94,7 @@ describe('/api/payments', () => {
         amount: 10000,
         currency: 'jpy',
         paymentMethod: 'card',
-        provider: 'stripe',
+        provider: 'manual',
       }
 
       mockPaymentService.processPayment.mockResolvedValue({

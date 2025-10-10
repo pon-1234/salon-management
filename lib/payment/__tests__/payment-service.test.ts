@@ -50,8 +50,8 @@ const mockPrisma = vi.mocked(prisma)
 
 // Mock payment provider
 class MockPaymentProvider extends PaymentProvider {
-  readonly name = 'mock'
-  readonly supportedMethods = ['card']
+  readonly name = 'manual'
+  readonly supportedMethods = ['card', 'bank_transfer', 'cash']
 
   async processPayment(request: ProcessPaymentRequest): Promise<ProcessPaymentResult> {
     return {
@@ -62,11 +62,11 @@ class MockPaymentProvider extends PaymentProvider {
         customerId: request.customerId,
         amount: request.amount,
         currency: request.currency,
-        provider: 'stripe' as PaymentProviderType,
+        provider: 'manual' as PaymentProviderType,
         paymentMethod: request.paymentMethod,
         status: 'completed',
         paymentIntentId: 'pi_mock_123',
-        stripePaymentId: 'pi_mock_123',
+        stripePaymentId: undefined,
         metadata: request.metadata,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -78,7 +78,7 @@ class MockPaymentProvider extends PaymentProvider {
     return {
       id: 'pi_mock_123',
       providerId: 'pi_123',
-      provider: 'stripe' as PaymentProviderType,
+      provider: 'manual' as PaymentProviderType,
       amount: request.amount,
       currency: request.currency,
       status: 'pending',
@@ -101,11 +101,11 @@ class MockPaymentProvider extends PaymentProvider {
         customerId: 'cust_123',
         amount: 10000,
         currency: 'jpy',
-        provider: 'stripe' as PaymentProviderType,
+        provider: 'manual' as PaymentProviderType,
         paymentMethod: 'card' as PaymentMethod,
         status: 'completed',
         paymentIntentId: intentId,
-        stripePaymentId: intentId,
+        stripePaymentId: undefined,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -122,13 +122,13 @@ class MockPaymentProvider extends PaymentProvider {
         customerId: 'cust_123',
         amount: 10000,
         currency: 'jpy',
-        provider: 'stripe' as PaymentProviderType,
+        provider: 'manual' as PaymentProviderType,
         paymentMethod: 'card' as PaymentMethod,
         status: 'refunded' as const,
         refundedAt: new Date(),
         refundAmount: request.amount || 10000,
         paymentIntentId: request.providerPaymentId,
-        stripePaymentId: request.providerPaymentId,
+        stripePaymentId: undefined,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -142,11 +142,11 @@ class MockPaymentProvider extends PaymentProvider {
       customerId: 'cust_123',
       amount: 10000,
       currency: 'jpy',
-      provider: 'stripe',
+      provider: 'manual',
       paymentMethod: 'card',
       status: 'completed' as const,
       paymentIntentId: transactionId,
-      stripePaymentId: transactionId,
+      stripePaymentId: undefined,
       createdAt: new Date(),
       updatedAt: new Date(),
     }
@@ -165,7 +165,7 @@ describe('PaymentService', () => {
     vi.clearAllMocks()
     mockProvider = new MockPaymentProvider()
     service = new PaymentService({
-      stripe: mockProvider,
+      manual: mockProvider,
     })
 
     // Setup default mock responses
@@ -176,12 +176,12 @@ describe('PaymentService', () => {
       customerId: 'cust_123',
       amount: 10000,
       currency: 'jpy',
-      provider: 'stripe',
+      provider: 'manual',
       paymentMethod: 'card',
       status: 'completed',
       type: 'payment',
       paymentIntentId: 'pi_123',
-      stripePaymentId: 'pi_123',
+      stripePaymentId: undefined,
       refundedAt: null,
       refundAmount: null,
       metadata: { reservationId: 'res_123', customerId: 'cust_123' },
@@ -192,15 +192,15 @@ describe('PaymentService', () => {
     })
     vi.mocked(mockPrisma.paymentIntent.findUnique).mockResolvedValue({
       id: 'pi_123',
-      stripeIntentId: 'pi_stripe_123',
-      provider: 'stripe',
+      stripeIntentId: 'pi_manual_123',
+      provider: 'manual',
       amount: 10000,
       currency: 'jpy',
       status: 'pending',
       paymentMethod: 'card',
       customerId: 'cust_123',
       metadata: { reservationId: 'res_123' },
-      providerId: 'pi_stripe_123',
+      providerId: 'pi_manual_123',
       errorMessage: null,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -215,7 +215,7 @@ describe('PaymentService', () => {
         amount: 10000,
         currency: 'jpy',
         paymentMethod: 'card' as PaymentMethod,
-        provider: 'stripe',
+        provider: 'manual',
       }
 
       const result = await service.processPayment(request)
@@ -250,7 +250,7 @@ describe('PaymentService', () => {
         amount: 10000,
         currency: 'jpy',
         paymentMethod: 'card' as PaymentMethod,
-        provider: 'stripe',
+        provider: 'manual',
       }
 
       const intent = await service.createPaymentIntent(request)
@@ -268,7 +268,7 @@ describe('PaymentService', () => {
         amount: 8000,
         currency: 'jpy',
         paymentMethod: 'card' as PaymentMethod,
-        provider: 'stripe',
+        provider: 'manual',
         metadata: { promoCode: 'WINTER' },
       }
 

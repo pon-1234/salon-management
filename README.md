@@ -108,6 +108,12 @@ npm run create:admin
 npm run seed:full
 ```
 
+## Payments
+
+- The built-in payment endpoints now rely on an internal **manual provider**. No external Stripe keys are required.
+- `/api/payments` and `/api/payments/intents` accept requests without a `provider` value (they default to `manual`).
+- Historical Stripe webhook support has been removed; refunds and payment history are tracked purely in your database.
+
 ## Development
 
 For detailed development information, see [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md)

@@ -12,6 +12,7 @@ import {
   PaymentIntent,
   RefundRequest,
   RefundResult,
+  PaymentProviderType,
 } from './types'
 import { prisma } from '@/lib/generated/prisma'
 import logger from '@/lib/logger'
@@ -27,10 +28,15 @@ export class PaymentService {
 
   async processPayment(request: ProcessPaymentRequest): Promise<ProcessPaymentResult> {
     const startTime = Date.now()
-    const { provider: providerName, amount, customerId, reservationId } = request
+    const providerName = this.resolveProviderName(request.provider)
+    const normalizedRequest: ProcessPaymentRequest = {
+      ...request,
+      provider: providerName,
+    }
+    const { amount, customerId, reservationId } = normalizedRequest
 
     // Validate request
-    const validation = validatePaymentRequest(request)
+    const validation = validatePaymentRequest(normalizedRequest)
     if (!validation.valid) {
       const error = `Payment validation failed: ${validation.errors.join(', ')}`
       logger.error({ validationErrors: validation.errors }, error)
@@ -42,7 +48,7 @@ export class PaymentService {
 
     // Sanitize metadata
     const sanitizedRequest = {
-      ...request,
+      ...normalizedRequest,
       metadata: sanitizeMetadata(request.metadata),
     }
 
@@ -108,9 +114,14 @@ export class PaymentService {
   }
 
   async createPaymentIntent(request: ProcessPaymentRequest): Promise<PaymentIntent> {
-    const provider = this.getProvider(request.provider)
+    const providerName = this.resolveProviderName(request.provider)
+    const provider = this.getProvider(providerName)
+    const normalizedRequest: ProcessPaymentRequest = {
+      ...request,
+      provider: providerName,
+    }
 
-    const intent = await provider.createPaymentIntent(request)
+    const intent = await provider.createPaymentIntent(normalizedRequest)
 
     // Save intent to database
     await this.saveIntent(intent)
@@ -313,11 +324,16 @@ export class PaymentService {
     })
   }
 
-  private getProvider(providerName: string): PaymentProvider {
-    const provider = this.providers[providerName]
+  private resolveProviderName(provider?: PaymentProviderType): PaymentProviderType {
+    return provider ?? 'manual'
+  }
+
+  private getProvider(providerName: PaymentProviderType | undefined): PaymentProvider {
+    const resolved = this.resolveProviderName(providerName)
+    const provider = this.providers[resolved]
     if (!provider) {
-      logger.error({ provider: providerName }, 'Payment provider not configured')
-      throw new PaymentProviderNotFoundError(providerName)
+      logger.error({ provider: resolved }, 'Payment provider not configured')
+      throw new PaymentProviderNotFoundError(resolved)
     }
     return provider
   }

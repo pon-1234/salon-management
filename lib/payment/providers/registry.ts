@@ -1,5 +1,5 @@
 import { PaymentProvider } from './base'
-import { StripeProvider, StripeConfig } from './stripe'
+import { ManualPaymentProvider } from './manual'
 import { PaymentService } from '../service'
 
 interface ProviderStatus {
@@ -15,48 +15,23 @@ let providersCache: ProviderMap | null = null
 let statusCache: StatusMap | null = null
 let serviceCache: PaymentService | null = null
 
-function buildStripeProvider(): { provider?: PaymentProvider; status: ProviderStatus } {
-  const secretKey = (process.env.STRIPE_SECRET_KEY || '').trim()
-  const publishableKey = (process.env.STRIPE_PUBLISHABLE_KEY || '').trim()
-
-  if (!secretKey) {
-    return {
-      status: {
-        enabled: false,
-        reason: 'Stripe secret key is not configured',
-      },
-    }
-  }
-
-  const config: StripeConfig = {
-    secretKey,
-    publishableKey,
-  }
-
-  return {
-    provider: new StripeProvider(config),
-    status: {
-      enabled: true,
-    },
-  }
-}
-
 function ensureInitialized() {
   if (providersCache && statusCache && serviceCache) {
     return
   }
 
-  const providers: ProviderMap = {}
-  const statuses: StatusMap = {}
+  const manualProvider = new ManualPaymentProvider()
 
-  const { provider: stripeProvider, status: stripeStatus } = buildStripeProvider()
-  statuses.stripe = stripeStatus
-  if (stripeProvider) {
-    providers[stripeProvider.name] = stripeProvider
+  providersCache = {
+    [manualProvider.name]: manualProvider,
   }
 
-  providersCache = providers
-  statusCache = statuses
+  statusCache = {
+    [manualProvider.name]: {
+      enabled: true,
+    },
+  }
+
   serviceCache = new PaymentService(providersCache)
 }
 

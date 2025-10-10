@@ -7,7 +7,7 @@
 import { BaseEntity } from '../shared'
 
 // Payment provider types
-export type PaymentProviderType = 'stripe' | 'payjp'
+export type PaymentProviderType = 'manual'
 export type PaymentMethod = 'card' | 'bank_transfer' | 'cash'
 export type PaymentStatus =
   | 'pending'
@@ -58,7 +58,7 @@ export interface ProcessPaymentRequest {
   amount: number
   currency: string
   paymentMethod: PaymentMethod
-  provider: PaymentProviderType
+  provider?: PaymentProviderType
   metadata?: Record<string, any>
 }
 

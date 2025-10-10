@@ -41,7 +41,7 @@ export default function PaymentStatusPage() {
           customerId: 'cust_001',
           amount: 15000,
           currency: 'jpy',
-          provider: 'stripe',
+      provider: 'manual',
           paymentMethod: 'card',
           status: 'completed',
           processedAt: new Date('2024-01-15T10:30:00'),
@@ -54,7 +54,7 @@ export default function PaymentStatusPage() {
           customerId: 'cust_002',
           amount: 25000,
           currency: 'jpy',
-          provider: 'stripe',
+      provider: 'manual',
           paymentMethod: 'card',
           status: 'pending',
           createdAt: new Date('2024-01-15T11:00:00'),
@@ -66,7 +66,7 @@ export default function PaymentStatusPage() {
           customerId: 'cust_003',
           amount: 18000,
           currency: 'jpy',
-          provider: 'payjp',
+      provider: 'bank_transfer',
           paymentMethod: 'card',
           status: 'failed',
           errorMessage: 'Card declined',
@@ -79,7 +79,7 @@ export default function PaymentStatusPage() {
           customerId: 'cust_004',
           amount: 30000,
           currency: 'jpy',
-          provider: 'stripe',
+      provider: 'manual',
           paymentMethod: 'card',
           status: 'refunded',
           refundAmount: 15000,
@@ -94,7 +94,7 @@ export default function PaymentStatusPage() {
           customerId: 'cust_005',
           amount: 12000,
           currency: 'jpy',
-          provider: 'stripe',
+      provider: 'cash',
           paymentMethod: 'card',
           status: 'processing',
           createdAt: new Date('2024-01-15T13:30:00'),
@@ -192,9 +192,9 @@ export default function PaymentStatusPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">すべて</SelectItem>
-                  <SelectItem value="stripe">Stripe</SelectItem>
-                  <SelectItem value="payjp">PAY.JP</SelectItem>
+                  <SelectItem value="manual">手動登録</SelectItem>
                   <SelectItem value="cash">現金</SelectItem>
+                  <SelectItem value="bank_transfer">銀行振込</SelectItem>
                 </SelectContent>
               </Select>
             </div>
