@@ -59,6 +59,7 @@ import {
 } from '@/lib/customer/types'
 import { Reservation } from '@/lib/types/reservation'
 import { Cast } from '@/lib/cast/types'
+import { normalizeCastList } from '@/lib/cast/mapper'
 import { getCustomerUsageHistory, getCustomerPointHistory } from '@/lib/customer/data'
 import { getReservationsByCustomerId } from '@/lib/reservation/data'
 import { getAllCasts } from '@/lib/cast/data'
@@ -165,7 +166,18 @@ export default function CustomerProfile() {
       setUsageHistory([])
       setPointHistory([])
       setReservations([])
-      setAvailableCasts([])
+
+      try {
+        const response = await fetch('/api/cast', {
+          cache: 'no-store',
+        })
+        if (response.ok) {
+          const payload = await response.json()
+          setAvailableCasts(normalizeCastList(payload))
+        }
+      } catch (error) {
+        console.error('Failed to load cast list:', error)
+      }
     }
 
     fetchCustomerData()

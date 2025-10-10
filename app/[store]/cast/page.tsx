@@ -7,6 +7,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Star, Heart, Crown } from 'lucide-react'
 import Link from 'next/link'
+import { Cast } from '@/lib/cast/types'
+import { resolveApiUrl } from '@/lib/http/base-url'
+import { normalizeCastList } from '@/lib/cast/mapper'
 
 export default async function CastListPage({ params }: { params: Promise<{ store: string }> }) {
   const { store: storeSlug } = await params
@@ -16,49 +19,18 @@ export default async function CastListPage({ params }: { params: Promise<{ store
     notFound()
   }
 
-  // Mock cast data - in real app, this would come from database
-  const casts = [
-    {
-      id: '1',
-      name: 'ことね',
-      age: 27,
-      height: 158,
-      measurements: { bust: 95, cup: 'G', waist: 63, hip: 97 },
-      rank: 1,
-      isNew: false,
-      rating: 4.8,
-      reviews: 156,
-      tags: ['巨乳', '人気No.1', 'リピート率高'],
-      schedule: '出勤中',
-    },
-    {
-      id: '2',
-      name: 'ののか',
-      age: 31,
-      height: 160,
-      measurements: { bust: 84, cup: 'F', waist: 60, hip: 85 },
-      rank: 2,
-      isNew: false,
-      rating: 4.7,
-      reviews: 132,
-      tags: ['テクニシャン', '癒し系'],
-      schedule: '出勤中',
-    },
-    {
-      id: '3',
-      name: 'みるく',
-      age: 20,
-      height: 160,
-      measurements: { bust: 96, cup: 'G', waist: 62, hip: 98 },
-      rank: 3,
-      isNew: true,
-      rating: 4.9,
-      reviews: 45,
-      tags: ['新人', '巨乳', '笑顔が素敵'],
-      schedule: '15:00-23:00',
-    },
-    // Add more cast members...
-  ]
+  let casts: Cast[] = []
+  try {
+    const response = await fetch(resolveApiUrl('/api/cast'), {
+      cache: 'no-store',
+    })
+    if (response.ok) {
+      const payload = await response.json()
+      casts = normalizeCastList(payload)
+    }
+  } catch (error) {
+    console.error('Failed to load cast data:', error)
+  }
 
   return (
     <>
@@ -110,25 +82,31 @@ export default async function CastListPage({ params }: { params: Promise<{ store
                 <Card key={cast.id} className="transition-shadow hover:shadow-lg">
                   <CardHeader className="p-4 pb-2">
                     <div className="relative">
-                      <div className="mb-3 aspect-[3/4] rounded-lg bg-gradient-to-br from-pink-300 to-purple-400" />
-                      {cast.rank <= 3 && (
+                      <div className="mb-3 aspect-[3/4] overflow-hidden rounded-lg bg-gradient-to-br from-pink-300 to-purple-400">
+                        {cast.images[0] && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={cast.images[0]}
+                            alt={cast.name}
+                            className="h-full w-full object-cover"
+                          />
+                        )}
+                      </div>
+                      {cast.panelDesignationRank <= 3 && cast.panelDesignationRank > 0 && (
                         <Badge
                           className={`absolute left-2 top-2 ${
-                            cast.rank === 1
+                            cast.panelDesignationRank === 1
                               ? 'bg-yellow-500'
-                              : cast.rank === 2
+                              : cast.panelDesignationRank === 2
                                 ? 'bg-gray-400'
                                 : 'bg-orange-600'
                           }`}
                         >
                           <Crown className="mr-1 h-3 w-3" />
-                          {cast.rank}位
+                          {cast.panelDesignationRank}位
                         </Badge>
                       )}
-                      {cast.isNew && (
-                        <Badge className="absolute right-2 top-2 bg-pink-500">NEW</Badge>
-                      )}
-                      {cast.schedule === '出勤中' && (
+                      {cast.workStatus === '出勤' && (
                         <Badge className="absolute bottom-2 left-2 bg-green-500">出勤中</Badge>
                       )}
                     </div>
@@ -140,26 +118,29 @@ export default async function CastListPage({ params }: { params: Promise<{ store
                         {cast.age}歳 T{cast.height}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        B{cast.measurements.bust}({cast.measurements.cup}) W
-                        {cast.measurements.waist} H{cast.measurements.hip}
+                        B{cast.bust} W{cast.waist} H{cast.hip}
                       </p>
                     </div>
 
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1">
                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm font-medium">{cast.rating}</span>
-                        <span className="text-xs text-muted-foreground">({cast.reviews})</span>
+                        <span className="text-sm font-medium">
+                          {cast.panelDesignationRank > 0 ? `Rank ${cast.panelDesignationRank}` : ''}
+                        </span>
                       </div>
                       <Heart className="h-4 w-4 text-pink-400" />
                     </div>
 
                     <div className="flex flex-wrap gap-1">
-                      {cast.tags.slice(0, 2).map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-xs">
-                          {tag}
+                      <Badge variant="secondary" className="text-xs">
+                        {cast.type}
+                      </Badge>
+                      {cast.netReservation && (
+                        <Badge variant="secondary" className="text-xs">
+                          ネット予約可
                         </Badge>
-                      ))}
+                      )}
                     </div>
 
                     <div className="space-y-2 pt-2">

@@ -1,9 +1,11 @@
 import { notFound } from 'next/navigation'
 import { getStoreBySlug } from '@/lib/store/data'
-import { getCastById } from '@/lib/cast/data'
 import { CastDetailContent } from '@/components/cast/cast-detail-content'
 import { StoreNavigation } from '@/components/store-navigation'
 import { StoreFooter } from '@/components/store-footer'
+import { Cast } from '@/lib/cast/types'
+import { resolveApiUrl } from '@/lib/http/base-url'
+import { normalizeCast } from '@/lib/cast/mapper'
 
 export default async function CastDetailPage({
   params,
@@ -17,8 +19,21 @@ export default async function CastDetailPage({
     notFound()
   }
 
-  // Get cast data
-  const cast = getCastById(id)
+  let cast: Cast | null = null
+  try {
+    const response = await fetch(resolveApiUrl(`/api/cast?id=${id}`), {
+      cache: 'no-store',
+    })
+    if (response.status === 404) {
+      notFound()
+    }
+    if (response.ok) {
+      const payload = await response.json()
+      cast = normalizeCast(payload)
+    }
+  } catch (error) {
+    console.error('Failed to load cast data:', error)
+  }
 
   if (!cast) {
     notFound()

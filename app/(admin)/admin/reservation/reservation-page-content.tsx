@@ -9,7 +9,7 @@ import { Timeline } from '@/components/reservation/timeline'
 import { ReservationList } from '@/components/reservation/reservation-list'
 import { ViewToggle } from '@/components/reservation/view-toggle'
 import { FilterDialog, FilterOptions } from '@/components/reservation/filter-dialog'
-import { castMembers, Cast, Appointment } from '@/lib/cast/data'
+import { Cast, Appointment } from '@/lib/cast/types'
 import { getAllReservations } from '@/lib/reservation/data'
 import { getCourseById } from '@/lib/course-option/utils'
 import { ReservationTable } from '@/components/reservation/reservation-table'
@@ -18,6 +18,7 @@ import { format } from 'date-fns'
 import { customers as customerList, Customer } from '@/lib/customer/data' // Import customer data
 import { ReservationDialog } from '@/components/reservation/reservation-dialog'
 import { InfoBar } from '@/components/reservation/info-bar'
+import { normalizeCastList } from '@/lib/cast/mapper'
 
 // Utility function to check if two dates are on the same day
 const isSameDay = (date1: Date, date2: Date) => {
@@ -29,7 +30,8 @@ const isSameDay = (date1: Date, date2: Date) => {
 }
 
 export function ReservationPageContent() {
-  const [castData, setCastData] = useState<Cast[]>(castMembers)
+  const [allCasts, setAllCasts] = useState<Cast[]>([])
+  const [castData, setCastData] = useState<Cast[]>([])
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [view, setView] = useState<'timeline' | 'list'>('timeline')
   const [filterDialogOpen, setFilterDialogOpen] = useState(false)
@@ -49,22 +51,43 @@ export function ReservationPageContent() {
     }
   }, [customerId])
 
-  // ページ遷移時にスクロール位置をリセット
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [])
 
-  const fetchData = useCallback(async () => {
-    const allReservations = await getAllReservations()
+  useEffect(() => {
+    const loadCasts = async () => {
+      try {
+        const response = await fetch('/api/cast', { cache: 'no-store' })
+        if (!response.ok) {
+          throw new Error(`Failed to fetch casts: ${response.status}`)
+        }
+        const payload = await response.json()
+        const normalized = normalizeCastList(payload)
+        setAllCasts(normalized)
+        setCastData(normalized)
+      } catch (error) {
+        console.error('Failed to load cast data:', error)
+      }
+    }
 
-    // 2. Fix: Log all appointments for debugging
+    loadCasts()
+  }, [])
+
+  const fetchData = useCallback(async () => {
+    if (allCasts.length === 0) {
+      setCastData([])
+      return
+    }
+
+    const allReservations = await getAllReservations()
     console.log('Fetched reservations:', allReservations)
 
     const filteredReservations = allReservations.filter((reservation) =>
       isSameDay(new Date(reservation.startTime), selectedDate)
     )
 
-    let updatedCastData = castMembers.map((member) => {
+    let updatedCastData = allCasts.map((member) => {
       const appointments: Appointment[] = filteredReservations
         .filter((reservation) => reservation.staffId === member.id)
         .map((reservation) => {
@@ -89,7 +112,6 @@ export function ReservationPageContent() {
       return { ...member, appointments }
     })
 
-    // Filter out NG casts if a customer is selected
     if (selectedCustomer) {
       const ngCastIds =
         selectedCustomer.ngCasts?.map((ng) => ng.castId) || selectedCustomer.ngCastIds || []
@@ -97,7 +119,7 @@ export function ReservationPageContent() {
     }
 
     setCastData(updatedCastData)
-  }, [selectedDate, selectedCustomer])
+  }, [allCasts, selectedDate, selectedCustomer])
 
   useEffect(() => {
     fetchData()
@@ -108,7 +130,8 @@ export function ReservationPageContent() {
   }
 
   const handleFilterCharacter = (char: string) => {
-    let filtered = [...castMembers]
+    if (allCasts.length === 0) return
+    let filtered = [...allCasts]
 
     // First apply NG cast filtering if customer is selected
     if (selectedCustomer) {
@@ -148,7 +171,7 @@ export function ReservationPageContent() {
 
     if (char === 'その他') {
       filtered = filtered.filter((st) => {
-        const firstChar = st.nameKana.charAt(0)
+        const firstChar = (st.nameKana || st.name || '').charAt(0)
         const isOther = !Object.values(rowMap).some((row) => row.includes(firstChar))
         return isOther
       })
@@ -158,14 +181,15 @@ export function ReservationPageContent() {
 
     const targetRow = rowMap[char] || []
     filtered = filtered.filter((st) => {
-      const firstChar = st.nameKana.charAt(0)
+      const firstChar = (st.nameKana || st.name || '').charAt(0)
       return targetRow.includes(firstChar)
     })
     setCastData(filtered)
   }
 
   const handleFilter = (filters: FilterOptions) => {
-    let filtered = [...castMembers]
+    if (allCasts.length === 0) return
+    let filtered = [...allCasts]
 
     // Filter out NG casts if a customer is selected
     if (selectedCustomer) {

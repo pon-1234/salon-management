@@ -32,7 +32,7 @@ import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { ReservationDialog } from './reservation/reservation-dialog'
 import { Cast } from '@/lib/cast/types'
-import { getAllCasts } from '@/lib/cast/data'
+import { normalizeCastList } from '@/lib/cast/mapper'
 import { useNotifications } from '@/contexts/notification-context'
 import { StoreSelector } from '@/components/store/store-selector'
 
@@ -47,8 +47,22 @@ export function Header() {
   const [selectedReservation, setSelectedReservation] = useState<any>(null)
 
   useEffect(() => {
-    const cast = getAllCasts()
-    setCastList(cast)
+    const loadCasts = async () => {
+      try {
+        const response = await fetch('/api/cast', {
+          cache: 'no-store',
+        })
+        if (!response.ok) {
+          throw new Error(`Failed to fetch casts: ${response.status}`)
+        }
+        const payload = await response.json()
+        setCastList(normalizeCastList(payload))
+      } catch (error) {
+        console.error('Failed to load casts:', error)
+      }
+    }
+
+    loadCasts()
   }, [])
 
   const handleSearch = (e: React.FormEvent) => {
