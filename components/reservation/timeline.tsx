@@ -4,17 +4,16 @@ import { useState, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
-import { ReservationDialog } from './reservation-dialog'
 import { QuickBookingDialog } from './quick-booking-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Calendar, Clock, MapPin, User, AlertCircle } from 'lucide-react'
+import { Clock, User, AlertCircle, Plus } from 'lucide-react'
 import { Cast, Appointment } from '@/lib/cast/types'
 import { logError } from '@/lib/error-utils'
 import { StaffDialog } from '@/components/cast/cast-dialog'
 import { format } from 'date-fns'
 import { getCourseById } from '@/lib/course-option/utils'
-import { customers as customerList, Customer } from '@/lib/customer/data'
+import { Customer } from '@/lib/customer/types'
 import { ReservationData } from '@/lib/types/reservation'
 
 // safeMapを安全に実装（undefinedやnullでも空配列を返す）
@@ -26,7 +25,8 @@ interface TimelineProps {
   staff: (Cast & { appointments: Appointment[] })[] | undefined
   selectedDate: Date
   selectedCustomer: Customer | null
-  setSelectedAppointment: (appointment: any) => void
+  setSelectedAppointment: (reservation: ReservationData) => void
+  reservations: ReservationData[]
 }
 
 interface AvailableSlot {
@@ -47,11 +47,10 @@ export function Timeline({
   selectedDate,
   selectedCustomer,
   setSelectedAppointment,
+  reservations,
 }: TimelineProps) {
-  const [selectedAppointment, setSelectedAppointmentState] = useState<Appointment | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null)
   const [selectedStaff, setSelectedStaff] = useState<Cast | null>(null)
-  const [viewMode, setViewMode] = useState<'day' | 'week'>('day')
   const [zoomLevel, setZoomLevel] = useState(1)
 
   const startHour = 9
@@ -88,6 +87,13 @@ export function Timeline({
     const left = (start - startHour) * HOUR_WIDTH
     const width = (end - start) * HOUR_WIDTH
     return { left: `${left}px`, width: `${width}px` }
+  }
+
+  const handleAppointmentClick = (appointment: Appointment) => {
+    const reservationData = reservations.find((entry) => entry.id === appointment.id)
+    if (reservationData) {
+      setSelectedAppointment(reservationData)
+    }
   }
 
   const isSameDay = (date1: Date, date2: Date) => {
@@ -204,49 +210,6 @@ export function Timeline({
       startTime: selectedTime,
       duration: SLOT_DURATION,
     })
-  }
-
-  const convertToReservationData = (appointment: Appointment, staff: Cast): ReservationData => {
-    const customer = customerList.find((c) => c.id === String(appointment.customerId))
-    return {
-      ...appointment,
-      id: appointment.id.toString(),
-      customerName: customer?.name || '顧客が見つかりません',
-      customerType: 'regular',
-      phoneNumber: customer?.phone || '',
-      email: customer?.email || '',
-      points: customer?.points || 0,
-      bookingStatus: appointment.status === 'confirmed' ? '確定済' : '仮予約',
-      staffConfirmation: '確認済',
-      customerConfirmation: '確認済',
-      prefecture: '東京都',
-      district: '豊島区',
-      location: '池袋（北口・西口）(0円)',
-      locationType: 'ホテル利用',
-      specificLocation: 'location details placeholder',
-      staff: staff.name,
-      marketingChannel: 'Replace me',
-      date: format(new Date(appointment.startTime), 'yyyy-MM-dd'),
-      time: format(new Date(appointment.startTime), 'HH:mm'),
-      inOutTime: `${format(new Date(appointment.startTime), 'HH:mm')} - ${format(new Date(appointment.endTime), 'HH:mm')}`,
-      course: getCourseById(appointment.serviceId)?.name || 'N/A',
-      freeExtension: '0',
-      designation: 'N/A',
-      designationFee: '0円',
-      options: {},
-      transportationFee: 0,
-      paymentMethod: '現金',
-      discount: 'なし',
-      additionalFee: 0,
-      totalPayment: appointment.price,
-      storeRevenue: 0,
-      staffRevenue: 0,
-      staffBonusFee: 0,
-      startTime: new Date(appointment.startTime),
-      endTime: new Date(appointment.endTime),
-      staffImage: staff.image,
-      customerId: String(appointment.customerId),
-    }
   }
 
   // 現在時刻の位置を計算
@@ -384,7 +347,7 @@ export function Timeline({
                       ...getTimeBlockStyle(appointment.startTime, appointment.endTime),
                       height: 'calc(100% - 16px)',
                     }}
-                    onClick={() => setSelectedAppointmentState(appointment)}
+                    onClick={() => handleAppointmentClick(appointment)}
                   >
                     <div className="mb-1 flex items-center justify-between">
                       <Badge
@@ -428,53 +391,52 @@ export function Timeline({
                   </div>
                 ))}
 
-                {/* 利用可能スロット */}
                 {safeMap(getAvailableSlots(member), (slot, index) => {
                   if (slot.duration < 30) return null
 
                   const disabled = !selectedCustomer
 
                   return (
-                    <button
+                    <div
                       key={`${member.id}-${index}`}
-                      className={cn(
-                        'absolute top-2 rounded-lg border-2 border-dashed border-gray-300 group flex items-center justify-center',
-                        disabled
-                          ? 'cursor-not-allowed bg-gray-50 opacity-70'
-                          : 'transition-all hover:border-emerald-500 hover:bg-emerald-50'
-                      )}
-                      style={{
-                        ...getTimeBlockStyle(slot.startTime, slot.endTime),
-                        height: 'calc(100% - 16px)',
-                      }}
-                      onClick={() => !disabled && handleTimeSlotClick(slot, slot.startTime)}
-                      disabled={disabled}
+                      className="absolute top-2 flex h-[calc(100%-16px)] w-full items-center justify-center"
+                      style={getTimeBlockStyle(slot.startTime, slot.endTime)}
                     >
-                      <div className="text-center">
-                        <div
-                          className={cn(
-                            'text-xs',
-                            disabled ? 'text-gray-400' : 'text-gray-500 group-hover:text-emerald-700'
-                          )}
-                        >
+                      <div
+                        className={cn(
+                          'flex h-full w-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 p-2 text-center',
+                          disabled
+                            ? 'bg-gray-50/80 text-gray-400'
+                            : 'bg-white/60 text-gray-500 transition-all hover:border-emerald-500 hover:bg-emerald-50'
+                        )}
+                      >
+                        <span className={cn('text-xs', disabled ? 'text-gray-400' : 'text-gray-500')}>
                           {slot.startTime.toLocaleTimeString([], {
                             hour: '2-digit',
                             minute: '2-digit',
                           })}
-                        </div>
-                        <div
+                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
                           className={cn(
-                            'text-sm font-medium',
-                            disabled ? 'text-gray-400' : 'text-gray-600 group-hover:text-emerald-700'
+                            'mt-1 h-10 w-10 rounded-full border-emerald-500 text-emerald-600',
+                            disabled ? 'cursor-not-allowed opacity-60' : 'hover:bg-emerald-500 hover:text-white'
                           )}
+                          onClick={() => handleTimeSlotClick(slot, slot.startTime)}
+                          disabled={disabled}
                         >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                        <span className={cn('mt-1 text-xs', disabled ? 'text-gray-400' : 'text-gray-500')}>
                           {slot.duration}分可
-                        </div>
+                        </span>
                         {disabled && (
-                          <div className="mt-1 text-[10px] text-gray-400">顧客を選択してください</div>
+                          <span className="mt-1 text-[10px] text-gray-400">顧客を選択してください</span>
                         )}
                       </div>
-                    </button>
+                    </div>
                   )
                 })}
 
@@ -505,20 +467,6 @@ export function Timeline({
         </div>
         <ScrollBar orientation="horizontal" />
       </ScrollArea>
-
-      <ReservationDialog
-        open={!!selectedAppointment}
-        onOpenChange={(open) => !open && setSelectedAppointmentState(null)}
-        reservation={
-          selectedAppointment
-            ? convertToReservationData(
-                selectedAppointment,
-                filteredStaff.find((s) => s.appointments.includes(selectedAppointment)) ||
-                  filteredStaff[0]
-              )
-            : null
-        }
-      />
 
       <QuickBookingDialog
         open={!!selectedSlot}

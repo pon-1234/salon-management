@@ -25,6 +25,7 @@ export interface ReservationData {
   email?: string
   points: number
   bookingStatus: string
+  status?: string
   staffConfirmation: string
   customerConfirmation: string
   prefecture: string
@@ -33,11 +34,13 @@ export interface ReservationData {
   locationType: string
   specificLocation: string
   staff: string
+  staffId?: string
   marketingChannel: string
   date: string
   time: string
   inOutTime: string
   course: string
+  serviceId?: string
   freeExtension: string
   designation: string
   designationFee: string
@@ -54,6 +57,16 @@ export interface ReservationData {
   endTime: Date
   staffImage: string
   modifiableUntil?: Date
+  notes?: string
+  storeMemo?: string
+}
+
+export interface ReservationUpdatePayload {
+  startTime: Date
+  endTime: Date
+  castId: string
+  notes?: string
+  storeMemo?: string
 }
 
 export interface Service extends BaseEntity {

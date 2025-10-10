@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, ChangeEvent } from 'react'
 import { Header } from '@/components/header'
 import { ReservationList } from '@/components/reservation/reservation-list'
 import { Button } from '@/components/ui/button'
@@ -15,20 +15,52 @@ import {
 import { ReservationRepositoryImpl } from '@/lib/reservation/repository-impl'
 import { toast } from '@/hooks/use-toast'
 import { ReservationDialog } from '@/components/reservation/reservation-dialog'
-import { Reservation, ReservationData } from '@/lib/types/reservation'
-import { format } from 'date-fns'
+import { Reservation, ReservationData, ReservationUpdatePayload } from '@/lib/types/reservation'
+import { mapReservationToReservationData } from '@/lib/reservation/transformers'
+import { recordModification } from '@/lib/modification-history/data'
+import { useSession } from 'next-auth/react'
+import { format, isSameDay } from 'date-fns'
 
 export default function ReservationListPage() {
-  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
-  const [reservations, setReservations] = useState<Reservation[]>([])
+  const [selectedReservation, setSelectedReservation] = useState<ReservationData | null>(null)
+  const [rawReservations, setRawReservations] = useState<Reservation[]>([])
+  const [dailyReservations, setDailyReservations] = useState<ReservationData[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+  const [statusFilter, setStatusFilter] = useState<'all' | 'confirmed' | 'pending'>('all')
+  const { data: session } = useSession()
   const reservationRepository = useMemo(() => new ReservationRepositoryImpl(), [])
+
+  const updateDailyReservations = useCallback(
+    (source: Reservation[], targetDate: Date) => {
+      const filtered = source.filter((reservation) =>
+        isSameDay(new Date(reservation.startTime), targetDate)
+      )
+      const mapped = filtered.map((reservation) =>
+        mapReservationToReservationData({
+          ...reservation,
+          startTime: new Date(reservation.startTime),
+          endTime: new Date(reservation.endTime),
+        } as Reservation)
+      )
+      setDailyReservations(mapped.sort((a, b) => a.startTime.getTime() - b.startTime.getTime()))
+    },
+    []
+  )
 
   const fetchReservations = useCallback(async () => {
     setLoading(true)
     try {
       const fetchedReservations = await reservationRepository.getAll()
-      setReservations(fetchedReservations)
+      const normalized = fetchedReservations.map(
+        (reservation) =>
+          ({
+            ...reservation,
+            startTime: new Date(reservation.startTime),
+            endTime: new Date(reservation.endTime),
+          }) as Reservation
+      )
+      setRawReservations(normalized)
     } catch (error) {
       console.error('Error fetching reservations:', error)
       toast({
@@ -45,46 +77,142 @@ export default function ReservationListPage() {
     fetchReservations()
   }, [fetchReservations])
 
-  // 予約データをダイアログ用に変換
-  const convertToReservationData = (reservation: Reservation): ReservationData | null => {
-    if (!reservation) return null
+  useEffect(() => {
+    updateDailyReservations(rawReservations, selectedDate)
+  }, [rawReservations, selectedDate, updateDailyReservations])
 
-    return {
-      id: reservation.id,
-      customerId: reservation.customerId,
-      customerName: `顧客${reservation.customerId}`,
-      customerType: '通常顧客',
-      phoneNumber: '090-1234-5678',
-      points: 100,
-      bookingStatus: reservation.status,
-      staffConfirmation: '確認済み',
-      customerConfirmation: '確認済み',
-      prefecture: '東京都',
-      district: '渋谷区',
-      location: 'アパホテル',
-      locationType: 'ホテル',
-      specificLocation: '502号室',
-      staff: `スタッフ${reservation.staffId}`,
-      marketingChannel: 'WEB',
-      date: format(reservation.startTime, 'yyyy-MM-dd'),
-      time: format(reservation.startTime, 'HH:mm'),
-      inOutTime: `${format(reservation.startTime, 'HH:mm')}-${format(reservation.endTime, 'HH:mm')}`,
-      course: 'リラクゼーションコース',
-      freeExtension: 'なし',
-      designation: '指名',
-      designationFee: '3,000円',
-      options: {},
-      transportationFee: 0,
-      paymentMethod: '現金',
-      discount: '0円',
-      additionalFee: 0,
-      totalPayment: reservation.price,
-      storeRevenue: Math.floor(reservation.price * 0.6),
-      staffRevenue: Math.floor(reservation.price * 0.4),
-      staffBonusFee: 0,
-      startTime: reservation.startTime,
-      endTime: reservation.endTime,
-      staffImage: '/placeholder-user.jpg',
+  const filteredReservations = useMemo(() => {
+    if (statusFilter === 'all') {
+      return dailyReservations
+    }
+
+    if (statusFilter === 'confirmed') {
+      return dailyReservations.filter((reservation) => reservation.status === 'confirmed')
+    }
+
+    return dailyReservations.filter(
+      (reservation) => reservation.status !== 'confirmed' && reservation.status !== 'cancelled'
+    )
+  }, [dailyReservations, statusFilter])
+
+  const confirmedCount = useMemo(
+    () => dailyReservations.filter((reservation) => reservation.status === 'confirmed').length,
+    [dailyReservations]
+  )
+
+  const pendingCount = useMemo(
+    () =>
+      dailyReservations.filter(
+        (reservation) => reservation.status !== 'confirmed' && reservation.status !== 'cancelled'
+      ).length,
+    [dailyReservations]
+  )
+
+  const totalCount = dailyReservations.length
+
+  const handleDateChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value
+    if (!value) return
+    const nextDate = new Date(`${value}T00:00:00`)
+    if (!Number.isNaN(nextDate.getTime())) {
+      setSelectedDate(nextDate)
+    }
+  }
+
+  const handleReservationSave = async (
+    reservationId: string,
+    payload: ReservationUpdatePayload
+  ): Promise<void> => {
+    const targetReservation = rawReservations.find((reservation) => reservation.id === reservationId)
+    if (!targetReservation) {
+      const err = new Error('対象の予約が見つかりません。')
+      toast({
+        title: '更新に失敗しました',
+        description: err.message,
+        variant: 'destructive',
+      })
+      throw err
+    }
+
+    const updatePayload: Partial<Reservation> & { castId?: string } = {
+      castId: payload.castId,
+      startTime: payload.startTime,
+      endTime: payload.endTime,
+    }
+
+    if (payload.notes !== undefined) {
+      updatePayload.notes = payload.notes
+    }
+
+    if (payload.storeMemo !== undefined) {
+      ;(updatePayload as any).storeMemo = payload.storeMemo
+    }
+
+    try {
+      const updatedReservation = await reservationRepository.update(reservationId, updatePayload)
+      const normalizedUpdated = {
+        ...updatedReservation,
+        startTime: new Date(updatedReservation.startTime),
+        endTime: new Date(updatedReservation.endTime),
+      } as Reservation
+
+      setRawReservations((prev) =>
+        prev.map((reservation) => (reservation.id === reservationId ? normalizedUpdated : reservation))
+      )
+
+      const updatedData = mapReservationToReservationData(normalizedUpdated)
+      setSelectedReservation(updatedData)
+
+      const actorId = session?.user?.id || 'admin-ui'
+      const actorName = session?.user?.name || '管理ユーザー'
+
+      if ((targetReservation as any).castId !== payload.castId) {
+        recordModification(
+          reservationId,
+          actorId,
+          actorName,
+          'castId',
+          '担当キャスト',
+          (targetReservation as any).castId,
+          payload.castId,
+          '担当キャストを変更',
+          '0.0.0.0',
+          'browser',
+          'session'
+        )
+      }
+
+      if (
+        targetReservation.startTime.getTime() !== payload.startTime.getTime() ||
+        targetReservation.endTime.getTime() !== payload.endTime.getTime()
+      ) {
+        recordModification(
+          reservationId,
+          actorId,
+          actorName,
+          'schedule',
+          '予約時間',
+          `${targetReservation.startTime.toISOString()} - ${targetReservation.endTime.toISOString()}`,
+          `${payload.startTime.toISOString()} - ${payload.endTime.toISOString()}`,
+          '予約時間を変更',
+          '0.0.0.0',
+          'browser',
+          'session'
+        )
+      }
+
+      toast({
+        title: '予約を更新しました',
+        description: '変更内容を保存しました。',
+      })
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error('不明なエラーが発生しました。')
+      toast({
+        title: '更新に失敗しました',
+        description: err.message,
+        variant: 'destructive',
+      })
+      throw err
     }
   }
 
@@ -92,23 +220,43 @@ export default function ReservationListPage() {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">予約一覧</h1>
-          <div className="flex items-center gap-4">
-            <Select defaultValue="all">
-              <SelectTrigger className="w-[150px]">
-                <SelectValue />
+        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">本日の予約</h1>
+            <p className="text-sm text-muted-foreground">
+              {format(selectedDate, 'yyyy年MM月dd日(E)')} の予約状況
+            </p>
+            <div className="mt-2 flex flex-wrap gap-3 text-sm text-muted-foreground">
+              <span>
+                総件数 <span className="font-semibold text-foreground">{totalCount}</span>
+              </span>
+              <span className="text-emerald-600">確定 {confirmedCount}</span>
+              <span className="text-amber-600">調整中 {pendingCount}</span>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Input
+              type="date"
+              value={format(selectedDate, 'yyyy-MM-dd')}
+              onChange={handleDateChange}
+              className="w-[180px]"
+            />
+            <Select
+              value={statusFilter}
+              onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}
+            >
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="ステータス" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">全て表示</SelectItem>
-                <SelectItem value="confirmed">確定済み</SelectItem>
-                <SelectItem value="pending">未確定</SelectItem>
+                <SelectItem value="all">すべて</SelectItem>
+                <SelectItem value="confirmed">確定</SelectItem>
+                <SelectItem value="pending">調整中</SelectItem>
               </SelectContent>
             </Select>
-            <div className="flex gap-2">
-              <Input placeholder="予約No" className="w-[200px]" />
-              <Button className="bg-emerald-600 hover:bg-emerald-700">検索</Button>
-            </div>
+            <Button variant="outline" onClick={fetchReservations} disabled={loading}>
+              再読込
+            </Button>
           </div>
         </div>
 
@@ -118,20 +266,16 @@ export default function ReservationListPage() {
           </div>
         ) : (
           <ReservationList
-            reservations={reservations
-              .map((r) => convertToReservationData(r))
-              .filter((r): r is ReservationData => r !== null)}
-            onOpenReservation={(reservationData) => {
-              const reservation = reservations.find((r) => r.id === reservationData.id)
-              if (reservation) setSelectedReservation(reservation)
-            }}
+            reservations={filteredReservations}
+            onOpenReservation={setSelectedReservation}
           />
         )}
       </main>
       <ReservationDialog
         open={!!selectedReservation}
         onOpenChange={(open) => !open && setSelectedReservation(null)}
-        reservation={selectedReservation ? convertToReservationData(selectedReservation) : null}
+        reservation={selectedReservation}
+        onSave={handleReservationSave}
       />
     </div>
   )

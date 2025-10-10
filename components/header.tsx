@@ -12,6 +12,7 @@ import {
   Users,
   Clock,
   Settings,
+  ListChecks,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -35,8 +36,11 @@ import { Cast } from '@/lib/cast/types'
 import { normalizeCastList } from '@/lib/cast/mapper'
 import { useNotifications } from '@/contexts/notification-context'
 import { StoreSelector } from '@/components/store/store-selector'
+import { useSession } from 'next-auth/react'
 
 export function Header() {
+  const { data: session } = useSession()
+  const isGeneralStaff = session?.user?.adminRole === 'staff'
   const [castList, setCastList] = useState<Cast[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [open, setOpen] = useState(false)
@@ -116,6 +120,16 @@ export function Header() {
           >
             <Calendar className="h-5 w-5" />
             <span className="text-xs text-gray-600">予約</span>
+          </Button>
+        </Link>
+
+        <Link href="/admin/reservation-list">
+          <Button
+            variant="ghost"
+            className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
+          >
+            <ListChecks className="h-5 w-5" />
+            <span className="text-xs text-gray-600">本日の予約</span>
           </Button>
         </Link>
 
@@ -214,15 +228,17 @@ export function Header() {
           </PopoverContent>
         </Popover>
 
-        <Link href="/admin/analytics/daily-sales">
-          <Button
-            variant="ghost"
-            className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
-          >
-            <BarChart2 className="h-5 w-5" />
-            <span className="text-xs text-gray-600">集計</span>
-          </Button>
-        </Link>
+        {!isGeneralStaff && (
+          <Link href="/admin/analytics/daily-sales">
+            <Button
+              variant="ghost"
+              className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
+            >
+              <BarChart2 className="h-5 w-5" />
+              <span className="text-xs text-gray-600">集計</span>
+            </Button>
+          </Link>
+        )}
 
         <Link href="/admin/settings">
           <Button
