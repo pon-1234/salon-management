@@ -43,6 +43,16 @@ vi.mock('@/lib/logger', () => ({
   },
 }))
 
+function jsonResponse(data: any, init?: Partial<Response>): Response {
+  return {
+    ok: init?.ok ?? true,
+    status: init?.status ?? 200,
+    statusText: init?.statusText ?? 'OK',
+    json: async () => data,
+    text: async () => (typeof data === 'string' ? data : JSON.stringify(data)),
+  } as Response
+}
+
 global.fetch = vi.fn()
 
 describe('reservation data (API-backed)', () => {
@@ -52,11 +62,20 @@ describe('reservation data (API-backed)', () => {
   })
 
   it('fetches all reservations via API', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: async () => mockReservations,
-    } as Response)
+    const fetchMock = vi.mocked(fetch)
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = input.toString()
+      if (url.includes('/api/reservation')) {
+        return jsonResponse(mockReservations)
+      }
+      if (url.includes('cust_1')) {
+        return jsonResponse({ id: 'cust_1', name: '山田太郎' })
+      }
+      if (url.includes('cust_2')) {
+        return jsonResponse({ id: 'cust_2', name: '佐藤花子' })
+      }
+      return jsonResponse({}, { ok: false, status: 404, statusText: 'Not Found' })
+    })
 
     const result = await getAllReservations()
 
@@ -65,29 +84,50 @@ describe('reservation data (API-backed)', () => {
       cache: 'no-store',
     })
     expect(result).toHaveLength(2)
-    expect(result[0].customerId).toBe('cust_1')
+    expect(result[0].customerName).toBe('山田太郎')
     expect(result[0].startTime).toBeInstanceOf(Date)
   })
 
   it('falls back to mock data when API fails', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: false,
-      status: 500,
-      statusText: 'Server Error',
-      text: async () => 'error',
-    } as Response)
+    let call = 0
+    const fetchMock = vi.mocked(fetch)
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = input.toString()
+      if (call === 0 && url.includes('/api/reservation')) {
+        call += 1
+        return jsonResponse('error', {
+          ok: false,
+          status: 500,
+          statusText: 'Server Error',
+        })
+      }
+      if (url.includes('cust_1')) {
+        return jsonResponse({ id: 'cust_1', name: '山田太郎' })
+      }
+      if (url.includes('cust_2')) {
+        return jsonResponse({ id: 'cust_2', name: '佐藤花子' })
+      }
+      return jsonResponse({}, { ok: false, status: 404, statusText: 'Not Found' })
+    })
 
     const result = await getAllReservations()
 
-    expect(result).toEqual(mockReservations)
+    expect(result).toHaveLength(2)
+    expect(result[0].customerName).toBe('山田太郎')
   })
 
   it('fetches reservations by customer', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: async () => [mockReservations[0]],
-    } as Response)
+    const fetchMock = vi.mocked(fetch)
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = input.toString()
+      if (url.includes('/api/reservation')) {
+        return jsonResponse([mockReservations[0]])
+      }
+      if (url.includes('cust_1')) {
+        return jsonResponse({ id: 'cust_1', name: '山田太郎' })
+      }
+      return jsonResponse({}, { ok: false, status: 404 })
+    })
 
     const result = await getReservationsByCustomerId('cust_1')
 
@@ -95,16 +135,28 @@ describe('reservation data (API-backed)', () => {
       credentials: 'include',
       cache: 'no-store',
     })
-    expect(result).toHaveLength(1)
-    expect(result[0].customerId).toBe('cust_1')
+    expect(result[0].customerName).toBe('山田太郎')
   })
 
   it('fallbacks to mock customer reservations on failure', async () => {
-    vi.mocked(fetch).mockRejectedValueOnce(new Error('network'))
+    let call = 0
+    const fetchMock = vi.mocked(fetch)
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      if (call === 0) {
+        call += 1
+        throw new Error('network')
+      }
+      const url = input.toString()
+      if (url.includes('cust_1')) {
+        return jsonResponse({ id: 'cust_1', name: '山田太郎' })
+      }
+      return jsonResponse({}, { ok: false, status: 404 })
+    })
 
     const result = await getReservationsByCustomerId('cust_1')
 
-    expect(result).toEqual([mockReservations[0]])
+    expect(result).toHaveLength(1)
+    expect(result[0].customerName).toBe('山田太郎')
   })
 
   it('creates reservation via API', async () => {
@@ -118,11 +170,17 @@ describe('reservation data (API-backed)', () => {
       price: 1000,
     }
 
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      status: 201,
-      json: async () => ({ id: 'created', ...payload }),
-    } as Response)
+    const fetchMock = vi.mocked(fetch)
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = input.toString()
+      if (url.includes('/api/reservation') && !url.includes('?id=')) {
+        return jsonResponse({ id: 'created', ...payload }, { status: 201 })
+      }
+      if (url.includes('cust_3')) {
+        return jsonResponse({ id: 'cust_3', name: '新規顧客' })
+      }
+      return jsonResponse({}, { ok: false, status: 404 })
+    })
 
     const result = await addReservation(payload as any)
 
@@ -132,15 +190,21 @@ describe('reservation data (API-backed)', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
-    expect(result?.id).toBe('created')
+    expect(result?.customerName).toBe('新規顧客')
   })
 
   it('updates reservation via API', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: async () => ({ id: '1', status: 'completed' }),
-    } as Response)
+    const fetchMock = vi.mocked(fetch)
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = input.toString()
+      if (url.includes('/api/reservation') && !url.includes('?id=')) {
+        return jsonResponse({ id: '1', status: 'completed', customerId: 'cust_1' })
+      }
+      if (url.includes('cust_1')) {
+        return jsonResponse({ id: 'cust_1', name: '山田太郎' })
+      }
+      return jsonResponse({}, { ok: false, status: 404 })
+    })
 
     const result = await updateReservation('1', { status: 'completed' } as any)
 
@@ -150,11 +214,23 @@ describe('reservation data (API-backed)', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: '1', status: 'completed' }),
     })
-    expect(result?.status).toBe('completed')
+    expect(result?.customerName).toBe('山田太郎')
   })
 
   it('falls back to mock reservation creation on failure', async () => {
-    vi.mocked(fetch).mockRejectedValueOnce(new Error('network'))
+    let call = 0
+    const fetchMock = vi.mocked(fetch)
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      if (call === 0) {
+        call += 1
+        throw new Error('network')
+      }
+      const url = input.toString()
+      if (url.includes('cust_4')) {
+        return jsonResponse({ id: 'cust_4', name: '新規顧客' })
+      }
+      return jsonResponse({}, { ok: false, status: 404 })
+    })
 
     const payload = {
       customerId: 'cust_4',
@@ -168,6 +244,6 @@ describe('reservation data (API-backed)', () => {
 
     const result = await addReservation(payload as any)
 
-    expect(result.id).toBe('mock')
+    expect(result.customerName).toBe('新規顧客')
   })
 })

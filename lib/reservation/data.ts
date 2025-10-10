@@ -78,6 +78,63 @@ function buildUrl(path: string): URL {
   return new URL(resolved, 'http://localhost')
 }
 
+function withDisplayName(reservation: Reservation, fallback?: string): Reservation {
+  const name = reservation.customerName?.trim()
+  if (name && name.length > 0) {
+    return reservation
+  }
+
+  const idFragment = reservation.customerId ? reservation.customerId.slice(0, 8) : ''
+  const generated = fallback ?? (reservation.customerId ? `顧客${idFragment}` : '顧客')
+  return {
+    ...reservation,
+    customerName: generated,
+  }
+}
+
+async function enrichCustomerNames(reservations: Reservation[]): Promise<Reservation[]> {
+  const missingIds = Array.from(
+    new Set(
+      reservations
+        .filter((reservation) => !reservation.customerName || reservation.customerName.trim().length === 0)
+        .map((reservation) => reservation.customerId)
+        .filter(Boolean)
+    )
+  )
+
+  if (missingIds.length === 0) {
+    return reservations.map((reservation) => withDisplayName(reservation))
+  }
+
+  const nameMap = new Map<string, string>()
+
+  await Promise.all(
+    missingIds.map(async (customerId) => {
+      try {
+        const response = await fetch(buildUrl(`/api/customer?id=${customerId}`).toString(), {
+          credentials: 'include',
+          cache: 'no-store',
+        })
+
+        if (!response.ok) {
+          return
+        }
+
+        const customer = await response.json()
+        if (customer?.name) {
+          nameMap.set(customerId, customer.name)
+        }
+      } catch (error) {
+        logWarning('Failed to enrich customer name', { err: error, customerId })
+      }
+    })
+  )
+
+  return reservations.map((reservation) =>
+    withDisplayName(reservation, reservation.customerId ? nameMap.get(reservation.customerId) : undefined)
+  )
+}
+
 async function requestReservations(query: ReservationQuery = {}): Promise<Reservation[]> {
   const url = buildUrl(RESERVATION_API_PATH)
 
@@ -134,19 +191,23 @@ async function requestReservationMutation(
 
 export async function getReservationsByCustomerId(customerId: string): Promise<Reservation[]> {
   try {
-    return await requestReservations({ customerId })
+    const reservations = await requestReservations({ customerId })
+    return enrichCustomerNames(reservations)
   } catch (error) {
     logWarning('Falling back to mock reservations for customer', { err: error })
-    return getMockReservationsByCustomerId(customerId)
+    const fallbackReservations = await getMockReservationsByCustomerId(customerId)
+    return enrichCustomerNames(fallbackReservations)
   }
 }
 
 export async function getAllReservations(params?: ReservationQuery): Promise<Reservation[]> {
   try {
-    return await requestReservations(params)
+    const reservations = await requestReservations(params)
+    return enrichCustomerNames(reservations)
   } catch (error) {
     logWarning('Falling back to mock reservations list', { err: error })
-    return getAllMockReservations()
+    const fallbackReservations = await getAllMockReservations()
+    return enrichCustomerNames(fallbackReservations)
   }
 }
 
@@ -155,12 +216,18 @@ export async function updateReservation(
   updates: Partial<Reservation>
 ): Promise<Reservation | null> {
   try {
-    return await requestReservationMutation('PUT', { id, ...updates })
+    const updated = await requestReservationMutation('PUT', { id, ...updates })
+    if (!updated) {
+      return null
+    }
+    const [enriched] = await enrichCustomerNames([updated])
+    return enriched
   } catch (error) {
     logWarning('Falling back to mock reservation update', { err: error })
     updateMockReservation(id, updates)
     const reservations = await getAllMockReservations()
-    return reservations.find((reservation) => reservation.id === id) || null
+    const enriched = await enrichCustomerNames(reservations)
+    return enriched.find((reservation) => reservation.id === id) || null
   }
 }
 
@@ -172,9 +239,12 @@ export async function addReservation(
     if (!created) {
       throw new Error('Reservation API returned empty response')
     }
-    return created
+    const [enriched] = await enrichCustomerNames([created])
+    return enriched
   } catch (error) {
     logWarning('Falling back to mock reservation creation', { err: error })
-    return addMockReservation(reservation)
+    const created = addMockReservation(reservation)
+    const enriched = await enrichCustomerNames([created])
+    return enriched[0]
   }
 }
