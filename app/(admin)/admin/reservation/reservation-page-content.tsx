@@ -81,18 +81,48 @@ export function ReservationPageContent() {
     }
 
     const allReservations = await getAllReservations()
-    console.log('Fetched reservations:', allReservations)
+
+    const scheduleResponse = await fetch(
+      `/api/cast-schedule?date=${selectedDate.toISOString()}`,
+      {
+        credentials: 'include',
+        cache: 'no-store',
+      }
+    )
+
+    let schedulesByCast = new Map<string, any>()
+    if (scheduleResponse.ok) {
+      const payload = await scheduleResponse.json()
+      const data = Array.isArray(payload?.data) ? payload.data : payload
+      if (Array.isArray(data)) {
+        data.forEach((entry: any) => {
+          schedulesByCast.set(entry.castId, entry)
+        })
+      }
+    }
 
     const filteredReservations = allReservations.filter((reservation) =>
       isSameDay(new Date(reservation.startTime), selectedDate)
     )
 
-    let updatedCastData = allCasts.map((member) => {
-      const appointments: Appointment[] = filteredReservations
-        .filter((reservation) => reservation.staffId === member.id)
-        .map((reservation) => {
-          const customer = customerList.find((c) => c.id === reservation.customerId)
-          const course = getCourseById(reservation.serviceId)
+    let updatedCastData = allCasts
+      .map((member) => {
+        const scheduleEntry = schedulesByCast.get(member.id)
+        if (!scheduleEntry || scheduleEntry.isAvailable === false) {
+          return null
+        }
+
+        const workStart = scheduleEntry.startTime ? new Date(scheduleEntry.startTime) : undefined
+        const workEnd = scheduleEntry.endTime ? new Date(scheduleEntry.endTime) : undefined
+        if (!workStart || !workEnd) {
+          return null
+        }
+
+        const appointments: Appointment[] = filteredReservations
+          .filter((reservation) => reservation.staffId === member.id)
+          .map((reservation) => {
+            const customer = customerList.find((c) => c.id === reservation.customerId)
+            const course = getCourseById(reservation.serviceId)
 
           return {
             id: reservation.id,
@@ -107,10 +137,16 @@ export function ReservationPageContent() {
             location: '東京エリア',
             price: reservation.price,
           } as Appointment
-        })
+          })
 
-      return { ...member, appointments }
-    })
+        return {
+          ...member,
+          appointments,
+          workStart,
+          workEnd,
+        }
+      })
+      .filter((member): member is Cast & { appointments: Appointment[] } => member !== null)
 
     if (selectedCustomer) {
       const ngCastIds =
@@ -343,9 +379,6 @@ export function ReservationPageContent() {
       }
     })
   )
-
-  // 5. Fix: Log allAppointments for debugging
-  console.log('All Appointments:', allAppointments)
 
   return (
     <div className="min-h-screen bg-white">

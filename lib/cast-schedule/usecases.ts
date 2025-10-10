@@ -46,8 +46,13 @@ export class CastScheduleUseCases {
     const weekEnd = endOfWeek(filters.date, { weekStartsOn: 1 })
 
     try {
+      const requestOptions: RequestInit = {
+        credentials: 'include',
+        cache: 'no-store',
+      }
+
       // Fetch cast data
-      const castResponse = await fetch('/api/cast')
+      const castResponse = await fetch('/api/cast', requestOptions)
       if (!castResponse.ok) {
         throw new Error('Failed to fetch cast data')
       }
@@ -55,7 +60,8 @@ export class CastScheduleUseCases {
 
       // Fetch schedule data for the week
       const scheduleResponse = await fetch(
-        `/api/cast-schedule?startDate=${weekStart.toISOString()}&endDate=${weekEnd.toISOString()}`
+        `/api/cast-schedule?startDate=${weekStart.toISOString()}&endDate=${weekEnd.toISOString()}`,
+        requestOptions
       )
       if (!scheduleResponse.ok) {
         throw new Error('Failed to fetch schedule data')
