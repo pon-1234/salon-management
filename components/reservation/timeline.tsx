@@ -429,38 +429,54 @@ export function Timeline({
                 ))}
 
                 {/* 利用可能スロット */}
-                {selectedCustomer &&
-                  safeMap(getAvailableSlots(member), (slot, index) => {
-                    if (slot.duration < 30) return null // 30分未満は表示しない
+                {safeMap(getAvailableSlots(member), (slot, index) => {
+                  if (slot.duration < 30) return null
 
-                    return (
-                      <button
-                        key={`${member.id}-${index}`}
-                        className={cn(
-                          'absolute top-2 rounded-lg border-2 border-dashed border-gray-300',
-                          'transition-all hover:border-emerald-500 hover:bg-emerald-50',
-                          'group flex items-center justify-center'
-                        )}
-                        style={{
-                          ...getTimeBlockStyle(slot.startTime, slot.endTime),
-                          height: 'calc(100% - 16px)',
-                        }}
-                        onClick={() => handleTimeSlotClick(slot, slot.startTime)}
-                      >
-                        <div className="text-center">
-                          <div className="text-xs text-gray-500 group-hover:text-emerald-700">
-                            {slot.startTime.toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </div>
-                          <div className="text-sm font-medium text-gray-600 group-hover:text-emerald-700">
-                            {slot.duration}分可
-                          </div>
+                  const disabled = !selectedCustomer
+
+                  return (
+                    <button
+                      key={`${member.id}-${index}`}
+                      className={cn(
+                        'absolute top-2 rounded-lg border-2 border-dashed border-gray-300 group flex items-center justify-center',
+                        disabled
+                          ? 'cursor-not-allowed bg-gray-50 opacity-70'
+                          : 'transition-all hover:border-emerald-500 hover:bg-emerald-50'
+                      )}
+                      style={{
+                        ...getTimeBlockStyle(slot.startTime, slot.endTime),
+                        height: 'calc(100% - 16px)',
+                      }}
+                      onClick={() => !disabled && handleTimeSlotClick(slot, slot.startTime)}
+                      disabled={disabled}
+                    >
+                      <div className="text-center">
+                        <div
+                          className={cn(
+                            'text-xs',
+                            disabled ? 'text-gray-400' : 'text-gray-500 group-hover:text-emerald-700'
+                          )}
+                        >
+                          {slot.startTime.toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
                         </div>
-                      </button>
-                    )
-                  })}
+                        <div
+                          className={cn(
+                            'text-sm font-medium',
+                            disabled ? 'text-gray-400' : 'text-gray-600 group-hover:text-emerald-700'
+                          )}
+                        >
+                          {slot.duration}分可
+                        </div>
+                        {disabled && (
+                          <div className="mt-1 text-[10px] text-gray-400">顧客を選択してください</div>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
 
                 {/* 時間グリッド線 */}
                 {Array.from({ length: totalHours }).map((_, index) => (
