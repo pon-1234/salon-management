@@ -69,6 +69,7 @@ import { ReservationData } from '@/lib/types/reservation'
 import { CustomerUseCases } from '@/lib/customer/usecases'
 import { CustomerRepositoryImpl } from '@/lib/customer/repository-impl'
 import { isVipMember } from '@/lib/utils'
+import { toast } from '@/hooks/use-toast'
 
 const formSchema = z.object({
   name: z.string().min(1, '名前は必須です'),
@@ -147,20 +148,28 @@ export default function CustomerProfile() {
       // Fetch main customer data
       const fetchedCustomer = await customerUseCases.getById(id)
 
-      if (fetchedCustomer) {
-        setCustomer(fetchedCustomer as Customer)
-        form.reset({
-          name: fetchedCustomer.name,
-          phone: fetchedCustomer.phone,
-          email: fetchedCustomer.email,
-          password: fetchedCustomer.password,
-          birthDate: new Date(fetchedCustomer.birthDate),
-          memberType: fetchedCustomer.memberType as 'regular' | 'vip',
-          smsEnabled: (fetchedCustomer as any).smsEnabled || false, // Assuming smsEnabled might not exist yet
-          notes: (fetchedCustomer as any).notes || '',
-          points: fetchedCustomer.points,
+      if (!fetchedCustomer) {
+        toast({
+          title: 'エラー',
+          description: '顧客情報が見つかりませんでした',
+          variant: 'destructive',
         })
+        router.replace('/admin/customers')
+        return
       }
+
+      setCustomer(fetchedCustomer as Customer)
+      form.reset({
+        name: fetchedCustomer.name,
+        phone: fetchedCustomer.phone,
+        email: fetchedCustomer.email,
+        password: fetchedCustomer.password,
+        birthDate: new Date(fetchedCustomer.birthDate),
+        memberType: fetchedCustomer.memberType as 'regular' | 'vip',
+        smsEnabled: (fetchedCustomer as any).smsEnabled || false,
+        notes: (fetchedCustomer as any).notes || '',
+        points: fetchedCustomer.points,
+      })
 
       // TODO: Implement and call APIs for these sections
       setUsageHistory([])
@@ -170,6 +179,7 @@ export default function CustomerProfile() {
       try {
         const response = await fetch('/api/cast', {
           cache: 'no-store',
+          credentials: 'include',
         })
         if (response.ok) {
           const payload = await response.json()
