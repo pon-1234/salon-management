@@ -65,8 +65,21 @@ function normalizeReservation(entry: any): Reservation {
   }
 }
 
+function buildUrl(path: string): URL {
+  const resolved = resolveApiUrl(path)
+  if (resolved.startsWith('http')) {
+    return new URL(resolved)
+  }
+
+  if (typeof window !== 'undefined') {
+    return new URL(resolved, window.location.origin)
+  }
+
+  return new URL(resolved, 'http://localhost')
+}
+
 async function requestReservations(query: ReservationQuery = {}): Promise<Reservation[]> {
-  const url = new URL(resolveApiUrl(RESERVATION_API_PATH))
+  const url = buildUrl(RESERVATION_API_PATH)
 
   Object.entries(query).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
@@ -95,8 +108,9 @@ async function requestReservationMutation(
   body?: Record<string, unknown>,
   id?: string
 ): Promise<Reservation | null> {
-  const targetUrl = id ? `${RESERVATION_API_PATH}?id=${id}` : RESERVATION_API_PATH
-  const response = await fetch(resolveApiUrl(targetUrl), {
+  const targetPath = id ? `${RESERVATION_API_PATH}?id=${id}` : RESERVATION_API_PATH
+  const targetUrl = buildUrl(targetPath)
+  const response = await fetch(targetUrl.toString(), {
     method,
     credentials: 'include',
     headers: {
