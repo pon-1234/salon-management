@@ -58,7 +58,10 @@ export function ReservationPageContent() {
   useEffect(() => {
     const loadCasts = async () => {
       try {
-        const response = await fetch('/api/cast', { cache: 'no-store' })
+        const response = await fetch('/api/cast', {
+          cache: 'no-store',
+          credentials: 'include',
+        })
         if (!response.ok) {
           throw new Error(`Failed to fetch casts: ${response.status}`)
         }
@@ -109,50 +112,58 @@ export function ReservationPageContent() {
       isSameDay(new Date(reservation.startTime), selectedDate)
     )
 
-    let updatedCastData = allCasts.map((member) => {
-      const scheduleEntry = schedulesByCast.get(member.id)
-      if (!scheduleEntry) {
-        return hasScheduleData ? null : { ...member, appointments: [], workStart: undefined, workEnd: undefined }
-      }
+    let updatedCastData = allCasts
+      .map((member) => {
+        const scheduleEntry = schedulesByCast.get(member.id)
 
-      if (scheduleEntry.isAvailable === false) {
-        return null
-      }
+        const baseWorkStart = member.workStart ? new Date(member.workStart) : undefined
+        const baseWorkEnd = member.workEnd ? new Date(member.workEnd) : undefined
 
-      const workStart = scheduleEntry.startTime ? new Date(scheduleEntry.startTime) : undefined
-      const workEnd = scheduleEntry.endTime ? new Date(scheduleEntry.endTime) : undefined
-      if (!workStart || !workEnd) {
-        return null
-      }
+        const workStart = scheduleEntry?.startTime
+          ? new Date(scheduleEntry.startTime)
+          : baseWorkStart
+        const workEnd = scheduleEntry?.endTime ? new Date(scheduleEntry.endTime) : baseWorkEnd
 
-      const appointments: Appointment[] = filteredReservations
-        .filter((reservation) => reservation.staffId === member.id)
-        .map((reservation) => {
-          const customer = customerList.find((c) => c.id === reservation.customerId)
-          const course = getCourseById(reservation.serviceId)
+        const isWorking = scheduleEntry
+          ? scheduleEntry.isAvailable !== false && Boolean(scheduleEntry.startTime && scheduleEntry.endTime)
+          : Boolean(workStart && workEnd)
 
-          return {
-            id: reservation.id,
-            serviceName: course?.name || 'Unknown Service',
-            startTime: new Date(reservation.startTime),
-            endTime: new Date(reservation.endTime),
-            customerName: customer?.name || `顧客${reservation.customerId}`,
-            customerPhone: customer?.phone || '090-0000-0000',
-            customerEmail: customer?.email || 'customer@example.com',
-            reservationTime: format(new Date(reservation.startTime), 'HH:mm'),
-            status: reservation.status === 'confirmed' ? 'confirmed' : 'provisional',
-            location: '東京エリア',
-            price: reservation.price,
-          } as Appointment
-        })
+        const appointments: Appointment[] = filteredReservations
+          .filter((reservation) => reservation.staffId === member.id)
+          .map((reservation) => {
+            const customer = customerList.find((c) => c.id === reservation.customerId)
+            const course = getCourseById(reservation.serviceId)
 
-      return {
-        ...member,
-        appointments,
-        workStart,
-        workEnd,
-      }
-    }).filter((member): member is Cast & { appointments: Appointment[] } => member !== null)
+            return {
+              id: reservation.id,
+              serviceName: course?.name || 'Unknown Service',
+              startTime: new Date(reservation.startTime),
+              endTime: new Date(reservation.endTime),
+              customerName: customer?.name || `顧客${reservation.customerId}`,
+              customerPhone: customer?.phone || '090-0000-0000',
+              customerEmail: customer?.email || 'customer@example.com',
+              reservationTime: format(new Date(reservation.startTime), 'HH:mm'),
+              status: reservation.status === 'confirmed' ? 'confirmed' : 'provisional',
+              location: '東京エリア',
+              price: reservation.price,
+            } as Appointment
+          })
+
+        const hasAppointments = appointments.length > 0
+
+        if (!isWorking && !hasAppointments) {
+          return null
+        }
+
+        return {
+          ...member,
+          appointments,
+          workStart,
+          workEnd,
+          workStatus: scheduleEntry?.isAvailable === false ? '休日' : member.workStatus,
+        }
+      })
+      .filter((member): member is Cast & { appointments: Appointment[] } => member !== null)
 
     if (selectedCustomer) {
       const ngCastIds =
