@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { format, addDays, startOfWeek } from 'date-fns'
+import { format, addDays, startOfDay } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import {
   Dialog,
@@ -67,7 +67,7 @@ export function ScheduleEditDialog({
   }, [open, normalizedInitialSchedule])
 
   // Generate 7 days starting from the given start date
-  const weekStart = startOfWeek(startDate, { weekStartsOn: 1 }) // Monday start
+  const weekStart = startOfDay(startDate)
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
 
   const statusOptions: { value: WorkStatus; label: string; color: string }[] = [

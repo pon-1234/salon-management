@@ -23,7 +23,7 @@ import {
 import { ReservationDialog } from '@/components/reservation/reservation-dialog'
 import { ReservationData, Reservation } from '@/lib/types/reservation'
 import { getAllReservations } from '@/lib/reservation/data'
-import { format, startOfWeek, addDays } from 'date-fns'
+import { format, addDays, startOfDay } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -42,14 +42,7 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
   const [scheduleMap, setScheduleMap] = useState<Record<string, CastSchedule>>({})
-  const weekStart = useMemo(() => {
-    const now = new Date()
-    const localStart = startOfWeek(now, { weekStartsOn: 1 })
-    if (localStart > now) {
-      return addDays(localStart, -7)
-    }
-    return localStart
-  }, [])
+  const weekStart = useMemo(() => startOfDay(new Date()), [])
   const weekEnd = useMemo(() => addDays(weekStart, 6), [weekStart])
   const [formData, setFormData] = useState({
     name: cast.name,
