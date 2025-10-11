@@ -519,8 +519,8 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
                       item.isWorking ? 'text-emerald-700' : 'text-gray-500'
                     }`}
                   >
+                    <span className="sm:hidden">{item.time}</span>
                     <span className="hidden sm:inline">{item.time}</span>
-                    <span className="sm:inline">{item.time}</span>
                   </div>
                 </div>
               ))}
@@ -550,6 +550,14 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
                   .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
                   .slice(0, 3)
                   .map((reservation) => {
+                    const customerLabel = reservation.customerName?.trim()
+                      ? reservation.customerName
+                      : reservation.customerId
+                        ? `顧客${reservation.customerId.slice(0, 8)}`
+                        : '顧客'
+                    const serviceLabel = reservation.serviceName?.trim()
+                      ? reservation.serviceName
+                      : 'サービス未設定'
                     const today = new Date()
                     const tomorrow = new Date(today)
                     tomorrow.setDate(tomorrow.getDate() + 1)
@@ -581,7 +589,7 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
                                 ? '明日'
                                 : format(reservation.startTime, 'M/d')}
                           </Badge>
-                          <span className="font-medium">顧客{reservation.customerId}</span>
+                          <span className="font-medium">{customerLabel}</span>
                           <Badge variant="outline" className="text-xs">
                             {reservation.status === 'confirmed'
                               ? '確定'
@@ -595,7 +603,7 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
                             {format(reservation.startTime, 'HH:mm')} -{' '}
                             {format(reservation.endTime, 'HH:mm')}
                           </div>
-                          <div>サービス{reservation.serviceId}</div>
+                          <div>{serviceLabel}</div>
                           <div
                             className={`font-semibold ${isToday ? 'text-emerald-700' : isTomorrow ? 'text-blue-700' : ''}`}
                           >
