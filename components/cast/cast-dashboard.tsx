@@ -501,40 +501,26 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-7 gap-1 sm:gap-2">
-              {[
-                { day: '月', date: '3', time: '休日', isHoliday: true },
-                { day: '火', date: '4', time: '20:00-29:00', isToday: true },
-                { day: '水', date: '5', time: '13:00-23:30' },
-                { day: '木', date: '6', time: '15:00-29:00' },
-                { day: '金', date: '7', time: '13:00-29:00' },
-                { day: '土', date: '8', time: '13:00-23:30' },
-                { day: '日', date: '9', time: '未定', isUndefined: true },
-              ].map((item, index) => (
+              {scheduleDisplay.map((item) => (
                 <div
-                  key={index}
+                  key={item.key}
                   className={`rounded-lg border p-1 text-center text-xs sm:p-2 ${
                     item.isToday
                       ? 'border-emerald-200 bg-emerald-50'
-                      : item.isHoliday
-                        ? 'border-gray-200 bg-gray-50'
-                        : item.isUndefined
-                          ? 'border-orange-200 bg-orange-50'
-                          : 'border-gray-200 bg-white'
+                      : item.isWorking
+                        ? 'border-emerald-100 bg-emerald-50/40'
+                        : 'border-gray-200 bg-gray-50'
                   }`}
                 >
-                  <div className="font-medium">{item.day}</div>
-                  <div className="text-xs text-gray-500">{item.date}</div>
+                  <div className="font-medium">{item.dayLabel}</div>
+                  <div className="text-xs text-gray-500">{item.dateLabel}</div>
                   <div
                     className={`mt-1 text-xs sm:text-xs ${
-                      item.isHoliday
-                        ? 'text-gray-500'
-                        : item.isUndefined
-                          ? 'text-orange-600'
-                          : 'text-gray-800'
+                      item.isWorking ? 'text-emerald-700' : 'text-gray-500'
                     }`}
                   >
                     <span className="hidden sm:inline">{item.time}</span>
-                    <span className="sm:hidden">{item.time.split('-')[0] || item.time}</span>
+                    <span className="sm:inline">{item.time}</span>
                   </div>
                 </div>
               ))}
