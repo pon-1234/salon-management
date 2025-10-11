@@ -19,7 +19,7 @@ import { Reservation, ReservationData, ReservationUpdatePayload } from '@/lib/ty
 import { mapReservationToReservationData } from '@/lib/reservation/transformers'
 import { recordModification } from '@/lib/modification-history/data'
 import { useSession } from 'next-auth/react'
-import { format, isSameDay, startOfWeek, addDays } from 'date-fns'
+import { format, isSameDay, startOfDay, addDays } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 
@@ -28,7 +28,7 @@ export default function ReservationListPage() {
   const [rawReservations, setRawReservations] = useState<Reservation[]>([])
   const [dailyReservations, setDailyReservations] = useState<ReservationData[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+  const [selectedDate, setSelectedDate] = useState<Date>(() => startOfDay(new Date()))
   const [statusFilter, setStatusFilter] = useState<'all' | 'confirmed' | 'pending'>('all')
   const { data: session } = useSession()
   const reservationRepository = useMemo(() => new ReservationRepositoryImpl(), [])
@@ -113,10 +113,10 @@ export default function ReservationListPage() {
   const totalCount = dailyReservations.length
 
   const weekOverview = useMemo(() => {
-    const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 })
+    const baseDate = startOfDay(new Date())
 
     return Array.from({ length: 7 }).map((_, index) => {
-      const date = addDays(weekStart, index)
+      const date = addDays(baseDate, index)
       const dayReservations = rawReservations.filter((reservation) =>
         isSameDay(reservation.startTime, date)
       )
