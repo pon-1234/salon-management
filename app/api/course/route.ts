@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
 import logger from '@/lib/logger'
+import { defaultCourses } from '@/lib/pricing/data'
 
 async function requireSession() {
   const session = await getServerSession(authOptions)
@@ -17,16 +18,34 @@ async function requireSession() {
   return session
 }
 
+function buildFallbackCourseResponse(id: string | null, isAdmin: boolean) {
+  if (id) {
+    const fallback = defaultCourses.find((course) => course.id === id)
+    if (!fallback) {
+      return NextResponse.json({ error: 'Course not found' }, { status: 404 })
+    }
+    const payload = isAdmin ? { ...fallback, reservations: [] } : fallback
+    return NextResponse.json(payload)
+  }
+
+  const payload = defaultCourses.map((course) =>
+    isAdmin ? { ...course, reservations: [] } : course
+  )
+  return NextResponse.json(payload)
+}
+
 export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams
+  const id = searchParams.get('id')
+  let isAdmin = false
+
   try {
     const session = await requireSession()
     if (session instanceof NextResponse) {
       return session
     }
 
-    const isAdmin = session.user.role === 'admin'
-    const searchParams = request.nextUrl.searchParams
-    const id = searchParams.get('id')
+    isAdmin = session.user.role === 'admin'
 
     if (id) {
       const course = await db.coursePrice.findUnique({
@@ -84,7 +103,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(sanitizedCourses)
   } catch (error) {
     logger.error({ err: error }, 'Error fetching course data')
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return buildFallbackCourseResponse(id, isAdmin)
   }
 }
 

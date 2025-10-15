@@ -9,6 +9,8 @@ import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import logger from '@/lib/logger'
+import { customers as mockCustomers } from '@/lib/customer/data'
+import { normalizePhoneQuery } from '@/lib/customer/utils'
 
 const SALT_ROUNDS = 10
 
@@ -25,17 +27,17 @@ function sanitizeCustomer(customer: any) {
 }
 
 export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams
+  const id = searchParams.get('id')
+  const phoneQuery = searchParams.get('phone')
+  const limitParam = searchParams.get('limit')
+  const take = limitParam ? Math.min(Math.max(parseInt(limitParam, 10) || 10, 1), 50) : 10
+
+  const session = await getServerSession(authOptions)
+  const isAdmin = session?.user?.role === 'admin'
+  const sessionCustomerId = session?.user?.id
+
   try {
-    const session = await getServerSession(authOptions)
-    const searchParams = request.nextUrl.searchParams
-    const id = searchParams.get('id')
-    const phoneQuery = searchParams.get('phone')
-    const limitParam = searchParams.get('limit')
-    const take = limitParam ? Math.min(Math.max(parseInt(limitParam, 10) || 10, 1), 50) : 10
-
-    const isAdmin = session?.user?.role === 'admin'
-    const sessionCustomerId = session?.user?.id
-
     if (id) {
       if (!session) {
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
@@ -146,7 +148,48 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(customers)
   } catch (error) {
     logger.error({ err: error }, 'Error fetching customer data')
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+
+    if (id) {
+      if (!session) {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+      }
+      if (!isAdmin && id !== sessionCustomerId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+
+      const fallback = mockCustomers.find((customer) => customer.id === id)
+      if (!fallback) {
+        return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
+      }
+
+      return NextResponse.json(sanitizeCustomer(fallback))
+    }
+
+    if (phoneQuery) {
+      if (!session) {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+      }
+      if (!isAdmin) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+      const normalizedPhone = normalizePhoneQuery(phoneQuery)
+      if (!normalizedPhone) {
+        return NextResponse.json([])
+      }
+      const matches = mockCustomers.filter((customer) =>
+        normalizePhoneQuery(customer.phone).includes(normalizedPhone)
+      )
+      return NextResponse.json(matches.slice(0, take).map(sanitizeCustomer))
+    }
+
+    if (!session) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+    if (!isAdmin) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    return NextResponse.json(mockCustomers.map(sanitizeCustomer))
   }
 }
 

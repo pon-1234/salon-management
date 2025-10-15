@@ -10,6 +10,7 @@ import { z } from 'zod'
 import { requireAdmin } from '@/lib/auth/utils'
 import { handleApiError } from '@/lib/api/errors'
 import { SuccessResponses } from '@/lib/api/responses'
+import { castMembers } from '@/lib/cast/data'
 
 // Validation schema for cast data
 const castSchema = z.object({
@@ -33,11 +34,25 @@ const castSchema = z.object({
   availableOptions: z.array(z.string()).optional().default([]),
 })
 
-export async function GET(request: NextRequest) {
-  try {
-    const searchParams = request.nextUrl.searchParams
-    const id = searchParams.get('id')
+function transformCast(cast: any) {
+  return {
+    ...cast,
+    nameKana: cast.nameKana ?? cast.name,
+    images: Array.isArray(cast.images)
+      ? cast.images
+      : typeof cast.images === 'string'
+        ? JSON.parse(cast.images)
+        : [],
+    availableOptions: cast.availableOptions ?? [],
+    appointments: cast.appointments ?? [],
+  }
+}
 
+export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams
+  const id = searchParams.get('id')
+
+  try {
     if (id) {
       const cast = await db.cast.findUnique({
         where: { id },
@@ -97,7 +112,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(transformedCasts)
   } catch (error) {
     logger.error({ err: error }, 'Error fetching cast data')
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    if (id) {
+      const fallbackCast = castMembers.find((cast) => cast.id === id)
+      if (!fallbackCast) {
+        return NextResponse.json({ error: 'Cast not found' }, { status: 404 })
+      }
+      return NextResponse.json(transformCast(fallbackCast))
+    }
+
+    return NextResponse.json(castMembers.map(transformCast))
   }
 }
 

@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
 import logger from '@/lib/logger'
+import { defaultOptions } from '@/lib/pricing/data'
 
 async function requireSession() {
   const session = await getServerSession(authOptions)
@@ -17,16 +18,34 @@ async function requireSession() {
   return session
 }
 
+function buildFallbackOptionResponse(id: string | null, isAdmin: boolean) {
+  if (id) {
+    const option = defaultOptions.find((item) => item.id === id)
+    if (!option) {
+      return NextResponse.json({ error: 'Option not found' }, { status: 404 })
+    }
+    const payload = isAdmin ? { ...option, reservations: [] } : option
+    return NextResponse.json(payload)
+  }
+
+  const payload = defaultOptions.map((option) =>
+    isAdmin ? { ...option, reservations: [] } : option
+  )
+  return NextResponse.json(payload)
+}
+
 export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams
+  const id = searchParams.get('id')
+  let isAdmin = false
+
   try {
     const session = await requireSession()
     if (session instanceof NextResponse) {
       return session
     }
 
-    const isAdmin = session.user.role === 'admin'
-    const searchParams = request.nextUrl.searchParams
-    const id = searchParams.get('id')
+    isAdmin = session.user.role === 'admin'
 
     if (id) {
       const option = await db.optionPrice.findUnique({
@@ -92,7 +111,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(sanitizedOptions)
   } catch (error) {
     logger.error({ err: error }, 'Error fetching option data')
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return buildFallbackOptionResponse(id, isAdmin)
   }
 }
 
