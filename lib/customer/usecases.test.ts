@@ -11,6 +11,7 @@ const mockCustomerRepository: CustomerRepository = {
   update: vi.fn(),
   delete: vi.fn(),
   getCustomerByPhone: vi.fn(),
+  searchByPhone: vi.fn(),
   findByEmail: vi.fn(),
 }
 
@@ -103,3 +104,15 @@ describe('CustomerUseCases', () => {
     })
   })
 })
+  describe('searchByPhone', () => {
+    it("should call repository's searchByPhone and return customers", async () => {
+      const phone = '090'
+      const customers: Partial<Customer>[] = [{ id: 'cust1', phone: '09012345678' }]
+      ;(mockCustomerRepository.searchByPhone as Mock).mockResolvedValue(customers as Customer[])
+
+      const result = await customerUseCases.searchByPhone(phone)
+
+      expect(mockCustomerRepository.searchByPhone).toHaveBeenCalledWith(phone)
+      expect(result).toEqual(customers)
+    })
+  })

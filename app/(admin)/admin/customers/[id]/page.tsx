@@ -69,53 +69,8 @@ import { ReservationData } from '@/lib/types/reservation'
 import { CustomerUseCases } from '@/lib/customer/usecases'
 import { CustomerRepositoryImpl } from '@/lib/customer/repository-impl'
 import { isVipMember } from '@/lib/utils'
+import { calculateAge, deserializeCustomer } from '@/lib/customer/utils'
 import { toast } from '@/hooks/use-toast'
-
-function toOptionalDate(value: unknown): Date | null {
-  if (!value) return null
-  const date = value instanceof Date ? value : new Date(value)
-  return Number.isNaN(date.getTime()) ? null : date
-}
-
-function calculateAgeFromDate(birthDate: Date | null): number | null {
-  if (!birthDate) return null
-  const today = new Date()
-  let age = today.getFullYear() - birthDate.getFullYear()
-  const monthDiff = today.getMonth() - birthDate.getMonth()
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-    age--
-  }
-  return age
-}
-
-function normalizeCustomer(raw: any): Customer {
-  const birthDate = toOptionalDate(raw.birthDate) ?? new Date()
-  const createdAt = toOptionalDate(raw.createdAt) ?? new Date()
-  const updatedAt = toOptionalDate(raw.updatedAt) ?? createdAt
-  const registrationDate = toOptionalDate(raw.registrationDate) ?? createdAt
-  const lastLoginDate = toOptionalDate(raw.lastLoginDate) ?? undefined
-  const lastVisitDate = toOptionalDate(raw.lastVisitDate) ?? undefined
-
-  return {
-    ...raw,
-    password: raw.password ?? '',
-    birthDate,
-    createdAt,
-    updatedAt,
-    registrationDate,
-    lastLoginDate,
-    lastVisitDate,
-    age: raw.age ?? (calculateAgeFromDate(birthDate) ?? 0),
-    smsEnabled: raw.smsEnabled ?? false,
-    points: raw.points ?? 0,
-    ngCasts: Array.isArray(raw.ngCasts)
-      ? raw.ngCasts.map((ng: any) => ({
-          ...ng,
-          addedDate: toOptionalDate(ng.addedDate) ?? new Date(),
-        }))
-      : [],
-  }
-}
 
 const formSchema = z.object({
   name: z.string().min(1, '名前は必須です'),
@@ -172,7 +127,7 @@ export default function CustomerProfile() {
   })
 
   const birthDate = form.watch('birthDate')
-  const age = calculateAgeFromDate(birthDate ?? null)
+  const age = birthDate ? calculateAge(birthDate) : null
 
   useEffect(() => {
     if (!id) return
@@ -194,7 +149,7 @@ export default function CustomerProfile() {
         return
       }
 
-      const normalizedCustomer = normalizeCustomer(fetchedCustomer)
+      const normalizedCustomer = deserializeCustomer(fetchedCustomer)
       setCustomer(normalizedCustomer)
       form.reset({
         name: normalizedCustomer.name,
@@ -255,7 +210,7 @@ export default function CustomerProfile() {
       })
 
       if (updatedCustomer) {
-        const normalizedCustomer = normalizeCustomer(updatedCustomer)
+        const normalizedCustomer = deserializeCustomer(updatedCustomer)
         setCustomer(normalizedCustomer)
         form.reset({
           name: normalizedCustomer.name,

@@ -24,6 +24,7 @@ vi.mock('@/lib/db', () => ({
   db: {
     customer: {
       findUnique: vi.fn(),
+      findMany: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
@@ -158,6 +159,39 @@ describe('GET /api/customer', () => {
 
     expect(response.status).toBe(403)
     expect(data.error).toBe('Forbidden')
+  })
+
+  it('should allow admin to search customers by phone', async () => {
+    const mockCustomer = {
+      id: 'cust1',
+      name: '検索対象',
+      phone: '09012345678',
+      email: 'search@example.com',
+      birthDate: new Date('1990-01-01'),
+      memberType: 'regular',
+      points: 200,
+      createdAt: new Date('2024-01-01'),
+      updatedAt: new Date('2024-01-02'),
+    }
+
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'admin', role: 'admin' },
+    } as any)
+
+    vi.mocked(db.customer.findMany).mockResolvedValueOnce([mockCustomer] as any)
+
+    const request = new NextRequest('http://localhost:3000/api/customer?phone=090', {
+      method: 'GET',
+    })
+
+    const response = await GET(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(Array.isArray(data)).toBe(true)
+    expect(data).toHaveLength(1)
+    expect(data[0].id).toBe(mockCustomer.id)
+    expect(data[0].password).toBeUndefined()
   })
 })
 

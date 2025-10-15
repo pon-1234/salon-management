@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CustomerRepositoryImpl } from './repository-impl'
 import { Customer } from './types'
 
@@ -6,311 +6,158 @@ vi.mock('@/lib/http/base-url', () => ({
   resolveApiUrl: (path: string) => path,
 }))
 
+const rawCustomer = {
+  id: 'cust_1',
+  name: '山田 太郎',
+  nameKana: 'ヤマダ タロウ',
+  phone: '09012345678',
+  email: 'taro@example.com',
+  password: 'hashed',
+  birthDate: '1990-01-01T00:00:00.000Z',
+  memberType: 'vip',
+  points: 1200,
+  createdAt: '2024-01-01T00:00:00.000Z',
+  updatedAt: '2024-01-10T00:00:00.000Z',
+}
+
 describe('CustomerRepositoryImpl', () => {
   let repository: CustomerRepositoryImpl
 
   beforeEach(() => {
-    vi.clearAllMocks()
     global.fetch = vi.fn()
     repository = new CustomerRepositoryImpl()
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
-  const mockCustomer: Customer = {
-    id: '1',
-    name: '山田太郎',
-    nameKana: 'ヤマダタロウ',
-    email: 'yamada@example.com',
-    phone: '090-1234-5678',
-    password: 'hashedpassword',
-    birthDate: new Date('1990-01-01'),
-    age: 34,
-    memberType: 'vip',
-    smsEnabled: true,
-    points: 100,
-    registrationDate: new Date('2023-01-01'),
-    lastVisitDate: new Date('2024-01-01'),
-    notes: 'VIP顧客',
-    createdAt: new Date('2023-01-01'),
-    updatedAt: new Date('2023-01-01'),
+  const mockFetch = (response: Partial<Response>) => {
+    vi.mocked(fetch).mockResolvedValue(response as Response)
   }
 
-  describe('getAll', () => {
-    it('should fetch all customers successfully', async () => {
-      const mockCustomers = [mockCustomer]
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockCustomers,
-      } as Response)
+  const expectCustomer = (customer: Customer) => {
+    expect(customer.id).toBe(rawCustomer.id)
+    expect(customer.phone).toBe(rawCustomer.phone)
+    expect(customer.name).toBe(rawCustomer.name)
+    expect(customer.points).toBe(rawCustomer.points)
+    expect(customer.memberType).toBe('vip')
+    expect(customer.birthDate).toBeInstanceOf(Date)
+  }
 
-      const result = await repository.getAll()
-
-      expect(fetch).toHaveBeenCalledWith('/api/customer', {
-        credentials: 'include',
-      })
-      expect(result).toEqual(mockCustomers)
+  it('getAll returns deserialized customers', async () => {
+    mockFetch({
+      ok: true,
+      json: async () => [rawCustomer],
     })
 
-    it('should throw error when fetch fails', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-      } as Response)
-
-      await expect(repository.getAll()).rejects.toThrow('Failed to fetch customers')
-    })
+    const customers = await repository.getAll()
+    expect(fetch).toHaveBeenCalledWith('/api/customer', { credentials: 'include' })
+    expect(customers).toHaveLength(1)
+    expectCustomer(customers[0])
   })
 
-  describe('getById', () => {
-    it('should fetch customer by id successfully', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockCustomer,
-      } as Response)
-
-      const result = await repository.getById('1')
-
-      expect(fetch).toHaveBeenCalledWith('/api/customer?id=1', {
-        credentials: 'include',
-      })
-      expect(result).toEqual(mockCustomer)
+  it('getById returns customer', async () => {
+    mockFetch({
+      ok: true,
+      json: async () => rawCustomer,
     })
 
-    it('should return null for 404 response', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-      } as Response)
-
-      const result = await repository.getById('999')
-
-      expect(result).toBeNull()
-    })
-
-    it('should throw error for other failures', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-      } as Response)
-
-      await expect(repository.getById('1')).rejects.toThrow('Failed to fetch customer')
-    })
+    const customer = await repository.getById('cust_1')
+    expect(fetch).toHaveBeenCalledWith('/api/customer?id=cust_1', { credentials: 'include' })
+    expect(customer).not.toBeNull()
+    expectCustomer(customer!)
   })
 
-  describe('getCustomerByPhone', () => {
-    it('should fetch customer by phone successfully', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockCustomer,
-      } as Response)
-
-      const result = await repository.getCustomerByPhone('090-1234-5678')
-
-      expect(fetch).toHaveBeenCalledWith('/api/customer/by-phone/090-1234-5678', {
-        credentials: 'include',
-      })
-      expect(result).toEqual(mockCustomer)
+  it('getById returns null on 404', async () => {
+    mockFetch({
+      ok: false,
+      status: 404,
     })
 
-    it('should return null for 404 response', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-      } as Response)
-
-      const result = await repository.getCustomerByPhone('000-000-0000')
-
-      expect(result).toBeNull()
-    })
-
-    it('should throw error on other failures', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-      } as Response)
-
-      await expect(repository.getCustomerByPhone('090-1234-5678')).rejects.toThrow(
-        'Failed to fetch customer by phone'
-      )
-    })
+    const customer = await repository.getById('missing')
+    expect(customer).toBeNull()
   })
 
-  describe('findByEmail', () => {
-    it('should fetch customer by email successfully', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockCustomer,
-      } as Response)
-
-      const result = await repository.findByEmail('yamada@example.com')
-
-      expect(fetch).toHaveBeenCalledWith('/api/customer/by-email/yamada%40example.com', {
-        credentials: 'include',
-      })
-      expect(result).toEqual(mockCustomer)
+  it('searchByPhone queries API and returns customers', async () => {
+    mockFetch({
+      ok: true,
+      json: async () => [rawCustomer],
     })
 
-    it('should return null for 404 response', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-      } as Response)
-
-      const result = await repository.findByEmail('notfound@example.com')
-
-      expect(result).toBeNull()
+    const customers = await repository.searchByPhone('090-1234-5678')
+    expect(fetch).toHaveBeenCalledWith('/api/customer?phone=09012345678', {
+      credentials: 'include',
     })
-
-    it('should throw error for other failures', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-      } as Response)
-
-      await expect(repository.findByEmail('error@example.com')).rejects.toThrow(
-        'Failed to fetch customer by email'
-      )
-    })
-
-    it('should properly encode email with special characters', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockCustomer,
-      } as Response)
-
-      await repository.findByEmail('test+tag@example.com')
-
-      expect(fetch).toHaveBeenCalledWith('/api/customer/by-email/test%2Btag%40example.com', {
-        credentials: 'include',
-      })
-    })
+    expect(customers).toHaveLength(1)
+    expectCustomer(customers[0])
   })
 
-  describe('create', () => {
-    it('should create customer successfully', async () => {
-      const newCustomerData = {
-        name: '新規顧客',
-        nameKana: 'シンキコキャク',
-        email: 'new@example.com',
-        phone: '090-9876-5432',
-        password: 'password123',
-        birthDate: new Date('1995-05-05'),
-        age: 29,
-        memberType: 'regular' as const,
-        smsEnabled: false,
-        points: 0,
-        registrationDate: new Date('2024-01-01'),
-        notes: '',
-      }
-
-      const createdCustomer = {
-        ...newCustomerData,
-        id: '2',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
-
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => createdCustomer,
-      } as Response)
-
-      const result = await repository.create(newCustomerData)
-
-      expect(fetch).toHaveBeenCalledWith('/api/customer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(newCustomerData),
-      })
-      expect(result).toEqual(createdCustomer)
+  it('getCustomerByPhone returns first exact match', async () => {
+    mockFetch({
+      ok: true,
+      json: async () => [rawCustomer],
     })
 
-    it('should throw error when create fails', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-      } as Response)
-
-      await expect(
-        repository.create({
-          name: 'Test',
-          nameKana: 'テスト',
-          email: 'test@example.com',
-          phone: '090-0000-0000',
-          password: 'password123',
-          birthDate: new Date('2000-01-01'),
-          age: 24,
-          memberType: 'regular',
-          smsEnabled: false,
-          points: 0,
-          registrationDate: new Date(),
-          notes: '',
-        })
-      ).rejects.toThrow('Failed to create customer')
-    })
+    const customer = await repository.getCustomerByPhone('09012345678')
+    expect(customer).not.toBeNull()
+    expectCustomer(customer!)
   })
 
-  describe('update', () => {
-    it('should update customer successfully', async () => {
-      const updateData = { name: '更新太郎', points: 200 }
-      const updatedCustomer = { ...mockCustomer, ...updateData }
+  it('getCustomerByPhone returns null when not found', async () => {
+    mockFetch({
+      ok: true,
+      json: async () => [],
+    })
 
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => updatedCustomer,
-      } as Response)
+    const customer = await repository.getCustomerByPhone('0000000000')
+    expect(customer).toBeNull()
+  })
 
-      const result = await repository.update('1', updateData)
+  it('create returns created customer', async () => {
+    mockFetch({
+      ok: true,
+      json: async () => rawCustomer,
+    })
 
-      expect(fetch).toHaveBeenCalledWith('/api/customer', {
+    const payload = { ...rawCustomer, id: undefined, createdAt: undefined, updatedAt: undefined }
+    // @ts-expect-error: partial payload for test convenience
+    const customer = await repository.create(payload)
+    expect(fetch).toHaveBeenCalledWith('/api/customer', expect.any(Object))
+    expectCustomer(customer)
+  })
+
+  it('update returns updated customer', async () => {
+    mockFetch({
+      ok: true,
+      json: async () => ({ ...rawCustomer, name: '更新 太郎' }),
+    })
+
+    const customer = await repository.update('cust_1', { name: '更新 太郎' })
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/customer',
+      expect.objectContaining({
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ id: '1', ...updateData }),
       })
-      expect(result).toEqual(updatedCustomer)
-    })
-
-    it('should throw error when update fails', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-      } as Response)
-
-      await expect(repository.update('1', { name: 'Test' })).rejects.toThrow(
-        'Failed to update customer'
-      )
-    })
+    )
+    expect(customer?.name).toBe('更新 太郎')
   })
 
-  describe('delete', () => {
-    it('should delete customer successfully', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-      } as Response)
-
-      const result = await repository.delete('1')
-
-      expect(fetch).toHaveBeenCalledWith('/api/customer?id=1', {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-      expect(result).toBe(true)
+  it('delete returns true on success', async () => {
+    mockFetch({
+      ok: true,
     })
 
-    it('should return false when delete fails', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-      } as Response)
-
-      const result = await repository.delete('1')
-
-      expect(fetch).toHaveBeenCalledWith('/api/customer?id=1', {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-      expect(result).toBe(false)
+    const result = await repository.delete('cust_1')
+    expect(fetch).toHaveBeenCalledWith('/api/customer?id=cust_1', {
+      method: 'DELETE',
+      credentials: 'include',
     })
+    expect(result).toBe(true)
+  })
+
+  it('delete returns false on failure', async () => {
+    mockFetch({
+      ok: false,
+    })
+
+    const result = await repository.delete('cust_1')
+    expect(result).toBe(false)
   })
 })

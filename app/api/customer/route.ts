@@ -12,11 +12,26 @@ import logger from '@/lib/logger'
 
 const SALT_ROUNDS = 10
 
+function sanitizeCustomer(customer: any) {
+  const {
+    password,
+    resetToken,
+    resetTokenExpiry,
+    emailVerificationToken,
+    emailVerificationExpiry,
+    ...safe
+  } = customer
+  return safe
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     const searchParams = request.nextUrl.searchParams
     const id = searchParams.get('id')
+    const phoneQuery = searchParams.get('phone')
+    const limitParam = searchParams.get('limit')
+    const take = limitParam ? Math.min(Math.max(parseInt(limitParam, 10) || 10, 1), 50) : 10
 
     const isAdmin = session?.user?.role === 'admin'
     const sessionCustomerId = session?.user?.id
@@ -64,6 +79,46 @@ export async function GET(request: NextRequest) {
 
       const { password, ...customerData } = customer
       return NextResponse.json(customerData)
+    }
+
+    if (phoneQuery) {
+      if (!session) {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+      }
+      if (!isAdmin) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+
+      const normalizedPhone = phoneQuery.replace(/\D/g, '')
+      if (!normalizedPhone) {
+        return NextResponse.json([])
+      }
+
+      const customers = await db.customer.findMany({
+        where: {
+          phone: {
+            contains: normalizedPhone,
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take,
+        select: {
+          id: true,
+          name: true,
+          nameKana: true,
+          phone: true,
+          email: true,
+          birthDate: true,
+          memberType: true,
+          points: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      })
+
+      return NextResponse.json(customers.map(sanitizeCustomer))
     }
 
     // Get all customers - admin only

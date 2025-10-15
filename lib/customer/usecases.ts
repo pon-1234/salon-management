@@ -12,6 +12,10 @@ export class CustomerUseCases {
     return this.repository.getCustomerByPhone(phone)
   }
 
+  async searchByPhone(phone: string): Promise<Customer[]> {
+    return this.repository.searchByPhone(phone)
+  }
+
   async getAll(): Promise<Customer[]> {
     return this.repository.getAll()
   }
