@@ -128,9 +128,6 @@ export function CustomerSelectionDialog({ open, onOpenChange }: CustomerSelectio
           if (ignore) return
           const list = customers.length > 0 ? customers : filterLocally(allCustomers, trimmed)
           setFilteredCustomers(list)
-          if (selectedCustomer && !list.some((c) => c.id === selectedCustomer.id)) {
-            setSelectedCustomer(null)
-          }
           setStatus('ready')
         })
         .catch((error) => {
@@ -148,13 +145,24 @@ export function CustomerSelectionDialog({ open, onOpenChange }: CustomerSelectio
 
     const filtered = filterLocally(allCustomers, trimmed)
     setFilteredCustomers(filtered)
-    if (selectedCustomer && !filtered.some((c) => c.id === selectedCustomer.id)) {
-      setSelectedCustomer(null)
-    }
     if (status !== 'loading') {
       setStatus('ready')
     }
-  }, [searchTerm, open, allCustomers, customerUseCases, selectedCustomer, status])
+  }, [searchTerm, open, allCustomers, customerUseCases, status])
+
+  useEffect(() => {
+    if (filteredCustomers.length === 1) {
+      setSelectedCustomer(filteredCustomers[0])
+      return
+    }
+
+    if (
+      selectedCustomer &&
+      !filteredCustomers.some((customer) => customer.id === selectedCustomer.id)
+    ) {
+      setSelectedCustomer(null)
+    }
+  }, [filteredCustomers, selectedCustomer])
 
   const handleCustomerSelect = (customer: Customer) => {
     setSelectedCustomer(customer)
