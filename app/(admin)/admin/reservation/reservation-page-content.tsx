@@ -14,7 +14,7 @@ import { Cast, Appointment } from '@/lib/cast/types'
 import { getAllReservations } from '@/lib/reservation/data'
 import { ReservationTable } from '@/components/reservation/reservation-table'
 import { Reservation, ReservationData, ReservationUpdatePayload } from '@/lib/types/reservation'
-import { customers as customerList, Customer } from '@/lib/customer/data'
+import { customers as fallbackCustomers, Customer } from '@/lib/customer/data'
 import { ReservationDialog } from '@/components/reservation/reservation-dialog'
 import { InfoBar } from '@/components/reservation/info-bar'
 import { normalizeCastList } from '@/lib/cast/mapper'
@@ -23,6 +23,8 @@ import { ReservationRepositoryImpl } from '@/lib/reservation/repository-impl'
 import { toast } from '@/hooks/use-toast'
 import { recordModification } from '@/lib/modification-history/data'
 import { startOfDay, endOfDay } from 'date-fns'
+import { CustomerUseCases } from '@/lib/customer/usecases'
+import { CustomerRepositoryImpl } from '@/lib/customer/repository-impl'
 
 const isSameDay = (date1: Date, date2: Date) => {
   return (
@@ -47,22 +49,82 @@ export function ReservationPageContent() {
   const [filterDialogOpen, setFilterDialogOpen] = useState(false)
   const [selectedAppointment, setSelectedAppointment] = useState<ReservationData | null>(null)
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
+  const [customers, setCustomers] = useState<Customer[]>(fallbackCustomers)
   const [rawReservations, setRawReservations] = useState<Reservation[]>([])
   const [currentDayReservations, setCurrentDayReservations] = useState<ReservationData[]>([])
   const reservationRepository = useMemo(() => new ReservationRepositoryImpl(), [])
   const { data: session } = useSession()
+  const customerUseCases = useMemo(
+    () => new CustomerUseCases(new CustomerRepositoryImpl()),
+    []
+  )
 
   const searchParams = useSearchParams()
   const customerId = searchParams.get('customerId')
 
   useEffect(() => {
-    if (customerId) {
-      const customer = customerList.find((c) => c.id === customerId)
-      if (customer) {
-        setSelectedCustomer(customer)
+    let ignore = false
+
+    const loadCustomers = async () => {
+      try {
+        const fetched = await customerUseCases.getAll()
+        if (!ignore && Array.isArray(fetched) && fetched.length > 0) {
+          setCustomers(fetched)
+        }
+      } catch (error) {
+        console.error('Failed to load customers:', error)
+        if (!ignore) {
+          setCustomers(fallbackCustomers)
+        }
       }
     }
-  }, [customerId])
+
+    loadCustomers()
+
+    return () => {
+      ignore = true
+    }
+  }, [customerUseCases])
+
+  useEffect(() => {
+    if (customerId) {
+      let ignore = false
+
+      const resolveCustomer = async () => {
+        const localMatch = customers.find((c) => c.id === customerId)
+        if (localMatch) {
+          setSelectedCustomer(localMatch)
+          return
+        }
+
+        try {
+          const fetchedCustomer = await customerUseCases.getById(customerId)
+          if (!ignore) {
+            if (fetchedCustomer) {
+              setSelectedCustomer(fetchedCustomer)
+            } else {
+              const fallback = fallbackCustomers.find((c) => c.id === customerId) || null
+              setSelectedCustomer(fallback)
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load customer by id:', error)
+          if (!ignore) {
+            const fallback = fallbackCustomers.find((c) => c.id === customerId) || null
+            setSelectedCustomer(fallback)
+          }
+        }
+      }
+
+      resolveCustomer()
+
+      return () => {
+        ignore = true
+      }
+    } else {
+      setSelectedCustomer(null)
+    }
+  }, [customerId, customers, customerUseCases])
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -137,7 +199,7 @@ export function ReservationPageContent() {
     )
 
     const todaysReservationData = todaysReservations.map((reservation) =>
-      mapReservationToReservationData(reservation, { casts: allCasts, customers: customerList })
+      mapReservationToReservationData(reservation, { casts: allCasts, customers })
     )
     setCurrentDayReservations(todaysReservationData)
 
@@ -201,7 +263,7 @@ export function ReservationPageContent() {
 
     setCastData(updatedCastData)
     return todaysReservationData
-  }, [allCasts, selectedDate, selectedCustomer])
+  }, [allCasts, selectedDate, selectedCustomer, customers])
 
   useEffect(() => {
     fetchData()
