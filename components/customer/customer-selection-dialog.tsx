@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Search, User, Phone, Mail, Crown, Star, ChevronRight, UserPlus } from 'lucide-react'
+import { Search, User, Phone, Mail, Crown, Star, ChevronRight, UserPlus, Clock } from 'lucide-react'
 import { customers as customerData } from '@/lib/customer/data'
 import { Customer } from '@/lib/customer/types'
 import { useRouter } from 'next/navigation'
@@ -63,6 +63,11 @@ export function CustomerSelectionDialog({ open, onOpenChange }: CustomerSelectio
     onOpenChange(false)
   }
 
+  const handleOpenTimeline = () => {
+    router.push('/admin/reservation')
+    onOpenChange(false)
+  }
+
   const getMemberBadge = (type: string) => {
     if (isVipMember(type)) {
       return (
@@ -107,6 +112,12 @@ export function CustomerSelectionDialog({ open, onOpenChange }: CustomerSelectio
           <Button onClick={handleNewCustomer} variant="outline" className="w-full justify-start">
             <UserPlus className="mr-2 h-4 w-4" />
             新規顧客を登録
+          </Button>
+
+          {/* タイムライン確認ボタン */}
+          <Button onClick={handleOpenTimeline} variant="secondary" className="w-full justify-start">
+            <Clock className="mr-2 h-4 w-4" />
+            タイムラインを確認する
           </Button>
 
           {/* 顧客リスト */}
