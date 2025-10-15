@@ -226,6 +226,12 @@ export default function SettingsPage() {
                     case 'course-info':
                       window.location.href = '/admin/settings/course-info'
                       break
+                    case 'area-info':
+                      window.location.href = '/admin/settings/area-info'
+                      break
+                    case 'station-info':
+                      window.location.href = '/admin/settings/station-info'
+                      break
                     case 'hotel-info':
                       window.location.href = '/admin/settings/hotel-info'
                       break

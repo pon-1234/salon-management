@@ -113,6 +113,8 @@ export async function POST(request: NextRequest) {
       data: {
         name: data.name,
         price: data.price,
+        storeShare: data.storeShare ?? null,
+        castShare: data.castShare ?? null,
       },
       include: {
         reservations: true,
@@ -149,6 +151,8 @@ export async function PUT(request: NextRequest) {
       data: {
         name: updates.name,
         price: updates.price,
+        storeShare: updates.storeShare ?? null,
+        castShare: updates.castShare ?? null,
       },
       include: {
         reservations: {

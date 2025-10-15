@@ -30,6 +30,34 @@ import Link from 'next/link'
 import { getPricingUseCases, OptionPrice } from '@/lib/pricing'
 import { useToast } from '@/hooks/use-toast'
 
+const DEFAULT_STORE_RATIO = 0.6
+
+function normalizeRevenueSplit(
+  price: number,
+  storeShare?: number | null,
+  castShare?: number | null
+): { storeShare: number; castShare: number } {
+  const safePrice = Math.max(0, price || 0)
+  let store = typeof storeShare === 'number' ? Math.max(0, storeShare) : Number.NaN
+  let cast = typeof castShare === 'number' ? Math.max(0, castShare) : Number.NaN
+
+  if (Number.isNaN(store) && Number.isNaN(cast)) {
+    store = Math.round(safePrice * DEFAULT_STORE_RATIO)
+    cast = Math.max(safePrice - store, 0)
+  } else if (Number.isNaN(store)) {
+    cast = Math.min(safePrice, cast)
+    store = Math.max(safePrice - cast, 0)
+  } else if (Number.isNaN(cast)) {
+    store = Math.min(safePrice, store)
+    cast = Math.max(safePrice - store, 0)
+  } else {
+    store = Math.min(store, safePrice)
+    cast = Math.max(safePrice - store, 0)
+  }
+
+  return { storeShare: store, castShare: cast }
+}
+
 export default function OptionInfoPage() {
   const [options, setOptions] = useState<OptionPrice[]>([])
   const [loading, setLoading] = useState(true)
@@ -49,6 +77,8 @@ export default function OptionInfoPage() {
     displayOrder: 0,
     isActive: true,
     note: '',
+    storeShare: 0,
+    castShare: 0,
   })
 
   const loadOptions = useCallback(async () => {
@@ -102,12 +132,19 @@ export default function OptionInfoPage() {
       displayOrder: options.length + 1,
       isActive: true,
       note: '',
+      storeShare: 0,
+      castShare: 0,
     })
     setDialogOpen(true)
   }
 
   const handleEditOption = (option: OptionPrice) => {
     setEditingOption(option)
+    const { storeShare, castShare } = normalizeRevenueSplit(
+      option.price,
+      option.storeShare,
+      option.castShare
+    )
     setFormData({
       name: option.name,
       description: option.description || '',
@@ -117,17 +154,26 @@ export default function OptionInfoPage() {
       displayOrder: option.displayOrder,
       isActive: option.isActive,
       note: option.note || '',
+      storeShare,
+      castShare,
     })
     setDialogOpen(true)
   }
 
   const handleSaveOption = async () => {
     try {
+      const { storeShare, castShare } = normalizeRevenueSplit(
+        formData.price,
+        formData.storeShare,
+        formData.castShare
+      )
       const dataToSave = {
         ...formData,
         description: formData.description || undefined,
         duration: formData.duration || undefined,
         note: formData.note || undefined,
+        storeShare,
+        castShare,
       }
 
       if (editingOption) {
@@ -329,7 +375,22 @@ export default function OptionInfoPage() {
                         <TableCell>
                           <Badge variant="outline">{getCategoryLabel(option.category)}</Badge>
                         </TableCell>
-                        <TableCell>¥{option.price.toLocaleString()}</TableCell>
+                        {(() => {
+                          const { storeShare, castShare } = normalizeRevenueSplit(
+                            option.price,
+                            option.storeShare,
+                            option.castShare
+                          )
+                          return (
+                            <TableCell>
+                              <div>¥{option.price.toLocaleString()}</div>
+                              <div className="text-xs text-muted-foreground">
+                                店舗 {storeShare.toLocaleString()}円 / キャスト{' '}
+                                {castShare.toLocaleString()}円
+                              </div>
+                            </TableCell>
+                          )
+                        })()}
                         <TableCell>
                           {option.duration ? (
                             <div className="flex items-center gap-1">
@@ -410,9 +471,17 @@ export default function OptionInfoPage() {
                       id="price"
                       type="number"
                       value={formData.price}
-                      onChange={(e) =>
-                        setFormData((prev) => ({ ...prev, price: parseInt(e.target.value) || 0 }))
-                      }
+                      onChange={(e) => {
+                        const value = Math.max(0, parseInt(e.target.value) || 0)
+                        setFormData((prev) => {
+                          const { storeShare, castShare } = normalizeRevenueSplit(
+                            value,
+                            prev.storeShare,
+                            prev.castShare
+                          )
+                          return { ...prev, price: value, storeShare, castShare }
+                        })
+                      }}
                     />
                   </div>
                   <div className="space-y-2">
@@ -431,6 +500,51 @@ export default function OptionInfoPage() {
                     />
                   </div>
                 </div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="storeShare">店取り分（円）</Label>
+                    <Input
+                      id="storeShare"
+                      type="number"
+                      value={formData.storeShare}
+                      onChange={(e) => {
+                        const value = Math.max(0, parseInt(e.target.value) || 0)
+                        setFormData((prev) => {
+                          const { storeShare, castShare } = normalizeRevenueSplit(
+                            prev.price,
+                            value,
+                            prev.castShare
+                          )
+                          return { ...prev, storeShare, castShare }
+                        })
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="castShare">キャスト取り分（円）</Label>
+                    <Input
+                      id="castShare"
+                      type="number"
+                      value={formData.castShare}
+                      onChange={(e) => {
+                        const value = Math.max(0, parseInt(e.target.value) || 0)
+                        setFormData((prev) => {
+                          const { storeShare, castShare } = normalizeRevenueSplit(
+                            prev.price,
+                            prev.storeShare,
+                            value
+                          )
+                          return { ...prev, storeShare, castShare }
+                        })
+                      }}
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  合計: 店舗 {formData.storeShare.toLocaleString()}円 / キャスト{' '}
+                  {formData.castShare.toLocaleString()}円 （コース料金 ¥
+                  {formData.price.toLocaleString()}）
+                </p>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="category">カテゴリー</Label>

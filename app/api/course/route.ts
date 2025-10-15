@@ -106,6 +106,8 @@ export async function POST(request: NextRequest) {
         name: data.name,
         duration: data.duration,
         price: data.price,
+        storeShare: data.storeShare ?? null,
+        castShare: data.castShare ?? null,
         description: data.description || '',
       },
       include: {
@@ -144,6 +146,8 @@ export async function PUT(request: NextRequest) {
         name: updates.name,
         duration: updates.duration,
         price: updates.price,
+        storeShare: updates.storeShare ?? null,
+        castShare: updates.castShare ?? null,
         description: updates.description,
       },
       include: {

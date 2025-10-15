@@ -89,6 +89,8 @@ model CoursePrice {
   name         String
   duration     Int
   price        Int
+  storeShare   Int?
+  castShare    Int?
   description  String
   reservations Reservation[]
 }
@@ -97,7 +99,41 @@ model OptionPrice {
   id           String              @id @default(cuid())
   name         String
   price        Int
+  storeShare   Int?
+  castShare    Int?
   reservations ReservationOption[]
+}
+
+model AreaInfo {
+  id           String         @id @default(cuid())
+  name         String
+  prefecture   String?
+  city         String?
+  description  String?
+  baseFee      Int?           @default(0)
+  travelTime   Int?           @default(0) // minutes
+  displayOrder Int            @default(0)
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  stations     StationInfo[]
+}
+
+model StationInfo {
+  id               String    @id @default(cuid())
+  name             String
+  line             String?
+  areaId           String?
+  transportationFee Int?     @default(0)
+  travelTime       Int?      @default(0) // minutes
+  description      String?
+  isActive         Boolean   @default(true)
+  displayOrder     Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  area             AreaInfo? @relation(fields: [areaId], references: [id])
+
+  @@index([areaId])
 }
 
 model ReservationOption {

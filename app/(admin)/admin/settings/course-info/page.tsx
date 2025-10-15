@@ -30,6 +30,41 @@ import Link from 'next/link'
 import { getPricingUseCases, CoursePrice, CourseDuration } from '@/lib/pricing'
 import { useToast } from '@/hooks/use-toast'
 
+const DEFAULT_STORE_RATIO = 0.6
+
+type DurationFormState = {
+  time: number
+  price: number
+  storeShare: number
+  castShare: number
+}
+
+function normalizeRevenueSplit(
+  price: number,
+  storeShare?: number | null,
+  castShare?: number | null
+): { storeShare: number; castShare: number } {
+  const safePrice = Math.max(0, price || 0)
+  let store = typeof storeShare === 'number' ? Math.max(0, storeShare) : Number.NaN
+  let cast = typeof castShare === 'number' ? Math.max(0, castShare) : Number.NaN
+
+  if (Number.isNaN(store) && Number.isNaN(cast)) {
+    store = Math.round(safePrice * DEFAULT_STORE_RATIO)
+    cast = Math.max(safePrice - store, 0)
+  } else if (Number.isNaN(store)) {
+    cast = Math.min(safePrice, cast)
+    store = Math.max(safePrice - cast, 0)
+  } else if (Number.isNaN(cast)) {
+    store = Math.min(safePrice, store)
+    cast = Math.max(safePrice - store, 0)
+  } else {
+    store = Math.min(store, safePrice)
+    cast = Math.max(safePrice - store, 0)
+  }
+
+  return { storeShare: store, castShare: cast }
+}
+
 export default function CourseInfoPage() {
   const [courses, setCourses] = useState<CoursePrice[]>([])
   const [loading, setLoading] = useState(true)
@@ -54,9 +89,11 @@ export default function CourseInfoPage() {
     maxAge: 70,
   })
 
-  const [durationForm, setDurationForm] = useState({
+  const [durationForm, setDurationForm] = useState<DurationFormState>({
     time: 60,
     price: 0,
+    storeShare: 0,
+    castShare: 0,
   })
 
   const loadCourses = useCallback(async () => {
@@ -122,7 +159,18 @@ export default function CourseInfoPage() {
     setFormData({
       name: course.name,
       description: course.description,
-      durations: [...course.durations],
+      durations: course.durations.map((duration) => {
+        const { storeShare, castShare } = normalizeRevenueSplit(
+          duration.price,
+          duration.storeShare,
+          duration.castShare
+        )
+        return {
+          ...duration,
+          storeShare,
+          castShare,
+        }
+      }),
       features: [...course.features],
       category: course.category === 'campaign' ? 'standard' : course.category,
       displayOrder: course.displayOrder,
@@ -137,9 +185,27 @@ export default function CourseInfoPage() {
 
   const handleSaveCourse = async () => {
     try {
+      const normalizedDurations = formData.durations.map((duration) => {
+        const { storeShare, castShare } = normalizeRevenueSplit(
+          duration.price,
+          duration.storeShare,
+          duration.castShare
+        )
+        return {
+          ...duration,
+          storeShare,
+          castShare,
+        }
+      })
+
+      const payload = {
+        ...formData,
+        durations: normalizedDurations,
+      }
+
       if (editingCourse) {
         // Update existing course
-        const updated = await pricingUseCases.updateCourse(editingCourse.id, formData)
+        const updated = await pricingUseCases.updateCourse(editingCourse.id, payload)
         setCourses((prev) =>
           prev.map((course) => (course.id === editingCourse.id ? updated : course))
         )
@@ -149,7 +215,7 @@ export default function CourseInfoPage() {
         })
       } else {
         // Create new course
-        const newCourse = await pricingUseCases.createCourse(formData)
+        const newCourse = await pricingUseCases.createCourse(payload)
         setCourses((prev) => [...prev, newCourse])
         toast({
           title: '追加完了',
@@ -200,11 +266,19 @@ export default function CourseInfoPage() {
 
   const addDuration = () => {
     if (durationForm.time > 0 && durationForm.price > 0) {
+      const { storeShare, castShare } = normalizeRevenueSplit(
+        durationForm.price,
+        durationForm.storeShare,
+        durationForm.castShare
+      )
       setFormData((prev) => ({
         ...prev,
-        durations: [...prev.durations, { ...durationForm }].sort((a, b) => a.time - b.time),
+        durations: [
+          ...prev.durations,
+          { ...durationForm, storeShare, castShare },
+        ].sort((a, b) => a.time - b.time),
       }))
-      setDurationForm({ time: 60, price: 0 })
+      setDurationForm({ time: 60, price: 0, storeShare: 0, castShare: 0 })
     }
   }
 
@@ -213,6 +287,37 @@ export default function CourseInfoPage() {
       ...prev,
       durations: prev.durations.filter((_, i) => i !== index),
     }))
+  }
+
+  const updateDurationForm = (field: keyof DurationFormState, value: number) => {
+    setDurationForm((prev) => {
+      const next = { ...prev, [field]: value }
+      if (field === 'price') {
+        const { storeShare, castShare } = normalizeRevenueSplit(
+          next.price,
+          next.storeShare,
+          next.castShare
+        )
+        return { ...next, storeShare, castShare }
+      }
+      if (field === 'storeShare') {
+        const { storeShare, castShare } = normalizeRevenueSplit(
+          next.price,
+          value,
+          next.castShare
+        )
+        return { ...next, storeShare, castShare }
+      }
+      if (field === 'castShare') {
+        const { storeShare, castShare } = normalizeRevenueSplit(
+          next.price,
+          next.storeShare,
+          value
+        )
+        return { ...next, storeShare, castShare }
+      }
+      return next
+    })
   }
 
   const addFeature = (feature: string) => {
@@ -359,9 +464,15 @@ export default function CourseInfoPage() {
                         <TableCell>
                           <div className="space-y-1">
                             {course.durations.map((duration, index) => (
-                              <div key={index} className="flex items-center gap-2 text-sm">
-                                <Clock className="h-3 w-3 text-gray-400" />
-                                {duration.time}分: ¥{duration.price.toLocaleString()}
+                              <div key={index} className="text-sm">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="h-3 w-3 text-gray-400" />
+                                  {duration.time}分: ¥{duration.price.toLocaleString()}
+                                </div>
+                                <div className="pl-5 text-xs text-muted-foreground">
+                                  店舗 {duration.storeShare?.toLocaleString() ?? 0}円 / キャスト{' '}
+                                  {duration.castShare?.toLocaleString() ?? 0}円
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -470,7 +581,7 @@ export default function CourseInfoPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>時間と料金</Label>
-                  <div className="mb-2 flex gap-2">
+                  <div className="mb-2 grid gap-2 md:grid-cols-[repeat(4,minmax(0,1fr))]">
                     <Input
                       type="number"
                       placeholder="時間（分）"
@@ -478,7 +589,7 @@ export default function CourseInfoPage() {
                       onChange={(e) =>
                         setDurationForm((prev) => ({
                           ...prev,
-                          time: parseInt(e.target.value) || 0,
+                          time: Math.max(0, parseInt(e.target.value) || 0),
                         }))
                       }
                     />
@@ -487,33 +598,127 @@ export default function CourseInfoPage() {
                       placeholder="料金（円）"
                       value={durationForm.price}
                       onChange={(e) =>
-                        setDurationForm((prev) => ({
-                          ...prev,
-                          price: parseInt(e.target.value) || 0,
-                        }))
+                        updateDurationForm('price', Math.max(0, parseInt(e.target.value) || 0))
                       }
                     />
-                    <Button type="button" onClick={addDuration}>
-                      追加
-                    </Button>
+                    <Input
+                      type="number"
+                      placeholder="店取り分（円）"
+                      value={durationForm.storeShare}
+                      onChange={(e) =>
+                        updateDurationForm(
+                          'storeShare',
+                          Math.max(0, parseInt(e.target.value) || 0)
+                        )
+                      }
+                    />
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        placeholder="キャスト取り分（円）"
+                        value={durationForm.castShare}
+                        onChange={(e) =>
+                          updateDurationForm(
+                            'castShare',
+                            Math.max(0, parseInt(e.target.value) || 0)
+                          )
+                        }
+                      />
+                      <Button type="button" onClick={addDuration}>
+                        追加
+                      </Button>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     {formData.durations.map((duration, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between rounded bg-gray-50 p-2"
+                        className="space-y-2 rounded bg-gray-50 p-3"
                       >
-                        <span>
-                          {duration.time}分: ¥{duration.price.toLocaleString()}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeDuration(index)}
-                        >
-                          削除
-                        </Button>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="font-medium">
+                            {duration.time}分: ¥{duration.price.toLocaleString()}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeDuration(index)}
+                            >
+                              削除
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="grid gap-2 md:grid-cols-3">
+                          <Input
+                            type="number"
+                            value={duration.price}
+                            onChange={(e) => {
+                              const nextPrice = Math.max(0, parseInt(e.target.value) || 0)
+                              setFormData((prev) => {
+                                const durations = [...prev.durations]
+                                const current = durations[index]
+                                const { storeShare, castShare } = normalizeRevenueSplit(
+                                  nextPrice,
+                                  current.storeShare,
+                                  current.castShare
+                                )
+                                durations[index] = {
+                                  ...current,
+                                  price: nextPrice,
+                                  storeShare,
+                                  castShare,
+                                }
+                                return { ...prev, durations }
+                              })
+                            }}
+                            placeholder="料金（円）"
+                          />
+                          <Input
+                            type="number"
+                            value={duration.storeShare ?? 0}
+                            onChange={(e) => {
+                              const nextStore = Math.max(0, parseInt(e.target.value) || 0)
+                              setFormData((prev) => {
+                                const durations = [...prev.durations]
+                                const current = durations[index]
+                                const { storeShare, castShare } = normalizeRevenueSplit(
+                                  current.price,
+                                  nextStore,
+                                  current.castShare
+                                )
+                                durations[index] = { ...current, storeShare, castShare }
+                                return { ...prev, durations }
+                              })
+                            }}
+                            placeholder="店取り分（円）"
+                          />
+                          <Input
+                            type="number"
+                            value={duration.castShare ?? 0}
+                            onChange={(e) => {
+                              const nextCast = Math.max(0, parseInt(e.target.value) || 0)
+                              setFormData((prev) => {
+                                const durations = [...prev.durations]
+                                const current = durations[index]
+                                const { storeShare, castShare } = normalizeRevenueSplit(
+                                  current.price,
+                                  current.storeShare,
+                                  nextCast
+                                )
+                                durations[index] = { ...current, storeShare, castShare }
+                                return { ...prev, durations }
+                              })
+                            }}
+                            placeholder="キャスト取り分（円）"
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          自動計算: 店舗 {duration.storeShare?.toLocaleString() ?? 0}円 / キャスト{' '}
+                          {duration.castShare?.toLocaleString() ?? 0}円（合計 ¥
+                          {duration.price.toLocaleString()}）
+                        </p>
                       </div>
                     ))}
                   </div>

@@ -23,6 +23,8 @@ export interface CourseDuration {
   price: number // in yen
   originalPrice?: number // original price before discount
   label?: string // label like "人気No.1" or "お試しフリー限定"
+  storeShare?: number
+  castShare?: number
 }
 
 // Option pricing model
@@ -36,6 +38,8 @@ export interface OptionPrice extends BaseEntity {
   isActive: boolean
   isPopular?: boolean
   note?: string
+  storeShare?: number
+  castShare?: number
 }
 
 // Additional fees model

@@ -71,6 +71,52 @@ import { CustomerRepositoryImpl } from '@/lib/customer/repository-impl'
 import { isVipMember } from '@/lib/utils'
 import { toast } from '@/hooks/use-toast'
 
+function toOptionalDate(value: unknown): Date | null {
+  if (!value) return null
+  const date = value instanceof Date ? value : new Date(value)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function calculateAgeFromDate(birthDate: Date | null): number | null {
+  if (!birthDate) return null
+  const today = new Date()
+  let age = today.getFullYear() - birthDate.getFullYear()
+  const monthDiff = today.getMonth() - birthDate.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--
+  }
+  return age
+}
+
+function normalizeCustomer(raw: any): Customer {
+  const birthDate = toOptionalDate(raw.birthDate) ?? new Date()
+  const createdAt = toOptionalDate(raw.createdAt) ?? new Date()
+  const updatedAt = toOptionalDate(raw.updatedAt) ?? createdAt
+  const registrationDate = toOptionalDate(raw.registrationDate) ?? createdAt
+  const lastLoginDate = toOptionalDate(raw.lastLoginDate) ?? undefined
+  const lastVisitDate = toOptionalDate(raw.lastVisitDate) ?? undefined
+
+  return {
+    ...raw,
+    password: raw.password ?? '',
+    birthDate,
+    createdAt,
+    updatedAt,
+    registrationDate,
+    lastLoginDate,
+    lastVisitDate,
+    age: raw.age ?? (calculateAgeFromDate(birthDate) ?? 0),
+    smsEnabled: raw.smsEnabled ?? false,
+    points: raw.points ?? 0,
+    ngCasts: Array.isArray(raw.ngCasts)
+      ? raw.ngCasts.map((ng: any) => ({
+          ...ng,
+          addedDate: toOptionalDate(ng.addedDate) ?? new Date(),
+        }))
+      : [],
+  }
+}
+
 const formSchema = z.object({
   name: z.string().min(1, '名前は必須です'),
   phone: z.string().min(1, '電話番号は必須です'),
@@ -125,18 +171,8 @@ export default function CustomerProfile() {
     },
   })
 
-  const calculateAge = (birthDate: Date) => {
-    const today = new Date()
-    let age = today.getFullYear() - birthDate.getFullYear()
-    const monthDiff = today.getMonth() - birthDate.getMonth()
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--
-    }
-    return age
-  }
-
   const birthDate = form.watch('birthDate')
-  const age = birthDate ? calculateAge(birthDate) : null
+  const age = calculateAgeFromDate(birthDate ?? null)
 
   useEffect(() => {
     if (!id) return
@@ -158,17 +194,18 @@ export default function CustomerProfile() {
         return
       }
 
-      setCustomer(fetchedCustomer as Customer)
+      const normalizedCustomer = normalizeCustomer(fetchedCustomer)
+      setCustomer(normalizedCustomer)
       form.reset({
-        name: fetchedCustomer.name,
-        phone: fetchedCustomer.phone,
-        email: fetchedCustomer.email,
-        password: fetchedCustomer.password,
-        birthDate: new Date(fetchedCustomer.birthDate),
-        memberType: fetchedCustomer.memberType as 'regular' | 'vip',
-        smsEnabled: (fetchedCustomer as any).smsEnabled || false,
-        notes: (fetchedCustomer as any).notes || '',
-        points: fetchedCustomer.points,
+        name: normalizedCustomer.name,
+        phone: normalizedCustomer.phone,
+        email: normalizedCustomer.email,
+        password: normalizedCustomer.password,
+        birthDate: normalizedCustomer.birthDate,
+        memberType: normalizedCustomer.memberType as 'regular' | 'vip',
+        smsEnabled: normalizedCustomer.smsEnabled || false,
+        notes: normalizedCustomer.notes || '',
+        points: normalizedCustomer.points,
       })
 
       // TODO: Implement and call APIs for these sections
@@ -218,7 +255,19 @@ export default function CustomerProfile() {
       })
 
       if (updatedCustomer) {
-        setCustomer(updatedCustomer as Customer)
+        const normalizedCustomer = normalizeCustomer(updatedCustomer)
+        setCustomer(normalizedCustomer)
+        form.reset({
+          name: normalizedCustomer.name,
+          phone: normalizedCustomer.phone,
+          email: normalizedCustomer.email,
+          password: normalizedCustomer.password,
+          birthDate: normalizedCustomer.birthDate,
+          memberType: normalizedCustomer.memberType as 'regular' | 'vip',
+          smsEnabled: normalizedCustomer.smsEnabled || false,
+          notes: normalizedCustomer.notes || '',
+          points: normalizedCustomer.points,
+        })
       }
 
       setIsEditing(false)

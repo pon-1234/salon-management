@@ -98,6 +98,8 @@ async function main() {
       name: 'スタンダードコース',
       duration: 60,
       price: 10000,
+      storeShare: 6000,
+      castShare: 4000,
       description: '基本的なコースです。',
     },
   })

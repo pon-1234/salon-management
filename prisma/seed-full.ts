@@ -31,6 +31,8 @@ async function main() {
         name: 'ショートコース',
         duration: 30,
         price: 5000,
+        storeShare: 3000,
+        castShare: 2000,
         description: 'お急ぎの方向けの短時間コース',
       },
     }),
@@ -39,6 +41,8 @@ async function main() {
         name: 'スタンダードコース',
         duration: 60,
         price: 10000,
+        storeShare: 6000,
+        castShare: 4000,
         description: '一番人気の標準コース',
       },
     }),
@@ -47,6 +51,8 @@ async function main() {
         name: 'ロングコース',
         duration: 90,
         price: 15000,
+        storeShare: 9000,
+        castShare: 6000,
         description: 'ゆったりとした時間を過ごしたい方向け',
       },
     }),
@@ -55,6 +61,8 @@ async function main() {
         name: 'VIPコース',
         duration: 120,
         price: 25000,
+        storeShare: 15000,
+        castShare: 10000,
         description: '特別な時間をお過ごしいただける最高級コース',
       },
     }),
@@ -67,24 +75,32 @@ async function main() {
       data: {
         name: '指名料',
         price: 2000,
+        storeShare: 1200,
+        castShare: 800,
       },
     }),
     prisma.optionPrice.create({
       data: {
         name: '延長30分',
         price: 5000,
+        storeShare: 3000,
+        castShare: 2000,
       },
     }),
     prisma.optionPrice.create({
       data: {
         name: 'ドリンクサービス',
         price: 1000,
+        storeShare: 600,
+        castShare: 400,
       },
     }),
     prisma.optionPrice.create({
       data: {
         name: 'アロマオイル',
         price: 3000,
+        storeShare: 1800,
+        castShare: 1200,
       },
     }),
   ])
