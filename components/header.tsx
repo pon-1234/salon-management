@@ -37,6 +37,7 @@ import { normalizeCastList } from '@/lib/cast/mapper'
 import { useNotifications } from '@/contexts/notification-context'
 import { StoreSelector } from '@/components/store/store-selector'
 import { useSession } from 'next-auth/react'
+import { CustomerSelectionDialog } from '@/components/customer/customer-selection-dialog'
 
 export function Header() {
   const { data: session } = useSession()
@@ -49,6 +50,7 @@ export function Header() {
   const { notifications, markAsRead, removeNotification, unreadCount } = useNotifications()
   const router = useRouter()
   const [selectedReservation, setSelectedReservation] = useState<any>(null)
+  const [showCustomerSelection, setShowCustomerSelection] = useState(false)
 
   useEffect(() => {
     const loadCasts = async () => {
@@ -113,15 +115,15 @@ export function Header() {
         {/* 店舗セレクター */}
         <StoreSelector />
 
-        <Link href="/admin/reservation">
-          <Button
-            variant="ghost"
-            className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
-          >
-            <Calendar className="h-5 w-5" />
-            <span className="text-xs text-gray-600">予約作成</span>
-          </Button>
-        </Link>
+        <Button
+          type="button"
+          variant="ghost"
+          className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
+          onClick={() => setShowCustomerSelection(true)}
+        >
+          <Calendar className="h-5 w-5" />
+          <span className="text-xs text-gray-600">予約作成</span>
+        </Button>
 
         <Link href="/admin/reservation-list">
           <Button
@@ -282,6 +284,10 @@ export function Header() {
           open={!!selectedReservation}
           onOpenChange={(open) => !open && setSelectedReservation(null)}
           reservation={selectedReservation}
+        />
+        <CustomerSelectionDialog
+          open={showCustomerSelection}
+          onOpenChange={setShowCustomerSelection}
         />
       </div>
     </>

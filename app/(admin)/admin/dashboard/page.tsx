@@ -693,31 +693,41 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {reservations.slice(0, 5).map((reservation) => (
-              <div
-                key={reservation.id}
-                className="flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50"
-                onClick={() => setSelectedReservation(reservation)}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400" />
-                  <div>
-                    <p className="font-medium">予約ID: {reservation.id}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {format(reservation.startTime, 'MM月dd日 HH:mm')} -{' '}
-                      {format(reservation.endTime, 'HH:mm')}
-                    </p>
+            {reservations.slice(0, 5).map((reservation) => {
+              const customerDisplayName =
+                reservation.customerName ??
+                (reservation.customerId ? `顧客${reservation.customerId.slice(0, 8)}` : '顧客')
+              const staffDisplayName =
+                reservation.staffName ??
+                (reservation.staffId ? `スタッフ${reservation.staffId.slice(0, 8)}` : 'スタッフ')
+
+              return (
+                <div
+                  key={reservation.id}
+                  className="flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50"
+                  onClick={() => setSelectedReservation(reservation)}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400" />
+                    <div>
+                      <p className="font-medium">{customerDisplayName}</p>
+                      <p className="text-sm text-muted-foreground">担当: {staffDisplayName}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {format(reservation.startTime, 'MM月dd日 HH:mm')} -{' '}
+                        {format(reservation.endTime, 'HH:mm')}
+                      </p>
+                      <p className="text-xs text-muted-foreground">ID: {reservation.id}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="font-medium">¥{reservation.price.toLocaleString()}</p>
+                    </div>
+                    <StatusBadge status={reservation.status} />
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="font-medium">¥{reservation.price.toLocaleString()}</p>
-                    <p className="text-sm text-muted-foreground">スタッフ{reservation.staffId}</p>
-                  </div>
-                  <StatusBadge status={reservation.status} />
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </CardContent>
       </Card>
