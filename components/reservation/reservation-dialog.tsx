@@ -386,31 +386,32 @@ export function ReservationDialog({
           </div>
         </div>
 
-        {validationError && (
-          <div className="border-b bg-red-50 px-4 py-3">
-            <Alert variant="destructive">
-              <AlertDescription>{validationError}</AlertDescription>
-            </Alert>
-          </div>
-        )}
+        <div className="flex-1 overflow-y-auto">
+          {validationError && (
+            <div className="border-b bg-red-50 px-4 py-3">
+              <Alert variant="destructive">
+                <AlertDescription>{validationError}</AlertDescription>
+              </Alert>
+            </div>
+          )}
 
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
-          <div className="border-b bg-white px-4 pt-3">
-            <TabsList className="grid w-full grid-cols-3 md:w-auto md:grid-cols-3">
-              <TabsTrigger value="overview">概要</TabsTrigger>
-              <TabsTrigger value="details">詳細</TabsTrigger>
-              <TabsTrigger value="history" className="relative">
-                履歴
-                {modificationAlerts.length > 0 && (
-                  <Badge variant="destructive" className="ml-2 h-4 px-1.5 py-0 text-[10px]">
-                    {modificationAlerts.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-            </TabsList>
-          </div>
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
+            <div className="border-b bg-white px-4 pt-3">
+              <TabsList className="grid w-full grid-cols-3 md:w-auto md:grid-cols-3">
+                <TabsTrigger value="overview">概要</TabsTrigger>
+                <TabsTrigger value="details">詳細</TabsTrigger>
+                <TabsTrigger value="history" className="relative">
+                  履歴
+                  {modificationAlerts.length > 0 && (
+                    <Badge variant="destructive" className="ml-2 h-4 px-1.5 py-0 text-[10px]">
+                      {modificationAlerts.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-          <TabsContent value="overview" className="space-y-6 p-4">
+            <TabsContent value="overview" className="space-y-6 p-4">
             <div className="grid gap-4 md:grid-cols-2">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -720,6 +721,7 @@ export function ReservationDialog({
             />
           </TabsContent>
         </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   )
