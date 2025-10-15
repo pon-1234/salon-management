@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -10,40 +10,151 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Search, User, Phone, Mail, Crown, Star, ChevronRight, UserPlus, Clock } from 'lucide-react'
+import {
+  Search,
+  User,
+  Phone,
+  Mail,
+  Crown,
+  Star,
+  ChevronRight,
+  UserPlus,
+  Clock,
+  Loader2,
+} from 'lucide-react'
 import { customers as customerData } from '@/lib/customer/data'
 import { Customer } from '@/lib/customer/types'
 import { useRouter } from 'next/navigation'
 import { cn, isVipMember } from '@/lib/utils'
+import { CustomerUseCases } from '@/lib/customer/usecases'
+import { CustomerRepositoryImpl } from '@/lib/customer/repository-impl'
+import { normalizePhoneQuery } from '@/lib/customer/utils'
 
 interface CustomerSelectionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
+type SearchStatus = 'idle' | 'loading' | 'ready' | 'error'
+
 export function CustomerSelectionDialog({ open, onOpenChange }: CustomerSelectionDialogProps) {
   const [searchTerm, setSearchTerm] = useState('')
+  const [allCustomers, setAllCustomers] = useState<Customer[]>(customerData)
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>(customerData)
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
+  const [status, setStatus] = useState<SearchStatus>('idle')
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const router = useRouter()
+  const hasLoadedRef = useRef(false)
+
+  const customerUseCases = useMemo(
+    () => new CustomerUseCases(new CustomerRepositoryImpl()),
+    []
+  )
 
   useEffect(() => {
-    // 検索フィルタリング
-    const filtered = customerData.filter((customer) => {
-      const searchLower = searchTerm.toLowerCase()
+    if (!open || hasLoadedRef.current) {
+      return
+    }
+
+    let ignore = false
+
+    const fetchCustomers = async () => {
+      setStatus('loading')
+      setErrorMessage(null)
+      try {
+        const customers = await customerUseCases.getAll()
+        if (!ignore) {
+          setAllCustomers(customers)
+          setFilteredCustomers(customers)
+          hasLoadedRef.current = true
+          setStatus('ready')
+        }
+      } catch (error) {
+        console.error('Failed to fetch customers:', error)
+        if (!ignore) {
+          setAllCustomers(customerData)
+          setFilteredCustomers(customerData)
+          hasLoadedRef.current = true
+          setStatus('ready')
+          setErrorMessage('顧客データの取得に失敗しました。モックデータを表示しています。')
+        }
+      }
+    }
+
+    fetchCustomers()
+
+    return () => {
+      ignore = true
+    }
+  }, [open, customerUseCases])
+
+  const filterLocally = (source: Customer[], term: string) => {
+    if (!term) {
+      return source
+    }
+    const lower = term.toLowerCase()
+    return source.filter((customer) => {
       return (
-        customer.name.toLowerCase().includes(searchLower) ||
-        customer.phone.includes(searchTerm) ||
-        customer.email.toLowerCase().includes(searchLower) ||
-        customer.id.includes(searchTerm)
+        customer.name.toLowerCase().includes(lower) ||
+        customer.phone.includes(term) ||
+        customer.email.toLowerCase().includes(lower) ||
+        customer.id.includes(term)
       )
     })
+  }
+
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    const trimmed = searchTerm.trim()
+    const normalizedPhone = normalizePhoneQuery(trimmed)
+    const shouldSearchByPhone =
+      normalizedPhone.length >= 3 && /^\d[\d\s-]*$/.test(trimmed.replace(/\s/g, ''))
+
+    if (shouldSearchByPhone) {
+      let ignore = false
+      setStatus('loading')
+      setErrorMessage(null)
+
+      customerUseCases
+        .searchByPhone(trimmed)
+        .then((customers) => {
+          if (ignore) return
+          const list = customers.length > 0 ? customers : filterLocally(allCustomers, trimmed)
+          setFilteredCustomers(list)
+          if (selectedCustomer && !list.some((c) => c.id === selectedCustomer.id)) {
+            setSelectedCustomer(null)
+          }
+          setStatus('ready')
+        })
+        .catch((error) => {
+          console.error('Phone search failed:', error)
+          if (ignore) return
+          setFilteredCustomers(filterLocally(allCustomers, trimmed))
+          setStatus('ready')
+          setErrorMessage('電話番号による検索に失敗しました。絞り込み結果を表示しています。')
+        })
+
+      return () => {
+        ignore = true
+      }
+    }
+
+    const filtered = filterLocally(allCustomers, trimmed)
     setFilteredCustomers(filtered)
-  }, [searchTerm])
+    if (selectedCustomer && !filtered.some((c) => c.id === selectedCustomer.id)) {
+      setSelectedCustomer(null)
+    }
+    if (status !== 'loading') {
+      setStatus('ready')
+    }
+  }, [searchTerm, open, allCustomers, customerUseCases, selectedCustomer, status])
 
   const handleCustomerSelect = (customer: Customer) => {
     setSelectedCustomer(customer)
@@ -51,14 +162,12 @@ export function CustomerSelectionDialog({ open, onOpenChange }: CustomerSelectio
 
   const handleProceed = () => {
     if (selectedCustomer) {
-      // 選択した顧客IDをクエリパラメータとして予約画面へ遷移
       router.push(`/admin/reservation?customerId=${selectedCustomer.id}`)
       onOpenChange(false)
     }
   }
 
   const handleNewCustomer = () => {
-    // 新規顧客登録画面へ遷移
     router.push('/admin/customers/new')
     onOpenChange(false)
   }
@@ -96,7 +205,6 @@ export function CustomerSelectionDialog({ open, onOpenChange }: CustomerSelectio
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* 検索バー */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
             <Input
@@ -108,19 +216,24 @@ export function CustomerSelectionDialog({ open, onOpenChange }: CustomerSelectio
             />
           </div>
 
-          {/* 新規顧客登録ボタン */}
+          {status === 'loading' && (
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              検索中です…
+            </div>
+          )}
+          {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
+
           <Button onClick={handleNewCustomer} variant="outline" className="w-full justify-start">
             <UserPlus className="mr-2 h-4 w-4" />
             新規顧客を登録
           </Button>
 
-          {/* タイムライン確認ボタン */}
           <Button onClick={handleOpenTimeline} variant="secondary" className="w-full justify-start">
             <Clock className="mr-2 h-4 w-4" />
             タイムラインを確認する
           </Button>
 
-          {/* 顧客リスト */}
           <ScrollArea className="h-[400px] pr-4">
             <div className="space-y-2">
               {filteredCustomers.length > 0 ? (
@@ -164,6 +277,11 @@ export function CustomerSelectionDialog({ open, onOpenChange }: CustomerSelectio
                     </div>
                   </Card>
                 ))
+              ) : status === 'loading' ? (
+                <div className="py-8 text-center text-gray-500">
+                  <Loader2 className="mx-auto mb-4 h-6 w-6 animate-spin text-gray-400" />
+                  <p>検索中です…</p>
+                </div>
               ) : (
                 <div className="py-8 text-center text-gray-500">
                   <User className="mx-auto mb-4 h-12 w-12 text-gray-300" />
@@ -173,15 +291,14 @@ export function CustomerSelectionDialog({ open, onOpenChange }: CustomerSelectio
             </div>
           </ScrollArea>
 
-          {/* アクションボタン */}
           <div className="flex items-center justify-between border-t pt-4">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               キャンセル
             </Button>
             <Button
               onClick={handleProceed}
-              disabled={!selectedCustomer}
-              className="bg-purple-600 hover:bg-purple-700"
+              disabled={!selectedCustomer || status === 'loading'}
+              className="bg-purple-600 hover:bg-purple-700 disabled:opacity-70"
             >
               この顧客で予約を作成
               <ChevronRight className="ml-1 h-4 w-4" />
