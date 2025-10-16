@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,11 +30,13 @@ import {
   Calendar,
   Users,
   Loader2,
+  Train,
 } from 'lucide-react'
 import { Customer } from '@/lib/customer/types'
 import { Cast } from '@/lib/cast/types'
 import { usePricing } from '@/hooks/use-pricing'
 import { useAvailability } from '@/hooks/use-availability'
+import { useLocations } from '@/hooks/use-locations'
 import { TimeSlotPicker } from './time-slot-picker'
 import { toast } from '@/hooks/use-toast'
 import { isVipMember } from '@/lib/utils'
@@ -48,7 +50,13 @@ type PriceBreakdown = {
   transportationFee: number
   additionalFee: number
   total: number
+  storeRevenue: number
+  staffRevenue: number
 }
+
+const marketingChannels = ['WEB', '店リピート', '電話', '紹介', 'SNS']
+
+const paymentMethods = ['現金', 'クレジットカード', 'ポイント利用', '振込']
 
 const formatYen = (amount: number) => `${amount.toLocaleString()}円`
 
@@ -74,29 +82,44 @@ const getDesignationLabel = (type: DesignationType, cast?: Cast) => {
   return 'フリー'
 }
 
+interface NormalizedCourse {
+  id: string
+  name: string
+  duration: number
+  price: number
+  storeShare?: number | null
+  castShare?: number | null
+}
+
+interface NormalizedOption {
+  id: string
+  name: string
+  price: number
+  note?: string | null
+  storeShare?: number | null
+  castShare?: number | null
+}
+
 interface BookingDetails {
   customerName: string
   customerType: string
   phoneNumber: string
   points: number
+  areaId: string
+  stationId: string
+  stationName: string
+  stationTravelTime: number
   bookingStatus: string
-  staffConfirmation: string
-  customerConfirmation: string
-  prefecture: string
-  district: string
-  location: string
-  locationType: string
-  specificLocation: string
   staff: string
   marketingChannel: string
   date: string
   time: string
-  inOutTime: string
-  freeExtension: string
   options: Record<string, boolean>
   transportationFee: number
-  paymentMethod: string
   additionalFee: number
+  paymentMethod: string
+  locationMemo: string
+  notes: string
 }
 
 interface QuickBookingDialogProps {
@@ -117,115 +140,199 @@ export function QuickBookingDialog({
   const [currentStep, setCurrentStep] = useState(1)
   const totalSteps = 3
 
-  // Get pricing data from centralized system
-  const { courses, options, loading: pricingLoading } = usePricing()
+  const {
+    courses,
+    options,
+    coursePrices,
+    optionPrices,
+    loading: pricingLoading,
+  } = usePricing()
+  const { areas, stations, loading: locationsLoading } = useLocations()
 
-  // Get available options for the selected staff
-  const availableOptions = selectedStaff?.availableOptions
-    ? options.filter((option) => selectedStaff.availableOptions.includes(option.id))
-    : options
-  const [bookingDetails, setBookingDetails] = useState<BookingDetails>({
-    customerName: selectedCustomer?.name || '', // 更新
-    customerType: isVipMember(selectedCustomer?.memberType) ? 'VIPメンバー' : '通常会員', // 更新
-    phoneNumber: selectedCustomer?.phone || '', // 更新
-    points: selectedCustomer?.points || 0, // 更新
-    bookingStatus: '仮予約',
-    staffConfirmation: '未確認',
-    customerConfirmation: '未確認',
-    prefecture: '東京都',
-    district: '豊島区',
-    location: '池袋（北口・西口）(0円)',
-    locationType: 'ホテル利用',
-    specificLocation: 'グランドホテル 605',
-    staff: selectedStaff?.name || '', // Remove default "やぎ"
-    marketingChannel: '店リピート',
-    date: selectedTime ? format(selectedTime, 'yyyy-MM-dd') : '',
-    time: selectedTime ? format(selectedTime, 'HH:mm') : '',
-    inOutTime: '',
-    freeExtension: '0',
-    options: {},
-    transportationFee: 0,
-    paymentMethod: '現金',
-    additionalFee: 0,
-  })
+  const courseCatalog: NormalizedCourse[] = useMemo(() => {
+    if (coursePrices.length > 0) {
+      return coursePrices.map((course) => ({
+        id: course.id,
+        name: course.name,
+        duration: course.duration,
+        price: course.price,
+        storeShare: course.storeShare ?? null,
+        castShare: course.castShare ?? null,
+      }))
+    }
+
+    return courses.map((course) => ({
+      id: course.id,
+      name: course.name,
+      duration: course.duration,
+      price: course.price,
+      storeShare: null,
+      castShare: null,
+    }))
+  }, [courses, coursePrices])
+
+  const normalizedOptions: NormalizedOption[] = useMemo(() => {
+    if (optionPrices.length > 0) {
+      return optionPrices.map((option) => ({
+        id: option.id,
+        name: option.name,
+        price: option.price,
+        note: option.note,
+        storeShare: option.storeShare ?? null,
+        castShare: option.castShare ?? null,
+      }))
+    }
+
+    return options.map((option) => ({
+      id: option.id,
+      name: option.name,
+      price: option.price,
+      note: option.note ?? null,
+      storeShare: null,
+      castShare: null,
+    }))
+  }, [optionPrices, options])
+
   const [selectedCourseId, setSelectedCourseId] = useState<string>('')
   const [designationType, setDesignationType] = useState<DesignationType>('none')
 
-  const selectedCourse = useMemo(
-    () => courses.find((course) => course.id === selectedCourseId),
-    [courses, selectedCourseId]
-  )
+  const [selectedAreaId, setSelectedAreaId] = useState<string>('')
+  const [selectedStationId, setSelectedStationId] = useState<string>('')
 
-  const designationOptions = useMemo(
-    () => {
-      const candidates: Array<{ type: DesignationType; label: string; fee: number }> = [
-        { type: 'none', label: 'フリー', fee: 0 },
-      ]
-
-      if (selectedStaff?.regularDesignationFee) {
-        candidates.push({
-          type: 'regular',
-          label: '本指名',
-          fee: selectedStaff.regularDesignationFee,
-        })
-      }
-
-      if (selectedStaff?.specialDesignationFee) {
-        candidates.push({
-          type: 'special',
-          label: '特別指名',
-          fee: selectedStaff.specialDesignationFee,
-        })
-      }
-
-      return candidates
-    },
-    [selectedStaff]
-  )
-
-  const priceBreakdown = useMemo<PriceBreakdown>(
-    () => {
-      const basePrice = selectedCourse?.price ?? 0
-      const designationFeeAmount = getDesignationFeeAmount(designationType, selectedStaff)
-      const optionsTotal = availableOptions.reduce((sum, option) => {
-        return bookingDetails.options[option.id] ? sum + option.price : sum
-      }, 0)
-      const transportationFee = bookingDetails.transportationFee || 0
-      const additionalFee = bookingDetails.additionalFee || 0
-
-      const total =
-        basePrice + designationFeeAmount + optionsTotal + transportationFee + additionalFee
-
-      return {
-        basePrice,
-        designationFee: designationFeeAmount,
-        optionsTotal,
-        transportationFee,
-        additionalFee,
-        total,
-      }
-    },
-    [
-      selectedCourse,
-      designationType,
-      selectedStaff,
-      availableOptions,
-      bookingDetails.options,
-      bookingDetails.transportationFee,
-      bookingDetails.additionalFee,
-    ]
-  )
+  const [bookingDetails, setBookingDetails] = useState<BookingDetails>({
+    customerName: selectedCustomer?.name ?? '',
+    customerType: selectedCustomer ? (isVipMember(selectedCustomer.memberType) ? 'VIP会員' : '通常会員') : '',
+    phoneNumber: selectedCustomer?.phone ?? '',
+    points: selectedCustomer?.points ?? 0,
+    areaId: '',
+    stationId: '',
+    stationName: '',
+    stationTravelTime: 0,
+    bookingStatus: '仮予約',
+    staff: selectedStaff?.name ?? '',
+    marketingChannel: 'WEB',
+    date: selectedTime ? format(selectedTime, 'yyyy-MM-dd') : '',
+    time: selectedTime ? format(selectedTime, 'HH:mm') : '',
+    options: {},
+    transportationFee: 0,
+    additionalFee: 0,
+    paymentMethod: '現金',
+    locationMemo: '',
+    notes: '',
+  })
 
   useEffect(() => {
-    if (courses.length === 0) {
+    if (!pricingLoading && courseCatalog.length > 0) {
+      setSelectedCourseId((prev) => prev || courseCatalog[0].id)
+    }
+  }, [courseCatalog, pricingLoading])
+
+  useEffect(() => {
+    if (!locationsLoading && areas.length > 0) {
+      setSelectedAreaId((prev) => prev || areas[0].id)
+    }
+  }, [areas, locationsLoading])
+
+  useEffect(() => {
+    if (!selectedAreaId) {
+      setSelectedStationId('')
       return
     }
-
-    const hasSelectedCourse = courses.some((course) => course.id === selectedCourseId)
-    if (!selectedCourseId || !hasSelectedCourse) {
-      setSelectedCourseId(courses[0].id)
+    const areaStations = stations.filter((station) => station.areaId === selectedAreaId)
+    if (areaStations.length === 0) {
+      setSelectedStationId('')
+      return
     }
-  }, [courses, selectedCourseId])
+    setSelectedStationId((prev) =>
+      prev && areaStations.some((station) => station.id === prev) ? prev : areaStations[0].id
+    )
+  }, [selectedAreaId, stations])
+
+  useEffect(() => {
+    const area = areas.find((entry) => entry.id === selectedAreaId)
+    const station = stations.find((entry) => entry.id === selectedStationId)
+
+    setBookingDetails((prev) => ({
+      ...prev,
+      areaId: selectedAreaId,
+      stationId: selectedStationId,
+      stationName: station?.name ?? '',
+      stationTravelTime: station?.travelTime ?? 0,
+      locationMemo: prev.locationMemo || station?.name || '',
+      transportationFee: station?.transportationFee ?? prev.transportationFee,
+    }))
+
+    if (area) {
+      setBookingDetails((prev) => ({
+        ...prev,
+        marketingChannel: prev.marketingChannel || 'WEB',
+      }))
+    }
+  }, [selectedAreaId, selectedStationId, areas, stations])
+
+  useEffect(() => {
+    setBookingDetails((prev) => ({
+      ...prev,
+      customerName: selectedCustomer?.name ?? '',
+      customerType: selectedCustomer
+        ? isVipMember(selectedCustomer.memberType)
+          ? 'VIP会員'
+          : '通常会員'
+        : '',
+      phoneNumber: selectedCustomer?.phone ?? '',
+      points: selectedCustomer?.points ?? 0,
+    }))
+  }, [selectedCustomer])
+
+  useEffect(() => {
+    if (selectedStaff) {
+      setBookingDetails((prev) => ({
+        ...prev,
+        staff: selectedStaff.name,
+      }))
+
+      setDesignationType((prev) => {
+        if (prev === 'special' && selectedStaff.specialDesignationFee) {
+          return prev
+        }
+        if (prev === 'regular' && selectedStaff.regularDesignationFee) {
+          return prev
+        }
+        if (selectedStaff.regularDesignationFee) {
+          return 'regular'
+        }
+        if (selectedStaff.specialDesignationFee) {
+          return 'special'
+        }
+        return 'none'
+      })
+    } else {
+      setDesignationType('none')
+    }
+  }, [selectedStaff])
+
+  useEffect(() => {
+    if (selectedTime) {
+      setBookingDetails((prev) => ({
+        ...prev,
+        date: format(selectedTime, 'yyyy-MM-dd'),
+        time: format(selectedTime, 'HH:mm'),
+      }))
+    }
+  }, [selectedTime])
+
+  const selectedCourse = useMemo(
+    () => courseCatalog.find((course) => course.id === selectedCourseId) ?? null,
+    [courseCatalog, selectedCourseId]
+  )
+
+  const availableOptions = useMemo(() => {
+    if (!selectedStaff?.availableOptions || selectedStaff.availableOptions.length === 0) {
+      return normalizedOptions
+    }
+    const allowedIds = new Set(selectedStaff.availableOptions)
+    return normalizedOptions.filter((option) => allowedIds.has(option.id))
+  }, [normalizedOptions, selectedStaff])
 
   useEffect(() => {
     setBookingDetails((prev) => {
@@ -233,99 +340,158 @@ export function QuickBookingDialog({
         return prev
       }
 
-      const validOptionIds = new Set(availableOptions.map((option) => option.id))
-      const filteredEntries = Object.entries(prev.options).filter(([optionId]) =>
-        validOptionIds.has(optionId)
+      const validIds = new Set(availableOptions.map((option) => option.id))
+      const nextOptions = Object.fromEntries(
+        Object.entries(prev.options).filter(([optionId]) => validIds.has(optionId))
       )
 
-      if (filteredEntries.length === Object.keys(prev.options).length) {
+      if (Object.keys(nextOptions).length === Object.keys(prev.options).length) {
         return prev
       }
 
       return {
         ...prev,
-        options: Object.fromEntries(filteredEntries),
+        options: nextOptions,
       }
     })
   }, [availableOptions])
 
-  useEffect(() => {
-    if (!selectedTime) return
-    setBookingDetails((prev) => ({
-      ...prev,
-      date: format(selectedTime, 'yyyy-MM-dd'),
-      time: format(selectedTime, 'HH:mm'),
-    }))
-  }, [selectedTime])
+  const optionSelections = useMemo(
+    () =>
+      Object.entries(bookingDetails.options)
+        .filter(([, selected]) => selected)
+        .map(([optionId]) => optionId),
+    [bookingDetails.options]
+  )
 
-  useEffect(() => {
-    if (!selectedStaff) {
-      setDesignationType('none')
-      return
+  const selectedOptionDetails = useMemo(
+    () => availableOptions.filter((option) => optionSelections.includes(option.id)),
+    [availableOptions, optionSelections]
+  )
+
+  const priceBreakdown = useMemo<PriceBreakdown>(() => {
+    const basePrice = selectedCourse?.price ?? 0
+    const designationFeeAmount = getDesignationFeeAmount(designationType, selectedStaff)
+    const optionsTotal = selectedOptionDetails.reduce((sum, option) => sum + option.price, 0)
+    const transportationFee = bookingDetails.transportationFee || 0
+    const additionalFee = bookingDetails.additionalFee || 0
+
+    const total =
+      basePrice + designationFeeAmount + optionsTotal + transportationFee + additionalFee
+
+    const courseStoreShare = selectedCourse
+      ? Math.min(selectedCourse.storeShare ?? Math.round(basePrice * 0.6), basePrice)
+      : 0
+    const courseCastShare = selectedCourse
+      ? Math.max(selectedCourse.castShare ?? basePrice - courseStoreShare, 0)
+      : 0
+
+    const optionStoreShare = selectedOptionDetails.reduce((sum, option) => {
+      const store = Math.min(option.storeShare ?? Math.round(option.price * 0.6), option.price)
+      return sum + store
+    }, 0)
+    const optionCastShare = selectedOptionDetails.reduce((sum, option) => {
+      const store = Math.min(option.storeShare ?? Math.round(option.price * 0.6), option.price)
+      const cast = Math.max(option.castShare ?? option.price - store, 0)
+      return sum + cast
+    }, 0)
+
+    const storeRevenue =
+      courseStoreShare + optionStoreShare + transportationFee + additionalFee
+    const staffRevenue = courseCastShare + optionCastShare + designationFeeAmount
+
+    return {
+      basePrice,
+      designationFee: designationFeeAmount,
+      optionsTotal,
+      transportationFee,
+      additionalFee,
+      total,
+      storeRevenue,
+      staffRevenue,
     }
+  }, [
+    bookingDetails.additionalFee,
+    bookingDetails.transportationFee,
+    designationType,
+    selectedCourse,
+    selectedOptionDetails,
+    selectedStaff,
+  ])
 
-    setBookingDetails((prev) => ({
-      ...prev,
-      staff: selectedStaff.name,
-    }))
-
-    setDesignationType((prev) => {
-      if (prev === 'special' && selectedStaff.specialDesignationFee) {
-        return prev
-      }
-      if (prev === 'regular' && selectedStaff.regularDesignationFee) {
-        return prev
-      }
-      if (selectedStaff.regularDesignationFee) {
-        return 'regular'
-      }
-      if (selectedStaff.specialDesignationFee) {
-        return 'special'
-      }
-      return 'none'
-    })
-  }, [selectedStaff])
-
-  useEffect(() => {
-    if (selectedCustomer) {
-      setBookingDetails((prev) => ({
-        ...prev,
-        customerName: selectedCustomer.name,
-        customerType: isVipMember(selectedCustomer.memberType) ? 'VIPメンバー' : '通常会員',
-        phoneNumber: selectedCustomer.phone,
-        points: selectedCustomer.points,
-      }))
-    }
-  }, [selectedCustomer])
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  const handleTextChange = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    const { name, value } = e.target
-    setBookingDetails((prev) => ({ ...prev, [name]: value }))
+    const { name, value } = event.target
+    setBookingDetails((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
   }
 
-  const handleCheckboxChange = (name: string, checked: boolean) => {
+  const handleNumberChange = (name: keyof BookingDetails, value: number) => {
     setBookingDetails((prev) => ({
       ...prev,
-      options: { ...prev.options, [name]: checked },
+      [name]: Number.isNaN(value) ? 0 : value,
     }))
+  }
+
+  const handleCheckboxChange = (optionId: string, checked: boolean) => {
+    setBookingDetails((prev) => ({
+      ...prev,
+      options: {
+        ...prev.options,
+        [optionId]: checked,
+      },
+    }))
+  }
+
+  const { checkAvailability } = useAvailability()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const validateStep = () => {
+    if (currentStep === 1) {
+      if (!selectedCustomer) {
+        toast({
+          title: '顧客未選択',
+          description: '顧客を選択してから進めてください。',
+          variant: 'destructive',
+        })
+        return false
+      }
+      if (!selectedCourse) {
+        toast({
+          title: 'コース未選択',
+          description: 'コースを選択してください。',
+          variant: 'destructive',
+        })
+        return false
+      }
+      if (!bookingDetails.date || !bookingDetails.time) {
+        toast({
+          title: '日時未設定',
+          description: '予約日時を入力してください。',
+          variant: 'destructive',
+        })
+        return false
+      }
+    }
+
+    return true
   }
 
   const nextStep = () => {
+    if (!validateStep()) return
     if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1)
+      setCurrentStep((prev) => prev + 1)
     }
   }
 
   const prevStep = () => {
     if (currentStep > 1) {
-      setCurrentStep(currentStep - 1)
+      setCurrentStep((prev) => prev - 1)
     }
   }
-
-  const { checkAvailability } = useAvailability()
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async () => {
     if (!selectedStaff) {
@@ -346,10 +512,19 @@ export function QuickBookingDialog({
       return
     }
 
+    if (!selectedCustomer) {
+      toast({
+        title: '顧客未選択',
+        description: '顧客を選択してください。',
+        variant: 'destructive',
+      })
+      return
+    }
+
     if (!bookingDetails.date || !bookingDetails.time) {
       toast({
         title: '日時未設定',
-        description: '予約日時を選択してください。',
+        description: '予約日時を入力してください。',
         variant: 'destructive',
       })
       return
@@ -358,20 +533,17 @@ export function QuickBookingDialog({
     try {
       setIsSubmitting(true)
 
-      // Parse selected time and course duration
       const [hours, minutes] = bookingDetails.time.split(':').map(Number)
       if (Number.isNaN(hours) || Number.isNaN(minutes)) {
         throw new Error('予約時間の形式が正しくありません。')
       }
+
       const startTime = new Date(bookingDetails.date)
       startTime.setHours(hours, minutes, 0, 0)
-
       const endTime = new Date(startTime)
-      endTime.setMinutes(endTime.getMinutes() + selectedCourse.duration)
+      endTime.setMinutes(endTime.getMinutes() + (selectedCourse?.duration ?? 0))
 
-      // Check availability before submitting
       const availability = await checkAvailability(selectedStaff.id, startTime, endTime)
-
       if (!availability.available) {
         toast({
           title: '予約不可',
@@ -381,36 +553,39 @@ export function QuickBookingDialog({
         return
       }
 
-      // Create reservation
       const response = await fetch('/api/reservation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          customerId: selectedCustomer?.id,
+          customerId: selectedCustomer.id,
           castId: selectedStaff.id,
           courseId: selectedCourseId,
           startTime: startTime.toISOString(),
           endTime: endTime.toISOString(),
           status: bookingDetails.bookingStatus === '確定済' ? 'confirmed' : 'pending',
-          options: Object.entries(bookingDetails.options)
-            .filter(([_, selected]) => selected)
-            .map(([optionId]) => optionId),
+          options: optionSelections,
+          price: priceBreakdown.total,
+          designationType,
+          designationFee: priceBreakdown.designationFee,
+          transportationFee: priceBreakdown.transportationFee,
+          additionalFee: priceBreakdown.additionalFee,
+          paymentMethod: bookingDetails.paymentMethod,
+          marketingChannel: bookingDetails.marketingChannel,
+          areaId: bookingDetails.areaId || null,
+          stationId: bookingDetails.stationId || null,
+          locationMemo: bookingDetails.locationMemo,
+          notes: bookingDetails.notes,
+          storeRevenue: priceBreakdown.storeRevenue,
+          staffRevenue: priceBreakdown.staffRevenue,
         }),
       })
 
-      const data = await response.json()
+      const data = await response.json().catch(() => ({}))
 
       if (!response.ok) {
-        if (response.status === 409) {
-          toast({
-            title: '予約不可',
-            description: data.error || 'この時間帯は予約できません。',
-            variant: 'destructive',
-          })
-        } else {
-          throw new Error(data.error || '予約の作成に失敗しました')
-        }
-        return
+        const errorMessage =
+          data?.error || (response.status === 409 ? 'この時間帯は予約できません。' : '予約の作成に失敗しました')
+        throw new Error(errorMessage)
       }
 
       toast({
@@ -457,6 +632,10 @@ export function QuickBookingDialog({
 
   const stepTitles = ['基本情報', '詳細設定', '確認・完了']
 
+  const stationOptions = stations.filter((station) => !selectedAreaId || station.areaId === selectedAreaId)
+  const selectedStation = stations.find((station) => station.id === selectedStationId) ?? null
+  const selectedArea = areas.find((area) => area.id === selectedAreaId) ?? null
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col overflow-hidden">
@@ -471,7 +650,6 @@ export function QuickBookingDialog({
         <div className="flex-1 overflow-y-auto px-2">
           {currentStep === 1 && (
             <div className="space-y-6">
-              {/* Customer Information Card */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center">
@@ -483,18 +661,20 @@ export function QuickBookingDialog({
                   <div className="rounded-lg bg-gray-50 p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="text-lg font-semibold">{bookingDetails.customerName}</h3>
+                        <h3 className="text-lg font-semibold">{bookingDetails.customerName || '未選択'}</h3>
                         <Badge variant="secondary" className="mt-1">
-                          {bookingDetails.customerType}
+                          {bookingDetails.customerType || '---'}
                         </Badge>
                       </div>
                       <div className="text-right">
                         <div className="flex items-center">
                           <Phone className="mr-1 h-4 w-4" />
-                          <span className="font-semibold">{bookingDetails.phoneNumber}</span>
+                          <span className="font-semibold">
+                            {bookingDetails.phoneNumber || '未設定'}
+                          </span>
                         </div>
                         <div className="mt-1 text-sm text-gray-600">
-                          現在 {bookingDetails.points}pt
+                          現在 {bookingDetails.points.toLocaleString()}pt
                         </div>
                       </div>
                     </div>
@@ -502,7 +682,6 @@ export function QuickBookingDialog({
                 </CardContent>
               </Card>
 
-              {/* Service Selection Card */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center">
@@ -516,13 +695,22 @@ export function QuickBookingDialog({
                       <Label>日付</Label>
                       <Input
                         type="date"
+                        name="date"
                         value={bookingDetails.date}
-                        readOnly
-                        className="bg-gray-50"
+                        onChange={handleTextChange}
+                      />
+                    </div>
+                    <div>
+                      <Label>時間</Label>
+                      <Input
+                        type="time"
+                        name="time"
+                        value={bookingDetails.time}
+                        onChange={handleTextChange}
                       />
                     </div>
                     <div className="col-span-2">
-                      <Label>時間選択</Label>
+                      <Label>時間帯を選択</Label>
                       {selectedStaff && bookingDetails.date && selectedCourse ? (
                         <TimeSlotPicker
                           castId={selectedStaff.id}
@@ -532,12 +720,16 @@ export function QuickBookingDialog({
                           onTimeSelect={(time) => {
                             const date = new Date(time)
                             const timeStr = format(date, 'HH:mm')
-                            handleInputChange({ target: { name: 'time', value: timeStr } } as any)
+                            setBookingDetails((prev) => ({
+                              ...prev,
+                              time: timeStr,
+                              date: format(date, 'yyyy-MM-dd'),
+                            }))
                           }}
                         />
                       ) : (
                         <div className="rounded-lg bg-gray-50 p-4 text-center text-gray-500">
-                          担当者・日付・コースを選択してください
+                          担当者・日付・コースを選択すると空き時間が表示されます
                         </div>
                       )}
                     </div>
@@ -545,7 +737,7 @@ export function QuickBookingDialog({
 
                   <div>
                     <Label>担当キャスト</Label>
-                    <Input value={bookingDetails.staff} readOnly className="bg-gray-50" />
+                    <Input value={bookingDetails.staff || '未選択'} readOnly className="bg-gray-50" />
                   </div>
 
                   <div>
@@ -560,12 +752,12 @@ export function QuickBookingDialog({
                       <SelectContent>
                         {pricingLoading ? (
                           <div className="px-4 py-2 text-sm text-gray-500">読み込み中...</div>
-                        ) : courses.length === 0 ? (
+                        ) : courseCatalog.length === 0 ? (
                           <div className="px-4 py-2 text-sm text-gray-500">
                             利用可能なコースがありません
                           </div>
                         ) : (
-                          courses.map((course) => (
+                          courseCatalog.map((course) => (
                             <SelectItem key={course.id} value={course.id}>
                               {course.name} {course.duration}分 {course.price.toLocaleString()}円
                             </SelectItem>
@@ -577,7 +769,100 @@ export function QuickBookingDialog({
                 </CardContent>
               </Card>
 
-              {/* Designation Settings */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center">
+                    <MapPin className="mr-2 h-5 w-5" />
+                    出張エリア・待ち合わせ場所
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>エリア</Label>
+                      <Select
+                        value={selectedAreaId}
+                        onValueChange={(value) => setSelectedAreaId(value)}
+                        disabled={locationsLoading}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="エリアを選択" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {areas.length === 0 ? (
+                            <div className="px-4 py-2 text-sm text-gray-500">
+                              エリア情報がありません
+                            </div>
+                          ) : (
+                            areas.map((area) => (
+                              <SelectItem key={area.id} value={area.id}>
+                                {area.name}
+                                {area.baseFee ? `（+${area.baseFee}円）` : ''}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>待ち合わせ駅</Label>
+                      <Select
+                        value={selectedStationId}
+                        onValueChange={(value) => setSelectedStationId(value)}
+                        disabled={locationsLoading || stationOptions.length === 0}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="駅を選択" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {stationOptions.length === 0 ? (
+                            <div className="px-4 py-2 text-sm text-gray-500">
+                              駅情報がありません
+                            </div>
+                          ) : (
+                            stationOptions.map((station) => (
+                              <SelectItem key={station.id} value={station.id}>
+                                {station.name}
+                                {station.transportationFee
+                                  ? `（+${station.transportationFee}円）`
+                                  : ''}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <Train className="h-4 w-4" />
+                      <span>
+                        {selectedStation
+                          ? `${selectedStation.name} / 目安移動時間 ${
+                              selectedStation.travelTime ?? 0
+                            }分 / 交通費 ${formatYen(selectedStation.transportationFee ?? 0)}`
+                          : '駅情報が選択されていません'}
+                      </span>
+                    </div>
+                    {selectedArea?.description && (
+                      <div className="mt-2">{selectedArea.description}</div>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label>現地情報メモ</Label>
+                    <Textarea
+                      name="locationMemo"
+                      value={bookingDetails.locationMemo}
+                      onChange={handleTextChange}
+                      placeholder="ホテル名や部屋番号などがあれば入力してください"
+                      rows={2}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center">
@@ -587,7 +872,27 @@ export function QuickBookingDialog({
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex flex-wrap gap-2">
-                    {designationOptions.map((option) => (
+                    {[
+                      { type: 'none' as DesignationType, label: 'フリー', fee: 0 },
+                      ...(selectedStaff?.regularDesignationFee
+                        ? [
+                            {
+                              type: 'regular' as DesignationType,
+                              label: '本指名',
+                              fee: selectedStaff.regularDesignationFee,
+                            },
+                          ]
+                        : []),
+                      ...(selectedStaff?.specialDesignationFee
+                        ? [
+                            {
+                              type: 'special' as DesignationType,
+                              label: '特別指名',
+                              fee: selectedStaff.specialDesignationFee,
+                            },
+                          ]
+                        : []),
+                    ].map((option) => (
                       <Button
                         key={option.type}
                         type="button"
@@ -610,120 +915,25 @@ export function QuickBookingDialog({
                   </p>
                 </CardContent>
               </Card>
-
-              {/* Booking Status */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center">
-                    <Clock className="mr-2 h-5 w-5" />
-                    予約ステータス
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div>
-                      <Label className="text-sm">予約レベル</Label>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {['仮予約', 'ネット予約', '事前予約', '当日予約', '確定済'].map(
-                          (status) => (
-                            <Button
-                              key={status}
-                              type="button"
-                              size="sm"
-                              onClick={() =>
-                                handleInputChange({
-                                  target: { name: 'bookingStatus', value: status },
-                                } as any)
-                              }
-                              variant={
-                                bookingDetails.bookingStatus === status ? 'default' : 'outline'
-                              }
-                            >
-                              {status}
-                            </Button>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           )}
 
           {currentStep === 2 && (
             <div className="space-y-6">
-              {/* Location Details */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center">
-                    <MapPin className="mr-2 h-5 w-5" />
-                    場所詳細
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>都道府県</Label>
-                      <Select
-                        value={bookingDetails.prefecture}
-                        onValueChange={(value) =>
-                          handleInputChange({ target: { name: 'prefecture', value } } as any)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="東京都">東京都</SelectItem>
-                          <SelectItem value="神奈川県">神奈川県</SelectItem>
-                          <SelectItem value="埼玉県">埼玉県</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>地区</Label>
-                      <Select
-                        value={bookingDetails.district}
-                        onValueChange={(value) =>
-                          handleInputChange({ target: { name: 'district', value } } as any)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="豊島区">豊島区</SelectItem>
-                          <SelectItem value="新宿区">新宿区</SelectItem>
-                          <SelectItem value="渋谷区">渋谷区</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label>詳細場所</Label>
-                    <Textarea
-                      value={bookingDetails.specificLocation}
-                      onChange={handleInputChange}
-                      name="specificLocation"
-                      placeholder="例: グランドホテル 605号室"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Options */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center">
                     <Users className="mr-2 h-5 w-5" />
-                    オプション・追加サービス
+                    オプション選択
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {availableOptions.map((option) => (
+                <CardContent className="space-y-3">
+                  {availableOptions.length === 0 ? (
+                    <div className="rounded-lg bg-gray-50 p-4 text-center text-gray-500">
+                      利用可能なオプションがありません
+                    </div>
+                  ) : (
+                    availableOptions.map((option) => (
                       <div
                         key={option.id}
                         className="flex items-center justify-between rounded-lg border p-3"
@@ -731,48 +941,113 @@ export function QuickBookingDialog({
                         <div className="flex items-center">
                           <Checkbox
                             id={option.id}
-                            checked={bookingDetails.options[option.name] || false}
+                            checked={Boolean(bookingDetails.options[option.id])}
                             onCheckedChange={(checked) =>
-                              handleCheckboxChange(option.name, checked as boolean)
+                              handleCheckboxChange(option.id, Boolean(checked))
                             }
                           />
                           <Label htmlFor={option.id} className="ml-3 font-medium">
                             {option.name}
+                            {option.note ? (
+                              <span className="ml-2 text-xs text-gray-500">({option.note})</span>
+                            ) : null}
                           </Label>
                         </div>
                         <Badge variant="secondary">
                           {option.price === 0 ? '無料' : `+${option.price.toLocaleString()}円`}
                         </Badge>
                       </div>
-                    ))}
-                  </div>
+                    ))
+                  )}
                 </CardContent>
               </Card>
 
-              {/* Payment Method */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center">
                     <CreditCard className="mr-2 h-5 w-5" />
-                    お支払い方法
+                    支払い・経路情報
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <Select
-                    value={bookingDetails.paymentMethod}
-                    onValueChange={(value) =>
-                      handleInputChange({ target: { name: 'paymentMethod', value } } as any)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="現金">現金</SelectItem>
-                      <SelectItem value="クレジットカード">クレジットカード</SelectItem>
-                      <SelectItem value="ポイント利用">ポイント利用</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>支払い方法</Label>
+                      <Select
+                        value={bookingDetails.paymentMethod}
+                        onValueChange={(value) =>
+                          setBookingDetails((prev) => ({ ...prev, paymentMethod: value }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {paymentMethods.map((method) => (
+                            <SelectItem key={method} value={method}>
+                              {method}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>集客チャネル</Label>
+                      <Select
+                        value={bookingDetails.marketingChannel}
+                        onValueChange={(value) =>
+                          setBookingDetails((prev) => ({ ...prev, marketingChannel: value }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {marketingChannels.map((channel) => (
+                            <SelectItem key={channel} value={channel}>
+                              {channel}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>交通費（円）</Label>
+                      <Input
+                        type="number"
+                        value={bookingDetails.transportationFee}
+                        onChange={(event) =>
+                          handleNumberChange('transportationFee', Number(event.target.value))
+                        }
+                        min={0}
+                      />
+                    </div>
+                    <div>
+                      <Label>追加料金（円）</Label>
+                      <Input
+                        type="number"
+                        value={bookingDetails.additionalFee}
+                        onChange={(event) =>
+                          handleNumberChange('additionalFee', Number(event.target.value))
+                        }
+                        min={0}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label>メモ</Label>
+                    <Textarea
+                      name="notes"
+                      value={bookingDetails.notes}
+                      onChange={handleTextChange}
+                      placeholder="店舗用メモがあれば記載してください"
+                      rows={3}
+                    />
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -780,7 +1055,6 @@ export function QuickBookingDialog({
 
           {currentStep === 3 && (
             <div className="space-y-6">
-              {/* Booking Summary */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center">
@@ -793,7 +1067,9 @@ export function QuickBookingDialog({
                     <div className="space-y-2">
                       <div>
                         <span className="text-gray-600">お客様:</span>
-                        <span className="ml-2 font-semibold">{bookingDetails.customerName}</span>
+                        <span className="ml-2 font-semibold">
+                          {bookingDetails.customerName || '未選択'}
+                        </span>
                       </div>
                       <div>
                         <span className="text-gray-600">日時:</span>
@@ -803,7 +1079,9 @@ export function QuickBookingDialog({
                       </div>
                       <div>
                         <span className="text-gray-600">担当:</span>
-                        <span className="ml-2 font-semibold">{bookingDetails.staff}</span>
+                        <span className="ml-2 font-semibold">
+                          {bookingDetails.staff || '未選択'}
+                        </span>
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -816,21 +1094,37 @@ export function QuickBookingDialog({
                         </span>
                       </div>
                       <div>
-                        <span className="text-gray-600">場所:</span>
+                        <span className="text-gray-600">エリア:</span>
                         <span className="ml-2 font-semibold">
-                          {bookingDetails.specificLocation}
+                          {selectedArea?.name || '未設定'}
                         </span>
                       </div>
                       <div>
-                        <span className="text-gray-600">お支払い:</span>
-                        <span className="ml-2 font-semibold">{bookingDetails.paymentMethod}</span>
+                        <span className="text-gray-600">駅:</span>
+                        <span className="ml-2 font-semibold">
+                          {selectedStation?.name || '未設定'}
+                        </span>
                       </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg bg-gray-50 p-3 text-sm">
+                    <div>
+                      <span className="text-gray-600">現地メモ:</span>
+                      <span className="ml-2">{bookingDetails.locationMemo || '記載なし'}</span>
+                    </div>
+                    <div className="mt-1">
+                      <span className="text-gray-600">支払い方法:</span>
+                      <span className="ml-2">{bookingDetails.paymentMethod}</span>
+                    </div>
+                    <div className="mt-1">
+                      <span className="text-gray-600">集客チャネル:</span>
+                      <span className="ml-2">{bookingDetails.marketingChannel}</span>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Price Breakdown */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle>料金内訳</CardTitle>
@@ -868,6 +1162,14 @@ export function QuickBookingDialog({
                       <span>合計</span>
                       <span className="font-bold">{formatYen(priceBreakdown.total)}</span>
                     </div>
+                    <div className="mt-2 grid grid-cols-2 gap-4 text-xs text-gray-500">
+                      <div className="rounded-md bg-gray-100 p-2">
+                        店舗取り分: {formatYen(priceBreakdown.storeRevenue)}
+                      </div>
+                      <div className="rounded-md bg-gray-100 p-2">
+                        キャスト取り分: {formatYen(priceBreakdown.staffRevenue)}
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -875,7 +1177,6 @@ export function QuickBookingDialog({
           )}
         </div>
 
-        {/* Action Buttons */}
         <div className="border-t px-6 pb-6 pt-4">
           <div className="flex justify-between">
             <Button onClick={prevStep} disabled={currentStep === 1} variant="outline">

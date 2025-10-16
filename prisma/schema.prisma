@@ -76,11 +76,26 @@ model Reservation {
   startTime  DateTime
   endTime    DateTime
   status     String
+  price      Int                 @default(0)
+  designationType   String?
+  designationFee    Int          @default(0)
+  transportationFee Int          @default(0)
+  additionalFee     Int          @default(0)
+  paymentMethod     String?      @default("現金")
+  marketingChannel  String?
+  storeRevenue      Int?
+  staffRevenue      Int?
+  areaId            String?
+  stationId         String?
+  locationMemo      String?
+  notes             String?
   createdAt  DateTime            @default(now())
   updatedAt  DateTime            @updatedAt
   cast       Cast                @relation(fields: [castId], references: [id])
   course     CoursePrice         @relation(fields: [courseId], references: [id])
   customer   Customer            @relation(fields: [customerId], references: [id])
+  area       AreaInfo?           @relation(fields: [areaId], references: [id])
+  station    StationInfo?        @relation(fields: [stationId], references: [id])
   options    ReservationOption[]
 }
 
@@ -117,6 +132,7 @@ model AreaInfo {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   stations     StationInfo[]
+  reservations Reservation[]
 }
 
 model StationInfo {
@@ -132,6 +148,7 @@ model StationInfo {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   area             AreaInfo? @relation(fields: [areaId], references: [id])
+  reservations     Reservation[]
 
   @@index([areaId])
 }

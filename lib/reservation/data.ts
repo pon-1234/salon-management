@@ -62,6 +62,22 @@ function normalizeReservation(entry: any): Reservation {
     customerName: entry.customer?.name,
     staffName: entry.cast?.name || entry.staffName,
     serviceName: entry.course?.name || entry.service?.name,
+    designationType: entry.designationType ?? undefined,
+    designationFee: entry.designationFee ?? undefined,
+    transportationFee: entry.transportationFee ?? undefined,
+    additionalFee: entry.additionalFee ?? undefined,
+    paymentMethod: entry.paymentMethod ?? undefined,
+    marketingChannel: entry.marketingChannel ?? undefined,
+    storeRevenue: entry.storeRevenue ?? undefined,
+    staffRevenue: entry.staffRevenue ?? undefined,
+    areaId: entry.areaId ?? entry.area?.id ?? null,
+    areaName: entry.area?.name ?? undefined,
+    areaPrefecture: entry.area?.prefecture ?? undefined,
+    areaCity: entry.area?.city ?? undefined,
+    stationId: entry.stationId ?? entry.station?.id ?? null,
+    stationName: entry.station?.name ?? undefined,
+    stationTravelTime: entry.station?.travelTime ?? undefined,
+    locationMemo: entry.locationMemo ?? undefined,
   }
 }
 

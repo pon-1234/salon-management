@@ -116,6 +116,8 @@ export async function GET(request: NextRequest) {
               option: true,
             },
           },
+          area: true,
+          station: true,
         },
       })
 
@@ -178,6 +180,8 @@ export async function GET(request: NextRequest) {
             option: true,
           },
         },
+        area: true,
+        station: true,
       },
       orderBy,
       take,
@@ -250,18 +254,34 @@ export async function POST(request: NextRequest) {
           throw new Error('Time slot is not available')
         }
 
-        // 予約を作成
+        const optionIds: string[] = Array.isArray(reservationData.options)
+          ? reservationData.options
+          : []
+
         const createdReservation = await tx.reservation.create({
           data: {
-            ...reservationData,
-            customerId: targetCustomerId, // 対象顧客IDを使用
+            customerId: targetCustomerId,
+            castId: reservationData.castId,
+            courseId: reservationData.courseId,
+            status: reservationData.status ?? 'pending',
+            price: reservationData.price ?? 0,
+            designationType: reservationData.designationType ?? null,
+            designationFee: reservationData.designationFee ?? 0,
+            transportationFee: reservationData.transportationFee ?? 0,
+            additionalFee: reservationData.additionalFee ?? 0,
+            paymentMethod: reservationData.paymentMethod ?? '現金',
+            marketingChannel: reservationData.marketingChannel ?? null,
+            areaId: reservationData.areaId ?? null,
+            stationId: reservationData.stationId ?? null,
+            locationMemo: reservationData.locationMemo ?? null,
+            notes: reservationData.notes ?? null,
+            storeRevenue: reservationData.storeRevenue ?? null,
+            staffRevenue: reservationData.staffRevenue ?? null,
             startTime,
             endTime,
-            options: reservationData.options
+            options: optionIds.length
               ? {
-                  create: reservationData.options.map((optionId: string) => ({
-                    optionId,
-                  })),
+                  create: optionIds.map((optionId) => ({ optionId })),
                 }
               : undefined,
           },
@@ -270,6 +290,8 @@ export async function POST(request: NextRequest) {
             cast: true,
             course: true,
             options: { include: { option: true } },
+            area: true,
+            station: true,
           },
         })
 
@@ -369,25 +391,54 @@ export async function PUT(request: NextRequest) {
     // トランザクション内で予約更新とオプション更新を実行
     const updatedReservation = await db.$transaction(async (tx) => {
       // オプションが変更される場合は既存オプションを削除
-      if (updates.options) {
+      const optionIds: string[] | null = Array.isArray(updates.options)
+        ? updates.options
+        : null
+
+      if (optionIds) {
         await tx.reservationOption.deleteMany({
           where: { reservationId: id },
         })
       }
 
       // 予約を更新
+      const updateData: Record<string, unknown> = {}
+
+      if (updates.castId) updateData.castId = updates.castId
+      if (updates.courseId) updateData.courseId = updates.courseId
+      if (updates.status) updateData.status = updates.status
+      if (typeof updates.price === 'number') updateData.price = updates.price
+      if ('designationType' in updates) updateData.designationType = updates.designationType ?? null
+      if (typeof updates.designationFee === 'number') updateData.designationFee = updates.designationFee
+      if (typeof updates.transportationFee === 'number') updateData.transportationFee = updates.transportationFee
+      if (typeof updates.additionalFee === 'number') updateData.additionalFee = updates.additionalFee
+      if (updates.paymentMethod) updateData.paymentMethod = updates.paymentMethod
+      if (updates.marketingChannel) updateData.marketingChannel = updates.marketingChannel
+      if ('areaId' in updates) updateData.areaId = updates.areaId ?? null
+      if ('stationId' in updates) updateData.stationId = updates.stationId ?? null
+      if ('locationMemo' in updates) updateData.locationMemo = updates.locationMemo ?? null
+      if ('notes' in updates) updateData.notes = updates.notes ?? null
+      if ('storeRevenue' in updates && typeof updates.storeRevenue === 'number') {
+        updateData.storeRevenue = updates.storeRevenue
+      }
+      if ('staffRevenue' in updates && typeof updates.staffRevenue === 'number') {
+        updateData.staffRevenue = updates.staffRevenue
+      }
+
+      if (updates.startTime) {
+        updateData.startTime = new Date(updates.startTime)
+      }
+      if (updates.endTime) {
+        updateData.endTime = new Date(updates.endTime)
+      }
+
       return await tx.reservation.update({
         where: { id },
         data: {
-          ...updates,
-          startTime: updates.startTime ? new Date(updates.startTime) : undefined,
-          endTime: updates.endTime ? new Date(updates.endTime) : undefined,
-
-          options: updates.options
+          ...updateData,
+          options: optionIds
             ? {
-                create: updates.options.map((optionId: string) => ({
-                  optionId,
-                })),
+                create: optionIds.map((optionId) => ({ optionId })),
               }
             : undefined,
         },
@@ -400,6 +451,8 @@ export async function PUT(request: NextRequest) {
               option: true,
             },
           },
+          area: true,
+          station: true,
         },
       })
     })

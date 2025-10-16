@@ -14,6 +14,22 @@ export interface Reservation extends BaseEntity {
   customerName?: string
   staffName?: string
   serviceName?: string
+  designationType?: string
+  designationFee?: number
+  transportationFee?: number
+  additionalFee?: number
+  paymentMethod?: string
+  marketingChannel?: string
+  storeRevenue?: number
+  staffRevenue?: number
+  areaId?: string | null
+  areaName?: string
+  areaPrefecture?: string
+  areaCity?: string
+  stationId?: string | null
+  stationName?: string
+  stationTravelTime?: number
+  locationMemo?: string
 }
 
 export interface ReservationData {
@@ -59,6 +75,12 @@ export interface ReservationData {
   modifiableUntil?: Date
   notes?: string
   storeMemo?: string
+  areaId?: string | null
+  areaName?: string
+  stationId?: string | null
+  stationName?: string
+  stationTravelTime?: number
+  locationMemo?: string
 }
 
 export interface ReservationUpdatePayload {
@@ -67,6 +89,16 @@ export interface ReservationUpdatePayload {
   castId: string
   notes?: string
   storeMemo?: string
+  price?: number
+  designationType?: string
+  designationFee?: number
+  transportationFee?: number
+  additionalFee?: number
+  paymentMethod?: string
+  marketingChannel?: string
+  areaId?: string | null
+  stationId?: string | null
+  locationMemo?: string
 }
 
 export interface Service extends BaseEntity {

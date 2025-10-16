@@ -19,6 +19,12 @@ const statusLabelMap: Record<string, string> = {
   completed: '完了',
 }
 
+const designationTypeLabel: Record<string, string> = {
+  special: '特別指名',
+  regular: '本指名',
+  none: 'フリー',
+}
+
 export function mapReservationToReservationData(
   reservation: Reservation,
   options: TransformOptions = {}
@@ -42,14 +48,14 @@ export function mapReservationToReservationData(
   const staffName = reservation.staffName || cast?.name || `スタッフ${staffId || '-'}`.trim()
 
   const totalPayment = reservation.price ?? course?.price ?? 0
-  const storeRevenue = Math.floor(totalPayment * 0.6)
-  const staffRevenue = totalPayment - storeRevenue
+  const storeRevenue = reservation.storeRevenue ?? Math.floor(totalPayment * 0.6)
+  const staffRevenue = reservation.staffRevenue ?? totalPayment - storeRevenue
 
   const rawOptions = (reservation as any).options
   const optionMap: Record<string, boolean> = {}
   if (Array.isArray(rawOptions)) {
     rawOptions.forEach((entry: any) => {
-      const key = entry?.option?.name || entry?.optionId || entry?.id
+      const key = entry?.optionId || entry?.option?.id || entry?.option?.name || entry?.id
       if (key) {
         optionMap[String(key)] = true
       }
@@ -72,27 +78,32 @@ export function mapReservationToReservationData(
     status: reservation.status,
     staffConfirmation: '確認済',
     customerConfirmation: reservation.status === 'confirmed' ? '確認済' : '未確認',
-    prefecture: (reservation as any).prefecture || '東京都',
-    district: (reservation as any).district || '未設定',
-    location: (reservation as any).location || '未設定',
+    prefecture: reservation.areaPrefecture || (reservation as any).prefecture || '未設定',
+    district: reservation.areaCity || (reservation as any).district || '未設定',
+    location: reservation.areaName || (reservation as any).location || '未設定',
     locationType: (reservation as any).locationType || '未設定',
-    specificLocation: (reservation as any).specificLocation || '',
+    specificLocation: reservation.locationMemo || (reservation as any).specificLocation || '',
     staff: staffName,
     staffId,
-    marketingChannel: (reservation as any).marketingChannel || '未設定',
+    marketingChannel: reservation.marketingChannel || (reservation as any).marketingChannel || '未設定',
     date: format(start, 'yyyy-MM-dd'),
     time: format(start, 'HH:mm'),
     inOutTime: `${format(start, 'HH:mm')} - ${format(end, 'HH:mm')}`,
     course: reservation.serviceName || course?.name || '未設定',
     serviceId,
     freeExtension: (reservation as any).freeExtension || '0',
-    designation: (reservation as any).designation || 'なし',
-    designationFee: (reservation as any).designationFee || '0円',
+    designation:
+      reservation.designationType && designationTypeLabel[reservation.designationType]
+        ? designationTypeLabel[reservation.designationType]
+        : 'なし',
+    designationFee: reservation.designationFee
+      ? `${reservation.designationFee.toLocaleString()}円`
+      : '0円',
     options: optionMap,
-    transportationFee: (reservation as any).transportationFee ?? 0,
-    paymentMethod: (reservation as any).paymentMethod || '現金',
+    transportationFee: reservation.transportationFee ?? (reservation as any).transportationFee ?? 0,
+    paymentMethod: reservation.paymentMethod || (reservation as any).paymentMethod || '現金',
     discount: (reservation as any).discount || 'なし',
-    additionalFee: (reservation as any).additionalFee ?? 0,
+    additionalFee: reservation.additionalFee ?? (reservation as any).additionalFee ?? 0,
     totalPayment,
     storeRevenue,
     staffRevenue,
@@ -103,5 +114,11 @@ export function mapReservationToReservationData(
     modifiableUntil: reservation.modifiableUntil,
     notes: reservation.notes,
     storeMemo: (reservation as any).storeMemo,
+    areaId: reservation.areaId ?? null,
+    areaName: reservation.areaName ?? undefined,
+    stationId: reservation.stationId ?? null,
+    stationName: reservation.stationName ?? undefined,
+    stationTravelTime: reservation.stationTravelTime ?? undefined,
+    locationMemo: reservation.locationMemo ?? undefined,
   }
 }
