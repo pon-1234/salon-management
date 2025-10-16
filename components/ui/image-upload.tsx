@@ -87,7 +87,7 @@ export function ImageUpload({ value, onChange, onRemove, index, disabled }: Imag
     <div className="flex items-center gap-2">
       <Label className="min-w-[60px]">画像{index + 1}</Label>
 
-      <div className="flex-1 space-y-2">
+      <div className="flex-1 min-w-0 space-y-2">
         {value ? (
           <div className="flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -99,7 +99,7 @@ export function ImageUpload({ value, onChange, onRemove, index, disabled }: Imag
                 e.currentTarget.style.display = 'none'
               }}
             />
-            <span className="flex-1 truncate text-sm text-gray-600">{value}</span>
+            <span className="flex-1 min-w-0 truncate text-sm text-gray-600">{value}</span>
           </div>
         ) : (
           <div className="flex items-center gap-2">

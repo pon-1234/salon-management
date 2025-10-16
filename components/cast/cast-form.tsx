@@ -481,9 +481,12 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
               <img
                 src={formData.image}
                 alt="メイン画像プレビュー"
-                className="h-20 w-16 rounded object-cover"
+                className="h-20 w-16 flex-shrink-0 rounded object-cover"
               />
-              <p className="text-sm text-muted-foreground">現在のメイン画像です。</p>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">現在のメイン画像</p>
+                <p className="truncate text-xs text-muted-foreground">{formData.image}</p>
+              </div>
             </div>
           ) : null}
         </div>
