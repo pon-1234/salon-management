@@ -7,8 +7,8 @@ import { CastDashboard } from '@/components/cast/cast-dashboard'
 import { Cast } from '@/lib/cast/types'
 import { Header } from '@/components/header'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   ArrowLeft,
@@ -30,7 +30,6 @@ import { WorkPerformanceTab } from '@/components/cast/work-performance-tab'
 
 export default function CastManagePage({ params }: { params: Promise<{ id: string }> }) {
   const [cast, setCast] = useState<Cast | null>(null)
-  const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [id, setId] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const router = useRouter()
@@ -86,15 +85,16 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
           title: '成功',
           description: 'キャストを作成しました',
         })
+        router.push('/admin/cast/list')
       } else {
         // Update existing cast
-        await castRepository.update(id, data)
+        const updatedCast = await castRepository.update(id, data)
+        setCast((prev) => (prev ? { ...prev, ...updatedCast } : prev))
         toast({
           title: '成功',
           description: 'キャスト情報を更新しました',
         })
       }
-      router.push('/admin/cast/list')
     } catch (error) {
       console.error('Error saving cast:', error)
       toast({
@@ -114,18 +114,12 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
       await castRepository.update(id, updateData)
 
       // Update local state
-      if (cast) {
-        setCast({
-          ...cast,
-          ...updateData,
-        })
-      }
+      setCast((prev) => (prev ? { ...prev, ...updateData } : prev))
 
       toast({
         title: '成功',
         description: '公開プロフィールを更新しました',
       })
-      setIsEditingProfile(false)
     } catch (error) {
       console.error('Error updating public profile:', error)
       toast({
@@ -176,90 +170,88 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
             <CastForm cast={null} onSubmit={handleSubmit} />
           ) : (
             cast && (
-              <div className="space-y-6">
-                {/* メインダッシュボード */}
-                <CastDashboard
-                  cast={cast}
-                  onUpdate={(data) => {
-                    setCast({ ...cast, ...data })
-                  }}
-                />
+              <Tabs defaultValue="overview" className="space-y-6">
+                <TabsList className="border bg-white">
+                  <TabsTrigger value="overview" className="data-[state=active]:bg-emerald-50">
+                    <FileText className="mr-2 h-4 w-4" />
+                    プロフィール概要
+                  </TabsTrigger>
+                  <TabsTrigger value="edit" className="data-[state=active]:bg-emerald-50">
+                    <Settings className="mr-2 h-4 w-4" />
+                    プロフィール編集
+                  </TabsTrigger>
+                  <TabsTrigger value="sales" className="data-[state=active]:bg-emerald-50">
+                    <DollarSign className="mr-2 h-4 w-4" />
+                    売上管理
+                  </TabsTrigger>
+                  <TabsTrigger value="payment" className="data-[state=active]:bg-emerald-50">
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    入金履歴
+                  </TabsTrigger>
+                  <TabsTrigger value="settlement" className="data-[state=active]:bg-emerald-50">
+                    <Calculator className="mr-2 h-4 w-4" />
+                    精算状況
+                  </TabsTrigger>
+                  <TabsTrigger value="performance" className="data-[state=active]:bg-emerald-50">
+                    <BarChart3 className="mr-2 h-4 w-4" />
+                    就業成績
+                  </TabsTrigger>
+                </TabsList>
 
-                {/* 管理機能タブ */}
-                <Tabs defaultValue="profile" className="space-y-6">
-                  <TabsList className="border bg-white">
-                    <TabsTrigger value="profile" className="data-[state=active]:bg-emerald-50">
-                      <FileText className="mr-2 h-4 w-4" />
-                      公開プロフィール
-                    </TabsTrigger>
-                    <TabsTrigger value="settings" className="data-[state=active]:bg-emerald-50">
-                      <Settings className="mr-2 h-4 w-4" />
-                      詳細設定
-                    </TabsTrigger>
-                    <TabsTrigger value="sales" className="data-[state=active]:bg-emerald-50">
-                      <DollarSign className="mr-2 h-4 w-4" />
-                      売上管理
-                    </TabsTrigger>
-                    <TabsTrigger value="payment" className="data-[state=active]:bg-emerald-50">
-                      <CreditCard className="mr-2 h-4 w-4" />
-                      入金履歴
-                    </TabsTrigger>
-                    <TabsTrigger value="settlement" className="data-[state=active]:bg-emerald-50">
-                      <Calculator className="mr-2 h-4 w-4" />
-                      精算状況
-                    </TabsTrigger>
-                    <TabsTrigger value="performance" className="data-[state=active]:bg-emerald-50">
-                      <BarChart3 className="mr-2 h-4 w-4" />
-                      就業成績
-                    </TabsTrigger>
-                  </TabsList>
+                <TabsContent value="overview" className="space-y-6">
+                  <CastDashboard
+                    cast={cast}
+                    onUpdate={(data) => {
+                      setCast((prev) => (prev ? { ...prev, ...data } : prev))
+                    }}
+                  />
+                  <CastProfile cast={cast} />
+                </TabsContent>
 
-                  <TabsContent value="profile" className="space-y-6">
-                    <Tabs defaultValue="view" className="space-y-4">
-                      <TabsList className="border-0 bg-gray-100">
-                        <TabsTrigger value="view" className="data-[state=active]:bg-white">
-                          表示
-                        </TabsTrigger>
-                        <TabsTrigger value="edit" className="data-[state=active]:bg-white">
-                          編集
-                        </TabsTrigger>
-                      </TabsList>
-
-                      <TabsContent value="view">
-                        <CastProfile cast={cast} />
-                      </TabsContent>
-
-                      <TabsContent value="edit">
-                        <PublicProfileForm
-                          cast={cast}
-                          onSubmit={handlePublicProfileSubmit}
-                          isEditing={true}
-                        />
-                      </TabsContent>
-                    </Tabs>
-                  </TabsContent>
-
-                  <TabsContent value="settings" className="space-y-6">
+                <TabsContent value="edit" className="space-y-10">
+                  <section className="space-y-4">
+                    <div>
+                      <h2 className="text-xl font-semibold">基本情報・詳細設定</h2>
+                      <p className="text-sm text-muted-foreground">
+                        キャストの基本情報や稼働ステータス、料金設定を更新します。保存するとすぐに管理画面へ反映されます。
+                      </p>
+                    </div>
                     <CastForm cast={cast} onSubmit={handleSubmit} />
-                  </TabsContent>
+                  </section>
 
-                  <TabsContent value="sales" className="space-y-6">
-                    <SalesManagementTab castId={cast.id} castName={cast.name} />
-                  </TabsContent>
+                  <Separator />
 
-                  <TabsContent value="payment" className="space-y-6">
-                    <PaymentHistoryTab castId={cast.id} castName={cast.name} />
-                  </TabsContent>
+                  <section className="space-y-4">
+                    <div>
+                      <h2 className="text-xl font-semibold">公開プロフィール</h2>
+                      <p className="text-sm text-muted-foreground">
+                        店舗サイトに表示される紹介情報を編集します。保存すると公開ページの表示が更新されます。
+                      </p>
+                    </div>
+                    <PublicProfileForm
+                      cast={cast}
+                      onSubmit={handlePublicProfileSubmit}
+                      isEditing={true}
+                    />
+                  </section>
+                </TabsContent>
 
-                  <TabsContent value="settlement" className="space-y-6">
-                    <SettlementStatusTab castId={cast.id} castName={cast.name} />
-                  </TabsContent>
+                <TabsContent value="sales" className="space-y-6">
+                  <SalesManagementTab castId={cast.id} castName={cast.name} />
+                </TabsContent>
 
-                  <TabsContent value="performance" className="space-y-6">
-                    <WorkPerformanceTab castId={cast.id} castName={cast.name} />
-                  </TabsContent>
-                </Tabs>
-              </div>
+                <TabsContent value="payment" className="space-y-6">
+                  <PaymentHistoryTab castId={cast.id} castName={cast.name} />
+                </TabsContent>
+
+                <TabsContent value="settlement" className="space-y-6">
+                  <SettlementStatusTab castId={cast.id} castName={cast.name} />
+                </TabsContent>
+
+                <TabsContent value="performance" className="space-y-6">
+                  <WorkPerformanceTab castId={cast.id} castName={cast.name} />
+                </TabsContent>
+              </Tabs>
             )
           )}
         </div>

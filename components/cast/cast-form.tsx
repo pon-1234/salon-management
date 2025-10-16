@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Cast } from '@/lib/cast/types'
 import { options } from '@/lib/course-option/data'
 import { Button } from '@/components/ui/button'
@@ -26,34 +26,40 @@ interface CastFormProps {
   onSubmit: (data: Partial<Cast>) => void
 }
 
+const buildInitialFormState = (cast?: Cast | null) => ({
+  name: cast?.name || '',
+  nameKana: cast?.nameKana || '',
+  age: cast?.age || '',
+  height: cast?.height || '',
+  bust: cast?.bust || '',
+  waist: cast?.waist || '',
+  hip: cast?.hip || '',
+  type: cast?.type || 'カワイイ系',
+  image: cast?.image || '',
+  images: cast?.images ? [...cast.images] : [],
+  description: cast?.description || '',
+  netReservation: cast?.netReservation ?? true,
+  specialDesignationFee: cast?.specialDesignationFee ?? '',
+  regularDesignationFee: cast?.regularDesignationFee ?? '',
+  panelDesignationRank: cast?.panelDesignationRank || 0,
+  regularDesignationRank: cast?.regularDesignationRank || 0,
+  workStatus: cast?.workStatus || '出勤',
+  availableOptions: cast?.availableOptions ? [...cast.availableOptions] : [],
+  phone: '',
+  email: '',
+  password: '',
+  birthDate: '',
+  registrationDate: new Date().toISOString().split('T')[0],
+  blogId: '',
+  twitterId: '',
+})
+
 export function CastForm({ cast, onSubmit }: CastFormProps) {
-  const [formData, setFormData] = useState({
-    name: cast?.name || '',
-    nameKana: cast?.nameKana || '',
-    age: cast?.age || '',
-    height: cast?.height || '',
-    bust: cast?.bust || '',
-    waist: cast?.waist || '',
-    hip: cast?.hip || '',
-    type: cast?.type || 'カワイイ系',
-    image: cast?.image || '',
-    images: cast?.images || [],
-    description: cast?.description || '',
-    netReservation: cast?.netReservation ?? true,
-    specialDesignationFee: cast?.specialDesignationFee || '',
-    regularDesignationFee: cast?.regularDesignationFee || '',
-    panelDesignationRank: cast?.panelDesignationRank || 0,
-    regularDesignationRank: cast?.regularDesignationRank || 0,
-    workStatus: cast?.workStatus || '出勤',
-    availableOptions: cast?.availableOptions || [],
-    phone: '',
-    email: '',
-    password: '',
-    birthDate: '',
-    registrationDate: new Date().toISOString().split('T')[0],
-    blogId: '',
-    twitterId: '',
-  })
+  const [formData, setFormData] = useState(() => buildInitialFormState(cast))
+
+  useEffect(() => {
+    setFormData(buildInitialFormState(cast))
+  }, [cast])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

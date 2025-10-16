@@ -265,6 +265,72 @@ describe('Cast API endpoints', () => {
 
       expect(response.status).toBe(404)
     })
+
+    it('should coerce numeric fields provided as strings', async () => {
+      const updateData = {
+        id: 'test-id',
+        age: '27',
+        height: '172',
+        waist: '60',
+        hip: '88',
+        panelDesignationRank: '2',
+        regularDesignationRank: '3',
+        specialDesignationFee: '5000',
+        regularDesignationFee: null,
+      }
+
+      const coercedResult = {
+        id: 'test-id',
+        age: 27,
+        height: 172,
+        waist: 60,
+        hip: 88,
+        panelDesignationRank: 2,
+        regularDesignationRank: 3,
+        specialDesignationFee: 5000,
+        regularDesignationFee: null,
+        updatedAt: new Date(),
+        schedules: [],
+        reservations: [],
+      }
+
+      mockedDb.cast.findUnique.mockResolvedValue({ id: 'test-id' })
+      mockedDb.cast.update.mockResolvedValue(coercedResult)
+
+      const request = new NextRequest('http://localhost:3000/api/cast', {
+        method: 'PUT',
+        body: JSON.stringify(updateData),
+      })
+
+      const response = await PUT(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(mockedDb.cast.update).toHaveBeenCalledWith({
+        where: { id: 'test-id' },
+        data: expect.objectContaining({
+          age: 27,
+          height: 172,
+          waist: 60,
+          hip: 88,
+          panelDesignationRank: 2,
+          regularDesignationRank: 3,
+          specialDesignationFee: 5000,
+          regularDesignationFee: null,
+        }),
+      })
+      expect(data).toMatchObject({
+        id: 'test-id',
+        age: 27,
+        height: 172,
+        waist: 60,
+        hip: 88,
+        panelDesignationRank: 2,
+        regularDesignationRank: 3,
+        specialDesignationFee: 5000,
+        regularDesignationFee: null,
+      })
+    })
   })
 
   describe('DELETE /api/cast', () => {
