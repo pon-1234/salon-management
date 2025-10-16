@@ -36,11 +36,16 @@ import { normalizePhoneQuery } from '@/lib/customer/utils'
 interface CustomerSelectionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onSelectCustomer?: (customer: Customer) => void
 }
 
 type SearchStatus = 'idle' | 'loading' | 'ready' | 'error'
 
-export function CustomerSelectionDialog({ open, onOpenChange }: CustomerSelectionDialogProps) {
+export function CustomerSelectionDialog({
+  open,
+  onOpenChange,
+  onSelectCustomer,
+}: CustomerSelectionDialogProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [allCustomers, setAllCustomers] = useState<Customer[]>(customerData)
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>(customerData)
@@ -170,8 +175,13 @@ export function CustomerSelectionDialog({ open, onOpenChange }: CustomerSelectio
 
   const handleProceed = () => {
     if (selectedCustomer) {
-      router.push(`/admin/reservation?customerId=${selectedCustomer.id}`)
-      onOpenChange(false)
+      if (onSelectCustomer) {
+        onSelectCustomer(selectedCustomer)
+        onOpenChange(false)
+      } else {
+        router.push(`/admin/reservation?customerId=${selectedCustomer.id}`)
+        onOpenChange(false)
+      }
     }
   }
 

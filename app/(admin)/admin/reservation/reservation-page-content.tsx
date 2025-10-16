@@ -451,12 +451,20 @@ export function ReservationPageContent() {
     handleFilterDialogClose()
   }
 
-  const handleCustomerSelection = (customer: { id: string; name: string } | null) => {
+  const handleCustomerSelection = (customer: Customer | null) => {
+    setSelectedCustomer(customer)
     if (customer) {
-      const fullCustomer = customerList.find((c) => c.id === customer.id)
-      setSelectedCustomer(fullCustomer || null)
+      const params = new URLSearchParams(window.location.search)
+      params.set('customerId', customer.id)
+      const newUrl = `${window.location.pathname}?${params.toString()}`
+      window.history.replaceState(null, '', newUrl)
     } else {
-      setSelectedCustomer(null)
+      const params = new URLSearchParams(window.location.search)
+      params.delete('customerId')
+      const newUrl = params.toString()
+        ? `${window.location.pathname}?${params.toString()}`
+        : window.location.pathname
+      window.history.replaceState(null, '', newUrl)
     }
   }
 

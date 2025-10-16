@@ -1,14 +1,15 @@
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { RefreshCw, Filter, UserPlus, UserMinus } from 'lucide-react'
-import { useState } from 'react'
 import { QuickBookingDialog } from './quick-booking-dialog'
-import { FilterDialog } from './filter-dialog'
+import { CustomerSelectionDialog } from '@/components/customer/customer-selection-dialog'
+import { Customer } from '@/lib/customer/types'
 
 interface ActionButtonsProps {
   onRefresh: () => void
   onFilter: () => void
-  onCustomerSelect: (customer: { id: string; name: string } | null) => void
-  selectedCustomer: { id: string; name: string } | null
+  onCustomerSelect: (customer: Customer | null) => void
+  selectedCustomer: Customer | null
 }
 
 export function ActionButtons({
@@ -18,7 +19,7 @@ export function ActionButtons({
   selectedCustomer,
 }: ActionButtonsProps) {
   const [openQuickBooking, setOpenQuickBooking] = useState(false)
-  const [openFilter, setOpenFilter] = useState(false)
+  const [showCustomerDialog, setShowCustomerDialog] = useState(false)
 
   return (
     <div className="flex items-center justify-between border-b p-4">
@@ -37,11 +38,7 @@ export function ActionButtons({
             顧客選択を解除
           </Button>
         ) : (
-          <Button
-            onClick={() => onCustomerSelect({ id: 'dummy-id', name: '山田太郎' })}
-            variant="outline"
-            size="sm"
-          >
+          <Button onClick={() => setShowCustomerDialog(true)} variant="outline" size="sm">
             <UserPlus className="mr-2 h-4 w-4" />
             この顧客で予約を取る
           </Button>
@@ -51,16 +48,20 @@ export function ActionButtons({
         <Button onClick={() => setOpenQuickBooking(true)} variant="outline" size="sm">
           新規予約
         </Button>
-        <Button onClick={() => setOpenFilter(true)} variant="outline" size="sm">
-          絞り込み
-        </Button>
       </div>
       <QuickBookingDialog
         open={openQuickBooking}
         onOpenChange={setOpenQuickBooking}
-        selectedCustomer={null}
+        selectedCustomer={selectedCustomer}
       />
-      <FilterDialog open={openFilter} onOpenChange={setOpenFilter} onApplyFilters={() => {}} />
+      <CustomerSelectionDialog
+        open={showCustomerDialog}
+        onOpenChange={setShowCustomerDialog}
+        onSelectCustomer={(customer) => {
+          onCustomerSelect(customer)
+          setShowCustomerDialog(false)
+        }}
+      />
     </div>
   )
 }
