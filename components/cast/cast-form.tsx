@@ -121,8 +121,9 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
     }
 
     const sanitizedImages = formData.images
-      .map((url) => (typeof url === 'string' ? url.trim() : url))
-      .filter((url) => typeof url === 'string' && url.length > 0)
+      .map((url) => (typeof url === 'string' ? url.trim() : ''))
+      .filter((url): url is string => Boolean(url && url.length > 0))
+      .filter((value, index, array) => array.indexOf(value) === index)
 
     const payload: Partial<Cast> = {
       name: formData.name.trim(),
@@ -139,6 +140,9 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
     const mainImage = formData.image.trim()
     if (mainImage) {
       payload.image = mainImage
+      if (!sanitizedImages.includes(mainImage)) {
+        sanitizedImages.unshift(mainImage)
+      }
     }
 
     const age = toOptionalNumber(formData.age)
@@ -165,7 +169,10 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
     const regularFee = toOptionalMoney(formData.regularDesignationFee as number | string | null)
     if (regularFee !== undefined) payload.regularDesignationFee = regularFee
 
-    onSubmit(payload)
+    onSubmit({
+      ...payload,
+      images: sanitizedImages,
+    })
   }
 
   const handleInputChange = (
@@ -192,24 +199,39 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
     setFormData((prev) => {
       const newImages = [...prev.images]
       newImages[index] = url
-      return { ...prev, images: newImages }
+      const hasMainImage = prev.image?.trim()
+      return {
+        ...prev,
+        images: newImages,
+        image: hasMainImage ? prev.image : url,
+      }
     })
   }
 
   const addImage = () => {
-    if (formData.images.length < 10) {
-      setFormData((prev) => ({
+    setFormData((prev) => {
+      if (prev.images.length >= 10) return prev
+      return {
         ...prev,
         images: [...prev.images, ''],
-      }))
-    }
+      }
+    })
   }
 
   const removeImage = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index),
-    }))
+    setFormData((prev) => {
+      const removedValue = prev.images[index]
+      const newImages = prev.images.filter((_, i) => i !== index)
+      const nextMain =
+        prev.image && removedValue && prev.image === removedValue
+          ? newImages.find((img) => (img ?? '').trim().length > 0) ?? ''
+          : prev.image
+      return {
+        ...prev,
+        images: newImages,
+        image: nextMain,
+      }
+    })
   }
 
   const handleCancel = () => {
@@ -445,7 +467,19 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
             value={formData.image}
             onChange={handleInputChange}
             placeholder="https://example.com/main.jpg"
+            autoComplete="off"
           />
+          {formData.image ? (
+            <div className="flex items-center gap-4 rounded-lg border bg-muted/40 p-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={formData.image}
+                alt="メイン画像プレビュー"
+                className="h-20 w-16 rounded object-cover"
+              />
+              <p className="text-sm text-muted-foreground">現在のメイン画像です。</p>
+            </div>
+          ) : null}
         </div>
         <div className={cn('grid gap-4', formData.images.length > 0 ? 'md:grid-cols-2' : '')}>
           {formData.images.length === 0 && (
