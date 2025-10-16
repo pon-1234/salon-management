@@ -5,35 +5,20 @@ import { Course, Option } from '../types/course-option'
  * Converts CoursePrice objects from the centralized pricing system
  * to the legacy Course format used in reservations
  */
-export function convertCoursePriceToCourse(coursePrice: CoursePrice): Course[] {
-  // Convert each duration into a separate Course object for backward compatibility
-  return coursePrice.durations.map((duration, index) => {
-    const baseName = coursePrice.name
-    const durationSuffix = duration.time >= 60 ? `${duration.time / 60}時間` : `${duration.time}分`
-
-    return {
-      id: `${coursePrice.id}-${duration.time}min`,
-      name: `${baseName} ${duration.time}分`,
-      duration: duration.time,
-      price: duration.price,
-    }
-  })
+export function convertCoursePriceToCourse(coursePrice: CoursePrice): Course {
+  return {
+    id: coursePrice.id,
+    name: coursePrice.name,
+    duration: coursePrice.duration,
+    price: coursePrice.price,
+  }
 }
 
 /**
  * Converts all active courses from the pricing system to legacy format
  */
 export function convertAllCoursePricesToCourses(coursePrices: CoursePrice[]): Course[] {
-  const courses: Course[] = []
-
-  coursePrices
-    .filter((cp) => cp.isActive)
-    .sort((a, b) => a.displayOrder - b.displayOrder)
-    .forEach((coursePrice) => {
-      courses.push(...convertCoursePriceToCourse(coursePrice))
-    })
-
-  return courses
+  return coursePrices.map(convertCoursePriceToCourse)
 }
 
 /**
@@ -74,30 +59,18 @@ export function getCourseDurationById(
   duration: number,
   coursePrices: CoursePrice[]
 ): Course | undefined {
-  for (const coursePrice of coursePrices) {
-    const matchingDuration = coursePrice.durations.find((d) => d.time === duration)
-    if (matchingDuration) {
-      const courses = convertCoursePriceToCourse(coursePrice)
-      return courses.find((c) => c.duration === duration)
-    }
-  }
-  return undefined
+  const match = coursePrices.find((course) => course.id === courseId && course.duration === duration)
+  return match ? convertCoursePriceToCourse(match) : undefined
 }
 
-/**
- * Creates a legacy course ID from coursePrice ID and duration
- */
 export function createLegacyCourseId(coursePriceId: string, duration: number): string {
-  return `${coursePriceId}-${duration}min`
+  return `${coursePriceId}-${duration}`
 }
 
-/**
- * Parses a legacy course ID to get coursePrice ID and duration
- */
 export function parseLegacyCourseId(
   legacyId: string
 ): { coursePriceId: string; duration: number } | null {
-  const match = legacyId.match(/^(.+)-(\d+)min$/)
+  const match = legacyId.match(/^(.+)-(\d+)$/)
   if (!match) {
     return null
   }

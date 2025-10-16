@@ -17,44 +17,18 @@ describe('Pricing Data', () => {
         expect(course).toHaveProperty('id')
         expect(course).toHaveProperty('name')
         expect(course).toHaveProperty('description')
-        expect(course).toHaveProperty('durations')
-        expect(course).toHaveProperty('features')
-        expect(course).toHaveProperty('category')
-        expect(course).toHaveProperty('displayOrder')
-        expect(course).toHaveProperty('isActive')
+        expect(course).toHaveProperty('duration')
+        expect(course).toHaveProperty('price')
         expect(course).toHaveProperty('createdAt')
         expect(course).toHaveProperty('updatedAt')
 
         expect(typeof course.id).toBe('string')
         expect(typeof course.name).toBe('string')
-        expect(typeof course.description).toBe('string')
-        expect(Array.isArray(course.durations)).toBe(true)
-        expect(Array.isArray(course.features)).toBe(true)
-        expect(typeof course.category).toBe('string')
-        expect(typeof course.displayOrder).toBe('number')
-        expect(typeof course.isActive).toBe('boolean')
+        expect(typeof course.description === 'string' || course.description === null).toBe(true)
+        expect(typeof course.duration).toBe('number')
+        expect(typeof course.price).toBe('number')
         expect(course.createdAt).toBeInstanceOf(Date)
         expect(course.updatedAt).toBeInstanceOf(Date)
-      })
-    })
-
-    it('should have valid duration structure', () => {
-      defaultCourses.forEach((course) => {
-        course.durations.forEach((duration) => {
-          expect(duration).toHaveProperty('time')
-          expect(duration).toHaveProperty('price')
-          expect(typeof duration.time).toBe('number')
-          expect(typeof duration.price).toBe('number')
-
-          if (duration.originalPrice !== undefined) {
-            expect(typeof duration.originalPrice).toBe('number')
-            expect(duration.originalPrice).toBeGreaterThan(duration.price)
-          }
-
-          if (duration.label !== undefined) {
-            expect(typeof duration.label).toBe('string')
-          }
-        })
       })
     })
 
@@ -62,21 +36,6 @@ describe('Pricing Data', () => {
       const ids = defaultCourses.map((course) => course.id)
       const uniqueIds = [...new Set(ids)]
       expect(ids.length).toBe(uniqueIds.length)
-    })
-
-    it('should have campaign and standard courses', () => {
-      const categories = defaultCourses.map((c) => c.category)
-      expect(categories).toContain('campaign')
-      expect(categories).toContain('standard')
-    })
-
-    it('should have valid age ranges', () => {
-      defaultCourses.forEach((course) => {
-        if (course.minAge !== undefined && course.maxAge !== undefined) {
-          expect(course.minAge).toBeLessThanOrEqual(course.maxAge)
-          expect(course.minAge).toBeGreaterThanOrEqual(0)
-        }
-      })
     })
   })
 

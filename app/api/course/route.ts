@@ -10,6 +10,70 @@ import { db } from '@/lib/db'
 import logger from '@/lib/logger'
 import { defaultCourses } from '@/lib/pricing/data'
 
+function normalizeNumber(value: any, fallback: number = 0) {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed)) return fallback
+  return Math.trunc(parsed)
+}
+
+function buildCoursePayload(data: any, mode: 'create' | 'update') {
+  const payload: Record<string, any> = {}
+
+  if (data.name !== undefined) {
+    const name = data.name?.toString().trim()
+    if (!name) {
+      throw new Error('NAME_REQUIRED')
+    }
+    payload.name = name
+  } else if (mode === 'create') {
+    throw new Error('NAME_REQUIRED')
+  }
+
+  if (data.description !== undefined) {
+    payload.description = data.description?.toString() ?? ''
+  } else if (mode === 'create') {
+    payload.description = ''
+  }
+
+  if (data.duration !== undefined) {
+    const duration = normalizeNumber(data.duration, NaN)
+    if (!Number.isFinite(duration) || duration <= 0) {
+      throw new Error('INVALID_DURATION')
+    }
+    payload.duration = duration
+  } else if (mode === 'create') {
+    throw new Error('INVALID_DURATION')
+  }
+
+  if (data.price !== undefined) {
+    const price = normalizeNumber(data.price, NaN)
+    if (!Number.isFinite(price) || price < 0) {
+      throw new Error('INVALID_PRICE')
+    }
+    payload.price = price
+  } else if (mode === 'create') {
+    throw new Error('INVALID_PRICE')
+  }
+
+  if (data.storeShare !== undefined) {
+    const storeShare = normalizeNumber(data.storeShare, NaN)
+    if (!Number.isFinite(storeShare) || storeShare < 0) {
+      throw new Error('INVALID_STORE_SHARE')
+    }
+    payload.storeShare = storeShare
+  }
+
+  if (data.castShare !== undefined) {
+    const castShare = normalizeNumber(data.castShare, NaN)
+    if (!Number.isFinite(castShare) || castShare < 0) {
+      throw new Error('INVALID_CAST_SHARE')
+    }
+    payload.castShare = castShare
+  }
+
+  return payload
+}
+
 async function requireSession() {
   const session = await getServerSession(authOptions)
   if (!session) {
@@ -85,7 +149,7 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: {
-        price: 'asc',
+        duration: 'asc',
       },
     })
 
@@ -120,15 +184,45 @@ export async function POST(request: NextRequest) {
 
     const data = await request.json()
 
+    let payload
+    try {
+      payload = buildCoursePayload(data, 'create')
+    } catch (error) {
+      if (error instanceof Error && error.message === 'NAME_REQUIRED') {
+        return NextResponse.json(
+          { error: 'Validation error', details: [{ path: ['name'], message: 'Name is required' }] },
+          { status: 400 }
+        )
+      }
+      if (error instanceof Error && error.message === 'INVALID_DURATION') {
+        return NextResponse.json(
+          { error: 'Validation error', details: [{ path: ['duration'], message: 'Duration must be greater than 0' }] },
+          { status: 400 }
+        )
+      }
+      if (error instanceof Error && error.message === 'INVALID_PRICE') {
+        return NextResponse.json(
+          { error: 'Validation error', details: [{ path: ['price'], message: 'Price must be 0以上の数値です' }] },
+          { status: 400 }
+        )
+      }
+      if (error instanceof Error && error.message === 'INVALID_STORE_SHARE') {
+        return NextResponse.json(
+          { error: 'Validation error', details: [{ path: ['storeShare'], message: 'Store share must be 0以上の数値です' }] },
+          { status: 400 }
+        )
+      }
+      if (error instanceof Error && error.message === 'INVALID_CAST_SHARE') {
+        return NextResponse.json(
+          { error: 'Validation error', details: [{ path: ['castShare'], message: 'Cast share must be 0以上の数値です' }] },
+          { status: 400 }
+        )
+      }
+      throw error
+    }
+
     const newCourse = await db.coursePrice.create({
-      data: {
-        name: data.name,
-        duration: data.duration,
-        price: data.price,
-        storeShare: data.storeShare ?? null,
-        castShare: data.castShare ?? null,
-        description: data.description || '',
-      },
+      data: payload,
       include: {
         reservations: true,
       },
@@ -159,16 +253,46 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 })
     }
 
+    let payload
+    try {
+      payload = buildCoursePayload(updates, 'update')
+    } catch (error) {
+      if (error instanceof Error && error.message === 'NAME_REQUIRED') {
+        return NextResponse.json(
+          { error: 'Validation error', details: [{ path: ['name'], message: 'Name is required' }] },
+          { status: 400 }
+        )
+      }
+      if (error instanceof Error && error.message === 'INVALID_DURATION') {
+        return NextResponse.json(
+          { error: 'Validation error', details: [{ path: ['duration'], message: 'Duration must be greater than 0' }] },
+          { status: 400 }
+        )
+      }
+      if (error instanceof Error && error.message === 'INVALID_PRICE') {
+        return NextResponse.json(
+          { error: 'Validation error', details: [{ path: ['price'], message: 'Price must be 0以上の数値です' }] },
+          { status: 400 }
+        )
+      }
+      if (error instanceof Error && error.message === 'INVALID_STORE_SHARE') {
+        return NextResponse.json(
+          { error: 'Validation error', details: [{ path: ['storeShare'], message: 'Store share must be 0以上の数値です' }] },
+          { status: 400 }
+        )
+      }
+      if (error instanceof Error && error.message === 'INVALID_CAST_SHARE') {
+        return NextResponse.json(
+          { error: 'Validation error', details: [{ path: ['castShare'], message: 'Cast share must be 0以上の数値です' }] },
+          { status: 400 }
+        )
+      }
+      throw error
+    }
+
     const updatedCourse = await db.coursePrice.update({
       where: { id },
-      data: {
-        name: updates.name,
-        duration: updates.duration,
-        price: updates.price,
-        storeShare: updates.storeShare ?? null,
-        castShare: updates.castShare ?? null,
-        description: updates.description,
-      },
+      data: Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== undefined)),
       include: {
         reservations: {
           include: {

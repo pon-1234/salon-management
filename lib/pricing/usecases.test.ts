@@ -46,12 +46,10 @@ describe('PricingUseCases', () => {
             id: 'course-1',
             name: 'Standard Course',
             description: 'Standard course description',
-            durations: [{ time: 60, price: 10000 }],
-            features: ['feature1'],
-            category: 'standard',
-            displayOrder: 1,
-            isActive: true,
-            isPopular: false,
+            duration: 60,
+            price: 10000,
+            storeShare: 6000,
+            castShare: 4000,
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -71,12 +69,10 @@ describe('PricingUseCases', () => {
           id: 'course-1',
           name: 'Standard Course',
           description: 'Standard course description',
-          durations: [{ time: 60, price: 10000 }],
-          features: ['feature1'],
-          category: 'standard',
-          displayOrder: 1,
-          isActive: true,
-          isPopular: false,
+          duration: 60,
+          price: 10000,
+          storeShare: 6000,
+          castShare: 4000,
           createdAt: new Date(),
           updatedAt: new Date(),
         }
@@ -97,41 +93,6 @@ describe('PricingUseCases', () => {
       })
     })
 
-    describe('toggleCourseStatus', () => {
-      it('should toggle course status from active to inactive', async () => {
-        const mockCourse: CoursePrice = {
-          id: 'course-1',
-          name: 'Standard Course',
-          description: 'Standard course description',
-          durations: [{ time: 60, price: 10000 }],
-          features: [],
-          category: 'standard',
-          displayOrder: 1,
-          isActive: true,
-          isPopular: false,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }
-        const updatedCourse = { ...mockCourse, isActive: false }
-
-        vi.mocked(mockRepository.getCourseById).mockResolvedValue(mockCourse)
-        vi.mocked(mockRepository.updateCourse).mockResolvedValue(updatedCourse)
-
-        const result = await useCases.toggleCourseStatus('course-1')
-
-        expect(mockRepository.getCourseById).toHaveBeenCalledWith('course-1')
-        expect(mockRepository.updateCourse).toHaveBeenCalledWith('course-1', { isActive: false })
-        expect(result).toEqual(updatedCourse)
-      })
-
-      it('should throw error when course not found', async () => {
-        vi.mocked(mockRepository.getCourseById).mockResolvedValue(null)
-
-        await expect(useCases.toggleCourseStatus('non-existent')).rejects.toThrow(
-          'Course with id non-existent not found'
-        )
-      })
-    })
   })
 
   describe('Option management', () => {
@@ -202,15 +163,10 @@ describe('PricingUseCases', () => {
         id: 'course-1',
         name: 'Standard Course',
         description: '',
-        durations: [
-          { time: 60, price: 10000 },
-          { time: 90, price: 15000 },
-        ],
-        features: [],
-        category: 'standard',
-        displayOrder: 1,
-        isActive: true,
-        isPopular: false,
+        duration: 90,
+        price: 15000,
+        storeShare: 9000,
+        castShare: 6000,
         createdAt: new Date(),
         updatedAt: new Date(),
       }
@@ -261,12 +217,10 @@ describe('PricingUseCases', () => {
         id: 'course-1',
         name: 'Standard Course',
         description: '',
-        durations: [{ time: 60, price: 10000 }],
-        features: [],
-        category: 'standard',
-        displayOrder: 1,
-        isActive: true,
-        isPopular: false,
+        duration: 60,
+        price: 10000,
+        storeShare: 6000,
+        castShare: 4000,
         createdAt: new Date(),
         updatedAt: new Date(),
       }
@@ -299,33 +253,6 @@ describe('PricingUseCases', () => {
       const total = await useCases.calculateTotalPrice('non-existent', 60, [], false)
 
       expect(total).toBe(0)
-    })
-  })
-
-  describe('determineCourseCategory', () => {
-    it('should determine VIP category for VIP courses', () => {
-      const category = (useCases as any).determineCourseCategory('VIPコース', 50000)
-      expect(category).toBe('vip')
-    })
-
-    it('should determine VIP category for high-priced courses', () => {
-      const category = (useCases as any).determineCourseCategory('高級コース', 45000)
-      expect(category).toBe('vip')
-    })
-
-    it('should determine premium category for premium courses', () => {
-      const category = (useCases as any).determineCourseCategory('プレミアムコース', 25000)
-      expect(category).toBe('premium')
-    })
-
-    it('should determine premium category for mid-priced courses', () => {
-      const category = (useCases as any).determineCourseCategory('中級コース', 22000)
-      expect(category).toBe('premium')
-    })
-
-    it('should determine standard category for regular courses', () => {
-      const category = (useCases as any).determineCourseCategory('スタンダードコース', 10000)
-      expect(category).toBe('standard')
     })
   })
 

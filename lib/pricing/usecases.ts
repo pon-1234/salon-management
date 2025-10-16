@@ -1,13 +1,6 @@
 import { PricingRepository } from './repository'
 import { getPricingRepository } from './repository-impl'
-import {
-  CoursePrice,
-  OptionPrice,
-  AdditionalFee,
-  StorePricing,
-  PricingSyncStatus,
-  CourseDuration,
-} from './types'
+import { CoursePrice, OptionPrice, AdditionalFee, StorePricing, PricingSyncStatus } from './types'
 
 export class PricingUseCases {
   constructor(private repository: PricingRepository = getPricingRepository()) {}
@@ -33,14 +26,6 @@ export class PricingUseCases {
 
   async deleteCourse(id: string): Promise<void> {
     return this.repository.deleteCourse(id)
-  }
-
-  async toggleCourseStatus(id: string): Promise<CoursePrice> {
-    const course = await this.repository.getCourseById(id)
-    if (!course) {
-      throw new Error(`Course with id ${id} not found`)
-    }
-    return this.repository.updateCourse(id, { isActive: !course.isActive })
   }
 
   // Option management
@@ -130,11 +115,8 @@ export class PricingUseCases {
 
     // Get course price
     const course = await this.repository.getCourseById(courseId)
-    if (course) {
-      const courseDuration = course.durations.find((d) => d.time === duration)
-      if (courseDuration) {
-        total += courseDuration.price
-      }
+    if (course && (duration === course.duration || !duration)) {
+      total += course.price
     }
 
     // Add option prices
@@ -165,26 +147,23 @@ export class PricingUseCases {
   async migrateFromOldFormat(oldCourses: any[], oldOptions: any[], storeId: string): Promise<void> {
     // Migrate courses
     for (const oldCourse of oldCourses) {
-      const features = oldCourse.features || []
-      const durations: CourseDuration[] = []
+      const durationEntries = Array.isArray(oldCourse.durations) && oldCourse.durations.length > 0
+        ? oldCourse.durations
+        : [{ time: oldCourse.duration ?? 60, price: oldCourse.price ?? 0, storeShare: oldCourse.storeShare, castShare: oldCourse.castShare }]
 
-      if (oldCourse.duration && oldCourse.price) {
-        durations.push({ time: oldCourse.duration, price: oldCourse.price })
+      for (const entry of durationEntries) {
+        await this.createCourse({
+          name:
+            durationEntries.length > 1
+              ? `${oldCourse.name} ${entry.time}分`
+              : oldCourse.name,
+          description: oldCourse.description || '',
+          duration: entry.time,
+          price: entry.price,
+          storeShare: entry.storeShare,
+          castShare: entry.castShare,
+        })
       }
-
-      await this.createCourse({
-        name: oldCourse.name,
-        description: oldCourse.description || '',
-        durations,
-        features,
-        category: this.determineCourseCategory(oldCourse.name, oldCourse.price),
-        displayOrder: oldCourse.displayOrder || 999,
-        isActive: oldCourse.isActive ?? true,
-        isPopular: oldCourse.name.includes('プレミアム'),
-        targetAudience: oldCourse.targetAudience,
-        minAge: oldCourse.minAge,
-        maxAge: oldCourse.maxAge,
-      })
     }
 
     // Migrate options
@@ -201,13 +180,6 @@ export class PricingUseCases {
       })
     }
   }
-
-  private determineCourseCategory(name: string, price: number): 'standard' | 'premium' | 'vip' {
-    if (name.includes('VIP') || price > 40000) return 'vip'
-    if (name.includes('プレミアム') || price > 20000) return 'premium'
-    return 'standard'
-  }
-
   private determineOptionCategory(
     name: string
   ): 'relaxation' | 'body-care' | 'extension' | 'special' {

@@ -3,9 +3,10 @@ import { getStoreBySlug } from '@/lib/store/data'
 import { StoreNavigation } from '@/components/store-navigation'
 import { StoreFooter } from '@/components/store-footer'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Check, Star, Clock } from 'lucide-react'
+import { Clock } from 'lucide-react'
 import { getPricingUseCases } from '@/lib/pricing'
+
+const DEFAULT_STORE_RATIO = 0.6
 
 export default async function PricingPage({ params }: { params: Promise<{ store: string }> }) {
   const { store: storeSlug } = await params
@@ -19,6 +20,7 @@ export default async function PricingPage({ params }: { params: Promise<{ store:
   const pricingUseCases = getPricingUseCases()
   const storePricing = await pricingUseCases.getStorePricing(store.id)
   const { courses, options, additionalFees, notes } = storePricing
+  const sortedCourses = courses.slice().sort((a, b) => a.duration - b.duration || a.price - b.price)
 
   // Group options by category
   const optionsByCategory = options.reduce(
@@ -49,100 +51,35 @@ export default async function PricingPage({ params }: { params: Promise<{ store:
         <section className="py-12">
           <div className="mx-auto max-w-7xl px-4">
             <h2 className="mb-12 text-center text-3xl font-bold">コース料金</h2>
-            <div
-              className={`grid grid-cols-1 gap-8 ${
-                courses.length === 2
-                  ? 'mx-auto max-w-5xl md:grid-cols-2'
-                  : courses.length >= 3
-                    ? 'md:grid-cols-3'
-                    : ''
-              }`}
-            >
-              {courses.map((course) => (
-                <Card
-                  key={course.id}
-                  className={course.isPopular ? 'relative border-purple-500 shadow-xl' : ''}
-                >
-                  {course.isPopular && (
-                    <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-600">
-                      人気No.1
-                    </Badge>
-                  )}
+            <div className={`grid grid-cols-1 gap-8 ${sortedCourses.length >= 3 ? 'md:grid-cols-3' : sortedCourses.length === 2 ? 'mx-auto max-w-5xl md:grid-cols-2' : ''}`}>
+              {sortedCourses.map((course) => (
+                <Card key={course.id}>
                   <CardHeader>
                     <CardTitle className="text-center text-xl lg:text-2xl">{course.name}</CardTitle>
                     {course.description && (
                       <p className="mt-2 text-center text-sm text-gray-600">{course.description}</p>
                     )}
                   </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-2">
-                      {course.durations.map((duration) => (
-                        <div key={duration.time} className="rounded-lg bg-gray-50 p-3">
-                          <div className="flex items-center justify-between">
-                            <span className="flex items-center gap-2">
-                              <Clock className="h-4 w-4 text-gray-500" />
-                              {duration.time}分
-                              {duration.label && (
-                                <Badge variant="secondary" className="text-xs">
-                                  {duration.label}
-                                </Badge>
-                              )}
-                            </span>
-                            <div className="text-right">
-                              {duration.originalPrice && (
-                                <span className="block text-sm text-gray-400 line-through">
-                                  ¥{duration.originalPrice.toLocaleString()}
-                                </span>
-                              )}
-                              <span className="text-lg font-bold text-red-600">
-                                ¥{duration.price.toLocaleString()}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="space-y-2">
-                      {course.features.map((feature) => (
-                        <div key={feature} className="flex items-start gap-2">
-                          <Check className="mt-0.5 h-5 w-5 flex-shrink-0 text-green-500" />
-                          <span className="text-sm">{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                    {course.notes && course.notes.length > 0 && (
-                      <div className="space-y-1 border-t pt-3">
-                        {course.notes.map((note, index) => (
-                          <p key={index} className="text-xs text-gray-600">
-                            ※ {note}
-                          </p>
-                        ))}
+                  <CardContent className="space-y-4">
+                    <div className="rounded-lg bg-gray-50 p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-2 text-sm font-medium text-gray-600">
+                          <Clock className="h-4 w-4 text-gray-500" />
+                          {course.duration}分
+                        </span>
+                        <span className="text-2xl font-bold text-red-600">
+                          ¥{course.price.toLocaleString()}
+                        </span>
                       </div>
-                    )}
-                    {course.recommendedDuration && (
-                      <div className="rounded-lg bg-yellow-50 p-3">
-                        <p className="text-center text-sm font-medium text-yellow-800">
-                          おすすめ: {course.recommendedDuration}分コース
-                        </p>
-                      </div>
-                    )}
-                    {course.targetAudience && (
-                      <p className="text-center text-sm font-medium text-gray-600">
-                        {course.targetAudience}
+                    </div>
+                    <div className="rounded-lg bg-emerald-50 p-3 text-xs text-emerald-700">
+                      <p>
+                        店舗取り分: ¥{(course.storeShare ?? Math.round(course.price * DEFAULT_STORE_RATIO)).toLocaleString()}
                       </p>
-                    )}
-                    {course.pointUsage && (
-                      <div className="rounded-lg bg-blue-50 p-3">
-                        <p className="mb-2 text-xs font-semibold text-blue-800">ポイント利用可能</p>
-                        <div className="space-y-1">
-                          {Object.entries(course.pointUsage).map(([duration, points]) => (
-                            <p key={duration} className="text-xs text-blue-700">
-                              {duration}分: {points.toLocaleString()}pt
-                            </p>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                      <p>
+                        キャスト取り分: ¥{(course.castShare ?? Math.max(course.price - Math.round(course.price * DEFAULT_STORE_RATIO), 0)).toLocaleString()}
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
               ))}

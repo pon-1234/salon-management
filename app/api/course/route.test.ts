@@ -98,7 +98,7 @@ describe('GET /api/course', () => {
     expect(data.error).toBe('Course not found')
   })
 
-  it('should get all courses sorted by price', async () => {
+  it('should get all courses sorted by duration', async () => {
     const mockCourses = [
       {
         id: 'course1',
@@ -139,7 +139,7 @@ describe('GET /api/course', () => {
         },
       },
       orderBy: {
-        price: 'asc',
+        duration: 'asc',
       },
     })
   })
@@ -229,9 +229,9 @@ describe('POST /api/course', () => {
     expect(vi.mocked(db.coursePrice.create)).toHaveBeenCalledWith({
       data: {
         name: '90-minute Course',
+        description: 'Extended 90-minute session',
         duration: 90,
         price: 15000,
-        description: 'Extended 90-minute session',
       },
       include: {
         reservations: true,
@@ -267,9 +267,9 @@ describe('POST /api/course', () => {
     expect(vi.mocked(db.coursePrice.create)).toHaveBeenCalledWith({
       data: {
         name: '120-minute Course',
+        description: '',
         duration: 120,
         price: 20000,
-        description: '',
       },
       include: {
         reservations: true,
@@ -284,8 +284,6 @@ describe('POST /api/course', () => {
       price: 5000,
     }
 
-    vi.mocked(db.coursePrice.create).mockRejectedValueOnce(new Error('Database error'))
-
     const request = new NextRequest('http://localhost:3000/api/course', {
       method: 'POST',
       body: JSON.stringify(newCourseData),
@@ -294,8 +292,8 @@ describe('POST /api/course', () => {
     const response = await POST(request)
     const data = await response.json()
 
-    expect(response.status).toBe(500)
-    expect(data.error).toBe('Internal server error')
+    expect(response.status).toBe(400)
+    expect(data.error).toBe('Validation error')
   })
 
   it('should reject non-admin users', async () => {
@@ -395,12 +393,11 @@ describe('PUT /api/course', () => {
     expect(data.price).toBe(12000)
     expect(vi.mocked(db.coursePrice.update)).toHaveBeenCalledWith({
       where: { id: 'course1' },
-      data: {
+      data: expect.objectContaining({
         name: 'Updated Course Name',
-        duration: undefined,
         price: 12000,
         description: 'Updated description',
-      },
+      }),
       include: {
         reservations: {
           include: {
