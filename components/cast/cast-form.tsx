@@ -63,20 +63,42 @@ export function CastForm({ cast, onSubmit }: CastFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+
+    const toNumber = (value: number | string) =>
+      typeof value === 'string' ? parseInt(value, 10) || 0 : value
+
+    const toMoney = (value: number | string | null) => {
+      if (value === null) return null
+      if (typeof value === 'string') {
+        const parsed = parseInt(value, 10)
+        return Number.isNaN(parsed) ? null : parsed
+      }
+      return value
+    }
+
+    const sanitizedImages = formData.images
+      .map((url) => (typeof url === 'string' ? url.trim() : url))
+      .filter((url) => typeof url === 'string' && url.length > 0)
+
     onSubmit({
-      ...formData,
-      age: typeof formData.age === 'string' ? parseInt(formData.age, 10) || 0 : formData.age,
-      height:
-        typeof formData.height === 'string' ? parseInt(formData.height, 10) || 0 : formData.height,
-      waist:
-        typeof formData.waist === 'string' ? parseInt(formData.waist, 10) || 0 : formData.waist,
-      hip: typeof formData.hip === 'string' ? parseInt(formData.hip, 10) || 0 : formData.hip,
-      specialDesignationFee: formData.specialDesignationFee
-        ? parseInt(formData.specialDesignationFee as string, 10) || null
-        : null,
-      regularDesignationFee: formData.regularDesignationFee
-        ? parseInt(formData.regularDesignationFee as string, 10) || null
-        : null,
+      name: formData.name.trim(),
+      nameKana: formData.nameKana.trim(),
+      age: toNumber(formData.age),
+      height: toNumber(formData.height),
+      bust: formData.bust,
+      waist: toNumber(formData.waist),
+      hip: toNumber(formData.hip),
+      type: formData.type,
+      image: formData.image.trim(),
+      images: sanitizedImages,
+      description: formData.description,
+      netReservation: formData.netReservation,
+      specialDesignationFee: toMoney(formData.specialDesignationFee as number | string | null),
+      regularDesignationFee: toMoney(formData.regularDesignationFee as number | string | null),
+      panelDesignationRank: toNumber(formData.panelDesignationRank),
+      regularDesignationRank: toNumber(formData.regularDesignationRank),
+      workStatus: formData.workStatus,
+      availableOptions: formData.availableOptions,
     })
   }
 
