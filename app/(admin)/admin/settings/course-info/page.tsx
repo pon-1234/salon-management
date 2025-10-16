@@ -101,6 +101,14 @@ export default function CourseInfoPage() {
       setLoading(true)
       const data = await pricingUseCases.getCourses()
       setCourses(data)
+      const hasCampaign = data.some((course) => course.category === 'campaign')
+      if (!hasCampaign) {
+        toast({
+          title: '注意',
+          description:
+            'キャンペーンコースが未設定のため、古い設定画面でエラーになる場合があります。必要に応じて新規追加してください。',
+        })
+      }
     } catch (error) {
       toast({
         title: 'エラー',
