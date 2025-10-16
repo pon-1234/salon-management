@@ -39,6 +39,13 @@ type DurationFormState = {
   castShare: number
 }
 
+const normalizeCourseEntity = (course: CoursePrice): CoursePrice => ({
+  ...course,
+  durations: Array.isArray(course.durations) ? course.durations : [],
+  features: Array.isArray(course.features) ? course.features : [],
+  category: course.category ?? 'standard',
+})
+
 function normalizeRevenueSplit(
   price: number,
   storeShare?: number | null,
@@ -100,8 +107,9 @@ export default function CourseInfoPage() {
     try {
       setLoading(true)
       const data = await pricingUseCases.getCourses()
-      setCourses(data)
-      const hasCampaign = data.some((course) => course.category === 'campaign')
+      const normalized = data.map(normalizeCourseEntity)
+      setCourses(normalized)
+      const hasCampaign = normalized.some((course) => course.category === 'campaign')
       if (!hasCampaign) {
         toast({
           title: '注意',
@@ -214,8 +222,9 @@ export default function CourseInfoPage() {
       if (editingCourse) {
         // Update existing course
         const updated = await pricingUseCases.updateCourse(editingCourse.id, payload)
+        const normalizedUpdated = normalizeCourseEntity(updated)
         setCourses((prev) =>
-          prev.map((course) => (course.id === editingCourse.id ? updated : course))
+          prev.map((course) => (course.id === editingCourse.id ? normalizedUpdated : course))
         )
         toast({
           title: '更新完了',
@@ -224,7 +233,7 @@ export default function CourseInfoPage() {
       } else {
         // Create new course
         const newCourse = await pricingUseCases.createCourse(payload)
-        setCourses((prev) => [...prev, newCourse])
+        setCourses((prev) => [...prev, normalizeCourseEntity(newCourse)])
         toast({
           title: '追加完了',
           description: '新しいコースが追加されました',
@@ -262,7 +271,8 @@ export default function CourseInfoPage() {
   const handleToggleActive = async (id: string) => {
     try {
       const updated = await pricingUseCases.toggleCourseStatus(id)
-      setCourses((prev) => prev.map((course) => (course.id === id ? updated : course)))
+      const normalizedUpdated = normalizeCourseEntity(updated)
+      setCourses((prev) => prev.map((course) => (course.id === id ? normalizedUpdated : course)))
     } catch (error) {
       toast({
         title: 'エラー',
