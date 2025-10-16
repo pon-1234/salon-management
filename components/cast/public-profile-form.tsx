@@ -93,6 +93,7 @@ export function PublicProfileForm({
   isEditing = false,
   setIsEditing,
 }: PublicProfileFormProps) {
+  const fieldId = (suffix: string) => `profile-${suffix}`
   const [publicProfile, setPublicProfile] = useState<PublicProfile>({
     bustCup: cast?.publicProfile?.bustCup || '',
     bodyType: cast?.publicProfile?.bodyType || [],
@@ -205,9 +206,9 @@ export function PublicProfileForm({
         >
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="height">身長 (cm)</Label>
+              <Label htmlFor={fieldId('height')}>身長 (cm)</Label>
               <Input
-                id="height"
+                id={fieldId('height')}
                 type="number"
                 value={basicInfo.height || ''}
                 onChange={(e) => handleBasicInfoChange('height', Number(e.target.value) || 0)}
@@ -216,9 +217,9 @@ export function PublicProfileForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="bust">バスト</Label>
+              <Label htmlFor={fieldId('bust')}>バスト</Label>
               <Input
-                id="bust"
+                id={fieldId('bust')}
                 value={basicInfo.bust || ''}
                 onChange={(e) => handleBasicInfoChange('bust', e.target.value)}
                 placeholder="84"
@@ -226,9 +227,9 @@ export function PublicProfileForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="bustCup">カップ</Label>
+              <Label htmlFor={fieldId('bustCup')}>カップ</Label>
               <Input
-                id="bustCup"
+                id={fieldId('bustCup')}
                 value={publicProfile.bustCup}
                 onChange={(e) => handleChange('bustCup', e.target.value)}
                 placeholder="G"
@@ -236,9 +237,9 @@ export function PublicProfileForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="waist">ウエスト (cm)</Label>
+              <Label htmlFor={fieldId('waist')}>ウエスト (cm)</Label>
               <Input
-                id="waist"
+                id={fieldId('waist')}
                 type="number"
                 value={basicInfo.waist || ''}
                 onChange={(e) => handleBasicInfoChange('waist', Number(e.target.value) || 0)}
@@ -247,9 +248,9 @@ export function PublicProfileForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="hip">ヒップ (cm)</Label>
+              <Label htmlFor={fieldId('hip')}>ヒップ (cm)</Label>
               <Input
-                id="hip"
+                id={fieldId('hip')}
                 type="number"
                 value={basicInfo.hip || ''}
                 onChange={(e) => handleBasicInfoChange('hip', Number(e.target.value) || 0)}
@@ -258,13 +259,13 @@ export function PublicProfileForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="type">タイプ</Label>
+              <Label htmlFor={fieldId('type')}>タイプ</Label>
               <Select
                 value={basicInfo.type || ''}
                 onValueChange={(value) => handleBasicInfoChange('type', value)}
                 disabled={!isEditing}
               >
-                <SelectTrigger id="type">
+                <SelectTrigger id={fieldId('type')}>
                   <SelectValue placeholder="タイプを選択" />
                 </SelectTrigger>
                 <SelectContent>
@@ -277,9 +278,9 @@ export function PublicProfileForm({
               </Select>
             </div>
             <div className="space-y-2 md:col-span-1 xl:col-span-3">
-              <Label htmlFor="birthplace">出身地</Label>
+              <Label htmlFor={fieldId('birthplace')}>出身地</Label>
               <Input
-                id="birthplace"
+                id={fieldId('birthplace')}
                 value={publicProfile.birthplace}
                 onChange={(e) => handleChange('birthplace', e.target.value)}
                 placeholder="関東地方"
@@ -288,9 +289,9 @@ export function PublicProfileForm({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">プロフィール文</Label>
+            <Label htmlFor={fieldId('description')}>プロフィール文</Label>
             <Textarea
-              id="description"
+              id={fieldId('description')}
               value={basicInfo.description || ''}
               onChange={(e) => handleBasicInfoChange('description', e.target.value)}
               placeholder="心を込めたサービスでお迎えします。"
@@ -459,7 +460,7 @@ export function PublicProfileForm({
           </div>
           <div className="flex items-center justify-between rounded-lg border bg-muted/40 px-4 py-3">
             <div>
-              <Label htmlFor="massageQualification" className="text-sm font-medium">
+              <Label htmlFor={fieldId('massageQualification')} className="text-sm font-medium">
                 エステ・マッサージ資格
               </Label>
               <p className="text-xs text-muted-foreground">
@@ -467,7 +468,7 @@ export function PublicProfileForm({
               </p>
             </div>
             <Switch
-              id="massageQualification"
+              id={fieldId('massageQualification')}
               checked={publicProfile.massageQualification}
               onCheckedChange={(checked) => handleChange('massageQualification', checked)}
               disabled={!isEditing}
@@ -475,9 +476,9 @@ export function PublicProfileForm({
           </div>
           {publicProfile.massageQualification && (
             <div className="space-y-2">
-              <Label htmlFor="qualificationDetails">資格詳細</Label>
+              <Label htmlFor={fieldId('qualificationDetails')}>資格詳細</Label>
               <Textarea
-                id="qualificationDetails"
+                id={fieldId('qualificationDetails')}
                 value={publicProfile.qualificationDetails.join('\n')}
                 onChange={(e) =>
                   handleChange(
@@ -502,9 +503,9 @@ export function PublicProfileForm({
         >
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="hobbies">趣味・特技</Label>
+              <Label htmlFor={fieldId('hobbies')}>趣味・特技</Label>
               <Input
-                id="hobbies"
+                id={fieldId('hobbies')}
                 value={publicProfile.hobbies}
                 onChange={(e) => handleChange('hobbies', e.target.value)}
                 placeholder="料理"
@@ -512,9 +513,9 @@ export function PublicProfileForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="charmPoint">チャームポイント</Label>
+              <Label htmlFor={fieldId('charmPoint')}>チャームポイント</Label>
               <Input
-                id="charmPoint"
+                id={fieldId('charmPoint')}
                 value={publicProfile.charmPoint}
                 onChange={(e) => handleChange('charmPoint', e.target.value)}
                 placeholder="目♡"
@@ -522,9 +523,9 @@ export function PublicProfileForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="personalityOneWord">性格を一言で</Label>
+              <Label htmlFor={fieldId('personalityOneWord')}>性格を一言で</Label>
               <Input
-                id="personalityOneWord"
+                id={fieldId('personalityOneWord')}
                 value={publicProfile.personalityOneWord}
                 onChange={(e) => handleChange('personalityOneWord', e.target.value)}
                 placeholder="明るい"
@@ -532,9 +533,9 @@ export function PublicProfileForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="favoriteType">好きな男性タイプ</Label>
+              <Label htmlFor={fieldId('favoriteType')}>好きな男性タイプ</Label>
               <Input
-                id="favoriteType"
+                id={fieldId('favoriteType')}
                 value={publicProfile.favoriteType}
                 onChange={(e) => handleChange('favoriteType', e.target.value)}
                 placeholder="紳士な人♡"
@@ -542,9 +543,9 @@ export function PublicProfileForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="favoriteFood">好きな食べ物</Label>
+              <Label htmlFor={fieldId('favoriteFood')}>好きな食べ物</Label>
               <Input
-                id="favoriteFood"
+                id={fieldId('favoriteFood')}
                 value={publicProfile.favoriteFood}
                 onChange={(e) => handleChange('favoriteFood', e.target.value)}
                 placeholder="プリン"
@@ -552,9 +553,9 @@ export function PublicProfileForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="specialTechnique">私の奥義（金の技）</Label>
+              <Label htmlFor={fieldId('specialTechnique')}>私の奥義（金の技）</Label>
               <Input
-                id="specialTechnique"
+                id={fieldId('specialTechnique')}
                 value={publicProfile.specialTechnique}
                 onChange={(e) => handleChange('specialTechnique', e.target.value)}
                 placeholder="超密着マッサージ"
@@ -563,9 +564,9 @@ export function PublicProfileForm({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="shopMessage">お店からの一言</Label>
+            <Label htmlFor={fieldId('shopMessage')}>お店からの一言</Label>
             <Textarea
-              id="shopMessage"
+              id={fieldId('shopMessage')}
               value={publicProfile.shopMessage}
               onChange={(e) => handleChange('shopMessage', e.target.value)}
               placeholder="とっても人懐っこく、明るいセラピストです。"
@@ -574,9 +575,9 @@ export function PublicProfileForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="customerMessage">お客様へのメッセージ</Label>
+            <Label htmlFor={fieldId('customerMessage')}>お客様へのメッセージ</Label>
             <Textarea
-              id="customerMessage"
+              id={fieldId('customerMessage')}
               value={publicProfile.customerMessage}
               onChange={(e) => handleChange('customerMessage', e.target.value)}
               placeholder="初めまして♡ あいりと申します✨✨"

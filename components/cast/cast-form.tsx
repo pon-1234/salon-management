@@ -29,11 +29,11 @@ interface CastFormProps {
 const buildInitialFormState = (cast?: Cast | null) => ({
   name: cast?.name || '',
   nameKana: cast?.nameKana || '',
-  age: cast?.age || '',
-  height: cast?.height || '',
+  age: cast?.age ?? '',
+  height: cast?.height ?? '',
   bust: cast?.bust || '',
-  waist: cast?.waist || '',
-  hip: cast?.hip || '',
+  waist: cast?.waist ?? '',
+  hip: cast?.hip ?? '',
   type: cast?.type || 'カワイイ系',
   image: cast?.image || '',
   images: cast?.images ? [...cast.images] : [],
@@ -41,8 +41,8 @@ const buildInitialFormState = (cast?: Cast | null) => ({
   netReservation: cast?.netReservation ?? true,
   specialDesignationFee: cast?.specialDesignationFee ?? '',
   regularDesignationFee: cast?.regularDesignationFee ?? '',
-  panelDesignationRank: cast?.panelDesignationRank || 0,
-  regularDesignationRank: cast?.regularDesignationRank || 0,
+  panelDesignationRank: cast?.panelDesignationRank ?? '',
+  regularDesignationRank: cast?.regularDesignationRank ?? '',
   workStatus: cast?.workStatus || '出勤',
   availableOptions: cast?.availableOptions ? [...cast.availableOptions] : [],
   phone: '',
@@ -93,6 +93,7 @@ const OptionPill = ({
 
 export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
   const [formData, setFormData] = useState(() => buildInitialFormState(cast))
+  const fieldId = (suffix: string) => `cast-${suffix}`
 
   useEffect(() => {
     setFormData(buildInitialFormState(cast))
@@ -101,42 +102,70 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    const toNumber = (value: number | string) =>
-      typeof value === 'string' ? parseInt(value, 10) || 0 : value
-
-    const toMoney = (value: number | string | null) => {
-      if (value === null) return null
-      if (typeof value === 'string') {
-        const parsed = parseInt(value, 10)
-        return Number.isNaN(parsed) ? null : parsed
+    const toOptionalNumber = (value: number | string) => {
+      if (value === '' || value === null || value === undefined) {
+        return undefined
       }
-      return value
+      if (typeof value === 'number') return value
+      const parsed = Number(value)
+      return Number.isNaN(parsed) ? undefined : parsed
+    }
+
+    const toOptionalMoney = (value: number | string | null | undefined) => {
+      if (value === '' || value === undefined) return undefined
+      if (value === null) return null
+      if (typeof value === 'number') return value
+      const parsed = Number(value)
+      if (Number.isNaN(parsed)) return undefined
+      return parsed
     }
 
     const sanitizedImages = formData.images
       .map((url) => (typeof url === 'string' ? url.trim() : url))
       .filter((url) => typeof url === 'string' && url.length > 0)
 
-    onSubmit({
+    const payload: Partial<Cast> = {
       name: formData.name.trim(),
       nameKana: formData.nameKana.trim(),
-      age: toNumber(formData.age),
-      height: toNumber(formData.height),
-      bust: formData.bust,
-      waist: toNumber(formData.waist),
-      hip: toNumber(formData.hip),
+      bust: formData.bust.trim(),
       type: formData.type,
-      image: formData.image.trim(),
-      images: sanitizedImages,
-      description: formData.description,
+      description: formData.description.trim(),
       netReservation: formData.netReservation,
-      specialDesignationFee: toMoney(formData.specialDesignationFee as number | string | null),
-      regularDesignationFee: toMoney(formData.regularDesignationFee as number | string | null),
-      panelDesignationRank: toNumber(formData.panelDesignationRank),
-      regularDesignationRank: toNumber(formData.regularDesignationRank),
+      images: sanitizedImages,
       workStatus: formData.workStatus,
       availableOptions: formData.availableOptions,
-    })
+    }
+
+    const mainImage = formData.image.trim()
+    if (mainImage) {
+      payload.image = mainImage
+    }
+
+    const age = toOptionalNumber(formData.age)
+    if (age !== undefined) payload.age = age
+
+    const height = toOptionalNumber(formData.height)
+    if (height !== undefined) payload.height = height
+
+    const waist = toOptionalNumber(formData.waist)
+    if (waist !== undefined) payload.waist = waist
+
+    const hip = toOptionalNumber(formData.hip)
+    if (hip !== undefined) payload.hip = hip
+
+    const panelRank = toOptionalNumber(formData.panelDesignationRank)
+    if (panelRank !== undefined) payload.panelDesignationRank = panelRank
+
+    const regularRank = toOptionalNumber(formData.regularDesignationRank)
+    if (regularRank !== undefined) payload.regularDesignationRank = regularRank
+
+    const specialFee = toOptionalMoney(formData.specialDesignationFee as number | string | null)
+    if (specialFee !== undefined) payload.specialDesignationFee = specialFee
+
+    const regularFee = toOptionalMoney(formData.regularDesignationFee as number | string | null)
+    if (regularFee !== undefined) payload.regularDesignationFee = regularFee
+
+    onSubmit(payload)
   }
 
   const handleInputChange = (
@@ -201,9 +230,9 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
       >
         <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="name">源氏名</Label>
+            <Label htmlFor={fieldId('name')}>源氏名</Label>
             <Input
-              id="name"
+              id={fieldId('name')}
               name="name"
               value={formData.name}
               onChange={handleInputChange}
@@ -212,9 +241,9 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="nameKana">本名（ひらがな）</Label>
+            <Label htmlFor={fieldId('nameKana')}>本名（ひらがな）</Label>
             <Input
-              id="nameKana"
+              id={fieldId('nameKana')}
               name="nameKana"
               value={formData.nameKana}
               onChange={handleInputChange}
@@ -224,9 +253,9 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
             <p className="text-xs text-muted-foreground">サイト上には表示されませんが検索時に使用します。</p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="age">年齢</Label>
+            <Label htmlFor={fieldId('age')}>年齢</Label>
             <Input
-              id="age"
+              id={fieldId('age')}
               name="age"
               type="number"
               min={18}
@@ -236,9 +265,9 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="height">身長 (cm)</Label>
+            <Label htmlFor={fieldId('height')}>身長 (cm)</Label>
             <Input
-              id="height"
+              id={fieldId('height')}
               name="height"
               type="number"
               min={100}
@@ -248,9 +277,9 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="bust">バスト</Label>
+            <Label htmlFor={fieldId('bust')}>バスト</Label>
             <Input
-              id="bust"
+              id={fieldId('bust')}
               name="bust"
               value={formData.bust}
               onChange={handleInputChange}
@@ -258,9 +287,9 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="waist">ウエスト (cm)</Label>
+            <Label htmlFor={fieldId('waist')}>ウエスト (cm)</Label>
             <Input
-              id="waist"
+              id={fieldId('waist')}
               name="waist"
               type="number"
               value={formData.waist}
@@ -269,9 +298,9 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="hip">ヒップ (cm)</Label>
+            <Label htmlFor={fieldId('hip')}>ヒップ (cm)</Label>
             <Input
-              id="hip"
+              id={fieldId('hip')}
               name="hip"
               type="number"
               value={formData.hip}
@@ -280,12 +309,12 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="type">タイプ</Label>
+            <Label htmlFor={fieldId('type')}>タイプ</Label>
             <Select
               value={formData.type}
               onValueChange={(value) => setFormData((prev) => ({ ...prev, type: value }))}
             >
-              <SelectTrigger id="type">
+              <SelectTrigger id={fieldId('type')}>
                 <SelectValue placeholder="スタイルを選択" />
               </SelectTrigger>
               <SelectContent>
@@ -299,9 +328,9 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="description">紹介文</Label>
+          <Label htmlFor={fieldId('description')}>紹介文</Label>
           <Textarea
-            id="description"
+            id={fieldId('description')}
             name="description"
             value={formData.description}
             onChange={handleInputChange}
@@ -318,26 +347,26 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
         <div className="grid gap-6 md:grid-cols-2">
           <div className="flex items-center justify-between rounded-lg border bg-muted/40 px-4 py-3">
             <div>
-              <Label htmlFor="netReservation" className="text-sm font-medium">
-                ネット予約
-              </Label>
+            <Label htmlFor={fieldId('netReservation')} className="text-sm font-medium">
+              ネット予約
+            </Label>
               <p className="text-xs text-muted-foreground">
                 オンラインからの予約を受け付ける場合はオンにします。
               </p>
             </div>
             <Switch
-              id="netReservation"
+              id={fieldId('netReservation')}
               checked={formData.netReservation}
               onCheckedChange={(checked) => handleSwitchChange('netReservation', checked)}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="workStatus">稼働ステータス</Label>
+            <Label htmlFor={fieldId('workStatus')}>稼働ステータス</Label>
             <Select
               value={formData.workStatus}
               onValueChange={(value) => setFormData((prev) => ({ ...prev, workStatus: value }))}
             >
-              <SelectTrigger id="workStatus">
+              <SelectTrigger id={fieldId('workStatus')}>
                 <SelectValue placeholder="稼働ステータスを選択" />
               </SelectTrigger>
               <SelectContent>
@@ -352,9 +381,9 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
         </div>
         <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="specialDesignationFee">特別指名料 (円)</Label>
+            <Label htmlFor={fieldId('specialDesignationFee')}>特別指名料 (円)</Label>
             <Input
-              id="specialDesignationFee"
+              id={fieldId('specialDesignationFee')}
               name="specialDesignationFee"
               type="number"
               min={0}
@@ -364,9 +393,9 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="regularDesignationFee">本指名料 (円)</Label>
+            <Label htmlFor={fieldId('regularDesignationFee')}>本指名料 (円)</Label>
             <Input
-              id="regularDesignationFee"
+              id={fieldId('regularDesignationFee')}
               name="regularDesignationFee"
               type="number"
               min={0}
@@ -376,9 +405,9 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="panelDesignationRank">パネル指名ランク</Label>
+            <Label htmlFor={fieldId('panelDesignationRank')}>パネル指名ランク</Label>
             <Input
-              id="panelDesignationRank"
+              id={fieldId('panelDesignationRank')}
               name="panelDesignationRank"
               type="number"
               min={0}
@@ -387,9 +416,9 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="regularDesignationRank">本指名ランク</Label>
+            <Label htmlFor={fieldId('regularDesignationRank')}>本指名ランク</Label>
             <Input
-              id="regularDesignationRank"
+              id={fieldId('regularDesignationRank')}
               name="regularDesignationRank"
               type="number"
               min={0}
@@ -405,9 +434,9 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
         description="アイキャッチ画像とギャラリー画像を設定します。3枚以上の登録がおすすめです。"
       >
         <div className="space-y-2">
-          <Label htmlFor="image">メイン画像URL</Label>
+          <Label htmlFor={fieldId('image')}>メイン画像URL</Label>
           <Input
-            id="image"
+            id={fieldId('image')}
             name="image"
             value={formData.image}
             onChange={handleInputChange}
@@ -444,9 +473,9 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
       >
         <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="phone">TEL</Label>
+            <Label htmlFor={fieldId('phone')}>TEL</Label>
             <Input
-              id="phone"
+              id={fieldId('phone')}
               name="phone"
               type="tel"
               value={formData.phone}
@@ -455,9 +484,9 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">メール</Label>
+            <Label htmlFor={fieldId('email')}>メール</Label>
             <Input
-              id="email"
+              id={fieldId('email')}
               name="email"
               type="email"
               value={formData.email}
@@ -466,9 +495,9 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="twitterId">Twitter / X</Label>
+            <Label htmlFor={fieldId('twitterId')}>Twitter / X</Label>
             <Input
-              id="twitterId"
+              id={fieldId('twitterId')}
               name="twitterId"
               value={formData.twitterId}
               onChange={handleInputChange}
@@ -476,9 +505,9 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="blogId">ブログウィジェット</Label>
+            <Label htmlFor={fieldId('blogId')}>ブログウィジェット</Label>
             <Input
-              id="blogId"
+              id={fieldId('blogId')}
               name="blogId"
               value={formData.blogId}
               onChange={handleInputChange}
@@ -486,9 +515,9 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">パスワード</Label>
+            <Label htmlFor={fieldId('password')}>パスワード</Label>
             <Input
-              id="password"
+              id={fieldId('password')}
               name="password"
               type="password"
               value={formData.password}
@@ -497,9 +526,9 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="birthDate">生年月日</Label>
+            <Label htmlFor={fieldId('birthDate')}>生年月日</Label>
             <Input
-              id="birthDate"
+              id={fieldId('birthDate')}
               name="birthDate"
               type="date"
               value={formData.birthDate}
@@ -507,9 +536,9 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="registrationDate">登録日</Label>
+            <Label htmlFor={fieldId('registrationDate')}>登録日</Label>
             <Input
-              id="registrationDate"
+              id={fieldId('registrationDate')}
               name="registrationDate"
               type="date"
               value={formData.registrationDate}
