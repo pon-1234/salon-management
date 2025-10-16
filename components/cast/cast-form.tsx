@@ -197,13 +197,19 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
 
   const handleImageChange = (index: number, url: string) => {
     setFormData((prev) => {
+      const trimmedUrl = url.trim()
       const newImages = [...prev.images]
-      newImages[index] = url
-      const hasMainImage = prev.image?.trim()
+      newImages[index] = trimmedUrl
+
+      const currentMain = prev.image?.trim() ?? ''
+      const isDefaultMain =
+        !currentMain || currentMain.includes('placeholder') || currentMain === prev.images[index]
+      const nextMain = isDefaultMain ? trimmedUrl : currentMain
+
       return {
         ...prev,
         images: newImages,
-        image: hasMainImage ? prev.image : url,
+        image: nextMain,
       }
     })
   }
@@ -220,10 +226,10 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
 
   const removeImage = (index: number) => {
     setFormData((prev) => {
-      const removedValue = prev.images[index]
+      const removedValue = prev.images[index]?.trim()
       const newImages = prev.images.filter((_, i) => i !== index)
       const nextMain =
-        prev.image && removedValue && prev.image === removedValue
+        prev.image && removedValue && prev.image.trim() === removedValue
           ? newImages.find((img) => (img ?? '').trim().length > 0) ?? ''
           : prev.image
       return {
