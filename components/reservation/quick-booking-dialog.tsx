@@ -636,6 +636,48 @@ export function QuickBookingDialog({
   const selectedStation = stations.find((station) => station.id === selectedStationId) ?? null
   const selectedArea = areas.find((area) => area.id === selectedAreaId) ?? null
 
+  useEffect(() => {
+    if (!open) return
+
+    setCurrentStep(1)
+    if (courseCatalog.length > 0) {
+      setSelectedCourseId(courseCatalog[0].id)
+    }
+    if (areas.length > 0) {
+      setSelectedAreaId(areas[0].id)
+    }
+
+    const stationOptions = stations.filter((station) =>
+      areas.length > 0 ? station.areaId === (areas[0]?.id ?? station.areaId) : true
+    )
+    if (stationOptions.length > 0) {
+      setSelectedStationId(stationOptions[0].id)
+    }
+
+    setBookingDetails((prev) => ({
+      ...prev,
+      customerName: selectedCustomer?.name ?? '',
+      customerType: selectedCustomer
+        ? isVipMember(selectedCustomer.memberType)
+          ? 'VIP会員'
+          : '通常会員'
+        : '',
+      phoneNumber: selectedCustomer?.phone ?? '',
+      points: selectedCustomer?.points ?? 0,
+      staff: selectedStaff?.name ?? '',
+      date: selectedTime ? format(selectedTime, 'yyyy-MM-dd') : prev.date,
+      time: selectedTime ? format(selectedTime, 'HH:mm') : prev.time,
+      options: {},
+      transportationFee: stationOptions[0]?.transportationFee ?? 0,
+      additionalFee: 0,
+      paymentMethod: '現金',
+      marketingChannel: 'WEB',
+      locationMemo: stationOptions[0]?.name ?? '',
+      notes: '',
+    }))
+    setDesignationType('none')
+  }, [open, selectedCustomer, selectedStaff, selectedTime, courseCatalog, areas, stations])
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col overflow-hidden">

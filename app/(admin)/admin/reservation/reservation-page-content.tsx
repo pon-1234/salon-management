@@ -144,7 +144,7 @@ export function ReservationPageContent() {
         const payload = await response.json()
         const normalized = normalizeCastList(payload)
         setAllCasts(normalized)
-        setCastData(normalized)
+        setCastData([]) // wait for fetchData to populate based on schedules
       } catch (error) {
         console.error('Failed to load cast data:', error)
       }
