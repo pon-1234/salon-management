@@ -47,8 +47,8 @@ export function CustomerSelectionDialog({
   onSelectCustomer,
 }: CustomerSelectionDialogProps) {
   const [searchTerm, setSearchTerm] = useState('')
-  const [allCustomers, setAllCustomers] = useState<Customer[]>(customerData)
-  const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>(customerData)
+  const [allCustomers, setAllCustomers] = useState<Customer[]>([])
+  const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([])
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [status, setStatus] = useState<SearchStatus>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -59,6 +59,12 @@ export function CustomerSelectionDialog({
     () => new CustomerUseCases(new CustomerRepositoryImpl()),
     []
   )
+
+  useEffect(() => {
+    if (open && !hasLoadedRef.current) {
+      setStatus('loading')
+    }
+  }, [open])
 
   useEffect(() => {
     if (!open || hasLoadedRef.current) {
@@ -117,6 +123,10 @@ export function CustomerSelectionDialog({
       return
     }
 
+    if (!hasLoadedRef.current) {
+      return
+    }
+
     const trimmed = searchTerm.trim()
     const normalizedPhone = normalizePhoneQuery(trimmed)
     const shouldSearchByPhone =
@@ -150,10 +160,8 @@ export function CustomerSelectionDialog({
 
     const filtered = filterLocally(allCustomers, trimmed)
     setFilteredCustomers(filtered)
-    if (status !== 'loading') {
-      setStatus('ready')
-    }
-  }, [searchTerm, open, allCustomers, customerUseCases, status])
+    setStatus('ready')
+  }, [searchTerm, open, allCustomers, customerUseCases])
 
   useEffect(() => {
     if (filteredCustomers.length === 1) {
@@ -195,6 +203,8 @@ export function CustomerSelectionDialog({
     onOpenChange(false)
   }
 
+  const showLoadingState = status === 'loading' || (open && !hasLoadedRef.current)
+
   const getMemberBadge = (type: string) => {
     if (isVipMember(type)) {
       return (
@@ -234,7 +244,7 @@ export function CustomerSelectionDialog({
             />
           </div>
 
-          {status === 'loading' && (
+          {showLoadingState && (
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <Loader2 className="h-4 w-4 animate-spin" />
               検索中です…
@@ -295,7 +305,7 @@ export function CustomerSelectionDialog({
                     </div>
                   </Card>
                 ))
-              ) : status === 'loading' ? (
+              ) : showLoadingState ? (
                 <div className="py-8 text-center text-gray-500">
                   <Loader2 className="mx-auto mb-4 h-6 w-6 animate-spin text-gray-400" />
                   <p>検索中です…</p>
@@ -315,7 +325,7 @@ export function CustomerSelectionDialog({
             </Button>
             <Button
               onClick={handleProceed}
-              disabled={!selectedCustomer || status === 'loading'}
+              disabled={!selectedCustomer || showLoadingState}
               className="bg-purple-600 hover:bg-purple-700 disabled:opacity-70"
             >
               この顧客で予約を作成
