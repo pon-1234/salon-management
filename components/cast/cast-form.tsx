@@ -15,15 +15,15 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Plus } from 'lucide-react'
 import { ImageUpload } from '@/components/ui/image-upload'
+import { FormSection } from '@/components/cast/form-section'
+import { cn } from '@/lib/utils'
 
 interface CastFormProps {
   cast?: Cast | null
   onSubmit: (data: Partial<Cast>) => void
+  onCancel?: () => void
 }
 
 const buildInitialFormState = (cast?: Cast | null) => ({
@@ -54,7 +54,44 @@ const buildInitialFormState = (cast?: Cast | null) => ({
   twitterId: '',
 })
 
-export function CastForm({ cast, onSubmit }: CastFormProps) {
+const PROFILE_TYPES = [
+  'カワイイ系',
+  'キレイ系',
+  'セクシー系',
+  'お姉さん系',
+  'モデル系',
+  'おっとり系',
+]
+
+const WORK_STATUS_OPTIONS: Cast['workStatus'][] = ['出勤', '未出勤']
+
+const OptionPill = ({
+  label,
+  caption,
+  selected,
+  onToggle,
+}: {
+  label: string
+  caption?: string
+  selected: boolean
+  onToggle: () => void
+}) => (
+  <button
+    type="button"
+    onClick={onToggle}
+    className={cn(
+      'w-full rounded-lg border px-4 py-3 text-left text-sm transition',
+      selected
+        ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+        : 'border-border hover:border-emerald-400 hover:bg-emerald-50'
+    )}
+  >
+    <span className="block font-medium">{label}</span>
+    {caption ? <span className="mt-1 block text-xs text-muted-foreground">{caption}</span> : null}
+  </button>
+)
+
+export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
   const [formData, setFormData] = useState(() => buildInitialFormState(cast))
 
   useEffect(() => {
@@ -146,38 +183,266 @@ export function CastForm({ cast, onSubmit }: CastFormProps) {
     }))
   }
 
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel()
+      return
+    }
+    if (typeof window !== 'undefined') {
+      window.history.back()
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* 基本情報 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>基本情報</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">源氏名</Label>
-              <Input
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="nameKana">本名</Label>
-              <Input
-                id="nameKana"
-                name="nameKana"
-                value={formData.nameKana}
-                onChange={handleInputChange}
-                required
-              />
-              <span className="text-sm text-red-500">※ひらがなが必須</span>
-            </div>
+      <FormSection
+        title="基本プロフィール"
+        description="公開プロフィールで表示されるキャストの基礎情報を整えます。"
+      >
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="name">源氏名</Label>
+            <Input
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              placeholder="例：高橋 えみり"
+              required
+            />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="nameKana">本名（ひらがな）</Label>
+            <Input
+              id="nameKana"
+              name="nameKana"
+              value={formData.nameKana}
+              onChange={handleInputChange}
+              placeholder="たかはし えみり"
+              required
+            />
+            <p className="text-xs text-muted-foreground">サイト上には表示されませんが検索時に使用します。</p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="age">年齢</Label>
+            <Input
+              id="age"
+              name="age"
+              type="number"
+              min={18}
+              value={formData.age}
+              onChange={handleInputChange}
+              placeholder="25"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="height">身長 (cm)</Label>
+            <Input
+              id="height"
+              name="height"
+              type="number"
+              min={100}
+              value={formData.height}
+              onChange={handleInputChange}
+              placeholder="168"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="bust">バスト</Label>
+            <Input
+              id="bust"
+              name="bust"
+              value={formData.bust}
+              onChange={handleInputChange}
+              placeholder="84"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="waist">ウエスト (cm)</Label>
+            <Input
+              id="waist"
+              name="waist"
+              type="number"
+              value={formData.waist}
+              onChange={handleInputChange}
+              placeholder="60"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="hip">ヒップ (cm)</Label>
+            <Input
+              id="hip"
+              name="hip"
+              type="number"
+              value={formData.hip}
+              onChange={handleInputChange}
+              placeholder="88"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="type">タイプ</Label>
+            <Select
+              value={formData.type}
+              onValueChange={(value) => setFormData((prev) => ({ ...prev, type: value }))}
+            >
+              <SelectTrigger id="type">
+                <SelectValue placeholder="スタイルを選択" />
+              </SelectTrigger>
+              <SelectContent>
+                {PROFILE_TYPES.map((item) => (
+                  <SelectItem key={item} value={item}>
+                    {item}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="description">紹介文</Label>
+          <Textarea
+            id="description"
+            name="description"
+            value={formData.description}
+            onChange={handleInputChange}
+            placeholder="キャストの雰囲気や得意なサービスなどを記載します。"
+            className="min-h-[120px]"
+          />
+        </div>
+      </FormSection>
 
+      <FormSection
+        title="稼働・料金設定"
+        description="出勤可否や指名料、ランク情報などの管理項目です。"
+      >
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="flex items-center justify-between rounded-lg border bg-muted/40 px-4 py-3">
+            <div>
+              <Label htmlFor="netReservation" className="text-sm font-medium">
+                ネット予約
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                オンラインからの予約を受け付ける場合はオンにします。
+              </p>
+            </div>
+            <Switch
+              id="netReservation"
+              checked={formData.netReservation}
+              onCheckedChange={(checked) => handleSwitchChange('netReservation', checked)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="workStatus">稼働ステータス</Label>
+            <Select
+              value={formData.workStatus}
+              onValueChange={(value) => setFormData((prev) => ({ ...prev, workStatus: value }))}
+            >
+              <SelectTrigger id="workStatus">
+                <SelectValue placeholder="稼働ステータスを選択" />
+              </SelectTrigger>
+              <SelectContent>
+                {WORK_STATUS_OPTIONS.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {status}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="specialDesignationFee">特別指名料 (円)</Label>
+            <Input
+              id="specialDesignationFee"
+              name="specialDesignationFee"
+              type="number"
+              min={0}
+              value={formData.specialDesignationFee}
+              onChange={handleInputChange}
+              placeholder="8000"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="regularDesignationFee">本指名料 (円)</Label>
+            <Input
+              id="regularDesignationFee"
+              name="regularDesignationFee"
+              type="number"
+              min={0}
+              value={formData.regularDesignationFee}
+              onChange={handleInputChange}
+              placeholder="4000"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="panelDesignationRank">パネル指名ランク</Label>
+            <Input
+              id="panelDesignationRank"
+              name="panelDesignationRank"
+              type="number"
+              min={0}
+              value={formData.panelDesignationRank}
+              onChange={handleInputChange}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="regularDesignationRank">本指名ランク</Label>
+            <Input
+              id="regularDesignationRank"
+              name="regularDesignationRank"
+              type="number"
+              min={0}
+              value={formData.regularDesignationRank}
+              onChange={handleInputChange}
+            />
+          </div>
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="メイン画像・ギャラリー"
+        description="アイキャッチ画像とギャラリー画像を設定します。3枚以上の登録がおすすめです。"
+      >
+        <div className="space-y-2">
+          <Label htmlFor="image">メイン画像URL</Label>
+          <Input
+            id="image"
+            name="image"
+            value={formData.image}
+            onChange={handleInputChange}
+            placeholder="https://example.com/main.jpg"
+          />
+        </div>
+        <div className={cn('grid gap-4', formData.images.length > 0 ? 'md:grid-cols-2' : '')}>
+          {formData.images.length === 0 && (
+            <p className="rounded-lg border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+              画像を追加するとここにプレビューが表示されます。
+            </p>
+          )}
+          {formData.images.map((image, index) => (
+            <ImageUpload
+              key={index}
+              value={image}
+              onChange={(url) => handleImageChange(index, url)}
+              onRemove={() => removeImage(index)}
+              index={index}
+            />
+          ))}
+        </div>
+        {formData.images.length < 10 && (
+          <Button type="button" variant="outline" onClick={addImage} className="w-full sm:w-fit">
+            <Plus className="mr-2 h-4 w-4" />
+            画像を追加 ({formData.images.length}/10)
+          </Button>
+        )}
+      </FormSection>
+
+      <FormSection
+        title="連絡先・管理メモ"
+        description="社内共有用の情報としてご活用ください（任意入力）。"
+      >
+        <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="phone">TEL</Label>
             <Input
@@ -186,24 +451,9 @@ export function CastForm({ cast, onSubmit }: CastFormProps) {
               type="tel"
               value={formData.phone}
               onChange={handleInputChange}
+              placeholder="090-1234-5678"
             />
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="twitter">Twitter</Label>
-            <Input
-              id="twitter"
-              name="twitterId"
-              value={formData.twitterId}
-              onChange={handleInputChange}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="blogId">ブログウィジェット</Label>
-            <Input id="blogId" name="blogId" value={formData.blogId} onChange={handleInputChange} />
-          </div>
-
           <div className="space-y-2">
             <Label htmlFor="email">メール</Label>
             <Input
@@ -212,9 +462,29 @@ export function CastForm({ cast, onSubmit }: CastFormProps) {
               type="email"
               value={formData.email}
               onChange={handleInputChange}
+              placeholder="staff@example.com"
             />
           </div>
-
+          <div className="space-y-2">
+            <Label htmlFor="twitterId">Twitter / X</Label>
+            <Input
+              id="twitterId"
+              name="twitterId"
+              value={formData.twitterId}
+              onChange={handleInputChange}
+              placeholder="@example"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="blogId">ブログウィジェット</Label>
+            <Input
+              id="blogId"
+              name="blogId"
+              value={formData.blogId}
+              onChange={handleInputChange}
+              placeholder="ブログ埋め込みコードなど"
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="password">パスワード</Label>
             <Input
@@ -223,158 +493,63 @@ export function CastForm({ cast, onSubmit }: CastFormProps) {
               type="password"
               value={formData.password}
               onChange={handleInputChange}
+              placeholder="管理用パスワード"
             />
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="birthDate">生年月日</Label>
-              <Input
-                id="birthDate"
-                name="birthDate"
-                type="date"
-                value={formData.birthDate}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="registrationDate">登録日</Label>
-              <Input
-                id="registrationDate"
-                name="registrationDate"
-                type="date"
-                value={formData.registrationDate}
-                onChange={handleInputChange}
-                disabled
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 予約設定 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>予約設定</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="netReservation">ネット予約</Label>
-            <Switch
-              id="netReservation"
-              checked={formData.netReservation}
-              onCheckedChange={(checked) => handleSwitchChange('netReservation', checked)}
+          <div className="space-y-2">
+            <Label htmlFor="birthDate">生年月日</Label>
+            <Input
+              id="birthDate"
+              name="birthDate"
+              type="date"
+              value={formData.birthDate}
+              onChange={handleInputChange}
             />
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="specialDesignationFee">特別指名料</Label>
-              <Input
-                id="specialDesignationFee"
-                name="specialDesignationFee"
-                type="number"
-                value={formData.specialDesignationFee}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="regularDesignationFee">本指名料</Label>
-              <Input
-                id="regularDesignationFee"
-                name="regularDesignationFee"
-                type="number"
-                value={formData.regularDesignationFee}
-                onChange={handleInputChange}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="registrationDate">登録日</Label>
+            <Input
+              id="registrationDate"
+              name="registrationDate"
+              type="date"
+              value={formData.registrationDate}
+              onChange={handleInputChange}
+              disabled
+            />
           </div>
+        </div>
+      </FormSection>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="panelDesignationRank">パネル指名ランク</Label>
-              <Input
-                id="panelDesignationRank"
-                name="panelDesignationRank"
-                type="number"
-                min="0"
-                value={formData.panelDesignationRank}
-                onChange={handleInputChange}
+      <FormSection
+        title="提供可能オプション"
+        description="実施可能なオプションを選択すると、予約画面の提案にも反映されます。"
+      >
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {options.map((option) => {
+            const selected = formData.availableOptions.includes(option.id)
+            const caption =
+              option.price === 0 ? '追加料金なし' : `追加料金 ${option.price.toLocaleString()}円`
+            return (
+              <OptionPill
+                key={option.id}
+                label={option.name}
+                caption={caption}
+                selected={selected}
+                onToggle={() => handleOptionChange(option.id, !selected)}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="regularDesignationRank">本指名ランク</Label>
-              <Input
-                id="regularDesignationRank"
-                name="regularDesignationRank"
-                type="number"
-                min="0"
-                value={formData.regularDesignationRank}
-                onChange={handleInputChange}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            )
+          })}
+        </div>
+      </FormSection>
 
-      {/* プロフィール画像 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>プロフィール画像（最大10枚）</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-3">
-            {formData.images.map((image, index) => (
-              <ImageUpload
-                key={index}
-                value={image}
-                onChange={(url) => handleImageChange(index, url)}
-                onRemove={() => removeImage(index)}
-                index={index}
-              />
-            ))}
-          </div>
-
-          {formData.images.length < 10 && (
-            <Button type="button" variant="outline" onClick={addImage} className="w-full">
-              <Plus className="mr-2 h-4 w-4" />
-              画像を追加 ({formData.images.length}/10)
-            </Button>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* 可能オプション */}
-      <Card>
-        <CardHeader>
-          <CardTitle>可能オプション</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            {options.map((option) => (
-              <div key={option.id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={option.id}
-                  checked={formData.availableOptions.includes(option.id)}
-                  onCheckedChange={(checked) => handleOptionChange(option.id, !!checked)}
-                />
-                <Label htmlFor={option.id} className="text-sm">
-                  {option.name}
-                  <span className="ml-2 text-gray-500">
-                    {option.price === 0 ? '0円' : `${option.price.toLocaleString()}円`}
-                  </span>
-                </Label>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="flex justify-end gap-4">
-        <Button type="button" variant="outline">
+      <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:justify-end">
+        <Button type="button" variant="outline" onClick={handleCancel} className="sm:min-w-[120px]">
           キャンセル
         </Button>
-        <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
+        <Button
+          type="submit"
+          className="bg-emerald-600 hover:bg-emerald-700 sm:min-w-[160px]"
+        >
           保存
         </Button>
       </div>

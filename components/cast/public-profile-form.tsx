@@ -13,10 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Save, X } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
+import { FormSection } from '@/components/cast/form-section'
+import { cn } from '@/lib/utils'
 
 interface PublicProfileFormProps {
   cast: Cast
@@ -25,6 +25,66 @@ interface PublicProfileFormProps {
   isEditing?: boolean
   setIsEditing?: (editing: boolean) => void
 }
+
+const PROFILE_STYLE_OPTIONS = ['カワイイ系', 'キレイ系', 'セクシー系', 'お姉さん系', 'モデル系', 'おっとり系']
+const BODY_TYPE_OPTIONS = ['スレンダー', '普通', 'グラマー', 'ぽっちゃり', '小柄', '長身']
+const PERSONALITY_OPTIONS = [
+  '正統派セラピスト',
+  '清楚なお姉さん',
+  'モデルなみのスタイル',
+  'エッチなお姉さん',
+  '魅惑の人妻',
+  'エロすぎる痴女',
+]
+const SERVICE_OPTIONS = [
+  '睾丸マッサージ',
+  'パウダーマッサージ',
+  'オイルマッサージ',
+  '指圧マッサージ',
+  '全身マッサージ',
+  '密着フェザータッチ',
+  '鼠径部回春',
+  '上半身リップ',
+  '洗体サーサービス',
+  '全身密着泡洗体',
+  'トップレス',
+  'Tバック',
+  '手コキ',
+]
+const SMOKING_OPTIONS: PublicProfile['smoking'][] = ['吸わない', '吸う', '電子タバコ']
+const BLOOD_TYPE_OPTIONS: PublicProfile['bloodType'][] = ['A', 'B', 'O', 'AB', '秘密']
+const HOME_VISIT_OPTIONS: PublicProfile['homeVisit'][] = ['NG', 'OK']
+const TATTOO_OPTIONS: PublicProfile['tattoo'][] = ['なし', 'ある']
+const FOREIGNER_OPTIONS: PublicProfile['foreignerOk'][] = ['NG', 'OK']
+
+const SelectablePill = ({
+  label,
+  selected,
+  onToggle,
+  disabled,
+  className,
+}: {
+  label: string
+  selected: boolean
+  onToggle: () => void
+  disabled?: boolean
+  className?: string
+}) => (
+  <button
+    type="button"
+    onClick={onToggle}
+    disabled={disabled}
+    className={cn(
+      'rounded-full border px-4 py-2 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+      selected
+        ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+        : 'border-border hover:border-emerald-400 hover:bg-emerald-50',
+      className
+    )}
+  >
+    {label}
+  </button>
+)
 
 export function PublicProfileForm({
   cast,
@@ -60,6 +120,7 @@ export function PublicProfileForm({
     height: cast?.height || 0,
     bust: cast?.bust || '',
     waist: cast?.waist || 0,
+    hip: cast?.hip || 0,
     type: cast?.type || '',
     description: cast?.description || '',
   })
@@ -98,11 +159,12 @@ export function PublicProfileForm({
       height: cast?.height || 0,
       bust: cast?.bust || '',
       waist: cast?.waist || 0,
+      hip: cast?.hip || 0,
       type: cast?.type || '',
       description: cast?.description || '',
     })
-    if (setIsEditing) setIsEditing(false)
-    if (onCancel) onCancel()
+    setIsEditing?.(false)
+    onCancel?.()
   }
 
   const handleChange = (field: keyof PublicProfile, value: any) => {
@@ -137,417 +199,400 @@ export function PublicProfileForm({
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* 基本スタイル情報 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>基本スタイル情報</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="height">身長</Label>
-                <Input
-                  id="height"
-                  type="number"
-                  value={basicInfo.height || ''}
-                  onChange={(e) => handleBasicInfoChange('height', Number(e.target.value))}
-                  placeholder="160"
-                  disabled={!isEditing}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="bust">バスト</Label>
-                <Input
-                  id="bust"
-                  value={basicInfo.bust || ''}
-                  onChange={(e) => handleBasicInfoChange('bust', e.target.value)}
-                  placeholder="84"
-                  disabled={!isEditing}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="bustCup">カップ</Label>
-                <Input
-                  id="bustCup"
-                  value={publicProfile.bustCup}
-                  onChange={(e) => handleChange('bustCup', e.target.value)}
-                  placeholder="G"
-                  disabled={!isEditing}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="waist">ウエスト</Label>
-                <Input
-                  id="waist"
-                  type="number"
-                  value={basicInfo.waist || ''}
-                  onChange={(e) => handleBasicInfoChange('waist', Number(e.target.value))}
-                  placeholder="62"
-                  disabled={!isEditing}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="type">タイプ</Label>
-                <Select
-                  value={basicInfo.type || ''}
-                  onValueChange={(value) => handleBasicInfoChange('type', value)}
-                  disabled={!isEditing}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="カワイイ系">カワイイ系</SelectItem>
-                    <SelectItem value="キレイ系">キレイ系</SelectItem>
-                    <SelectItem value="セクシー系">セクシー系</SelectItem>
-                    <SelectItem value="お姉さん系">お姉さん系</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="birthplace">出身地</Label>
-                <Input
-                  id="birthplace"
-                  value={publicProfile.birthplace}
-                  onChange={(e) => handleChange('birthplace', e.target.value)}
-                  placeholder="関東地方"
-                  disabled={!isEditing}
-                />
-              </div>
-            </div>
-
+        <FormSection
+          title="基本スタイル情報"
+          description="プロフィールページで強調表示される基礎情報です。数字は半角で入力してください。"
+        >
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="description">プロフィール文</Label>
-              <Textarea
-                id="description"
-                value={basicInfo.description || ''}
-                onChange={(e) => handleBasicInfoChange('description', e.target.value)}
-                placeholder="明るく元気な性格で、お客様を楽しませることが得意です。マッサージの技術も高く、リピーターの多いキャストです。"
-                className="min-h-[100px]"
+              <Label htmlFor="height">身長 (cm)</Label>
+              <Input
+                id="height"
+                type="number"
+                value={basicInfo.height || ''}
+                onChange={(e) => handleBasicInfoChange('height', Number(e.target.value) || 0)}
+                placeholder="168"
                 disabled={!isEditing}
               />
             </div>
-          </CardContent>
-        </Card>
-
-        {/* 詳細スタイル情報 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>詳細スタイル情報</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>体型</Label>
-              <div className="grid grid-cols-3 gap-2">
-                {['スレンダー', '普通', 'グラマー', 'ぽっちゃり', '小柄', '長身'].map((type) => (
-                  <div key={type} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`bodyType-${type}`}
-                      checked={publicProfile.bodyType.includes(type)}
-                      onCheckedChange={() => handleArrayToggle('bodyType', type)}
-                      disabled={!isEditing}
-                    />
-                    <Label htmlFor={`bodyType-${type}`} className="text-sm">
-                      {type}
-                    </Label>
-                  </div>
-                ))}
-              </div>
+              <Label htmlFor="bust">バスト</Label>
+              <Input
+                id="bust"
+                value={basicInfo.bust || ''}
+                onChange={(e) => handleBasicInfoChange('bust', e.target.value)}
+                placeholder="84"
+                disabled={!isEditing}
+              />
             </div>
-
             <div className="space-y-2">
-              <Label>個性</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  '正統派セラピスト',
-                  '清楚なお姉さん',
-                  'モデルなみのスタイル',
-                  'エッチなお姉さん',
-                  '魅惑の人妻',
-                  'エロすぎる痴女',
-                ].map((personality) => (
-                  <div key={personality} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`personality-${personality}`}
-                      checked={publicProfile.personality.includes(personality)}
-                      onCheckedChange={() => handleArrayToggle('personality', personality)}
-                      disabled={!isEditing}
-                    />
-                    <Label htmlFor={`personality-${personality}`} className="text-sm">
-                      {personality}
-                    </Label>
-                  </div>
-                ))}
-              </div>
+              <Label htmlFor="bustCup">カップ</Label>
+              <Input
+                id="bustCup"
+                value={publicProfile.bustCup}
+                onChange={(e) => handleChange('bustCup', e.target.value)}
+                placeholder="G"
+                disabled={!isEditing}
+              />
             </div>
-          </CardContent>
-        </Card>
+            <div className="space-y-2">
+              <Label htmlFor="waist">ウエスト (cm)</Label>
+              <Input
+                id="waist"
+                type="number"
+                value={basicInfo.waist || ''}
+                onChange={(e) => handleBasicInfoChange('waist', Number(e.target.value) || 0)}
+                placeholder="62"
+                disabled={!isEditing}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="hip">ヒップ (cm)</Label>
+              <Input
+                id="hip"
+                type="number"
+                value={basicInfo.hip || ''}
+                onChange={(e) => handleBasicInfoChange('hip', Number(e.target.value) || 0)}
+                placeholder="88"
+                disabled={!isEditing}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="type">タイプ</Label>
+              <Select
+                value={basicInfo.type || ''}
+                onValueChange={(value) => handleBasicInfoChange('type', value)}
+                disabled={!isEditing}
+              >
+                <SelectTrigger id="type">
+                  <SelectValue placeholder="タイプを選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROFILE_STYLE_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 md:col-span-1 xl:col-span-3">
+              <Label htmlFor="birthplace">出身地</Label>
+              <Input
+                id="birthplace"
+                value={publicProfile.birthplace}
+                onChange={(e) => handleChange('birthplace', e.target.value)}
+                placeholder="関東地方"
+                disabled={!isEditing}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">プロフィール文</Label>
+            <Textarea
+              id="description"
+              value={basicInfo.description || ''}
+              onChange={(e) => handleBasicInfoChange('description', e.target.value)}
+              placeholder="心を込めたサービスでお迎えします。"
+              className="min-h-[120px]"
+              disabled={!isEditing}
+            />
+          </div>
+        </FormSection>
 
-        {/* 可能プレイ */}
-        <Card>
-          <CardHeader>
-            <CardTitle>可能プレイ</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                '睾丸マッサージ',
-                'パウダーマッサージ',
-                'オイルマッサージ',
-                '指圧マッサージ',
-                '全身マッサージ',
-                '密着フェザータッチ',
-                '鼠径部回春',
-                '上半身リップ',
-                '洗体サーサービス',
-                '全身密着泡洗体',
-                'トップレス',
-                'Tバック',
-                '手コキ',
-              ].map((service) => (
-                <div key={service} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`service-${service}`}
-                    checked={publicProfile.availableServices.includes(service)}
-                    onCheckedChange={() => handleArrayToggle('availableServices', service)}
+        <FormSection
+          title="詳細スタイル情報"
+          description="タグを選択すると、お客様が検索しやすくなります。複数選択可能です。"
+        >
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">体型</Label>
+              <div className="flex flex-wrap gap-2">
+                {BODY_TYPE_OPTIONS.map((type) => (
+                  <SelectablePill
+                    key={type}
+                    label={type}
+                    selected={publicProfile.bodyType.includes(type)}
+                    onToggle={() => handleArrayToggle('bodyType', type)}
                     disabled={!isEditing}
                   />
-                  <Label htmlFor={`service-${service}`} className="text-sm">
-                    {service}
-                  </Label>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 検索用情報 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>検索用情報</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>タバコ</Label>
-                <Select
-                  value={publicProfile.smoking}
-                  onValueChange={(value: any) => handleChange('smoking', value)}
-                  disabled={!isEditing}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="吸わない">吸わない</SelectItem>
-                    <SelectItem value="吸う">吸う</SelectItem>
-                    <SelectItem value="電子タバコ">電子タバコ</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>血液型</Label>
-                <Select
-                  value={publicProfile.bloodType}
-                  onValueChange={(value: any) => handleChange('bloodType', value)}
-                  disabled={!isEditing}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="A">A</SelectItem>
-                    <SelectItem value="B">B</SelectItem>
-                    <SelectItem value="O">O</SelectItem>
-                    <SelectItem value="AB">AB</SelectItem>
-                    <SelectItem value="秘密">秘密</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>自宅派遣</Label>
-                <Select
-                  value={publicProfile.homeVisit}
-                  onValueChange={(value: any) => handleChange('homeVisit', value)}
-                  disabled={!isEditing}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="NG">NG</SelectItem>
-                    <SelectItem value="OK">OK</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>タトゥー</Label>
-                <Select
-                  value={publicProfile.tattoo}
-                  onValueChange={(value: any) => handleChange('tattoo', value)}
-                  disabled={!isEditing}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="なし">なし</SelectItem>
-                    <SelectItem value="ある">ある</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>外国人</Label>
-                <Select
-                  value={publicProfile.foreignerOk}
-                  onValueChange={(value: any) => handleChange('foreignerOk', value)}
-                  disabled={!isEditing}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="NG">NG</SelectItem>
-                    <SelectItem value="OK">OK</SelectItem>
-                  </SelectContent>
-                </Select>
+                ))}
               </div>
             </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="massageQualification"
-                checked={publicProfile.massageQualification}
-                onCheckedChange={(checked) => handleChange('massageQualification', checked)}
-                disabled={!isEditing}
-              />
-              <Label htmlFor="massageQualification">エステ・マッサージ資格</Label>
-            </div>
-
-            {publicProfile.massageQualification && (
-              <div className="space-y-2">
-                <Label>資格詳細</Label>
-                <Textarea
-                  value={publicProfile.qualificationDetails.join('\n')}
-                  onChange={(e) => handleChange('qualificationDetails', e.target.value.split('\n'))}
-                  placeholder="メンズエステ経験者&#10;アロマリンパドレナージュ&#10;前立腺マッサージ対応"
-                  className="min-h-[80px]"
-                  disabled={!isEditing}
-                />
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* 個人情報 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>個人情報</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="hobbies">趣味・特技</Label>
-                <Input
-                  id="hobbies"
-                  value={publicProfile.hobbies}
-                  onChange={(e) => handleChange('hobbies', e.target.value)}
-                  placeholder="料理"
-                  disabled={!isEditing}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="charmPoint">チャームポイント</Label>
-                <Input
-                  id="charmPoint"
-                  value={publicProfile.charmPoint}
-                  onChange={(e) => handleChange('charmPoint', e.target.value)}
-                  placeholder="目♡"
-                  disabled={!isEditing}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="personalityOneWord">性格を一言で</Label>
-                <Input
-                  id="personalityOneWord"
-                  value={publicProfile.personalityOneWord}
-                  onChange={(e) => handleChange('personalityOneWord', e.target.value)}
-                  placeholder="明るい"
-                  disabled={!isEditing}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="favoriteType">好きな男性タイプ</Label>
-                <Input
-                  id="favoriteType"
-                  value={publicProfile.favoriteType}
-                  onChange={(e) => handleChange('favoriteType', e.target.value)}
-                  placeholder="紳士な人♡"
-                  disabled={!isEditing}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="favoriteFood">好きな食べ物</Label>
-                <Input
-                  id="favoriteFood"
-                  value={publicProfile.favoriteFood}
-                  onChange={(e) => handleChange('favoriteFood', e.target.value)}
-                  placeholder="ぷりん"
-                  disabled={!isEditing}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="specialTechnique">私の奥義（金の技）</Label>
-                <Input
-                  id="specialTechnique"
-                  value={publicProfile.specialTechnique}
-                  onChange={(e) => handleChange('specialTechnique', e.target.value)}
-                  placeholder="超密着マッサージ"
-                  disabled={!isEditing}
-                />
-              </div>
-            </div>
-
             <div className="space-y-2">
-              <Label htmlFor="shopMessage">お店からの一言</Label>
+              <Label className="text-sm font-medium">個性</Label>
+              <div className="flex flex-wrap gap-2">
+                {PERSONALITY_OPTIONS.map((personality) => (
+                  <SelectablePill
+                    key={personality}
+                    label={personality}
+                    selected={publicProfile.personality.includes(personality)}
+                    onToggle={() => handleArrayToggle('personality', personality)}
+                    disabled={!isEditing}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </FormSection>
+
+        <FormSection
+          title="可能プレイ"
+          description="提供可能なサービスを選択すると、予約画面のおすすめにも反映されます。"
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            {SERVICE_OPTIONS.map((service) => (
+              <SelectablePill
+                key={service}
+                label={service}
+                selected={publicProfile.availableServices.includes(service)}
+                onToggle={() => handleArrayToggle('availableServices', service)}
+                disabled={!isEditing}
+                className="w-full justify-between"
+              />
+            ))}
+          </div>
+        </FormSection>
+
+        <FormSection
+          title="検索用情報"
+          description="検索フィルターに使用される項目です。未選択の場合は「秘密」として扱われます。"
+        >
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>タバコ</Label>
+              <Select
+                value={publicProfile.smoking}
+                onValueChange={(value: PublicProfile['smoking']) => handleChange('smoking', value)}
+                disabled={!isEditing}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="選択してください" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SMOKING_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>血液型</Label>
+              <Select
+                value={publicProfile.bloodType}
+                onValueChange={(value: PublicProfile['bloodType']) => handleChange('bloodType', value)}
+                disabled={!isEditing}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="選択してください" />
+                </SelectTrigger>
+                <SelectContent>
+                  {BLOOD_TYPE_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>自宅派遣</Label>
+              <Select
+                value={publicProfile.homeVisit}
+                onValueChange={(value: PublicProfile['homeVisit']) => handleChange('homeVisit', value)}
+                disabled={!isEditing}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="選択してください" />
+                </SelectTrigger>
+                <SelectContent>
+                  {HOME_VISIT_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>タトゥー</Label>
+              <Select
+                value={publicProfile.tattoo}
+                onValueChange={(value: PublicProfile['tattoo']) => handleChange('tattoo', value)}
+                disabled={!isEditing}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="選択してください" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TATTOO_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>外国人対応</Label>
+              <Select
+                value={publicProfile.foreignerOk}
+                onValueChange={(value: PublicProfile['foreignerOk']) =>
+                  handleChange('foreignerOk', value)
+                }
+                disabled={!isEditing}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="選択してください" />
+                </SelectTrigger>
+                <SelectContent>
+                  {FOREIGNER_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border bg-muted/40 px-4 py-3">
+            <div>
+              <Label htmlFor="massageQualification" className="text-sm font-medium">
+                エステ・マッサージ資格
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                保有資格がある場合はオンにして詳細を記入してください。
+              </p>
+            </div>
+            <Switch
+              id="massageQualification"
+              checked={publicProfile.massageQualification}
+              onCheckedChange={(checked) => handleChange('massageQualification', checked)}
+              disabled={!isEditing}
+            />
+          </div>
+          {publicProfile.massageQualification && (
+            <div className="space-y-2">
+              <Label htmlFor="qualificationDetails">資格詳細</Label>
               <Textarea
-                id="shopMessage"
-                value={publicProfile.shopMessage}
-                onChange={(e) => handleChange('shopMessage', e.target.value)}
-                placeholder="とっても人懐っこく、とっても明るいキレ可愛いセラピストさん。"
+                id="qualificationDetails"
+                value={publicProfile.qualificationDetails.join('\n')}
+                onChange={(e) =>
+                  handleChange(
+                    'qualificationDetails',
+                    e.target.value
+                      .split('\n')
+                      .map((item) => item.trim())
+                      .filter(Boolean)
+                  )
+                }
+                placeholder="メンズエステ経験者&#10;アロマリンパドレナージュ&#10;前立腺マッサージ対応"
                 className="min-h-[100px]"
                 disabled={!isEditing}
               />
             </div>
+          )}
+        </FormSection>
 
+        <FormSection
+          title="個人情報・メッセージ"
+          description="キャストの人柄が伝わるように具体的なエピソードを添えると効果的です。"
+        >
+          <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="customerMessage">お客様へのメッセージ</Label>
-              <Textarea
-                id="customerMessage"
-                value={publicProfile.customerMessage}
-                onChange={(e) => handleChange('customerMessage', e.target.value)}
-                placeholder="初めまして♡ あいりと申します✨✨"
-                className="min-h-[100px]"
+              <Label htmlFor="hobbies">趣味・特技</Label>
+              <Input
+                id="hobbies"
+                value={publicProfile.hobbies}
+                onChange={(e) => handleChange('hobbies', e.target.value)}
+                placeholder="料理"
                 disabled={!isEditing}
               />
             </div>
-          </CardContent>
-        </Card>
+            <div className="space-y-2">
+              <Label htmlFor="charmPoint">チャームポイント</Label>
+              <Input
+                id="charmPoint"
+                value={publicProfile.charmPoint}
+                onChange={(e) => handleChange('charmPoint', e.target.value)}
+                placeholder="目♡"
+                disabled={!isEditing}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="personalityOneWord">性格を一言で</Label>
+              <Input
+                id="personalityOneWord"
+                value={publicProfile.personalityOneWord}
+                onChange={(e) => handleChange('personalityOneWord', e.target.value)}
+                placeholder="明るい"
+                disabled={!isEditing}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="favoriteType">好きな男性タイプ</Label>
+              <Input
+                id="favoriteType"
+                value={publicProfile.favoriteType}
+                onChange={(e) => handleChange('favoriteType', e.target.value)}
+                placeholder="紳士な人♡"
+                disabled={!isEditing}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="favoriteFood">好きな食べ物</Label>
+              <Input
+                id="favoriteFood"
+                value={publicProfile.favoriteFood}
+                onChange={(e) => handleChange('favoriteFood', e.target.value)}
+                placeholder="プリン"
+                disabled={!isEditing}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="specialTechnique">私の奥義（金の技）</Label>
+              <Input
+                id="specialTechnique"
+                value={publicProfile.specialTechnique}
+                onChange={(e) => handleChange('specialTechnique', e.target.value)}
+                placeholder="超密着マッサージ"
+                disabled={!isEditing}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="shopMessage">お店からの一言</Label>
+            <Textarea
+              id="shopMessage"
+              value={publicProfile.shopMessage}
+              onChange={(e) => handleChange('shopMessage', e.target.value)}
+              placeholder="とっても人懐っこく、明るいセラピストです。"
+              className="min-h-[120px]"
+              disabled={!isEditing}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="customerMessage">お客様へのメッセージ</Label>
+            <Textarea
+              id="customerMessage"
+              value={publicProfile.customerMessage}
+              onChange={(e) => handleChange('customerMessage', e.target.value)}
+              placeholder="初めまして♡ あいりと申します✨✨"
+              className="min-h-[120px]"
+              disabled={!isEditing}
+            />
+          </div>
+        </FormSection>
 
         {isEditing && (
-          <div className="flex justify-end gap-4">
-            <Button type="button" variant="outline" onClick={handleCancel}>
+          <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:justify-end">
+            <Button type="button" variant="outline" onClick={handleCancel} className="sm:min-w-[120px]">
               <X className="mr-2 h-4 w-4" />
               キャンセル
             </Button>
-            <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
+            <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 sm:min-w-[160px]">
               <Save className="mr-2 h-4 w-4" />
               保存
             </Button>

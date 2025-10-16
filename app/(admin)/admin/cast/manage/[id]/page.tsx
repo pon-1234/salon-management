@@ -167,7 +167,7 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
 
         <div className="mx-auto max-w-7xl">
           {isNewCast ? (
-            <CastForm cast={null} onSubmit={handleSubmit} />
+            <CastForm cast={null} onSubmit={handleSubmit} onCancel={() => router.back()} />
           ) : (
             cast && (
               <Tabs defaultValue="overview" className="space-y-6">
@@ -216,7 +216,7 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
                         キャストの基本情報や稼働ステータス、料金設定を更新します。保存するとすぐに管理画面へ反映されます。
                       </p>
                     </div>
-                    <CastForm cast={cast} onSubmit={handleSubmit} />
+                    <CastForm cast={cast} onSubmit={handleSubmit} onCancel={() => router.back()} />
                   </section>
 
                   <Separator />
