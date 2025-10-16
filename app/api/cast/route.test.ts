@@ -331,6 +331,59 @@ describe('Cast API endpoints', () => {
         regularDesignationFee: null,
       })
     })
+
+    it('should accept relative image paths when updating', async () => {
+      const updateData = {
+        id: 'test-id',
+        image: '/images/cast/emiri-main.jpg',
+        images: ['/images/cast/emiri-main.jpg', 'https://example.com/backup.jpg'],
+      }
+
+      mockedDb.cast.findUnique.mockResolvedValue({ id: 'test-id' })
+      mockedDb.cast.update.mockResolvedValue({
+        ...updateData,
+        updatedAt: new Date(),
+        schedules: [],
+        reservations: [],
+      })
+
+      const request = new NextRequest('http://localhost:3000/api/cast', {
+        method: 'PUT',
+        body: JSON.stringify(updateData),
+      })
+
+      const response = await PUT(request)
+
+      expect(response.status).toBe(200)
+      expect(mockedDb.cast.update).toHaveBeenCalledWith({
+        where: { id: 'test-id' },
+        data: expect.objectContaining({
+          image: '/images/cast/emiri-main.jpg',
+          images: updateData.images,
+        }),
+      })
+    })
+
+    it('should reject invalid image strings', async () => {
+      const updateData = {
+        id: 'test-id',
+        image: 'invalid-image',
+      }
+
+      const request = new NextRequest('http://localhost:3000/api/cast', {
+        method: 'PUT',
+        body: JSON.stringify(updateData),
+      })
+
+      const response = await PUT(request)
+      const payload = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(payload).toMatchObject({
+        error: 'Validation error',
+      })
+      expect(payload.details?.[0]?.path).toEqual(['image'])
+    })
   })
 
   describe('DELETE /api/cast', () => {

@@ -223,7 +223,7 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
       <FormSection
         title="基本プロフィール"
         description="公開プロフィールで表示されるキャストの基礎情報を整えます。"
@@ -238,6 +238,7 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
               onChange={handleInputChange}
               placeholder="例：高橋 えみり"
               required
+              autoComplete="tel"
             />
           </div>
           <div className="space-y-2">
@@ -249,6 +250,7 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
               onChange={handleInputChange}
               placeholder="たかはし えみり"
               required
+              autoComplete="off"
             />
             <p className="text-xs text-muted-foreground">サイト上には表示されませんが検索時に使用します。</p>
           </div>
@@ -262,6 +264,7 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
               value={formData.age}
               onChange={handleInputChange}
               placeholder="25"
+              autoComplete="off"
             />
           </div>
           <div className="space-y-2">
@@ -274,6 +277,7 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
               value={formData.height}
               onChange={handleInputChange}
               placeholder="168"
+              autoComplete="off"
             />
           </div>
           <div className="space-y-2">
@@ -523,6 +527,7 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
               value={formData.password}
               onChange={handleInputChange}
               placeholder="管理用パスワード"
+              autoComplete="new-password"
             />
           </div>
           <div className="space-y-2">

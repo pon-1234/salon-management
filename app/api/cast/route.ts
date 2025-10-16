@@ -13,6 +13,18 @@ import { SuccessResponses } from '@/lib/api/responses'
 import { castMembers } from '@/lib/cast/data'
 
 // Validation schema for cast data
+const imageUrlSchema = z
+  .string()
+  .min(1)
+  .refine((value) => {
+    try {
+      new URL(value)
+      return true
+    } catch {
+      return value.startsWith('/') || value.startsWith('data:')
+    }
+  }, 'Invalid image path')
+
 const castSchema = z.object({
   name: z.string().min(1),
   nameKana: z.string().min(1).optional(), // Optional for now since DB doesn't have this field
@@ -22,8 +34,8 @@ const castSchema = z.object({
   waist: z.coerce.number().int().min(40).max(150),
   hip: z.coerce.number().int().min(40).max(150),
   type: z.string(),
-  image: z.string().url(),
-  images: z.array(z.string().url()).optional().default([]),
+  image: imageUrlSchema,
+  images: z.array(imageUrlSchema).optional().default([]),
   description: z.string().optional().default(''),
   netReservation: z.boolean().optional().default(true),
   specialDesignationFee: z.union([z.null(), z.coerce.number().int().min(0)]).optional(),
