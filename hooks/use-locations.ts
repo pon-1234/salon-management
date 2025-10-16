@@ -8,8 +8,6 @@ export interface LocationArea {
   prefecture?: string | null
   city?: string | null
   description?: string | null
-  baseFee?: number | null
-  travelTime?: number | null
 }
 
 export interface LocationStation {
@@ -37,8 +35,6 @@ const fallbackAreas: LocationArea[] = [
     prefecture: '東京都',
     city: '渋谷区',
     description: '渋谷駅周辺および表参道・原宿エリア',
-    baseFee: 0,
-    travelTime: 15,
   },
   {
     id: 'fallback-shinjuku',
@@ -46,8 +42,6 @@ const fallbackAreas: LocationArea[] = [
     prefecture: '東京都',
     city: '新宿区',
     description: '歌舞伎町・西新宿・東新宿エリア',
-    baseFee: 1000,
-    travelTime: 20,
   },
   {
     id: 'fallback-ikebukuro',
@@ -55,8 +49,6 @@ const fallbackAreas: LocationArea[] = [
     prefecture: '東京都',
     city: '豊島区',
     description: '池袋駅東口・西口エリア',
-    baseFee: 1500,
-    travelTime: 25,
   },
 ]
 
@@ -135,8 +127,6 @@ export function useLocations(): LocationResponse {
           prefecture: area.prefecture,
           city: area.city,
           description: area.description,
-          baseFee: area.baseFee,
-          travelTime: area.travelTime,
         }))
       )
       setStations(stationData)

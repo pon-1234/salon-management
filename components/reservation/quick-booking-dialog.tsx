@@ -797,7 +797,6 @@ export function QuickBookingDialog({
                             areas.map((area) => (
                               <SelectItem key={area.id} value={area.id}>
                                 {area.name}
-                                {area.baseFee ? `（+${area.baseFee}円）` : ''}
                               </SelectItem>
                             ))
                           )}

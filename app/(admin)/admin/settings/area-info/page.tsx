@@ -27,7 +27,7 @@ import {
   Trash2,
   RefreshCw,
   Building2,
-  Navigation,
+  Train,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -42,8 +42,6 @@ interface AreaSettings {
   prefecture?: string | null
   city?: string | null
   description?: string | null
-  baseFee?: number | null
-  travelTime?: number | null
   displayOrder: number
   isActive: boolean
   stations?: StationSummary[]
@@ -55,8 +53,6 @@ type AreaFormState = {
   prefecture: string
   city: string
   description: string
-  baseFee: number
-  travelTime: number
   displayOrder: number
   isActive: boolean
 }
@@ -66,8 +62,6 @@ const emptyForm: AreaFormState = {
   prefecture: '',
   city: '',
   description: '',
-  baseFee: 0,
-  travelTime: 0,
   displayOrder: 0,
   isActive: true,
 }
@@ -118,8 +112,6 @@ export default function AreaInfoPage() {
         prefecture: area.prefecture ?? '',
         city: area.city ?? '',
         description: area.description ?? '',
-        baseFee: area.baseFee ?? 0,
-        travelTime: area.travelTime ?? 0,
         displayOrder: area.displayOrder ?? 0,
         isActive: area.isActive,
       })
@@ -140,8 +132,6 @@ export default function AreaInfoPage() {
       prefecture: formData.prefecture.trim() || null,
       city: formData.city.trim() || null,
       description: formData.description.trim() || null,
-      baseFee: Math.max(0, formData.baseFee),
-      travelTime: Math.max(0, formData.travelTime),
       displayOrder: formData.displayOrder ?? 0,
       isActive: formData.isActive,
     }
@@ -233,8 +223,6 @@ export default function AreaInfoPage() {
           prefecture: area.prefecture,
           city: area.city,
           description: area.description,
-          baseFee: area.baseFee ?? 0,
-          travelTime: area.travelTime ?? 0,
           displayOrder: area.displayOrder,
           isActive: !area.isActive,
         }),
@@ -269,12 +257,8 @@ export default function AreaInfoPage() {
   }
 
   const activeCount = useMemo(() => areas.filter((area) => area.isActive).length, [areas])
-  const averageTravelTime = useMemo(() => {
-    const validTimes = areas
-      .map((area) => area.travelTime ?? 0)
-      .filter((time) => typeof time === 'number' && time > 0)
-    if (validTimes.length === 0) return 0
-    return Math.round(validTimes.reduce((sum, time) => sum + time, 0) / validTimes.length)
+  const totalStations = useMemo(() => {
+    return areas.reduce((sum, area) => sum + (area.stations?.length ?? 0), 0)
   }, [areas])
 
   if (loading) {
@@ -313,7 +297,7 @@ export default function AreaInfoPage() {
                   エリア情報設定
                 </h1>
                 <p className="text-sm text-gray-600">
-                  サービス提供エリアと所要時間・交通費を管理します
+                  サービス提供エリアの基本情報と登録駅を管理します
                 </p>
               </div>
             </div>
@@ -353,10 +337,10 @@ export default function AreaInfoPage() {
             <Card>
               <CardContent className="flex items-center justify-between p-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">平均移動時間</p>
-                  <p className="mt-1 text-2xl font-bold text-purple-600">{averageTravelTime}分</p>
+                  <p className="text-sm text-muted-foreground">登録駅数</p>
+                  <p className="mt-1 text-2xl font-bold text-purple-600">{totalStations}</p>
                 </div>
-                <Navigation className="h-8 w-8 text-purple-500" />
+                <Train className="h-8 w-8 text-purple-500" />
               </CardContent>
             </Card>
           </div>
@@ -364,7 +348,9 @@ export default function AreaInfoPage() {
           <Card>
             <CardHeader>
               <CardTitle>エリア一覧</CardTitle>
-              <CardDescription>表示順でソートされます。ステータスや交通費を確認できます。</CardDescription>
+              <CardDescription>
+                表示順でソートされます。エリアの有効状態と登録駅を確認できます。
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
@@ -373,8 +359,6 @@ export default function AreaInfoPage() {
                     <TableHead>表示順</TableHead>
                     <TableHead>エリア名</TableHead>
                     <TableHead>拠点</TableHead>
-                    <TableHead>交通費</TableHead>
-                    <TableHead>目安時間</TableHead>
                     <TableHead>ステータス</TableHead>
                     <TableHead>登録駅</TableHead>
                     <TableHead>操作</TableHead>
@@ -400,13 +384,6 @@ export default function AreaInfoPage() {
                           ) : (
                             <span className="text-xs text-muted-foreground">未設定</span>
                           )}
-                        </TableCell>
-                        <TableCell>
-                          ¥{(area.baseFee ?? 0).toLocaleString()}
-                          <div className="text-xs text-muted-foreground">一律料金</div>
-                        </TableCell>
-                        <TableCell>
-                          {area.travelTime ? `${area.travelTime}分` : '未設定'}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -509,36 +486,6 @@ export default function AreaInfoPage() {
                   value={formData.city}
                   onChange={(e) => setFormData((prev) => ({ ...prev, city: e.target.value }))}
                   placeholder="例：渋谷区"
-                />
-              </div>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="baseFee">交通費（円）</Label>
-                <Input
-                  id="baseFee"
-                  type="number"
-                  value={formData.baseFee}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      baseFee: Math.max(0, parseInt(e.target.value) || 0),
-                    }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="travelTime">移動目安時間（分）</Label>
-                <Input
-                  id="travelTime"
-                  type="number"
-                  value={formData.travelTime}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      travelTime: Math.max(0, parseInt(e.target.value) || 0),
-                    }))
-                  }
                 />
               </div>
             </div>

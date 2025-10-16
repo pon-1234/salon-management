@@ -16,8 +16,6 @@ const areaSchema = z.object({
   prefecture: z.string().optional().nullable(),
   city: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
-  baseFee: z.number().min(0).optional().nullable(),
-  travelTime: z.number().min(0).optional().nullable(),
   displayOrder: z.number().optional(),
   isActive: z.boolean().optional(),
 })
@@ -43,8 +41,6 @@ export async function GET() {
           prefecture: '東京都',
           city: '渋谷区',
           description: '渋谷駅周辺および表参道・原宿エリア',
-          baseFee: 0,
-          travelTime: 15,
           displayOrder: 1,
         },
         {
@@ -52,8 +48,6 @@ export async function GET() {
           prefecture: '東京都',
           city: '新宿区',
           description: '歌舞伎町・西新宿・東新宿エリア',
-          baseFee: 1000,
-          travelTime: 20,
           displayOrder: 2,
         },
         {
@@ -61,8 +55,6 @@ export async function GET() {
           prefecture: '東京都',
           city: '豊島区',
           description: '池袋駅東口・西口エリア',
-          baseFee: 1500,
-          travelTime: 25,
           displayOrder: 3,
         },
       ]
@@ -97,8 +89,6 @@ export async function POST(request: NextRequest) {
         prefecture: validated.prefecture ?? null,
         city: validated.city ?? null,
         description: validated.description ?? null,
-        baseFee: validated.baseFee ?? 0,
-        travelTime: validated.travelTime ?? 0,
         displayOrder: validated.displayOrder ?? 0,
         isActive: validated.isActive ?? true,
       },
@@ -134,8 +124,6 @@ export async function PUT(request: NextRequest) {
         prefecture: validated.prefecture ?? null,
         city: validated.city ?? null,
         description: validated.description ?? null,
-        baseFee: validated.baseFee ?? 0,
-        travelTime: validated.travelTime ?? 0,
         displayOrder: validated.displayOrder ?? 0,
         isActive: validated.isActive ?? true,
       },

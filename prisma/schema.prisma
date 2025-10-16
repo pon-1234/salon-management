@@ -125,8 +125,6 @@ model AreaInfo {
   prefecture   String?
   city         String?
   description  String?
-  baseFee      Int?           @default(0)
-  travelTime   Int?           @default(0) // minutes
   displayOrder Int            @default(0)
   isActive     Boolean        @default(true)
   createdAt    DateTime       @default(now())
