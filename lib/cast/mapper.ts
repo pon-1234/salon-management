@@ -26,22 +26,22 @@ const normalizeImages = (value: unknown): string[] => {
   return []
 }
 
+const normalizeAvailableOptions = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    return []
+  }
+  const mapped = value
+    .map((item) => (typeof item === 'string' ? item : String(item ?? '')))
+    .filter((id) => id.length > 0)
+    .map((id) => resolveOptionId(id))
+  return Array.from(new Set(mapped))
+}
+
 const normalizeAppointment = (raw: any): Appointment | null => {
   if (!raw) return null
   const start = toDate(raw.startTime)
   const end = toDate(raw.endTime)
   if (!start || !end) return null
-
-  const normalizeAvailableOptions = (value: unknown): string[] => {
-    if (!Array.isArray(value)) {
-      return []
-    }
-    const mapped = value
-      .map((item) => (typeof item === 'string' ? item : String(item ?? '')))
-      .filter((id) => id.length > 0)
-      .map((id) => resolveOptionId(id))
-    return Array.from(new Set(mapped))
-  }
 
   return {
     id: String(raw.id ?? ''),

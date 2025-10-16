@@ -167,7 +167,7 @@ export default function CourseInfoPage() {
     setFormData({
       name: course.name,
       description: course.description,
-      durations: course.durations.map((duration) => {
+      durations: (course.durations ?? []).map((duration) => {
         const { storeShare, castShare } = normalizeRevenueSplit(
           duration.price,
           duration.storeShare,
@@ -471,7 +471,7 @@ export default function CourseInfoPage() {
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
-                            {course.durations.map((duration, index) => (
+                            {(course.durations ?? []).map((duration, index) => (
                               <div key={index} className="text-sm">
                                 <div className="flex items-center gap-2">
                                   <Clock className="h-3 w-3 text-gray-400" />
