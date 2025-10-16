@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getStorageService } from '@/lib/storage'
 import logger from '@/lib/logger'
 
+export const runtime = 'nodejs'
+
 export async function POST(request: NextRequest) {
   try {
     const data = await request.formData()
@@ -41,7 +43,10 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
       }
-      throw uploadError
+      logger.error({ err: uploadError }, 'Image upload failed')
+      const message =
+        uploadError instanceof Error ? uploadError.message : 'アップロードに失敗しました'
+      return NextResponse.json({ error: message }, { status: 500 })
     }
   } catch (error) {
     logger.error({ err: error }, 'Upload error')

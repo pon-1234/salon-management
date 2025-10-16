@@ -28,8 +28,8 @@ const castSchema = z.object({
   netReservation: z.boolean().optional().default(true),
   specialDesignationFee: z.number().min(0).nullable().optional(),
   regularDesignationFee: z.number().min(0).nullable().optional(),
-  panelDesignationRank: z.number().min(1).optional().default(999),
-  regularDesignationRank: z.number().min(1).optional().default(999),
+  panelDesignationRank: z.number().min(0).optional().default(0),
+  regularDesignationRank: z.number().min(0).optional().default(0),
   workStatus: z.string().optional().default('出勤'),
   availableOptions: z.array(z.string()).optional().default([]),
 })

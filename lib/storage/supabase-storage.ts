@@ -15,14 +15,18 @@ export class SupabaseStorageService implements StorageService {
     this.config = config
 
     // Supabase接続情報を環境変数から取得
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const supabaseUrl =
+      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+    const supabaseKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-    if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error('Supabase環境変数が設定されていません')
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error(
+        'Supabase環境変数が設定されていません。NEXT_PUBLIC_SUPABASE_URL/SUPABASE_URL と NEXT_PUBLIC_SUPABASE_ANON_KEY/SUPABASE_SERVICE_ROLE_KEY を確認してください。'
+      )
     }
 
-    this.supabase = createClient(supabaseUrl, supabaseAnonKey)
+    this.supabase = createClient(supabaseUrl, supabaseKey)
   }
 
   async upload(file: File, options?: UploadOptions): Promise<UploadResult> {
@@ -41,16 +45,32 @@ export class SupabaseStorageService implements StorageService {
     // ファイルパスの生成
     const timestamp = Date.now()
     const randomString = Math.random().toString(36).substring(2, 15)
-    const extension = file.name.split('.').pop()
+    const fileAny = file as any
+    const originalName = fileAny?.name || 'upload'
+    const extension = originalName.includes('.') ? originalName.split('.').pop() : 'bin'
     const filename = options?.filename || `${timestamp}-${randomString}.${extension}`
     const folder = options?.folder || 'uploads'
     const path = `${folder}/${filename}`
 
+    const contentType =
+      options?.contentType || fileAny?.type || 'application/octet-stream'
+
+    let uploadBody: Blob | ArrayBuffer
+    if (typeof fileAny?.arrayBuffer === 'function') {
+      uploadBody = await fileAny.arrayBuffer()
+    } else if (fileAny instanceof ArrayBuffer) {
+      uploadBody = fileAny
+    } else if (fileAny?.buffer instanceof ArrayBuffer) {
+      uploadBody = fileAny.buffer
+    } else {
+      uploadBody = fileAny
+    }
+
     // Supabaseにアップロード
     const { data, error } = await this.supabase.storage
       .from(this.config.bucket)
-      .upload(path, file, {
-        contentType: options?.contentType || file.type,
+      .upload(path, uploadBody, {
+        contentType,
         upsert: options?.upsert || false,
       })
 
@@ -63,8 +83,10 @@ export class SupabaseStorageService implements StorageService {
 
     return {
       url: data.path,
-      filename: file.name,
-      size: file.size,
+      filename: originalName,
+      size:
+        fileAny?.size ??
+        (uploadBody instanceof ArrayBuffer ? uploadBody.byteLength : undefined),
       publicUrl,
     }
   }
