@@ -30,6 +30,7 @@ import {
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { getOptionById } from '@/lib/options/data'
+import type { Option } from '@/lib/types/course-option'
 
 interface CastDetailContentProps {
   cast: Cast
@@ -42,9 +43,9 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
   const [isFavorite, setIsFavorite] = useState(false)
 
   // Get available options details
-  const availableOptions = cast.availableOptions
+  const availableOptions: Option[] = cast.availableOptions
     .map((optionId) => getOptionById(optionId))
-    .filter(Boolean)
+    .filter((option): option is Option => Boolean(option))
 
   const nextImage = () => {
     setSelectedImageIndex((prev) => (prev === cast.images.length - 1 ? 0 : prev + 1))

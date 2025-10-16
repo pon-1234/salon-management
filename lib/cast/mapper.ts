@@ -1,4 +1,5 @@
 import { Cast, Appointment } from './types'
+import { resolveOptionId } from '@/lib/options/data'
 
 const toDate = (value: unknown): Date | undefined => {
   if (!value) return undefined
@@ -30,6 +31,17 @@ const normalizeAppointment = (raw: any): Appointment | null => {
   const start = toDate(raw.startTime)
   const end = toDate(raw.endTime)
   if (!start || !end) return null
+
+  const normalizeAvailableOptions = (value: unknown): string[] => {
+    if (!Array.isArray(value)) {
+      return []
+    }
+    const mapped = value
+      .map((item) => (typeof item === 'string' ? item : String(item ?? '')))
+      .filter((id) => id.length > 0)
+      .map((id) => resolveOptionId(id))
+    return Array.from(new Set(mapped))
+  }
 
   return {
     id: String(raw.id ?? ''),
@@ -93,7 +105,7 @@ export const normalizeCast = (raw: any): Cast => {
     workStart: toDate(raw.workStart),
     workEnd: toDate(raw.workEnd),
     appointments,
-    availableOptions: Array.isArray(raw.availableOptions) ? raw.availableOptions : [],
+    availableOptions: normalizeAvailableOptions(raw.availableOptions),
     publicProfile: raw.publicProfile,
     createdAt: toDate(raw.createdAt) ?? new Date(),
     updatedAt: toDate(raw.updatedAt) ?? new Date(),

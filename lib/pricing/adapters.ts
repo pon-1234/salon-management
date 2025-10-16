@@ -45,6 +45,13 @@ export function convertOptionPriceToOption(optionPrice: OptionPrice): Option {
     id: optionPrice.id,
     name: optionPrice.name,
     price: optionPrice.price,
+    description: optionPrice.description,
+    duration: optionPrice.duration,
+    category: optionPrice.category,
+    storeShare: optionPrice.storeShare ?? null,
+    castShare: optionPrice.castShare ?? null,
+    isActive: optionPrice.isActive,
+    isPopular: optionPrice.isPopular,
     note: optionPrice.note,
   }
 }

@@ -1,8 +1,7 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Cast } from '@/lib/cast/types'
-import { options } from '@/lib/course-option/data'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,6 +18,18 @@ import { Plus } from 'lucide-react'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { FormSection } from '@/components/cast/form-section'
 import { cn } from '@/lib/utils'
+import { usePricing } from '@/hooks/use-pricing'
+import { resolveOptionId } from '@/lib/options/data'
+
+type OptionChoice = {
+  id: string
+  name: string
+  price: number
+  description?: string
+  note?: string | null
+  storeShare?: number | null
+  castShare?: number | null
+}
 
 interface CastFormProps {
   cast?: Cast | null
@@ -68,11 +79,15 @@ const WORK_STATUS_OPTIONS: Cast['workStatus'][] = ['出勤', '未出勤']
 const OptionPill = ({
   label,
   caption,
+  description,
+  note,
   selected,
   onToggle,
 }: {
   label: string
   caption?: string
+  description?: string
+  note?: string | null
   selected: boolean
   onToggle: () => void
 }) => (
@@ -87,17 +102,107 @@ const OptionPill = ({
     )}
   >
     <span className="block font-medium">{label}</span>
-    {caption ? <span className="mt-1 block text-xs text-muted-foreground">{caption}</span> : null}
+    {note ? (
+      <span className="mt-1 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
+        {note}
+      </span>
+    ) : null}
+    {description ? (
+      <span className="mt-1 block text-xs text-muted-foreground">{description}</span>
+    ) : null}
+    {caption ? (
+      <span className="mt-1 block text-xs text-muted-foreground">{caption}</span>
+    ) : null}
   </button>
 )
+
+const DEFAULT_STORE_RATIO = 0.6
+
+function calculateRevenueSplit(
+  price: number,
+  storeShare?: number | null,
+  castShare?: number | null
+) {
+  const safePrice = Math.max(0, price || 0)
+  let store = typeof storeShare === 'number' ? Math.max(0, storeShare) : Number.NaN
+  let cast = typeof castShare === 'number' ? Math.max(0, castShare) : Number.NaN
+
+  if (Number.isNaN(store) && Number.isNaN(cast)) {
+    store = Math.round(safePrice * DEFAULT_STORE_RATIO)
+    cast = Math.max(safePrice - store, 0)
+  } else if (Number.isNaN(store)) {
+    cast = Math.min(safePrice, cast)
+    store = Math.max(safePrice - cast, 0)
+  } else if (Number.isNaN(cast)) {
+    store = Math.min(safePrice, store)
+    cast = Math.max(safePrice - store, 0)
+  } else {
+    store = Math.min(store, safePrice)
+    cast = Math.max(safePrice - store, 0)
+  }
+
+  return { storeShare: store, castShare: cast }
+}
 
 export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
   const [formData, setFormData] = useState(() => buildInitialFormState(cast))
   const fieldId = (suffix: string) => `cast-${suffix}`
+  const { optionPrices, options: legacyOptions, loading: optionsLoading } = usePricing()
+
+  const optionCatalog: OptionChoice[] = useMemo(() => {
+    if (optionPrices.length > 0) {
+      return optionPrices
+        .filter((option) => option.isActive !== false)
+        .sort((a, b) => a.displayOrder - b.displayOrder)
+        .map((option) => ({
+          id: option.id,
+          name: option.name,
+          price: option.price,
+          description: option.description ?? '',
+          note: option.note ?? null,
+          storeShare: option.storeShare ?? null,
+          castShare: option.castShare ?? null,
+        }))
+    }
+
+    if (legacyOptions.length > 0) {
+      return legacyOptions.map((option) => ({
+        id: option.id,
+        name: option.name,
+        price: option.price,
+        description: option.description ?? '',
+        note: option.note ?? null,
+        storeShare: option.storeShare ?? null,
+        castShare: option.castShare ?? null,
+      }))
+    }
+
+    return []
+  }, [optionPrices, legacyOptions])
 
   useEffect(() => {
     setFormData(buildInitialFormState(cast))
   }, [cast])
+
+  useEffect(() => {
+    setFormData((prev) => {
+      if (prev.availableOptions.length === 0) {
+        return prev
+      }
+
+      const normalized = prev.availableOptions.map((id) => resolveOptionId(id))
+      const hasChanged = normalized.some((id, index) => id !== prev.availableOptions[index])
+
+      if (!hasChanged) {
+        return prev
+      }
+
+      return {
+        ...prev,
+        availableOptions: Array.from(new Set(normalized)),
+      }
+    })
+  }, [optionCatalog])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -187,12 +292,21 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
   }
 
   const handleOptionChange = (optionId: string, checked: boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      availableOptions: checked
-        ? [...prev.availableOptions, optionId]
-        : prev.availableOptions.filter((id) => id !== optionId),
-    }))
+    setFormData((prev) => {
+      const filtered = prev.availableOptions.filter((id) => {
+        const resolved = resolveOptionId(id)
+        return resolved !== optionId && id !== optionId
+      })
+
+      if (checked) {
+        filtered.push(optionId)
+      }
+
+      return {
+        ...prev,
+        availableOptions: Array.from(new Set(filtered)),
+      }
+    })
   }
 
   const handleImageChange = (index: number, url: string) => {
@@ -204,12 +318,12 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
       const currentMain = prev.image?.trim() ?? ''
       const isDefaultMain =
         !currentMain || currentMain.includes('placeholder') || currentMain === prev.images[index]
-      const nextMain = isDefaultMain ? trimmedUrl : currentMain
+      const nextMain = isDefaultMain && trimmedUrl ? trimmedUrl : currentMain
 
       return {
         ...prev,
         images: newImages,
-        image: nextMain,
+        image: nextMain ?? '',
       }
     })
   }
@@ -235,7 +349,7 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
       return {
         ...prev,
         images: newImages,
-        image: nextMain,
+        image: nextMain ?? '',
       }
     })
   }
@@ -601,22 +715,42 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
         title="提供可能オプション"
         description="実施可能なオプションを選択すると、予約画面の提案にも反映されます。"
       >
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {options.map((option) => {
-            const selected = formData.availableOptions.includes(option.id)
-            const caption =
-              option.price === 0 ? '追加料金なし' : `追加料金 ${option.price.toLocaleString()}円`
-            return (
-              <OptionPill
-                key={option.id}
-                label={option.name}
-                caption={caption}
-                selected={selected}
-                onToggle={() => handleOptionChange(option.id, !selected)}
-              />
-            )
-          })}
-        </div>
+        {optionsLoading && optionCatalog.length === 0 ? (
+          <p className="text-sm text-muted-foreground">オプション情報を読み込み中です…</p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {optionCatalog.map((option) => {
+              const selected = formData.availableOptions.some((value) => {
+                const resolved = resolveOptionId(value)
+                return value === option.id || resolved === option.id
+              })
+              const { storeShare, castShare } = calculateRevenueSplit(
+                option.price,
+                option.storeShare,
+                option.castShare
+              )
+
+              const caption = option.price === 0
+                ? `無料 / 店舗 ${storeShare.toLocaleString()}円 / キャスト ${castShare.toLocaleString()}円`
+                : `料金 ¥${option.price.toLocaleString()} / 店舗 ${storeShare.toLocaleString()}円 / キャスト ${castShare.toLocaleString()}円`
+
+              return (
+                <OptionPill
+                  key={option.id}
+                  label={option.name}
+                  description={option.description}
+                  note={option.note}
+                  caption={caption}
+                  selected={selected}
+                  onToggle={() => handleOptionChange(option.id, !selected)}
+                />
+              )
+            })}
+          </div>
+        )}
+        {optionCatalog.length === 0 && !optionsLoading ? (
+          <p className="text-sm text-muted-foreground">登録済みのオプションがありません</p>
+        ) : null}
       </FormSection>
 
       <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:justify-end">

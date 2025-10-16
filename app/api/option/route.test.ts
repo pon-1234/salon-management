@@ -49,7 +49,15 @@ describe('GET /api/option', () => {
     const mockOption = {
       id: 'option1',
       name: 'Extended Service',
+      description: 'Relaxing add-on',
       price: 2000,
+      duration: 30,
+      category: 'special',
+      displayOrder: 1,
+      isActive: true,
+      note: null,
+      storeShare: 1200,
+      castShare: 800,
       reservations: [],
     }
 
@@ -106,13 +114,25 @@ describe('GET /api/option', () => {
       {
         id: 'option1',
         name: 'Basic Add-on',
+        description: null,
         price: 1000,
+        duration: null,
+        category: 'special',
+        displayOrder: 1,
+        isActive: true,
+        note: null,
         reservations: [],
       },
       {
         id: 'option2',
         name: 'Premium Add-on',
+        description: null,
         price: 3000,
+        duration: null,
+        category: 'special',
+        displayOrder: 2,
+        isActive: true,
+        note: null,
         reservations: [],
       },
     ]
@@ -143,9 +163,10 @@ describe('GET /api/option', () => {
           },
         },
       },
-      orderBy: {
-        price: 'asc',
-      },
+      orderBy: [
+        { displayOrder: 'asc' },
+        { price: 'asc' },
+      ],
     })
   })
 
@@ -238,7 +259,15 @@ describe('POST /api/option', () => {
   it('should create a new option', async () => {
     const newOptionData = {
       name: 'Special Treatment',
+      description: 'VIP向けサービス',
       price: 5000,
+      duration: 20,
+      category: 'special',
+      displayOrder: 5,
+      isActive: true,
+      note: '人気',
+      storeShare: 3000,
+      castShare: 2000,
     }
 
     const mockCreatedOption = {
@@ -262,10 +291,18 @@ describe('POST /api/option', () => {
     expect(data.name).toBe('Special Treatment')
     expect(data.price).toBe(5000)
     expect(vi.mocked(db.optionPrice.create)).toHaveBeenCalledWith({
-      data: {
+      data: expect.objectContaining({
         name: 'Special Treatment',
+        description: 'VIP向けサービス',
         price: 5000,
-      },
+        duration: 20,
+        category: 'special',
+        displayOrder: 5,
+        isActive: true,
+        note: '人気',
+        storeShare: 3000,
+        castShare: 2000,
+      }),
       include: {
         reservations: true,
       },
@@ -292,13 +329,27 @@ describe('POST /api/option', () => {
     expect(data.error).toBe('Internal server error')
   })
 
-  it('should handle missing required fields', async () => {
+  it('should default missing price to zero', async () => {
     const incompleteData = {
       name: 'Incomplete Option',
-      // Missing price
     }
 
-    vi.mocked(db.optionPrice.create).mockRejectedValueOnce(new Error('Missing required field'))
+    const mockCreatedOption = {
+      id: 'generated-id',
+      name: 'Incomplete Option',
+      description: null,
+      price: 0,
+      duration: null,
+      category: 'special',
+      displayOrder: 0,
+      isActive: true,
+      note: null,
+      storeShare: 0,
+      castShare: 0,
+      reservations: [],
+    }
+
+    vi.mocked(db.optionPrice.create).mockResolvedValueOnce(mockCreatedOption as any)
 
     const request = new NextRequest('http://localhost:3000/api/option', {
       method: 'POST',
@@ -308,8 +359,27 @@ describe('POST /api/option', () => {
     const response = await POST(request)
     const data = await response.json()
 
-    expect(response.status).toBe(500)
-    expect(data.error).toBe('Internal server error')
+    expect(response.status).toBe(201)
+    expect(data.price).toBe(0)
+    expect(data.name).toBe('Incomplete Option')
+  })
+
+  it('should require option name', async () => {
+    const invalidData = {
+      price: 1500,
+    }
+
+    const request = new NextRequest('http://localhost:3000/api/option', {
+      method: 'POST',
+      body: JSON.stringify(invalidData),
+    })
+
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(data.error).toBe('Validation error')
+    expect(vi.mocked(db.optionPrice.create)).not.toHaveBeenCalled()
   })
 
   it('should reject non-admin users', async () => {
@@ -379,13 +449,20 @@ describe('PUT /api/option', () => {
     const updateData = {
       id: 'option1',
       name: 'Updated Service Name',
+      description: 'アップデートされた説明',
       price: 3500,
+      category: 'relaxation',
+      displayOrder: 3,
+      isActive: false,
+      note: '季節限定',
     }
 
     const mockUpdatedOption = {
       id: 'option1',
-      name: 'Updated Service Name',
-      price: 3500,
+      ...updateData,
+      duration: null,
+      storeShare: 2000,
+      castShare: 1500,
       reservations: [],
     }
 
@@ -404,10 +481,15 @@ describe('PUT /api/option', () => {
     expect(data.price).toBe(3500)
     expect(vi.mocked(db.optionPrice.update)).toHaveBeenCalledWith({
       where: { id: 'option1' },
-      data: {
+      data: expect.objectContaining({
         name: 'Updated Service Name',
+        description: 'アップデートされた説明',
         price: 3500,
-      },
+        category: 'relaxation',
+        displayOrder: 3,
+        isActive: false,
+        note: '季節限定',
+      }),
       include: {
         reservations: {
           include: {
@@ -475,10 +557,9 @@ describe('PUT /api/option', () => {
     expect(data.price).toBe(4000)
     expect(vi.mocked(db.optionPrice.update)).toHaveBeenCalledWith({
       where: { id: 'option1' },
-      data: {
-        name: undefined,
+      data: expect.objectContaining({
         price: 4000,
-      },
+      }),
       include: {
         reservations: {
           include: {

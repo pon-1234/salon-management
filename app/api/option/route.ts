@@ -10,6 +10,78 @@ import { db } from '@/lib/db'
 import logger from '@/lib/logger'
 import { defaultOptions } from '@/lib/pricing/data'
 
+function normalizeNumber(value: any, fallback: number | null = null): number | null {
+  if (value === null || value === undefined || value === '') return fallback
+  const num = Number(value)
+  if (!Number.isFinite(num)) {
+    return fallback
+  }
+  return Math.trunc(num)
+}
+
+function buildOptionPayload(data: any, mode: 'create' | 'update' = 'create') {
+  const payload: Record<string, any> = {}
+
+  if (data.name !== undefined) {
+    const name = data.name?.toString().trim()
+    if (!name) {
+      throw new Error('NAME_REQUIRED')
+    }
+    payload.name = name
+  } else if (mode === 'create') {
+    throw new Error('NAME_REQUIRED')
+  }
+
+  if (data.description !== undefined) {
+    payload.description = data.description ? data.description.toString() : null
+  } else if (mode === 'create') {
+    payload.description = null
+  }
+
+  if (data.price !== undefined) {
+    payload.price = Math.max(0, normalizeNumber(data.price, 0) ?? 0)
+  } else if (mode === 'create') {
+    payload.price = 0
+  }
+
+  if (data.duration !== undefined) {
+    payload.duration = normalizeNumber(data.duration)
+  }
+
+  if (data.category !== undefined) {
+    const category = data.category?.toString() || 'special'
+    payload.category = category
+  } else if (mode === 'create') {
+    payload.category = 'special'
+  }
+
+  if (data.displayOrder !== undefined) {
+    payload.displayOrder = normalizeNumber(data.displayOrder, 0) ?? 0
+  } else if (mode === 'create') {
+    payload.displayOrder = 0
+  }
+
+  if (data.isActive !== undefined) {
+    payload.isActive = Boolean(data.isActive)
+  } else if (mode === 'create') {
+    payload.isActive = true
+  }
+
+  if (data.note !== undefined) {
+    payload.note = data.note ? data.note.toString() : null
+  }
+
+  if (data.storeShare !== undefined) {
+    payload.storeShare = Math.max(0, normalizeNumber(data.storeShare, 0) ?? 0)
+  }
+
+  if (data.castShare !== undefined) {
+    payload.castShare = Math.max(0, normalizeNumber(data.castShare, 0) ?? 0)
+  }
+
+  return payload
+}
+
 async function requireSession() {
   const session = await getServerSession(authOptions)
   if (!session) {
@@ -92,9 +164,14 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: {
-        price: 'asc',
-      },
+      orderBy: [
+        {
+          displayOrder: 'asc',
+        },
+        {
+          price: 'asc',
+        },
+      ],
     })
 
     if (isAdmin) {
@@ -128,13 +205,28 @@ export async function POST(request: NextRequest) {
 
     const data = await request.json()
 
+    let payload
+    try {
+      payload = buildOptionPayload(data, 'create')
+    } catch (error) {
+      if (error instanceof Error && error.message === 'NAME_REQUIRED') {
+        return NextResponse.json(
+          {
+            error: 'Validation error',
+            details: [{ path: ['name'], message: 'Name is required' }],
+          },
+          { status: 400 }
+        )
+      }
+      throw error
+    }
+
+    const prismaPayload = Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== undefined)
+    )
+
     const newOption = await db.optionPrice.create({
-      data: {
-        name: data.name,
-        price: data.price,
-        storeShare: data.storeShare ?? null,
-        castShare: data.castShare ?? null,
-      },
+      data: prismaPayload,
       include: {
         reservations: true,
       },
@@ -165,14 +257,29 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 })
     }
 
+    let payload
+    try {
+      payload = buildOptionPayload(updates, 'update')
+    } catch (error) {
+      if (error instanceof Error && error.message === 'NAME_REQUIRED') {
+        return NextResponse.json(
+          {
+            error: 'Validation error',
+            details: [{ path: ['name'], message: 'Name is required' }],
+          },
+          { status: 400 }
+        )
+      }
+      throw error
+    }
+
+    const prismaPayload = Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== undefined)
+    )
+
     const updatedOption = await db.optionPrice.update({
       where: { id },
-      data: {
-        name: updates.name,
-        price: updates.price,
-        storeShare: updates.storeShare ?? null,
-        castShare: updates.castShare ?? null,
-      },
+      data: prismaPayload,
       include: {
         reservations: {
           include: {

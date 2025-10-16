@@ -37,7 +37,6 @@ export interface OptionPrice extends BaseEntity {
   displayOrder: number
   isActive: boolean
   isPopular?: boolean
-  note?: string
   storeShare?: number
   castShare?: number
 }

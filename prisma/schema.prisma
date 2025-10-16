@@ -113,9 +113,17 @@ model CoursePrice {
 model OptionPrice {
   id           String              @id @default(cuid())
   name         String
+  description  String?
   price        Int
+  duration     Int?
+  category     String              @default("special")
+  displayOrder Int                  @default(0)
+  isActive     Boolean              @default(true)
+  note         String?
   storeShare   Int?
   castShare    Int?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
   reservations ReservationOption[]
 }
 

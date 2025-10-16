@@ -3,7 +3,9 @@ import { getPricingUseCases } from '../pricing'
 import {
   convertAllCoursePricesToCourses,
   convertAllOptionPricesToOptions,
+  convertOptionPriceToOption,
 } from '../pricing/adapters'
+import { defaultOptions } from '../pricing/data'
 
 // Cache for courses and options to avoid fetching on every import
 /** @no-test-required reason: Internal cache variables used by exported functions */
@@ -101,13 +103,8 @@ function getFallbackCourses(): Course[] {
 
 /** @no-test-required reason: Internal fallback function called by exported getOptions which handles errors */
 function getFallbackOptions(): Option[] {
-  return [
-    { id: '1', name: 'オールヌード', price: 3000 },
-    { id: '2', name: 'ローション追加', price: 2000 },
-    { id: '3', name: 'コスプレ', price: 2000 },
-    { id: '4', name: '延長30分', price: 8000 },
-    { id: '5', name: 'ホットストーン', price: 2000 },
-    { id: '6', name: 'アロマトリートメント', price: 1500 },
-    { id: '7', name: 'ネックトリートメント', price: 1000 },
-  ]
+  return defaultOptions
+    .filter((option) => option.isActive !== false)
+    .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+    .map(convertOptionPriceToOption)
 }

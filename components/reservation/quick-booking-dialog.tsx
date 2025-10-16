@@ -40,6 +40,7 @@ import { useLocations } from '@/hooks/use-locations'
 import { TimeSlotPicker } from './time-slot-picker'
 import { toast } from '@/hooks/use-toast'
 import { isVipMember } from '@/lib/utils'
+import { resolveOptionId } from '@/lib/options/data'
 
 type DesignationType = 'none' | 'regular' | 'special'
 
@@ -330,8 +331,14 @@ export function QuickBookingDialog({
     if (!selectedStaff?.availableOptions || selectedStaff.availableOptions.length === 0) {
       return normalizedOptions
     }
-    const allowedIds = new Set(selectedStaff.availableOptions)
-    return normalizedOptions.filter((option) => allowedIds.has(option.id))
+    const allowedIds = new Set(
+      selectedStaff.availableOptions.map((value) => resolveOptionId(value))
+    )
+    return normalizedOptions.filter((option) => {
+      const optionId = option.id
+      const resolvedOptionId = resolveOptionId(optionId)
+      return allowedIds.has(optionId) || allowedIds.has(resolvedOptionId)
+    })
   }, [normalizedOptions, selectedStaff])
 
   useEffect(() => {

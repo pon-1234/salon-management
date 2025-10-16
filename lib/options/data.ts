@@ -1,5 +1,7 @@
-import { OptionPrice } from '@/lib/pricing/types'
 import { defaultOptions } from '@/lib/pricing/data'
+import { convertOptionPriceToOption } from '@/lib/pricing/adapters'
+import { options as cachedOptions } from '@/lib/course-option/data'
+import type { Option } from '@/lib/types/course-option'
 
 // Map option IDs to actual option data
 /** @no-test-required reason: Internal mapping used by getOptionById function which is tested */
@@ -16,19 +18,39 @@ const optionIdMap: Record<string, string> = {
   extension: '10', // 延長30分
 }
 
-export function getOptionById(id: string): OptionPrice | undefined {
-  // First try to find by direct ID
-  let option = defaultOptions.find((opt) => opt.id === id)
+const fallbackOptions: Option[] = defaultOptions.map(convertOptionPriceToOption)
 
-  // If not found, try to map from old ID format
-  if (!option && optionIdMap[id]) {
-    option = defaultOptions.find((opt) => opt.id === optionIdMap[id])
-  }
-
-  return option
+export function resolveOptionId(id: string): string {
+  return optionIdMap[id] ?? id
 }
 
-/** @no-test-required reason: Unused internal function - not exported or referenced */
-function getAllOptions(): OptionPrice[] {
-  return defaultOptions
+export function getOptionById(id: string): Option | undefined {
+  const optionFromCache = cachedOptions.find((option) => option.id === id)
+  if (optionFromCache) {
+    return optionFromCache
+  }
+
+  const mappedId = optionIdMap[id]
+  if (mappedId) {
+    const mappedOption = cachedOptions.find((option) => option.id === mappedId)
+    if (mappedOption) {
+      return mappedOption
+    }
+  }
+
+  const fallbackDirect = fallbackOptions.find((option) => option.id === id)
+  if (fallbackDirect) {
+    return fallbackDirect
+  }
+
+  if (mappedId) {
+    return fallbackOptions.find((option) => option.id === mappedId)
+  }
+
+  return undefined
+}
+
+/** @no-test-required reason: Unused internal helper kept for potential future use */
+function getAllOptions(): Option[] {
+  return cachedOptions.length > 0 ? cachedOptions : fallbackOptions
 }
