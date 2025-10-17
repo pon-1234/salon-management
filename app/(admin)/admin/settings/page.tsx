@@ -159,9 +159,9 @@ export default function SettingsPage() {
       category: 'サービス管理',
     },
     {
-      id: 'additional-fees',
-      title: '追加料金設定',
-      description: '指名料、交通費、深夜料金などの追加料金を管理',
+      id: 'designation-fees',
+      title: '指名料設定',
+      description: 'フリー指名・本指名などの指名料と取り分を管理',
       icon: <Receipt className="h-5 w-5" />,
       status: 'available',
       category: 'サービス管理',
@@ -244,8 +244,8 @@ export default function SettingsPage() {
                     case 'templates':
                       window.location.href = '/admin/settings/templates'
                       break
-                    case 'additional-fees':
-                      window.location.href = '/admin/settings/additional-fees'
+                    case 'designation-fees':
+                      window.location.href = '/admin/settings/designation-fees'
                       break
                     default:
                       console.log(`${item.title}の設定ページは準備中です`)

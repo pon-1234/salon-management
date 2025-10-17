@@ -60,11 +60,11 @@ The system uses a repository pattern with:
 - Set prices and categories
 - Optional duration for time-based options
 
-### Additional Fees (`/admin/settings/additional-fees`)
+### Designation Fees (`/admin/settings/designation-fees`)
 
-- Configure extra charges
-- Support for fixed amounts, percentages, or ranges
-- Examples: nomination fee, transportation, late night charges
+- Manage nomination fees such as free designation, panel designation, repeat designation
+- Configure total fee along with store and cast share
+- Currently backed by mock data in the admin UI
 
 ## Frontend Integration
 
