@@ -7,6 +7,9 @@ function createEnv() {
   const rawEnvSchema = z.object({
     DATABASE_URL: z.string().optional(),
     DIRECT_URL: z.string().optional(),
+    POSTGRES_URL: z.string().optional(),
+    POSTGRES_PRISMA_URL: z.string().optional(),
+    POSTGRES_URL_NON_POOLING: z.string().optional(),
     NEXTAUTH_URL: z.string().optional(),
     NEXTAUTH_SECRET: z.string().optional(),
     NEXT_PUBLIC_SITE_URL: z.string().optional(),
@@ -20,12 +23,16 @@ function createEnv() {
     BUSINESS_HOUR_START: z.string().optional(),
     BUSINESS_HOUR_END: z.string().optional(),
     USE_MOCK_FALLBACK: z.string().optional(),
+    NEXT_PUBLIC_USE_MOCK_FALLBACK: z.string().optional(),
     INITIAL_ADMIN_PASSWORD: z.string().optional(),
   })
 
   const rawEnv = rawEnvSchema.parse({
     DATABASE_URL: process.env.DATABASE_URL,
     DIRECT_URL: process.env.DIRECT_URL,
+    POSTGRES_URL: process.env.POSTGRES_URL,
+    POSTGRES_PRISMA_URL: process.env.POSTGRES_PRISMA_URL,
+    POSTGRES_URL_NON_POOLING: process.env.POSTGRES_URL_NON_POOLING,
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
@@ -39,11 +46,17 @@ function createEnv() {
     BUSINESS_HOUR_START: process.env.BUSINESS_HOUR_START,
     BUSINESS_HOUR_END: process.env.BUSINESS_HOUR_END,
     USE_MOCK_FALLBACK: process.env.USE_MOCK_FALLBACK,
+    NEXT_PUBLIC_USE_MOCK_FALLBACK: process.env.NEXT_PUBLIC_USE_MOCK_FALLBACK,
     INITIAL_ADMIN_PASSWORD: process.env.INITIAL_ADMIN_PASSWORD,
   })
 
-  const databaseUrl = rawEnv.DATABASE_URL ?? ''
-  const directDatabaseUrl = rawEnv.DIRECT_URL ?? databaseUrl
+  const databaseUrl =
+    rawEnv.DATABASE_URL ??
+    rawEnv.POSTGRES_PRISMA_URL ??
+    rawEnv.POSTGRES_URL ??
+    ''
+  const directDatabaseUrl =
+    rawEnv.DIRECT_URL ?? rawEnv.POSTGRES_URL_NON_POOLING ?? rawEnv.POSTGRES_URL ?? databaseUrl
 
   const nextAuthUrl = rawEnv.NEXTAUTH_URL ?? 'http://localhost:3000'
   const defaultDevSecret = 'development-secret-key-not-for-production'
@@ -67,7 +80,9 @@ function createEnv() {
   const businessHourStart = rawEnv.BUSINESS_HOUR_START ?? '09:00'
   const businessHourEnd = rawEnv.BUSINESS_HOUR_END ?? '23:00'
 
-  const mockFallbackRaw = rawEnv.USE_MOCK_FALLBACK?.toLowerCase() ?? ''
+  const mockFallbackPreference =
+    rawEnv.NEXT_PUBLIC_USE_MOCK_FALLBACK ?? rawEnv.USE_MOCK_FALLBACK
+  const mockFallbackRaw = mockFallbackPreference?.toLowerCase() ?? ''
   const useMockFallbacks =
     mockFallbackRaw === 'true'
       ? true

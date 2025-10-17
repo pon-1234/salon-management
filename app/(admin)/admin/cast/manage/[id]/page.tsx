@@ -18,6 +18,7 @@ import {
   CreditCard,
   Calculator,
   BarChart3,
+  AlertTriangle,
 } from 'lucide-react'
 import { CastRepositoryImpl } from '@/lib/cast/repository-impl'
 import { toast } from '@/hooks/use-toast'
@@ -27,6 +28,7 @@ import { SalesManagementTab } from '@/components/cast/sales-management-tab'
 import { PaymentHistoryTab } from '@/components/cast/payment-history-tab'
 import { SettlementStatusTab } from '@/components/cast/settlement-status-tab'
 import { WorkPerformanceTab } from '@/components/cast/work-performance-tab'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function CastManagePage({ params }: { params: Promise<{ id: string }> }) {
   const [cast, setCast] = useState<Cast | null>(null)
@@ -49,15 +51,13 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
       try {
         if (!isNewCast) {
           const foundCast = await castRepository.getById(id)
-          if (foundCast) {
-            setCast(foundCast)
-          } else {
+          setCast(foundCast)
+          if (!foundCast) {
             toast({
-              title: 'エラー',
-              description: 'キャストが見つかりませんでした',
+              title: 'キャストが見つかりません',
+              description: 'URLが古いか、キャストが削除された可能性があります。',
               variant: 'destructive',
             })
-            router.push('/admin/cast/list')
           }
         }
       } catch (error) {
@@ -67,6 +67,7 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
           description: 'キャスト情報の取得に失敗しました',
           variant: 'destructive',
         })
+        setCast(null)
       } finally {
         setLoading(false)
       }
@@ -130,8 +131,39 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
     }
   }
 
-  if (!isNewCast && !cast) {
-    return <div>Loading...</div>
+  if (!isNewCast && loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <span className="text-sm text-muted-foreground">読み込み中...</span>
+      </div>
+    )
+  }
+
+  if (!isNewCast && !loading && !cast) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <main className="flex flex-1 items-center justify-center px-6 py-16">
+          <Card className="max-w-xl text-center">
+            <CardHeader>
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                <AlertTriangle className="h-6 w-6" />
+              </div>
+              <CardTitle>キャストが見つかりませんでした</CardTitle>
+              <CardDescription>
+                リンクが古い、またはキャストが削除された可能性があります。キャスト一覧から最新の情報を確認してください。
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              <Button onClick={() => router.push('/admin/cast/list')}>キャスト一覧へ戻る</Button>
+              <Button variant="ghost" onClick={() => router.back()}>
+                前のページに戻る
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    )
   }
 
   return (

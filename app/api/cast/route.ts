@@ -12,6 +12,7 @@ import { handleApiError } from '@/lib/api/errors'
 import { SuccessResponses } from '@/lib/api/responses'
 import { castMembers } from '@/lib/cast/data'
 import { env } from '@/lib/config/env'
+import { Prisma } from '@prisma/client'
 
 // Validation schema for cast data
 const imageUrlSchema = z
@@ -51,6 +52,8 @@ function transformCast(cast: any) {
   return {
     ...cast,
     nameKana: cast.nameKana ?? cast.name,
+    schedules: cast.schedules ?? [],
+    reservations: cast.reservations ?? [],
     images: Array.isArray(cast.images)
       ? cast.images
       : typeof cast.images === 'string'
@@ -61,29 +64,71 @@ function transformCast(cast: any) {
   }
 }
 
+async function fetchCastWithRelations(id: string) {
+  try {
+    return await db.cast.findUnique({
+      where: { id },
+      include: {
+        schedules: true,
+        reservations: {
+          include: {
+            customer: true,
+            course: true,
+            options: {
+              include: {
+                option: true,
+              },
+            },
+          },
+        },
+      },
+    })
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2022') {
+      logger.warn(
+        { err: error, castId: id },
+        'Cast relation fetch failed due to schema mismatch, falling back to minimal query'
+      )
+      return db.cast.findUnique({
+        where: { id },
+      })
+    }
+    throw error
+  }
+}
+
+async function fetchCastListWithRelations() {
+  try {
+    return await db.cast.findMany({
+      include: {
+        schedules: true,
+        reservations: {
+          include: {
+            customer: true,
+            course: true,
+          },
+        },
+      },
+    })
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2022') {
+      logger.warn(
+        { err: error },
+        'Cast list relation fetch failed due to schema mismatch, falling back to minimal query'
+      )
+      return db.cast.findMany()
+    }
+    throw error
+  }
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const id = searchParams.get('id')
 
   try {
     if (id) {
-      const cast = await db.cast.findUnique({
-        where: { id },
-        include: {
-          schedules: true,
-          reservations: {
-            include: {
-              customer: true,
-              course: true,
-              options: {
-                include: {
-                  option: true,
-                },
-              },
-            },
-          },
-        },
-      })
+      const cast = await fetchCastWithRelations(id)
 
       if (!cast) {
         return NextResponse.json({ error: 'Cast not found' }, { status: 404 })
@@ -101,26 +146,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(transformedCast)
     }
 
-    const casts = await db.cast.findMany({
-      include: {
-        schedules: true,
-        reservations: {
-          include: {
-            customer: true,
-            course: true,
-          },
-        },
-      },
-    })
+    const casts = await fetchCastListWithRelations()
 
     // Transform database results to match frontend expectations
-    const transformedCasts = casts.map((cast) => ({
-      ...cast,
-      nameKana: cast.name, // Temporary: use name as nameKana
-      images: typeof cast.images === 'string' ? JSON.parse(cast.images) : cast.images,
-      availableOptions: [],
-      appointments: [],
-    }))
+    const transformedCasts = casts.map(transformCast)
 
     return NextResponse.json(transformedCasts)
   } catch (error) {

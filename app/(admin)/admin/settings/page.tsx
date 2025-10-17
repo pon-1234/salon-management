@@ -232,8 +232,17 @@ export default function SettingsPage() {
                     case 'station-info':
                       window.location.href = '/admin/settings/station-info'
                       break
+                    case 'hp-pricing':
+                      window.location.href = '/admin/settings/hp-pricing'
+                      break
+                    case 'mutual-links':
+                      window.location.href = '/admin/settings/mutual-links'
+                      break
                     case 'hotel-info':
                       window.location.href = '/admin/settings/hotel-info'
+                      break
+                    case 'templates':
+                      window.location.href = '/admin/settings/templates'
                       break
                     case 'additional-fees':
                       window.location.href = '/admin/settings/additional-fees'
