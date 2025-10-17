@@ -38,15 +38,23 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next()
     }
 
-    // If already authenticated, redirect to appropriate dashboard
     if (token) {
       if (token.role === 'admin' && pathname.startsWith('/admin')) {
         return NextResponse.redirect(new URL('/admin/dashboard', request.url))
-      } else if (token.role === 'customer') {
-        const store = pathname.split('/')[1]
-        return NextResponse.redirect(new URL(`/${store}`, request.url))
+      }
+
+      if (token.role === 'customer') {
+        // Allow customers to reach the admin login page so they can re-authenticate as admin
+        if (pathname === '/admin/login') {
+          return NextResponse.next()
+        }
+
+        const storeMatch = pathname.match(/^\/([^/]+)\/(login|register)/)
+        const fallbackPath = storeMatch ? `/${storeMatch[1]}` : '/'
+        return NextResponse.redirect(new URL(fallbackPath, request.url))
       }
     }
+
     return NextResponse.next()
   }
 
@@ -60,8 +68,9 @@ export async function middleware(request: NextRequest) {
     }
 
     if (token.role !== 'admin') {
-      // Return 403 if authenticated but not admin
-      return new NextResponse('Forbidden', { status: 403 })
+      const url = new URL('/admin/login', request.url)
+      url.searchParams.set('callbackUrl', pathname)
+      return NextResponse.redirect(url, { status: 307 })
     }
 
     // Special redirect for /admin to /admin/dashboard
