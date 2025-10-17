@@ -273,12 +273,13 @@ export async function PUT(request: NextRequest) {
       throw error
     }
 
-    const sanitizedPayload = Object.fromEntries(
+    const prismaPayload = Object.fromEntries(
       Object.entries(payload).filter(([, value]) => value !== undefined)
     )
 
-    const existingOption = await db.optionPrice.findUnique({
+    const updatedOption = await db.optionPrice.update({
       where: { id },
+      data: prismaPayload,
       include: {
         reservations: {
           include: {
@@ -291,80 +292,6 @@ export async function PUT(request: NextRequest) {
           },
         },
       },
-    })
-
-    if (!existingOption) {
-      return NextResponse.json({ error: 'Option not found' }, { status: 404 })
-    }
-
-    const updateKeys = Object.keys(sanitizedPayload)
-    const isStatusOnlyUpdate = updateKeys.length === 1 && updateKeys[0] === 'isActive'
-
-    if (isStatusOnlyUpdate) {
-      const updatedOption = await db.optionPrice.update({
-        where: { id },
-        data: {
-          isActive: sanitizedPayload.isActive,
-          archivedAt: sanitizedPayload.isActive ? null : new Date(),
-        },
-        include: {
-          reservations: {
-            include: {
-              reservation: {
-                include: {
-                  customer: true,
-                  cast: true,
-                },
-              },
-            },
-          },
-        },
-      })
-
-      return NextResponse.json(updatedOption)
-    }
-
-    const updatedOption = await db.$transaction(async (tx) => {
-      await tx.optionPrice.update({
-        where: { id },
-        data: {
-          isActive: false,
-          archivedAt: new Date(),
-        },
-      })
-
-      const baseOptionData = {
-        name: existingOption.name,
-        description: existingOption.description,
-        price: existingOption.price,
-        duration: existingOption.duration,
-        category: existingOption.category,
-        displayOrder: existingOption.displayOrder,
-        note: existingOption.note,
-        storeShare: existingOption.storeShare,
-        castShare: existingOption.castShare,
-      }
-
-      return tx.optionPrice.create({
-        data: {
-          ...baseOptionData,
-          ...sanitizedPayload,
-          isActive: sanitizedPayload.isActive ?? true,
-          archivedAt: null,
-        },
-        include: {
-          reservations: {
-            include: {
-              reservation: {
-                include: {
-                  customer: true,
-                  cast: true,
-                },
-              },
-            },
-          },
-        },
-      })
     })
 
     return NextResponse.json(updatedOption)
@@ -395,12 +322,12 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 })
     }
 
-    await db.optionPrice.update({
+    await db.reservationOption.deleteMany({
+      where: { optionId: id },
+    })
+
+    await db.optionPrice.delete({
       where: { id },
-      data: {
-        isActive: false,
-        archivedAt: new Date(),
-      },
     })
 
     return new NextResponse(null, { status: 204 })
