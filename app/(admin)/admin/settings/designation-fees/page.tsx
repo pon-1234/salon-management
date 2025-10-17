@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Header } from '@/components/header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { RefreshCw, ArrowLeft, Pencil, Trash2, Plus } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
 
 interface DesignationFee {
   id: string
@@ -31,7 +32,7 @@ interface DesignationFee {
   isActive: boolean
 }
 
-const defaultFees: DesignationFee[] = [
+const DEFAULT_FEES: DesignationFee[] = [
   {
     id: 'free-designation',
     name: 'フリー指名',
@@ -74,27 +75,31 @@ const defaultFees: DesignationFee[] = [
   },
 ]
 
-const ensureShares = (price: number, storeShare: number, castShare: number) => {
-  const safePrice = Math.max(0, price)
-  const safeStore = Math.max(0, Math.min(storeShare, safePrice))
-  const safeCast = Math.max(0, Math.min(castShare, safePrice - safeStore))
+const clampShares = (price: number, storeShare: number, castShare: number) => {
+  const normalizedPrice = Math.max(0, Math.round(price))
+  const normalizedStore = Math.max(0, Math.round(storeShare))
+  const normalizedCast = Math.max(0, Math.round(castShare))
 
-  if (safeStore + safeCast > safePrice) {
-    const difference = safeStore + safeCast - safePrice
+  if (normalizedStore + normalizedCast <= normalizedPrice) {
     return {
-      storeShare: safeStore,
-      castShare: Math.max(0, safeCast - difference),
+      price: normalizedPrice,
+      storeShare: normalizedStore,
+      castShare: normalizedCast,
     }
   }
 
+  const adjustedCast = Math.max(0, normalizedPrice - normalizedStore)
+
   return {
-    storeShare: safeStore,
-    castShare: safeCast,
+    price: normalizedPrice,
+    storeShare: normalizedStore,
+    castShare: adjustedCast,
   }
 }
 
 export default function DesignationFeesPage() {
-  const [fees, setFees] = useState<DesignationFee[]>(defaultFees)
+  const { toast } = useToast()
+  const [fees, setFees] = useState<DesignationFee[]>(DEFAULT_FEES)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingFee, setEditingFee] = useState<DesignationFee | null>(null)
   const [formData, setFormData] = useState({
@@ -107,7 +112,12 @@ export default function DesignationFeesPage() {
     isActive: true,
   })
 
-  const openCreateDialog = () => {
+  const orderedFees = useMemo(
+    () => [...fees].sort((a, b) => a.sortOrder - b.sortOrder),
+    [fees]
+  )
+
+  const openCreateDialog = useCallback(() => {
     setEditingFee(null)
     setFormData({
       name: '',
@@ -119,9 +129,9 @@ export default function DesignationFeesPage() {
       isActive: true,
     })
     setDialogOpen(true)
-  }
+  }, [fees.length])
 
-  const openEditDialog = (fee: DesignationFee) => {
+  const openEditDialog = useCallback((fee: DesignationFee) => {
     setEditingFee(fee)
     setFormData({
       name: fee.name,
@@ -133,53 +143,36 @@ export default function DesignationFeesPage() {
       isActive: fee.isActive,
     })
     setDialogOpen(true)
-  }
+  }, [])
 
-  const handlePriceChange = (price: number) => {
-    setFormData((prev) => {
-      const { storeShare, castShare } = ensureShares(price, prev.storeShare, prev.castShare)
-      return {
-        ...prev,
-        price,
-        storeShare,
-        castShare,
-      }
-    })
-  }
+  const handlePriceChange = useCallback((price: number) => {
+    setFormData((prev) => clampShares(price, prev.storeShare, prev.castShare))
+  }, [])
 
-  const handleStoreShareChange = (storeShare: number) => {
-    setFormData((prev) => {
-      const { storeShare: store, castShare } = ensureShares(prev.price, storeShare, prev.castShare)
-      return {
-        ...prev,
-        storeShare: store,
-        castShare,
-      }
-    })
-  }
+  const handleStoreShareChange = useCallback((storeShare: number) => {
+    setFormData((prev) => clampShares(prev.price, storeShare, prev.castShare))
+  }, [])
 
-  const handleCastShareChange = (castShare: number) => {
-    setFormData((prev) => {
-      const { storeShare, castShare: cast } = ensureShares(prev.price, prev.storeShare, castShare)
-      return {
-        ...prev,
-        storeShare,
-        castShare: cast,
-      }
-    })
-  }
+  const handleCastShareChange = useCallback((castShare: number) => {
+    setFormData((prev) => clampShares(prev.price, prev.storeShare, castShare))
+  }, [])
 
-  const saveFee = () => {
+  const saveFee = useCallback(() => {
     if (!formData.name.trim()) {
+      toast({
+        title: '入力エラー',
+        description: '名称を入力してください。',
+        variant: 'destructive',
+      })
       return
     }
 
     const normalized = {
-      ...formData,
-      price: Math.max(0, Math.round(formData.price)),
-      storeShare: Math.max(0, Math.round(formData.storeShare)),
-      castShare: Math.max(0, Math.round(formData.castShare)),
+      ...clampShares(formData.price, formData.storeShare, formData.castShare),
+      name: formData.name.trim(),
       description: formData.description.trim(),
+      sortOrder: Math.max(1, Math.round(formData.sortOrder)),
+      isActive: formData.isActive,
     }
 
     if (editingFee) {
@@ -195,25 +188,39 @@ export default function DesignationFeesPage() {
           )
           .sort((a, b) => a.sortOrder - b.sortOrder)
       )
+      toast({ title: '更新しました', description: `${normalized.name}を更新しました。` })
     } else {
+      const newId =
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `designation-${Date.now()}`
       const newFee: DesignationFee = {
-        id: `designation-${Date.now()}`,
+        id: newId,
         ...normalized,
       }
       setFees((prev) => [...prev, newFee].sort((a, b) => a.sortOrder - b.sortOrder))
+      toast({ title: '追加しました', description: `${normalized.name}を追加しました。` })
     }
 
     setDialogOpen(false)
-  }
+  }, [editingFee, formData, toast])
 
-  const removeFee = (id: string) => {
+  const removeFee = useCallback((id: string) => {
     if (!confirm('この指名料を削除しますか？')) return
     setFees((prev) => prev.filter((fee) => fee.id !== id))
-  }
+    toast({ title: '削除しました' })
+  }, [toast])
 
-  const toggleActive = (id: string, value: boolean) => {
+  const toggleActive = useCallback((id: string, value: boolean) => {
     setFees((prev) => prev.map((fee) => (fee.id === id ? { ...fee, isActive: value } : fee)))
-  }
+  }, [])
+
+  const handleSync = useCallback(() => {
+    toast({
+      title: '同期機能は準備中です',
+      description: '実装後に全店舗へ同期できるようになります。',
+    })
+  }, [toast])
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -236,7 +243,7 @@ export default function DesignationFeesPage() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => alert('将来的に全店舗同期を実装予定です。')}>
+            <Button variant="outline" onClick={handleSync}>
               <RefreshCw className="mr-2 h-4 w-4" /> 全店舗に同期
             </Button>
             <Button onClick={openCreateDialog}>
@@ -264,7 +271,7 @@ export default function DesignationFeesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {fees.map((fee) => (
+                {orderedFees.map((fee) => (
                   <TableRow key={fee.id}>
                     <TableCell className="font-mono text-sm text-muted-foreground">
                       #{fee.sortOrder.toString().padStart(2, '0')}
@@ -403,4 +410,3 @@ export default function DesignationFeesPage() {
     </div>
   )
 }
-
