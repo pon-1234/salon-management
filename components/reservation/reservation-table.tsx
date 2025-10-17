@@ -39,14 +39,14 @@ export function ReservationTable({ reservations, onOpenReservation }: Reservatio
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[80px]">NO.</TableHead>
-            <TableHead className="w-[160px]">お名前</TableHead>
-            <TableHead className="w-[160px]">日時指定</TableHead>
-            <TableHead className="w-[160px]">女性</TableHead>
-            <TableHead className="w-[160px]">コース</TableHead>
-            <TableHead className="w-[80px]">IN</TableHead>
-            <TableHead className="w-[80px]">OUT</TableHead>
-            <TableHead className="w-[120px]">確認</TableHead>
+            <TableHead className="w-[80px] whitespace-nowrap">NO.</TableHead>
+            <TableHead className="w-[160px] whitespace-nowrap">お名前</TableHead>
+            <TableHead className="w-[160px] whitespace-nowrap">日時指定</TableHead>
+            <TableHead className="w-[160px] whitespace-nowrap">女性</TableHead>
+            <TableHead className="w-[160px] whitespace-nowrap">コース</TableHead>
+            <TableHead className="w-[80px] whitespace-nowrap">IN</TableHead>
+            <TableHead className="w-[80px] whitespace-nowrap">OUT</TableHead>
+            <TableHead className="w-[120px] whitespace-nowrap">確認</TableHead>
             <TableHead className="w-[200px]">詳細</TableHead>
             <TableHead className="w-[80px] text-right">操作</TableHead>
           </TableRow>
@@ -54,7 +54,7 @@ export function ReservationTable({ reservations, onOpenReservation }: Reservatio
         <TableBody>
           {reservations.map((reservation, index) => (
             <TableRow key={index} onClick={() => handleOpenReservation(reservation)}>
-              <TableCell className="font-medium">
+              <TableCell className="font-medium whitespace-nowrap">
                 {(index + 1).toString().padStart(4, '0')}
               </TableCell>
               <TableCell>
