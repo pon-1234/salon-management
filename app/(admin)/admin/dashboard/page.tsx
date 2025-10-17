@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -308,8 +308,7 @@ export default function DashboardPage() {
     )
   }
 
-  // 期間に基づくデータフィルタリング
-  const getFilteredData = () => {
+  const filteredReservations = useMemo(() => {
     const now = new Date()
     let startDate: Date
     let endDate: Date
@@ -330,44 +329,40 @@ export default function DashboardPage() {
     }
 
     return reservations.filter((r) => r.startTime >= startDate && r.startTime <= endDate)
-  }
+  }, [reservations, selectedPeriod])
 
-  // KPI計算
-  const calculateKPIs = () => {
-    const filtered = getFilteredData()
-    const totalRevenue = filtered.reduce((sum, r) => sum + r.price, 0)
-    const avgRevenue = filtered.length > 0 ? totalRevenue / filtered.length : 0
-    const confirmedCount = filtered.filter((r) => r.status === 'confirmed').length
-    const cancelledCount = filtered.filter((r) => r.status === 'cancelled').length
-    const cancelRate = filtered.length > 0 ? (cancelledCount / filtered.length) * 100 : 0
+  const previousPeriodReservations = useMemo(() => {
+    const now = new Date()
+    let startDate: Date
+    let endDate: Date
 
-    // 前期間との比較
-    const previousFiltered = reservations.filter((r) => {
-      const now = new Date()
-      let startDate: Date
-      let endDate: Date
+    switch (selectedPeriod) {
+      case 'today':
+        startDate = startOfDay(subDays(now, 1))
+        endDate = endOfDay(subDays(now, 1))
+        break
+      case 'week':
+        startDate = startOfWeek(subDays(now, 7), { locale: ja })
+        endDate = endOfWeek(subDays(now, 7), { locale: ja })
+        break
+      case 'month':
+        startDate = startOfMonth(subMonths(now, 1))
+        endDate = endOfMonth(subMonths(now, 1))
+        break
+    }
 
-      switch (selectedPeriod) {
-        case 'today':
-          startDate = startOfDay(subDays(now, 1))
-          endDate = endOfDay(subDays(now, 1))
-          break
-        case 'week':
-          startDate = startOfWeek(subDays(now, 7), { locale: ja })
-          endDate = endOfWeek(subDays(now, 7), { locale: ja })
-          break
-        case 'month':
-          startDate = startOfMonth(subMonths(now, 1))
-          endDate = endOfMonth(subMonths(now, 1))
-          break
-      }
+    return reservations.filter((r) => r.startTime >= startDate && r.startTime <= endDate)
+  }, [reservations, selectedPeriod])
 
-      return r.startTime >= startDate && r.startTime <= endDate
-    })
+  const kpis = useMemo(() => {
+    const totalRevenue = filteredReservations.reduce((sum, r) => sum + r.price, 0)
+    const avgRevenue = filteredReservations.length > 0 ? totalRevenue / filteredReservations.length : 0
+    const confirmedCount = filteredReservations.filter((r) => r.status === 'confirmed').length
+    const cancelledCount = filteredReservations.filter((r) => r.status === 'cancelled').length
+    const cancelRate = filteredReservations.length > 0 ? (cancelledCount / filteredReservations.length) * 100 : 0
 
-    const previousRevenue = previousFiltered.reduce((sum, r) => sum + r.price, 0)
-    const revenueChange =
-      previousRevenue > 0 ? ((totalRevenue - previousRevenue) / previousRevenue) * 100 : 0
+    const previousRevenue = previousPeriodReservations.reduce((sum, r) => sum + r.price, 0)
+    const revenueChange = previousRevenue > 0 ? ((totalRevenue - previousRevenue) / previousRevenue) * 100 : 0
 
     return {
       totalRevenue,
@@ -375,12 +370,10 @@ export default function DashboardPage() {
       confirmedCount,
       cancelRate,
       revenueChange,
-      totalBookings: filtered.length,
-      previousBookings: previousFiltered.length,
+      totalBookings: filteredReservations.length,
+      previousBookings: previousPeriodReservations.length,
     }
-  }
-
-  const kpis = calculateKPIs()
+  }, [filteredReservations, previousPeriodReservations])
 
   // 売上推移データの生成
   const generateSalesData = () => {
@@ -399,48 +392,101 @@ export default function DashboardPage() {
   }
 
   // 時間帯別予約データ
-  const generateHourlyData = () => {
-    const hourlyData = Array.from({ length: 24 }, (_, hour) => ({
+  const salesData = useMemo(() => generateSalesData(), [reservations])
+  const hourlyData = useMemo(() => {
+    const hourly = Array.from({ length: 24 }, (_, hour) => ({
       hour: `${hour}時`,
       count: 0,
       revenue: 0,
     }))
 
-    getFilteredData().forEach((r) => {
+    filteredReservations.forEach((r) => {
       const hour = r.startTime.getHours()
-      hourlyData[hour].count += 1
-      hourlyData[hour].revenue += r.price
+      hourly[hour].count += 1
+      hourly[hour].revenue += r.price
     })
 
-    return hourlyData.filter((h) => h.count > 0)
+    return hourly.filter((h) => h.count > 0)
+  }, [filteredReservations])
+
+  const statusDistribution = useMemo(
+    () => [
+      {
+        name: '確定済み',
+        value: reservations.filter((r) => r.status === 'confirmed').length,
+        color: colors.success,
+      },
+      {
+        name: '保留中',
+        value: reservations.filter((r) => r.status === 'pending').length,
+        color: colors.warning,
+      },
+      {
+        name: 'キャンセル',
+        value: reservations.filter((r) => r.status === 'cancelled').length,
+        color: colors.danger,
+      },
+      {
+        name: '修正可能',
+        value: reservations.filter((r) => r.status === 'modifiable').length,
+        color: colors.info,
+      },
+    ],
+    [reservations]
+  )
+
+  if (loading) {
+    return (
+      <div className="space-y-6 p-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Card key={index} className="animate-pulse">
+              <CardContent className="space-y-3 p-6">
+                <div className="h-4 w-24 rounded bg-muted" />
+                <div className="h-7 w-32 rounded bg-muted" />
+                <div className="h-3 w-full rounded bg-muted" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <Card className="animate-pulse">
+          <CardContent className="space-y-4 p-6">
+            <div className="h-4 w-32 rounded bg-muted" />
+            <div className="h-56 rounded bg-muted" />
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
-  // ステータス別分布
-  const statusDistribution = [
-    {
-      name: '確定済み',
-      value: reservations.filter((r) => r.status === 'confirmed').length,
-      color: colors.success,
-    },
-    {
-      name: '保留中',
-      value: reservations.filter((r) => r.status === 'pending').length,
-      color: colors.warning,
-    },
-    {
-      name: 'キャンセル',
-      value: reservations.filter((r) => r.status === 'cancelled').length,
-      color: colors.danger,
-    },
-    {
-      name: '修正可能',
-      value: reservations.filter((r) => r.status === 'modifiable').length,
-      color: colors.info,
-    },
-  ]
-
-  const salesData = generateSalesData()
-  const hourlyData = generateHourlyData()
+  if (!loading && reservations.length === 0) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center p-6">
+        <Card className="max-w-xl text-center">
+          <CardHeader>
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-purple-100 text-purple-600">
+              <Sparkles className="h-6 w-6" />
+            </div>
+            <CardTitle>まだデータがありません</CardTitle>
+            <CardDescription>
+              新しい予約が登録されると、このダッシュボードで売上や稼働状況を確認できます。
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Button onClick={() => setShowCustomerSelection(true)}>
+                <Calendar className="mr-2 h-4 w-4" /> 予約を登録
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/admin/analytics/daily-sales">レポートを見る</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6 p-6">
@@ -710,13 +756,17 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-4">
                     <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400" />
                     <div>
-                      <p className="font-medium">{customerDisplayName}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{customerDisplayName}</p>
+                        <Badge variant="outline" className="font-mono text-[10px] uppercase">
+                          {reservation.id.slice(0, 8)}
+                        </Badge>
+                      </div>
                       <p className="text-sm text-muted-foreground">担当: {staffDisplayName}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs text-muted-foreground whitespace-nowrap">
                         {format(reservation.startTime, 'MM月dd日 HH:mm')} -{' '}
                         {format(reservation.endTime, 'HH:mm')}
                       </p>
-                      <p className="text-xs text-muted-foreground">ID: {reservation.id}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
