@@ -8,6 +8,8 @@ export interface CoursePrice extends BaseEntity {
   price: number
   storeShare?: number | null
   castShare?: number | null
+  isActive: boolean
+  archivedAt?: Date | null
 }
 
 // Option pricing model
@@ -22,6 +24,7 @@ export interface OptionPrice extends BaseEntity {
   isPopular?: boolean
   storeShare?: number
   castShare?: number
+  archivedAt?: Date | null
 }
 
 // Additional fees model

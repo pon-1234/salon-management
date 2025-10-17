@@ -20,6 +20,7 @@ vi.mock('@/lib/auth/config', () => ({
 // Mock the database
 vi.mock('@/lib/db', () => ({
   db: {
+    $transaction: vi.fn(),
     optionPrice: {
       findUnique: vi.fn(),
       findMany: vi.fn(),
@@ -43,6 +44,7 @@ vi.mock('@/lib/logger', () => ({
 describe('GET /api/option', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(db.$transaction).mockImplementation(async (cb: any) => cb(db as any))
     vi.mocked(getServerSession).mockResolvedValue({
       user: { id: 'admin1', role: 'admin' },
     } as any)
@@ -254,6 +256,7 @@ describe('GET /api/option', () => {
 describe('POST /api/option', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(db.$transaction).mockImplementation(async (cb: any) => cb(db as any))
     vi.mocked(getServerSession).mockResolvedValue({
       user: { id: 'admin1', role: 'admin' },
     } as any)
@@ -427,6 +430,7 @@ describe('POST /api/option', () => {
 describe('PUT /api/option', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(db.$transaction).mockImplementation(async (cb: any) => cb(db as any))
     vi.mocked(getServerSession).mockResolvedValue({
       user: { id: 'admin1', role: 'admin' },
     } as any)
@@ -448,7 +452,7 @@ describe('PUT /api/option', () => {
     expect(data.error).toBe('ID is required')
   })
 
-  it('should update option data', async () => {
+  it('should create a new option version on update', async () => {
     const updateData = {
       id: 'option1',
       name: 'Updated Service Name',
@@ -456,20 +460,39 @@ describe('PUT /api/option', () => {
       price: 3500,
       category: 'relaxation',
       displayOrder: 3,
-      isActive: false,
+      isActive: true,
       note: '季節限定',
+      storeShare: 2100,
+      castShare: 1400,
     }
 
-    const mockUpdatedOption = {
+    const existingOption = {
       id: 'option1',
-      ...updateData,
+      name: 'Existing Service',
+      description: '元の説明',
+      price: 3000,
       duration: null,
-      storeShare: 2000,
-      castShare: 1500,
+      category: 'special',
+      displayOrder: 2,
+      isActive: true,
+      note: null,
+      storeShare: 1800,
+      castShare: 1200,
+      archivedAt: null,
       reservations: [],
     }
 
-    vi.mocked(db.optionPrice.update).mockResolvedValueOnce(mockUpdatedOption as any)
+    const newOptionVersion = {
+      id: 'option1-v2',
+      ...updateData,
+      duration: null,
+      archivedAt: null,
+      reservations: [],
+    }
+
+    vi.mocked(db.optionPrice.findUnique).mockResolvedValueOnce(existingOption as any)
+    vi.mocked(db.optionPrice.update).mockResolvedValueOnce(existingOption as any)
+    vi.mocked(db.optionPrice.create).mockResolvedValueOnce(newOptionVersion as any)
 
     const request = new NextRequest('http://localhost:3000/api/option', {
       method: 'PUT',
@@ -480,18 +503,22 @@ describe('PUT /api/option', () => {
     const data = await response.json()
 
     expect(response.status).toBe(200)
+    expect(data.id).toBe('option1-v2')
     expect(data.name).toBe('Updated Service Name')
-    expect(data.price).toBe(3500)
     expect(vi.mocked(db.optionPrice.update)).toHaveBeenCalledWith({
       where: { id: 'option1' },
       data: expect.objectContaining({
+        isActive: false,
+        archivedAt: expect.any(Date),
+      }),
+    })
+    expect(vi.mocked(db.optionPrice.create)).toHaveBeenCalledWith({
+      data: expect.objectContaining({
         name: 'Updated Service Name',
-        description: 'アップデートされた説明',
         price: 3500,
         category: 'relaxation',
-        displayOrder: 3,
-        isActive: false,
-        note: '季節限定',
+        isActive: true,
+        archivedAt: null,
       }),
       include: {
         reservations: {
@@ -509,14 +536,7 @@ describe('PUT /api/option', () => {
   })
 
   it('should handle non-existent option', async () => {
-    vi.mocked(db.optionPrice.update).mockRejectedValueOnce({
-      code: 'P2025',
-      message: 'Record not found',
-    })
-
-    vi.mocked(getServerSession).mockResolvedValueOnce({
-      user: { id: 'admin1', role: 'admin' },
-    } as any)
+    vi.mocked(db.optionPrice.findUnique).mockResolvedValueOnce(null)
 
     const request = new NextRequest('http://localhost:3000/api/option', {
       method: 'PUT',
@@ -531,22 +551,42 @@ describe('PUT /api/option', () => {
 
     expect(response.status).toBe(404)
     expect(data.error).toBe('Option not found')
+    expect(db.optionPrice.update).not.toHaveBeenCalled()
+    expect(db.optionPrice.create).not.toHaveBeenCalled()
   })
 
-  it('should allow partial updates', async () => {
+  it('should create a new version for partial updates', async () => {
     const updateData = {
       id: 'option1',
-      price: 4000, // Only updating price
+      price: 4000,
     }
 
-    const mockUpdatedOption = {
+    const existingOption = {
       id: 'option1',
       name: 'Existing Name',
-      price: 4000,
+      description: null,
+      price: 3500,
+      duration: null,
+      category: 'special',
+      displayOrder: 1,
+      isActive: true,
+      note: null,
+      storeShare: 2100,
+      castShare: 1400,
+      archivedAt: null,
       reservations: [],
     }
 
-    vi.mocked(db.optionPrice.update).mockResolvedValueOnce(mockUpdatedOption as any)
+    const newOptionVersion = {
+      ...existingOption,
+      id: 'option1-v2',
+      price: 4000,
+      archivedAt: null,
+    }
+
+    vi.mocked(db.optionPrice.findUnique).mockResolvedValueOnce(existingOption as any)
+    vi.mocked(db.optionPrice.update).mockResolvedValueOnce(existingOption as any)
+    vi.mocked(db.optionPrice.create).mockResolvedValueOnce(newOptionVersion as any)
 
     const request = new NextRequest('http://localhost:3000/api/option', {
       method: 'PUT',
@@ -561,8 +601,57 @@ describe('PUT /api/option', () => {
     expect(vi.mocked(db.optionPrice.update)).toHaveBeenCalledWith({
       where: { id: 'option1' },
       data: expect.objectContaining({
-        price: 4000,
+        isActive: false,
+        archivedAt: expect.any(Date),
       }),
+    })
+    expect(vi.mocked(db.optionPrice.create)).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        price: 4000,
+        isActive: true,
+      }),
+      include: expect.any(Object),
+    })
+  })
+
+  it('should toggle active status without creating a new version', async () => {
+    vi.mocked(db.optionPrice.findUnique).mockResolvedValueOnce({
+      id: 'option1',
+      name: 'Existing Name',
+      price: 3000,
+      isActive: true,
+      archivedAt: null,
+      reservations: [],
+    } as any)
+
+    vi.mocked(db.optionPrice.update).mockResolvedValueOnce({
+      id: 'option1',
+      name: 'Existing Name',
+      price: 3000,
+      isActive: false,
+      archivedAt: new Date(),
+      reservations: [],
+    } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/option', {
+      method: 'PUT',
+      body: JSON.stringify({
+        id: 'option1',
+        isActive: false,
+      }),
+    })
+
+    const response = await PUT(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.isActive).toBe(false)
+    expect(vi.mocked(db.optionPrice.update)).toHaveBeenCalledWith({
+      where: { id: 'option1' },
+      data: {
+        isActive: false,
+        archivedAt: expect.any(Date),
+      },
       include: {
         reservations: {
           include: {
@@ -576,6 +665,7 @@ describe('PUT /api/option', () => {
         },
       },
     })
+    expect(db.optionPrice.create).not.toHaveBeenCalled()
   })
 
   it('should reject updates from non-admin users', async () => {
@@ -602,6 +692,7 @@ describe('PUT /api/option', () => {
 describe('DELETE /api/option', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(db.$transaction).mockImplementation(async (cb: any) => cb(db as any))
     vi.mocked(getServerSession).mockResolvedValue({
       user: { id: 'admin1', role: 'admin' },
     } as any)
@@ -620,8 +711,7 @@ describe('DELETE /api/option', () => {
   })
 
   it('should delete option', async () => {
-    vi.mocked(db.optionPrice.delete).mockResolvedValueOnce({} as any)
-    vi.mocked(db.reservationOption.deleteMany).mockResolvedValueOnce({ count: 1 } as any)
+    vi.mocked(db.optionPrice.update).mockResolvedValueOnce({} as any)
 
     const request = new NextRequest('http://localhost:3000/api/option?id=option1', {
       method: 'DELETE',
@@ -630,16 +720,17 @@ describe('DELETE /api/option', () => {
     const response = await DELETE(request)
 
     expect(response.status).toBe(204)
-    expect(vi.mocked(db.reservationOption.deleteMany)).toHaveBeenCalledWith({
-      where: { optionId: 'option1' },
-    })
-    expect(vi.mocked(db.optionPrice.delete)).toHaveBeenCalledWith({
+    expect(vi.mocked(db.optionPrice.update)).toHaveBeenCalledWith({
       where: { id: 'option1' },
+      data: expect.objectContaining({
+        isActive: false,
+        archivedAt: expect.any(Date),
+      }),
     })
   })
 
   it('should handle non-existent option', async () => {
-    vi.mocked(db.optionPrice.delete).mockRejectedValueOnce({
+    vi.mocked(db.optionPrice.update).mockRejectedValueOnce({
       code: 'P2025',
       message: 'Record not found',
     })

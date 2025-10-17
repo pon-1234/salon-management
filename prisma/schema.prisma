@@ -107,6 +107,8 @@ model CoursePrice {
   storeShare   Int?
   castShare    Int?
   description  String
+  isActive     Boolean       @default(true)
+  archivedAt   DateTime?
   reservations Reservation[]
 }
 
@@ -124,6 +126,7 @@ model OptionPrice {
   castShare    Int?
   createdAt    DateTime             @default(now())
   updatedAt    DateTime             @updatedAt
+  archivedAt   DateTime?
   reservations ReservationOption[]
 }
 
@@ -160,12 +163,17 @@ model StationInfo {
 }
 
 model ReservationOption {
+  id            String        @id @default(cuid())
   reservationId String
-  optionId      String
-  option        OptionPrice @relation(fields: [optionId], references: [id])
-  reservation   Reservation @relation(fields: [reservationId], references: [id])
+  optionId      String?
+  option        OptionPrice?  @relation(fields: [optionId], references: [id], onDelete: SetNull)
+  optionName    String
+  optionPrice   Int
+  storeShare    Int?
+  castShare     Int?
+  reservation   Reservation  @relation(fields: [reservationId], references: [id])
 
-  @@id([reservationId, optionId])
+  @@index([reservationId])
 }
 
 model Review {

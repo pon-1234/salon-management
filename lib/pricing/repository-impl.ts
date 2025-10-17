@@ -53,7 +53,9 @@ export class PricingRepositoryImpl implements PricingRepository {
   // Course pricing methods
   async getCourses(storeId?: string): Promise<CoursePrice[]> {
     const courses = await this.fetchJson<CoursePrice[]>(COURSE_API_PATH)
-    return courses.sort((a: any, b: any) => (a.duration || 0) - (b.duration || 0))
+    return courses
+      .filter((course: any) => course.isActive !== false)
+      .sort((a: any, b: any) => (a.duration || 0) - (b.duration || 0))
   }
 
   async getCourseById(id: string): Promise<CoursePrice | null> {

@@ -179,9 +179,10 @@ export default function OptionInfoPage() {
       if (editingOption) {
         // Update existing option
         const updated = await pricingUseCases.updateOption(editingOption.id, dataToSave)
-        setOptions((prev) =>
-          prev.map((option) => (option.id === editingOption.id ? updated : option))
-        )
+        setOptions((prev) => [
+          ...prev.filter((option) => option.id !== editingOption.id),
+          updated,
+        ])
         toast({
           title: '更新完了',
           description: 'オプション情報が更新されました',
