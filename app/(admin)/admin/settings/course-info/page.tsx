@@ -205,10 +205,9 @@ export default function CourseInfoPage() {
     try {
       if (editingCourse) {
         const updated = await pricingUseCases.updateCourse(editingCourse.id, payload)
-        setCourses((prev) => {
-          const normalized = normalizeCourse(updated)
-          return [...prev.filter((course) => course.id !== editingCourse.id), normalized]
-        })
+        setCourses((prev) =>
+          prev.map((course) => (course.id === editingCourse.id ? normalizeCourse(updated) : course))
+        )
         toast({
           title: '更新完了',
           description: 'コース情報が更新されました',

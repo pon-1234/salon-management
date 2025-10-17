@@ -20,7 +20,6 @@ vi.mock('@/lib/auth/config', () => ({
 // Mock the database
 vi.mock('@/lib/db', () => ({
   db: {
-    $transaction: vi.fn(),
     coursePrice: {
       findUnique: vi.fn(),
       findMany: vi.fn(),
@@ -41,7 +40,6 @@ vi.mock('@/lib/logger', () => ({
 describe('GET /api/course', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(db.$transaction).mockImplementation(async (cb: any) => cb(db as any))
     vi.mocked(getServerSession).mockResolvedValue({
       user: { id: 'admin1', role: 'admin' },
     } as any)
@@ -132,9 +130,6 @@ describe('GET /api/course', () => {
     expect(response.status).toBe(200)
     expect(data).toHaveLength(2)
     expect(vi.mocked(db.coursePrice.findMany)).toHaveBeenCalledWith({
-      where: {
-        isActive: true,
-      },
       include: {
         reservations: {
           include: {
@@ -199,7 +194,6 @@ describe('GET /api/course', () => {
 describe('POST /api/course', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(db.$transaction).mockImplementation(async (cb: any) => cb(db as any))
     vi.mocked(getServerSession).mockResolvedValue({
       user: { id: 'admin1', role: 'admin' },
     } as any)
@@ -346,7 +340,6 @@ describe('POST /api/course', () => {
 describe('PUT /api/course', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(db.$transaction).mockImplementation(async (cb: any) => cb(db as any))
     vi.mocked(getServerSession).mockResolvedValue({
       user: { id: 'admin1', role: 'admin' },
     } as any)
@@ -368,7 +361,7 @@ describe('PUT /api/course', () => {
     expect(data.error).toBe('ID is required')
   })
 
-  it('should create a new course version on update', async () => {
+  it('should update course data', async () => {
     const updateData = {
       id: 'course1',
       name: 'Updated Course Name',
@@ -376,35 +369,16 @@ describe('PUT /api/course', () => {
       description: 'Updated description',
     }
 
-    const existingCourse = {
+    const mockUpdatedCourse = {
       id: 'course1',
-      name: 'Original Course Name',
-      duration: 60,
-      price: 10000,
-      description: 'Original description',
-      storeShare: 6000,
-      castShare: 4000,
-      isActive: true,
-      archivedAt: null,
-      reservations: [],
-    }
-
-    const newCourseVersion = {
-      id: 'course1-v2',
       name: 'Updated Course Name',
       duration: 60,
       price: 12000,
       description: 'Updated description',
-      storeShare: 7200,
-      castShare: 4800,
-      isActive: true,
-      archivedAt: null,
       reservations: [],
     }
 
-    vi.mocked(db.coursePrice.findUnique).mockResolvedValueOnce(existingCourse as any)
-    vi.mocked(db.coursePrice.update).mockResolvedValueOnce(existingCourse as any)
-    vi.mocked(db.coursePrice.create).mockResolvedValueOnce(newCourseVersion as any)
+    vi.mocked(db.coursePrice.update).mockResolvedValueOnce(mockUpdatedCourse as any)
 
     const request = new NextRequest('http://localhost:3000/api/course', {
       method: 'PUT',
@@ -415,23 +389,14 @@ describe('PUT /api/course', () => {
     const data = await response.json()
 
     expect(response.status).toBe(200)
-    expect(data.id).toBe('course1-v2')
     expect(data.name).toBe('Updated Course Name')
     expect(data.price).toBe(12000)
     expect(vi.mocked(db.coursePrice.update)).toHaveBeenCalledWith({
       where: { id: 'course1' },
       data: expect.objectContaining({
-        isActive: false,
-        archivedAt: expect.any(Date),
-      }),
-    })
-    expect(vi.mocked(db.coursePrice.create)).toHaveBeenCalledWith({
-      data: expect.objectContaining({
         name: 'Updated Course Name',
         price: 12000,
         description: 'Updated description',
-        isActive: true,
-        archivedAt: null,
       }),
       include: {
         reservations: {
@@ -445,7 +410,14 @@ describe('PUT /api/course', () => {
   })
 
   it('should handle non-existent course', async () => {
-    vi.mocked(db.coursePrice.findUnique).mockResolvedValueOnce(null)
+    vi.mocked(db.coursePrice.update).mockRejectedValueOnce({
+      code: 'P2025',
+      message: 'Record not found',
+    })
+
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'admin1', role: 'admin' },
+    } as any)
 
     const request = new NextRequest('http://localhost:3000/api/course', {
       method: 'PUT',
@@ -460,8 +432,6 @@ describe('PUT /api/course', () => {
 
     expect(response.status).toBe(404)
     expect(data.error).toBe('Course not found')
-    expect(db.coursePrice.update).not.toHaveBeenCalled()
-    expect(db.coursePrice.create).not.toHaveBeenCalled()
   })
 
   it('should reject updates from non-admin users', async () => {
@@ -488,7 +458,6 @@ describe('PUT /api/course', () => {
 describe('DELETE /api/course', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(db.$transaction).mockImplementation(async (cb: any) => cb(db as any))
     vi.mocked(getServerSession).mockResolvedValue({
       user: { id: 'admin1', role: 'admin' },
     } as any)
@@ -506,8 +475,8 @@ describe('DELETE /api/course', () => {
     expect(data.error).toBe('ID is required')
   })
 
-  it('should archive course instead of hard delete', async () => {
-    vi.mocked(db.coursePrice.update).mockResolvedValueOnce({} as any)
+  it('should delete course', async () => {
+    vi.mocked(db.coursePrice.delete).mockResolvedValueOnce({} as any)
 
     const request = new NextRequest('http://localhost:3000/api/course?id=course1', {
       method: 'DELETE',
@@ -516,17 +485,13 @@ describe('DELETE /api/course', () => {
     const response = await DELETE(request)
 
     expect(response.status).toBe(204)
-    expect(vi.mocked(db.coursePrice.update)).toHaveBeenCalledWith({
+    expect(vi.mocked(db.coursePrice.delete)).toHaveBeenCalledWith({
       where: { id: 'course1' },
-      data: expect.objectContaining({
-        isActive: false,
-        archivedAt: expect.any(Date),
-      }),
     })
   })
 
   it('should handle non-existent course', async () => {
-    vi.mocked(db.coursePrice.update).mockRejectedValueOnce({
+    vi.mocked(db.coursePrice.delete).mockRejectedValueOnce({
       code: 'P2025',
       message: 'Record not found',
     })

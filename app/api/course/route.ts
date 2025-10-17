@@ -140,9 +140,6 @@ export async function GET(request: NextRequest) {
     }
 
     const courses = await db.coursePrice.findMany({
-      where: {
-        isActive: true,
-      },
       include: {
         reservations: {
           include: {
@@ -293,12 +290,9 @@ export async function PUT(request: NextRequest) {
       throw error
     }
 
-    const sanitizedPayload = Object.fromEntries(
-      Object.entries(payload).filter(([, value]) => value !== undefined)
-    )
-
-    const existingCourse = await db.coursePrice.findUnique({
+    const updatedCourse = await db.coursePrice.update({
       where: { id },
+      data: Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== undefined)),
       include: {
         reservations: {
           include: {
@@ -307,50 +301,6 @@ export async function PUT(request: NextRequest) {
           },
         },
       },
-    })
-
-    if (!existingCourse) {
-      return NextResponse.json({ error: 'Course not found' }, { status: 404 })
-    }
-
-    if (Object.keys(sanitizedPayload).length === 0) {
-      return NextResponse.json(existingCourse)
-    }
-
-    const updatedCourse = await db.$transaction(async (tx) => {
-      await tx.coursePrice.update({
-        where: { id },
-        data: {
-          isActive: false,
-          archivedAt: new Date(),
-        },
-      })
-
-      const baseCourseData = {
-        name: existingCourse.name,
-        description: existingCourse.description,
-        duration: existingCourse.duration,
-        price: existingCourse.price,
-        storeShare: existingCourse.storeShare,
-        castShare: existingCourse.castShare,
-      }
-
-      return tx.coursePrice.create({
-        data: {
-          ...baseCourseData,
-          ...sanitizedPayload,
-          isActive: true,
-          archivedAt: null,
-        },
-        include: {
-          reservations: {
-            include: {
-              customer: true,
-              cast: true,
-            },
-          },
-        },
-      })
     })
 
     return NextResponse.json(updatedCourse)
@@ -381,12 +331,8 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 })
     }
 
-    await db.coursePrice.update({
+    await db.coursePrice.delete({
       where: { id },
-      data: {
-        isActive: false,
-        archivedAt: new Date(),
-      },
     })
 
     return new NextResponse(null, { status: 204 })
