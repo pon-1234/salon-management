@@ -48,14 +48,14 @@ export function ReservationList({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[80px]">NO.</TableHead>
-              <TableHead className="w-[140px]">お名前</TableHead>
-              <TableHead>日時指定</TableHead>
-              <TableHead>スタッフ</TableHead>
-              <TableHead>コース</TableHead>
-              <TableHead className="w-[80px]">IN</TableHead>
-              <TableHead className="w-[80px]">OUT</TableHead>
-              <TableHead className="w-[180px]">確認</TableHead>
+              <TableHead className="w-[80px] whitespace-nowrap">NO.</TableHead>
+              <TableHead className="w-[140px] whitespace-nowrap">お名前</TableHead>
+              <TableHead className="whitespace-nowrap">日時指定</TableHead>
+              <TableHead className="whitespace-nowrap">スタッフ</TableHead>
+              <TableHead className="whitespace-nowrap">コース</TableHead>
+              <TableHead className="w-[80px] whitespace-nowrap">IN</TableHead>
+              <TableHead className="w-[80px] whitespace-nowrap">OUT</TableHead>
+              <TableHead className="w-[180px] whitespace-nowrap">確認</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -65,8 +65,10 @@ export function ReservationList({
                 onClick={() => onOpenReservation && onOpenReservation(reservation)}
                 className="cursor-pointer hover:bg-gray-50"
               >
-                <TableCell>
-                  <div className="w-20 rounded bg-red-50 p-1 text-center">{reservation.id}</div>
+                <TableCell className="whitespace-nowrap">
+                  <div className="w-24 rounded bg-red-50 p-1 text-center font-mono text-xs">
+                    {reservation.id.slice(0, 10)}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div>{reservation.customerName} 様</div>
