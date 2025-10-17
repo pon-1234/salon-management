@@ -255,8 +255,32 @@ export async function POST(request: NextRequest) {
         }
 
         const optionIds: string[] = Array.isArray(reservationData.options)
-          ? reservationData.options
+          ? reservationData.options.filter(Boolean)
           : []
+
+        const optionRecords = optionIds.length
+          ? await tx.optionPrice.findMany({ where: { id: { in: optionIds } } })
+          : []
+
+        const optionPayloads = optionIds.map((optionId) => {
+          const record = optionRecords.find((option) => option.id === optionId)
+          if (!record) {
+            return {
+              optionId,
+              optionName: optionId,
+              optionPrice: 0,
+              storeShare: null,
+              castShare: null,
+            }
+          }
+          return {
+            optionId: record.id,
+            optionName: record.name,
+            optionPrice: record.price,
+            storeShare: record.storeShare ?? null,
+            castShare: record.castShare ?? null,
+          }
+        })
 
         const createdReservation = await tx.reservation.create({
           data: {
@@ -279,11 +303,7 @@ export async function POST(request: NextRequest) {
             staffRevenue: reservationData.staffRevenue ?? null,
             startTime,
             endTime,
-            options: optionIds.length
-              ? {
-                  create: optionIds.map((optionId) => ({ optionId })),
-                }
-              : undefined,
+            options: optionPayloads.length ? { create: optionPayloads } : undefined,
           },
           include: {
             customer: true,
@@ -392,13 +412,49 @@ export async function PUT(request: NextRequest) {
     const updatedReservation = await db.$transaction(async (tx) => {
       // オプションが変更される場合は既存オプションを削除
       const optionIds: string[] | null = Array.isArray(updates.options)
-        ? updates.options
+        ? updates.options.filter(Boolean)
         : null
+
+      let optionPayloads: Array<{
+        optionId: string | null
+        optionName: string
+        optionPrice: number
+        storeShare: number | null
+        castShare: number | null
+      }> | undefined
 
       if (optionIds) {
         await tx.reservationOption.deleteMany({
           where: { reservationId: id },
         })
+
+        if (optionIds.length) {
+          const optionRecords = await tx.optionPrice.findMany({
+            where: { id: { in: optionIds } },
+          })
+
+          optionPayloads = optionIds.map((optionId) => {
+            const record = optionRecords.find((option) => option.id === optionId)
+            if (!record) {
+              return {
+                optionId,
+                optionName: optionId,
+                optionPrice: 0,
+                storeShare: null,
+                castShare: null,
+              }
+            }
+            return {
+              optionId: record.id,
+              optionName: record.name,
+              optionPrice: record.price,
+              storeShare: record.storeShare ?? null,
+              castShare: record.castShare ?? null,
+            }
+          })
+        } else {
+          optionPayloads = []
+        }
       }
 
       // 予約を更新
@@ -436,9 +492,9 @@ export async function PUT(request: NextRequest) {
         where: { id },
         data: {
           ...updateData,
-          options: optionIds
+          options: optionPayloads && optionPayloads.length
             ? {
-                create: optionIds.map((optionId) => ({ optionId })),
+                create: optionPayloads,
               }
             : undefined,
         },
