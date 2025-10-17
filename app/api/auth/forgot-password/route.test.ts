@@ -3,6 +3,7 @@ import { POST } from './route'
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { emailClient } from '@/lib/email/client'
+import { refreshEnv } from '@/lib/config/env'
 
 vi.mock('@/lib/db', () => ({
   db: {
@@ -33,6 +34,7 @@ describe('POST /api/auth/forgot-password', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     process.env.NEXTAUTH_URL = 'http://localhost:3000'
+    refreshEnv()
   })
 
   it('should send password reset email for valid customer', async () => {

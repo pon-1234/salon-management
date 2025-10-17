@@ -11,6 +11,7 @@ import { requireAdmin } from '@/lib/auth/utils'
 import { handleApiError } from '@/lib/api/errors'
 import { SuccessResponses } from '@/lib/api/responses'
 import { castMembers } from '@/lib/cast/data'
+import { env } from '@/lib/config/env'
 
 // Validation schema for cast data
 const imageUrlSchema = z
@@ -124,6 +125,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(transformedCasts)
   } catch (error) {
     logger.error({ err: error }, 'Error fetching cast data')
+    if (!env.featureFlags.useMockFallbacks) {
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
     if (id) {
       const fallbackCast = castMembers.find((cast) => cast.id === id)
       if (!fallbackCast) {

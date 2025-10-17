@@ -6,6 +6,7 @@ import {
   convertOptionPriceToOption,
 } from '../pricing/adapters'
 import { defaultOptions } from '../pricing/data'
+import { shouldUseMockFallbacks } from '@/lib/config/feature-flags'
 
 // Cache for courses and options to avoid fetching on every import
 /** @no-test-required reason: Internal cache variables used by exported functions */
@@ -35,7 +36,10 @@ export async function getCourses(): Promise<Course[]> {
   } catch (error) {
     console.error('Failed to fetch courses from pricing system:', error)
     // Return fallback data if pricing system fails
-    return getFallbackCourses()
+    if (shouldUseMockFallbacks()) {
+      return getFallbackCourses()
+    }
+    throw error
   }
 }
 
@@ -60,7 +64,10 @@ export async function getOptions(): Promise<Option[]> {
   } catch (error) {
     console.error('Failed to fetch options from pricing system:', error)
     // Return fallback data if pricing system fails
-    return getFallbackOptions()
+    if (shouldUseMockFallbacks()) {
+      return getFallbackOptions()
+    }
+    throw error
   }
 }
 
@@ -72,14 +79,31 @@ export let courses: Course[] = []
 export let options: Option[] = []
 
 // Initialize with fallback data for immediate availability
-courses = getFallbackCourses()
-options = getFallbackOptions()
+if (shouldUseMockFallbacks()) {
+  courses = getFallbackCourses()
+  options = getFallbackOptions()
+}
 
 // Asynchronously update with real data
 /** @no-test-required reason: Self-executing async initialization - tested via the exported arrays */
 ;(async () => {
-  courses = await getCourses()
-  options = await getOptions()
+  try {
+    courses = await getCourses()
+    options = await getOptions()
+  } catch (error) {
+    console.error('Failed to hydrate pricing cache on startup:', error)
+    if (shouldUseMockFallbacks()) {
+      if (courses.length === 0) {
+        courses = getFallbackCourses()
+      }
+      if (options.length === 0) {
+        options = getFallbackOptions()
+      }
+    } else {
+      courses = []
+      options = []
+    }
+  }
 })()
 
 /**

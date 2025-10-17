@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { shouldUseMockFallbacks } from '@/lib/config/feature-flags'
 
 export interface LocationArea {
   id: string
@@ -133,8 +134,13 @@ export function useLocations(): LocationResponse {
     } catch (err) {
       console.error('Failed to load area/station data:', err)
       setError(err as Error)
-      setAreas(fallbackAreas)
-      setStations(fallbackStations)
+      if (shouldUseMockFallbacks()) {
+        setAreas(fallbackAreas)
+        setStations(fallbackStations)
+      } else {
+        setAreas([])
+        setStations([])
+      }
     } finally {
       setLoading(false)
     }

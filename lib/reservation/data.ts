@@ -6,6 +6,7 @@ import {
   getMockReservationsByCustomerId,
   updateMockReservation,
 } from './mock-data'
+import { shouldUseMockFallbacks } from '@/lib/config/feature-flags'
 
 let cachedLogger: any = undefined
 
@@ -210,6 +211,9 @@ export async function getReservationsByCustomerId(customerId: string): Promise<R
     const reservations = await requestReservations({ customerId })
     return enrichCustomerNames(reservations)
   } catch (error) {
+    if (!shouldUseMockFallbacks()) {
+      throw error
+    }
     logWarning('Falling back to mock reservations for customer', { err: error })
     const fallbackReservations = await getMockReservationsByCustomerId(customerId)
     return enrichCustomerNames(fallbackReservations)
@@ -221,6 +225,9 @@ export async function getAllReservations(params?: ReservationQuery): Promise<Res
     const reservations = await requestReservations(params)
     return enrichCustomerNames(reservations)
   } catch (error) {
+    if (!shouldUseMockFallbacks()) {
+      throw error
+    }
     logWarning('Falling back to mock reservations list', { err: error })
     const fallbackReservations = await getAllMockReservations()
     return enrichCustomerNames(fallbackReservations)
@@ -239,6 +246,9 @@ export async function updateReservation(
     const [enriched] = await enrichCustomerNames([updated])
     return enriched
   } catch (error) {
+    if (!shouldUseMockFallbacks()) {
+      throw error
+    }
     logWarning('Falling back to mock reservation update', { err: error })
     updateMockReservation(id, updates)
     const reservations = await getAllMockReservations()
@@ -258,6 +268,9 @@ export async function addReservation(
     const [enriched] = await enrichCustomerNames([created])
     return enriched
   } catch (error) {
+    if (!shouldUseMockFallbacks()) {
+      throw error
+    }
     logWarning('Falling back to mock reservation creation', { err: error })
     const created = addMockReservation(reservation)
     const enriched = await enrichCustomerNames([created])

@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { emailClient } from '@/lib/email/client'
 import { ErrorResponses, SuccessResponses } from '@/lib/api/responses'
 import { randomBytes } from 'crypto'
+import { env } from '@/lib/config/env'
 
 const sendVerificationSchema = z.object({
   email: z.string().email('有効なメールアドレスを入力してください'),
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Send verification email
-    const verificationUrl = `${process.env.NEXTAUTH_URL}/verify-email?token=${verificationToken}`
+    const verificationUrl = `${env.nextAuth.url}/verify-email?token=${verificationToken}`
     await emailClient.send({
       to: email,
       subject: 'メールアドレスの確認',

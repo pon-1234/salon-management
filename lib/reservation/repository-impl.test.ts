@@ -1,9 +1,41 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ReservationRepositoryImpl } from './repository-impl'
 import { Reservation } from '../types/reservation'
+import { ApiError } from '@/lib/http/api-client'
+
+vi.mock('@/lib/http/base-url', () => ({
+  resolveApiUrl: (path: string) => path,
+}))
 
 // Mock fetch globally
 global.fetch = vi.fn()
+
+function mockResponse({
+  ok = true,
+  status = 200,
+  body,
+  statusText = 'OK',
+}: {
+  ok?: boolean
+  status?: number
+  body?: unknown
+  statusText?: string
+}): Response {
+  return {
+    ok,
+    status,
+    statusText,
+    text: async () => {
+      if (body === undefined || body === null) {
+        return ''
+      }
+      if (typeof body === 'string') {
+        return body
+      }
+      return JSON.stringify(body)
+    },
+  } as Response
+}
 
 describe('ReservationRepositoryImpl', () => {
   let repository: ReservationRepositoryImpl
@@ -34,48 +66,48 @@ describe('ReservationRepositoryImpl', () => {
   describe('getAll', () => {
     it('should fetch all reservations successfully', async () => {
       const mockReservations = [mockReservation]
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockReservations,
-      } as Response)
+      vi.mocked(fetch).mockResolvedValueOnce(mockResponse({ body: mockReservations }))
 
       const result = await repository.getAll()
 
-      expect(fetch).toHaveBeenCalledWith('/api/reservation')
-      expect(result).toEqual(mockReservations)
+      const [url, init] = vi.mocked(fetch).mock.calls[0]
+      expect(url).toBe('/api/reservation')
+      expect(init?.method).toBe('GET')
+      expect(result).toEqual([
+        expect.objectContaining({ id: mockReservation.id, customerId: mockReservation.customerId }),
+      ])
     })
 
     it('should throw error when fetch fails', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Internal Server Error',
-      } as Response)
-
-      await expect(repository.getAll()).rejects.toThrow(
-        'Failed to fetch reservations: Internal Server Error'
+      vi.mocked(fetch).mockResolvedValueOnce(
+        mockResponse({ ok: false, status: 500, statusText: 'Internal Server Error' })
       )
+
+      const promise = repository.getAll()
+      await expect(promise).rejects.toThrow(ApiError)
+      await expect(promise).rejects.toMatchObject({
+        status: 500,
+        message: 'Internal Server Error',
+      })
     })
   })
 
   describe('getById', () => {
     it('should fetch reservation by id successfully', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => mockReservation,
-      } as Response)
+      vi.mocked(fetch).mockResolvedValueOnce(mockResponse({ status: 200, body: mockReservation }))
 
       const result = await repository.getById('1')
 
-      expect(fetch).toHaveBeenCalledWith('/api/reservation?id=1')
-      expect(result).toEqual(mockReservation)
+      const [url, init] = vi.mocked(fetch).mock.calls[0]
+      expect(url).toBe('/api/reservation?id=1')
+      expect(init?.method).toBe('GET')
+      expect(result).toMatchObject({ id: mockReservation.id, customerId: mockReservation.customerId })
     })
 
     it('should return null for 404 response', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-      } as Response)
+      vi.mocked(fetch).mockResolvedValueOnce(
+        mockResponse({ ok: false, status: 404, statusText: 'Not Found' })
+      )
 
       const result = await repository.getById('999')
 
@@ -83,15 +115,16 @@ describe('ReservationRepositoryImpl', () => {
     })
 
     it('should throw error for other failures', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        statusText: 'Internal Server Error',
-      } as Response)
-
-      await expect(repository.getById('1')).rejects.toThrow(
-        'Failed to fetch reservation: Internal Server Error'
+      vi.mocked(fetch).mockResolvedValueOnce(
+        mockResponse({ ok: false, status: 500, statusText: 'Internal Server Error' })
       )
+
+      const promise = repository.getById('1')
+      await expect(promise).rejects.toThrow(ApiError)
+      await expect(promise).rejects.toMatchObject({
+        status: 500,
+        message: 'Internal Server Error',
+      })
     })
   })
 
@@ -108,25 +141,23 @@ describe('ReservationRepositoryImpl', () => {
         notes: '',
       }
 
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          ...newReservationData,
-          id: '2',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }),
-      } as Response)
+      vi.mocked(fetch).mockResolvedValueOnce(
+        mockResponse({
+          body: {
+            ...newReservationData,
+            id: '2',
+          },
+        })
+      )
 
       const result = await repository.create(newReservationData)
 
-      expect(fetch).toHaveBeenCalledWith('/api/reservation', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newReservationData),
-      })
+      const [url, init] = vi.mocked(fetch).mock.calls[0]
+      expect(url).toBe('/api/reservation')
+      expect(init?.method).toBe('POST')
+      expect(init?.body).toBe(JSON.stringify(newReservationData))
+      const headers = init?.headers instanceof Headers ? init.headers : new Headers(init?.headers)
+      expect(headers?.get('Content-Type')).toBe('application/json')
       expect(result).toHaveProperty('id', '2')
     })
 
@@ -143,38 +174,9 @@ describe('ReservationRepositoryImpl', () => {
         ],
       }
 
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-        status: 409,
-        json: async () => conflictData,
-      } as Response)
-
-      try {
-        await repository.create({
-          customerId: 'customer1',
-          staffId: 'cast1',
-          serviceId: 'service1',
-          startTime: new Date('2024-01-15T14:00:00'),
-          endTime: new Date('2024-01-15T15:00:00'),
-          status: 'confirmed',
-          price: 0,
-          notes: '',
-        })
-        expect.fail('Should have thrown an error')
-      } catch (error: any) {
-        expect(error.message).toBe('Time slot is not available')
-        expect(error.conflicts).toEqual(conflictData.conflicts)
-        expect(error.status).toBe(409)
-      }
-    })
-
-    it('should throw generic error for other failures', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        statusText: 'Bad Request',
-        json: async () => ({ error: 'Invalid data' }),
-      } as Response)
+      vi.mocked(fetch).mockResolvedValueOnce(
+        mockResponse({ ok: false, status: 409, statusText: 'Conflict', body: conflictData })
+      )
 
       await expect(
         repository.create({
@@ -187,7 +189,39 @@ describe('ReservationRepositoryImpl', () => {
           price: 0,
           notes: '',
         })
-      ).rejects.toThrow('Invalid data')
+      ).rejects.toMatchObject({
+        message: 'Time slot is not available',
+        status: 409,
+        conflicts: conflictData.conflicts,
+      })
+    })
+
+    it('should throw generic error for other failures', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(
+        mockResponse({
+          ok: false,
+          status: 400,
+          statusText: 'Bad Request',
+          body: { error: 'Invalid data' },
+        })
+      )
+
+      const promise = repository.create({
+        customerId: 'customer1',
+        staffId: 'cast1',
+        serviceId: 'service1',
+        startTime: new Date('2024-01-15T14:00:00'),
+        endTime: new Date('2024-01-15T15:00:00'),
+        status: 'confirmed',
+        price: 0,
+        notes: '',
+      })
+
+      await expect(promise).rejects.toThrow(ApiError)
+      await expect(promise).rejects.toMatchObject({
+        status: 400,
+        message: 'Invalid data',
+      })
     })
   })
 
@@ -196,21 +230,15 @@ describe('ReservationRepositoryImpl', () => {
       const updateData = { status: 'cancelled' as const, notes: '顧客都合でキャンセル' }
       const updatedReservation = { ...mockReservation, ...updateData }
 
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => updatedReservation,
-      } as Response)
+      vi.mocked(fetch).mockResolvedValueOnce(mockResponse({ body: updatedReservation }))
 
       const result = await repository.update('1', updateData)
 
-      expect(fetch).toHaveBeenCalledWith('/api/reservation', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ id: '1', ...updateData }),
-      })
-      expect(result).toEqual(updatedReservation)
+      const [url, init] = vi.mocked(fetch).mock.calls[0]
+      expect(url).toBe('/api/reservation')
+      expect(init?.method).toBe('PUT')
+      expect(init?.body).toBe(JSON.stringify({ id: '1', ...updateData }))
+      expect(result).toMatchObject({ id: mockReservation.id, status: updateData.status })
     })
 
     it('should handle 409 conflict on update', async () => {
@@ -219,84 +247,92 @@ describe('ReservationRepositoryImpl', () => {
         conflicts: [{ id: 'conflict1' }],
       }
 
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-        status: 409,
-        json: async () => conflictData,
-      } as Response)
+      vi.mocked(fetch).mockResolvedValueOnce(
+        mockResponse({ ok: false, status: 409, statusText: 'Conflict', body: conflictData })
+      )
 
-      try {
-        await repository.update('1', { startTime: new Date('2024-01-01T15:00:00') })
-        expect.fail('Should have thrown an error')
-      } catch (error: any) {
-        expect(error.message).toBe('Time slot is not available')
-        expect(error.conflicts).toEqual(conflictData.conflicts)
-        expect(error.status).toBe(409)
-      }
+      const promise = repository.update('1', { startTime: new Date('2024-01-01T15:00:00') })
+      await expect(promise).rejects.toThrow(ApiError)
+      await expect(promise).rejects.toMatchObject({
+        status: 409,
+        message: 'Time slot is not available',
+        conflicts: conflictData.conflicts,
+      })
     })
 
     it('should throw error for other update failures', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Not Found',
-        json: async () => ({}),
-      } as Response)
-
-      await expect(repository.update('999', { status: 'cancelled' })).rejects.toThrow(
-        'Failed to update reservation: Not Found'
+      vi.mocked(fetch).mockResolvedValueOnce(
+        mockResponse({
+          ok: false,
+          status: 404,
+          statusText: 'Not Found',
+          body: { error: 'Reservation not found' },
+        })
       )
+
+      const promise = repository.update('999', { status: 'cancelled' })
+      await expect(promise).rejects.toThrow(ApiError)
+      await expect(promise).rejects.toMatchObject({
+        status: 404,
+        message: 'Reservation not found',
+      })
     })
   })
 
   describe('delete', () => {
     it('should delete reservation successfully', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ id: '1', status: 'cancelled' }),
-      } as Response)
+      vi.mocked(fetch).mockResolvedValueOnce(mockResponse({ status: 204 }))
 
       const result = await repository.delete('1')
 
-      expect(fetch).toHaveBeenCalledWith('/api/reservation?id=1', {
-        method: 'DELETE',
-      })
+      const [url, init] = vi.mocked(fetch).mock.calls[0]
+      expect(url).toBe('/api/reservation?id=1')
+      expect(init?.method).toBe('DELETE')
       expect(result).toBe(true)
     })
 
     it('should throw error when delete fails', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Forbidden',
-        json: async () => ({ error: 'Access denied' }),
-      } as Response)
+      vi.mocked(fetch).mockResolvedValueOnce(
+        mockResponse({
+          ok: false,
+          status: 403,
+          statusText: 'Forbidden',
+          body: { error: 'Access denied' },
+        })
+      )
 
-      await expect(repository.delete('1')).rejects.toThrow('Access denied')
+      const promise = repository.delete('1')
+      await expect(promise).rejects.toThrow(ApiError)
+      await expect(promise).rejects.toMatchObject({
+        status: 403,
+        message: 'Access denied',
+      })
     })
   })
 
   describe('getReservationsByCustomer', () => {
     it('should fetch reservations by customer id successfully', async () => {
       const mockReservations = [mockReservation]
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockReservations,
-      } as Response)
+      vi.mocked(fetch).mockResolvedValueOnce(mockResponse({ body: mockReservations }))
 
       const result = await repository.getReservationsByCustomer('customer1')
 
-      expect(fetch).toHaveBeenCalledWith('/api/reservation?customerId=customer1')
-      expect(result).toEqual(mockReservations)
+      const [url, init] = vi.mocked(fetch).mock.calls[0]
+      expect(url).toBe('/api/reservation?customerId=customer1')
+      expect(init?.method).toBe('GET')
+      expect(result).toEqual([
+        expect.objectContaining({ id: mockReservation.id, customerId: mockReservation.customerId }),
+      ])
     })
 
     it('should throw error when fetch fails', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Server Error',
-      } as Response)
-
-      await expect(repository.getReservationsByCustomer('customer1')).rejects.toThrow(
-        'Failed to fetch customer reservations: Server Error'
+      vi.mocked(fetch).mockResolvedValueOnce(
+        mockResponse({ ok: false, status: 500, statusText: 'Server Error' })
       )
+
+      const promise = repository.getReservationsByCustomer('customer1')
+      await expect(promise).rejects.toThrow(ApiError)
+      await expect(promise).rejects.toMatchObject({ status: 500, message: 'Server Error' })
     })
   })
 
@@ -306,28 +342,29 @@ describe('ReservationRepositoryImpl', () => {
       const endDate = new Date('2024-01-31')
       const mockReservations = [mockReservation]
 
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockReservations,
-      } as Response)
+      vi.mocked(fetch).mockResolvedValueOnce(mockResponse({ body: mockReservations }))
 
       const result = await repository.getReservationsByStaff('cast1', startDate, endDate)
 
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/reservation?castId=cast1&startDate=')
-      )
-      expect(result).toEqual(mockReservations)
+      const [url, init] = vi.mocked(fetch).mock.calls[0]
+      expect(url).toContain('/api/reservation?')
+      expect(url).toContain('castId=cast1')
+      expect(url).toContain(`startDate=${encodeURIComponent(startDate.toISOString())}`)
+      expect(url).toContain(`endDate=${encodeURIComponent(endDate.toISOString())}`)
+      expect(init?.method).toBe('GET')
+      expect(result).toEqual([
+        expect.objectContaining({ id: mockReservation.id, staffId: mockReservation.staffId }),
+      ])
     })
 
     it('should throw error when fetch fails', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Server Error',
-      } as Response)
+      vi.mocked(fetch).mockResolvedValueOnce(
+        mockResponse({ ok: false, status: 500, statusText: 'Server Error' })
+      )
 
-      await expect(
-        repository.getReservationsByStaff('cast1', new Date(), new Date())
-      ).rejects.toThrow('Failed to fetch staff reservations: Server Error')
+      const promise = repository.getReservationsByStaff('cast1', new Date(), new Date())
+      await expect(promise).rejects.toThrow(ApiError)
+      await expect(promise).rejects.toMatchObject({ status: 500, message: 'Server Error' })
     })
   })
 
@@ -351,19 +388,13 @@ describe('ReservationRepositoryImpl', () => {
       ]
 
       vi.mocked(fetch)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockCourses,
-        } as Response)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockOptions,
-        } as Response)
+        .mockResolvedValueOnce(mockResponse({ body: mockCourses }))
+        .mockResolvedValueOnce(mockResponse({ body: mockOptions }))
 
       const result = await repository.getServices()
 
-      expect(fetch).toHaveBeenNthCalledWith(1, '/api/course')
-      expect(fetch).toHaveBeenNthCalledWith(2, '/api/option')
+      expect(fetch).toHaveBeenNthCalledWith(1, '/api/course', expect.any(Object))
+      expect(fetch).toHaveBeenNthCalledWith(2, '/api/option', expect.any(Object))
       expect(result).toEqual([
         {
           id: 'course1',
@@ -385,11 +416,14 @@ describe('ReservationRepositoryImpl', () => {
     })
 
     it('should throw error when fetching services fails', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-      } as Response)
+      vi.mocked(fetch)
+        .mockResolvedValueOnce(
+          mockResponse({ ok: false, status: 500, statusText: 'Server Error' })
+        )
+        .mockResolvedValueOnce(mockResponse({ body: [] }))
 
-      await expect(repository.getServices()).rejects.toThrow('Failed to fetch services')
+      const promise = repository.getServices()
+      await expect(promise).rejects.toThrow(ApiError)
     })
   })
 
@@ -397,48 +431,45 @@ describe('ReservationRepositoryImpl', () => {
     it('should check availability successfully', async () => {
       const startTime = new Date('2024-01-01T10:00:00')
       const endTime = new Date('2024-01-01T11:00:00')
-      const mockResponse = { available: true }
+      const availability = { available: true }
 
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResponse,
-      } as Response)
+      vi.mocked(fetch).mockResolvedValueOnce(mockResponse({ body: availability }))
 
       const result = await repository.checkAvailability('cast1', startTime, endTime)
 
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/reservation/availability/check?castId=cast1&startTime=')
-      )
-      expect(result).toEqual(mockResponse)
+      const [url, init] = vi.mocked(fetch).mock.calls[0]
+      expect(url).toContain('/api/reservation/availability/check?')
+      expect(url).toContain('castId=cast1')
+      expect(url).toContain(`startTime=${encodeURIComponent(startTime.toISOString())}`)
+      expect(url).toContain(`endTime=${encodeURIComponent(endTime.toISOString())}`)
+      expect(init?.method).toBe('GET')
+      expect(result).toEqual(availability)
     })
 
     it('should return conflicts when not available', async () => {
       const startTime = new Date('2024-01-01T10:00:00')
       const endTime = new Date('2024-01-01T11:00:00')
-      const mockResponse = {
+      const availabilityResponse = {
         available: false,
         conflicts: [{ id: 'conflict1', startTime: '10:00', endTime: '11:00' }],
       }
 
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResponse,
-      } as Response)
+      vi.mocked(fetch).mockResolvedValueOnce(
+        mockResponse({ body: availabilityResponse })
+      )
 
       const result = await repository.checkAvailability('cast1', startTime, endTime)
 
-      expect(result).toEqual(mockResponse)
+      expect(result).toEqual(availabilityResponse)
     })
 
     it('should throw error when check fails', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Server Error',
-      } as Response)
-
-      await expect(repository.checkAvailability('cast1', new Date(), new Date())).rejects.toThrow(
-        'Failed to check availability: Server Error'
+      vi.mocked(fetch).mockResolvedValueOnce(
+        mockResponse({ ok: false, status: 500, statusText: 'Server Error' })
       )
+
+      const promise = repository.checkAvailability('cast1', new Date(), new Date())
+      await expect(promise).rejects.toThrow(ApiError)
     })
   })
 
@@ -452,24 +483,21 @@ describe('ReservationRepositoryImpl', () => {
         ],
       }
 
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockSlots,
-      } as Response)
+      vi.mocked(fetch).mockResolvedValueOnce(mockResponse({ body: mockSlots }))
 
       const result = await repository.getAvailableSlots('cast1', date, 60)
 
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/reservation/availability?castId=cast1&date=')
-      )
+      const [url, init] = vi.mocked(fetch).mock.calls[0]
+      expect(url).toContain('/api/reservation/availability?')
+      expect(url).toContain('castId=cast1')
+      expect(url).toContain(`date=${encodeURIComponent(date.toISOString())}`)
+      expect(url).toContain('duration=60')
+      expect(init?.method).toBe('GET')
       expect(result).toEqual(mockSlots.availableSlots)
     })
 
     it('should return empty array when no slots available', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({}),
-      } as Response)
+      vi.mocked(fetch).mockResolvedValueOnce(mockResponse({ body: {} }))
 
       const result = await repository.getAvailableSlots('cast1', new Date(), 60)
 
@@ -477,14 +505,12 @@ describe('ReservationRepositoryImpl', () => {
     })
 
     it('should throw error when fetch fails', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Server Error',
-      } as Response)
-
-      await expect(repository.getAvailableSlots('cast1', new Date(), 60)).rejects.toThrow(
-        'Failed to get available slots: Server Error'
+      vi.mocked(fetch).mockResolvedValueOnce(
+        mockResponse({ ok: false, status: 500, statusText: 'Server Error' })
       )
+
+      const promise = repository.getAvailableSlots('cast1', new Date(), 60)
+      await expect(promise).rejects.toThrow(ApiError)
     })
   })
 })

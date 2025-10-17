@@ -1,8 +1,13 @@
 import { DailyReport, StaffDailyReport } from './types'
 import { castMembers } from '@/lib/cast/data'
 import { courses, options } from '@/lib/course-option/data'
+import { shouldUseMockFallbacks } from '@/lib/config/feature-flags'
 
 export function generateDailyReport(date: string): DailyReport {
+  if (!shouldUseMockFallbacks()) {
+    throw new Error('Mock report generation is disabled in this environment')
+  }
+
   // Mock data generation
   const totalStaffCount = castMembers.length
 

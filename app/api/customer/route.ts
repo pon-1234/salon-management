@@ -11,6 +11,7 @@ import bcrypt from 'bcryptjs'
 import logger from '@/lib/logger'
 import { customers as mockCustomers } from '@/lib/customer/data'
 import { normalizePhoneQuery } from '@/lib/customer/utils'
+import { env } from '@/lib/config/env'
 
 const SALT_ROUNDS = 10
 
@@ -148,6 +149,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(customers)
   } catch (error) {
     logger.error({ err: error }, 'Error fetching customer data')
+    if (!env.featureFlags.useMockFallbacks) {
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
 
     if (id) {
       if (!session) {

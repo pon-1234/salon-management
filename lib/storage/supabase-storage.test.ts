@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { SupabaseStorageService } from './supabase-storage'
+import { refreshEnv } from '@/lib/config/env'
 
 // Mock Supabase client
 const mockSupabaseClient = {
@@ -33,11 +34,13 @@ describe('SupabaseStorageService', () => {
       NEXT_PUBLIC_SUPABASE_URL: 'https://test.supabase.co',
       NEXT_PUBLIC_SUPABASE_ANON_KEY: 'test-anon-key',
     }
+    refreshEnv()
     mockSupabaseClient.storage.from.mockReturnThis()
   })
 
   afterEach(() => {
     process.env = originalEnv
+    refreshEnv()
   })
 
   describe('constructor', () => {

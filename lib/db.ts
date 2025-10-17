@@ -5,6 +5,7 @@
  */
 
 import { PrismaClient } from '@prisma/client'
+import { env } from '@/lib/config/env'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
@@ -13,7 +14,7 @@ const globalForPrisma = globalThis as unknown as {
 export const db =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
+    log: env.nodeEnv === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
   })
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
+if (!env.isProduction) globalForPrisma.prisma = db

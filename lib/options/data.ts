@@ -2,6 +2,7 @@ import { defaultOptions } from '@/lib/pricing/data'
 import { convertOptionPriceToOption } from '@/lib/pricing/adapters'
 import { options as cachedOptions } from '@/lib/course-option/data'
 import type { Option } from '@/lib/types/course-option'
+import { shouldUseMockFallbacks } from '@/lib/config/feature-flags'
 
 // Map option IDs to actual option data
 /** @no-test-required reason: Internal mapping used by getOptionById function which is tested */
@@ -39,12 +40,15 @@ export function getOptionById(id: string): Option | undefined {
   }
 
   const fallbackDirect = fallbackOptions.find((option) => option.id === id)
-  if (fallbackDirect) {
+  if (fallbackDirect && shouldUseMockFallbacks()) {
     return fallbackDirect
   }
 
   if (mappedId) {
-    return fallbackOptions.find((option) => option.id === mappedId)
+    const mappedFallback = fallbackOptions.find((option) => option.id === mappedId)
+    if (mappedFallback && shouldUseMockFallbacks()) {
+      return mappedFallback
+    }
   }
 
   return undefined
@@ -52,5 +56,8 @@ export function getOptionById(id: string): Option | undefined {
 
 /** @no-test-required reason: Unused internal helper kept for potential future use */
 function getAllOptions(): Option[] {
-  return cachedOptions.length > 0 ? cachedOptions : fallbackOptions
+  if (cachedOptions.length > 0) {
+    return cachedOptions
+  }
+  return shouldUseMockFallbacks() ? fallbackOptions : []
 }

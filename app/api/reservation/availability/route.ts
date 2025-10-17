@@ -8,6 +8,7 @@ import { db } from '@/lib/db'
 import type { PrismaClient } from '@prisma/client'
 import logger from '@/lib/logger'
 import { toZonedTime, fromZonedTime } from 'date-fns-tz'
+import { env } from '@/lib/config/env'
 
 const JST_TIMEZONE = 'Asia/Tokyo'
 
@@ -193,8 +194,8 @@ async function handleAvailableSlots(searchParams: URLSearchParams): Promise<Next
       return NextResponse.json({ error: 'Cast not found' }, { status: 404 })
     }
 
-    const businessHourStart = process.env.BUSINESS_HOUR_START || '09:00'
-    const businessHourEnd = process.env.BUSINESS_HOUR_END || '23:00'
+    const businessHourStart = env.businessHours.start
+    const businessHourEnd = env.businessHours.end
 
     // JSTでその日の一日を定義
     const dateInJst = toZonedTime(date, JST_TIMEZONE)

@@ -6,6 +6,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
+import { env } from '@/lib/config/env'
 
 // Public routes that don't require authentication
 const publicRoutes = ['/', '/_next', '/favicon.ico']
@@ -27,7 +28,7 @@ export async function middleware(request: NextRequest) {
   // Get session token
   const token = await getToken({
     req: request,
-    secret: process.env.NEXTAUTH_SECRET,
+    secret: env.nextAuth.secret,
   })
 
   const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route))

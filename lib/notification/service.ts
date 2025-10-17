@@ -8,6 +8,7 @@ import { smsClient } from '@/lib/sms/client'
 import { pushClient } from '@/lib/push/client'
 import { db } from '@/lib/db'
 import logger from '@/lib/logger'
+import { env } from '@/lib/config/env'
 
 interface NotificationResult {
   success: boolean
@@ -353,7 +354,7 @@ export class NotificationService {
 
   private async sendEmail(data: any): Promise<NotificationResult> {
     // APIキーが設定されていない場合は、何もせずに成功として返す
-    if (!process.env.RESEND_API_KEY) {
+    if (!env.resend.apiKey) {
       logger.warn('RESEND_API_KEY is not set. Skipping email sending.')
       return { success: true, notificationId: 'dummy-email-id-no-key' }
     }

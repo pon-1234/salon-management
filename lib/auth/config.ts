@@ -8,6 +8,7 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import { checkRateLimit, recordLoginAttempt } from './rate-limit'
+import { env } from '@/lib/config/env'
 
 // Extend the default session interface
 declare module 'next-auth' {
@@ -213,11 +214,5 @@ export const authOptions: NextAuthOptions = {
     maxAge: 2 * 60 * 60, // 2 hours
     updateAge: 30 * 60, // Update session every 30 minutes
   },
-  secret:
-    process.env.NEXTAUTH_SECRET ||
-    (process.env.NODE_ENV === 'production'
-      ? (() => {
-          throw new Error('NEXTAUTH_SECRET is required in production')
-        })()
-      : 'development-secret-key-not-for-production'),
+  secret: env.nextAuth.secret,
 }

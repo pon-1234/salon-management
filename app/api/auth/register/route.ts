@@ -8,6 +8,7 @@ import { hash } from 'bcryptjs'
 import { emailClient } from '@/lib/email/client'
 import { randomBytes } from 'crypto'
 import { db } from '@/lib/db'
+import { env } from '@/lib/config/env'
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     // Send verification email
     try {
-      const verificationUrl = `${process.env.NEXTAUTH_URL}/verify-email?token=${verificationToken}`
+      const verificationUrl = `${env.nextAuth.url}/verify-email?token=${verificationToken}`
       await emailClient.send({
         to: email,
         subject: 'メールアドレスの確認',

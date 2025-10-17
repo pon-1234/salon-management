@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { emailClient } from '@/lib/email/client'
 import { ErrorResponses, SuccessResponses } from '@/lib/api/responses'
 import { randomBytes } from 'crypto'
+import { env } from '@/lib/config/env'
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('有効なメールアドレスを入力してください'),
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Send reset email
-    const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${resetToken}`
+    const resetUrl = `${env.nextAuth.url}/reset-password?token=${resetToken}`
     await emailClient.send({
       to: email,
       subject: 'パスワードリセットのご案内',

@@ -26,6 +26,7 @@ import { recordModification } from '@/lib/modification-history/data'
 import { startOfDay, endOfDay } from 'date-fns'
 import { CustomerUseCases } from '@/lib/customer/usecases'
 import { CustomerRepositoryImpl } from '@/lib/customer/repository-impl'
+import { shouldUseMockFallbacks } from '@/lib/config/feature-flags'
 
 const isSameDay = (date1: Date, date2: Date) => {
   return (
@@ -43,6 +44,7 @@ interface ScheduleEntry {
 }
 
 export function ReservationPageContent() {
+  const useMockFallbacks = shouldUseMockFallbacks()
   const [allCasts, setAllCasts] = useState<Cast[]>([])
   const [castData, setCastData] = useState<Cast[]>([])
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
@@ -50,7 +52,9 @@ export function ReservationPageContent() {
   const [filterDialogOpen, setFilterDialogOpen] = useState(false)
   const [selectedAppointment, setSelectedAppointment] = useState<ReservationData | null>(null)
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
-  const [customers, setCustomers] = useState<Customer[]>(fallbackCustomers)
+  const [customers, setCustomers] = useState<Customer[]>(
+    useMockFallbacks ? fallbackCustomers : []
+  )
   const [rawReservations, setRawReservations] = useState<Reservation[]>([])
   const [currentDayReservations, setCurrentDayReservations] = useState<ReservationData[]>([])
   const reservationRepository = useMemo(() => new ReservationRepositoryImpl(), [])
@@ -75,7 +79,7 @@ export function ReservationPageContent() {
       } catch (error) {
         console.error('Failed to load customers:', error)
         if (!ignore) {
-          setCustomers(fallbackCustomers)
+          setCustomers(useMockFallbacks ? fallbackCustomers : [])
         }
       }
     }
@@ -85,7 +89,7 @@ export function ReservationPageContent() {
     return () => {
       ignore = true
     }
-  }, [customerUseCases])
+  }, [customerUseCases, useMockFallbacks])
 
   useEffect(() => {
     if (customerId) {
@@ -103,16 +107,22 @@ export function ReservationPageContent() {
           if (!ignore) {
             if (fetchedCustomer) {
               setSelectedCustomer(fetchedCustomer)
-            } else {
+            } else if (useMockFallbacks) {
               const fallback = fallbackCustomers.find((c) => c.id === customerId) || null
               setSelectedCustomer(fallback)
+            } else {
+              setSelectedCustomer(null)
             }
           }
         } catch (error) {
           console.error('Failed to load customer by id:', error)
           if (!ignore) {
-            const fallback = fallbackCustomers.find((c) => c.id === customerId) || null
-            setSelectedCustomer(fallback)
+            if (useMockFallbacks) {
+              const fallback = fallbackCustomers.find((c) => c.id === customerId) || null
+              setSelectedCustomer(fallback)
+            } else {
+              setSelectedCustomer(null)
+            }
           }
         }
       }
@@ -125,7 +135,7 @@ export function ReservationPageContent() {
     } else {
       setSelectedCustomer(null)
     }
-  }, [customerId, customers, customerUseCases])
+  }, [customerId, customers, customerUseCases, useMockFallbacks])
 
   useEffect(() => {
     window.scrollTo(0, 0)

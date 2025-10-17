@@ -7,6 +7,39 @@ import type {
   StorageConfig,
 } from './types'
 
+interface SupabaseCredentials {
+  url: string | undefined
+  key: string | undefined
+}
+
+function resolveSupabaseCredentials(): SupabaseCredentials {
+  if (typeof window === 'undefined') {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { env } = require('@/lib/config/env') as {
+        env: {
+          supabase: {
+            url: string
+            anonKey: string
+            serviceRoleKey: string
+          }
+        }
+      }
+      return {
+        url: env.supabase.url,
+        key: env.supabase.serviceRoleKey || env.supabase.anonKey,
+      }
+    } catch {
+      // Fall through to process.env derived values
+    }
+  }
+
+  return {
+    url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  }
+}
+
 export class SupabaseStorageService implements StorageService {
   private supabase
   private config: StorageConfig
@@ -15,10 +48,7 @@ export class SupabaseStorageService implements StorageService {
     this.config = config
 
     // Supabase接続情報を環境変数から取得
-    const supabaseUrl =
-      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-    const supabaseKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const { url: supabaseUrl, key: supabaseKey } = resolveSupabaseCredentials()
 
     if (!supabaseUrl || !supabaseKey) {
       throw new Error(

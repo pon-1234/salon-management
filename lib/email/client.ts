@@ -4,13 +4,14 @@
  * @known_issues Mock implementation - replace with actual email service
  */
 import { Resend } from 'resend'
+import { env } from '@/lib/config/env'
 
 // 環境変数からAPIキーを取得
-const resend = new Resend(process.env.RESEND_API_KEY)
+const resendClient = env.resend.apiKey ? new Resend(env.resend.apiKey) : null
 
 // Note: In production, update this to use a verified domain email address
 // For development, 'onboarding@resend.dev' is provided by Resend for testing
-const FROM_EMAIL = process.env.FROM_EMAIL || 'onboarding@resend.dev'
+const FROM_EMAIL = env.resend.fromEmail
 
 export const emailClient = {
   async send(data: {
@@ -20,14 +21,14 @@ export const emailClient = {
     data?: any // 同上
     body?: string
   }): Promise<{ success: boolean; id?: string; error?: string }> {
-    if (!process.env.RESEND_API_KEY) {
+    if (!resendClient || !env.resend.apiKey) {
       console.error('RESEND_API_KEY is not set. Skipping email sending.')
       // 開発環境でキーがない場合でもアプリケーション全体が停止しないようにする
       return { success: false, error: 'RESEND_API_KEY is not configured.' }
     }
 
     try {
-      const response = await resend.emails.send({
+      const response = await resendClient.emails.send({
         from: FROM_EMAIL,
         to: data.to,
         subject: data.subject,

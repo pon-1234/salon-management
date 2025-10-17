@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
 import logger from '@/lib/logger'
 import { defaultCourses } from '@/lib/pricing/data'
+import { env } from '@/lib/config/env'
 
 function normalizeNumber(value: any, fallback: number = 0) {
   const parsed = Number(value)
@@ -170,6 +171,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(sanitizedCourses)
   } catch (error) {
     logger.error({ err: error }, 'Error fetching course data')
+    if (!env.featureFlags.useMockFallbacks) {
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
     return buildFallbackCourseResponse(id, isAdmin)
   }
 }
