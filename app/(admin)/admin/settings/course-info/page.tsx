@@ -340,21 +340,21 @@ export default function CourseInfoPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>コース名</TableHead>
-                    <TableHead className="w-32">時間</TableHead>
-                    <TableHead className="w-40">料金</TableHead>
-                    <TableHead className="w-48">取り分</TableHead>
-                    <TableHead>説明</TableHead>
-                    <TableHead className="w-32">操作</TableHead>
+                    <TableHead className="whitespace-nowrap">コース名</TableHead>
+                    <TableHead className="w-32 whitespace-nowrap">時間</TableHead>
+                    <TableHead className="w-40 whitespace-nowrap">料金</TableHead>
+                    <TableHead className="w-48 whitespace-nowrap">取り分</TableHead>
+                    <TableHead className="whitespace-nowrap">説明</TableHead>
+                    <TableHead className="w-32 whitespace-nowrap">操作</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {sortedCourses.map((course) => (
                     <TableRow key={course.id}>
-                      <TableCell className="font-medium">{course.name}</TableCell>
-                      <TableCell>{course.duration}分</TableCell>
-                      <TableCell>{toCurrency(course.price)}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
+                      <TableCell className="font-medium whitespace-nowrap">{course.name}</TableCell>
+                      <TableCell className="whitespace-nowrap">{course.duration}分</TableCell>
+                      <TableCell className="whitespace-nowrap">{toCurrency(course.price)}</TableCell>
+                      <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                         店舗 {toCurrency(course.storeShare)} / キャスト {toCurrency(course.castShare)}
                       </TableCell>
                       <TableCell className="max-w-md truncate text-sm text-gray-600">
