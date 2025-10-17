@@ -76,6 +76,10 @@ cp env.example .env.local
 2. Configure the required variables:
 
 - **Database**: Set your PostgreSQL connection string
+  - When using Supabase with PgBouncer:  
+    - `DATABASE_URL` → pooled connection string (usually the `...pooler.supabase.com:6543` URI with `?pgbouncer=true`)  
+    - `DIRECT_URL` → non-pooled connection string (the standard `...supabase.com:5432` URI)  
+    - Prisma uses the pooled URL for application queries and the direct URL for migrations/introspection.
 - **NextAuth**: Generate a secret with `openssl rand -base64 32`
 - **Supabase**: Set your Supabase URL and anon key
 
