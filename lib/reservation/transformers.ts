@@ -55,7 +55,8 @@ export function mapReservationToReservationData(
   const optionMap: Record<string, boolean> = {}
   if (Array.isArray(rawOptions)) {
     rawOptions.forEach((entry: any) => {
-      const key = entry?.optionId || entry?.option?.id || entry?.option?.name || entry?.id
+      const key =
+        entry?.optionName || entry?.option?.name || entry?.optionId || entry?.option?.id || entry?.id
       if (key) {
         optionMap[String(key)] = true
       }
