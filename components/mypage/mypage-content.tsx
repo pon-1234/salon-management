@@ -5,7 +5,7 @@
  */
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { useSession } from 'next-auth/react'
 import { Store } from '@/lib/store/types'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -13,7 +13,9 @@ import { ProfileSection } from './profile-section'
 import { ReservationHistory } from './reservation-history'
 import { FavoriteCasts } from './favorite-casts'
 import { PointHistory } from './point-history'
-import { User, Calendar, Heart, Coins } from 'lucide-react'
+import { User, Calendar, Heart, Coins, LogOut } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { useAuth } from '@/hooks/use-auth'
 
 interface MyPageContentProps {
   store: Store
@@ -21,7 +23,9 @@ interface MyPageContentProps {
 
 export function MyPageContent({ store }: MyPageContentProps) {
   const [activeTab, setActiveTab] = useState('profile')
+  const [isPending, startTransition] = useTransition()
   const { data: session, status } = useSession()
+  const { logout } = useAuth()
 
   // Show loading state while session is loading
   if (status === 'loading') {
@@ -60,24 +64,45 @@ export function MyPageContent({ store }: MyPageContentProps) {
     smsEnabled: true, // This would come from user profile API
   }
 
+  const handleLogout = () => {
+    startTransition(() => {
+      logout(`/${store.slug}/login`).catch((error) => {
+        console.error('Failed to logout from MyPage:', error)
+      })
+    })
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       {/* Header */}
       <div className="mb-6 rounded-lg bg-white p-6 shadow">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="mb-2 text-2xl font-bold">{user.nickname}さんのマイページ</h1>
-            <p className="text-gray-600">
-              会員ランク: {user.memberType === 'regular' ? '通常会員' : 'VIP会員'}
-            </p>
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="flex-1">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h1 className="mb-1 text-2xl font-bold">{user.nickname}さんのマイページ</h1>
+                <p className="text-gray-600">
+                  会員ランク: {user.memberType === 'regular' ? '通常会員' : 'VIP会員'}
+                </p>
+              </div>
+              <div className="text-left sm:text-right">
+                <p className="text-sm text-gray-500">保有ポイント</p>
+                <p className="text-3xl font-bold text-purple-600">
+                  {user.points.toLocaleString()}
+                  <span className="ml-1 text-sm">pt</span>
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="text-right">
-            <p className="text-sm text-gray-500">保有ポイント</p>
-            <p className="text-3xl font-bold text-purple-600">
-              {user.points.toLocaleString()}
-              <span className="ml-1 text-sm">pt</span>
-            </p>
-          </div>
+          <Button
+            variant="outline"
+            className="w-full gap-2 md:w-auto"
+            onClick={handleLogout}
+            disabled={isPending}
+          >
+            <LogOut className="h-4 w-4" />
+            {isPending ? 'ログアウト中...' : 'ログアウト'}
+          </Button>
         </div>
       </div>
 
