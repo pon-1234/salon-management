@@ -322,6 +322,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 })
     }
 
+    await db.reservationOption.deleteMany({
+      where: { optionId: id },
+    })
+
     await db.optionPrice.delete({
       where: { id },
     })

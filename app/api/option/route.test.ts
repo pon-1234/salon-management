@@ -27,6 +27,9 @@ vi.mock('@/lib/db', () => ({
       update: vi.fn(),
       delete: vi.fn(),
     },
+    reservationOption: {
+      deleteMany: vi.fn(),
+    },
   },
 }))
 
@@ -618,6 +621,7 @@ describe('DELETE /api/option', () => {
 
   it('should delete option', async () => {
     vi.mocked(db.optionPrice.delete).mockResolvedValueOnce({} as any)
+    vi.mocked(db.reservationOption.deleteMany).mockResolvedValueOnce({ count: 1 } as any)
 
     const request = new NextRequest('http://localhost:3000/api/option?id=option1', {
       method: 'DELETE',
@@ -626,6 +630,9 @@ describe('DELETE /api/option', () => {
     const response = await DELETE(request)
 
     expect(response.status).toBe(204)
+    expect(vi.mocked(db.reservationOption.deleteMany)).toHaveBeenCalledWith({
+      where: { optionId: 'option1' },
+    })
     expect(vi.mocked(db.optionPrice.delete)).toHaveBeenCalledWith({
       where: { id: 'option1' },
     })
