@@ -41,6 +41,8 @@ import { TimeSlotPicker } from './time-slot-picker'
 import { toast } from '@/hooks/use-toast'
 import { isVipMember } from '@/lib/utils'
 import { resolveOptionId } from '@/lib/options/data'
+import { getDesignationFees } from '@/lib/designation/data'
+import type { DesignationFee } from '@/lib/designation/types'
 
 type DesignationType = 'none' | 'regular' | 'special'
 
@@ -194,8 +196,10 @@ export function QuickBookingDialog({
     }))
   }, [optionPrices, options])
 
+  const [designationFees, setDesignationFees] = useState<DesignationFee[]>([])
   const [selectedCourseId, setSelectedCourseId] = useState<string>('')
   const [designationType, setDesignationType] = useState<DesignationType>('none')
+  const [selectedDesignationId, setSelectedDesignationId] = useState<string>('')
 
   const [selectedAreaId, setSelectedAreaId] = useState<string>('')
   const [selectedStationId, setSelectedStationId] = useState<string>('')
@@ -227,6 +231,29 @@ export function QuickBookingDialog({
       setSelectedCourseId((prev) => prev || courseCatalog[0].id)
     }
   }, [courseCatalog, pricingLoading])
+
+  useEffect(() => {
+    let ignore = false
+
+    const loadDesignationFees = async () => {
+      try {
+        const fees = await getDesignationFees()
+        if (!ignore) {
+          setDesignationFees(fees)
+        }
+      } catch (error) {
+        console.error('Failed to load designation fees:', error)
+        if (!ignore) {
+          setDesignationFees([])
+        }
+      }
+    }
+
+    loadDesignationFees()
+    return () => {
+      ignore = true
+    }
+  }, [])
 
   useEffect(() => {
     if (!locationsLoading && areas.length > 0) {
@@ -376,9 +403,14 @@ export function QuickBookingDialog({
     [availableOptions, optionSelections]
   )
 
+  const selectedDesignationFee = useMemo(() => {
+    if (!selectedDesignationId) return null
+    return designationFees.find((fee) => fee.id === selectedDesignationId) ?? null
+  }, [selectedDesignationId, designationFees])
+
   const priceBreakdown = useMemo<PriceBreakdown>(() => {
     const basePrice = selectedCourse?.price ?? 0
-    const designationFeeAmount = getDesignationFeeAmount(designationType, selectedStaff)
+    const designationFeeAmount = selectedDesignationFee?.price ?? getDesignationFeeAmount(designationType, selectedStaff)
     const optionsTotal = selectedOptionDetails.reduce((sum, option) => sum + option.price, 0)
     const transportationFee = bookingDetails.transportationFee || 0
     const additionalFee = bookingDetails.additionalFee || 0
@@ -403,9 +435,12 @@ export function QuickBookingDialog({
       return sum + cast
     }, 0)
 
+    const designationStoreShare = selectedDesignationFee?.storeShare ?? 0
+    const designationCastShare = selectedDesignationFee?.castShare ?? designationFeeAmount
+
     const storeRevenue =
-      courseStoreShare + optionStoreShare + transportationFee + additionalFee
-    const staffRevenue = courseCastShare + optionCastShare + designationFeeAmount
+      courseStoreShare + optionStoreShare + transportationFee + additionalFee + designationStoreShare
+    const staffRevenue = courseCastShare + optionCastShare + designationCastShare
 
     return {
       basePrice,
@@ -424,6 +459,7 @@ export function QuickBookingDialog({
     selectedCourse,
     selectedOptionDetails,
     selectedStaff,
+    selectedDesignationFee,
   ])
 
   const handleTextChange = (
@@ -572,7 +608,7 @@ export function QuickBookingDialog({
           status: bookingDetails.bookingStatus === '確定済' ? 'confirmed' : 'pending',
           options: optionSelections,
           price: priceBreakdown.total,
-          designationType,
+          designationType: selectedDesignationFee?.name ?? getDesignationLabel(designationType, selectedStaff),
           designationFee: priceBreakdown.designationFee,
           transportationFee: priceBreakdown.transportationFee,
           additionalFee: priceBreakdown.additionalFee,
@@ -661,6 +697,11 @@ export function QuickBookingDialog({
       setSelectedStationId(stationOptions[0].id)
     }
 
+    // Set default designation fee (first one, which should be "フリー指名")
+    if (designationFees.length > 0) {
+      setSelectedDesignationId(designationFees[0].id)
+    }
+
     setBookingDetails((prev) => ({
       ...prev,
       customerName: selectedCustomer?.name ?? '',
@@ -683,7 +724,7 @@ export function QuickBookingDialog({
       notes: '',
     }))
     setDesignationType('none')
-  }, [open, selectedCustomer, selectedStaff, selectedTime, courseCatalog, areas, stations])
+  }, [open, selectedCustomer, selectedStaff, selectedTime, courseCatalog, areas, stations, designationFees])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -920,43 +961,23 @@ export function QuickBookingDialog({
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex flex-wrap gap-2">
-                    {[
-                      { type: 'none' as DesignationType, label: 'フリー', fee: 0 },
-                      ...(selectedStaff?.regularDesignationFee
-                        ? [
-                            {
-                              type: 'regular' as DesignationType,
-                              label: '本指名',
-                              fee: selectedStaff.regularDesignationFee,
-                            },
-                          ]
-                        : []),
-                      ...(selectedStaff?.specialDesignationFee
-                        ? [
-                            {
-                              type: 'special' as DesignationType,
-                              label: '特別指名',
-                              fee: selectedStaff.specialDesignationFee,
-                            },
-                          ]
-                        : []),
-                    ].map((option) => (
+                    {designationFees.map((fee) => (
                       <Button
-                        key={option.type}
+                        key={fee.id}
                         type="button"
                         size="sm"
-                        variant={designationType === option.type ? 'default' : 'outline'}
-                        onClick={() => setDesignationType(option.type)}
+                        variant={selectedDesignationId === fee.id ? 'default' : 'outline'}
+                        onClick={() => setSelectedDesignationId(fee.id)}
                       >
-                        {option.label}
+                        {fee.name}
                         <span className="ml-2 text-xs text-gray-500">
-                          {option.fee > 0 ? formatYen(option.fee) : '0円'}
+                          {fee.price > 0 ? formatYen(fee.price) : '0円'}
                         </span>
                       </Button>
                     ))}
                   </div>
                   <p className="text-xs text-gray-500">
-                    選択中: {getDesignationLabel(designationType, selectedStaff)}
+                    選択中: {selectedDesignationFee?.name ?? 'なし'}
                     {priceBreakdown.designationFee > 0
                       ? `（${formatYen(priceBreakdown.designationFee)}）`
                       : ''}
@@ -1184,7 +1205,7 @@ export function QuickBookingDialog({
                       <span>{formatYen(priceBreakdown.basePrice)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>{`${getDesignationLabel(designationType, selectedStaff)}料`}</span>
+                      <span>{selectedDesignationFee?.name ?? 'フリー'}料</span>
                       <span>{formatYen(priceBreakdown.designationFee)}</span>
                     </div>
                     {priceBreakdown.optionsTotal > 0 && (
