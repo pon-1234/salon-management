@@ -44,11 +44,17 @@ import { cn } from '@/lib/utils'
 import { Cast } from '@/lib/cast/types'
 import { normalizeCastList } from '@/lib/cast/mapper'
 import { useSession } from 'next-auth/react'
+import {
+  DEFAULT_DESIGNATION_FEES,
+  findDesignationFeeByName,
+  findDesignationFeeByPrice,
+} from '@/lib/designation/fees'
 
 type EditFormState = {
   date: string
   startTime: string
   castId: string
+  designationId: string
   storeMemo: string
   notes: string
 }
@@ -103,6 +109,7 @@ export function ReservationDialog({
     date: '',
     startTime: '',
     castId: '',
+    designationId: '',
     storeMemo: '',
     notes: '',
   })
@@ -129,12 +136,13 @@ export function ReservationDialog({
         date: format(reservation.startTime, 'yyyy-MM-dd'),
         startTime: format(reservation.startTime, 'HH:mm'),
         castId: reservation.staffId || '',
+        designationId: reservationDesignation?.id || '',
         storeMemo: reservation.storeMemo || '',
         notes: reservation.notes || '',
       })
       setValidationError(null)
     }
-  }, [reservation])
+  }, [reservation, reservationDesignation])
 
   useEffect(() => {
     if (casts && casts.length > 0) {
@@ -219,12 +227,39 @@ export function ReservationDialog({
       .map(([key]) => key)
   }, [reservation?.options])
 
+  const designationOptions = useMemo(
+    () =>
+      DEFAULT_DESIGNATION_FEES.filter((fee) => fee.isActive).sort(
+        (a, b) => a.sortOrder - b.sortOrder
+      ),
+    []
+  )
+
+  const reservationDesignation = useMemo(() => {
+    if (!reservation) return undefined
+    return (
+      findDesignationFeeByName(reservation.designation) ||
+      findDesignationFeeByPrice(reservation.designationFee)
+    )
+  }, [reservation])
+
   if (!reservation) {
     return null
   }
 
   const statusColor = statusColorMap[reservation.status || ''] || 'bg-gray-500'
   const statusLabel = reservation.bookingStatus || statusTextMap[reservation.status || ''] || '予約'
+
+  const rawDesignationId =
+    formState.designationId || reservationDesignation?.id || ''
+
+  const selectedDesignation =
+    rawDesignationId && rawDesignationId.length > 0
+      ? designationOptions.find((fee) => fee.id === rawDesignationId)
+      : undefined
+
+  const designationSelectValue = rawDesignationId && rawDesignationId.length > 0 ? rawDesignationId : 'none'
+  const designationForDisplay = selectedDesignation || reservationDesignation
 
   const handleEnterEditMode = () => {
     if (!reservation) return
@@ -237,6 +272,7 @@ export function ReservationDialog({
       date: format(reservation.startTime, 'yyyy-MM-dd'),
       startTime: format(reservation.startTime, 'HH:mm'),
       castId: reservation.staffId || '',
+      designationId: reservationDesignation?.id || '',
       storeMemo: reservation.storeMemo || '',
       notes: reservation.notes || '',
     })
@@ -273,6 +309,12 @@ export function ReservationDialog({
 
     const end = addMinutes(start, reservationDurationMinutes)
 
+    const designationIdToSave = formState.designationId || reservationDesignation?.id || ''
+    const designationForSave =
+      designationIdToSave && designationIdToSave.length > 0
+        ? designationOptions.find((fee) => fee.id === designationIdToSave)
+        : undefined
+
     if (selectedCast?.workStart && selectedCast?.workEnd) {
       const workStart = new Date(start)
       workStart.setHours(selectedCast.workStart.getHours(), selectedCast.workStart.getMinutes(), 0, 0)
@@ -295,6 +337,8 @@ export function ReservationDialog({
         castId,
         storeMemo: formState.storeMemo,
         notes: formState.notes,
+        designationType: designationForSave?.name,
+        designationFee: designationForSave?.price,
       })
       setIsEditMode(false)
     } catch (error) {
@@ -492,9 +536,47 @@ export function ReservationDialog({
                     <p className="text-sm text-muted-foreground">売上情報は表示できません。</p>
                   ) : (
                     <>
+                      {isEditMode && (
+                        <div className="space-y-2">
+                          <Label htmlFor="reservation-designation">指名設定</Label>
+                          <Select
+                            value={designationSelectValue}
+                            onValueChange={(value) =>
+                              setFormState((prev) => ({
+                                ...prev,
+                                designationId: value === 'none' ? '' : value,
+                              }))
+                            }
+                          >
+                            <SelectTrigger id="reservation-designation">
+                              <SelectValue placeholder="指名を選択" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">指名なし</SelectItem>
+                              {designationOptions.map((fee) => (
+                                <SelectItem key={fee.id} value={fee.id}>
+                                  {fee.name}（¥{fee.price.toLocaleString()}）
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
                       <div className="flex items-center justify-between font-medium">
                         <span>総額</span>
                         <span>{formatCurrency(reservation.totalPayment)}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-muted-foreground">
+                        <span>指名料</span>
+                        {selectedDesignation ? (
+                          <span>
+                            ¥{selectedDesignation.price.toLocaleString()} （店舗 ¥
+                            {selectedDesignation.storeShare.toLocaleString()} / キャスト ¥
+                            {selectedDesignation.castShare.toLocaleString()}）
+                          </span>
+                        ) : (
+                          <span>なし</span>
+                        )}
                       </div>
                       <div className="flex items-center justify-between text-muted-foreground">
                         <span>支払い方法</span>
@@ -645,10 +727,18 @@ export function ReservationDialog({
                 </div>
                 <div>
                   <div className="text-muted-foreground">指名</div>
-                  <div className="font-medium">
-                    {reservation.designation || 'なし'}{' '}
-                    {reservation.designationFee && `(${reservation.designationFee})`}
-                  </div>
+                  {designationForDisplay ? (
+                    <div className="font-medium">
+                      {designationForDisplay.name}{' '}
+                      <span className="text-sm text-muted-foreground">
+                        （¥{designationForDisplay.price.toLocaleString()} / 店舗 ¥
+                        {designationForDisplay.storeShare.toLocaleString()} / キャスト ¥
+                        {designationForDisplay.castShare.toLocaleString()}）
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="font-medium">なし</div>
+                  )}
                 </div>
                 <div>
                   <div className="text-muted-foreground">無料延長</div>

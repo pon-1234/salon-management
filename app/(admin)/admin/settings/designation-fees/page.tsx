@@ -20,86 +20,15 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { RefreshCw, ArrowLeft, Pencil, Trash2, Plus } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-
-interface DesignationFee {
-  id: string
-  name: string
-  price: number
-  storeShare: number
-  castShare: number
-  description?: string
-  sortOrder: number
-  isActive: boolean
-}
-
-const DEFAULT_FEES: DesignationFee[] = [
-  {
-    id: 'free-designation',
-    name: 'フリー指名',
-    price: 0,
-    storeShare: 0,
-    castShare: 0,
-    description: '通常の受付からの指名。無料です。',
-    sortOrder: 1,
-    isActive: true,
-  },
-  {
-    id: 'panel-designation',
-    name: 'パネル指名',
-    price: 2000,
-    storeShare: 1200,
-    castShare: 800,
-    description: 'パネルを見ての指名。',
-    sortOrder: 2,
-    isActive: true,
-  },
-  {
-    id: 'repeat-designation',
-    name: '本指名',
-    price: 2000,
-    storeShare: 1200,
-    castShare: 800,
-    description: '過去に担当したキャストを再指名。',
-    sortOrder: 3,
-    isActive: true,
-  },
-  {
-    id: 'recommend-designation',
-    name: 'おすすめ指名',
-    price: 2000,
-    storeShare: 1200,
-    castShare: 800,
-    description: 'スタッフ推奨キャストの指名。',
-    sortOrder: 4,
-    isActive: true,
-  },
-]
-
-const clampShares = (price: number, storeShare: number, castShare: number) => {
-  const normalizedPrice = Math.max(0, Math.round(price))
-  const normalizedStore = Math.max(0, Math.round(storeShare))
-  const normalizedCast = Math.max(0, Math.round(castShare))
-
-  if (normalizedStore + normalizedCast <= normalizedPrice) {
-    return {
-      price: normalizedPrice,
-      storeShare: normalizedStore,
-      castShare: normalizedCast,
-    }
-  }
-
-  const adjustedCast = Math.max(0, normalizedPrice - normalizedStore)
-
-  return {
-    price: normalizedPrice,
-    storeShare: normalizedStore,
-    castShare: adjustedCast,
-  }
-}
+import {
+  DEFAULT_DESIGNATION_FEES,
+  DesignationFeeConfig,
+  normalizeDesignationShares,
+} from '@/lib/designation/fees'
 
 export default function DesignationFeesPage() {
   const { toast } = useToast()
-  const [fees, setFees] = useState<DesignationFee[]>(DEFAULT_FEES)
+  const [fees, setFees] = useState<DesignationFeeConfig[]>(DEFAULT_DESIGNATION_FEES)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingFee, setEditingFee] = useState<DesignationFee | null>(null)
   const [formData, setFormData] = useState({
@@ -146,15 +75,15 @@ export default function DesignationFeesPage() {
   }, [])
 
   const handlePriceChange = useCallback((price: number) => {
-    setFormData((prev) => clampShares(price, prev.storeShare, prev.castShare))
+    setFormData((prev) => normalizeDesignationShares(price, prev.storeShare, prev.castShare))
   }, [])
 
   const handleStoreShareChange = useCallback((storeShare: number) => {
-    setFormData((prev) => clampShares(prev.price, storeShare, prev.castShare))
+    setFormData((prev) => normalizeDesignationShares(prev.price, storeShare, prev.castShare))
   }, [])
 
   const handleCastShareChange = useCallback((castShare: number) => {
-    setFormData((prev) => clampShares(prev.price, prev.storeShare, castShare))
+    setFormData((prev) => normalizeDesignationShares(prev.price, prev.storeShare, castShare))
   }, [])
 
   const saveFee = useCallback(() => {
@@ -168,7 +97,7 @@ export default function DesignationFeesPage() {
     }
 
     const normalized = {
-      ...clampShares(formData.price, formData.storeShare, formData.castShare),
+      ...normalizeDesignationShares(formData.price, formData.storeShare, formData.castShare),
       name: formData.name.trim(),
       description: formData.description.trim(),
       sortOrder: Math.max(1, Math.round(formData.sortOrder)),
