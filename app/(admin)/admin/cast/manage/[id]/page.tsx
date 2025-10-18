@@ -34,6 +34,7 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
   const [cast, setCast] = useState<Cast | null>(null)
   const [id, setId] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
   const router = useRouter()
   const castRepository = useMemo(() => new CastRepositoryImpl(), [])
   const isNewCast = id === 'new'
@@ -77,14 +78,15 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
   }, [id, isNewCast, castRepository, router])
 
   const handleSubmit = async (data: Partial<Cast>) => {
+    setIsSaving(true)
     try {
       if (isNewCast) {
         // Create new cast
         const { id, createdAt, updatedAt, ...createData } = data as Cast
         await castRepository.create(createData)
         toast({
-          title: '成功',
-          description: 'キャストを作成しました',
+          title: '✓ 作成完了',
+          description: 'キャスト情報を作成しました',
         })
         router.push('/admin/cast/list')
       } else {
@@ -92,7 +94,7 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
         const updatedCast = await castRepository.update(id, data)
         setCast((prev) => (prev ? { ...prev, ...updatedCast } : prev))
         toast({
-          title: '成功',
+          title: '✓ 保存完了',
           description: 'キャスト情報を更新しました',
         })
       }
@@ -103,10 +105,13 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
         description: 'キャスト情報の保存に失敗しました',
         variant: 'destructive',
       })
+    } finally {
+      setIsSaving(false)
     }
   }
 
   const handlePublicProfileSubmit = async (data: any) => {
+    setIsSaving(true)
     try {
       const updateData = {
         ...data.basicInfo,
@@ -118,8 +123,9 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
       setCast((prev) => (prev ? { ...prev, ...updateData } : prev))
 
       toast({
-        title: '成功',
+        title: '✓ 保存完了',
         description: '公開プロフィールを更新しました',
+        duration: 3000,
       })
     } catch (error) {
       console.error('Error updating public profile:', error)
@@ -128,6 +134,8 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
         description: '公開プロフィールの更新に失敗しました',
         variant: 'destructive',
       })
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -199,7 +207,7 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
 
         <div className="mx-auto max-w-7xl">
           {isNewCast ? (
-            <CastForm cast={null} onSubmit={handleSubmit} onCancel={() => router.back()} />
+            <CastForm cast={null} onSubmit={handleSubmit} onCancel={() => router.back()} isSubmitting={isSaving} />
           ) : (
             cast && (
               <Tabs defaultValue="overview" className="space-y-6">
@@ -248,7 +256,7 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
                         キャストの基本情報や稼働ステータス、料金設定を更新します。保存するとすぐに管理画面へ反映されます。
                       </p>
                     </div>
-                    <CastForm cast={cast} onSubmit={handleSubmit} onCancel={() => router.back()} />
+                    <CastForm cast={cast} onSubmit={handleSubmit} onCancel={() => router.back()} isSubmitting={isSaving} />
                   </section>
 
                   <Separator />
@@ -264,6 +272,7 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
                       cast={cast}
                       onSubmit={handlePublicProfileSubmit}
                       isEditing={true}
+                      isSubmitting={isSaving}
                     />
                   </section>
                 </TabsContent>

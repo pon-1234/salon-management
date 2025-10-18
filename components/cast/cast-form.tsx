@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { Plus } from 'lucide-react'
+import { Plus, Loader2 } from 'lucide-react'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { FormSection } from '@/components/cast/form-section'
 import { cn } from '@/lib/utils'
@@ -33,8 +33,9 @@ type OptionChoice = {
 
 interface CastFormProps {
   cast?: Cast | null
-  onSubmit: (data: Partial<Cast>) => void
+  onSubmit: (data: Partial<Cast>) => Promise<void> | void
   onCancel?: () => void
+  isSubmitting?: boolean
 }
 
 const buildInitialFormState = (cast?: Cast | null) => ({
@@ -144,7 +145,7 @@ function calculateRevenueSplit(
   return { storeShare: store, castShare: cast }
 }
 
-export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
+export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: CastFormProps) {
   const [formData, setFormData] = useState(() => buildInitialFormState(cast))
   const fieldId = (suffix: string) => `cast-${suffix}`
   const { optionPrices, options: legacyOptions, loading: optionsLoading } = usePricing()
@@ -754,14 +755,28 @@ export function CastForm({ cast, onSubmit, onCancel }: CastFormProps) {
       </FormSection>
 
       <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:justify-end">
-        <Button type="button" variant="outline" onClick={handleCancel} className="sm:min-w-[120px]">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleCancel}
+          className="sm:min-w-[120px]"
+          disabled={isSubmitting}
+        >
           キャンセル
         </Button>
         <Button
           type="submit"
           className="bg-emerald-600 hover:bg-emerald-700 sm:min-w-[160px]"
+          disabled={isSubmitting}
         >
-          保存
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              保存中...
+            </>
+          ) : (
+            '保存'
+          )}
         </Button>
       </div>
     </form>

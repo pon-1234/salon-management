@@ -13,17 +13,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Save, X } from 'lucide-react'
+import { Save, X, Loader2 } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { FormSection } from '@/components/cast/form-section'
 import { cn } from '@/lib/utils'
 
 interface PublicProfileFormProps {
   cast: Cast
-  onSubmit: (data: { publicProfile: PublicProfile; basicInfo: Partial<Cast> }) => void
+  onSubmit: (data: { publicProfile: PublicProfile; basicInfo: Partial<Cast> }) => Promise<void> | void
   onCancel?: () => void
   isEditing?: boolean
   setIsEditing?: (editing: boolean) => void
+  isSubmitting?: boolean
 }
 
 const PROFILE_STYLE_OPTIONS = ['カワイイ系', 'キレイ系', 'セクシー系', 'お姉さん系', 'モデル系', 'おっとり系']
@@ -92,6 +93,7 @@ export function PublicProfileForm({
   onCancel,
   isEditing = false,
   setIsEditing,
+  isSubmitting = false,
 }: PublicProfileFormProps) {
   const fieldId = (suffix: string) => `profile-${suffix}`
   const [publicProfile, setPublicProfile] = useState<PublicProfile>({
@@ -589,13 +591,32 @@ export function PublicProfileForm({
 
         {isEditing && (
           <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:justify-end">
-            <Button type="button" variant="outline" onClick={handleCancel} className="sm:min-w-[120px]">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCancel}
+              className="sm:min-w-[120px]"
+              disabled={isSubmitting}
+            >
               <X className="mr-2 h-4 w-4" />
               キャンセル
             </Button>
-            <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 sm:min-w-[160px]">
-              <Save className="mr-2 h-4 w-4" />
-              保存
+            <Button
+              type="submit"
+              className="bg-emerald-600 hover:bg-emerald-700 sm:min-w-[160px]"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  保存中...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  保存
+                </>
+              )}
             </Button>
           </div>
         )}
