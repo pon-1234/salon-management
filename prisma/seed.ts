@@ -192,25 +192,6 @@ async function main() {
   ]
 
   const optionSeeds = [...serviceOptions, ...paidOptions]
-  const optionIds = optionSeeds.map((option) => option.id)
-
-  // Clean up legacy options that are no longer needed
-  await prisma.reservationOption.deleteMany({
-    where: {
-      optionId: {
-        notIn: optionIds,
-        not: null,
-      },
-    },
-  })
-
-  await prisma.optionPrice.deleteMany({
-    where: {
-      id: {
-        notIn: optionIds,
-      },
-    },
-  })
 
   const optionRecords = await Promise.all(
     optionSeeds.map((option) => {
