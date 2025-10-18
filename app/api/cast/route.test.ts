@@ -186,11 +186,13 @@ describe('Cast API endpoints', () => {
         workStatus: '出勤',
         panelDesignationRank: 1,
         regularDesignationRank: 1,
+        availableOptions: ['kaishun-plus', '10'],
       }
 
       const mockCreatedCast = {
         id: 'new-id',
         ...castData,
+        availableOptions: ['6', '10'],
         createdAt: new Date(),
         updatedAt: new Date(),
         schedules: [],
@@ -208,10 +210,18 @@ describe('Cast API endpoints', () => {
       const data = await response.json()
 
       expect(response.status).toBe(201)
-      expect(data).toMatchObject(castData)
+      expect(data).toMatchObject({
+        ...castData,
+        availableOptions: ['6', '10'],
+      })
       expect(data).toHaveProperty('id')
       expect(data).toHaveProperty('createdAt')
       expect(data).toHaveProperty('updatedAt')
+      expect(mockedDb.cast.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          availableOptions: ['6', '10'],
+        }),
+      })
     })
   })
 
@@ -221,10 +231,12 @@ describe('Cast API endpoints', () => {
         id: 'test-id',
         name: 'Updated Cast',
         age: 26,
+        availableOptions: ['healing-knee', '1'],
       }
 
       const mockUpdatedCast = {
         ...updateData,
+        availableOptions: ['1'],
         updatedAt: new Date(),
         schedules: [],
         reservations: [],
@@ -243,8 +255,19 @@ describe('Cast API endpoints', () => {
       const data = await response.json()
 
       expect(response.status).toBe(200)
-      expect(data).toMatchObject(updateData)
+      expect(data).toMatchObject({
+        ...updateData,
+        availableOptions: ['1'],
+      })
       expect(data).toHaveProperty('updatedAt')
+      expect(mockedDb.cast.update).toHaveBeenCalledWith({
+        where: { id: 'test-id' },
+        data: expect.objectContaining({
+          name: 'Updated Cast',
+          age: 26,
+          availableOptions: ['1'],
+        }),
+      })
     })
 
     it('should return 404 for non-existent cast member', async () => {

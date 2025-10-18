@@ -49,6 +49,7 @@ model Cast {
   panelDesignationRank   Int
   regularDesignationRank Int
   workStatus             String
+  availableOptions       String[]      @default([])
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @updatedAt
   schedules              CastSchedule[]

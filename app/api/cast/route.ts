@@ -13,6 +13,7 @@ import { SuccessResponses } from '@/lib/api/responses'
 import { castMembers } from '@/lib/cast/data'
 import { env } from '@/lib/config/env'
 import { Prisma } from '@prisma/client'
+import { resolveOptionId } from '@/lib/options/data'
 
 // Validation schema for cast data
 const imageUrlSchema = z
@@ -49,6 +50,43 @@ const castSchema = z.object({
   availableOptions: z.array(z.string()).optional().default([]),
 })
 
+function normalizeAvailableOptions(raw: unknown): string[] {
+  if (!raw) {
+    return []
+  }
+
+  const values = Array.isArray(raw)
+    ? raw
+    : typeof raw === 'string'
+      ? (() => {
+          try {
+            const parsed = JSON.parse(raw)
+            return Array.isArray(parsed) ? parsed : [raw]
+          } catch {
+            return [raw]
+          }
+        })()
+      : [raw]
+
+  const normalized = values
+    .map((value) => {
+      if (typeof value === 'string') {
+        const trimmed = value.trim()
+        if (!trimmed) {
+          return null
+        }
+        return resolveOptionId(trimmed)
+      }
+      if (value === null || value === undefined) {
+        return null
+      }
+      return resolveOptionId(String(value))
+    })
+    .filter((value): value is string => Boolean(value && value.length > 0))
+
+  return Array.from(new Set(normalized))
+}
+
 function transformCast(cast: any) {
   return {
     ...cast,
@@ -60,7 +98,7 @@ function transformCast(cast: any) {
       : typeof cast.images === 'string'
         ? JSON.parse(cast.images)
         : [],
-    availableOptions: cast.availableOptions ?? [],
+    availableOptions: normalizeAvailableOptions(cast.availableOptions),
     appointments: cast.appointments ?? [],
   }
 }
@@ -141,7 +179,7 @@ export async function GET(request: NextRequest) {
         nameKana: cast.name, // Temporary: use name as nameKana
         images: typeof cast.images === 'string' ? JSON.parse(cast.images) : cast.images,
         publicProfile: cast.publicProfile || null,
-        availableOptions: [],
+        availableOptions: normalizeAvailableOptions(cast.availableOptions),
         appointments: [],
       }
 
@@ -184,12 +222,15 @@ export async function POST(request: NextRequest) {
 
     // Remove fields that don't exist in DB
     const { nameKana, availableOptions, ...dbData } = validatedData
+    const normalizedOptions = normalizeAvailableOptions(availableOptions)
+    const images = Array.isArray(validatedData.images) ? validatedData.images : []
 
     // Create cast in database
     const cast = await db.cast.create({
       data: {
         ...dbData,
-        images: validatedData.images || [],
+        images,
+        availableOptions: normalizedOptions,
       },
     })
 
@@ -236,11 +277,22 @@ export async function PUT(request: NextRequest) {
 
     // Remove fields that don't exist in DB
     const { nameKana, availableOptions, ...dbData } = validatedData
+    const updatePayload: Record<string, unknown> = {
+      ...dbData,
+    }
+
+    if (Array.isArray(validatedData.images)) {
+      updatePayload.images = validatedData.images
+    }
+
+    if (availableOptions !== undefined) {
+      updatePayload.availableOptions = normalizeAvailableOptions(availableOptions)
+    }
 
     // Update cast in database
     const cast = await db.cast.update({
       where: { id },
-      data: dbData,
+      data: updatePayload,
     })
 
     logger.info({ castId: cast.id }, 'Cast updated successfully')
