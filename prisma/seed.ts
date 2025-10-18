@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { env } from '../lib/config/env'
+import { DEFAULT_DESIGNATION_FEES } from '../lib/designation/fees'
 
 const prisma = new PrismaClient()
 const SALT_ROUNDS = 10
@@ -234,6 +235,35 @@ async function main() {
   )
 
   console.log(`Upserted ${optionRecords.length} option records`)
+
+  const designationRecords = await Promise.all(
+    DEFAULT_DESIGNATION_FEES.map((fee, index) =>
+      prisma.designationFee.upsert({
+        where: { id: fee.id },
+        update: {
+          name: fee.name,
+          price: fee.price,
+          storeShare: fee.storeShare,
+          castShare: fee.castShare,
+          description: fee.description ?? null,
+          sortOrder: fee.sortOrder ?? index + 1,
+          isActive: fee.isActive,
+        },
+        create: {
+          id: fee.id,
+          name: fee.name,
+          price: fee.price,
+          storeShare: fee.storeShare,
+          castShare: fee.castShare,
+          description: fee.description ?? null,
+          sortOrder: fee.sortOrder ?? index + 1,
+          isActive: fee.isActive,
+        },
+      })
+    )
+  )
+
+  console.log(`Upserted ${designationRecords.length} designation fee records`)
 
   // 4. Create a reservation
   const defaultCourse =

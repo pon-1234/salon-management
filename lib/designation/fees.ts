@@ -1,15 +1,6 @@
-export interface DesignationFeeConfig {
-  id: string
-  name: string
-  price: number
-  storeShare: number
-  castShare: number
-  description?: string
-  sortOrder: number
-  isActive: boolean
-}
+import { DesignationFee } from './types'
 
-export const DEFAULT_DESIGNATION_FEES: DesignationFeeConfig[] = [
+export const DEFAULT_DESIGNATION_FEES: DesignationFee[] = [
   {
     id: 'free-designation',
     name: 'フリー指名',
@@ -78,12 +69,18 @@ export function normalizeDesignationShares(
   }
 }
 
-export function findDesignationFeeByName(name: string | null | undefined) {
+export function findDesignationFeeByName(
+  name: string | null | undefined,
+  fees: DesignationFee[] = DEFAULT_DESIGNATION_FEES
+) {
   if (!name) return undefined
-  return DEFAULT_DESIGNATION_FEES.find((fee) => fee.name === name)
+  return fees.find((fee) => fee.name === name)
 }
 
-export function findDesignationFeeByPrice(price: number | string | null | undefined) {
+export function findDesignationFeeByPrice(
+  price: number | string | null | undefined,
+  fees: DesignationFee[] = DEFAULT_DESIGNATION_FEES
+) {
   if (price === null || price === undefined) return undefined
   const numeric =
     typeof price === 'number'
@@ -91,5 +88,5 @@ export function findDesignationFeeByPrice(price: number | string | null | undefi
       : Number(String(price).replace(/[^0-9.-]+/g, ''))
 
   if (!Number.isFinite(numeric)) return undefined
-  return DEFAULT_DESIGNATION_FEES.find((fee) => fee.price === numeric)
+  return fees.find((fee) => fee.price === numeric)
 }

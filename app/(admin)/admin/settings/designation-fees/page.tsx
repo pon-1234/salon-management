@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Header } from '@/components/header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -20,15 +20,19 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { RefreshCw, ArrowLeft, Pencil, Trash2, Plus } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { DEFAULT_DESIGNATION_FEES, normalizeDesignationShares } from '@/lib/designation/fees'
 import {
-  DEFAULT_DESIGNATION_FEES,
-  DesignationFeeConfig,
-  normalizeDesignationShares,
-} from '@/lib/designation/fees'
+  createDesignationFee,
+  deleteDesignationFee,
+  getDesignationFees,
+  updateDesignationFee,
+} from '@/lib/designation/data'
+import type { DesignationFee } from '@/lib/designation/types'
 
 export default function DesignationFeesPage() {
   const { toast } = useToast()
-  const [fees, setFees] = useState<DesignationFeeConfig[]>(DEFAULT_DESIGNATION_FEES)
+  const [fees, setFees] = useState<DesignationFee[]>(DEFAULT_DESIGNATION_FEES)
+  const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingFee, setEditingFee] = useState<DesignationFee | null>(null)
   const [formData, setFormData] = useState({
@@ -40,6 +44,32 @@ export default function DesignationFeesPage() {
     sortOrder: 1,
     isActive: true,
   })
+
+  const loadFees = useCallback(async () => {
+    try {
+      setLoading(true)
+      const data = await getDesignationFees({ includeInactive: true })
+      if (Array.isArray(data) && data.length > 0) {
+        setFees(data.sort((a, b) => a.sortOrder - b.sortOrder))
+      } else {
+        setFees(DEFAULT_DESIGNATION_FEES)
+      }
+    } catch (error) {
+      console.error('Failed to load designation fees:', error)
+      setFees(DEFAULT_DESIGNATION_FEES)
+      toast({
+        title: '読み込みエラー',
+        description: '指名料の取得に失敗したため、デフォルト値を表示しています。',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }, [toast])
+
+  useEffect(() => {
+    void loadFees()
+  }, [loadFees])
 
   const orderedFees = useMemo(
     () => [...fees].sort((a, b) => a.sortOrder - b.sortOrder),
@@ -86,7 +116,7 @@ export default function DesignationFeesPage() {
     setFormData((prev) => normalizeDesignationShares(prev.price, prev.storeShare, castShare))
   }, [])
 
-  const saveFee = useCallback(() => {
+  const saveFee = useCallback(async () => {
     if (!formData.name.trim()) {
       toast({
         title: '入力エラー',
@@ -99,50 +129,78 @@ export default function DesignationFeesPage() {
     const normalized = {
       ...normalizeDesignationShares(formData.price, formData.storeShare, formData.castShare),
       name: formData.name.trim(),
-      description: formData.description.trim(),
+      description: formData.description.trim() || null,
       sortOrder: Math.max(1, Math.round(formData.sortOrder)),
       isActive: formData.isActive,
     }
 
-    if (editingFee) {
-      setFees((prev) =>
-        prev
-          .map((fee) =>
-            fee.id === editingFee.id
-              ? {
-                  ...editingFee,
-                  ...normalized,
-                }
-              : fee
-          )
-          .sort((a, b) => a.sortOrder - b.sortOrder)
-      )
-      toast({ title: '更新しました', description: `${normalized.name}を更新しました。` })
-    } else {
-      const newId =
-        typeof crypto !== 'undefined' && crypto.randomUUID
-          ? crypto.randomUUID()
-          : `designation-${Date.now()}`
-      const newFee: DesignationFee = {
-        id: newId,
-        ...normalized,
+    try {
+      if (editingFee) {
+        const updated = await updateDesignationFee(editingFee.id, normalized)
+        setFees((prev) =>
+          prev
+            .map((fee) => (fee.id === updated.id ? updated : fee))
+            .sort((a, b) => a.sortOrder - b.sortOrder)
+        )
+        toast({ title: '更新しました', description: `${normalized.name}を更新しました。` })
+      } else {
+        const created = await createDesignationFee({
+          ...normalized,
+          sortOrder: normalized.sortOrder || fees.length + 1,
+        })
+        setFees((prev) => [...prev, created].sort((a, b) => a.sortOrder - b.sortOrder))
+        toast({ title: '追加しました', description: `${normalized.name}を追加しました。` })
       }
-      setFees((prev) => [...prev, newFee].sort((a, b) => a.sortOrder - b.sortOrder))
-      toast({ title: '追加しました', description: `${normalized.name}を追加しました。` })
+      setDialogOpen(false)
+    } catch (error) {
+      console.error('Failed to save designation fee:', error)
+      toast({
+        title: '保存エラー',
+        description: '指名料の保存に失敗しました。',
+        variant: 'destructive',
+      })
     }
+  }, [editingFee, fees.length, formData, toast])
 
-    setDialogOpen(false)
-  }, [editingFee, formData, toast])
+  const removeFee = useCallback(
+    async (id: string) => {
+      if (!confirm('この指名料を削除しますか？')) return
+      try {
+        await deleteDesignationFee(id)
+        setFees((prev) => prev.filter((fee) => fee.id !== id))
+        toast({ title: '削除しました' })
+      } catch (error) {
+        console.error('Failed to delete designation fee:', error)
+        toast({
+          title: '削除エラー',
+          description: '指名料の削除に失敗しました。',
+          variant: 'destructive',
+        })
+      }
+    },
+    [toast]
+  )
 
-  const removeFee = useCallback((id: string) => {
-    if (!confirm('この指名料を削除しますか？')) return
-    setFees((prev) => prev.filter((fee) => fee.id !== id))
-    toast({ title: '削除しました' })
-  }, [toast])
-
-  const toggleActive = useCallback((id: string, value: boolean) => {
-    setFees((prev) => prev.map((fee) => (fee.id === id ? { ...fee, isActive: value } : fee)))
-  }, [])
+  const toggleActive = useCallback(
+    async (id: string, value: boolean) => {
+      try {
+        const updated = await updateDesignationFee(id, { isActive: value })
+        setFees((prev) =>
+          prev
+            .map((fee) => (fee.id === updated.id ? updated : fee))
+            .sort((a, b) => a.sortOrder - b.sortOrder)
+        )
+      } catch (error) {
+        console.error('Failed to toggle designation fee status:', error)
+        toast({
+          title: '更新エラー',
+          description: 'ステータスの更新に失敗しました。',
+          variant: 'destructive',
+        })
+      }
+    },
+    [toast]
+  )
 
   const handleSync = useCallback(() => {
     toast({
@@ -187,6 +245,9 @@ export default function DesignationFeesPage() {
             <CardDescription>指名料ごとの料金と取り分バランスを一覧表示します。</CardDescription>
           </CardHeader>
           <CardContent>
+            {loading && (
+              <p className="mb-4 text-sm text-muted-foreground">指名料を読み込み中です...</p>
+            )}
             <Table>
               <TableHeader>
                 <TableRow>
@@ -217,7 +278,9 @@ export default function DesignationFeesPage() {
                       <div className="flex items-center gap-2">
                         <Switch
                           checked={fee.isActive}
-                          onCheckedChange={(value) => toggleActive(fee.id, value)}
+                          onCheckedChange={(value) => {
+                            void toggleActive(fee.id, value)
+                          }}
                         />
                         <Badge variant={fee.isActive ? 'secondary' : 'outline'} className="whitespace-nowrap">
                           {fee.isActive ? '有効' : '非表示'}
@@ -233,7 +296,9 @@ export default function DesignationFeesPage() {
                           variant="ghost"
                           size="icon"
                           className="text-red-600 hover:text-red-700"
-                          onClick={() => removeFee(fee.id)}
+                          onClick={() => {
+                            void removeFee(fee.id)
+                          }}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

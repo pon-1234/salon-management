@@ -49,6 +49,8 @@ import {
   findDesignationFeeByName,
   findDesignationFeeByPrice,
 } from '@/lib/designation/fees'
+import { getDesignationFees } from '@/lib/designation/data'
+import type { DesignationFee } from '@/lib/designation/types'
 
 type EditFormState = {
   date: string
@@ -130,21 +132,57 @@ export function ReservationDialog({
     return diff > 0 ? diff : 60
   }, [reservation])
 
-  const designationOptions = useMemo(
-    () =>
-      DEFAULT_DESIGNATION_FEES.filter((fee) => fee.isActive).sort(
-        (a, b) => a.sortOrder - b.sortOrder
-      ),
-    []
-  )
+  const [designationOptions, setDesignationOptions] =
+    useState<DesignationFee[]>(DEFAULT_DESIGNATION_FEES)
+
+  useEffect(() => {
+    let ignore = false
+
+    const loadDesignationFees = async () => {
+      try {
+        const fees = await getDesignationFees({ includeInactive: true })
+        if (!ignore) {
+          setDesignationOptions(fees)
+        }
+      } catch (error) {
+        console.error('Failed to load designation fees:', error)
+        if (!ignore) {
+          setDesignationOptions(DEFAULT_DESIGNATION_FEES)
+        }
+      }
+    }
+
+    loadDesignationFees()
+    return () => {
+      ignore = true
+    }
+  }, [])
 
   const reservationDesignation = useMemo(() => {
     if (!reservation) return undefined
     return (
-      findDesignationFeeByName(reservation.designation) ||
-      findDesignationFeeByPrice(reservation.designationFee)
+      findDesignationFeeByName(reservation.designation, designationOptions) ||
+      findDesignationFeeByPrice(reservation.designationFee, designationOptions)
     )
-  }, [reservation])
+  }, [reservation, designationOptions])
+
+  const selectableDesignationOptions = useMemo(() => {
+    // Filter to show only active fees
+    const activeOptions = designationOptions.filter((fee) => fee.isActive)
+
+    // If editing an existing reservation with an inactive designation,
+    // include it in the options so it can still be selected
+    const currentDesignation = reservationDesignation
+    if (
+      currentDesignation &&
+      !currentDesignation.isActive &&
+      !activeOptions.find((fee) => fee.id === currentDesignation.id)
+    ) {
+      return [...activeOptions, currentDesignation].sort((a, b) => a.sortOrder - b.sortOrder)
+    }
+
+    return activeOptions
+  }, [designationOptions, reservationDesignation])
 
   useEffect(() => {
     if (reservation) {
@@ -553,9 +591,10 @@ export function ReservationDialog({
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="none">指名なし</SelectItem>
-                              {designationOptions.map((fee) => (
+                              {selectableDesignationOptions.map((fee) => (
                                 <SelectItem key={fee.id} value={fee.id}>
                                   {fee.name}（¥{fee.price.toLocaleString()}）
+                                  {!fee.isActive && ' (非表示)'}
                                 </SelectItem>
                               ))}
                             </SelectContent>

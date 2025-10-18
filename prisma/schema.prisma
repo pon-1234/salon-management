@@ -4,10 +4,7 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  /// Use a pooled connection (PgBouncer) for Prisma Client.
   url       = env("DATABASE_URL")
-  /// Use a non-pooled connection for migrations/introspection.
-  directUrl = env("DIRECT_URL")
 }
 
 model Customer {
@@ -176,6 +173,19 @@ model ReservationOption {
   reservation   Reservation  @relation(fields: [reservationId], references: [id])
 
   @@index([reservationId])
+}
+
+model DesignationFee {
+  id          String   @id @default(cuid())
+  name        String
+  price       Int      @default(0)
+  storeShare  Int      @default(0)
+  castShare   Int      @default(0)
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Review {
