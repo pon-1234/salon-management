@@ -39,6 +39,7 @@ const castSchema = z.object({
   image: imageUrlSchema,
   images: z.array(imageUrlSchema).optional().default([]),
   description: z.string().optional().default(''),
+  publicProfile: z.any().optional(), // JSON field for public profile data
   netReservation: z.boolean().optional().default(true),
   specialDesignationFee: z.union([z.null(), z.coerce.number().int().min(0)]).optional(),
   regularDesignationFee: z.union([z.null(), z.coerce.number().int().min(0)]).optional(),
@@ -139,6 +140,7 @@ export async function GET(request: NextRequest) {
         ...cast,
         nameKana: cast.name, // Temporary: use name as nameKana
         images: typeof cast.images === 'string' ? JSON.parse(cast.images) : cast.images,
+        publicProfile: cast.publicProfile || null,
         availableOptions: [],
         appointments: [],
       }

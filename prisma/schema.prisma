@@ -42,6 +42,7 @@ model Cast {
   image                  String
   images                 String[]
   description            String
+  publicProfile          Json?
   netReservation         Boolean
   specialDesignationFee  Int?
   regularDesignationFee  Int?
