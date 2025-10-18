@@ -76,7 +76,7 @@ export function ScheduleActionButtons({
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <div className="min-w-[140px] px-3 py-1 text-center text-sm font-medium text-gray-700">
-                {format(date, 'yyyy年M月d日週', { locale: ja })}
+                {format(date, 'yyyy年M月d日開始週', { locale: ja })}
               </div>
               <Button variant="ghost" size="sm" onClick={handleNextWeek} className="h-8 w-8 p-0">
                 <ChevronRight className="h-4 w-4" />
