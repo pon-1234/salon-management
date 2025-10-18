@@ -18,7 +18,6 @@ function logWarning(message: string, details?: unknown) {
 
   if (cachedLogger === undefined) {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
       cachedLogger = require('@/lib/logger').default
     } catch (error) {
       console.warn('Logger unavailable, falling back to console.warn', error)

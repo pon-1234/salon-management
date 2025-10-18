@@ -130,6 +130,22 @@ export function ReservationDialog({
     return diff > 0 ? diff : 60
   }, [reservation])
 
+  const designationOptions = useMemo(
+    () =>
+      DEFAULT_DESIGNATION_FEES.filter((fee) => fee.isActive).sort(
+        (a, b) => a.sortOrder - b.sortOrder
+      ),
+    []
+  )
+
+  const reservationDesignation = useMemo(() => {
+    if (!reservation) return undefined
+    return (
+      findDesignationFeeByName(reservation.designation) ||
+      findDesignationFeeByPrice(reservation.designationFee)
+    )
+  }, [reservation])
+
   useEffect(() => {
     if (reservation) {
       setFormState({
@@ -226,22 +242,6 @@ export function ReservationDialog({
       .filter(([, enabled]) => enabled)
       .map(([key]) => key)
   }, [reservation?.options])
-
-  const designationOptions = useMemo(
-    () =>
-      DEFAULT_DESIGNATION_FEES.filter((fee) => fee.isActive).sort(
-        (a, b) => a.sortOrder - b.sortOrder
-      ),
-    []
-  )
-
-  const reservationDesignation = useMemo(() => {
-    if (!reservation) return undefined
-    return (
-      findDesignationFeeByName(reservation.designation) ||
-      findDesignationFeeByPrice(reservation.designationFee)
-    )
-  }, [reservation])
 
   if (!reservation) {
     return null

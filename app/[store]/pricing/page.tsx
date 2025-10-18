@@ -3,7 +3,8 @@ import { getStoreBySlug } from '@/lib/store/data'
 import { StoreNavigation } from '@/components/store-navigation'
 import { StoreFooter } from '@/components/store-footer'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Clock } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Clock, Star } from 'lucide-react'
 import { getPricingUseCases } from '@/lib/pricing'
 
 const DEFAULT_STORE_RATIO = 0.6

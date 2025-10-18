@@ -15,7 +15,6 @@ interface SupabaseCredentials {
 function resolveSupabaseCredentials(): SupabaseCredentials {
   if (typeof window === 'undefined') {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { env } = require('@/lib/config/env') as {
         env: {
           supabase: {

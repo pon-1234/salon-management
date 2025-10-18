@@ -18,7 +18,6 @@ function readServerFlag(): boolean {
     return serverFlagCache
   }
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { env } = require('@/lib/config/env') as {
       env: { featureFlags: { useMockFallbacks: boolean } }
     }
