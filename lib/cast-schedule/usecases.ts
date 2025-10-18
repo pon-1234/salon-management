@@ -56,7 +56,8 @@ export class CastScheduleUseCases {
       if (!castResponse.ok) {
         throw new Error('Failed to fetch cast data')
       }
-      const casts = await castResponse.json()
+      const castPayload = await castResponse.json()
+      const casts = Array.isArray(castPayload?.data) ? castPayload.data : castPayload
 
       // Fetch schedule data for the week
       const scheduleResponse = await fetch(
@@ -66,7 +67,10 @@ export class CastScheduleUseCases {
       if (!scheduleResponse.ok) {
         throw new Error('Failed to fetch schedule data')
       }
-      const schedules = await scheduleResponse.json()
+      const schedulePayload = await scheduleResponse.json()
+      const schedules = Array.isArray(schedulePayload?.data)
+        ? schedulePayload.data
+        : schedulePayload
 
       // Transform data to match the expected format
       const entries = this.transformToWeeklyScheduleEntries(casts, schedules, weekStart)

@@ -605,19 +605,25 @@ describe('CastScheduleUseCases', () => {
       ;(global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockCasts,
+          json: async () => ({ data: mockCasts }),
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockSchedules,
+          json: async () => ({ data: mockSchedules }),
         })
 
       const result = await useCases.getWeeklySchedule({ date: testDate, castFilter: 'all' })
 
       // Verify API calls
       expect(fetch).toHaveBeenCalledTimes(2)
-      expect(fetch).toHaveBeenCalledWith('/api/cast')
-      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/api/cast-schedule?startDate='))
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/cast',
+        expect.objectContaining({ credentials: 'include', cache: 'no-store' })
+      )
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/cast-schedule?startDate='),
+        expect.objectContaining({ credentials: 'include', cache: 'no-store' })
+      )
 
       // Verify result structure
       expect(result).toHaveProperty('startDate')
@@ -670,11 +676,11 @@ describe('CastScheduleUseCases', () => {
       ;(global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => [],
+          json: async () => ({ data: [] }),
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => [],
+          json: async () => ({ data: [] }),
         })
 
       const result = await useCases.getWeeklySchedule({ date: testDate, castFilter: 'all' })
@@ -735,11 +741,11 @@ describe('CastScheduleUseCases', () => {
       ;(global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockCasts,
+          json: async () => ({ data: mockCasts }),
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => mockSchedules,
+          json: async () => ({ data: mockSchedules }),
         })
 
       const result = await useCases.getWeeklySchedule({ date: testDate, castFilter: 'all' })
