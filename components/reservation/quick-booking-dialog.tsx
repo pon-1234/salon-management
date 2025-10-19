@@ -103,6 +103,27 @@ interface NormalizedOption {
   castShare?: number | null
 }
 
+export function getCastAvailableOptions(
+  cast: Cast | undefined,
+  options: NormalizedOption[]
+): NormalizedOption[] {
+  if (!cast) {
+    return []
+  }
+
+  const allowedIds = new Set((cast.availableOptions ?? []).map((value) => resolveOptionId(value)))
+
+  if (allowedIds.size === 0) {
+    return []
+  }
+
+  return options.filter((option) => {
+    const optionId = option.id
+    const resolvedOptionId = resolveOptionId(optionId)
+    return allowedIds.has(optionId) || allowedIds.has(resolvedOptionId)
+  })
+}
+
 interface BookingDetails {
   customerName: string
   customerType: string
@@ -354,19 +375,10 @@ export function QuickBookingDialog({
     [courseCatalog, selectedCourseId]
   )
 
-  const availableOptions = useMemo(() => {
-    if (!selectedStaff?.availableOptions || selectedStaff.availableOptions.length === 0) {
-      return normalizedOptions
-    }
-    const allowedIds = new Set(
-      selectedStaff.availableOptions.map((value) => resolveOptionId(value))
-    )
-    return normalizedOptions.filter((option) => {
-      const optionId = option.id
-      const resolvedOptionId = resolveOptionId(optionId)
-      return allowedIds.has(optionId) || allowedIds.has(resolvedOptionId)
-    })
-  }, [normalizedOptions, selectedStaff])
+  const availableOptions = useMemo(
+    () => getCastAvailableOptions(selectedStaff, normalizedOptions),
+    [normalizedOptions, selectedStaff]
+  )
 
   useEffect(() => {
     setBookingDetails((prev) => {
