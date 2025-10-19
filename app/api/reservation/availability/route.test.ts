@@ -100,10 +100,10 @@ describe('GET /api/reservation/availability', () => {
     vi.mocked(db.reservation.findMany).mockResolvedValue(mockReservations as any)
 
     const request = new NextRequest(
-      'http://localhost:3000/api/reservation/availability/check?castId=cast1&startTime=2025-07-10T10:30:00&endTime=2025-07-10T11:30:00'
+      'http://localhost:3000/api/reservation/availability?mode=check&castId=cast1&startTime=2025-07-10T10:30:00&endTime=2025-07-10T11:30:00'
     )
     Object.defineProperty(request.nextUrl, 'pathname', {
-      value: '/api/reservation/availability/check',
+      value: '/api/reservation/availability',
       writable: false,
     })
 
@@ -127,10 +127,10 @@ describe('GET /api/reservation/availability', () => {
     vi.mocked(db.reservation.findMany).mockResolvedValue([])
 
     const request = new NextRequest(
-      'http://localhost:3000/api/reservation/availability/check?castId=cast1&startTime=2025-07-10T10:00:00&endTime=2025-07-10T11:00:00'
+      'http://localhost:3000/api/reservation/availability?mode=check&castId=cast1&startTime=2025-07-10T10:00:00&endTime=2025-07-10T11:00:00'
     )
     Object.defineProperty(request.nextUrl, 'pathname', {
-      value: '/api/reservation/availability/check',
+      value: '/api/reservation/availability',
       writable: false,
     })
 
@@ -165,10 +165,10 @@ describe('GET /api/reservation/availability', () => {
     vi.mocked(db.reservation.findMany).mockResolvedValue(mockReservations as any)
 
     const request = new NextRequest(
-      'http://localhost:3000/api/reservation/availability/check?castIds=cast1,cast2&startTime=2025-07-10T09:30:00&endTime=2025-07-10T10:30:00'
+      'http://localhost:3000/api/reservation/availability?mode=check&castIds=cast1,cast2&startTime=2025-07-10T09:30:00&endTime=2025-07-10T10:30:00'
     )
     Object.defineProperty(request.nextUrl, 'pathname', {
-      value: '/api/reservation/availability/check',
+      value: '/api/reservation/availability',
       writable: false,
     })
 
@@ -196,10 +196,10 @@ describe('GET /api/reservation/availability', () => {
     vi.mocked(db.reservation.findMany).mockResolvedValue([])
 
     const request = new NextRequest(
-      'http://localhost:3000/api/reservation/availability/check?castId=cast1&startTime=2025-07-10T10:00:00&endTime=2025-07-10T11:00:00'
+      'http://localhost:3000/api/reservation/availability?mode=check&castId=cast1&startTime=2025-07-10T10:00:00&endTime=2025-07-10T11:00:00'
     )
     Object.defineProperty(request.nextUrl, 'pathname', {
-      value: '/api/reservation/availability/check',
+      value: '/api/reservation/availability',
       writable: false,
     })
 
@@ -215,10 +215,10 @@ describe('GET /api/reservation/availability', () => {
 
   it('should validate required parameters', async () => {
     const request = new NextRequest(
-      'http://localhost:3000/api/reservation/availability/check?startTime=2025-07-10T10:00:00'
+      'http://localhost:3000/api/reservation/availability?mode=check&startTime=2025-07-10T10:00:00'
     )
     Object.defineProperty(request.nextUrl, 'pathname', {
-      value: '/api/reservation/availability/check',
+      value: '/api/reservation/availability',
       writable: false,
     })
 
@@ -233,10 +233,10 @@ describe('GET /api/reservation/availability', () => {
 
   it('should handle invalid date formats', async () => {
     const request = new NextRequest(
-      'http://localhost:3000/api/reservation/availability/check?castId=cast1&startTime=invalid-date&endTime=2025-07-10T11:00:00'
+      'http://localhost:3000/api/reservation/availability?mode=check&castId=cast1&startTime=invalid-date&endTime=2025-07-10T11:00:00'
     )
     Object.defineProperty(request.nextUrl, 'pathname', {
-      value: '/api/reservation/availability/check',
+      value: '/api/reservation/availability',
       writable: false,
     })
 
@@ -254,10 +254,10 @@ describe('GET /api/reservation/availability', () => {
     vi.mocked(db.reservation.findMany).mockRejectedValueOnce(dbError)
 
     const request = new NextRequest(
-      'http://localhost:3000/api/reservation/availability/check?castId=cast1&startTime=2025-07-10T10:00:00&endTime=2025-07-10T11:00:00'
+      'http://localhost:3000/api/reservation/availability?mode=check&castId=cast1&startTime=2025-07-10T10:00:00&endTime=2025-07-10T11:00:00'
     )
     Object.defineProperty(request.nextUrl, 'pathname', {
-      value: '/api/reservation/availability/check',
+      value: '/api/reservation/availability',
       writable: false,
     })
 

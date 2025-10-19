@@ -11,7 +11,6 @@ const RESERVATION_ENDPOINT = '/api/reservation'
 const COURSE_ENDPOINT = '/api/course'
 const OPTION_ENDPOINT = '/api/option'
 const AVAILABILITY_ENDPOINT = '/api/reservation/availability'
-const AVAILABILITY_CHECK_ENDPOINT = '/api/reservation/availability/check'
 
 function normalizeApiError(error: ApiError): ApiError {
   const body = (error.body ?? null) as { error?: string; conflicts?: unknown } | null
@@ -138,9 +137,10 @@ export class ReservationRepositoryImpl implements ReservationRepository {
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
     })
+    params.set('mode', 'check')
 
     return this.client.get<{ available: boolean; conflicts?: any[] }>(
-      `${AVAILABILITY_CHECK_ENDPOINT}?${params.toString()}`
+      `${AVAILABILITY_ENDPOINT}?${params.toString()}`
     )
   }
 

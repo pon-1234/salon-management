@@ -438,10 +438,11 @@ describe('ReservationRepositoryImpl', () => {
       const result = await repository.checkAvailability('cast1', startTime, endTime)
 
       const [url, init] = vi.mocked(fetch).mock.calls[0]
-      expect(url).toContain('/api/reservation/availability/check?')
+      expect(url).toContain('/api/reservation/availability?')
       expect(url).toContain('castId=cast1')
       expect(url).toContain(`startTime=${encodeURIComponent(startTime.toISOString())}`)
       expect(url).toContain(`endTime=${encodeURIComponent(endTime.toISOString())}`)
+      expect(url).toContain('mode=check')
       expect(init?.method).toBe('GET')
       expect(result).toEqual(availability)
     })

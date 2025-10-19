@@ -30,9 +30,10 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const path = request.nextUrl.pathname
+    const mode = searchParams.get('mode')
 
     // Check if this is a conflict check request
-    if (path.endsWith('/check')) {
+    if (path.endsWith('/check') || mode === 'check') {
       return handleConflictCheck(searchParams)
     }
 

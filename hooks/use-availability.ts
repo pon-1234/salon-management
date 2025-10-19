@@ -37,7 +37,9 @@ export function useAvailability() {
         endTime: endTime.toISOString(),
       })
 
-      const response = await fetch(`/api/reservation/availability/check?${params}`)
+      params.set('mode', 'check')
+
+      const response = await fetch(`/api/reservation/availability?${params}`)
       const data = await response.json()
 
       if (!response.ok) {
