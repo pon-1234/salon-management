@@ -152,6 +152,7 @@ interface QuickBookingDialogProps {
   selectedStaff?: Cast
   selectedTime?: Date
   selectedCustomer: Customer | null
+  onReservationCreated?: (reservationId?: string) => void
 }
 
 export function QuickBookingDialog({
@@ -160,6 +161,7 @@ export function QuickBookingDialog({
   selectedStaff,
   selectedTime,
   selectedCustomer,
+  onReservationCreated,
 }: QuickBookingDialogProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const totalSteps = 3
@@ -703,10 +705,19 @@ export function QuickBookingDialog({
         throw new Error(errorMessage)
       }
 
+      const reservationId =
+        data && typeof data === 'object'
+          ? (data.id as string | undefined) || (data.data?.id as string | undefined)
+          : undefined
+
       toast({
         title: '予約完了',
         description: '予約が正常に作成されました。',
       })
+
+      if (onReservationCreated) {
+        onReservationCreated(reservationId)
+      }
 
       onOpenChange(false)
     } catch (error) {

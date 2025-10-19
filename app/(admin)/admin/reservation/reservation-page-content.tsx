@@ -492,6 +492,7 @@ export function ReservationPageContent() {
         onFilter={handleFilterDialogOpen}
         onCustomerSelect={handleCustomerSelection}
         selectedCustomer={selectedCustomer}
+        onReservationCreated={handleRefresh}
       />
 
       <FilterDialog
@@ -507,6 +508,7 @@ export function ReservationPageContent() {
           selectedCustomer={selectedCustomer}
           setSelectedAppointment={setSelectedAppointment}
           reservations={currentDayReservations}
+          onReservationCreated={handleRefresh}
         />
       ) : (
         <ReservationTable

@@ -27,6 +27,7 @@ interface TimelineProps {
   selectedCustomer: Customer | null
   setSelectedAppointment: (reservation: ReservationData) => void
   reservations: ReservationData[]
+  onReservationCreated?: (reservationId?: string) => void
 }
 
 interface AvailableSlot {
@@ -48,6 +49,7 @@ export function Timeline({
   selectedCustomer,
   setSelectedAppointment,
   reservations,
+  onReservationCreated,
 }: TimelineProps) {
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null)
   const [selectedStaff, setSelectedStaff] = useState<Cast | null>(null)
@@ -481,6 +483,9 @@ export function Timeline({
         }
         selectedTime={selectedSlot?.startTime}
         selectedCustomer={selectedCustomer}
+        onReservationCreated={(reservationId) => {
+          onReservationCreated?.(reservationId)
+        }}
       />
 
       <StaffDialog

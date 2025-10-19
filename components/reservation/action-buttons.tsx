@@ -10,6 +10,7 @@ interface ActionButtonsProps {
   onFilter: () => void
   onCustomerSelect: (customer: Customer | null) => void
   selectedCustomer: Customer | null
+  onReservationCreated?: (reservationId?: string) => void
 }
 
 export function ActionButtons({
@@ -17,6 +18,7 @@ export function ActionButtons({
   onFilter,
   onCustomerSelect,
   selectedCustomer,
+  onReservationCreated,
 }: ActionButtonsProps) {
   const [openQuickBooking, setOpenQuickBooking] = useState(false)
   const [showCustomerDialog, setShowCustomerDialog] = useState(false)
@@ -53,6 +55,7 @@ export function ActionButtons({
         open={openQuickBooking}
         onOpenChange={setOpenQuickBooking}
         selectedCustomer={selectedCustomer}
+        onReservationCreated={onReservationCreated}
       />
       <CustomerSelectionDialog
         open={showCustomerDialog}
