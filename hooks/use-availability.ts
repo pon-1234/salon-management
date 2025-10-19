@@ -4,7 +4,7 @@
  * @known_issues None currently
  */
 import { useState, useEffect, useCallback } from 'react'
-import { format } from 'date-fns'
+import { zonedTimeToUtc } from 'date-fns-tz'
 
 interface TimeSlot {
   startTime: string
@@ -20,6 +20,7 @@ interface AvailabilityState {
 }
 
 export function useAvailability() {
+  const JST_TIMEZONE = 'Asia/Tokyo'
   const [state, setState] = useState<AvailabilityState>({
     loading: false,
     error: null,
@@ -64,13 +65,13 @@ export function useAvailability() {
     }
   }, [])
 
-  const getAvailableSlots = useCallback(async (castId: string, date: Date, duration: number) => {
+  const getAvailableSlots = useCallback(async (castId: string, dateString: string, duration: number) => {
     setState((prev) => ({ ...prev, loading: true, error: null }))
 
     try {
       const params = new URLSearchParams({
         castId,
-        date: format(date, 'yyyy-MM-dd'),
+        date: dateString,
         duration: duration.toString(),
       })
 
@@ -107,29 +108,21 @@ export function useAvailability() {
   }, [])
 
   const generateTimeSlots = useCallback(
-    (date: Date, duration: number, workingHours = { start: '09:00', end: '18:00' }) => {
+    (dateString: string, duration: number, workingHours = { start: '09:00', end: '18:00' }) => {
       const slots: TimeSlot[] = []
-      const [startHour, startMinute] = workingHours.start.split(':').map(Number)
-      const [endHour, endMinute] = workingHours.end.split(':').map(Number)
 
-      const slotStart = new Date(date)
-      slotStart.setHours(startHour, startMinute, 0, 0)
-
-      const dayEnd = new Date(date)
-      dayEnd.setHours(endHour, endMinute, 0, 0)
+      const startUtc = zonedTimeToUtc(`${dateString}T${workingHours.start}:00`, JST_TIMEZONE)
+      const endUtc = zonedTimeToUtc(`${dateString}T${workingHours.end}:00`, JST_TIMEZONE)
 
       const slotDurationMs = duration * 60 * 1000
 
-      while (slotStart.getTime() + slotDurationMs <= dayEnd.getTime()) {
-        const slotEnd = new Date(slotStart.getTime() + slotDurationMs)
-
+      for (let cursor = new Date(startUtc); cursor.getTime() + slotDurationMs <= endUtc.getTime(); ) {
+        const slotEnd = new Date(cursor.getTime() + slotDurationMs)
         slots.push({
-          startTime: slotStart.toISOString(),
+          startTime: cursor.toISOString(),
           endTime: slotEnd.toISOString(),
         })
-
-        // Move to next slot (30-minute intervals)
-        slotStart.setMinutes(slotStart.getMinutes() + 30)
+        cursor = new Date(cursor.getTime() + 30 * 60 * 1000)
       }
 
       return slots

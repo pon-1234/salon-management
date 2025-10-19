@@ -17,6 +17,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
+import { utcToZonedTime, zonedTimeToUtc, formatInTimeZone } from 'date-fns-tz'
 import {
   Phone,
   Clock,
@@ -62,6 +63,14 @@ const marketingChannels = ['WEB', '店リピート', '電話', '紹介', 'SNS']
 const paymentMethods = ['現金', 'クレジットカード', 'ポイント利用', '振込']
 
 const formatYen = (amount: number) => `${amount.toLocaleString()}円`
+
+const JST_TIMEZONE = 'Asia/Tokyo'
+
+const formatDateInJst = (date: Date) =>
+  format(utcToZonedTime(date, JST_TIMEZONE), 'yyyy-MM-dd')
+
+const formatTimeInJst = (date: Date) =>
+  format(utcToZonedTime(date, JST_TIMEZONE), 'HH:mm')
 
 const getDesignationFeeAmount = (type: DesignationType, cast?: Cast) => {
   if (!cast) return 0
@@ -297,8 +306,8 @@ export function QuickBookingDialog({
     bookingStatus: '仮予約',
     staff: selectedStaff?.name ?? '',
     marketingChannel: 'WEB',
-    date: selectedTime ? format(selectedTime, 'yyyy-MM-dd') : '',
-    time: selectedTime ? format(selectedTime, 'HH:mm') : '',
+    date: selectedTime ? formatDateInJst(selectedTime) : '',
+    time: selectedTime ? formatTimeInJst(selectedTime) : '',
     options: {},
     transportationFee: 0,
     additionalFee: 0,
@@ -424,8 +433,8 @@ export function QuickBookingDialog({
     if (selectedTime) {
       setBookingDetails((prev) => ({
         ...prev,
-        date: format(selectedTime, 'yyyy-MM-dd'),
-        time: format(selectedTime, 'HH:mm'),
+        date: formatDateInJst(selectedTime),
+        time: formatTimeInJst(selectedTime),
       }))
     }
   }, [selectedTime])
@@ -779,6 +788,11 @@ export function QuickBookingDialog({
 
   const stepTitles = ['基本情報', '詳細設定', '確認・完了']
 
+  const selectedTimeIso =
+    bookingDetails.date && bookingDetails.time
+      ? zonedTimeToUtc(`${bookingDetails.date}T${bookingDetails.time}`, JST_TIMEZONE).toISOString()
+      : undefined
+
   const stationOptions = stations.filter((station) => !selectedAreaId || station.areaId === selectedAreaId)
   const selectedStation = stations.find((station) => station.id === selectedStationId) ?? null
   const selectedArea = areas.find((area) => area.id === selectedAreaId) ?? null
@@ -817,8 +831,8 @@ export function QuickBookingDialog({
       phoneNumber: selectedCustomer?.phone ?? '',
       points: selectedCustomer?.points ?? 0,
       staff: currentStaff?.name ?? '',
-      date: selectedTime ? format(selectedTime, 'yyyy-MM-dd') : prev.date,
-      time: selectedTime ? format(selectedTime, 'HH:mm') : prev.time,
+      date: selectedTime ? formatDateInJst(selectedTime) : prev.date,
+      time: selectedTime ? formatTimeInJst(selectedTime) : prev.time,
       options: {},
       transportationFee: stationOptions[0]?.transportationFee ?? 0,
       additionalFee: 0,
@@ -908,16 +922,15 @@ export function QuickBookingDialog({
                       {currentStaff && bookingDetails.date && selectedCourse ? (
                         <TimeSlotPicker
                           castId={currentStaff.id}
-                          date={new Date(bookingDetails.date)}
+                          date={bookingDetails.date}
                           duration={selectedCourse.duration}
-                          selectedTime={bookingDetails.time}
+                          selectedTime={selectedTimeIso}
                           onTimeSelect={(time) => {
-                            const date = new Date(time)
-                            const timeStr = format(date, 'HH:mm')
+                            const zoned = utcToZonedTime(new Date(time), JST_TIMEZONE)
                             setBookingDetails((prev) => ({
                               ...prev,
-                              time: timeStr,
-                              date: format(date, 'yyyy-MM-dd'),
+                              time: format(zoned, 'HH:mm'),
+                              date: format(zoned, 'yyyy-MM-dd'),
                             }))
                           }}
                         />

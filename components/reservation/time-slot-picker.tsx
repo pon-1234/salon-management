@@ -6,7 +6,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { format } from 'date-fns'
+import { formatInTimeZone } from 'date-fns-tz'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Clock, Loader2, AlertCircle } from 'lucide-react'
@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils'
 
 interface TimeSlotPickerProps {
   castId: string
-  date: Date
+  date: string
   duration: number
   selectedTime?: string
   onTimeSelect: (time: string) => void
@@ -58,7 +58,7 @@ export function TimeSlotPicker({
   }, [availableSlots, allSlots, isSlotAvailable])
 
   const formatTime = (isoString: string) => {
-    return format(new Date(isoString), 'HH:mm')
+    return formatInTimeZone(new Date(isoString), 'Asia/Tokyo', 'HH:mm')
   }
 
   if (loading) {
