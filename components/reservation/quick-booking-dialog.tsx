@@ -104,7 +104,7 @@ interface NormalizedOption {
 }
 
 export function getCastAvailableOptions(
-  cast: Cast | undefined,
+  cast: Cast | null | undefined,
   options: NormalizedOption[]
 ): NormalizedOption[] {
   if (!cast) {
@@ -163,6 +163,11 @@ export function QuickBookingDialog({
 }: QuickBookingDialogProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const totalSteps = 3
+  const [staffDetails, setStaffDetails] = useState<Cast | null>(
+    selectedStaff && Array.isArray(selectedStaff.availableOptions) && selectedStaff.availableOptions.length > 0
+      ? selectedStaff
+      : null
+  )
 
   const {
     courses,
@@ -224,6 +229,59 @@ export function QuickBookingDialog({
 
   const [selectedAreaId, setSelectedAreaId] = useState<string>('')
   const [selectedStationId, setSelectedStationId] = useState<string>('')
+
+  useEffect(() => {
+    let ignore = false
+
+    if (!selectedStaff) {
+      setStaffDetails(null)
+      return
+    }
+
+    const hasDefinedOptions =
+      Array.isArray(selectedStaff.availableOptions) && selectedStaff.availableOptions.length > 0
+
+    if (hasDefinedOptions) {
+      setStaffDetails(selectedStaff)
+      return
+    }
+
+    const controller = new AbortController()
+
+    ;(async () => {
+      try {
+        const response = await fetch(`/api/cast?id=${selectedStaff.id}`, {
+          credentials: 'include',
+          cache: 'no-store',
+          signal: controller.signal,
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch cast details for ${selectedStaff.id}`)
+        }
+
+        const payload = await response.json()
+        const castData = (payload?.data ?? payload) as Cast
+
+        if (!ignore) {
+          setStaffDetails(castData)
+        }
+      } catch (error) {
+        if (controller.signal.aborted || ignore) {
+          return
+        }
+        console.error('Failed to load cast details:', error)
+        setStaffDetails(null)
+      }
+    })()
+
+    return () => {
+      ignore = true
+      controller.abort()
+    }
+  }, [selectedStaff])
+
+  const currentStaff = useMemo(() => staffDetails ?? selectedStaff ?? null, [staffDetails, selectedStaff])
 
   const [bookingDetails, setBookingDetails] = useState<BookingDetails>({
     customerName: selectedCustomer?.name ?? '',
@@ -334,23 +392,23 @@ export function QuickBookingDialog({
   }, [selectedCustomer])
 
   useEffect(() => {
-    if (selectedStaff) {
+    if (currentStaff) {
       setBookingDetails((prev) => ({
         ...prev,
-        staff: selectedStaff.name,
+        staff: currentStaff.name,
       }))
 
       setDesignationType((prev) => {
-        if (prev === 'special' && selectedStaff.specialDesignationFee) {
+        if (prev === 'special' && currentStaff.specialDesignationFee) {
           return prev
         }
-        if (prev === 'regular' && selectedStaff.regularDesignationFee) {
+        if (prev === 'regular' && currentStaff.regularDesignationFee) {
           return prev
         }
-        if (selectedStaff.regularDesignationFee) {
+        if (currentStaff.regularDesignationFee) {
           return 'regular'
         }
-        if (selectedStaff.specialDesignationFee) {
+        if (currentStaff.specialDesignationFee) {
           return 'special'
         }
         return 'none'
@@ -358,7 +416,7 @@ export function QuickBookingDialog({
     } else {
       setDesignationType('none')
     }
-  }, [selectedStaff])
+  }, [currentStaff])
 
   useEffect(() => {
     if (selectedTime) {
@@ -376,8 +434,8 @@ export function QuickBookingDialog({
   )
 
   const availableOptions = useMemo(
-    () => getCastAvailableOptions(selectedStaff, normalizedOptions),
-    [normalizedOptions, selectedStaff]
+    () => getCastAvailableOptions(currentStaff ?? undefined, normalizedOptions),
+    [normalizedOptions, currentStaff]
   )
 
   useEffect(() => {
@@ -422,7 +480,8 @@ export function QuickBookingDialog({
 
   const priceBreakdown = useMemo<PriceBreakdown>(() => {
     const basePrice = selectedCourse?.price ?? 0
-    const designationFeeAmount = selectedDesignationFee?.price ?? getDesignationFeeAmount(designationType, selectedStaff)
+    const designationFeeAmount =
+      selectedDesignationFee?.price ?? getDesignationFeeAmount(designationType, currentStaff ?? undefined)
     const optionsTotal = selectedOptionDetails.reduce((sum, option) => sum + option.price, 0)
     const transportationFee = bookingDetails.transportationFee || 0
     const additionalFee = bookingDetails.additionalFee || 0
@@ -470,7 +529,7 @@ export function QuickBookingDialog({
     designationType,
     selectedCourse,
     selectedOptionDetails,
-    selectedStaff,
+    currentStaff,
     selectedDesignationFee,
   ])
 
@@ -549,7 +608,7 @@ export function QuickBookingDialog({
   }
 
   const handleSubmit = async () => {
-    if (!selectedStaff) {
+    if (!currentStaff) {
       toast({
         title: '担当者未選択',
         description: '担当キャストを選択してください。',
@@ -598,7 +657,7 @@ export function QuickBookingDialog({
       const endTime = new Date(startTime)
       endTime.setMinutes(endTime.getMinutes() + (selectedCourse?.duration ?? 0))
 
-      const availability = await checkAvailability(selectedStaff.id, startTime, endTime)
+      const availability = await checkAvailability(currentStaff.id, startTime, endTime)
       if (!availability.available) {
         toast({
           title: '予約不可',
@@ -613,14 +672,15 @@ export function QuickBookingDialog({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           customerId: selectedCustomer.id,
-          castId: selectedStaff.id,
+          castId: currentStaff.id,
           courseId: selectedCourseId,
           startTime: startTime.toISOString(),
           endTime: endTime.toISOString(),
           status: bookingDetails.bookingStatus === '確定済' ? 'confirmed' : 'pending',
           options: optionSelections,
           price: priceBreakdown.total,
-          designationType: selectedDesignationFee?.name ?? getDesignationLabel(designationType, selectedStaff),
+          designationType:
+            selectedDesignationFee?.name ?? getDesignationLabel(designationType, currentStaff ?? undefined),
           designationFee: priceBreakdown.designationFee,
           transportationFee: priceBreakdown.transportationFee,
           additionalFee: priceBreakdown.additionalFee,
@@ -724,7 +784,7 @@ export function QuickBookingDialog({
         : '',
       phoneNumber: selectedCustomer?.phone ?? '',
       points: selectedCustomer?.points ?? 0,
-      staff: selectedStaff?.name ?? '',
+      staff: currentStaff?.name ?? '',
       date: selectedTime ? format(selectedTime, 'yyyy-MM-dd') : prev.date,
       time: selectedTime ? format(selectedTime, 'HH:mm') : prev.time,
       options: {},
@@ -736,7 +796,7 @@ export function QuickBookingDialog({
       notes: '',
     }))
     setDesignationType('none')
-  }, [open, selectedCustomer, selectedStaff, selectedTime, courseCatalog, areas, stations, designationFees])
+  }, [open, selectedCustomer, currentStaff, selectedTime, courseCatalog, areas, stations, designationFees])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -813,9 +873,9 @@ export function QuickBookingDialog({
                     </div>
                     <div className="col-span-2">
                       <Label>時間帯を選択</Label>
-                      {selectedStaff && bookingDetails.date && selectedCourse ? (
+                      {currentStaff && bookingDetails.date && selectedCourse ? (
                         <TimeSlotPicker
-                          castId={selectedStaff.id}
+                          castId={currentStaff.id}
                           date={new Date(bookingDetails.date)}
                           duration={selectedCourse.duration}
                           selectedTime={bookingDetails.time}
