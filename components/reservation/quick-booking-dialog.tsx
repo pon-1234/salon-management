@@ -700,8 +700,29 @@ export function QuickBookingDialog({
       const data = await response.json().catch(() => ({}))
 
       if (!response.ok) {
-        const errorMessage =
+        let errorMessage =
           data?.error || (response.status === 409 ? 'この時間帯は予約できません。' : '予約の作成に失敗しました')
+
+        if (
+          response.status === 409 &&
+          data &&
+          Array.isArray(data.conflicts) &&
+          data.conflicts.length > 0
+        ) {
+          const conflict = data.conflicts[0]
+          try {
+            const conflictStart = new Date(conflict.startTime)
+            const conflictEnd = new Date(conflict.endTime)
+            if (!Number.isNaN(conflictStart.getTime()) && !Number.isNaN(conflictEnd.getTime())) {
+              const startLabel = format(conflictStart, 'HH:mm')
+              const endLabel = format(conflictEnd, 'HH:mm')
+              errorMessage = `この時間帯（${startLabel}〜${endLabel}）は既に予約済みです。`
+            }
+          } catch {
+            // ignore parsing errors, fallback to default message
+          }
+        }
+
         throw new Error(errorMessage)
       }
 

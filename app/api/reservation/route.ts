@@ -238,6 +238,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'End time must be after start time' }, { status: 400 })
     }
 
+    // 事前の空き状況チェック（早期リターン）
+    const preflightAvailability = await checkCastAvailability(
+      reservationData.castId,
+      startTime,
+      endTime
+    )
+
+    if (!preflightAvailability.available) {
+      return NextResponse.json(
+        { error: 'Time slot is not available', conflicts: preflightAvailability.conflicts },
+        { status: 409 }
+      )
+    }
+
     // トランザクション内で空き状況の最終チェックと予約作成を行う
     try {
       const newReservation = await db.$transaction(async (tx) => {
@@ -251,7 +265,9 @@ export async function POST(request: NextRequest) {
 
         if (!availability.available) {
           // 意図的にエラーを発生させてトランザクションをロールバック
-          throw new Error('Time slot is not available')
+          const conflictError = new Error('Time slot is not available')
+          ;(conflictError as any).conflicts = availability.conflicts
+          throw conflictError
         }
 
         const optionIds: string[] = Array.isArray(reservationData.options)
@@ -308,7 +324,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(newReservation, { status: 201 })
     } catch (error: any) {
       if (error.message === 'Time slot is not available') {
-        return NextResponse.json({ error: 'Time slot is not available' }, { status: 409 })
+        return NextResponse.json(
+          {
+            error: 'Time slot is not available',
+            conflicts: Array.isArray((error as any)?.conflicts) ? (error as any).conflicts : [],
+          },
+          { status: 409 }
+        )
       }
       logger.error({ err: error }, 'Error creating reservation')
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
