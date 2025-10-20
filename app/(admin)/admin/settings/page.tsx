@@ -241,6 +241,9 @@ export default function SettingsPage() {
                     case 'hotel-info':
                       window.location.href = '/admin/settings/hotel-info'
                       break
+                    case 'admin-info':
+                      window.location.href = '/admin/settings/admin-info'
+                      break
                     case 'templates':
                       window.location.href = '/admin/settings/templates'
                       break
