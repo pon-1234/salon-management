@@ -51,6 +51,7 @@ import {
 } from '@/lib/designation/fees'
 import { getDesignationFees } from '@/lib/designation/data'
 import type { DesignationFee } from '@/lib/designation/types'
+import { hasPermission } from '@/lib/auth/permissions'
 
 type EditFormState = {
   date: string
@@ -121,7 +122,10 @@ export function ReservationDialog({
   const [isSaving, setIsSaving] = useState(false)
   const [remainingTime, setRemainingTime] = useState<number | null>(null)
   const { data: session } = useSession()
-  const isGeneralStaff = session?.user?.adminRole === 'staff'
+  const canViewFinancialDetails = hasPermission(
+    session?.user?.permissions ?? [],
+    'analytics:read'
+  )
 
   const modificationHistory = reservation ? getModificationHistory(reservation.id) : []
   const modificationAlerts = reservation ? getModificationAlerts(reservation.id) : []
@@ -570,8 +574,10 @@ export function ReservationDialog({
                   <CreditCard className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
-                  {isGeneralStaff ? (
-                    <p className="text-sm text-muted-foreground">売上情報は表示できません。</p>
+                  {!canViewFinancialDetails ? (
+                    <p className="text-sm text-muted-foreground">
+                      売上情報は表示できません。
+                    </p>
                   ) : (
                     <>
                       {isEditMode && (

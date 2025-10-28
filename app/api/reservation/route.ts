@@ -11,6 +11,7 @@ import { NotificationService } from '@/lib/notification/service'
 import logger from '@/lib/logger'
 import { fromZonedTime } from 'date-fns-tz'
 import { PrismaClient } from '@prisma/client'
+import { hasPermission } from '@/lib/auth/permissions'
 
 // Types
 interface AvailabilityCheck {
@@ -105,6 +106,10 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
       }
 
+      if (isAdmin && !hasPermission(session.user.permissions ?? [], 'reservation:read')) {
+        return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
+      }
+
       const reservation = await db.reservation.findUnique({
         where: { id },
         include: {
@@ -140,6 +145,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
       }
       where.customerId = sessionCustomerId
+    } else if (!hasPermission(session.user.permissions ?? [], 'reservation:read')) {
+      return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
     }
 
     // フィルタリング

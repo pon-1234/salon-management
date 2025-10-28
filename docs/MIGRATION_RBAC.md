@@ -47,7 +47,9 @@ Permissions are stored as JSON array in the admin table. Example permissions:
 - `cast:write` - Create/update cast members
 - `cast:delete` - Delete cast members
 - `analytics:read` - View analytics
-- `reservation:manage` - Manage all reservations
+- `dashboard:view` - Access the management dashboard
+- `reservation:read` - View reservation information
+- `reservation:*` - Manage all reservations
 - `customer:manage` - Manage customer accounts
 
 ## Migration Steps

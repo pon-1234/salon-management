@@ -27,6 +27,7 @@ import {
   UserCheck,
   MessageSquare,
   Sparkles,
+  Loader2,
 } from 'lucide-react'
 import { getAllReservations } from '@/lib/reservation/data'
 import {
@@ -64,6 +65,9 @@ import {
   LineChart,
   Line,
 } from 'recharts'
+import { useSession } from 'next-auth/react'
+import { hasPermission } from '@/lib/auth/permissions'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 // カラーパレット
 const colors = {
@@ -210,6 +214,14 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function DashboardPage() {
+  const { data: session, status } = useSession()
+  const grantedPermissions = session?.user?.permissions ?? []
+  const isAdmin = session?.user?.role === 'admin'
+  const canViewDashboard =
+    isAdmin &&
+    (hasPermission(grantedPermissions, 'dashboard:view') ||
+      hasPermission(grantedPermissions, 'analytics:read'))
+
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month'>('today')
@@ -217,6 +229,16 @@ export default function DashboardPage() {
   const [showCustomerSelection, setShowCustomerSelection] = useState(false)
 
   useEffect(() => {
+    if (status === 'loading') {
+      return
+    }
+
+    if (!canViewDashboard || status !== 'authenticated') {
+      setLoading((prev) => (prev ? false : prev))
+      setReservations((prev) => (prev.length ? [] : prev))
+      return
+    }
+
     const fetchData = async () => {
       setLoading(true)
       try {
@@ -230,7 +252,32 @@ export default function DashboardPage() {
     }
 
     fetchData()
-  }, [])
+  }, [canViewDashboard, status])
+
+  if (status === 'loading') {
+    return (
+      <div className="flex min-h-[calc(100vh-80px)] w-full items-center justify-center bg-muted/20 p-8">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          ダッシュボードを読み込み中です...
+        </div>
+      </div>
+    )
+  }
+
+  if (!canViewDashboard) {
+    return (
+      <div className="flex min-h-[calc(100vh-80px)] w-full items-center justify-center bg-muted/20 p-8">
+        <div className="max-w-md">
+          <Alert variant="destructive">
+            <AlertDescription>
+              ダッシュボードへのアクセス権限がありません。必要な場合は管理者にお問い合わせください。
+            </AlertDescription>
+          </Alert>
+        </div>
+      </div>
+    )
+  }
 
   // 予約データをダイアログ用に変換
   const convertToReservationData = (reservation: Reservation): ReservationData | null => {

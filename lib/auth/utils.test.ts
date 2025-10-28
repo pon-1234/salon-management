@@ -73,5 +73,39 @@ describe('Auth Utils', () => {
       expect(result?.status).toBe(401)
       expect(result?.body).toEqual({ error: '認証が必要です' })
     })
+
+    it('should enforce permission requirements when provided', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: {
+          id: '4',
+          name: 'Permissionless Admin',
+          email: 'no-perm@example.com',
+          role: 'admin',
+          permissions: ['reservation:read'],
+        },
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      })
+
+      const result = await requireAdmin({ permissions: 'analytics:read' })
+      expect(result).toBeDefined()
+      expect(result?.status).toBe(403)
+      expect(result?.body).toEqual({ error: 'この操作を行う権限がありません' })
+    })
+
+    it('should accept admins with matching permissions', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: {
+          id: '5',
+          name: 'Analytics Admin',
+          email: 'analytics@example.com',
+          role: 'admin',
+          permissions: ['analytics:*'],
+        },
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      })
+
+      const result = await requireAdmin({ permissions: 'analytics:read' })
+      expect(result).toBeNull()
+    })
   })
 })

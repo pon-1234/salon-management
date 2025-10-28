@@ -77,7 +77,7 @@ describe('Reservation API - Modifiable Status', () => {
       }
 
       vi.mocked(getServerSession).mockResolvedValue({
-        user: { role: 'admin' },
+        user: { role: 'admin', permissions: ['reservation:read'] },
       } as any)
 
       vi.mocked(db.reservation.findUnique).mockResolvedValue(modifiableReservation as any)
@@ -95,7 +95,7 @@ describe('Reservation API - Modifiable Status', () => {
   describe('PUT endpoint - Modifiable Status Support', () => {
     it('should allow changing status to modifiable with modifiableUntil', async () => {
       vi.mocked(getServerSession).mockResolvedValue({
-        user: { role: 'admin' },
+        user: { role: 'admin', permissions: ['reservation:read'] },
       } as any)
 
       vi.mocked(db.reservation.findUnique).mockResolvedValue(mockReservation as any)
@@ -169,7 +169,7 @@ describe('Reservation API - Modifiable Status', () => {
       }
 
       vi.mocked(getServerSession).mockResolvedValue({
-        user: { role: 'admin' },
+        user: { role: 'admin', permissions: ['reservation:read'] },
       } as any)
 
       vi.mocked(db.reservation.findUnique).mockResolvedValue(modifiableReservation as any)

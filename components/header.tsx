@@ -38,10 +38,11 @@ import { useNotifications } from '@/contexts/notification-context'
 import { StoreSelector } from '@/components/store/store-selector'
 import { useSession } from 'next-auth/react'
 import { CustomerSelectionDialog } from '@/components/customer/customer-selection-dialog'
+import { hasPermission } from '@/lib/auth/permissions'
 
 export function Header() {
   const { data: session } = useSession()
-  const isGeneralStaff = session?.user?.adminRole === 'staff'
+  const canViewAnalytics = hasPermission(session?.user?.permissions ?? [], 'analytics:read')
   const [castList, setCastList] = useState<Cast[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [open, setOpen] = useState(false)
@@ -230,7 +231,7 @@ export function Header() {
           </PopoverContent>
         </Popover>
 
-        {!isGeneralStaff && (
+        {canViewAnalytics && (
           <Link href="/admin/analytics/daily-sales">
             <Button
               variant="ghost"

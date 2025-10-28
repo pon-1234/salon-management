@@ -40,7 +40,13 @@ async function createAdmin() {
         password: managerPassword,
         name: '店舗マネージャー',
         role: 'manager',
-        permissions: JSON.stringify(['cast:*', 'customer:read', 'reservation:*', 'analytics:read']),
+        permissions: JSON.stringify([
+          'cast:*',
+          'customer:read',
+          'reservation:*',
+          'analytics:read',
+          'dashboard:view',
+        ]),
         isActive: true,
       },
     })
