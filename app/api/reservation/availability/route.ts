@@ -7,8 +7,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import type { PrismaClient } from '@prisma/client'
 import logger from '@/lib/logger'
-import { toZonedTime, fromZonedTime } from 'date-fns-tz'
+import { differenceInCalendarDays, parse } from 'date-fns'
+import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz'
 import { env } from '@/lib/config/env'
+import {
+  BusinessHoursRange,
+  DEFAULT_BUSINESS_HOURS,
+  parseBusinessHoursString,
+  minutesToIsoInJst,
+} from '@/lib/settings/business-hours'
 
 const JST_TIMEZONE = 'Asia/Tokyo'
 
@@ -175,10 +182,9 @@ async function handleAvailableSlots(searchParams: URLSearchParams): Promise<Next
       )
     }
 
-    const date = new Date(dateStr)
     const duration = parseInt(durationStr, 10)
 
-    if (isNaN(date.getTime()) || isNaN(duration)) {
+    if (!dateStr || isNaN(duration)) {
       return NextResponse.json({ error: 'Invalid date or duration format' }, { status: 400 })
     }
 
@@ -195,21 +201,15 @@ async function handleAvailableSlots(searchParams: URLSearchParams): Promise<Next
       return NextResponse.json({ error: 'Cast not found' }, { status: 404 })
     }
 
-    const businessHourStart = env.businessHours.start
-    const businessHourEnd = env.businessHours.end
-
-    // JSTでその日の一日を定義
-    const dateInJst = toZonedTime(date, JST_TIMEZONE)
-
-    const startOfDayInJst = new Date(dateInJst)
-    startOfDayInJst.setHours(0, 0, 0, 0)
-
-    const endOfDayInJst = new Date(dateInJst)
-    endOfDayInJst.setHours(23, 59, 59, 999)
-
-    // DBクエリのためにUTCに変換
-    const startOfDayInUtc = fromZonedTime(startOfDayInJst, JST_TIMEZONE)
-    const endOfDayInUtc = fromZonedTime(endOfDayInJst, JST_TIMEZONE)
+    const businessHours = await resolveBusinessHours()
+    const rangeStartUtc = zonedTimeToUtc(
+      minutesToIsoInJst(dateStr, businessHours.startMinutes),
+      JST_TIMEZONE
+    )
+    const rangeEndUtc = zonedTimeToUtc(
+      minutesToIsoInJst(dateStr, businessHours.endMinutes),
+      JST_TIMEZONE
+    )
 
     const reservations = await db.reservation.findMany({
       where: {
@@ -218,8 +218,8 @@ async function handleAvailableSlots(searchParams: URLSearchParams): Promise<Next
           not: 'cancelled',
         },
         startTime: {
-          gte: startOfDayInUtc,
-          lte: endOfDayInUtc,
+          gte: rangeStartUtc,
+          lt: rangeEndUtc,
         },
       },
       orderBy: {
@@ -232,39 +232,60 @@ async function handleAvailableSlots(searchParams: URLSearchParams): Promise<Next
     })
 
     // Calculate available slots
-    const availableSlots: TimeSlot[] = []
-
-    const [startHour, startMinute] = businessHourStart.split(':').map(Number)
-    const workStartInJst = new Date(dateInJst)
-    workStartInJst.setHours(startHour, startMinute, 0, 0)
-
-    const [endHour, endMinute] = businessHourEnd.split(':').map(Number)
-    const workEndInJst = new Date(dateInJst)
-    workEndInJst.setHours(endHour, endMinute, 0, 0)
-
-    let currentTimeInJst = new Date(workStartInJst)
-
-    for (const reservation of reservations) {
-      const reservationStartTimeInJst = toZonedTime(reservation.startTime, JST_TIMEZONE)
-      const reservationEndTimeInJst = toZonedTime(reservation.endTime, JST_TIMEZONE)
-
-      if (
-        reservationStartTimeInJst.getTime() - currentTimeInJst.getTime() >=
-        duration * 60 * 1000
-      ) {
-        availableSlots.push({
-          startTime: fromZonedTime(currentTimeInJst, JST_TIMEZONE).toISOString(),
-          endTime: fromZonedTime(reservationStartTimeInJst, JST_TIMEZONE).toISOString(),
-        })
-      }
-      currentTimeInJst = new Date(reservationEndTimeInJst)
+    const baseDate = parse(dateStr, 'yyyy-MM-dd', new Date())
+    const getMinutesFromDate = (date: Date) => {
+      const dateKey = formatInTimeZone(date, JST_TIMEZONE, 'yyyy-MM-dd')
+      const targetDate = parse(dateKey, 'yyyy-MM-dd', new Date())
+      const dayDiff = differenceInCalendarDays(targetDate, baseDate)
+      const minutesOfDay =
+        Number(formatInTimeZone(date, JST_TIMEZONE, 'HH')) * 60 +
+        Number(formatInTimeZone(date, JST_TIMEZONE, 'mm'))
+      return dayDiff * 24 * 60 + minutesOfDay
     }
 
-    // Check if there's time after the last reservation
-    if (workEndInJst.getTime() - currentTimeInJst.getTime() >= duration * 60 * 1000) {
+    const availableSlots: TimeSlot[] = []
+    let currentMinute = businessHours.startMinutes
+
+    for (const reservation of reservations) {
+      const reservationStartMinute = Math.max(
+        getMinutesFromDate(reservation.startTime),
+        businessHours.startMinutes
+      )
+      const reservationEndMinute = Math.min(
+        getMinutesFromDate(reservation.endTime),
+        businessHours.endMinutes
+      )
+
+      if (reservationEndMinute <= reservationStartMinute) {
+        continue
+      }
+
+      if (reservationStartMinute - currentMinute >= duration) {
+        availableSlots.push({
+          startTime: zonedTimeToUtc(
+            minutesToIsoInJst(dateStr, currentMinute),
+            JST_TIMEZONE
+          ).toISOString(),
+          endTime: zonedTimeToUtc(
+            minutesToIsoInJst(dateStr, reservationStartMinute),
+            JST_TIMEZONE
+          ).toISOString(),
+        })
+      }
+
+      currentMinute = Math.max(currentMinute, reservationEndMinute)
+    }
+
+    if (businessHours.endMinutes - currentMinute >= duration) {
       availableSlots.push({
-        startTime: fromZonedTime(currentTimeInJst, JST_TIMEZONE).toISOString(),
-        endTime: fromZonedTime(workEndInJst, JST_TIMEZONE).toISOString(),
+        startTime: zonedTimeToUtc(
+          minutesToIsoInJst(dateStr, currentMinute),
+          JST_TIMEZONE
+        ).toISOString(),
+        endTime: zonedTimeToUtc(
+          minutesToIsoInJst(dateStr, businessHours.endMinutes),
+          JST_TIMEZONE
+        ).toISOString(),
       })
     }
 
@@ -278,4 +299,17 @@ async function handleAvailableSlots(searchParams: URLSearchParams): Promise<Next
     logger.error({ err: error }, 'Error in handleAvailableSlots')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
+}
+async function resolveBusinessHours(): Promise<BusinessHoursRange> {
+  try {
+    const settings = await db.storeSettings.findFirst({
+      select: { businessHours: true },
+    })
+    if (settings?.businessHours) {
+      return parseBusinessHoursString(settings.businessHours)
+    }
+  } catch (error) {
+    logger.error({ err: error }, 'Failed to fetch store business hours')
+  }
+  return parseBusinessHoursString(`${env.businessHours.start} - ${env.businessHours.end}`)
 }

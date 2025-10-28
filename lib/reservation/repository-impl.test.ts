@@ -491,7 +491,7 @@ describe('ReservationRepositoryImpl', () => {
       const [url, init] = vi.mocked(fetch).mock.calls[0]
       expect(url).toContain('/api/reservation/availability?')
       expect(url).toContain('castId=cast1')
-      expect(url).toContain(`date=${encodeURIComponent(date.toISOString())}`)
+      expect(url).toContain('date=2024-01-01')
       expect(url).toContain('duration=60')
       expect(init?.method).toBe('GET')
       expect(result).toEqual(mockSlots.availableSlots)

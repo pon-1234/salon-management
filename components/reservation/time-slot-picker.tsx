@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Clock, Loader2, AlertCircle } from 'lucide-react'
 import { useAvailability } from '@/hooks/use-availability'
 import { cn } from '@/lib/utils'
+import { BusinessHoursRange } from '@/lib/settings/business-hours'
 
 interface TimeSlotPickerProps {
   castId: string
@@ -19,6 +20,7 @@ interface TimeSlotPickerProps {
   duration: number
   selectedTime?: string
   onTimeSelect: (time: string) => void
+  businessHours: BusinessHoursRange
 }
 
 export function TimeSlotPicker({
@@ -27,6 +29,7 @@ export function TimeSlotPicker({
   duration,
   selectedTime,
   onTimeSelect,
+  businessHours,
 }: TimeSlotPickerProps) {
   const { loading, error, availableSlots, getAvailableSlots, generateTimeSlots, isSlotAvailable } =
     useAvailability()
@@ -37,25 +40,22 @@ export function TimeSlotPicker({
 
   useEffect(() => {
     if (castId && date && duration) {
-      // Generate all possible time slots
-      const slots = generateTimeSlots(date, duration)
+      const slots = generateTimeSlots(date, duration, businessHours)
       setAllSlots(slots.map((slot) => ({ ...slot, available: false })))
 
-      // Fetch available slots
-      getAvailableSlots(castId, date, duration)
+      getAvailableSlots(castId, date, duration, businessHours)
     }
-  }, [castId, date, duration, generateTimeSlots, getAvailableSlots])
+  }, [castId, date, duration, businessHours, generateTimeSlots, getAvailableSlots])
 
   useEffect(() => {
-    // Update slot availability based on fetched data
-    if (availableSlots.length > 0) {
-      const updatedSlots = allSlots.map((slot) => ({
+    setAllSlots((prev) =>
+      prev.map((slot) => ({
         ...slot,
-        available: isSlotAvailable(slot, availableSlots),
+        available:
+          availableSlots.length > 0 ? isSlotAvailable(slot, availableSlots) : false,
       }))
-      setAllSlots(updatedSlots)
-    }
-  }, [availableSlots, allSlots, isSlotAvailable])
+    )
+  }, [availableSlots, isSlotAvailable])
 
   const formatTime = (isoString: string) => {
     return formatInTimeZone(new Date(isoString), 'Asia/Tokyo', 'HH:mm')

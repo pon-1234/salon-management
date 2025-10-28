@@ -4,6 +4,7 @@ import { RefreshCw, Filter, UserPlus, UserMinus } from 'lucide-react'
 import { QuickBookingDialog } from './quick-booking-dialog'
 import { CustomerSelectionDialog } from '@/components/customer/customer-selection-dialog'
 import { Customer } from '@/lib/customer/types'
+import { BusinessHoursRange } from '@/lib/settings/business-hours'
 
 interface ActionButtonsProps {
   onRefresh: () => void
@@ -11,6 +12,7 @@ interface ActionButtonsProps {
   onCustomerSelect: (customer: Customer | null) => void
   selectedCustomer: Customer | null
   onReservationCreated?: (reservationId?: string) => void
+  businessHours: BusinessHoursRange
 }
 
 export function ActionButtons({
@@ -19,6 +21,7 @@ export function ActionButtons({
   onCustomerSelect,
   selectedCustomer,
   onReservationCreated,
+  businessHours,
 }: ActionButtonsProps) {
   const [openQuickBooking, setOpenQuickBooking] = useState(false)
   const [showCustomerDialog, setShowCustomerDialog] = useState(false)
@@ -56,6 +59,7 @@ export function ActionButtons({
         onOpenChange={setOpenQuickBooking}
         selectedCustomer={selectedCustomer}
         onReservationCreated={onReservationCreated}
+        businessHours={businessHours}
       />
       <CustomerSelectionDialog
         open={showCustomerDialog}

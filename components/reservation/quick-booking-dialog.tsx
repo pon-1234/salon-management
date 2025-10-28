@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { format } from 'date-fns'
+import { format, addMinutes } from 'date-fns'
 import { utcToZonedTime, zonedTimeToUtc, formatInTimeZone } from 'date-fns-tz'
 import {
   Phone,
@@ -44,6 +44,7 @@ import { isVipMember } from '@/lib/utils'
 import { resolveOptionId } from '@/lib/options/data'
 import { getDesignationFees } from '@/lib/designation/data'
 import type { DesignationFee } from '@/lib/designation/types'
+import { BusinessHoursRange } from '@/lib/settings/business-hours'
 
 type DesignationType = 'none' | 'regular' | 'special'
 
@@ -71,6 +72,29 @@ const formatDateInJst = (date: Date) =>
 
 const formatTimeInJst = (date: Date) =>
   format(utcToZonedTime(date, JST_TIMEZONE), 'HH:mm')
+
+const MINUTES_IN_DAY = 24 * 60
+
+const timeStringToMinutes = (value: string): number | null => {
+  const match = value.match(/^(\d{1,2}):(\d{2})$/)
+  if (!match) return null
+  const hours = Number(match[1])
+  const minutes = Number(match[2])
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null
+  return hours * 60 + minutes
+}
+
+const normalizeToBusinessMinutes = (
+  timeValue: string,
+  range: BusinessHoursRange
+): number | null => {
+  const base = timeStringToMinutes(timeValue)
+  if (base === null) return null
+  if (range.endMinutes > MINUTES_IN_DAY && base < range.startMinutes) {
+    return base + MINUTES_IN_DAY
+  }
+  return base
+}
 
 const getDesignationFeeAmount = (type: DesignationType, cast?: Cast) => {
   if (!cast) return 0
@@ -162,6 +186,7 @@ interface QuickBookingDialogProps {
   selectedTime?: Date
   selectedCustomer: Customer | null
   onReservationCreated?: (reservationId?: string) => void
+  businessHours: BusinessHoursRange
 }
 
 export function QuickBookingDialog({
@@ -171,6 +196,7 @@ export function QuickBookingDialog({
   selectedTime,
   selectedCustomer,
   onReservationCreated,
+  businessHours,
 }: QuickBookingDialogProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const totalSteps = 3
@@ -306,8 +332,8 @@ export function QuickBookingDialog({
     bookingStatus: '仮予約',
     staff: selectedStaff?.name ?? '',
     marketingChannel: 'WEB',
-    date: selectedTime ? formatDateInJst(selectedTime) : '',
-    time: selectedTime ? formatTimeInJst(selectedTime) : '',
+    date: selectedTime ? formatDateInJst(selectedTime) : formatDateInJst(new Date()),
+    time: selectedTime ? formatTimeInJst(selectedTime) : businessHours.startLabel,
     options: {},
     transportationFee: 0,
     additionalFee: 0,
@@ -600,6 +626,35 @@ export function QuickBookingDialog({
         })
         return false
       }
+
+      const bookingStartMinutes = normalizeToBusinessMinutes(
+        bookingDetails.time,
+        businessHours
+      )
+
+      if (bookingStartMinutes === null) {
+        toast({
+          title: '時間形式エラー',
+          description: '有効な時間を入力してください。',
+          variant: 'destructive',
+        })
+        return false
+      }
+
+      if (selectedCourse) {
+        const bookingEndMinutes = bookingStartMinutes + selectedCourse.duration
+        if (
+          bookingStartMinutes < businessHours.startMinutes ||
+          bookingEndMinutes > businessHours.endMinutes
+        ) {
+          toast({
+            title: '営業時間外',
+            description: `営業時間内（${businessHours.startLabel}〜${businessHours.endLabel}）で時間を選択してください。`,
+            variant: 'destructive',
+          })
+          return false
+        }
+      }
     }
 
     return true
@@ -658,15 +713,19 @@ export function QuickBookingDialog({
     try {
       setIsSubmitting(true)
 
-      const [hours, minutes] = bookingDetails.time.split(':').map(Number)
-      if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+      const bookingStartMinutes = normalizeToBusinessMinutes(
+        bookingDetails.time,
+        businessHours
+      )
+      if (bookingStartMinutes === null) {
         throw new Error('予約時間の形式が正しくありません。')
       }
 
-      const startTime = new Date(bookingDetails.date)
-      startTime.setHours(hours, minutes, 0, 0)
-      const endTime = new Date(startTime)
-      endTime.setMinutes(endTime.getMinutes() + (selectedCourse?.duration ?? 0))
+      const startTime = zonedTimeToUtc(
+        `${bookingDetails.date}T${bookingDetails.time}:00`,
+        JST_TIMEZONE
+      )
+      const endTime = addMinutes(startTime, selectedCourse?.duration ?? 0)
 
       const availability = await checkAvailability(currentStaff.id, startTime, endTime)
       if (!availability.available) {
@@ -723,8 +782,8 @@ export function QuickBookingDialog({
             const conflictStart = new Date(conflict.startTime)
             const conflictEnd = new Date(conflict.endTime)
             if (!Number.isNaN(conflictStart.getTime()) && !Number.isNaN(conflictEnd.getTime())) {
-              const startLabel = format(conflictStart, 'HH:mm')
-              const endLabel = format(conflictEnd, 'HH:mm')
+              const startLabel = formatInTimeZone(conflictStart, JST_TIMEZONE, 'HH:mm')
+              const endLabel = formatInTimeZone(conflictEnd, JST_TIMEZONE, 'HH:mm')
               errorMessage = `この時間帯（${startLabel}〜${endLabel}）は既に予約済みです。`
             }
           } catch {
@@ -790,7 +849,10 @@ export function QuickBookingDialog({
 
   const selectedTimeIso =
     bookingDetails.date && bookingDetails.time
-      ? zonedTimeToUtc(`${bookingDetails.date}T${bookingDetails.time}`, JST_TIMEZONE).toISOString()
+      ? zonedTimeToUtc(
+          `${bookingDetails.date}T${bookingDetails.time}:00`,
+          JST_TIMEZONE
+        ).toISOString()
       : undefined
 
   const stationOptions = stations.filter((station) => !selectedAreaId || station.areaId === selectedAreaId)
@@ -831,8 +893,8 @@ export function QuickBookingDialog({
       phoneNumber: selectedCustomer?.phone ?? '',
       points: selectedCustomer?.points ?? 0,
       staff: currentStaff?.name ?? '',
-      date: selectedTime ? formatDateInJst(selectedTime) : prev.date,
-      time: selectedTime ? formatTimeInJst(selectedTime) : prev.time,
+      date: selectedTime ? formatDateInJst(selectedTime) : prev.date || formatDateInJst(new Date()),
+      time: selectedTime ? formatTimeInJst(selectedTime) : businessHours.startLabel,
       options: {},
       transportationFee: stationOptions[0]?.transportationFee ?? 0,
       additionalFee: 0,
@@ -933,6 +995,7 @@ export function QuickBookingDialog({
                               date: format(zoned, 'yyyy-MM-dd'),
                             }))
                           }}
+                          businessHours={businessHours}
                         />
                       ) : (
                         <div className="rounded-lg bg-gray-50 p-4 text-center text-gray-500">

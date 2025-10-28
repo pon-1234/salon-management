@@ -3,8 +3,9 @@
  * @related_to   reservation/availability/route.ts, quick-booking-dialog.tsx
  * @known_issues None currently
  */
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { zonedTimeToUtc } from 'date-fns-tz'
+import { BusinessHoursRange, DEFAULT_BUSINESS_HOURS, minutesToIsoInJst } from '@/lib/settings/business-hours'
 
 interface TimeSlot {
   startTime: string
@@ -65,64 +66,80 @@ export function useAvailability() {
     }
   }, [])
 
-  const getAvailableSlots = useCallback(async (castId: string, dateString: string, duration: number) => {
-    setState((prev) => ({ ...prev, loading: true, error: null }))
+  const getAvailableSlots = useCallback(
+    async (
+      castId: string,
+      dateString: string,
+      duration: number,
+      businessHours: BusinessHoursRange = DEFAULT_BUSINESS_HOURS
+    ) => {
+      setState((prev) => ({ ...prev, loading: true, error: null }))
 
-    try {
-      const params = new URLSearchParams({
-        castId,
-        date: dateString,
-        duration: duration.toString(),
-      })
+      try {
+        const params = new URLSearchParams({
+          castId,
+          date: dateString,
+          duration: duration.toString(),
+        })
 
-      const response = await fetch(`/api/reservation/availability?${params}`)
-      const data = await response.json()
+        const response = await fetch(`/api/reservation/availability?${params}`)
+        const data = await response.json()
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to get available slots')
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to get available slots')
+        }
+
+        // Process slots to add availability status
+        const slots: TimeSlot[] = Array.isArray(data.availableSlots)
+          ? data.availableSlots
+          : []
+        const processedSlots = slots.map((slot: TimeSlot) => ({
+          ...slot,
+          available: true,
+        }))
+
+        setState({
+          loading: false,
+          error: null,
+          availableSlots: processedSlots,
+          conflicts: [],
+        })
+
+        return processedSlots
+      } catch (error) {
+        setState((prev) => ({
+          ...prev,
+          loading: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }))
+        return []
       }
-
-      // Process slots to add availability status
-      const slots = data.availableSlots || []
-      const processedSlots = slots.map((slot: TimeSlot) => ({
-        ...slot,
-        available: true,
-      }))
-
-      setState({
-        loading: false,
-        error: null,
-        availableSlots: processedSlots,
-        conflicts: [],
-      })
-
-      return processedSlots
-    } catch (error) {
-      setState((prev) => ({
-        ...prev,
-        loading: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }))
-      return []
-    }
-  }, [])
+    },
+    []
+  )
 
   const generateTimeSlots = useCallback(
-    (dateString: string, duration: number, workingHours = { start: '09:00', end: '18:00' }) => {
+    (
+      dateString: string,
+      duration: number,
+      businessHours: BusinessHoursRange = DEFAULT_BUSINESS_HOURS
+    ) => {
       const slots: TimeSlot[] = []
 
-      const startUtc = zonedTimeToUtc(`${dateString}T${workingHours.start}:00`, JST_TIMEZONE)
-      const endUtc = zonedTimeToUtc(`${dateString}T${workingHours.end}:00`, JST_TIMEZONE)
+      for (
+        let minute = businessHours.startMinutes;
+        minute + duration <= businessHours.endMinutes;
+        minute += 30
+      ) {
+        const slotStartIso = minutesToIsoInJst(dateString, minute)
+        const slotEndIso = minutesToIsoInJst(dateString, minute + duration)
+        const startUtc = zonedTimeToUtc(slotStartIso, JST_TIMEZONE)
+        const endUtc = zonedTimeToUtc(slotEndIso, JST_TIMEZONE)
 
-      const slotDurationMs = duration * 60 * 1000
-
-      for (let cursor = new Date(startUtc); cursor.getTime() + slotDurationMs <= endUtc.getTime(); ) {
-        const slotEnd = new Date(cursor.getTime() + slotDurationMs)
         slots.push({
-          startTime: cursor.toISOString(),
-          endTime: slotEnd.toISOString(),
+          startTime: startUtc.toISOString(),
+          endTime: endUtc.toISOString(),
         })
-        cursor = new Date(cursor.getTime() + 30 * 60 * 1000)
       }
 
       return slots

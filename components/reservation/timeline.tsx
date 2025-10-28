@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
@@ -11,10 +11,19 @@ import { Clock, User, AlertCircle, Plus } from 'lucide-react'
 import { Cast, Appointment } from '@/lib/cast/types'
 import { logError } from '@/lib/error-utils'
 import { StaffDialog } from '@/components/cast/cast-dialog'
-import { format } from 'date-fns'
+import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz'
+import { differenceInCalendarDays, parse } from 'date-fns'
 import { getCourseById } from '@/lib/course-option/utils'
 import { Customer } from '@/lib/customer/types'
 import { ReservationData } from '@/lib/types/reservation'
+import {
+  BusinessHoursRange,
+  formatMinutesAsLabel,
+  minutesToIsoInJst,
+} from '@/lib/settings/business-hours'
+
+const JST_TIMEZONE = 'Asia/Tokyo'
+const MINUTES_IN_DAY = 24 * 60
 
 // safeMapを安全に実装（undefinedやnullでも空配列を返す）
 function safeMap<T, U>(arr: T[] | undefined | null, callback: (item: T, index: number) => U): U[] {
@@ -28,6 +37,7 @@ interface TimelineProps {
   setSelectedAppointment: (reservation: ReservationData) => void
   reservations: ReservationData[]
   onReservationCreated?: (reservationId?: string) => void
+  businessHours: BusinessHoursRange
 }
 
 interface AvailableSlot {
@@ -50,16 +60,45 @@ export function Timeline({
   setSelectedAppointment,
   reservations,
   onReservationCreated,
+  businessHours,
 }: TimelineProps) {
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null)
   const [selectedStaff, setSelectedStaff] = useState<Cast | null>(null)
   const [zoomLevel, setZoomLevel] = useState(1)
-
-  const startHour = 9
-  const endHour = 24
-  const totalHours = endHour - startHour
   const SLOT_DURATION = 30 // 30分単位
   const HOUR_WIDTH = 120 * zoomLevel // ズームに応じた幅
+  const startMinutes = businessHours.startMinutes
+  const endMinutes = businessHours.endMinutes
+  const totalMinutes = endMinutes - startMinutes
+  const hourSegments = Math.ceil(totalMinutes / 60)
+  const selectedDateKey = formatInTimeZone(selectedDate, JST_TIMEZONE, 'yyyy-MM-dd')
+
+  const getMinutesFromDate = useCallback(
+    (date: Date) => {
+      const dateKey = formatInTimeZone(date, JST_TIMEZONE, 'yyyy-MM-dd')
+      const baseDate = parse(selectedDateKey, 'yyyy-MM-dd', new Date())
+      const targetDate = parse(dateKey, 'yyyy-MM-dd', new Date())
+      const dayDiff = differenceInCalendarDays(targetDate, baseDate)
+      const minutesOfDay =
+        Number(formatInTimeZone(date, JST_TIMEZONE, 'HH')) * 60 +
+        Number(formatInTimeZone(date, JST_TIMEZONE, 'mm'))
+      return dayDiff * MINUTES_IN_DAY + minutesOfDay
+    },
+    [selectedDateKey]
+  )
+
+  const getTimeBlockStyle = useCallback(
+    (startTime: Date, endTime: Date) => {
+      const startMinute = getMinutesFromDate(startTime)
+      const endMinute = getMinutesFromDate(endTime)
+      const relativeStart = startMinute - startMinutes
+      const blockMinutes = Math.max(endMinute - startMinute, 0)
+      const left = (relativeStart / 60) * HOUR_WIDTH
+      const width = (blockMinutes / 60) * HOUR_WIDTH
+      return { left: `${left}px`, width: `${width}px` }
+    },
+    [getMinutesFromDate, startMinutes, HOUR_WIDTH]
+  )
 
   if (!staff) {
     return (
@@ -83,27 +122,11 @@ export function Timeline({
     )
   }
 
-  const getTimeBlockStyle = (startTime: Date, endTime: Date) => {
-    const start = startTime.getHours() + startTime.getMinutes() / 60
-    const end = endTime.getHours() + endTime.getMinutes() / 60
-    const left = (start - startHour) * HOUR_WIDTH
-    const width = (end - start) * HOUR_WIDTH
-    return { left: `${left}px`, width: `${width}px` }
-  }
-
   const handleAppointmentClick = (appointment: Appointment) => {
     const reservationData = reservations.find((entry) => entry.id === appointment.id)
     if (reservationData) {
       setSelectedAppointment(reservationData)
     }
-  }
-
-  const isSameDay = (date1: Date, date2: Date) => {
-    return (
-      date1.getFullYear() === date2.getFullYear() &&
-      date1.getMonth() === date2.getMonth() &&
-      date1.getDate() === date2.getDate()
-    )
   }
 
   const generateTimeSlots = (startTime: Date, endTime: Date): TimeSlot[] => {
@@ -125,7 +148,10 @@ export function Timeline({
   const filteredStaff = safeMap(staff, (member) => {
     const filteredAppointments = safeMap(
       member.appointments,
-      (app) => (isSameDay(app.startTime, selectedDate) ? app : null) // selectedDateに基づいてフィルタリング
+      (app) =>
+        formatInTimeZone(app.startTime, JST_TIMEZONE, 'yyyy-MM-dd') === selectedDateKey
+          ? app
+          : null
     ).filter((app): app is Appointment => app !== null)
 
     return {
@@ -161,39 +187,58 @@ export function Timeline({
     return true
   })
 
+  const minutesToUtcDate = useCallback(
+    (minutes: number) =>
+      new Date(zonedTimeToUtc(minutesToIsoInJst(selectedDateKey, minutes), JST_TIMEZONE)),
+    [selectedDateKey]
+  )
+
   const getAvailableSlots = (staff: Cast): AvailableSlot[] => {
     try {
       if (!staff.workStart || !staff.workEnd) return []
+
+      const workStartMinute = Math.max(getMinutesFromDate(staff.workStart), startMinutes)
+      const workEndMinute = Math.min(getMinutesFromDate(staff.workEnd), endMinutes)
+
+      if (workEndMinute <= workStartMinute) {
+        return []
+      }
 
       const slots: AvailableSlot[] = []
       const sortedAppointments = safeMap(staff.appointments, (app) => app).sort(
         (a, b) => a.startTime.getTime() - b.startTime.getTime()
       )
 
-      let currentTime = new Date(staff.workStart)
+      let currentMinute = workStartMinute
 
       sortedAppointments.forEach((appointment) => {
-        if (currentTime < appointment.startTime) {
-          const duration = Math.round(
-            (appointment.startTime.getTime() - currentTime.getTime()) / (1000 * 60)
-          )
+        const appointmentStartMinute = Math.max(
+          getMinutesFromDate(appointment.startTime),
+          startMinutes
+        )
+        const appointmentEndMinute = Math.min(
+          getMinutesFromDate(appointment.endTime),
+          endMinutes
+        )
+
+        if (appointmentStartMinute - currentMinute >= SLOT_DURATION) {
           slots.push({
-            startTime: new Date(currentTime),
-            endTime: new Date(appointment.startTime),
-            duration,
+            startTime: minutesToUtcDate(currentMinute),
+            endTime: minutesToUtcDate(appointmentStartMinute),
+            duration: appointmentStartMinute - currentMinute,
             staffId: staff.id,
             staffName: staff.name,
           })
         }
-        currentTime = new Date(appointment.endTime)
+
+        currentMinute = Math.max(currentMinute, appointmentEndMinute)
       })
 
-      if (currentTime < staff.workEnd) {
-        const duration = Math.round((staff.workEnd.getTime() - currentTime.getTime()) / (1000 * 60))
+      if (workEndMinute - currentMinute >= SLOT_DURATION) {
         slots.push({
-          startTime: new Date(currentTime),
-          endTime: new Date(staff.workEnd),
-          duration,
+          startTime: minutesToUtcDate(currentMinute),
+          endTime: minutesToUtcDate(workEndMinute),
+          duration: workEndMinute - currentMinute,
           staffId: staff.id,
           staffName: staff.name,
         })
@@ -218,10 +263,17 @@ export function Timeline({
   const currentTime = new Date()
   const currentTimePosition = (() => {
     const now = new Date()
-    if (!isSameDay(now, selectedDate)) return null
-    const hours = now.getHours() + now.getMinutes() / 60
-    if (hours < startHour || hours > endHour) return null
-    return (hours - startHour) * HOUR_WIDTH
+    const nowMinutes = getMinutesFromDate(now)
+    if (formatInTimeZone(now, JST_TIMEZONE, 'yyyy-MM-dd') !== selectedDateKey) {
+      const diff = differenceInCalendarDays(
+        parse(formatInTimeZone(now, JST_TIMEZONE, 'yyyy-MM-dd'), 'yyyy-MM-dd', new Date()),
+        parse(selectedDateKey, 'yyyy-MM-dd', new Date())
+      )
+      if (diff !== 0) return null
+    }
+    const relative = nowMinutes - startMinutes
+    if (relative < 0 || relative > totalMinutes) return null
+    return (relative / 60) * HOUR_WIDTH
   })()
 
   return (
@@ -251,11 +303,13 @@ export function Timeline({
             125%
           </Button>
         </div>
-        <div className="text-sm text-gray-600">{format(selectedDate, 'yyyy年MM月dd日(E)')}</div>
+        <div className="text-sm text-gray-600">
+          {formatInTimeZone(selectedDate, JST_TIMEZONE, 'yyyy年MM月dd日(E)')}
+        </div>
       </div>
 
       <ScrollArea className="w-full">
-        <div className="flex" style={{ minWidth: `${totalHours * HOUR_WIDTH + 240}px` }}>
+        <div className="flex" style={{ minWidth: `${hourSegments * HOUR_WIDTH + 240}px` }}>
           {/* スタッフ列 */}
           <div
             className="sticky left-0 z-20 border-r bg-white shadow-sm"
@@ -280,15 +334,9 @@ export function Timeline({
                   {member.workStart && member.workEnd ? (
                     <div className="flex items-center gap-1 text-xs text-gray-600">
                       <Clock className="h-3 w-3" />
-                      {member.workStart.toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      {formatInTimeZone(member.workStart, JST_TIMEZONE, 'HH:mm')}
                       {' - '}
-                      {member.workEnd.toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      {formatInTimeZone(member.workEnd, JST_TIMEZONE, 'HH:mm')}
                     </div>
                   ) : (
                     <Badge variant="secondary" className="text-xs">
@@ -309,18 +357,22 @@ export function Timeline({
           <div className="relative flex-1">
             {/* 時間ヘッダー */}
             <div className="sticky top-0 z-10 flex h-16 border-b bg-gray-50">
-              {Array.from({ length: totalHours }).map((_, index) => (
-                <div
-                  key={index}
-                  className="flex flex-col items-center justify-center border-r"
-                  style={{ width: `${HOUR_WIDTH}px` }}
-                >
-                  <div className="font-medium">{index + startHour}:00</div>
-                  <div className="text-xs text-gray-500">
-                    {index + startHour < 12 ? '午前' : '午後'}
+              {Array.from({ length: hourSegments }).map((_, index) => {
+                const minute = startMinutes + index * 60
+                const minuteOfDay = ((minute % MINUTES_IN_DAY) + MINUTES_IN_DAY) % MINUTES_IN_DAY
+                const label = formatMinutesAsLabel(minute)
+                const period = minuteOfDay < 12 * 60 ? '午前' : '午後'
+                return (
+                  <div
+                    key={index}
+                    className="flex flex-col items-center justify-center border-r"
+                    style={{ width: `${HOUR_WIDTH}px` }}
+                  >
+                    <div className="font-medium">{label}</div>
+                    <div className="text-xs text-gray-500">{period}</div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
             {/* スタッフ別タイムライン */}
@@ -375,15 +427,9 @@ export function Timeline({
                     </div>
                     <div className="flex items-center gap-1 text-xs text-gray-600">
                       <Clock className="h-3 w-3" />
-                      {appointment.startTime.toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      {formatInTimeZone(appointment.startTime, JST_TIMEZONE, 'HH:mm')}
                       -
-                      {appointment.endTime.toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      {formatInTimeZone(appointment.endTime, JST_TIMEZONE, 'HH:mm')}
                     </div>
                     {appointment.serviceId && (
                       <div className="mt-1 truncate text-xs text-gray-500">
@@ -413,10 +459,7 @@ export function Timeline({
                         )}
                       >
                         <span className={cn('text-xs', disabled ? 'text-gray-400' : 'text-gray-500')}>
-                          {slot.startTime.toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                          {formatInTimeZone(slot.startTime, JST_TIMEZONE, 'HH:mm')}
                         </span>
                         <Button
                           type="button"
@@ -443,7 +486,7 @@ export function Timeline({
                 })}
 
                 {/* 時間グリッド線 */}
-                {Array.from({ length: totalHours }).map((_, index) => (
+                {Array.from({ length: hourSegments }).map((_, index) => (
                   <div
                     key={index}
                     className="absolute top-0 h-full border-r border-gray-200"
@@ -461,7 +504,7 @@ export function Timeline({
               >
                 <div className="absolute -left-1 -top-2 h-3 w-3 rounded-full bg-red-500" />
                 <div className="absolute -left-8 -top-6 rounded bg-white px-1 text-xs font-medium text-red-600">
-                  {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {formatInTimeZone(currentTime, JST_TIMEZONE, 'HH:mm')}
                 </div>
               </div>
             )}
@@ -486,6 +529,7 @@ export function Timeline({
         onReservationCreated={(reservationId) => {
           onReservationCreated?.(reservationId)
         }}
+        businessHours={businessHours}
       />
 
       <StaffDialog

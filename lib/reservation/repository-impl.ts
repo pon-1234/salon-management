@@ -3,6 +3,7 @@
  * @related_to   ReservationRepository, Reservation API endpoints, fetch API
  * @known_issues None currently
  */
+import { formatInTimeZone } from 'date-fns-tz'
 import { ReservationRepository } from './repository'
 import { Reservation, Service } from '../types/reservation'
 import { ApiClient, ApiError, defaultApiClient } from '@/lib/http/api-client'
@@ -11,6 +12,7 @@ const RESERVATION_ENDPOINT = '/api/reservation'
 const COURSE_ENDPOINT = '/api/course'
 const OPTION_ENDPOINT = '/api/option'
 const AVAILABILITY_ENDPOINT = '/api/reservation/availability'
+const JST_TIMEZONE = 'Asia/Tokyo'
 
 function normalizeApiError(error: ApiError): ApiError {
   const body = (error.body ?? null) as { error?: string; conflicts?: unknown } | null
@@ -151,7 +153,7 @@ export class ReservationRepositoryImpl implements ReservationRepository {
   ): Promise<{ startTime: string; endTime: string }[]> {
     const params = new URLSearchParams({
       castId,
-      date: date.toISOString(),
+      date: formatInTimeZone(date, JST_TIMEZONE, 'yyyy-MM-dd'),
       duration: duration.toString(),
     })
 

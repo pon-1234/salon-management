@@ -17,6 +17,9 @@ vi.mock('@/lib/db', () => ({
     cast: {
       findUnique: vi.fn(),
     },
+    storeSettings: {
+      findFirst: vi.fn(),
+    },
   },
 }))
 
@@ -30,6 +33,9 @@ vi.mock('@/lib/logger', () => ({
 describe('GET /api/reservation/availability', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(db.storeSettings.findFirst).mockResolvedValue({
+      businessHours: '09:00 - 23:00',
+    } as any)
   })
 
   it('should return available time slots for a specific cast and date', async () => {

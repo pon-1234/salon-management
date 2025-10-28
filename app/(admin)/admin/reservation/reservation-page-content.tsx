@@ -23,18 +23,16 @@ import { mapReservationToReservationData } from '@/lib/reservation/transformers'
 import { ReservationRepositoryImpl } from '@/lib/reservation/repository-impl'
 import { toast } from '@/hooks/use-toast'
 import { recordModification } from '@/lib/modification-history/data'
-import { startOfDay, endOfDay } from 'date-fns'
+import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz'
 import { CustomerUseCases } from '@/lib/customer/usecases'
 import { CustomerRepositoryImpl } from '@/lib/customer/repository-impl'
 import { shouldUseMockFallbacks } from '@/lib/config/feature-flags'
-
-const isSameDay = (date1: Date, date2: Date) => {
-  return (
-    date1.getFullYear() === date2.getFullYear() &&
-    date1.getMonth() === date2.getMonth() &&
-    date1.getDate() === date2.getDate()
-  )
-}
+import {
+  BusinessHoursRange,
+  DEFAULT_BUSINESS_HOURS,
+  parseBusinessHoursString,
+  minutesToIsoInJst,
+} from '@/lib/settings/business-hours'
 
 interface ScheduleEntry {
   castId: string
@@ -42,6 +40,8 @@ interface ScheduleEntry {
   endTime?: string
   isAvailable?: boolean
 }
+
+const JST_TIMEZONE = 'Asia/Tokyo'
 
 export function ReservationPageContent() {
   const useMockFallbacks = shouldUseMockFallbacks()
@@ -57,6 +57,7 @@ export function ReservationPageContent() {
   )
   const [rawReservations, setRawReservations] = useState<Reservation[]>([])
   const [currentDayReservations, setCurrentDayReservations] = useState<ReservationData[]>([])
+  const [businessHours, setBusinessHours] = useState<BusinessHoursRange>(DEFAULT_BUSINESS_HOURS)
   const reservationRepository = useMemo(() => new ReservationRepositoryImpl(), [])
   const { data: session } = useSession()
   const customerUseCases = useMemo(
@@ -66,6 +67,11 @@ export function ReservationPageContent() {
 
   const searchParams = useSearchParams()
   const customerId = searchParams.get('customerId')
+
+  const selectedDateKey = useMemo(
+    () => formatInTimeZone(selectedDate, JST_TIMEZONE, 'yyyy-MM-dd'),
+    [selectedDate]
+  )
 
   useEffect(() => {
     let ignore = false
@@ -135,10 +141,44 @@ export function ReservationPageContent() {
     } else {
       setSelectedCustomer(null)
     }
-  }, [customerId, customers, customerUseCases, useMockFallbacks])
+  }, [customerId, customerUseCases, customers, useMockFallbacks])
 
   useEffect(() => {
     window.scrollTo(0, 0)
+  }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    const loadBusinessHours = async () => {
+      try {
+        const response = await fetch('/api/settings/store', {
+          cache: 'no-store',
+          credentials: 'include',
+          signal: controller.signal,
+        })
+        if (!response.ok) {
+          throw new Error(`Failed to fetch store settings: ${response.status}`)
+        }
+        const payload = await response.json()
+        const settings = payload?.data ?? payload
+        if (settings?.businessHours) {
+          setBusinessHours(parseBusinessHoursString(settings.businessHours))
+        } else {
+          setBusinessHours(DEFAULT_BUSINESS_HOURS)
+        }
+      } catch (error) {
+        if ((error as any)?.name === 'AbortError') return
+        console.error('Failed to load store settings:', error)
+        setBusinessHours(DEFAULT_BUSINESS_HOURS)
+      }
+    }
+
+    loadBusinessHours()
+
+    return () => {
+      controller.abort()
+    }
   }, [])
 
   useEffect(() => {
@@ -179,13 +219,27 @@ export function ReservationPageContent() {
     })) as Reservation[]
     setRawReservations(normalizedReservations)
 
-    const dayStart = startOfDay(selectedDate)
-    const dayEnd = endOfDay(selectedDate)
+    const todaysReservationData = normalizedReservations
+      .filter(
+        (reservation) =>
+          formatInTimeZone(reservation.startTime, JST_TIMEZONE, 'yyyy-MM-dd') === selectedDateKey
+      )
+      .map((reservation) =>
+        mapReservationToReservationData(reservation, { casts: allCasts, customers })
+      )
+    setCurrentDayReservations(todaysReservationData)
 
     let schedulesByCast = new Map<string, ScheduleEntry>()
     try {
+      const scheduleStartUtc = zonedTimeToUtc(
+        `${selectedDateKey}T00:00:00`,
+        JST_TIMEZONE
+      ).toISOString()
+      const scheduleEndLocal = minutesToIsoInJst(selectedDateKey, businessHours.endMinutes)
+      const scheduleEndUtc = zonedTimeToUtc(scheduleEndLocal, JST_TIMEZONE).toISOString()
+
       const response = await fetch(
-        `/api/cast-schedule?startDate=${dayStart.toISOString()}&endDate=${dayEnd.toISOString()}`,
+        `/api/cast-schedule?startDate=${scheduleStartUtc}&endDate=${scheduleEndUtc}`,
         {
           credentials: 'include',
           cache: 'no-store',
@@ -204,15 +258,6 @@ export function ReservationPageContent() {
     } catch (error) {
       console.error('Failed to load schedule data:', error)
     }
-
-    const todaysReservations = normalizedReservations.filter((reservation) =>
-      isSameDay(new Date(reservation.startTime), selectedDate)
-    )
-
-    const todaysReservationData = todaysReservations.map((reservation) =>
-      mapReservationToReservationData(reservation, { casts: allCasts, customers })
-    )
-    setCurrentDayReservations(todaysReservationData)
 
     let updatedCastData = allCasts
       .map((member) => {
@@ -274,11 +319,11 @@ export function ReservationPageContent() {
 
     setCastData(updatedCastData)
     return todaysReservationData
-  }, [allCasts, selectedDate, selectedCustomer, customers])
+  }, [allCasts, selectedDateKey, selectedCustomer, customers, businessHours])
 
   useEffect(() => {
     fetchData()
-  }, [selectedDate, selectedCustomer, fetchData])
+  }, [selectedDateKey, selectedCustomer, fetchData])
 
   const handleRefresh = () => {
     fetchData()
@@ -493,6 +538,7 @@ export function ReservationPageContent() {
         onCustomerSelect={handleCustomerSelection}
         selectedCustomer={selectedCustomer}
         onReservationCreated={handleRefresh}
+        businessHours={businessHours}
       />
 
       <FilterDialog
@@ -509,6 +555,7 @@ export function ReservationPageContent() {
           setSelectedAppointment={setSelectedAppointment}
           reservations={currentDayReservations}
           onReservationCreated={handleRefresh}
+          businessHours={businessHours}
         />
       ) : (
         <ReservationTable
