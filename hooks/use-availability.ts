@@ -4,7 +4,7 @@
  * @known_issues None currently
  */
 import { useState, useCallback } from 'react'
-import { zonedTimeToUtc } from 'date-fns-tz'
+import zonedTimeToUtc from 'date-fns-tz/zonedTimeToUtc'
 import { BusinessHoursRange, DEFAULT_BUSINESS_HOURS, minutesToIsoInJst } from '@/lib/settings/business-hours'
 
 interface TimeSlot {

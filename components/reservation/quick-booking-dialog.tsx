@@ -17,7 +17,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { format, addMinutes } from 'date-fns'
-import { utcToZonedTime, zonedTimeToUtc, formatInTimeZone } from 'date-fns-tz'
+import utcToZonedTime from 'date-fns-tz/utcToZonedTime'
+import zonedTimeToUtc from 'date-fns-tz/zonedTimeToUtc'
+import formatInTimeZone from 'date-fns-tz/formatInTimeZone'
 import {
   Phone,
   Clock,

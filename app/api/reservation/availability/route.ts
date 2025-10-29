@@ -8,7 +8,8 @@ import { db } from '@/lib/db'
 import type { PrismaClient } from '@prisma/client'
 import logger from '@/lib/logger'
 import { differenceInCalendarDays, parse } from 'date-fns'
-import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz'
+import formatInTimeZone from 'date-fns-tz/formatInTimeZone'
+import zonedTimeToUtc from 'date-fns-tz/zonedTimeToUtc'
 import {
   BusinessHoursRange,
   DEFAULT_BUSINESS_HOURS,
