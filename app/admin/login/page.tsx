@@ -64,13 +64,21 @@ export default function AdminLoginPage() {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             {/* Demo Credentials */}
-            <div className="rounded-lg bg-blue-50 p-4">
-              <p className="text-sm text-blue-800">
-                <strong>デモ用ログイン情報:</strong>
-                <br />
-                メール: admin@example.com
-                <br />
-                パスワード: admin123
+            <div className="space-y-2 rounded-lg bg-blue-50 p-4">
+              <p className="text-sm font-semibold text-blue-900">デモ用ログイン情報</p>
+              <ul className="space-y-1 text-sm text-blue-800">
+                <li>
+                  <span className="font-medium">スーパー管理者:</span> admin@example.com / admin123
+                </li>
+                <li>
+                  <span className="font-medium">マネージャー:</span> manager@example.com / manager123
+                </li>
+                <li>
+                  <span className="font-medium">スタッフ:</span> staff@example.com / staff123
+                </li>
+              </ul>
+              <p className="text-xs text-blue-700">
+                * スタッフロールは閲覧制限があります。必要に応じてロールを切り替えて動作を確認してください。
               </p>
             </div>
             {error && (
