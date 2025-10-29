@@ -13,6 +13,7 @@ import {
   Clock,
   Settings,
   ListChecks,
+  LogOut,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -36,7 +37,7 @@ import { Cast } from '@/lib/cast/types'
 import { normalizeCastList } from '@/lib/cast/mapper'
 import { useNotifications } from '@/contexts/notification-context'
 import { StoreSelector } from '@/components/store/store-selector'
-import { useSession } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
 import { CustomerSelectionDialog } from '@/components/customer/customer-selection-dialog'
 import { hasPermission } from '@/lib/auth/permissions'
 
@@ -280,6 +281,15 @@ export function Header() {
             />
           </PopoverContent>
         </Popover>
+
+        <Button
+          variant="ghost"
+          className="flex h-auto flex-col items-center gap-0.5 px-3 py-2 text-red-600"
+          onClick={() => signOut({ callbackUrl: '/admin/login' })}
+        >
+          <LogOut className="h-5 w-5" />
+          <span className="text-xs">ログアウト</span>
+        </Button>
 
         <ReservationDialog
           open={!!selectedReservation}
