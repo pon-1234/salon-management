@@ -281,6 +281,57 @@ export async function POST(request: NextRequest) {
           ? reservationData.options
           : []
 
+        const optionIds: string[] = Array.isArray(reservationData.options)
+          ? reservationData.options.filter(
+              (optionId): optionId is string => typeof optionId === 'string' && optionId.trim().length > 0
+            )
+          : []
+
+        let optionsToCreate: Array<{
+          optionId: string
+          optionName: string
+          optionPrice: number
+          storeShare: number | null
+          castShare: number | null
+        }> = []
+
+        if (optionIds.length) {
+          const uniqueOptionIds = Array.from(new Set(optionIds))
+          const optionRecords = await tx.optionPrice.findMany({
+            where: { id: { in: uniqueOptionIds } },
+            select: {
+              id: true,
+              name: true,
+              price: true,
+              storeShare: true,
+              castShare: true,
+            },
+          })
+
+          const foundIds = new Set(optionRecords.map((option) => option.id))
+          const missingOptionIds = uniqueOptionIds.filter((optionId) => !foundIds.has(optionId))
+
+          if (missingOptionIds.length) {
+            const invalidOptionError = new Error('Invalid option selection')
+            ;(invalidOptionError as any).missingOptions = missingOptionIds
+            throw invalidOptionError
+          }
+
+          optionsToCreate = optionIds.map((optionId) => {
+            const option = optionRecords.find((record) => record.id === optionId)
+            if (!option) {
+              throw new Error(`Invalid option selection: ${optionId}`)
+            }
+            return {
+              optionId: option.id,
+              optionName: option.name,
+              optionPrice: option.price,
+              storeShare: option.storeShare ?? null,
+              castShare: option.castShare ?? null,
+            }
+          })
+        }
+
         const createdReservation = await tx.reservation.create({
           data: {
             customerId: targetCustomerId,
@@ -302,9 +353,9 @@ export async function POST(request: NextRequest) {
             staffRevenue: reservationData.staffRevenue ?? null,
             startTime,
             endTime,
-            options: optionIds.length
+            options: optionsToCreate.length
               ? {
-                  create: optionIds.map((optionId) => ({ optionId })),
+                  create: optionsToCreate,
                 }
               : undefined,
           },
@@ -337,6 +388,17 @@ export async function POST(request: NextRequest) {
             conflicts: Array.isArray((error as any)?.conflicts) ? (error as any).conflicts : [],
           },
           { status: 409 }
+        )
+      }
+      if (error.message?.startsWith('Invalid option selection')) {
+        return NextResponse.json(
+          {
+            error: '選択されたオプションが存在しません。',
+            missingOptions: Array.isArray((error as any)?.missingOptions)
+              ? (error as any).missingOptions
+              : [],
+          },
+          { status: 400 }
         )
       }
       logger.error({ err: error }, 'Error creating reservation')
