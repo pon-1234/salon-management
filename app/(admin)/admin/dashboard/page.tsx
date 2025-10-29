@@ -254,30 +254,8 @@ export default function DashboardPage() {
     fetchData()
   }, [canViewDashboard, status])
 
-  if (status === 'loading') {
-    return (
-      <div className="flex min-h-[calc(100vh-80px)] w-full items-center justify-center bg-muted/20 p-8">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          ダッシュボードを読み込み中です...
-        </div>
-      </div>
-    )
-  }
-
-  if (!canViewDashboard) {
-    return (
-      <div className="flex min-h-[calc(100vh-80px)] w-full items-center justify-center bg-muted/20 p-8">
-        <div className="max-w-md">
-          <Alert variant="destructive">
-            <AlertDescription>
-              ダッシュボードへのアクセス権限がありません。必要な場合は管理者にお問い合わせください。
-            </AlertDescription>
-          </Alert>
-        </div>
-      </div>
-    )
-  }
+  const isSessionLoading = status === 'loading'
+  const isUnauthorized = !isSessionLoading && !canViewDashboard
 
   // 予約データをダイアログ用に変換
   const convertToReservationData = (reservation: Reservation): ReservationData | null => {
@@ -481,6 +459,31 @@ export default function DashboardPage() {
     ],
     [reservations]
   )
+
+  if (isSessionLoading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center bg-gray-50 p-6">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          ダッシュボードを読み込み中です...
+        </div>
+      </div>
+    )
+  }
+
+  if (isUnauthorized) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center bg-gray-50 p-6">
+        <div className="max-w-md">
+          <Alert variant="destructive">
+            <AlertDescription>
+              ダッシュボードへのアクセス権限がありません。必要な場合は管理者にお問い合わせください。
+            </AlertDescription>
+          </Alert>
+        </div>
+      </div>
+    )
+  }
 
   if (loading) {
     return (
