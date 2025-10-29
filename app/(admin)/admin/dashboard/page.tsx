@@ -217,10 +217,10 @@ export default function DashboardPage() {
   const { data: session, status } = useSession()
   const grantedPermissions = session?.user?.permissions ?? []
   const isAdmin = session?.user?.role === 'admin'
-  const canViewDashboard =
-    isAdmin &&
-    (hasPermission(grantedPermissions, 'dashboard:view') ||
-      hasPermission(grantedPermissions, 'analytics:read'))
+  const isAdminUser = isAdmin
+  const canViewFinancials =
+    hasPermission(grantedPermissions, 'analytics:read') ||
+    hasPermission(grantedPermissions, 'dashboard:view')
 
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [loading, setLoading] = useState(true)
@@ -233,7 +233,7 @@ export default function DashboardPage() {
       return
     }
 
-    if (!canViewDashboard || status !== 'authenticated') {
+    if (!isAdminUser || status !== 'authenticated') {
       setLoading((prev) => (prev ? false : prev))
       setReservations((prev) => (prev.length ? [] : prev))
       return
@@ -252,10 +252,10 @@ export default function DashboardPage() {
     }
 
     fetchData()
-  }, [canViewDashboard, status])
+  }, [isAdminUser, status])
 
   const isSessionLoading = status === 'loading'
-  const isUnauthorized = !isSessionLoading && !canViewDashboard
+  const isUnauthorized = !isSessionLoading && !isAdminUser
 
   // 予約データをダイアログ用に変換
   const convertToReservationData = (reservation: Reservation): ReservationData | null => {
@@ -563,16 +563,26 @@ export default function DashboardPage() {
 
       {/* メインKPIカード */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <KPICard
-          title="総売上"
-          value={`¥${kpis.totalRevenue.toLocaleString()}`}
-          change={Math.round(kpis.revenueChange)}
-          changeLabel={`前${selectedPeriod === 'today' ? '日' : selectedPeriod === 'week' ? '週' : '月'}比`}
-          icon={<DollarSign />}
-          trend={kpis.revenueChange > 0 ? 'up' : kpis.revenueChange < 0 ? 'down' : 'neutral'}
-          color="primary"
-          sparklineData={salesData.map((d) => d.revenue)}
-        />
+        {canViewFinancials ? (
+          <KPICard
+            title="総売上"
+            value={`¥${kpis.totalRevenue.toLocaleString()}`}
+            change={Math.round(kpis.revenueChange)}
+            changeLabel={`前${selectedPeriod === 'today' ? '日' : selectedPeriod === 'week' ? '週' : '月'}比`}
+            icon={<DollarSign />}
+            trend={kpis.revenueChange > 0 ? 'up' : kpis.revenueChange < 0 ? 'down' : 'neutral'}
+            color="primary"
+            sparklineData={salesData.map((d) => d.revenue)}
+          />
+        ) : (
+          <KPICard
+            title="総売上"
+            value="閲覧不可"
+            changeLabel="売上情報の閲覧権限がありません"
+            icon={<DollarSign />}
+            color="primary"
+          />
+        )}
 
         <KPICard
           title="予約数"
@@ -597,12 +607,22 @@ export default function DashboardPage() {
           sparklineData={salesData.map((d) => d.count)}
         />
 
-        <KPICard
-          title="平均単価"
-          value={`¥${Math.round(kpis.avgRevenue).toLocaleString()}`}
-          icon={<Target />}
-          color="warning"
-        />
+        {canViewFinancials ? (
+          <KPICard
+            title="平均単価"
+            value={`¥${Math.round(kpis.avgRevenue).toLocaleString()}`}
+            icon={<Target />}
+            color="warning"
+          />
+        ) : (
+          <KPICard
+            title="ステータス進捗"
+            value={`${kpis.confirmedCount}件 確定済み`}
+            changeLabel={`${reservations.filter((r) => r.status === 'pending').length}件が保留中`}
+            icon={<Target />}
+            color="warning"
+          />
+        )}
 
         <KPICard
           title="キャンセル率"
@@ -625,22 +645,23 @@ export default function DashboardPage() {
             <CardDescription>過去7日間の売上と予約数</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={salesData}>
-                  <defs>
-                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={colors.primary} stopOpacity={0.8} />
-                      <stop offset="95%" stopColor={colors.primary} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip
-                    formatter={(value: any) => `¥${value.toLocaleString()}`}
-                    labelFormatter={(label) => `日付: ${label}`}
-                  />
+            {canViewFinancials ? (
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={salesData}>
+                    <defs>
+                      <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={colors.primary} stopOpacity={0.8} />
+                        <stop offset="95%" stopColor={colors.primary} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip
+                      formatter={(value: any) => `¥${value.toLocaleString()}`}
+                      labelFormatter={(label) => `日付: ${label}`}
+                    />
                   <Area
                     type="monotone"
                     dataKey="revenue"
@@ -648,9 +669,15 @@ export default function DashboardPage() {
                     fillOpacity={1}
                     fill="url(#colorRevenue)"
                   />
+                  <Line type="monotone" dataKey="count" stroke={colors.secondary} strokeWidth={2} />
                 </AreaChart>
-              </ResponsiveContainer>
-            </div>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="flex h-64 items-center justify-center rounded-lg border border-dashed border-muted-foreground/40 bg-muted/20 text-sm text-muted-foreground">
+                売上チャートを表示する権限がありません
+              </div>
+            )}
           </CardContent>
         </Card>
 
