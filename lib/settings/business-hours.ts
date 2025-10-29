@@ -1,5 +1,4 @@
 import { addDays, format, parse } from 'date-fns'
-import { env } from '@/lib/config/env'
 
 export interface BusinessHoursRange {
   startMinutes: number
@@ -9,6 +8,8 @@ export interface BusinessHoursRange {
 }
 
 const MINUTES_IN_DAY = 24 * 60
+const DEFAULT_START_TIME = '09:00'
+const DEFAULT_END_TIME = '23:00'
 
 const toMinutes = (time: string): number | null => {
   const match = time.trim().match(/^(\d{1,2}):(\d{2})$/)
@@ -33,17 +34,17 @@ const formatLabel = (minutes: number) => {
 
 export const formatMinutesAsLabel = (minutes: number) => formatLabel(minutes)
 
-export const DEFAULT_BUSINESS_HOURS: BusinessHoursRange = (() => {
-  const fallbackStart = env.businessHours.start ?? '09:00'
-  const fallbackEnd = env.businessHours.end ?? '23:00'
-  const provisionalFallback: BusinessHoursRange = {
-    startMinutes: toMinutes(fallbackStart) ?? 9 * 60,
-    endMinutes: toMinutes(fallbackEnd) ?? 23 * 60,
-    startLabel: fallbackStart,
-    endLabel: fallbackEnd,
-  }
-  return parseBusinessHoursString(`${fallbackStart} - ${fallbackEnd}`, provisionalFallback)
-})()
+const DEFAULT_FALLBACK: BusinessHoursRange = {
+  startMinutes: toMinutes(DEFAULT_START_TIME) ?? 9 * 60,
+  endMinutes: toMinutes(DEFAULT_END_TIME) ?? 23 * 60,
+  startLabel: DEFAULT_START_TIME,
+  endLabel: DEFAULT_END_TIME,
+}
+
+export const DEFAULT_BUSINESS_HOURS: BusinessHoursRange = parseBusinessHoursString(
+  `${DEFAULT_START_TIME} - ${DEFAULT_END_TIME}`,
+  DEFAULT_FALLBACK
+)
 
 export function parseBusinessHoursString(
   raw: string | null | undefined,

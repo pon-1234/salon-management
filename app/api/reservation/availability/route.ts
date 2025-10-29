@@ -9,13 +9,13 @@ import type { PrismaClient } from '@prisma/client'
 import logger from '@/lib/logger'
 import { differenceInCalendarDays, parse } from 'date-fns'
 import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz'
-import { env } from '@/lib/config/env'
 import {
   BusinessHoursRange,
   DEFAULT_BUSINESS_HOURS,
   parseBusinessHoursString,
   minutesToIsoInJst,
 } from '@/lib/settings/business-hours'
+import { getConfiguredBusinessHours } from '@/lib/settings/business-hours.server'
 
 const JST_TIMEZONE = 'Asia/Tokyo'
 
@@ -311,5 +311,5 @@ async function resolveBusinessHours(): Promise<BusinessHoursRange> {
   } catch (error) {
     logger.error({ err: error }, 'Failed to fetch store business hours')
   }
-  return parseBusinessHoursString(`${env.businessHours.start} - ${env.businessHours.end}`)
+  return getConfiguredBusinessHours()
 }
