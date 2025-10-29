@@ -11,7 +11,7 @@ import { Clock, User, AlertCircle, Plus } from 'lucide-react'
 import { Cast, Appointment } from '@/lib/cast/types'
 import { logError } from '@/lib/error-utils'
 import { StaffDialog } from '@/components/cast/cast-dialog'
-import * as tz from 'date-fns-tz'
+import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz'
 import { differenceInCalendarDays, parse } from 'date-fns'
 import { getCourseById } from '@/lib/course-option/utils'
 import { Customer } from '@/lib/customer/types'
@@ -23,8 +23,6 @@ import {
 } from '@/lib/settings/business-hours'
 
 const JST_TIMEZONE = 'Asia/Tokyo'
-const formatInTimeZone = tz.formatInTimeZone
-const zonedTimeToUtc = tz.zonedTimeToUtc
 const MINUTES_IN_DAY = 24 * 60
 
 // safeMapを安全に実装（undefinedやnullでも空配列を返す）
