@@ -278,10 +278,6 @@ export async function POST(request: NextRequest) {
         }
 
         const optionIds: string[] = Array.isArray(reservationData.options)
-          ? reservationData.options
-          : []
-
-        const optionIds: string[] = Array.isArray(reservationData.options)
           ? reservationData.options.filter(
               (optionId): optionId is string => typeof optionId === 'string' && optionId.trim().length > 0
             )
