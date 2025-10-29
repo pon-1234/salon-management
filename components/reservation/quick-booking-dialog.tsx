@@ -1,7 +1,13 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -910,6 +916,9 @@ export function QuickBookingDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col overflow-hidden">
+        <DialogDescription className="sr-only">
+          予約受付の各ステップを完了し、情報を確認して予約を確定します。
+        </DialogDescription>
         <DialogHeader>
           <DialogTitle className="text-center text-2xl font-bold">簡単受付</DialogTitle>
           <StepIndicator />
