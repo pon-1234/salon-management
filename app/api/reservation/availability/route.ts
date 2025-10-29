@@ -8,7 +8,7 @@ import { db } from '@/lib/db'
 import type { PrismaClient } from '@prisma/client'
 import logger from '@/lib/logger'
 import { differenceInCalendarDays, parse } from 'date-fns'
-import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz'
+import tz from 'date-fns-tz'
 import {
   BusinessHoursRange,
   DEFAULT_BUSINESS_HOURS,
@@ -18,6 +18,7 @@ import {
 import { getConfiguredBusinessHours } from '@/lib/settings/business-hours.server'
 
 const JST_TIMEZONE = 'Asia/Tokyo'
+const { formatInTimeZone, zonedTimeToUtc } = tz
 
 interface TimeSlot {
   startTime: string

@@ -17,7 +17,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { format, addMinutes } from 'date-fns'
-import { utcToZonedTime, zonedTimeToUtc, formatInTimeZone } from 'date-fns-tz'
+import tz from 'date-fns-tz'
 import {
   Phone,
   Clock,
@@ -66,6 +66,7 @@ const paymentMethods = ['現金', 'クレジットカード', 'ポイント利�
 const formatYen = (amount: number) => `${amount.toLocaleString()}円`
 
 const JST_TIMEZONE = 'Asia/Tokyo'
+const { utcToZonedTime, zonedTimeToUtc, formatInTimeZone } = tz
 
 const formatDateInJst = (date: Date) =>
   format(utcToZonedTime(date, JST_TIMEZONE), 'yyyy-MM-dd')
