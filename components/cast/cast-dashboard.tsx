@@ -246,15 +246,19 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
       const isToday =
         format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
 
+      const time = record
+        ? `${format(record.startTime, 'HH:mm')} - ${format(record.endTime, 'HH:mm')}`
+        : '休日'
+      const note = record?.note?.trim().length ? record.note.trim() : null
+
       return {
         key,
         dayLabel: format(date, 'E', { locale: ja }),
         dateLabel: format(date, 'd'),
         isToday,
         isWorking,
-        time: record
-          ? `${format(record.startTime, 'HH:mm')} - ${format(record.endTime, 'HH:mm')}`
-          : '休日',
+        time,
+        note,
       }
     })
   }, [scheduleMap, weekDays])
@@ -522,10 +526,14 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
                     <span className="sm:hidden">{item.time}</span>
                     <span className="hidden sm:inline">{item.time}</span>
                   </div>
+                  {item.note && (
+                    <div className="mt-1 whitespace-pre-wrap text-[10px] text-gray-500">
+                      {item.note}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
-            <div className="mt-3 text-xs text-gray-600">※実出勤（22:00〜5:00）</div>
           </CardContent>
         </Card>
 
