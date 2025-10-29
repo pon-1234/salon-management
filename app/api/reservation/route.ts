@@ -292,51 +292,35 @@ export async function POST(request: NextRequest) {
         }> = []
 
         if (optionIds.length) {
-          try {
-            const uniqueOptionIds = Array.from(new Set(optionIds))
-            const optionRecords = await tx.optionPrice.findMany({
-              where: { id: { in: uniqueOptionIds } },
-              select: {
-                id: true,
-                name: true,
-                price: true,
-                storeShare: true,
-                castShare: true,
-              },
-            })
+          const uniqueOptionIds = Array.from(new Set(optionIds))
+          const optionRecords = await tx.optionPrice.findMany({
+            where: { id: { in: uniqueOptionIds } },
+            select: {
+              id: true,
+              name: true,
+              price: true,
+              storeShare: true,
+              castShare: true,
+            },
+          })
 
-            const foundIds = new Set(optionRecords.map((option) => option.id))
-            const missingOptionIds = uniqueOptionIds.filter((optionId) => !foundIds.has(optionId))
+          const optionRecordMap = new Map(optionRecords.map((record) => [record.id, record]))
+          const missingOptionIds = uniqueOptionIds.filter((optionId) => !optionRecordMap.has(optionId))
 
-            if (missingOptionIds.length) {
-              const invalidOptionError = new Error('Invalid option selection')
-              ;(invalidOptionError as any).missingOptions = missingOptionIds
-              throw invalidOptionError
-            }
-
-            optionsToCreate = optionIds.map((optionId) => {
-              const option = optionRecords.find((record) => record.id === optionId)
-              if (!option) {
-                throw new Error(`Invalid option selection: ${optionId}`)
-              }
-              return {
-                optionId: option.id,
-                optionName: option.name,
-                optionPrice: option.price,
-                storeShare: option.storeShare ?? null,
-                castShare: option.castShare ?? null,
-              }
-            })
-          } catch (error) {
-            logger.error({ err: error, optionIds }, 'Failed to resolve option metadata; using fallback values')
-            optionsToCreate = optionIds.map((optionId) => ({
-              optionId,
-              optionName: optionId,
-              optionPrice: 0,
-              storeShare: null,
-              castShare: null,
-            }))
+          if (missingOptionIds.length) {
+            logger.warn({ missingOptionIds }, 'Some option IDs could not be resolved and will be skipped')
           }
+
+          optionsToCreate = optionIds
+            .map((optionId) => optionRecordMap.get(optionId))
+            .filter((option): option is (typeof optionRecords)[number] => Boolean(option))
+            .map((option) => ({
+              optionId: option.id,
+              optionName: option.name,
+              optionPrice: option.price,
+              storeShare: option.storeShare ?? null,
+              castShare: option.castShare ?? null,
+            }))
         }
 
         const createdReservation = await tx.reservation.create({
