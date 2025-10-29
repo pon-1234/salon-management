@@ -23,8 +23,7 @@ import { mapReservationToReservationData } from '@/lib/reservation/transformers'
 import { ReservationRepositoryImpl } from '@/lib/reservation/repository-impl'
 import { toast } from '@/hooks/use-toast'
 import { recordModification } from '@/lib/modification-history/data'
-import formatInTimeZone from 'date-fns-tz/formatInTimeZone'
-import zonedTimeToUtc from 'date-fns-tz/zonedTimeToUtc'
+import * as tz from 'date-fns-tz'
 import { CustomerUseCases } from '@/lib/customer/usecases'
 import { CustomerRepositoryImpl } from '@/lib/customer/repository-impl'
 import { shouldUseMockFallbacks } from '@/lib/config/feature-flags'
@@ -68,6 +67,9 @@ export function ReservationPageContent() {
 
   const searchParams = useSearchParams()
   const customerId = searchParams.get('customerId')
+
+  const formatInTimeZone = tz.formatInTimeZone
+  const zonedTimeToUtc = tz.zonedTimeToUtc
 
   const selectedDateKey = useMemo(
     () => formatInTimeZone(selectedDate, JST_TIMEZONE, 'yyyy-MM-dd'),
