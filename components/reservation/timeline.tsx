@@ -101,6 +101,12 @@ export function Timeline({
     [getMinutesFromDate, startMinutes, HOUR_WIDTH]
   )
 
+  const minutesToUtcDate = useCallback(
+    (minutes: number) =>
+      new Date(zonedTimeToUtc(minutesToIsoInJst(selectedDateKey, minutes), JST_TIMEZONE)),
+    [selectedDateKey]
+  )
+
   if (!staff) {
     return (
       <div className="flex h-64 items-center justify-center text-gray-500">
@@ -187,12 +193,6 @@ export function Timeline({
     }
     return true
   })
-
-  const minutesToUtcDate = useCallback(
-    (minutes: number) =>
-      new Date(zonedTimeToUtc(minutesToIsoInJst(selectedDateKey, minutes), JST_TIMEZONE)),
-    [selectedDateKey]
-  )
 
   const getAvailableSlots = (staff: Cast): AvailableSlot[] => {
     try {
