@@ -128,6 +128,8 @@ export function useAvailability() {
 
       const { zonedTimeToUtc } = tz
 
+      const nowUtc = new Date()
+
       for (
         let minute = businessHours.startMinutes;
         minute + duration <= businessHours.endMinutes;
@@ -137,6 +139,10 @@ export function useAvailability() {
         const slotEndIso = minutesToIsoInJst(dateString, minute + duration)
         const startUtc = zonedTimeToUtc(slotStartIso, JST_TIMEZONE)
         const endUtc = zonedTimeToUtc(slotEndIso, JST_TIMEZONE)
+
+        if (startUtc.getTime() <= nowUtc.getTime()) {
+          continue
+        }
 
         slots.push({
           startTime: startUtc.toISOString(),

@@ -245,6 +245,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'End time must be after start time' }, { status: 400 })
     }
 
+    const nowUtc = new Date()
+    if (startTime.getTime() <= nowUtc.getTime()) {
+      return NextResponse.json(
+        { error: 'Cannot create reservations in the past' },
+        { status: 400 }
+      )
+    }
+
     // 事前の空き状況チェック（早期リターン）
     const preflightAvailability = await checkCastAvailability(
       reservationData.castId,

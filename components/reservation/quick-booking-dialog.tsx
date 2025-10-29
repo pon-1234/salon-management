@@ -717,22 +717,66 @@ export function QuickBookingDialog({
       return
     }
 
+    const courseDuration = selectedCourse?.duration ?? 0
+    if (!selectedCourse || courseDuration <= 0) {
+      toast({
+        title: 'コース未選択',
+        description: '予約するコースを選択してください。',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    const bookingStartMinutes = normalizeToBusinessMinutes(
+      bookingDetails.time,
+      businessHours
+    )
+    if (bookingStartMinutes === null) {
+      toast({
+        title: '時間の形式が不正です',
+        description: '有効な時間を入力してください。',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (bookingStartMinutes < businessHours.startMinutes) {
+      toast({
+        title: '営業時間外です',
+        description: `開始時間は営業開始時刻（${formatMinutesAsLabel(businessHours.startMinutes)}）以降を指定してください。`,
+        variant: 'destructive',
+      })
+      return
+    }
+
+    const bookingEndMinutes = bookingStartMinutes + courseDuration
+    if (bookingEndMinutes > businessHours.endMinutes) {
+      toast({
+        title: '営業時間外です',
+        description: `コース終了時刻が営業時間外になります。${formatMinutesAsLabel(businessHours.endMinutes)}までに終了する時間を選択してください。`,
+        variant: 'destructive',
+      })
+      return
+    }
+
+    const startTime = zonedTimeToUtc(
+      `${bookingDetails.date}T${bookingDetails.time}:00`,
+      JST_TIMEZONE
+    )
+    const nowUtc = new Date()
+    if (startTime.getTime() <= nowUtc.getTime()) {
+      toast({
+        title: '過去の時間は選択できません',
+        description: '現在時刻より後の時間を選択してください。',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    const endTime = addMinutes(startTime, courseDuration)
+
     try {
       setIsSubmitting(true)
-
-      const bookingStartMinutes = normalizeToBusinessMinutes(
-        bookingDetails.time,
-        businessHours
-      )
-      if (bookingStartMinutes === null) {
-        throw new Error('予約時間の形式が正しくありません。')
-      }
-
-      const startTime = zonedTimeToUtc(
-        `${bookingDetails.date}T${bookingDetails.time}:00`,
-        JST_TIMEZONE
-      )
-      const endTime = addMinutes(startTime, selectedCourse?.duration ?? 0)
 
       const availability = await checkAvailability(currentStaff.id, startTime, endTime)
       if (!availability.available) {
