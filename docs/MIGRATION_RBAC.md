@@ -52,6 +52,8 @@ Permissions are stored as JSON array in the admin table. Example permissions:
 - `reservation:*` - Manage all reservations
 - `customer:manage` - Manage customer accounts
 
+> Note: 管理画面ではロールを選択すると対応する許可範囲が自動付与され、個別に permissions を編集する必要はありません。
+
 ## Migration Steps
 
 ### 1. Database Migration

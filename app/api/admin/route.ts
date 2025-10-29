@@ -14,12 +14,21 @@ const SALT_ROUNDS = 10
 
 const roleEnum = z.enum(['super_admin', 'manager', 'staff'])
 
+const ROLE_PERMISSIONS: Record<z.infer<typeof roleEnum>, string[]> = {
+  super_admin: ['*'],
+  manager: ['cast:*', 'customer:read', 'reservation:*', 'analytics:read', 'dashboard:view'],
+  staff: ['cast:read', 'customer:read', 'reservation:read'],
+}
+
+function getPermissionsForRole(role: z.infer<typeof roleEnum>) {
+  return ROLE_PERMISSIONS[role] ?? []
+}
+
 const createSchema = z.object({
   email: z.string().email(),
   name: z.string().min(1),
   password: z.string().min(8),
   role: roleEnum.default('staff'),
-  permissions: z.array(z.string()).optional(),
   isActive: z.boolean().optional(),
 })
 
@@ -30,7 +39,6 @@ const updateSchema = z
     name: z.string().min(1).optional(),
     password: z.string().min(8).optional(),
     role: roleEnum.optional(),
-    permissions: z.array(z.string()).optional(),
     isActive: z.boolean().optional(),
   })
   .refine((data) => Object.keys(data).length > 1, {
@@ -114,7 +122,7 @@ export async function POST(request: NextRequest) {
         name: data.name,
         password: hashedPassword,
         role: data.role,
-        permissions: data.permissions ? JSON.stringify(data.permissions) : JSON.stringify([]),
+        permissions: JSON.stringify(getPermissionsForRole(data.role)),
         isActive: data.isActive ?? true,
       },
     })
@@ -160,9 +168,7 @@ export async function PUT(request: NextRequest) {
     }
     if (data.role && data.role !== existing.role) {
       updateData.role = data.role
-    }
-    if (data.permissions) {
-      updateData.permissions = JSON.stringify(data.permissions)
+      updateData.permissions = JSON.stringify(getPermissionsForRole(data.role))
     }
     if (typeof data.isActive === 'boolean' && data.isActive !== existing.isActive) {
       updateData.isActive = data.isActive

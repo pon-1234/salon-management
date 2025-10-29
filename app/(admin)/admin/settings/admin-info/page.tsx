@@ -55,7 +55,6 @@ type AdminFormState = {
   name: string
   password: string
   role: 'super_admin' | 'manager' | 'staff'
-  permissionsText: string
   isActive: boolean
 }
 
@@ -70,6 +69,12 @@ const roleOptions: Array<{ value: AdminRecord['role']; label: string }> = [
   { value: 'manager', label: ROLE_LABELS.manager },
   { value: 'staff', label: ROLE_LABELS.staff },
 ]
+
+const ROLE_PERMISSIONS: Record<AdminRecord['role'], string[]> = {
+  super_admin: ['*'],
+  manager: ['cast:*', 'customer:read', 'reservation:*', 'analytics:read', 'dashboard:view'],
+  staff: ['cast:read', 'customer:read', 'reservation:read'],
+}
 
 export default function AdminInfoPage() {
   const { data: session } = useSession()
@@ -86,7 +91,6 @@ export default function AdminInfoPage() {
     name: '',
     password: '',
     role: 'staff',
-    permissionsText: '',
     isActive: true,
   })
 
@@ -130,7 +134,6 @@ export default function AdminInfoPage() {
       name: '',
       password: '',
       role: 'staff',
-      permissionsText: '',
       isActive: true,
     })
     setDialogOpen(true)
@@ -143,7 +146,6 @@ export default function AdminInfoPage() {
       name: admin.name,
       password: '',
       role: admin.role,
-      permissionsText: admin.permissions.join('\n'),
       isActive: admin.isActive,
     })
     setDialogOpen(true)
@@ -157,7 +159,6 @@ export default function AdminInfoPage() {
       name: '',
       password: '',
       role: 'staff',
-      permissionsText: '',
       isActive: true,
     })
   }
@@ -168,12 +169,6 @@ export default function AdminInfoPage() {
       [field]: value,
     }))
   }
-
-  const parsePermissions = (text: string) =>
-    text
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0)
 
   const handleSubmit = async () => {
     if (saving) return
@@ -204,8 +199,6 @@ export default function AdminInfoPage() {
       return
     }
 
-    const permissions = parsePermissions(formState.permissionsText)
-
     try {
       setSaving(true)
       let response: Response
@@ -216,8 +209,6 @@ export default function AdminInfoPage() {
         if (formState.role !== editingAdmin.role) body.role = formState.role
         if (formState.password) body.password = formState.password
         if (formState.isActive !== editingAdmin.isActive) body.isActive = formState.isActive
-        if (formState.permissionsText !== editingAdmin.permissions.join('\n'))
-          body.permissions = permissions
 
         if (Object.keys(body).length === 1) {
           toast({
@@ -245,7 +236,6 @@ export default function AdminInfoPage() {
             name: formState.name,
             password: formState.password,
             role: formState.role,
-            permissions,
             isActive: formState.isActive,
           }),
         })
@@ -333,6 +323,8 @@ export default function AdminInfoPage() {
       }),
     [admins]
   )
+
+  const selectedRolePermissions = ROLE_PERMISSIONS[formState.role] ?? []
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -478,30 +470,39 @@ export default function AdminInfoPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {admin.permissions.length === 0 ? (
-                            <span className="text-xs text-gray-500">設定なし</span>
-                          ) : (
-                            <div className="flex max-w-[260px] flex-wrap gap-1">
-                              {admin.permissions.slice(0, 3).map((permission) => (
-                                <Badge
-                                  key={permission}
-                                  variant="outline"
-                                  className="whitespace-nowrap text-xs font-normal"
-                                  title={permission}
-                                >
-                                  {permission}
-                                </Badge>
-                              ))}
-                              {admin.permissions.length > 3 && (
-                                <Badge
-                                  variant="secondary"
-                                  className="whitespace-nowrap text-xs font-normal text-gray-700"
-                                >
-                                  +{admin.permissions.length - 3}
-                                </Badge>
-                              )}
-                            </div>
-                          )}
+                          {(() => {
+                            const permissionList =
+                              admin.permissions && admin.permissions.length > 0
+                                ? admin.permissions
+                                : ROLE_PERMISSIONS[admin.role] ?? []
+
+                            if (permissionList.length === 0) {
+                              return <span className="text-xs text-gray-500">設定なし</span>
+                            }
+
+                            return (
+                              <div className="flex max-w-[260px] flex-wrap gap-1">
+                                {permissionList.slice(0, 3).map((permission) => (
+                                  <Badge
+                                    key={permission}
+                                    variant="outline"
+                                    className="whitespace-nowrap text-xs font-normal"
+                                    title={permission}
+                                  >
+                                    {permission}
+                                  </Badge>
+                                ))}
+                                {permissionList.length > 3 && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="whitespace-nowrap text-xs font-normal text-gray-700"
+                                  >
+                                    +{permissionList.length - 3}
+                                  </Badge>
+                                )}
+                              </div>
+                            )
+                          })()}
                         </TableCell>
                         <TableCell>
                           {admin.lastLogin
@@ -606,15 +607,21 @@ export default function AdminInfoPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="admin-permissions">権限（1行に1つ）</Label>
-              <textarea
-                id="admin-permissions"
-                className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                value={formState.permissionsText}
-                onChange={(event) => handleInputChange('permissionsText', event.target.value)}
-                placeholder="例）\nreservation:read\nreservation:write"
-              />
-              <p className="text-xs text-gray-500">設定しない場合は空欄のままで構いません。</p>
+              <Label className="text-sm font-medium">付与される許可範囲</Label>
+              <div className="flex flex-wrap gap-2 rounded-lg border bg-muted/40 p-3">
+                {selectedRolePermissions.length === 0 ? (
+                  <span className="text-xs text-gray-500">権限は自動的に割り当てられます</span>
+                ) : (
+                  selectedRolePermissions.map((permission) => (
+                    <Badge key={permission} variant="outline" className="text-xs font-normal">
+                      {permission}
+                    </Badge>
+                  ))
+                )}
+              </div>
+              <p className="text-xs text-gray-500">
+                選択した権限に応じて自動的に設定され、個別の編集は不要です。
+              </p>
             </div>
 
             <div className="flex items-center justify-between rounded-lg border p-3">
