@@ -9,7 +9,7 @@ import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
 import { NotificationService } from '@/lib/notification/service'
 import logger from '@/lib/logger'
-import { fromZonedTime } from 'date-fns-tz'
+import { zonedTimeToUtc } from 'date-fns-tz'
 import { PrismaClient } from '@prisma/client'
 import { hasPermission } from '@/lib/auth/permissions'
 
@@ -91,6 +91,14 @@ async function checkCastAvailability(
 
 const JST_TIMEZONE = 'Asia/Tokyo'
 const notificationService = new NotificationService()
+
+function parseReservationDate(raw: string): Date {
+  const direct = new Date(raw)
+  if (!Number.isNaN(direct.getTime())) {
+    return direct
+  }
+  return zonedTimeToUtc(raw, JST_TIMEZONE)
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -234,8 +242,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const startTime = fromZonedTime(reservationData.startTime, JST_TIMEZONE)
-    const endTime = fromZonedTime(reservationData.endTime, JST_TIMEZONE)
+    const startTime = parseReservationDate(reservationData.startTime)
+    const endTime = parseReservationDate(reservationData.endTime)
 
     if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
       return NextResponse.json({ error: 'Invalid date format' }, { status: 400 })
