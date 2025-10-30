@@ -432,13 +432,17 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
       }
+      const message =
+        error instanceof Error && error.message ? error.message : 'Internal server error'
       logger.error({ err: error }, 'Error creating reservation')
-      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+      return NextResponse.json({ error: message }, { status: 500 })
     }
   } catch (error) {
     // この最上位のcatchは、リクエストの解析や認証などのトランザクション外のエラーを捕捉
+    const message =
+      error instanceof Error && error.message ? error.message : 'Internal server error'
     logger.error({ err: error }, 'Error in POST handler')
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
 
