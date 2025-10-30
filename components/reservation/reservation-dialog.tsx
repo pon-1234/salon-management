@@ -441,31 +441,6 @@ export function ReservationDialog({
     }
   }, [reservation?.id, historyReloadToken])
 
-  useEffect(() => {
-    if (reservation) {
-      setFormState({
-        date: format(reservation.startTime, 'yyyy-MM-dd'),
-        startTime: format(reservation.startTime, 'HH:mm'),
-        castId: reservation.staffId || '',
-        courseId: reservation.serviceId || '',
-        designationId: reservationDesignation?.id || '',
-        storeMemo: reservation.storeMemo || '',
-        notes: reservation.notes || '',
-        paymentMethod: reservation.paymentMethod || '現金',
-        marketingChannel: reservation.marketingChannel || 'WEB',
-        transportationFee: reservation.transportationFee ?? 0,
-        additionalFee: reservation.additionalFee ?? 0,
-        designationFee: reservation.designationFee ?? 0,
-        price: reservation.totalPayment ?? reservation.price ?? 0,
-        areaId: reservation.areaId ?? null,
-        stationId: reservation.stationId ?? null,
-        optionIds: normalizedInitialOptionIds,
-        locationMemo: reservation.locationMemo ?? '',
-      })
-      setValidationError(null)
-    }
-  }, [reservation, reservationDesignation, normalizedInitialOptionIds])
-
   const handleStatusChange = useCallback(
     async (nextStatus: ReservationStatus | 'completed') => {
       if (!reservation) {
@@ -624,16 +599,41 @@ export function ReservationDialog({
     )
   }, [initialOptionIdsRaw, optionChoices])
 
-  const initialOptionNames = useMemo(() => initialOptionIdsRaw, [initialOptionIdsRaw])
+const initialOptionNames = useMemo(() => initialOptionIdsRaw, [initialOptionIdsRaw])
 
-  const displayOptionNames = selectedOptionDetails.length > 0
-    ? selectedOptionDetails.map((option) => option.name)
-    : initialOptionNames
+const displayOptionNames = selectedOptionDetails.length > 0
+  ? selectedOptionDetails.map((option) => option.name)
+  : initialOptionNames
 
-  useEffect(() => {
-    if (!isEditMode) return
+useEffect(() => {
+  if (reservation) {
+    setFormState({
+      date: format(reservation.startTime, 'yyyy-MM-dd'),
+      startTime: format(reservation.startTime, 'HH:mm'),
+      castId: reservation.staffId || '',
+      courseId: reservation.serviceId || '',
+      designationId: reservationDesignation?.id || '',
+      storeMemo: reservation.storeMemo || '',
+      notes: reservation.notes || '',
+      paymentMethod: reservation.paymentMethod || '現金',
+      marketingChannel: reservation.marketingChannel || 'WEB',
+      transportationFee: reservation.transportationFee ?? 0,
+      additionalFee: reservation.additionalFee ?? 0,
+      designationFee: reservation.designationFee ?? 0,
+      price: reservation.totalPayment ?? reservation.price ?? 0,
+      areaId: reservation.areaId ?? null,
+      stationId: reservation.stationId ?? null,
+      optionIds: normalizedInitialOptionIds,
+      locationMemo: reservation.locationMemo ?? '',
+    })
+    setValidationError(null)
+  }
+}, [reservation, reservationDesignation, normalizedInitialOptionIds])
 
-    const baseCoursePrice = selectedCourse?.price ?? reservation?.price ?? 0
+useEffect(() => {
+  if (!isEditMode) return
+
+  const baseCoursePrice = selectedCourse?.price ?? reservation?.price ?? 0
     const optionsTotal = selectedOptionDetails.reduce((sum, option) => sum + (option.price ?? 0), 0)
     const transportationFee = formState.transportationFee ?? 0
     const additionalFee = formState.additionalFee ?? 0
