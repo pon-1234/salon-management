@@ -264,7 +264,7 @@ export async function updateReservation(
 }
 
 export async function addReservation(
-  reservation: Omit<Reservation, 'id' | 'createdAt' | 'updatedAt'>
+  reservation: Omit<Reservation, 'id' | 'createdAt' | 'updatedAt'>,
   storeId?: string
 ): Promise<Reservation> {
   try {

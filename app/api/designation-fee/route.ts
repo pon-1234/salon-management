@@ -108,7 +108,6 @@ export async function GET(request: NextRequest) {
   const id = searchParams.get('id')
   const storeId = await ensureStoreId(await resolveStoreId(request))
   const includeInactive = searchParams.get('includeInactive') === 'true'
-  const storeId = await ensureStoreId(await resolveStoreId(request))
 
   try {
     const session = await requireSession()
@@ -214,6 +213,7 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const id = searchParams.get('id')
+  const storeId = await ensureStoreId(await resolveStoreId(request))
 
   if (!id) {
     return NextResponse.json({ error: 'ID is required' }, { status: 400 })
