@@ -98,6 +98,7 @@ model Reservation {
   area       AreaInfo?           @relation(fields: [areaId], references: [id])
   station    StationInfo?        @relation(fields: [stationId], references: [id])
   options    ReservationOption[]
+  histories  ReservationHistory[]
 }
 
 model CoursePrice {
@@ -175,6 +176,25 @@ model ReservationOption {
   reservation   Reservation  @relation(fields: [reservationId], references: [id])
 
   @@unique([reservationId, optionId])
+}
+
+model ReservationHistory {
+  id               String       @id @default(cuid())
+  reservationId    String
+  fieldName        String
+  fieldDisplayName String
+  oldValue         String?
+  newValue         String?
+  reason           String?
+  actorId          String?
+  actorName        String?
+  actorIp          String?
+  actorAgent       String?
+  createdAt        DateTime     @default(now())
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([reservationId])
 }
 
 model DesignationFee {

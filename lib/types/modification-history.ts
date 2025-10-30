@@ -1,16 +1,15 @@
 export interface ModificationHistory {
   id: string
   reservationId: string
-  userId: string
-  userName: string
   fieldName: string
   fieldDisplayName: string
-  oldValue: string | number | null
-  newValue: string | number | null
-  reason: string
-  ipAddress: string
-  userAgent: string
-  sessionId: string
+  oldValue: string | null
+  newValue: string | null
+  reason: string | null
+  actorId: string | null
+  actorName: string | null
+  actorIp?: string | null
+  actorAgent?: string | null
   timestamp: Date
 }
 

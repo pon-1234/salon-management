@@ -43,6 +43,7 @@ import { ja } from 'date-fns/locale'
 import { ModificationHistoryTable } from '@/components/reservation/modification-history-table'
 import { getModificationHistory, getModificationAlerts } from '@/lib/modification-history/data'
 import { ReservationData, ReservationUpdatePayload } from '@/lib/types/reservation'
+import { ModificationAlert, ModificationHistory } from '@/lib/types/modification-history'
 import { cn } from '@/lib/utils'
 import { Cast } from '@/lib/cast/types'
 import { normalizeCastList } from '@/lib/cast/mapper'
@@ -218,8 +219,9 @@ export function ReservationDialog({
     'analytics:read'
   )
 
-  const modificationHistory = reservation ? getModificationHistory(reservation.id) : []
-  const modificationAlerts = reservation ? getModificationAlerts(reservation.id) : []
+  const [modificationHistory, setModificationHistory] = useState<ModificationHistory[]>([])
+  const [modificationAlerts, setModificationAlerts] = useState<ModificationAlert[]>([])
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false)
 
   const reservationDurationMinutes = useMemo(() => {
     if (!reservation) return 0
@@ -290,6 +292,50 @@ export function ReservationDialog({
       setStatus(reservation.status as ReservationStatus)
     }
   }, [reservation?.status])
+
+  useEffect(() => {
+    let ignore = false
+
+    const reservationId = reservation?.id
+    if (!reservationId) {
+      setModificationHistory([])
+      setModificationAlerts([])
+      return
+    }
+
+    const loadHistory = async () => {
+      setIsHistoryLoading(true)
+      try {
+        const [history, alerts] = await Promise.all([
+          getModificationHistory(reservationId),
+          getModificationAlerts(reservationId),
+        ])
+        if (!ignore) {
+          setModificationHistory(history)
+          setModificationAlerts(alerts)
+        }
+      } catch (error) {
+        if (!ignore) {
+          toast({
+            title: '履歴の取得に失敗しました',
+            description:
+              error instanceof Error ? error.message : '不明なエラーが発生しました。',
+            variant: 'destructive',
+          })
+        }
+      } finally {
+        if (!ignore) {
+          setIsHistoryLoading(false)
+        }
+      }
+    }
+
+    loadHistory()
+
+    return () => {
+      ignore = true
+    }
+  }, [reservation?.id])
 
   useEffect(() => {
     if (reservation) {
@@ -1165,6 +1211,9 @@ export function ReservationDialog({
                 ステータス・時間帯・料金などの更新は自動で記録されます。スタッフ間の共有メモや監査対応の証跡として活用してください。
               </AlertDescription>
             </Alert>
+            {isHistoryLoading && (
+              <p className="text-xs text-muted-foreground">履歴を読み込み中...</p>
+            )}
             <ModificationHistoryTable
               modifications={modificationHistory}
               alerts={modificationAlerts}
@@ -1176,3 +1225,4 @@ export function ReservationDialog({
     </Dialog>
   )
 }
+  

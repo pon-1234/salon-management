@@ -65,7 +65,7 @@ export function ModificationHistoryTable({ modifications, alerts }: Modification
                   <TableCell>
                     {format(modification.timestamp, 'yyyy/MM/dd HH:mm', { locale: ja })}
                   </TableCell>
-                  <TableCell>{modification.userName}</TableCell>
+                  <TableCell>{modification.actorName || '—'}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{modification.fieldDisplayName}</Badge>
                   </TableCell>

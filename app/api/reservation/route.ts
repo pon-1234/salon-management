@@ -11,6 +11,7 @@ import { NotificationService } from '@/lib/notification/service'
 import logger from '@/lib/logger'
 import { PrismaClient } from '@prisma/client'
 import { hasPermission } from '@/lib/auth/permissions'
+import { format } from 'date-fns'
 
 // Types
 interface AvailabilityCheck {
@@ -26,6 +27,69 @@ type PrismaTransactionClient = Omit<
   PrismaClient,
   '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
 >
+
+const STATUS_LABEL_MAP: Record<string, string> = {
+  confirmed: '確定済',
+  pending: '仮予約',
+  tentative: '仮予約',
+  cancelled: 'キャンセル',
+  modifiable: '修正待ち',
+  completed: '対応済み',
+}
+
+const DESIGNATION_LABEL_MAP: Record<string, string> = {
+  special: '特別指名',
+  regular: '本指名',
+  none: 'フリー',
+}
+
+function formatCurrency(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return '未設定'
+  }
+  return `¥${value.toLocaleString()}`
+}
+
+function formatText(value: unknown): string {
+  if (value === null || value === undefined || value === '') {
+    return '未設定'
+  }
+  return String(value)
+}
+
+function formatStatus(value: string | null | undefined): string {
+  if (!value) {
+    return '未設定'
+  }
+  return STATUS_LABEL_MAP[value] ?? value
+}
+
+function formatDesignation(value: string | null | undefined): string {
+  if (!value) {
+    return '未設定'
+  }
+  return DESIGNATION_LABEL_MAP[value] ?? value
+}
+
+function formatSchedule(value: Date | null | undefined): string {
+  if (!value) {
+    return '未設定'
+  }
+  return format(value, 'yyyy/MM/dd HH:mm')
+}
+
+function valuesDiffer(a: unknown, b: unknown): boolean {
+  if (a === null || a === undefined) {
+    return !(b === null || b === undefined)
+  }
+  if (b === null || b === undefined) {
+    return true
+  }
+  if (a instanceof Date && b instanceof Date) {
+    return a.getTime() !== b.getTime()
+  }
+  return a !== b
+}
 
 // Helper function to check cast availability
 async function checkCastAvailability(
@@ -555,6 +619,12 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    const actorId = session?.user?.id ?? 'system'
+    const actorName = session?.user?.name ?? 'システム'
+    const actorIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null
+    const actorAgent = request.headers.get('user-agent') ?? null
+    const previousReservation = existingReservation
+
     // トランザクション内で予約更新とオプション更新を実行
     const updatedReservation = await db.$transaction(async (tx) => {
       // オプションが変更される場合は既存オプションを削除
@@ -599,7 +669,7 @@ export async function PUT(request: NextRequest) {
         updateData.endTime = new Date(updates.endTime)
       }
 
-      return await tx.reservation.update({
+      const updated = await tx.reservation.update({
         where: { id },
         data: {
           ...updateData,
@@ -622,6 +692,212 @@ export async function PUT(request: NextRequest) {
           station: true,
         },
       })
+
+      const historyEntries: Array<{
+        fieldName: string
+        fieldDisplayName: string
+        oldValue: string | null
+        newValue: string | null
+        reason: string
+      }> = []
+
+      if (valuesDiffer(previousReservation.castId, updated.castId)) {
+        const oldLabel = previousReservation.cast?.name || previousReservation.castId || '未設定'
+        const newLabel = updated.cast?.name || updated.castId || '未設定'
+        historyEntries.push({
+          fieldName: 'castId',
+          fieldDisplayName: '担当キャスト',
+          oldValue: oldLabel,
+          newValue: newLabel,
+          reason: '担当キャストを変更',
+        })
+      }
+
+      if (
+        valuesDiffer(previousReservation.startTime, updated.startTime) ||
+        valuesDiffer(previousReservation.endTime, updated.endTime)
+      ) {
+        historyEntries.push({
+          fieldName: 'schedule',
+          fieldDisplayName: '予約時間',
+          oldValue: `${formatSchedule(previousReservation.startTime)} - ${formatSchedule(previousReservation.endTime)}`,
+          newValue: `${formatSchedule(updated.startTime)} - ${formatSchedule(updated.endTime)}`,
+          reason: '予約時間を変更',
+        })
+      }
+
+      if (valuesDiffer(previousReservation.status, updated.status)) {
+        historyEntries.push({
+          fieldName: 'status',
+          fieldDisplayName: 'ステータス',
+          oldValue: formatStatus(previousReservation.status),
+          newValue: formatStatus(updated.status),
+          reason: 'ステータスを更新',
+        })
+      }
+
+      if (valuesDiffer(previousReservation.price, updated.price)) {
+        historyEntries.push({
+          fieldName: 'price',
+          fieldDisplayName: '総額',
+          oldValue: formatCurrency(previousReservation.price),
+          newValue: formatCurrency(updated.price),
+          reason: '料金を更新',
+        })
+      }
+
+      if (valuesDiffer(previousReservation.designationType, updated.designationType)) {
+        historyEntries.push({
+          fieldName: 'designationType',
+          fieldDisplayName: '指名区分',
+          oldValue: formatDesignation(previousReservation.designationType),
+          newValue: formatDesignation(updated.designationType),
+          reason: '指名設定を変更',
+        })
+      }
+
+      if (valuesDiffer(previousReservation.designationFee, updated.designationFee)) {
+        historyEntries.push({
+          fieldName: 'designationFee',
+          fieldDisplayName: '指名料',
+          oldValue: formatCurrency(previousReservation.designationFee ?? null),
+          newValue: formatCurrency(updated.designationFee ?? null),
+          reason: '指名料を更新',
+        })
+      }
+
+      if (valuesDiffer(previousReservation.transportationFee, updated.transportationFee)) {
+        historyEntries.push({
+          fieldName: 'transportationFee',
+          fieldDisplayName: '交通費',
+          oldValue: formatCurrency(previousReservation.transportationFee ?? null),
+          newValue: formatCurrency(updated.transportationFee ?? null),
+          reason: '交通費を更新',
+        })
+      }
+
+      if (valuesDiffer(previousReservation.additionalFee, updated.additionalFee)) {
+        historyEntries.push({
+          fieldName: 'additionalFee',
+          fieldDisplayName: '追加料金',
+          oldValue: formatCurrency(previousReservation.additionalFee ?? null),
+          newValue: formatCurrency(updated.additionalFee ?? null),
+          reason: '追加料金を更新',
+        })
+      }
+
+      if (valuesDiffer(previousReservation.paymentMethod, updated.paymentMethod)) {
+        historyEntries.push({
+          fieldName: 'paymentMethod',
+          fieldDisplayName: '支払い方法',
+          oldValue: formatText(previousReservation.paymentMethod),
+          newValue: formatText(updated.paymentMethod),
+          reason: '支払い方法を更新',
+        })
+      }
+
+      if (valuesDiffer(previousReservation.marketingChannel, updated.marketingChannel)) {
+        historyEntries.push({
+          fieldName: 'marketingChannel',
+          fieldDisplayName: '集客チャネル',
+          oldValue: formatText(previousReservation.marketingChannel),
+          newValue: formatText(updated.marketingChannel),
+          reason: '集客チャネルを更新',
+        })
+      }
+
+      if (valuesDiffer(previousReservation.areaId, updated.areaId)) {
+        const oldArea = previousReservation.area?.name || previousReservation.areaId || '未設定'
+        const newArea = updated.area?.name || updated.areaId || '未設定'
+        historyEntries.push({
+          fieldName: 'areaId',
+          fieldDisplayName: 'エリア',
+          oldValue: oldArea,
+          newValue: newArea,
+          reason: '対応エリアを更新',
+        })
+      }
+
+      if (valuesDiffer(previousReservation.stationId, updated.stationId)) {
+        const oldStation = previousReservation.station?.name || previousReservation.stationId || '未設定'
+        const newStation = updated.station?.name || updated.stationId || '未設定'
+        historyEntries.push({
+          fieldName: 'stationId',
+          fieldDisplayName: '最寄り駅',
+          oldValue: oldStation,
+          newValue: newStation,
+          reason: '最寄り駅を更新',
+        })
+      }
+
+      if (valuesDiffer(previousReservation.locationMemo, updated.locationMemo)) {
+        historyEntries.push({
+          fieldName: 'locationMemo',
+          fieldDisplayName: '訪問先メモ',
+          oldValue: formatText(previousReservation.locationMemo),
+          newValue: formatText(updated.locationMemo),
+          reason: '訪問先メモを更新',
+        })
+      }
+
+      if (valuesDiffer(previousReservation.notes, updated.notes)) {
+        historyEntries.push({
+          fieldName: 'notes',
+          fieldDisplayName: '顧客メモ',
+          oldValue: formatText(previousReservation.notes),
+          newValue: formatText(updated.notes),
+          reason: '顧客メモを更新',
+        })
+      }
+
+      if (valuesDiffer((previousReservation as any).storeMemo, (updated as any).storeMemo)) {
+        historyEntries.push({
+          fieldName: 'storeMemo',
+          fieldDisplayName: '店舗メモ',
+          oldValue: formatText((previousReservation as any).storeMemo),
+          newValue: formatText((updated as any).storeMemo),
+          reason: '店舗メモを更新',
+        })
+      }
+
+      if (valuesDiffer(previousReservation.storeRevenue, updated.storeRevenue)) {
+        historyEntries.push({
+          fieldName: 'storeRevenue',
+          fieldDisplayName: '店舗取り分',
+          oldValue: formatCurrency(previousReservation.storeRevenue ?? null),
+          newValue: formatCurrency(updated.storeRevenue ?? null),
+          reason: '店舗取り分を更新',
+        })
+      }
+
+      if (valuesDiffer(previousReservation.staffRevenue, updated.staffRevenue)) {
+        historyEntries.push({
+          fieldName: 'staffRevenue',
+          fieldDisplayName: 'キャスト取り分',
+          oldValue: formatCurrency(previousReservation.staffRevenue ?? null),
+          newValue: formatCurrency(updated.staffRevenue ?? null),
+          reason: 'キャスト取り分を更新',
+        })
+      }
+
+      if (historyEntries.length > 0) {
+        await tx.reservationHistory.createMany({
+          data: historyEntries.map((entry) => ({
+            reservationId: id,
+            fieldName: entry.fieldName,
+            fieldDisplayName: entry.fieldDisplayName,
+            oldValue: entry.oldValue,
+            newValue: entry.newValue,
+            reason: entry.reason,
+            actorId,
+            actorName,
+            actorIp,
+            actorAgent,
+          })),
+        })
+      }
+
+      return updated
     })
 
     if (updates.startTime || updates.endTime) {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Header } from '@/components/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -98,7 +98,7 @@ export default function CourseInfoPage() {
   const pricingUseCases = getPricingUseCases()
   const { toast } = useToast()
 
-  const loadCourses = async () => {
+  const loadCourses = useCallback(async () => {
     try {
       setLoading(true)
       const data = await pricingUseCases.getCourses()
@@ -112,11 +112,11 @@ export default function CourseInfoPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [pricingUseCases, toast])
 
   useEffect(() => {
     loadCourses()
-  }, [])
+  }, [loadCourses])
 
   const handleSync = async () => {
     try {
