@@ -31,6 +31,7 @@ import {
   WeeklySchedule,
   WorkStatus,
 } from '@/components/cast/schedule-edit-dialog'
+import { useRouter } from 'next/navigation'
 
 interface CastDashboardProps {
   cast: Cast
@@ -59,6 +60,7 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
     [weekStart]
   )
   const { toast } = useToast()
+  const router = useRouter()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -74,11 +76,30 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
   useEffect(() => {
     const fetchReservations = async () => {
       const allReservations = await getAllReservations()
-      const castReservations = allReservations.filter((r) => r.staffId === cast.id)
+      const castReservations = allReservations
+        .filter((reservation) => {
+          const castId = (reservation as any).castId || reservation.castId || reservation.staffId
+          return castId === cast.id
+        })
+        .map(
+          (reservation) =>
+            ({
+              ...reservation,
+              startTime: new Date(reservation.startTime),
+              endTime: new Date(reservation.endTime),
+            }) as Reservation
+        )
       setReservations(castReservations)
     }
     fetchReservations()
   }, [cast.id])
+
+  const upcomingReservations = useMemo(() => {
+    const now = new Date()
+    return reservations
+      .filter((reservation) => reservation.startTime.getTime() >= now.getTime())
+      .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
+  }, [reservations])
 
   const fetchSchedule = useCallback(async () => {
     try {
@@ -545,7 +566,11 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
                 <CalendarDays className="h-5 w-5" />
                 予約状況
               </CardTitle>
-              <Button size="sm" variant="outline">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => router.push(`/admin/reservation?castId=${cast.id}`)}
+              >
                 <Plus className="mr-1 h-4 w-4" />
                 新規予約
               </Button>
@@ -553,9 +578,8 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {reservations.length > 0 ? (
-                reservations
-                  .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
+              {upcomingReservations.length > 0 ? (
+                upcomingReservations
                   .slice(0, 3)
                   .map((reservation) => {
                     const customerLabel = reservation.customerName?.trim()
@@ -634,8 +658,8 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
               ) : (
                 <div className="py-8 text-center text-gray-500">
                   <CalendarDays className="mx-auto mb-3 h-12 w-12 text-gray-300" />
-                  <p className="mb-2 text-lg font-medium">予約はありません</p>
-                  <p className="text-sm">現在、予約はありません</p>
+                  <p className="mb-2 text-lg font-medium">今後の予約はありません</p>
+                  <p className="text-sm">直近の予約が入るとここに表示されます。</p>
                 </div>
               )}
             </div>
