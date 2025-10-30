@@ -253,6 +253,38 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const [castRecord, customerRecord, courseRecord, areaRecord, stationRecord] = await Promise.all([
+      db.cast.findUnique({ where: { id: reservationData.castId } }),
+      db.customer.findUnique({ where: { id: targetCustomerId } }),
+      db.coursePrice.findUnique({ where: { id: reservationData.courseId } }),
+      reservationData.areaId ? db.areaInfo.findUnique({ where: { id: reservationData.areaId } }) : Promise.resolve(null),
+      reservationData.stationId
+        ? db.stationInfo.findUnique({ where: { id: reservationData.stationId } })
+        : Promise.resolve(null),
+    ])
+
+    if (!customerRecord) {
+      return NextResponse.json(
+        { error: '指定された顧客が存在しません。顧客情報を登録してください。' },
+        { status: 400 }
+      )
+    }
+
+    if (!castRecord) {
+      return NextResponse.json({ error: '指定されたキャストが存在しません。' }, { status: 400 })
+    }
+
+    if (!courseRecord) {
+      return NextResponse.json(
+        { error: '指定されたコースが存在しません。コースを管理画面で登録してください。' },
+        { status: 400 }
+      )
+    }
+
+    const resolvedAreaId = reservationData.areaId && areaRecord ? reservationData.areaId : null
+    const resolvedStationId =
+      reservationData.stationId && stationRecord ? reservationData.stationId : null
+
     // 事前の空き状況チェック（早期リターン）
     const preflightAvailability = await checkCastAvailability(
       reservationData.castId,
@@ -344,8 +376,8 @@ export async function POST(request: NextRequest) {
             additionalFee: reservationData.additionalFee ?? 0,
             paymentMethod: reservationData.paymentMethod ?? '現金',
             marketingChannel: reservationData.marketingChannel ?? null,
-            areaId: reservationData.areaId ?? null,
-            stationId: reservationData.stationId ?? null,
+            areaId: resolvedAreaId,
+            stationId: resolvedStationId,
             locationMemo: reservationData.locationMemo ?? null,
             notes: reservationData.notes ?? null,
             storeRevenue: reservationData.storeRevenue ?? null,
