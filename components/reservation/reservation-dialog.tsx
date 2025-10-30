@@ -36,6 +36,7 @@ import {
   AlertCircle,
   ChevronDown,
   Info,
+  Calculator,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { differenceInMinutes, addMinutes, format } from 'date-fns'
@@ -606,6 +607,40 @@ const displayOptionNames = selectedOptionDetails.length > 0
   ? selectedOptionDetails.map((option) => option.name)
   : initialOptionNames
 
+  const originalTotal = useMemo(
+    () => reservation?.totalPayment ?? reservation?.price ?? 0,
+    [reservation?.price, reservation?.totalPayment]
+  )
+
+  const priceBreakdown = useMemo(() => {
+    const basePrice = selectedCourse?.price ?? reservation?.price ?? 0
+    const optionTotal = selectedOptionDetails.reduce(
+      (sum, option) => sum + (option.price ?? 0),
+      0
+    )
+    const transportation = formState.transportationFee ?? 0
+    const additional = formState.additionalFee ?? 0
+    const designation = formState.designationFee ?? 0
+    const total = basePrice + optionTotal + transportation + additional + designation
+    return {
+      basePrice,
+      optionTotal,
+      transportation,
+      additional,
+      designation,
+      total,
+    }
+  }, [
+    selectedCourse,
+    reservation?.price,
+    selectedOptionDetails,
+    formState.transportationFee,
+    formState.additionalFee,
+    formState.designationFee,
+  ])
+
+  const priceDelta = priceBreakdown.total - originalTotal
+
 useEffect(() => {
   if (reservation) {
     setFormState({
@@ -633,31 +668,16 @@ useEffect(() => {
 
 useEffect(() => {
   if (!isEditMode) return
-
-  const baseCoursePrice = selectedCourse?.price ?? reservation?.price ?? 0
-    const optionsTotal = selectedOptionDetails.reduce((sum, option) => sum + (option.price ?? 0), 0)
-    const transportationFee = formState.transportationFee ?? 0
-    const additionalFee = formState.additionalFee ?? 0
-    const designationFeeValue = formState.designationFee ?? 0
-    const calculatedTotal =
-      baseCoursePrice + optionsTotal + transportationFee + additionalFee + designationFeeValue
-
-    if (Number.isFinite(calculatedTotal) && calculatedTotal !== formState.price) {
-      setFormState((prev) => ({
-        ...prev,
-        price: calculatedTotal,
-      }))
+  setFormState((prev) => {
+    if (!Number.isFinite(priceBreakdown.total) || prev.price === priceBreakdown.total) {
+      return prev
     }
-  }, [
-    isEditMode,
-    selectedCourse,
-    selectedOptionDetails,
-    formState.transportationFee,
-    formState.additionalFee,
-    formState.designationFee,
-    formState.price,
-    reservation?.price,
-  ])
+    return {
+      ...prev,
+      price: priceBreakdown.total,
+    }
+  })
+}, [isEditMode, priceBreakdown.total])
 
   const statusMeta = STATUS_META[status] ?? {
     label: statusTextMap[status] ?? status,
@@ -1522,6 +1542,90 @@ useEffect(() => {
                 </div>
               </CardContent>
             </Card>
+
+            {isEditMode && (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">料金プレビュー</CardTitle>
+                  <Calculator className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm">
+                  <div className="space-y-1">
+                    <div className="text-muted-foreground">変更後の合計</div>
+                    <div className="flex items-baseline justify-between gap-4">
+                      <span className="text-2xl font-semibold">
+                        {formatCurrency(priceBreakdown.total)}
+                      </span>
+                      {priceDelta !== 0 && (
+                        <span
+                          className={cn(
+                            'text-sm font-semibold',
+                            priceDelta > 0
+                              ? 'text-red-600'
+                              : 'text-emerald-600'
+                          )}
+                        >
+                          {priceDelta > 0 ? '+' : '-'}
+                          {formatCurrency(Math.abs(priceDelta))}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>現在の金額</span>
+                      <span>{formatCurrency(originalTotal)}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      内訳
+                    </div>
+                    <dl className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <dt>コース</dt>
+                        <dd>{formatCurrency(priceBreakdown.basePrice)}</dd>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <dt>オプション</dt>
+                        <dd>{formatCurrency(priceBreakdown.optionTotal)}</dd>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <dt>指名料</dt>
+                        <dd>{formatCurrency(priceBreakdown.designation)}</dd>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <dt>交通費</dt>
+                        <dd>{formatCurrency(priceBreakdown.transportation)}</dd>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <dt>追加料金</dt>
+                        <dd>{formatCurrency(priceBreakdown.additional)}</dd>
+                      </div>
+                    </dl>
+                  </div>
+
+                  {selectedOptionDetails.length > 0 && (
+                    <div className="space-y-1">
+                      <div className="text-xs font-medium text-muted-foreground">
+                        選択オプション ({selectedOptionDetails.length})
+                      </div>
+                      <ul className="space-y-1 text-xs">
+                        {selectedOptionDetails.map((option) => (
+                          <li key={option.id} className="flex items-center justify-between">
+                            <span>{option.name}</span>
+                            <span>{formatCurrency(option.price ?? 0)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-muted-foreground">
+                    変更内容は「保存する」で反映され、履歴にも記録されます。
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             <Card>
               <CardHeader>
