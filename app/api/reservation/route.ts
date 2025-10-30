@@ -591,6 +591,13 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Cannot modify cancelled reservation' }, { status: 400 })
     }
 
+    const storeId = existingReservation.storeId
+    const normalizedStoreId = storeId?.trim().toLowerCase()
+    const storeIdParam = request.nextUrl.searchParams.get('storeId')
+    if (storeIdParam && normalizedStoreId && storeIdParam.trim().toLowerCase() !== normalizedStoreId) {
+      return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
+    }
+
     // Check if reservation is modifiable
     if (existingReservation.status === 'modifiable' && !isAdmin) {
       // Only admins can modify reservations in modifiable status
