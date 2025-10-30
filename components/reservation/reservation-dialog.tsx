@@ -35,9 +35,6 @@ import {
   Loader2,
   AlertCircle,
   ChevronDown,
-  CheckCircle2,
-  Ban,
-  ClipboardList,
   Info,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -135,45 +132,6 @@ const STATUS_OPTIONS: Array<{
     value: 'completed',
     label: '対応済み',
     description: '施術が完了しレポート作成などのフォローのみ残っている際に使用します。',
-  },
-]
-
-type QuickAction = {
-  target: ReservationStatus | 'completed'
-  label: string
-  description: string
-  icon: LucideIcon
-  isVisible: (status: ReservationStatus | 'completed') => boolean
-}
-
-const QUICK_ACTIONS: QuickAction[] = [
-  {
-    target: 'confirmed',
-    label: '予約を確定',
-    description: '顧客と確定したらこちらを選択しておくと管理しやすくなります。',
-    icon: CheckCircle2,
-    isVisible: (status) => status === 'pending' || status === 'modifiable',
-  },
-  {
-    target: 'modifiable',
-    label: '詳細調整中にする',
-    description: '追加ヒアリングや調整が必要な場合に使用します。',
-    icon: ClipboardList,
-    isVisible: (status) => status === 'pending' || status === 'confirmed',
-  },
-  {
-    target: 'cancelled',
-    label: 'キャンセルにする',
-    description: '顧客都合・スタッフ都合などでキャンセルする際に設定します。',
-    icon: Ban,
-    isVisible: (status) => status !== 'cancelled',
-  },
-  {
-    target: 'completed',
-    label: '対応済みにする',
-    description: '来店・施術が完了したらステータスを完了に更新します。',
-    icon: Check,
-    isVisible: (status) => status === 'confirmed' || status === 'modifiable',
   },
 ]
 
@@ -493,10 +451,6 @@ export function ReservationDialog({
     label: statusTextMap[status] ?? status,
     description: '',
   }
-  const visibleQuickActions = useMemo(
-    () => QUICK_ACTIONS.filter((action) => action.isVisible(status)),
-    [status]
-  )
 
   if (!reservation) {
     return null
@@ -655,11 +609,11 @@ export function ReservationDialog({
                     修正可能残り時間: {formatRemainingTime(remainingTime)}
                   </span>
                 )}
-              </div>
-              {statusMeta.description && (
-                <p className="mt-1 text-xs text-muted-foreground">{statusMeta.description}</p>
-              )}
-            </div>
+          </div>
+          {statusMeta.description && (
+            <p className="mt-1 text-xs text-muted-foreground">{statusMeta.description}</p>
+          )}
+        </div>
             <div className="flex flex-wrap items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -730,38 +684,13 @@ export function ReservationDialog({
                     <X className="h-4 w-4" />
                     <span className="sr-only">閉じる</span>
                   </Button>
-                </>
-              )}
-            </div>
-          </div>
-          {visibleQuickActions.length > 0 && (
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              {visibleQuickActions.map((action) => {
-                const Icon = action.icon
-                return (
-                  <div
-                    key={action.target}
-                    className="flex flex-col gap-1 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/40 p-3"
-                  >
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="justify-start gap-2"
-                      disabled={statusUpdating || isEditMode || !onSave}
-                      onClick={() => handleStatusChange(action.target)}
-                    >
-                      <Icon className="h-4 w-4" />
-                      {action.label}
-                    </Button>
-                    <p className="text-xs text-muted-foreground">{action.description}</p>
-                  </div>
-                )
-              })}
-            </div>
+            </>
           )}
         </div>
+      </div>
+    </div>
 
-        <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto">
           {validationError && (
             <div className="border-b bg-red-50 px-4 py-3">
               <Alert variant="destructive">

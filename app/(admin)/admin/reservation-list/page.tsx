@@ -23,6 +23,59 @@ import { format, isSameDay, startOfDay, addDays } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 
+const STATUS_LABEL_MAP: Record<string, string> = {
+  confirmed: '確定済',
+  pending: '仮予約',
+  tentative: '仮予約',
+  cancelled: 'キャンセル',
+  modifiable: '修正待ち',
+  completed: '対応済み',
+}
+
+const DESIGNATION_LABEL_MAP: Record<string, string> = {
+  special: '特別指名',
+  regular: '本指名',
+  none: 'フリー',
+}
+
+const normalizeToken = (value: unknown): string => {
+  if (value === null || value === undefined) return ''
+  if (value instanceof Date) return value.getTime().toString()
+  if (typeof value === 'number') return value.toString()
+  return String(value)
+}
+
+const formatCurrencyDisplay = (value: unknown): string => {
+  if (value === null || value === undefined) return '未設定'
+  const amount = typeof value === 'number' ? value : Number(value)
+  if (Number.isNaN(amount)) {
+    return '未設定'
+  }
+  return `¥${amount.toLocaleString()}`
+}
+
+const formatStatusDisplay = (value: unknown): string => {
+  if (typeof value !== 'string') {
+    return '未設定'
+  }
+  return STATUS_LABEL_MAP[value] ?? value
+}
+
+const formatDesignationDisplay = (value: unknown): string => {
+  if (!value) return '未設定'
+  if (typeof value === 'string') {
+    return DESIGNATION_LABEL_MAP[value] ?? value
+  }
+  return String(value)
+}
+
+const formatTextDisplay = (value: unknown): string => {
+  if (value === null || value === undefined || value === '') {
+    return '未設定'
+  }
+  return String(value)
+}
+
 export default function ReservationListPage() {
   const [selectedReservation, setSelectedReservation] = useState<ReservationData | null>(null)
   const [rawReservations, setRawReservations] = useState<Reservation[]>([])
@@ -139,7 +192,7 @@ export default function ReservationListPage() {
         customerCount: uniqueCustomers.size,
       }
     })
-  }, [rawReservations, selectedDate])
+  }, [rawReservations])
 
   const handleDateChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value
@@ -171,12 +224,47 @@ export default function ReservationListPage() {
       endTime: payload.endTime,
     }
 
+    if (payload.status) {
+      updatePayload.status = payload.status as Reservation['status']
+    }
+
     if (payload.notes !== undefined) {
       updatePayload.notes = payload.notes
     }
 
     if (payload.storeMemo !== undefined) {
       ;(updatePayload as any).storeMemo = payload.storeMemo
+    }
+
+    if (payload.designationType !== undefined) {
+      updatePayload.designationType = payload.designationType
+    }
+    if (payload.designationFee !== undefined) {
+      updatePayload.designationFee = payload.designationFee
+    }
+    if (payload.transportationFee !== undefined) {
+      updatePayload.transportationFee = payload.transportationFee
+    }
+    if (payload.additionalFee !== undefined) {
+      updatePayload.additionalFee = payload.additionalFee
+    }
+    if (payload.paymentMethod !== undefined) {
+      updatePayload.paymentMethod = payload.paymentMethod
+    }
+    if (payload.marketingChannel !== undefined) {
+      updatePayload.marketingChannel = payload.marketingChannel
+    }
+    if (payload.areaId !== undefined) {
+      updatePayload.areaId = payload.areaId
+    }
+    if (payload.stationId !== undefined) {
+      updatePayload.stationId = payload.stationId
+    }
+    if (payload.locationMemo !== undefined) {
+      updatePayload.locationMemo = payload.locationMemo
+    }
+    if (payload.price !== undefined) {
+      updatePayload.price = payload.price
     }
 
     try {
@@ -197,38 +285,207 @@ export default function ReservationListPage() {
       const actorId = session?.user?.id || 'admin-ui'
       const actorName = session?.user?.name || '管理ユーザー'
 
-      if ((targetReservation as any).castId !== payload.castId) {
+      const logChange = (
+        fieldName: string,
+        fieldLabel: string,
+        oldRaw: unknown,
+        newRaw: unknown,
+        reason: string,
+        options?: { format?: 'currency' | 'status' | 'designation' }
+      ) => {
+        if (normalizeToken(oldRaw) === normalizeToken(newRaw)) {
+          return
+        }
+
+        let formattedOld: string
+        let formattedNew: string
+
+        switch (options?.format) {
+          case 'currency':
+            formattedOld = formatCurrencyDisplay(oldRaw)
+            formattedNew = formatCurrencyDisplay(newRaw)
+            break
+          case 'status':
+            formattedOld = formatStatusDisplay(oldRaw)
+            formattedNew = formatStatusDisplay(newRaw)
+            break
+          case 'designation':
+            formattedOld = formatDesignationDisplay(oldRaw)
+            formattedNew = formatDesignationDisplay(newRaw)
+            break
+          default:
+            formattedOld = formatTextDisplay(oldRaw)
+            formattedNew = formatTextDisplay(newRaw)
+        }
+
         recordModification(
           reservationId,
           actorId,
           actorName,
-          'castId',
-          '担当キャスト',
-          (targetReservation as any).castId,
-          payload.castId,
-          '担当キャストを変更',
+          fieldName,
+          fieldLabel,
+          formattedOld,
+          formattedNew,
+          reason,
           '0.0.0.0',
           'browser',
           'session'
         )
       }
 
-      if (
-        targetReservation.startTime.getTime() !== payload.startTime.getTime() ||
-        targetReservation.endTime.getTime() !== payload.endTime.getTime()
-      ) {
-        recordModification(
-          reservationId,
-          actorId,
-          actorName,
-          'schedule',
-          '予約時間',
-          `${targetReservation.startTime.toISOString()} - ${targetReservation.endTime.toISOString()}`,
-          `${payload.startTime.toISOString()} - ${payload.endTime.toISOString()}`,
-          '予約時間を変更',
-          '0.0.0.0',
-          'browser',
-          'session'
+      logChange(
+        'castId',
+        '担当キャスト',
+        (targetReservation as any).castId,
+        payload.castId,
+        '担当キャストを変更'
+      )
+
+      logChange(
+        'schedule',
+        '予約時間',
+        `${targetReservation.startTime.toISOString()} - ${targetReservation.endTime.toISOString()}`,
+        `${payload.startTime.toISOString()} - ${payload.endTime.toISOString()}`,
+        '予約時間を変更'
+      )
+
+      if (payload.status) {
+        logChange(
+          'status',
+          'ステータス',
+          targetReservation.status,
+          payload.status,
+          'ステータスを更新',
+          { format: 'status' }
+        )
+      }
+
+      if (payload.price !== undefined) {
+        logChange(
+          'price',
+          '総額',
+          targetReservation.price,
+          payload.price,
+          '料金を更新',
+          { format: 'currency' }
+        )
+      }
+
+      if (payload.designationType !== undefined) {
+        logChange(
+          'designationType',
+          '指名区分',
+          targetReservation.designationType,
+          payload.designationType,
+          '指名設定を変更',
+          { format: 'designation' }
+        )
+      }
+
+      if (payload.designationFee !== undefined) {
+        logChange(
+          'designationFee',
+          '指名料',
+          targetReservation.designationFee,
+          payload.designationFee,
+          '指名料を更新',
+          { format: 'currency' }
+        )
+      }
+
+      if (payload.transportationFee !== undefined) {
+        logChange(
+          'transportationFee',
+          '交通費',
+          targetReservation.transportationFee,
+          payload.transportationFee,
+          '交通費を更新',
+          { format: 'currency' }
+        )
+      }
+
+      if (payload.additionalFee !== undefined) {
+        logChange(
+          'additionalFee',
+          '追加料金',
+          targetReservation.additionalFee,
+          payload.additionalFee,
+          '追加料金を更新',
+          { format: 'currency' }
+        )
+      }
+
+      if (payload.paymentMethod !== undefined) {
+        logChange(
+          'paymentMethod',
+          '支払い方法',
+          targetReservation.paymentMethod,
+          payload.paymentMethod,
+          '支払い方法を更新'
+        )
+      }
+
+      if (payload.marketingChannel !== undefined) {
+        logChange(
+          'marketingChannel',
+          '集客チャネル',
+          targetReservation.marketingChannel,
+          payload.marketingChannel,
+          '集客チャネルを更新'
+        )
+      }
+
+      if (payload.areaId !== undefined) {
+        const oldAreaLabel =
+          (targetReservation as any).area?.name ||
+          (targetReservation as any).areaName ||
+          targetReservation.areaId ||
+          '未設定'
+        const newAreaLabel =
+          normalizedUpdated.area?.name || normalizedUpdated.areaId || '未設定'
+
+        logChange('areaId', 'エリア', oldAreaLabel, newAreaLabel, '対応エリアを更新')
+      }
+
+      if (payload.stationId !== undefined) {
+        const oldStationLabel =
+          (targetReservation as any).station?.name ||
+          (targetReservation as any).stationName ||
+          targetReservation.stationId ||
+          '未設定'
+        const newStationLabel =
+          normalizedUpdated.station?.name || normalizedUpdated.stationId || '未設定'
+
+        logChange('stationId', '最寄り駅', oldStationLabel, newStationLabel, '最寄り駅を更新')
+      }
+
+      if (payload.locationMemo !== undefined) {
+        logChange(
+          'locationMemo',
+          '訪問先メモ',
+          targetReservation.locationMemo ?? (targetReservation as any).locationMemo ?? '',
+          payload.locationMemo,
+          '訪問先メモを更新'
+        )
+      }
+
+      if (payload.notes !== undefined) {
+        logChange(
+          'notes',
+          '顧客メモ',
+          targetReservation.notes ?? '',
+          payload.notes,
+          '顧客メモを更新'
+        )
+      }
+
+      if (payload.storeMemo !== undefined) {
+        logChange(
+          'storeMemo',
+          '店舗メモ',
+          (targetReservation as any).storeMemo ?? '',
+          payload.storeMemo,
+          '店舗メモを更新'
         )
       }
 
