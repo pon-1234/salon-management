@@ -366,7 +366,7 @@ export function ReservationPageContent() {
     }
 
     try {
-      const updatePayload: Partial<Reservation> & { castId?: string } = {
+      const updatePayload: Partial<Reservation> & { castId?: string; options?: string[] } = {
         castId: payload.castId,
         startTime: payload.startTime,
         endTime: payload.endTime,
@@ -374,6 +374,10 @@ export function ReservationPageContent() {
 
       if (payload.status) {
         updatePayload.status = payload.status as Reservation['status']
+      }
+
+      if (payload.courseId) {
+        updatePayload.courseId = payload.courseId
       }
 
       if (payload.notes !== undefined) {
@@ -413,6 +417,10 @@ export function ReservationPageContent() {
       }
       if (payload.price !== undefined) {
         updatePayload.price = payload.price
+      }
+
+      if (payload.options !== undefined) {
+        updatePayload.options = payload.options
       }
 
       await reservationRepository.update(reservationId, updatePayload)

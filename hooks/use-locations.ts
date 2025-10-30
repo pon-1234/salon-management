@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { shouldUseMockFallbacks } from '@/lib/config/feature-flags'
+import { useStore } from '@/contexts/store-context'
 
 export interface LocationArea {
   id: string
@@ -85,16 +86,25 @@ export function useLocations(): LocationResponse {
   const [stations, setStations] = useState<LocationStation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const { currentStore } = useStore()
 
   const fetchLocations = useCallback(async () => {
     setLoading(true)
     setError(null)
 
     try {
-      const areaResponse = await fetch('/api/settings/area', {
+      const params = new URLSearchParams()
+      if (currentStore?.id) {
+        params.set('storeId', currentStore.id)
+      }
+
+      const areaResponse = await fetch(
+        `/api/settings/area${params.toString() ? `?${params.toString()}` : ''}`,
+        {
         credentials: 'include',
         cache: 'no-store',
-      })
+        }
+      )
 
       if (!areaResponse.ok) {
         throw new Error(await areaResponse.text())
@@ -144,7 +154,7 @@ export function useLocations(): LocationResponse {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [currentStore?.id])
 
   useEffect(() => {
     fetchLocations()

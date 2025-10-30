@@ -72,7 +72,7 @@ model Cast {
   regularDesignationRank Int
   workStatus             String
   availableOptions       String[]      @default([])
-  storeId                String        @default("ikebukuro")
+  storeId                String
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @updatedAt
   schedules              CastSchedule[]
@@ -104,7 +104,7 @@ model Reservation {
   endTime    DateTime
   status     String
   price      Int                 @default(0)
-  storeId    String              @default("ikebukuro")
+  storeId    String
   designationType   String?
   designationFee    Int          @default(0)
   transportationFee Int          @default(0)
@@ -141,7 +141,7 @@ model CoursePrice {
   description  String
   isActive     Boolean       @default(true)
   archivedAt   DateTime?
-  storeId      String        @default("ikebukuro")
+  storeId      String
   reservations Reservation[]
   store        Store         @relation(fields: [storeId], references: [id])
 
@@ -163,7 +163,7 @@ model OptionPrice {
   createdAt    DateTime             @default(now())
   updatedAt    DateTime             @default(now()) @updatedAt
   archivedAt   DateTime?
-  storeId      String              @default("ikebukuro")
+  storeId      String
   reservations ReservationOption[]
   store        Store               @relation(fields: [storeId], references: [id])
 
@@ -178,7 +178,7 @@ model AreaInfo {
   description  String?
   displayOrder Int            @default(0)
   isActive     Boolean        @default(true)
-  storeId      String         @default("ikebukuro")
+  storeId      String
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   stations     StationInfo[]
@@ -202,7 +202,7 @@ model StationInfo {
   updatedAt        DateTime  @updatedAt
   area             AreaInfo? @relation(fields: [areaId], references: [id])
   reservations     Reservation[]
-  storeId          String    @default("ikebukuro")
+  storeId          String
   store            Store     @relation(fields: [storeId], references: [id])
 
   @@index([areaId])
@@ -251,7 +251,7 @@ model DesignationFee {
   description String?
   sortOrder   Int      @default(0)
   isActive    Boolean  @default(true)
-  storeId     String   @default("ikebukuro")
+  storeId     String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   store       Store    @relation(fields: [storeId], references: [id])
@@ -355,7 +355,7 @@ model PaymentTransaction {
 
 model StoreSettings {
   id            String   @id @default(cuid())
-  storeId       String   @unique @default("ikebukuro")
+  storeId       String   @unique
   storeName     String
   address       String
   phone         String

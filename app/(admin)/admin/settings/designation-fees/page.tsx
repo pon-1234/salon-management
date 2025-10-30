@@ -28,9 +28,11 @@ import {
   updateDesignationFee,
 } from '@/lib/designation/data'
 import type { DesignationFee } from '@/lib/designation/types'
+import { useStore } from '@/contexts/store-context'
 
 export default function DesignationFeesPage() {
   const { toast } = useToast()
+  const { currentStore } = useStore()
   const [fees, setFees] = useState<DesignationFee[]>(DEFAULT_DESIGNATION_FEES)
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -48,7 +50,10 @@ export default function DesignationFeesPage() {
   const loadFees = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await getDesignationFees({ includeInactive: true })
+      const data = await getDesignationFees({
+        includeInactive: true,
+        storeId: currentStore.id,
+      })
       if (Array.isArray(data) && data.length > 0) {
         setFees(data.sort((a, b) => a.sortOrder - b.sortOrder))
       } else {
@@ -65,7 +70,7 @@ export default function DesignationFeesPage() {
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [currentStore.id, toast])
 
   useEffect(() => {
     void loadFees()
@@ -136,7 +141,7 @@ export default function DesignationFeesPage() {
 
     try {
       if (editingFee) {
-        const updated = await updateDesignationFee(editingFee.id, normalized)
+        const updated = await updateDesignationFee(editingFee.id, normalized, currentStore.id)
         setFees((prev) =>
           prev
             .map((fee) => (fee.id === updated.id ? updated : fee))
@@ -144,10 +149,13 @@ export default function DesignationFeesPage() {
         )
         toast({ title: '更新しました', description: `${normalized.name}を更新しました。` })
       } else {
-        const created = await createDesignationFee({
-          ...normalized,
-          sortOrder: normalized.sortOrder || fees.length + 1,
-        })
+        const created = await createDesignationFee(
+          {
+            ...normalized,
+            sortOrder: normalized.sortOrder || fees.length + 1,
+          },
+          currentStore.id
+        )
         setFees((prev) => [...prev, created].sort((a, b) => a.sortOrder - b.sortOrder))
         toast({ title: '追加しました', description: `${normalized.name}を追加しました。` })
       }
@@ -160,13 +168,13 @@ export default function DesignationFeesPage() {
         variant: 'destructive',
       })
     }
-  }, [editingFee, fees.length, formData, toast])
+  }, [currentStore.id, editingFee, fees.length, formData, toast])
 
   const removeFee = useCallback(
     async (id: string) => {
       if (!confirm('この指名料を削除しますか？')) return
       try {
-        await deleteDesignationFee(id)
+        await deleteDesignationFee(id, currentStore.id)
         setFees((prev) => prev.filter((fee) => fee.id !== id))
         toast({ title: '削除しました' })
       } catch (error) {
@@ -178,13 +186,13 @@ export default function DesignationFeesPage() {
         })
       }
     },
-    [toast]
+    [currentStore.id, toast]
   )
 
   const toggleActive = useCallback(
     async (id: string, value: boolean) => {
       try {
-        const updated = await updateDesignationFee(id, { isActive: value })
+        const updated = await updateDesignationFee(id, { isActive: value }, currentStore.id)
         setFees((prev) =>
           prev
             .map((fee) => (fee.id === updated.id ? updated : fee))
@@ -199,7 +207,7 @@ export default function DesignationFeesPage() {
         })
       }
     },
-    [toast]
+    [currentStore.id, toast]
   )
 
   const handleSync = useCallback(() => {

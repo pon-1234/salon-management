@@ -37,6 +37,7 @@ import {
   Route,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { useStore } from '@/contexts/store-context'
 
 interface AreaOption {
   id: string
@@ -89,10 +90,18 @@ export default function StationInfoPage() {
   const [formData, setFormData] = useState<StationFormState>(emptyForm)
   const [syncing, setSyncing] = useState(false)
   const { toast } = useToast()
+  const { currentStore } = useStore()
 
   const fetchAreas = useCallback(async () => {
     try {
-      const response = await fetch('/api/settings/area', { credentials: 'include' })
+      const params = new URLSearchParams()
+      if (currentStore?.id) {
+        params.set('storeId', currentStore.id)
+      }
+      const query = params.toString()
+      const response = await fetch(query ? `/api/settings/area?${query}` : '/api/settings/area', {
+        credentials: 'include',
+      })
       if (!response.ok) {
         throw new Error(await response.text())
       }
@@ -113,16 +122,26 @@ export default function StationInfoPage() {
         variant: 'destructive',
       })
     }
-  }, [toast])
+  }, [currentStore?.id, toast])
 
   const fetchStations = useCallback(
     async (areaId?: string) => {
       try {
         setLoading(true)
-        const searchParams = areaId && areaId !== 'all' ? `?areaId=${areaId}` : ''
-        const response = await fetch(`/api/settings/station${searchParams}`, {
+        const params = new URLSearchParams()
+        if (areaId && areaId !== 'all') {
+          params.set('areaId', areaId)
+        }
+        if (currentStore?.id) {
+          params.set('storeId', currentStore.id)
+        }
+        const query = params.toString()
+        const response = await fetch(
+          query ? `/api/settings/station?${query}` : '/api/settings/station',
+          {
           credentials: 'include',
-        })
+          }
+        )
         if (!response.ok) {
           throw new Error(await response.text())
         }
@@ -140,7 +159,7 @@ export default function StationInfoPage() {
         setLoading(false)
       }
     },
-    [toast]
+    [currentStore?.id, toast]
   )
 
   useEffect(() => {
@@ -196,7 +215,12 @@ export default function StationInfoPage() {
 
     try {
       const method = editingStation ? 'PUT' : 'POST'
-      const response = await fetch('/api/settings/station', {
+      const params = new URLSearchParams()
+      if (currentStore?.id) {
+        params.set('storeId', currentStore.id)
+      }
+      const query = params.toString()
+      const response = await fetch(query ? `/api/settings/station?${query}` : '/api/settings/station', {
         method,
         credentials: 'include',
         headers: {
@@ -232,7 +256,12 @@ export default function StationInfoPage() {
     if (!confirm(`${station.name}を削除しますか？`)) return
 
     try {
-      const response = await fetch(`/api/settings/station?id=${station.id}`, {
+      const params = new URLSearchParams({ id: station.id })
+      if (currentStore?.id) {
+        params.set('storeId', currentStore.id)
+      }
+      const query = params.toString()
+      const response = await fetch(query ? `/api/settings/station?${query}` : '/api/settings/station', {
         method: 'DELETE',
         credentials: 'include',
       })
@@ -256,7 +285,12 @@ export default function StationInfoPage() {
 
   const handleToggleActive = async (station: StationSettings) => {
     try {
-      const response = await fetch('/api/settings/station', {
+      const params = new URLSearchParams()
+      if (currentStore?.id) {
+        params.set('storeId', currentStore.id)
+      }
+      const query = params.toString()
+      const response = await fetch(query ? `/api/settings/station?${query}` : '/api/settings/station', {
         method: 'PUT',
         credentials: 'include',
         headers: {

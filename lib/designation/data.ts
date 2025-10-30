@@ -4,6 +4,7 @@ import type { DesignationFee, DesignationFeeInput } from './types'
 
 type FetchOptions = {
   includeInactive?: boolean
+  storeId?: string
 }
 
 async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
@@ -38,13 +39,20 @@ function mapDesignationFee(payload: any): DesignationFee {
   }
 }
 
-export async function getDesignationFees(
-  options: FetchOptions = {}
-): Promise<DesignationFee[]> {
-  const query = options.includeInactive ? '?includeInactive=true' : ''
+export async function getDesignationFees(options: FetchOptions = {}): Promise<DesignationFee[]> {
+  const params = new URLSearchParams()
+  if (options.includeInactive) {
+    params.set('includeInactive', 'true')
+  }
+  if (options.storeId) {
+    params.set('storeId', options.storeId)
+  }
+  const query = params.toString()
 
   try {
-    const result = await fetchJson<DesignationFee[]>(`/api/designation-fee${query}`)
+    const result = await fetchJson<DesignationFee[]>(
+      query ? `/api/designation-fee?${query}` : '/api/designation-fee'
+    )
     return Array.isArray(result)
       ? result.map(mapDesignationFee).sort((a, b) => a.sortOrder - b.sortOrder)
       : []
@@ -60,9 +68,15 @@ export async function getDesignationFees(
 }
 
 export async function createDesignationFee(
-  payload: Omit<DesignationFeeInput, 'id'>
+  payload: Omit<DesignationFeeInput, 'id'>,
+  storeId?: string
 ): Promise<DesignationFee> {
-  const result = await fetchJson<DesignationFee>(`/api/designation-fee`, {
+  const params = new URLSearchParams()
+  if (storeId) {
+    params.set('storeId', storeId)
+  }
+  const query = params.toString()
+  const result = await fetchJson<DesignationFee>(query ? `/api/designation-fee?${query}` : '/api/designation-fee', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
@@ -71,17 +85,28 @@ export async function createDesignationFee(
 
 export async function updateDesignationFee(
   id: string,
-  payload: Partial<DesignationFeeInput>
+  payload: Partial<DesignationFeeInput>,
+  storeId?: string
 ): Promise<DesignationFee> {
-  const result = await fetchJson<DesignationFee>(`/api/designation-fee`, {
+  const params = new URLSearchParams()
+  if (storeId) {
+    params.set('storeId', storeId)
+  }
+  const query = params.toString()
+  const result = await fetchJson<DesignationFee>(query ? `/api/designation-fee?${query}` : '/api/designation-fee', {
     method: 'PUT',
     body: JSON.stringify({ id, ...payload }),
   })
   return mapDesignationFee(result)
 }
 
-export async function deleteDesignationFee(id: string): Promise<void> {
-  await fetchJson(`/api/designation-fee?id=${encodeURIComponent(id)}`, {
+export async function deleteDesignationFee(id: string, storeId?: string): Promise<void> {
+  const params = new URLSearchParams({ id })
+  if (storeId) {
+    params.set('storeId', storeId)
+  }
+  const query = params.toString()
+  await fetchJson(query ? `/api/designation-fee?${query}` : `/api/designation-fee?id=${encodeURIComponent(id)}`, {
     method: 'DELETE',
   })
 }

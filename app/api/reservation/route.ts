@@ -636,10 +636,19 @@ export async function PUT(request: NextRequest) {
     // トランザクション内で予約更新とオプション更新を実行
     const updatedReservation = await db.$transaction(async (tx) => {
       // オプションが変更される場合は既存オプションを削除
+      type OptionRecord = {
+        id: string
+        name: string
+        price: number
+        storeShare: number | null
+        castShare: number | null
+      }
+
       const rawOptionIds: string[] | null = Array.isArray(updates.options)
         ? updates.options
         : null
       let normalizedOptionIds: string[] | null = null
+      let optionRecordMap: Map<string, OptionRecord> | null = null
 
       if (rawOptionIds) {
         await tx.reservationOption.deleteMany({
@@ -653,7 +662,7 @@ export async function PUT(request: NextRequest) {
 
         if (candidateOptionIds.length > 0) {
           const uniqueOptionIds = Array.from(new Set(candidateOptionIds))
-          const existingOptionIds = await tx.optionPrice.findMany({
+          const optionRecords = await tx.optionPrice.findMany({
             where: {
               id: {
                 in: uniqueOptionIds,
@@ -662,9 +671,20 @@ export async function PUT(request: NextRequest) {
             },
             select: {
               id: true,
+              name: true,
+              price: true,
+              storeShare: true,
+              castShare: true,
             },
           })
-          const validOptionIds = new Set(existingOptionIds.map((option) => option.id))
+          optionRecordMap = new Map(optionRecords.map((record) => [record.id, {
+            id: record.id,
+            name: record.name,
+            price: record.price,
+            storeShare: record.storeShare ?? null,
+            castShare: record.castShare ?? null,
+          }]))
+          const validOptionIds = new Set(optionRecords.map((option) => option.id))
           if (validOptionIds.size !== uniqueOptionIds.length) {
             logger.warn(
               {
@@ -757,7 +777,16 @@ export async function PUT(request: NextRequest) {
           options:
             normalizedOptionIds && normalizedOptionIds.length > 0
               ? {
-                  create: normalizedOptionIds.map((optionId) => ({ optionId })),
+                  create: normalizedOptionIds
+                    .map((optionId) => optionRecordMap?.get(optionId))
+                    .filter((record): record is OptionRecord => Boolean(record))
+                    .map((record) => ({
+                      optionId: record.id,
+                      optionName: record.name,
+                      optionPrice: record.price,
+                      storeShare: record.storeShare,
+                      castShare: record.castShare,
+                    })),
                 }
               : undefined,
         },
@@ -792,6 +821,18 @@ export async function PUT(request: NextRequest) {
           oldValue: oldLabel,
           newValue: newLabel,
           reason: '担当キャストを変更',
+        })
+      }
+
+      if (valuesDiffer(previousReservation.courseId, updated.courseId)) {
+        const oldCourse = previousReservation.course?.name || previousReservation.courseId || '未設定'
+        const newCourse = updated.course?.name || updated.courseId || '未設定'
+        historyEntries.push({
+          fieldName: 'courseId',
+          fieldDisplayName: 'コース',
+          oldValue: oldCourse,
+          newValue: newCourse,
+          reason: 'コースを更新',
         })
       }
 

@@ -51,6 +51,7 @@ import { resolveOptionId } from '@/lib/options/data'
 import { getDesignationFees } from '@/lib/designation/data'
 import type { DesignationFee } from '@/lib/designation/types'
 import { BusinessHoursRange } from '@/lib/settings/business-hours'
+import { useStore } from '@/contexts/store-context'
 
 type DesignationType = 'none' | 'regular' | 'special'
 
@@ -205,6 +206,7 @@ export function QuickBookingDialog({
   onReservationCreated,
   businessHours,
 }: QuickBookingDialogProps) {
+  const { currentStore } = useStore()
   const [currentStep, setCurrentStep] = useState(1)
   const totalSteps = 3
   const [staffDetails, setStaffDetails] = useState<Cast | null>(
@@ -219,7 +221,7 @@ export function QuickBookingDialog({
     coursePrices,
     optionPrices,
     loading: pricingLoading,
-  } = usePricing()
+  } = usePricing(currentStore.id)
   const { areas, stations, loading: locationsLoading } = useLocations()
 
   const courseCatalog: NormalizedCourse[] = useMemo(() => {
@@ -360,7 +362,9 @@ export function QuickBookingDialog({
 
     const loadDesignationFees = async () => {
       try {
-        const fees = await getDesignationFees()
+        const fees = await getDesignationFees({
+          storeId: currentStore.id,
+        })
         if (!ignore) {
           setDesignationFees(fees)
         }
@@ -376,7 +380,7 @@ export function QuickBookingDialog({
     return () => {
       ignore = true
     }
-  }, [])
+  }, [currentStore.id])
 
   useEffect(() => {
     if (!locationsLoading && areas.length > 0) {

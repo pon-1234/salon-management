@@ -9,6 +9,7 @@ import { requireAdmin } from '@/lib/auth/utils'
 import { SuccessResponses } from '@/lib/api/responses'
 import { ErrorResponses, handleApiError } from '@/lib/api/errors'
 import { db } from '@/lib/db'
+import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
 
 const areaSchema = z.object({
   id: z.string().optional(),
@@ -20,15 +21,18 @@ const areaSchema = z.object({
   isActive: z.boolean().optional(),
 })
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const authError = await requireAdmin()
   if (authError) return authError
 
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const areas = await db.areaInfo.findMany({
+      where: { storeId },
       orderBy: { displayOrder: 'asc' },
       include: {
         stations: {
+          where: { storeId },
           orderBy: { displayOrder: 'asc' },
         },
       },
@@ -59,11 +63,19 @@ export async function GET() {
         },
       ]
 
-      await db.areaInfo.createMany({ data: defaults })
+      await db.areaInfo.createMany({
+        data: defaults.map((entry) => ({ ...entry, storeId })),
+      })
 
       const seeded = await db.areaInfo.findMany({
+        where: { storeId },
         orderBy: { displayOrder: 'asc' },
-        include: { stations: { orderBy: { displayOrder: 'asc' } } },
+        include: {
+          stations: {
+            where: { storeId },
+            orderBy: { displayOrder: 'asc' },
+          },
+        },
       })
 
       return SuccessResponses.ok(seeded)
@@ -80,11 +92,13 @@ export async function POST(request: NextRequest) {
   if (authError) return authError
 
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const body = await request.json()
     const validated = areaSchema.parse(body)
 
     const area = await db.areaInfo.create({
       data: {
+        storeId,
         name: validated.name,
         prefecture: validated.prefecture ?? null,
         city: validated.city ?? null,
@@ -108,6 +122,7 @@ export async function PUT(request: NextRequest) {
   if (authError) return authError
 
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const body = await request.json()
     const { id, ...rest } = body
 
@@ -116,6 +131,14 @@ export async function PUT(request: NextRequest) {
     }
 
     const validated = areaSchema.parse({ id, ...rest })
+
+    const existing = await db.areaInfo.findFirst({
+      where: { id, storeId },
+    })
+
+    if (!existing) {
+      return ErrorResponses.notFound('エリア')
+    }
 
     const area = await db.areaInfo.update({
       where: { id },
@@ -129,6 +152,7 @@ export async function PUT(request: NextRequest) {
       },
       include: {
         stations: {
+          where: { storeId },
           orderBy: { displayOrder: 'asc' },
         },
       },
@@ -151,15 +175,20 @@ export async function DELETE(request: NextRequest) {
   if (authError) return authError
 
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const id = request.nextUrl.searchParams.get('id')
 
     if (!id) {
       return ErrorResponses.badRequest('エリアIDが必要です')
     }
 
-    await db.areaInfo.delete({
-      where: { id },
+    const deleted = await db.areaInfo.deleteMany({
+      where: { id, storeId },
     })
+
+    if (deleted.count === 0) {
+      return ErrorResponses.notFound('エリア')
+    }
 
     return SuccessResponses.deleted()
   } catch (error: any) {

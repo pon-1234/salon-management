@@ -112,7 +112,7 @@ export function Timeline({
       <div className="flex h-64 items-center justify-center text-gray-500">
         <div className="text-center">
           <AlertCircle className="mx-auto mb-2 h-12 w-12 text-gray-400" />
-          <p>スタッフ情報を読み込んでいます...</p>
+          <p>キャスト情報を読み込んでいます...</p>
         </div>
       </div>
     )
@@ -123,7 +123,7 @@ export function Timeline({
       <div className="flex h-64 items-center justify-center text-gray-500">
         <div className="text-center">
           <AlertCircle className="mx-auto mb-2 h-12 w-12 text-gray-400" />
-          <p>本日出勤予定のスタッフはいません。</p>
+          <p>本日出勤予定のキャストはいません。</p>
         </div>
       </div>
     )
@@ -311,14 +311,14 @@ export function Timeline({
 
       <ScrollArea className="w-full">
         <div className="flex" style={{ minWidth: `${hourSegments * HOUR_WIDTH + 240}px` }}>
-          {/* スタッフ列 */}
+          {/* キャスト列 */}
           <div
             className="sticky left-0 z-20 border-r bg-white shadow-sm"
             style={{ width: '240px' }}
           >
             <div className="flex h-16 items-center border-b bg-gray-50 px-4">
               <User className="mr-2 h-4 w-4 text-gray-600" />
-              <span className="font-medium">スタッフ</span>
+              <span className="font-medium">担当キャスト</span>
             </div>
             {safeMap(filteredStaff, (member) => (
               <button

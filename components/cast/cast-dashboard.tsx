@@ -31,6 +31,7 @@ import {
   WorkStatus,
 } from '@/components/cast/schedule-edit-dialog'
 import { useStore } from '@/contexts/store-context'
+import { mapReservationToReservationData } from '@/lib/reservation/transformers'
 interface CastDashboardProps {
   cast: Cast
   onUpdate: (data: Partial<Cast>) => void
@@ -308,44 +309,7 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
   // 予約データをダイアログ用に変換
   const convertToReservationData = (reservation: Reservation): ReservationData | null => {
     if (!reservation) return null
-
-    return {
-      id: reservation.id,
-      customerId: reservation.customerId,
-      customerName: reservation.customerName || `顧客${reservation.customerId}`,
-      customerType: '通常顧客',
-      phoneNumber: '090-1234-5678',
-      points: 100,
-      bookingStatus: reservation.status,
-      staffConfirmation: '確認済み',
-      customerConfirmation: '確認済み',
-      prefecture: '東京都',
-      district: '渋谷区',
-      location: 'アパホテル',
-      locationType: 'ホテル',
-      specificLocation: '502号室',
-      staff: reservation.staffName || cast.name,
-      marketingChannel: 'WEB',
-      date: format(reservation.startTime, 'yyyy-MM-dd'),
-      time: format(reservation.startTime, 'HH:mm'),
-      inOutTime: `${format(reservation.startTime, 'HH:mm')}-${format(reservation.endTime, 'HH:mm')}`,
-      course: reservation.serviceName || reservation.serviceId,
-      freeExtension: 'なし',
-      designation: '指名',
-      designationFee: '3,000円',
-      options: {},
-      transportationFee: 0,
-      paymentMethod: '現金',
-      discount: '0円',
-      additionalFee: 0,
-      totalPayment: reservation.price,
-      storeRevenue: Math.floor(reservation.price * 0.6),
-      staffRevenue: Math.floor(reservation.price * 0.4),
-      staffBonusFee: 0,
-      startTime: reservation.startTime,
-      endTime: reservation.endTime,
-      staffImage: '/placeholder-user.jpg',
-    }
+    return mapReservationToReservationData(reservation, { casts: [cast] })
   }
 
   return (
@@ -571,14 +535,17 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
                 upcomingReservations
                   .slice(0, 3)
                   .map((reservation) => {
-                    const customerLabel = reservation.customerName?.trim()
-                      ? reservation.customerName
+                    const normalized = mapReservationToReservationData(reservation, {
+                      casts: [cast],
+                    })
+                    const customerLabel = normalized?.customerName?.trim()
+                      ? normalized.customerName
                       : reservation.customerId
                         ? `顧客${reservation.customerId.slice(0, 8)}`
                         : '顧客'
-                    const serviceLabel = reservation.serviceName?.trim()
-                      ? reservation.serviceName
-                      : 'サービス未設定'
+                    const serviceLabel = normalized?.course?.trim()
+                      ? normalized.course
+                      : reservation.serviceName?.trim() || 'サービス未設定'
                     const today = new Date()
                     const tomorrow = new Date(today)
                     tomorrow.setDate(tomorrow.getDate() + 1)
@@ -612,9 +579,9 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
                           </Badge>
                           <span className="font-medium">{customerLabel}</span>
                           <Badge variant="outline" className="text-xs">
-                            {reservation.status === 'confirmed'
+                            {normalized?.status === 'confirmed'
                               ? '確定'
-                              : reservation.status === 'pending'
+                              : normalized?.status === 'pending'
                                 ? '仮予約'
                                 : '修正可能'}
                           </Badge>
@@ -628,17 +595,17 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
                           <div
                             className={`font-semibold ${isToday ? 'text-emerald-700' : isTomorrow ? 'text-blue-700' : ''}`}
                           >
-                            {reservation.price.toLocaleString()}円
+                            {(normalized?.totalPayment ?? reservation.price).toLocaleString()}円
                           </div>
                         </div>
                         <div className="mt-2 flex gap-1">
                           <Badge
                             variant={
-                              reservation.status === 'confirmed' ? 'secondary' : 'destructive'
+                              normalized?.status === 'confirmed' ? 'secondary' : 'destructive'
                             }
                             className="text-xs"
                           >
-                            {reservation.status === 'confirmed' ? '確認済み' : '要確認'}
+                            {normalized?.status === 'confirmed' ? '確認済み' : '要確認'}
                           </Badge>
                         </div>
                       </div>
@@ -653,11 +620,6 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
               )}
             </div>
 
-            <div className="mt-4 border-t pt-3">
-              <Button variant="ghost" className="w-full text-sm">
-                すべての予約を表示
-              </Button>
-            </div>
           </CardContent>
         </Card>
       </div>

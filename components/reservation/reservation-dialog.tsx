@@ -67,12 +67,16 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { MARKETING_CHANNELS, PAYMENT_METHODS, ReservationStatus } from '@/lib/constants'
 import { toast } from '@/hooks/use-toast'
+import { usePricing } from '@/hooks/use-pricing'
+import { useLocations } from '@/hooks/use-locations'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useStore } from '@/contexts/store-context'
 
 type EditFormState = {
   date: string
   startTime: string
   castId: string
+  courseId: string
   designationId: string
   storeMemo: string
   notes: string
@@ -84,6 +88,7 @@ type EditFormState = {
   price: number
   areaId: string | null
   stationId: string | null
+  optionIds: string[]
   locationMemo: string
 }
 
@@ -197,6 +202,7 @@ export function ReservationDialog({
     date: '',
     startTime: '',
     castId: '',
+    courseId: '',
     designationId: '',
     storeMemo: '',
     notes: '',
@@ -208,6 +214,7 @@ export function ReservationDialog({
     price: 0,
     areaId: null,
     stationId: null,
+    optionIds: [],
     locationMemo: '',
   })
   const [castOptions, setCastOptions] = useState<Cast[]>(casts ?? [])
@@ -220,10 +227,23 @@ export function ReservationDialog({
     session?.user?.permissions ?? [],
     'analytics:read'
   )
+  const {
+    coursePrices,
+    courses,
+    optionPrices,
+    options,
+    loading: pricingLoading,
+  } = usePricing(currentStore.id)
+  const {
+    areas,
+    stations,
+    loading: locationsLoading,
+  } = useLocations()
 
   const [modificationHistory, setModificationHistory] = useState<ModificationHistory[]>([])
   const [modificationAlerts, setModificationAlerts] = useState<ModificationAlert[]>([])
   const [isHistoryLoading, setIsHistoryLoading] = useState(false)
+  const [historyReloadToken, setHistoryReloadToken] = useState(0)
 
   const reservationDurationMinutes = useMemo(() => {
     if (!reservation) return 0
@@ -239,7 +259,10 @@ export function ReservationDialog({
 
     const loadDesignationFees = async () => {
       try {
-        const fees = await getDesignationFees({ includeInactive: true })
+        const fees = await getDesignationFees({
+          includeInactive: true,
+          storeId: currentStore.id,
+        })
         if (!ignore) {
           setDesignationOptions(fees)
         }
@@ -255,7 +278,7 @@ export function ReservationDialog({
     return () => {
       ignore = true
     }
-  }, [])
+  }, [currentStore.id])
 
   useEffect(() => {
     if (reservation?.status) {
@@ -288,6 +311,85 @@ export function ReservationDialog({
 
     return activeOptions
   }, [designationOptions, reservationDesignation])
+
+  const courseOptions = useMemo(
+    () =>
+      (coursePrices.length > 0 ? coursePrices : courses).map((course: any) => ({
+        id: course.id,
+        name: course.name,
+        duration: course.duration ?? 0,
+        price: course.price ?? 0,
+        storeShare: course.storeShare ?? null,
+        castShare: course.castShare ?? null,
+      })),
+    [coursePrices, courses]
+  )
+
+  const optionChoices = useMemo(
+    () =>
+      (optionPrices.length > 0 ? optionPrices : options).map((option: any) => ({
+        id: option.id,
+        name: option.name,
+        price: option.price ?? 0,
+        note: option.note ?? option.description ?? '',
+        storeShare: option.storeShare ?? null,
+        castShare: option.castShare ?? null,
+      })),
+    [optionPrices, options]
+  )
+
+  const selectedCourse = useMemo(() => {
+    const courseId = formState.courseId || reservation?.serviceId || ''
+    return courseOptions.find((course) => course.id === courseId) ?? null
+  }, [courseOptions, formState.courseId, reservation?.serviceId])
+
+  const selectedOptionDetails = useMemo(
+    () => optionChoices.filter((option) => formState.optionIds.includes(option.id)),
+    [optionChoices, formState.optionIds]
+  )
+
+  useEffect(() => {
+    if (courseOptions.length === 0) {
+      return
+    }
+
+    setFormState((prev) => {
+      const currentCourseId = prev.courseId || reservation?.serviceId || ''
+      if (currentCourseId && courseOptions.some((course) => course.id === currentCourseId)) {
+        return prev
+      }
+
+      const fallbackCourseId = courseOptions[0]?.id ?? ''
+      if (!fallbackCourseId || fallbackCourseId === prev.courseId) {
+        return prev
+      }
+
+      return {
+        ...prev,
+        courseId: fallbackCourseId,
+      }
+    })
+  }, [courseOptions, reservation?.serviceId])
+
+  const filteredStations = useMemo(() => {
+    if (!formState.areaId) {
+      return stations
+    }
+    return stations.filter((station) => station.areaId === formState.areaId)
+  }, [stations, formState.areaId])
+
+  useEffect(() => {
+    if (!formState.stationId) {
+      return
+    }
+    if (filteredStations.some((station) => station.id === formState.stationId)) {
+      return
+    }
+    setFormState((prev) => ({
+      ...prev,
+      stationId: null,
+    }))
+  }, [filteredStations, formState.stationId])
 
   useEffect(() => {
     if (reservation?.status) {
@@ -337,7 +439,7 @@ export function ReservationDialog({
     return () => {
       ignore = true
     }
-  }, [reservation?.id])
+  }, [reservation?.id, historyReloadToken])
 
   useEffect(() => {
     if (reservation) {
@@ -345,6 +447,7 @@ export function ReservationDialog({
         date: format(reservation.startTime, 'yyyy-MM-dd'),
         startTime: format(reservation.startTime, 'HH:mm'),
         castId: reservation.staffId || '',
+        courseId: reservation.serviceId || '',
         designationId: reservationDesignation?.id || '',
         storeMemo: reservation.storeMemo || '',
         notes: reservation.notes || '',
@@ -356,11 +459,12 @@ export function ReservationDialog({
         price: reservation.totalPayment ?? reservation.price ?? 0,
         areaId: reservation.areaId ?? null,
         stationId: reservation.stationId ?? null,
+        optionIds: normalizedInitialOptionIds,
         locationMemo: reservation.locationMemo ?? '',
       })
       setValidationError(null)
     }
-  }, [reservation, reservationDesignation])
+  }, [reservation, reservationDesignation, normalizedInitialOptionIds])
 
   const handleStatusChange = useCallback(
     async (nextStatus: ReservationStatus | 'completed') => {
@@ -392,6 +496,7 @@ export function ReservationDialog({
           status: nextStatus as ReservationStatus,
         })
         setStatus(nextStatus)
+        setHistoryReloadToken((prev) => prev + 1)
         toast({
           title: 'ステータスを更新しました',
           description: STATUS_META[nextStatus]?.label ?? nextStatus,
@@ -483,20 +588,75 @@ export function ReservationDialog({
 
   const paymentMethodOptions = useMemo(() => Object.values(PAYMENT_METHODS), [])
 
+  const effectiveDurationMinutes = useMemo(() => {
+    const duration = selectedCourse?.duration ?? 0
+    return duration > 0 ? duration : reservationDurationMinutes
+  }, [selectedCourse, reservationDurationMinutes])
+
   const computedEndTime = useMemo(() => {
     if (!formState.date || !formState.startTime) return ''
     const start = new Date(`${formState.date}T${formState.startTime}:00`)
     if (Number.isNaN(start.getTime())) return ''
-    const end = addMinutes(start, reservationDurationMinutes)
+    const end = addMinutes(start, effectiveDurationMinutes)
     return format(end, 'HH:mm')
-  }, [formState.date, formState.startTime, reservationDurationMinutes])
+  }, [formState.date, formState.startTime, effectiveDurationMinutes])
 
-  const optionList = useMemo(() => {
+  const initialOptionIdsRaw = useMemo(() => {
     if (!reservation?.options) return []
     return Object.entries(reservation.options)
       .filter(([, enabled]) => enabled)
       .map(([key]) => key)
   }, [reservation?.options])
+
+  const normalizedInitialOptionIds = useMemo(() => {
+    if (optionChoices.length === 0) {
+      return initialOptionIdsRaw
+    }
+    return Array.from(
+      new Set(
+        initialOptionIdsRaw.map((key) => {
+          const byId = optionChoices.find((option) => option.id === key)
+          if (byId) return byId.id
+          const byName = optionChoices.find((option) => option.name === key)
+          return byName ? byName.id : key
+        })
+      )
+    )
+  }, [initialOptionIdsRaw, optionChoices])
+
+  const initialOptionNames = useMemo(() => initialOptionIdsRaw, [initialOptionIdsRaw])
+
+  const displayOptionNames = selectedOptionDetails.length > 0
+    ? selectedOptionDetails.map((option) => option.name)
+    : initialOptionNames
+
+  useEffect(() => {
+    if (!isEditMode) return
+
+    const baseCoursePrice = selectedCourse?.price ?? reservation?.price ?? 0
+    const optionsTotal = selectedOptionDetails.reduce((sum, option) => sum + (option.price ?? 0), 0)
+    const transportationFee = formState.transportationFee ?? 0
+    const additionalFee = formState.additionalFee ?? 0
+    const designationFeeValue = formState.designationFee ?? 0
+    const calculatedTotal =
+      baseCoursePrice + optionsTotal + transportationFee + additionalFee + designationFeeValue
+
+    if (Number.isFinite(calculatedTotal) && calculatedTotal !== formState.price) {
+      setFormState((prev) => ({
+        ...prev,
+        price: calculatedTotal,
+      }))
+    }
+  }, [
+    isEditMode,
+    selectedCourse,
+    selectedOptionDetails,
+    formState.transportationFee,
+    formState.additionalFee,
+    formState.designationFee,
+    formState.price,
+    reservation?.price,
+  ])
 
   const statusMeta = STATUS_META[status] ?? {
     label: statusTextMap[status] ?? status,
@@ -529,6 +689,7 @@ export function ReservationDialog({
       date: format(reservation.startTime, 'yyyy-MM-dd'),
       startTime: format(reservation.startTime, 'HH:mm'),
       castId: reservation.staffId || '',
+      courseId: reservation.serviceId || '',
       designationId: reservationDesignation?.id || '',
       storeMemo: reservation.storeMemo || '',
       notes: reservation.notes || '',
@@ -540,6 +701,7 @@ export function ReservationDialog({
       price: reservation.totalPayment ?? reservation.price ?? 0,
       areaId: reservation.areaId ?? null,
       stationId: reservation.stationId ?? null,
+      optionIds: normalizedInitialOptionIds,
       locationMemo: reservation.locationMemo ?? '',
     })
   }
@@ -573,7 +735,8 @@ export function ReservationDialog({
       return
     }
 
-    const end = addMinutes(start, reservationDurationMinutes)
+    const durationMinutes = effectiveDurationMinutes > 0 ? effectiveDurationMinutes : reservationDurationMinutes
+    const end = addMinutes(start, durationMinutes)
 
     const designationIdToSave = formState.designationId || reservationDesignation?.id || ''
     const designationForSave =
@@ -597,7 +760,8 @@ export function ReservationDialog({
     setIsSaving(true)
 
     try {
-      await onSave(reservation.id, {
+      const courseIdToSave = formState.courseId || reservation.serviceId || ''
+      const updatePayload: ReservationUpdatePayload = {
         startTime: start,
         endTime: end,
         castId,
@@ -613,7 +777,15 @@ export function ReservationDialog({
         stationId: formState.stationId ?? null,
         locationMemo: formState.locationMemo,
         price: formState.price,
-      })
+        options: formState.optionIds,
+      }
+
+      if (courseIdToSave) {
+        updatePayload.courseId = courseIdToSave
+      }
+
+      await onSave(reservation.id, updatePayload)
+      setHistoryReloadToken((prev) => prev + 1)
       setIsEditMode(false)
     } catch (error) {
       if (error instanceof Error) {
@@ -634,9 +806,12 @@ export function ReservationDialog({
       }
       onOpenChange(next)
     }}>
-      <DialogContent className="flex max-h-[90vh] max-w-5xl flex-col overflow-hidden p-0">
+      <DialogContent
+        className="flex max-h-[90vh] max-w-6xl flex-col overflow-hidden p-0"
+        aria-describedby="reservation-dialog-description"
+      >
         <DialogTitle className="sr-only">{reservation.customerName} 様の予約詳細</DialogTitle>
-        <DialogDescription className="sr-only">
+        <DialogDescription id="reservation-dialog-description" className="sr-only">
           予約の詳細情報を表示し、必要に応じて編集できます。
         </DialogDescription>
 
@@ -802,7 +977,7 @@ export function ReservationDialog({
                         <Label htmlFor="reservation-end-time">終了時間</Label>
                         <Input id="reservation-end-time" type="time" value={computedEndTime} readOnly />
                         <p className="mt-1 text-xs text-muted-foreground">
-                          施術時間: {reservationDurationMinutes}分
+                          施術時間: {effectiveDurationMinutes}分
                         </p>
                       </div>
                     </div>
@@ -824,13 +999,108 @@ export function ReservationDialog({
                   <CardTitle className="text-sm font-medium">場所</CardTitle>
                   <MapPin className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <div className="font-medium">{reservation.location || '未設定'}</div>
-                  <div className="text-muted-foreground">
-                    {reservation.prefecture} / {reservation.district}
-                  </div>
-                  {reservation.specificLocation && (
-                    <div className="rounded-md bg-muted px-3 py-2 text-xs">{reservation.specificLocation}</div>
+                <CardContent className="space-y-3 text-sm">
+                  {isEditMode ? (
+                    <div className="space-y-3">
+                      <div>
+                        <Label htmlFor="reservation-area">対応エリア</Label>
+                        <Select
+                          value={formState.areaId ?? ''}
+                          onValueChange={(value) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              areaId: value === '' ? null : value,
+                              stationId: value === '' ? null : prev.stationId,
+                            }))
+                          }
+                        >
+                          <SelectTrigger id="reservation-area" disabled={locationsLoading}>
+                            <SelectValue
+                              placeholder={
+                                locationsLoading ? '読み込み中...' : 'エリアを選択'
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">未設定</SelectItem>
+                            {areas.map((area) => (
+                              <SelectItem key={area.id} value={area.id}>
+                                {area.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="reservation-station">最寄り駅</Label>
+                        <Select
+                          value={formState.stationId ?? ''}
+                          onValueChange={(value) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              stationId: value === '' ? null : value,
+                            }))
+                          }
+                          disabled={filteredStations.length === 0}
+                        >
+                          <SelectTrigger id="reservation-station">
+                            <SelectValue
+                              placeholder={
+                                filteredStations.length === 0
+                                  ? formState.areaId
+                                    ? '該当する駅がありません'
+                                    : 'エリアを選択してください'
+                                  : '駅を選択'
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">未設定</SelectItem>
+                            {filteredStations.map((station) => (
+                              <SelectItem key={station.id} value={station.id}>
+                                {station.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="reservation-location-memo">訪問先メモ</Label>
+                        <Textarea
+                          id="reservation-location-memo"
+                          value={formState.locationMemo}
+                          onChange={(event) =>
+                            setFormState((prev) => ({ ...prev, locationMemo: event.target.value }))
+                          }
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="font-medium">
+                        {reservation.areaName || reservation.location || '未設定'}
+                      </div>
+                      <div className="text-muted-foreground">
+                        {(reservation.prefecture || '未設定')}{' '}
+                        / {(reservation.district || '未設定')}
+                      </div>
+                      {reservation.stationName && (
+                        <div className="text-xs text-muted-foreground">
+                          最寄り駅: {reservation.stationName}
+                        </div>
+                      )}
+                      {reservation.specificLocation && (
+                        <div className="rounded-md bg-muted px-3 py-2 text-xs">
+                          {reservation.specificLocation}
+                        </div>
+                      )}
+                      {reservation.locationMemo && (
+                        <div className="rounded-md bg-muted px-3 py-2 text-xs whitespace-pre-wrap">
+                          {reservation.locationMemo}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -1128,7 +1398,43 @@ export function ReservationDialog({
               <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
                 <div>
                   <div className="text-muted-foreground">コース</div>
-                  <div className="font-medium">{reservation.course || '未設定'}</div>
+                  {isEditMode ? (
+                    <Select
+                      value={formState.courseId}
+                      onValueChange={(value) =>
+                        setFormState((prev) => ({
+                          ...prev,
+                          courseId: value,
+                        }))
+                      }
+                    >
+                      <SelectTrigger id="reservation-course">
+                        <SelectValue
+                          placeholder={
+                            pricingLoading ? '読み込み中...' : 'コースを選択'
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">未設定</SelectItem>
+                        {courseOptions.length === 0 ? (
+                          <SelectItem value="__empty" disabled>
+                            コースが登録されていません
+                          </SelectItem>
+                        ) : (
+                          courseOptions.map((course) => (
+                            <SelectItem key={course.id} value={course.id}>
+                              {course.name}（{course.duration}分 / ¥{course.price.toLocaleString()}）
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="font-medium">
+                      {selectedCourse?.name || reservation.course || '未設定'}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <div className="text-muted-foreground">指名</div>
@@ -1155,9 +1461,54 @@ export function ReservationDialog({
                 </div>
                 <div className="sm:col-span-2">
                   <div className="text-muted-foreground">オプション</div>
-                  {optionList.length > 0 ? (
+                  {isEditMode ? (
+                    optionChoices.length === 0 ? (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {pricingLoading ? 'オプションを読み込み中...' : 'オプションが設定されていません。'}
+                      </p>
+                    ) : (
+                      <div className="mt-2 space-y-2">
+                        {optionChoices.map((option) => {
+                          const isChecked = formState.optionIds.includes(option.id)
+                          return (
+                            <label key={option.id} className="flex items-start gap-2 text-xs">
+                              <Checkbox
+                                checked={isChecked}
+                                onCheckedChange={(checkedState) => {
+                                  const checked = checkedState === true
+                                  setFormState((prev) => {
+                                    const next = new Set(prev.optionIds)
+                                    if (checked) {
+                                      next.add(option.id)
+                                    } else {
+                                      next.delete(option.id)
+                                    }
+                                    return {
+                                      ...prev,
+                                      optionIds: Array.from(next),
+                                    }
+                                  })
+                                }}
+                              />
+                              <span className="flex-1">
+                                <span className="font-medium">{option.name}</span>
+                                <span className="ml-2 text-muted-foreground">
+                                  ¥{option.price.toLocaleString()}
+                                </span>
+                                {option.note && (
+                                  <span className="block text-[11px] text-muted-foreground">
+                                    {option.note}
+                                  </span>
+                                )}
+                              </span>
+                            </label>
+                          )
+                        })}
+                      </div>
+                    )
+                  ) : displayOptionNames.length > 0 ? (
                     <div className="mt-1 flex flex-wrap gap-2">
-                      {optionList.map((option) => (
+                      {displayOptionNames.map((option) => (
                         <Badge key={option} variant="secondary" className="text-xs">
                           {option}
                         </Badge>
@@ -1198,7 +1549,7 @@ export function ReservationDialog({
               </CardHeader>
               <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
                 <div>
-                  <div className="text-muted-foreground">スタッフ確認</div>
+                  <div className="text-muted-foreground">担当キャスト確認</div>
                   <div className="font-medium">{reservation.staffConfirmation}</div>
                 </div>
                 <div>

@@ -30,6 +30,7 @@ import {
   Train,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { useStore } from '@/contexts/store-context'
 
 interface StationSummary {
   id: string
@@ -74,11 +75,17 @@ export default function AreaInfoPage() {
   const [formData, setFormData] = useState<AreaFormState>(emptyForm)
   const [syncing, setSyncing] = useState(false)
   const { toast } = useToast()
+  const { currentStore } = useStore()
 
   const fetchAreas = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/settings/area', {
+      const params = new URLSearchParams()
+      if (currentStore?.id) {
+        params.set('storeId', currentStore.id)
+      }
+      const query = params.toString()
+      const response = await fetch(query ? `/api/settings/area?${query}` : '/api/settings/area', {
         credentials: 'include',
       })
       if (!response.ok) {
@@ -97,7 +104,7 @@ export default function AreaInfoPage() {
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [currentStore?.id, toast])
 
   useEffect(() => {
     fetchAreas()
@@ -147,7 +154,13 @@ export default function AreaInfoPage() {
 
     try {
       const method = editingArea ? 'PUT' : 'POST'
-      const response = await fetch('/api/settings/area', {
+      const params = new URLSearchParams()
+      if (currentStore?.id) {
+        params.set('storeId', currentStore.id)
+      }
+      const query = params.toString()
+
+      const response = await fetch(query ? `/api/settings/area?${query}` : '/api/settings/area', {
         method,
         credentials: 'include',
         headers: {
@@ -185,7 +198,13 @@ export default function AreaInfoPage() {
     if (!confirm(`${area.name}を削除しますか？`)) return
 
     try {
-      const response = await fetch(`/api/settings/area?id=${area.id}`, {
+      const params = new URLSearchParams({ id: area.id })
+      if (currentStore?.id) {
+        params.set('storeId', currentStore.id)
+      }
+      const query = params.toString()
+
+      const response = await fetch(query ? `/api/settings/area?${query}` : '/api/settings/area', {
         method: 'DELETE',
         credentials: 'include',
       })
@@ -211,7 +230,13 @@ export default function AreaInfoPage() {
 
   const handleToggleActive = async (area: AreaSettings) => {
     try {
-      const response = await fetch('/api/settings/area', {
+      const params = new URLSearchParams()
+      if (currentStore?.id) {
+        params.set('storeId', currentStore.id)
+      }
+      const query = params.toString()
+
+      const response = await fetch(query ? `/api/settings/area?${query}` : '/api/settings/area', {
         method: 'PUT',
         credentials: 'include',
         headers: {

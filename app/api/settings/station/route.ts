@@ -9,6 +9,7 @@ import { requireAdmin } from '@/lib/auth/utils'
 import { SuccessResponses } from '@/lib/api/responses'
 import { ErrorResponses, handleApiError } from '@/lib/api/errors'
 import { db } from '@/lib/db'
+import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
 
 const stationSchema = z.object({
   id: z.string().optional(),
@@ -27,12 +28,18 @@ export async function GET(request: NextRequest) {
   if (authError) return authError
 
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const areaId = request.nextUrl.searchParams.get('areaId') ?? undefined
 
     const stations = await db.stationInfo.findMany({
-      where: areaId ? { areaId } : undefined,
+      where: {
+        storeId,
+        ...(areaId ? { areaId } : {}),
+      },
       orderBy: { displayOrder: 'asc' },
-      include: { area: true },
+      include: {
+        area: true,
+      },
     })
 
     if (stations.length === 0) {
@@ -60,9 +67,12 @@ export async function GET(request: NextRequest) {
         },
       ]
 
-      await db.stationInfo.createMany({ data: defaultStations })
+      await db.stationInfo.createMany({
+        data: defaultStations.map((entry) => ({ ...entry, storeId })),
+      })
 
       const seeded = await db.stationInfo.findMany({
+        where: { storeId },
         orderBy: { displayOrder: 'asc' },
         include: { area: true },
       })
@@ -81,11 +91,23 @@ export async function POST(request: NextRequest) {
   if (authError) return authError
 
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const body = await request.json()
     const validated = stationSchema.parse(body)
 
+    if (validated.areaId) {
+      const areaExists = await db.areaInfo.findFirst({
+        where: { id: validated.areaId, storeId },
+        select: { id: true },
+      })
+      if (!areaExists) {
+        return ErrorResponses.badRequest('指定されたエリアが見つかりません。')
+      }
+    }
+
     const station = await db.stationInfo.create({
       data: {
+        storeId,
         name: validated.name,
         line: validated.line ?? null,
         areaId: validated.areaId ?? null,
@@ -112,6 +134,7 @@ export async function PUT(request: NextRequest) {
   if (authError) return authError
 
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const body = await request.json()
     const { id, ...rest } = body
 
@@ -120,6 +143,24 @@ export async function PUT(request: NextRequest) {
     }
 
     const validated = stationSchema.parse({ id, ...rest })
+
+    const existing = await db.stationInfo.findFirst({
+      where: { id, storeId },
+    })
+
+    if (!existing) {
+      return ErrorResponses.notFound('駅')
+    }
+
+    if (validated.areaId) {
+      const areaExists = await db.areaInfo.findFirst({
+        where: { id: validated.areaId, storeId },
+        select: { id: true },
+      })
+      if (!areaExists) {
+        return ErrorResponses.badRequest('指定されたエリアが見つかりません。')
+      }
+    }
 
     const station = await db.stationInfo.update({
       where: { id },
@@ -153,15 +194,20 @@ export async function DELETE(request: NextRequest) {
   if (authError) return authError
 
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const id = request.nextUrl.searchParams.get('id')
 
     if (!id) {
       return ErrorResponses.badRequest('駅IDが必要です')
     }
 
-    await db.stationInfo.delete({
-      where: { id },
+    const deleted = await db.stationInfo.deleteMany({
+      where: { id, storeId },
     })
+
+    if (deleted.count === 0) {
+      return ErrorResponses.notFound('駅')
+    }
 
     return SuccessResponses.deleted()
   } catch (error: any) {
