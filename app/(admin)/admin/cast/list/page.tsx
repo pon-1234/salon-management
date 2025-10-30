@@ -9,15 +9,20 @@ import { toast } from '@/hooks/use-toast'
 import { CastListActionButtons } from '@/components/cast/cast-list-action-buttons'
 import { CastListViewToggle } from '@/components/cast/cast-list-view-toggle'
 import { CastListInfoBar } from '@/components/cast/cast-list-info-bar'
+import { useStore } from '@/contexts/store-context'
 
 export default function CastListPage() {
+  const { currentStore } = useStore()
   const [castList, setCastList] = useState<Cast[]>([])
   const [allCasts, setAllCasts] = useState<Cast[]>([])
   const [view, setView] = useState<'grid' | 'list'>('grid')
   const [workStatus, setWorkStatus] = useState('就業中(公開)')
   const [nameSearch, setNameSearch] = useState('')
   const [loading, setLoading] = useState(true)
-  const castRepository = useMemo(() => new CastRepositoryImpl(), [])
+  const castRepository = useMemo(
+    () => new CastRepositoryImpl(undefined, currentStore.id),
+    [currentStore.id]
+  )
 
   useEffect(() => {
     // ページ遷移時にスクロール位置をリセット

@@ -14,6 +14,7 @@ import { castMembers } from '@/lib/cast/data'
 import { env } from '@/lib/config/env'
 import { Prisma } from '@prisma/client'
 import { resolveOptionId } from '@/lib/options/data'
+import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
 
 // Validation schema for cast data
 const imageUrlSchema = z
@@ -103,10 +104,10 @@ function transformCast(cast: any) {
   }
 }
 
-async function fetchCastWithRelations(id: string) {
+async function fetchCastWithRelations(id: string, storeId: string) {
   try {
-    return await db.cast.findUnique({
-      where: { id },
+    return await db.cast.findFirst({
+      where: { id, storeId },
       include: {
         schedules: true,
         reservations: {
@@ -128,17 +129,18 @@ async function fetchCastWithRelations(id: string) {
         { err: error, castId: id },
         'Cast relation fetch failed due to schema mismatch, falling back to minimal query'
       )
-      return db.cast.findUnique({
-        where: { id },
+      return db.cast.findFirst({
+        where: { id, storeId },
       })
     }
     throw error
   }
 }
 
-async function fetchCastListWithRelations() {
+async function fetchCastListWithRelations(storeId: string) {
   try {
     return await db.cast.findMany({
+      where: { storeId },
       include: {
         schedules: true,
         reservations: {
@@ -155,7 +157,9 @@ async function fetchCastListWithRelations() {
         { err: error },
         'Cast list relation fetch failed due to schema mismatch, falling back to minimal query'
       )
-      return db.cast.findMany()
+      return db.cast.findMany({
+        where: { storeId },
+      })
     }
     throw error
   }
@@ -164,10 +168,11 @@ async function fetchCastListWithRelations() {
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const id = searchParams.get('id')
+  const storeId = await ensureStoreId(await resolveStoreId(request))
 
   try {
     if (id) {
-      const cast = await fetchCastWithRelations(id)
+      const cast = await fetchCastWithRelations(id, storeId)
 
       if (!cast) {
         return NextResponse.json({ error: 'Cast not found' }, { status: 404 })
@@ -186,7 +191,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(transformedCast)
     }
 
-    const casts = await fetchCastListWithRelations()
+    const casts = await fetchCastListWithRelations(storeId)
 
     // Transform database results to match frontend expectations
     const transformedCasts = casts.map(transformCast)
@@ -215,6 +220,7 @@ export async function POST(request: NextRequest) {
   if (authError) return authError
 
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const body = await request.json()
 
     // Validate request body
@@ -229,6 +235,7 @@ export async function POST(request: NextRequest) {
     const cast = await db.cast.create({
       data: {
         ...dbData,
+        storeId,
         images,
         availableOptions: normalizedOptions,
       },
@@ -256,6 +263,7 @@ export async function PUT(request: NextRequest) {
   if (authError) return authError
 
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const body = await request.json()
     const { id, ...updateData } = body
 
@@ -267,8 +275,8 @@ export async function PUT(request: NextRequest) {
     const validatedData = castSchema.partial().parse(updateData)
 
     // Check if cast exists
-    const existingCast = await db.cast.findUnique({
-      where: { id },
+    const existingCast = await db.cast.findFirst({
+      where: { id, storeId },
     })
 
     if (!existingCast) {
@@ -317,6 +325,7 @@ export async function DELETE(request: NextRequest) {
   if (authError) return authError
 
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const searchParams = request.nextUrl.searchParams
     const id = searchParams.get('id')
 
@@ -325,8 +334,8 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if cast exists
-    const existingCast = await db.cast.findUnique({
-      where: { id },
+    const existingCast = await db.cast.findFirst({
+      where: { id, storeId },
     })
 
     if (!existingCast) {

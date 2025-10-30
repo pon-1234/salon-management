@@ -67,6 +67,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { MARKETING_CHANNELS, PAYMENT_METHODS, ReservationStatus } from '@/lib/constants'
 import { toast } from '@/hooks/use-toast'
+import { useStore } from '@/contexts/store-context'
 
 type EditFormState = {
   date: string
@@ -185,6 +186,7 @@ export function ReservationDialog({
   onSave,
   casts,
 }: ReservationDialogProps) {
+  const { currentStore } = useStore()
   const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'history'>('overview')
   const [isEditMode, setIsEditMode] = useState(false)
   const [status, setStatus] = useState<ReservationStatus | 'completed'>(
@@ -422,10 +424,13 @@ export function ReservationDialog({
     const loadCasts = async () => {
       setIsLoadingCasts(true)
       try {
-        const response = await fetch('/api/cast', {
-          cache: 'no-store',
-          credentials: 'include',
-        })
+        const response = await fetch(
+          `/api/cast?storeId=${encodeURIComponent(currentStore.id)}`,
+          {
+            cache: 'no-store',
+            credentials: 'include',
+          }
+        )
         if (!response.ok) {
           throw new Error(`Failed to fetch casts: ${response.status}`)
         }
@@ -446,7 +451,7 @@ export function ReservationDialog({
     return () => {
       ignore = true
     }
-  }, [open, castOptions.length])
+  }, [open, castOptions.length, currentStore.id])
 
   useEffect(() => {
     if (!reservation?.modifiableUntil) {
@@ -629,7 +634,7 @@ export function ReservationDialog({
       }
       onOpenChange(next)
     }}>
-      <DialogContent className="flex max-h-[90vh] max-w-4xl flex-col overflow-hidden p-0">
+      <DialogContent className="flex max-h-[90vh] max-w-5xl flex-col overflow-hidden p-0">
         <DialogTitle className="sr-only">{reservation.customerName} 様の予約詳細</DialogTitle>
         <DialogDescription className="sr-only">
           予約の詳細情報を表示し、必要に応じて編集できます。

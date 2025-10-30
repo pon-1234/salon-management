@@ -49,6 +49,7 @@ import { ReservationDialog } from '@/components/reservation/reservation-dialog'
 import { ReservationData } from '@/lib/types/reservation'
 import { recordModification } from '@/lib/modification-history/data'
 import { CustomerSelectionDialog } from '@/components/customer/customer-selection-dialog'
+import { useStore } from '@/contexts/store-context'
 import {
   AreaChart,
   Area,
@@ -215,6 +216,7 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function DashboardPage() {
   const { data: session, status } = useSession()
+  const { currentStore } = useStore()
   const grantedPermissions = session?.user?.permissions ?? []
   const isAdmin = session?.user?.role === 'admin'
   const isAdminUser = isAdmin
@@ -242,7 +244,7 @@ export default function DashboardPage() {
     const fetchData = async () => {
       setLoading(true)
       try {
-        const fetchedReservations = await getAllReservations()
+        const fetchedReservations = await getAllReservations({ storeId: currentStore.id })
         setReservations(fetchedReservations)
       } catch (error) {
         console.error('Failed to fetch reservations:', error)
@@ -252,7 +254,7 @@ export default function DashboardPage() {
     }
 
     fetchData()
-  }, [isAdminUser, status])
+  }, [currentStore.id, isAdminUser, status])
 
   const isSessionLoading = status === 'loading'
   const isUnauthorized = !isSessionLoading && !isAdminUser

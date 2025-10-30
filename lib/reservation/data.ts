@@ -42,6 +42,7 @@ interface ReservationQuery {
   castId?: string
   startDate?: string
   endDate?: string
+  storeId?: string
 }
 
 function normalizeReservation(entry: any): Reservation {
@@ -50,6 +51,7 @@ function normalizeReservation(entry: any): Reservation {
     customerId: entry.customerId,
     staffId: entry.staffId || entry.castId || '',
     serviceId: entry.serviceId || entry.courseId || '',
+    storeId: entry.storeId || entry.cast?.storeId || 'ikebukuro',
     startTime: new Date(entry.startTime),
     endTime: new Date(entry.endTime),
     status: entry.status as Reservation['status'],
@@ -179,10 +181,14 @@ async function requestReservations(query: ReservationQuery = {}): Promise<Reserv
 async function requestReservationMutation(
   method: 'POST' | 'PUT' | 'DELETE',
   body?: Record<string, unknown>,
-  id?: string
+  id?: string,
+  storeId?: string
 ): Promise<Reservation | null> {
   const targetPath = id ? `${RESERVATION_API_PATH}?id=${id}` : RESERVATION_API_PATH
   const targetUrl = buildUrl(targetPath)
+  if (storeId) {
+    targetUrl.searchParams.set('storeId', storeId)
+  }
   const response = await fetch(targetUrl.toString(), {
     method,
     credentials: 'include',
@@ -235,10 +241,11 @@ export async function getAllReservations(params?: ReservationQuery): Promise<Res
 
 export async function updateReservation(
   id: string,
-  updates: Partial<Reservation>
+  updates: Partial<Reservation>,
+  storeId?: string
 ): Promise<Reservation | null> {
   try {
-    const updated = await requestReservationMutation('PUT', { id, ...updates })
+    const updated = await requestReservationMutation('PUT', { id, ...updates }, id, storeId)
     if (!updated) {
       return null
     }
@@ -258,9 +265,10 @@ export async function updateReservation(
 
 export async function addReservation(
   reservation: Omit<Reservation, 'id' | 'createdAt' | 'updatedAt'>
+  storeId?: string
 ): Promise<Reservation> {
   try {
-    const created = await requestReservationMutation('POST', reservation)
+    const created = await requestReservationMutation('POST', reservation, undefined, storeId)
     if (!created) {
       throw new Error('Reservation API returned empty response')
     }

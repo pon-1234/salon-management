@@ -20,6 +20,15 @@ export class PricingRepositoryImpl implements PricingRepository {
     defaultAdditionalFees.forEach((fee) => this.additionalFees.set(fee.id, fee))
   }
 
+  private withStore(path: string, storeId?: string): string {
+    const id = storeId
+    if (!id) {
+      return path
+    }
+    const separator = path.includes('?') ? '&' : '?'
+    return `${path}${separator}storeId=${encodeURIComponent(id)}`
+  }
+
   private async fetchJson<T>(
     path: string,
     init?: RequestInit,
@@ -52,14 +61,14 @@ export class PricingRepositoryImpl implements PricingRepository {
 
   // Course pricing methods
   async getCourses(storeId?: string): Promise<CoursePrice[]> {
-    const courses = await this.fetchJson<CoursePrice[]>(COURSE_API_PATH)
+    const courses = await this.fetchJson<CoursePrice[]>(this.withStore(COURSE_API_PATH, storeId))
     return courses
       .filter((course: any) => course.isActive !== false)
       .sort((a: any, b: any) => (a.duration || 0) - (b.duration || 0))
   }
 
   async getCourseById(id: string): Promise<CoursePrice | null> {
-    return this.fetchJson<CoursePrice>(`${COURSE_API_PATH}?id=${id}`, undefined, {
+    return this.fetchJson<CoursePrice>(this.withStore(`${COURSE_API_PATH}?id=${id}`, undefined), undefined, {
       allowNotFound: true,
     })
   }
@@ -88,14 +97,14 @@ export class PricingRepositoryImpl implements PricingRepository {
 
   // Option pricing methods
   async getOptions(storeId?: string): Promise<OptionPrice[]> {
-    const options = await this.fetchJson<OptionPrice[]>(OPTION_API_PATH)
+    const options = await this.fetchJson<OptionPrice[]>(this.withStore(OPTION_API_PATH, storeId))
     return options
       .filter((option: any) => option.isActive !== false)
       .sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
   }
 
   async getOptionById(id: string): Promise<OptionPrice | null> {
-    return this.fetchJson<OptionPrice>(`${OPTION_API_PATH}?id=${id}`, undefined, {
+    return this.fetchJson<OptionPrice>(this.withStore(`${OPTION_API_PATH}?id=${id}`, undefined), undefined, {
       allowNotFound: true,
     })
   }

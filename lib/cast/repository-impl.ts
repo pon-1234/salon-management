@@ -18,15 +18,30 @@ function serializeScheduleInput(entry: CastSchedule) {
 }
 
 export class CastRepositoryImpl implements CastRepository {
-  constructor(private readonly client: ApiClient = defaultApiClient) {}
+  constructor(
+    private readonly client: ApiClient = defaultApiClient,
+    private readonly storeId?: string
+  ) {}
+
+  private withStore(path: string): string {
+    if (!this.storeId) {
+      return path
+    }
+    const separator = path.includes('?') ? '&' : '?'
+    return `${path}${separator}storeId=${encodeURIComponent(this.storeId)}`
+  }
 
   async getAll(): Promise<Cast[]> {
-    return this.client.get<Cast[]>(CAST_ENDPOINT)
+    return this.client.get<Cast[]>(this.withStore(CAST_ENDPOINT))
   }
 
   async getById(id: string): Promise<Cast | null> {
     try {
-      return await this.client.get<Cast>(`${CAST_ENDPOINT}?id=${encodeURIComponent(id)}`)
+      const params = new URLSearchParams({ id })
+      if (this.storeId) {
+        params.set('storeId', this.storeId)
+      }
+      return await this.client.get<Cast>(`${CAST_ENDPOINT}?${params.toString()}`)
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
         return null
@@ -36,15 +51,15 @@ export class CastRepositoryImpl implements CastRepository {
   }
 
   async create(data: Omit<Cast, 'id' | 'createdAt' | 'updatedAt'>): Promise<Cast> {
-    return this.client.post<Cast>(CAST_ENDPOINT, data)
+    return this.client.post<Cast>(this.withStore(CAST_ENDPOINT), data)
   }
 
   async update(id: string, data: Partial<Cast>): Promise<Cast> {
-    return this.client.put<Cast>(CAST_ENDPOINT, { id, ...data })
+    return this.client.put<Cast>(this.withStore(CAST_ENDPOINT), { id, ...data })
   }
 
   async delete(id: string): Promise<boolean> {
-    await this.client.delete(`${CAST_ENDPOINT}?id=${encodeURIComponent(id)}`, {
+    await this.client.delete(this.withStore(`${CAST_ENDPOINT}?id=${encodeURIComponent(id)}`), {
       parseJson: false,
     })
     return true
@@ -56,6 +71,9 @@ export class CastRepositoryImpl implements CastRepository {
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
     })
+    if (this.storeId) {
+      params.set('storeId', this.storeId)
+    }
 
     return this.client.get<CastSchedule[]>(`${CAST_SCHEDULE_ENDPOINT}?${params.toString()}`)
   }
@@ -78,12 +96,12 @@ export class CastRepositoryImpl implements CastRepository {
       )
 
       if (existing && 'id' in existing && (existing as any).id) {
-        await this.client.put(CAST_SCHEDULE_ENDPOINT, {
+        await this.client.put(this.withStore(CAST_SCHEDULE_ENDPOINT), {
           id: (existing as any).id,
           ...serializeScheduleInput(item),
         })
       } else {
-        await this.client.post(CAST_SCHEDULE_ENDPOINT, serializeScheduleInput(item))
+        await this.client.post(this.withStore(CAST_SCHEDULE_ENDPOINT), serializeScheduleInput(item))
       }
     }
   }

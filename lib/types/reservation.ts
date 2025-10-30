@@ -9,6 +9,7 @@ export interface Reservation extends BaseEntity {
   endTime: Date
   status: ReservationStatus
   price: number
+  storeId: string
   notes?: string
   modifiableUntil?: Date
   lastModified?: Date
@@ -52,6 +53,7 @@ export interface ReservationData {
   specificLocation: string
   staff: string
   staffId?: string
+  storeId?: string
   marketingChannel: string
   date: string
   time: string

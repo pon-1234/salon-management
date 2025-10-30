@@ -10,6 +10,7 @@ import { db } from '@/lib/db'
 import logger from '@/lib/logger'
 import { defaultCourses } from '@/lib/pricing/data'
 import { env } from '@/lib/config/env'
+import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
 
 function normalizeNumber(value: any, fallback: number = 0) {
   const parsed = Number(value)
@@ -103,6 +104,7 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const id = searchParams.get('id')
   let isAdmin = false
+  const storeId = await ensureStoreId(await resolveStoreId(request))
 
   try {
     const session = await requireSession()
@@ -113,8 +115,8 @@ export async function GET(request: NextRequest) {
     isAdmin = session.user.role === 'admin'
 
     if (id) {
-      const course = await db.coursePrice.findUnique({
-        where: { id },
+      const course = await db.coursePrice.findFirst({
+        where: { id, storeId },
         include: {
           reservations: {
             include: {
@@ -143,6 +145,7 @@ export async function GET(request: NextRequest) {
     const courses = await db.coursePrice.findMany({
       where: {
         isActive: true,
+        storeId,
       },
       include: {
         reservations: {
@@ -190,6 +193,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await request.json()
+    const storeId = await ensureStoreId(await resolveStoreId(request))
 
     let payload
     try {
@@ -229,7 +233,10 @@ export async function POST(request: NextRequest) {
     }
 
     const newCourse = await db.coursePrice.create({
-      data: payload,
+      data: {
+        ...payload,
+        storeId,
+      },
       include: {
         reservations: true,
       },
@@ -254,6 +261,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const data = await request.json()
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const { id, ...updates } = data
 
     if (!id) {
@@ -301,8 +309,8 @@ export async function PUT(request: NextRequest) {
       Object.entries(payload).filter(([, value]) => value !== undefined)
     )
 
-    const existingCourse = await db.coursePrice.findUnique({
-      where: { id },
+    const existingCourse = await db.coursePrice.findFirst({
+      where: { id, storeId },
       include: {
         reservations: {
           include: {
@@ -337,6 +345,7 @@ export async function PUT(request: NextRequest) {
         price: existingCourse.price,
         storeShare: existingCourse.storeShare,
         castShare: existingCourse.castShare,
+        storeId: existingCourse.storeId,
       }
 
       return tx.coursePrice.create({
@@ -380,9 +389,18 @@ export async function DELETE(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams
     const id = searchParams.get('id')
+    const storeId = await ensureStoreId(await resolveStoreId(request))
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+    }
+
+    const existingCourse = await db.coursePrice.findFirst({
+      where: { id, storeId },
+    })
+
+    if (!existingCourse) {
+      return NextResponse.json({ error: 'Course not found' }, { status: 404 })
     }
 
     await db.coursePrice.update({

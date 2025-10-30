@@ -30,12 +30,14 @@ import {
   WeeklySchedule,
   WorkStatus,
 } from '@/components/cast/schedule-edit-dialog'
+import { useStore } from '@/contexts/store-context'
 interface CastDashboardProps {
   cast: Cast
   onUpdate: (data: Partial<Cast>) => void
 }
 
 export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
+  const { currentStore } = useStore()
   const [isEditing, setIsEditing] = useState(false)
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
@@ -71,7 +73,7 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
   // 予約データを取得
   useEffect(() => {
     const fetchReservations = async () => {
-      const allReservations = await getAllReservations()
+      const allReservations = await getAllReservations({ storeId: currentStore.id })
       const castReservations = allReservations
         .filter((reservation) => {
           const castId = (reservation as any).castId || reservation.castId || reservation.staffId
@@ -88,7 +90,7 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
       setReservations(castReservations)
     }
     fetchReservations()
-  }, [cast.id])
+  }, [cast.id, currentStore.id])
 
   const upcomingReservations = useMemo(() => {
     const now = new Date()
@@ -103,6 +105,7 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
         castId: cast.id,
         startDate: weekStart.toISOString(),
         endDate: weekEnd.toISOString(),
+        storeId: currentStore.id,
       })
 
       const response = await fetch(`/api/cast-schedule?${params.toString()}`, {
@@ -142,7 +145,7 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
         variant: 'destructive',
       })
     }
-  }, [cast.id, toast, weekEnd, weekStart])
+  }, [cast.id, currentStore.id, toast, weekEnd, weekStart])
 
   useEffect(() => {
     fetchSchedule()

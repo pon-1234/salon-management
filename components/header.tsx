@@ -40,9 +40,11 @@ import { StoreSelector } from '@/components/store/store-selector'
 import { useSession, signOut } from 'next-auth/react'
 import { CustomerSelectionDialog } from '@/components/customer/customer-selection-dialog'
 import { hasPermission } from '@/lib/auth/permissions'
+import { useStore } from '@/contexts/store-context'
 
 export function Header() {
   const { data: session } = useSession()
+  const { currentStore } = useStore()
   const canViewAnalytics = hasPermission(session?.user?.permissions ?? [], 'analytics:read')
   const [castList, setCastList] = useState<Cast[]>([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -57,7 +59,7 @@ export function Header() {
   useEffect(() => {
     const loadCasts = async () => {
       try {
-        const response = await fetch('/api/cast', {
+        const response = await fetch(`/api/cast?storeId=${encodeURIComponent(currentStore.id)}`, {
           cache: 'no-store',
           credentials: 'include',
         })
@@ -72,7 +74,7 @@ export function Header() {
     }
 
     loadCasts()
-  }, [])
+  }, [currentStore.id])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()

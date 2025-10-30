@@ -6,6 +6,7 @@
 import { useState, useCallback } from 'react'
 import tz from 'date-fns-tz'
 import { BusinessHoursRange, DEFAULT_BUSINESS_HOURS, minutesToIsoInJst } from '@/lib/settings/business-hours'
+import { useStore } from '@/contexts/store-context'
 
 interface TimeSlot {
   startTime: string
@@ -22,6 +23,7 @@ interface AvailabilityState {
 
 export function useAvailability() {
   const JST_TIMEZONE = 'Asia/Tokyo'
+  const { currentStore } = useStore()
   const [state, setState] = useState<AvailabilityState>({
     loading: false,
     error: null,
@@ -40,6 +42,7 @@ export function useAvailability() {
       })
 
       params.set('mode', 'check')
+      params.set('storeId', currentStore.id)
 
       const response = await fetch(`/api/reservation/availability?${params}`)
       const data = await response.json()
@@ -64,7 +67,7 @@ export function useAvailability() {
       }))
       return { available: false, conflicts: [] }
     }
-  }, [])
+  }, [currentStore.id])
 
   const getAvailableSlots = useCallback(
     async (
@@ -81,6 +84,7 @@ export function useAvailability() {
           date: dateString,
           duration: duration.toString(),
         })
+        params.set('storeId', currentStore.id)
 
         const response = await fetch(`/api/reservation/availability?${params}`)
         const data = await response.json()
@@ -115,7 +119,7 @@ export function useAvailability() {
         return []
       }
     },
-    []
+    [currentStore.id]
   )
 
   const generateTimeSlots = useCallback(

@@ -30,6 +30,28 @@ model Customer {
   messages     Message[]
 }
 
+model Store {
+  id           String              @id
+  name         String
+  displayName  String
+  slug         String              @unique
+  phone        String?
+  email        String?
+  timezone     String              @default("Asia/Tokyo")
+  address      String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  isActive     Boolean             @default(true)
+  reservations Reservation[]
+  casts        Cast[]
+  coursePrices CoursePrice[]
+  optionPrices OptionPrice[]
+  areaInfos    AreaInfo[]
+  stationInfos StationInfo[]
+  designationFees DesignationFee[]
+  storeSettings StoreSettings?
+}
+
 model Cast {
   id                     String         @id @default(cuid())
   name                   String
@@ -50,6 +72,7 @@ model Cast {
   regularDesignationRank Int
   workStatus             String
   availableOptions       String[]      @default([])
+  storeId                String        @default("ikebukuro")
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @updatedAt
   schedules              CastSchedule[]
@@ -57,6 +80,9 @@ model Cast {
   reservations           Reservation[]
   reviews                Review[]
   messages               Message[]
+  store                  Store          @relation(fields: [storeId], references: [id])
+
+  @@index([storeId])
 }
 
 model NgCastEntry {
@@ -78,6 +104,7 @@ model Reservation {
   endTime    DateTime
   status     String
   price      Int                 @default(0)
+  storeId    String              @default("ikebukuro")
   designationType   String?
   designationFee    Int          @default(0)
   transportationFee Int          @default(0)
@@ -99,6 +126,9 @@ model Reservation {
   station    StationInfo?        @relation(fields: [stationId], references: [id])
   options    ReservationOption[]
   histories  ReservationHistory[]
+  store      Store               @relation(fields: [storeId], references: [id])
+
+  @@index([storeId])
 }
 
 model CoursePrice {
@@ -111,7 +141,11 @@ model CoursePrice {
   description  String
   isActive     Boolean       @default(true)
   archivedAt   DateTime?
+  storeId      String        @default("ikebukuro")
   reservations Reservation[]
+  store        Store         @relation(fields: [storeId], references: [id])
+
+  @@index([storeId])
 }
 
 model OptionPrice {
@@ -129,7 +163,11 @@ model OptionPrice {
   createdAt    DateTime             @default(now())
   updatedAt    DateTime             @default(now()) @updatedAt
   archivedAt   DateTime?
+  storeId      String              @default("ikebukuro")
   reservations ReservationOption[]
+  store        Store               @relation(fields: [storeId], references: [id])
+
+  @@index([storeId])
 }
 
 model AreaInfo {
@@ -140,10 +178,14 @@ model AreaInfo {
   description  String?
   displayOrder Int            @default(0)
   isActive     Boolean        @default(true)
+  storeId      String         @default("ikebukuro")
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   stations     StationInfo[]
   reservations Reservation[]
+  store        Store          @relation(fields: [storeId], references: [id])
+
+  @@index([storeId])
 }
 
 model StationInfo {
@@ -160,8 +202,11 @@ model StationInfo {
   updatedAt        DateTime  @updatedAt
   area             AreaInfo? @relation(fields: [areaId], references: [id])
   reservations     Reservation[]
+  storeId          String    @default("ikebukuro")
+  store            Store     @relation(fields: [storeId], references: [id])
 
   @@index([areaId])
+  @@index([storeId])
 }
 
 model ReservationOption {
@@ -206,8 +251,12 @@ model DesignationFee {
   description String?
   sortOrder   Int      @default(0)
   isActive    Boolean  @default(true)
+  storeId     String   @default("ikebukuro")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  store       Store    @relation(fields: [storeId], references: [id])
+
+  @@index([storeId])
 }
 
 model Review {
@@ -306,6 +355,7 @@ model PaymentTransaction {
 
 model StoreSettings {
   id            String   @id @default(cuid())
+  storeId       String   @unique @default("ikebukuro")
   storeName     String
   address       String
   phone         String
@@ -322,6 +372,9 @@ model StoreSettings {
   parkingInfo   String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  store         Store    @relation(fields: [storeId], references: [id])
+
+  @@index([storeId])
 }
 
 model HotelSettings {

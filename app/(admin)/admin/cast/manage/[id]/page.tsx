@@ -29,14 +29,19 @@ import { PaymentHistoryTab } from '@/components/cast/payment-history-tab'
 import { SettlementStatusTab } from '@/components/cast/settlement-status-tab'
 import { WorkPerformanceTab } from '@/components/cast/work-performance-tab'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useStore } from '@/contexts/store-context'
 
 export default function CastManagePage({ params }: { params: Promise<{ id: string }> }) {
+  const { currentStore } = useStore()
   const [cast, setCast] = useState<Cast | null>(null)
   const [id, setId] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const router = useRouter()
-  const castRepository = useMemo(() => new CastRepositoryImpl(), [])
+  const castRepository = useMemo(
+    () => new CastRepositoryImpl(undefined, currentStore.id),
+    [currentStore.id]
+  )
   const isNewCast = id === 'new'
 
   useEffect(() => {

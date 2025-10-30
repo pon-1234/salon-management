@@ -21,9 +21,11 @@ import { useSession } from 'next-auth/react'
 import { format, isSameDay, startOfDay, addDays } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
+import { useStore } from '@/contexts/store-context'
 
 
 export default function ReservationListPage() {
+  const { currentStore } = useStore()
   const [selectedReservation, setSelectedReservation] = useState<ReservationData | null>(null)
   const [rawReservations, setRawReservations] = useState<Reservation[]>([])
   const [dailyReservations, setDailyReservations] = useState<ReservationData[]>([])
@@ -31,7 +33,10 @@ export default function ReservationListPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(() => startOfDay(new Date()))
   const [statusFilter, setStatusFilter] = useState<'all' | 'confirmed' | 'pending'>('all')
   const { data: session } = useSession()
-  const reservationRepository = useMemo(() => new ReservationRepositoryImpl(), [])
+  const reservationRepository = useMemo(
+    () => new ReservationRepositoryImpl(undefined, currentStore.id),
+    [currentStore.id]
+  )
 
   const updateDailyReservations = useCallback(
     (source: Reservation[], targetDate: Date) => {

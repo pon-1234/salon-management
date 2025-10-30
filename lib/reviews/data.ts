@@ -3,7 +3,7 @@ import { Review, ReviewStats } from './types'
 export const reviewsData: Review[] = [
   {
     id: '1',
-    storeId: '1',
+    storeId: 'ikebukuro',
     castName: 'すずか',
     customerArea: '豊島区',
     rating: 5,
@@ -20,7 +20,7 @@ export const reviewsData: Review[] = [
   },
   {
     id: '2',
-    storeId: '1',
+    storeId: 'ikebukuro',
     castName: 'すずか',
     customerArea: '豊島区',
     rating: 5,
@@ -36,7 +36,7 @@ export const reviewsData: Review[] = [
   },
   {
     id: '3',
-    storeId: '1',
+    storeId: 'ikebukuro',
     castName: 'みるく',
     customerArea: '文京区',
     rating: 5,
@@ -53,7 +53,7 @@ export const reviewsData: Review[] = [
   },
   {
     id: '4',
-    storeId: '1',
+    storeId: 'ikebukuro',
     castName: 'ののか',
     customerArea: '板橋区',
     rating: 4,
@@ -69,7 +69,7 @@ export const reviewsData: Review[] = [
   },
   {
     id: '5',
-    storeId: '1',
+    storeId: 'ikebukuro',
     castName: 'さくら',
     customerArea: '新宿区',
     rating: 5,
@@ -92,7 +92,7 @@ export const reviewsData: Review[] = [
   },
   {
     id: '6',
-    storeId: '1',
+    storeId: 'ikebukuro',
     castName: 'れい',
     customerArea: '豊島区',
     rating: 5,
@@ -108,7 +108,7 @@ export const reviewsData: Review[] = [
   },
   {
     id: '7',
-    storeId: '1',
+    storeId: 'ikebukuro',
     castName: 'ゆき',
     customerArea: '中野区',
     rating: 5,
@@ -125,7 +125,7 @@ export const reviewsData: Review[] = [
   },
   {
     id: '8',
-    storeId: '1',
+    storeId: 'ikebukuro',
     castName: 'みなみ',
     customerArea: '練馬区',
     rating: 4,
@@ -141,7 +141,7 @@ export const reviewsData: Review[] = [
   },
   {
     id: '9',
-    storeId: '1',
+    storeId: 'ikebukuro',
     castName: 'きこ',
     customerArea: '世田谷区',
     rating: 5,
@@ -158,7 +158,7 @@ export const reviewsData: Review[] = [
   },
   {
     id: '10',
-    storeId: '1',
+    storeId: 'ikebukuro',
     castName: 'ひかる',
     customerArea: '豊島区',
     rating: 5,
@@ -181,7 +181,7 @@ export const reviewsData: Review[] = [
   },
   {
     id: '11',
-    storeId: '1',
+    storeId: 'ikebukuro',
     castName: 'ことね',
     customerArea: '杉並区',
     rating: 5,
@@ -198,7 +198,7 @@ export const reviewsData: Review[] = [
   },
   {
     id: '12',
-    storeId: '1',
+    storeId: 'ikebukuro',
     castName: 'ゆりこ',
     customerArea: '新宿区',
     rating: 4,
@@ -215,7 +215,7 @@ export const reviewsData: Review[] = [
   },
   {
     id: '13',
-    storeId: '1',
+    storeId: 'ikebukuro',
     castName: 'せな',
     customerArea: '品川区',
     rating: 5,
@@ -231,7 +231,7 @@ export const reviewsData: Review[] = [
   },
   {
     id: '14',
-    storeId: '1',
+    storeId: 'ikebukuro',
     castName: 'みるく',
     customerArea: '目黒区',
     rating: 5,
@@ -247,7 +247,7 @@ export const reviewsData: Review[] = [
   },
   {
     id: '15',
-    storeId: '1',
+    storeId: 'ikebukuro',
     castName: 'すずか',
     customerArea: '渋谷区',
     rating: 5,

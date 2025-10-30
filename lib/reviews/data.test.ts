@@ -65,7 +65,7 @@ describe('Reviews Data', () => {
 
   describe('getReviewsByStoreId', () => {
     it('should return reviews for a specific store', () => {
-      const storeId = '1'
+      const storeId = 'ikebukuro'
       const reviews = getReviewsByStoreId(storeId)
 
       expect(Array.isArray(reviews)).toBe(true)
@@ -80,9 +80,9 @@ describe('Reviews Data', () => {
     })
 
     it('should return different number of reviews for different stores', () => {
-      const store1Reviews = getReviewsByStoreId('1')
-      const store2Reviews = getReviewsByStoreId('2')
-      const store3Reviews = getReviewsByStoreId('3')
+      const store1Reviews = getReviewsByStoreId('ikebukuro')
+      const store2Reviews = getReviewsByStoreId('shinjuku')
+      const store3Reviews = getReviewsByStoreId('shibuya')
 
       const totalReviews = store1Reviews.length + store2Reviews.length + store3Reviews.length
       expect(totalReviews).toBe(reviewsData.length)
@@ -91,7 +91,7 @@ describe('Reviews Data', () => {
 
   describe('getReviewStats', () => {
     it('should return review statistics for a store', () => {
-      const stats = getReviewStats('1')
+      const stats = getReviewStats('ikebukuro')
 
       expect(stats).toHaveProperty('totalReviews')
       expect(stats).toHaveProperty('averageRating')
@@ -105,7 +105,7 @@ describe('Reviews Data', () => {
     })
 
     it('should return correct rating distribution', () => {
-      const stats = getReviewStats('1')
+      const stats = getReviewStats('ikebukuro')
       const distribution = stats.ratingDistribution
 
       expect(distribution).toHaveProperty('1')
@@ -122,7 +122,7 @@ describe('Reviews Data', () => {
     })
 
     it('should calculate correct average rating', () => {
-      const storeId = '1'
+      const storeId = 'ikebukuro'
       const reviews = getReviewsByStoreId(storeId)
       const stats = getReviewStats(storeId)
 
@@ -142,7 +142,7 @@ describe('Reviews Data', () => {
     })
 
     it('should return popular tags sorted by count', () => {
-      const stats = getReviewStats('1')
+      const stats = getReviewStats('ikebukuro')
 
       if (stats.popularTags.length > 1) {
         for (let i = 1; i < stats.popularTags.length; i++) {
@@ -152,7 +152,7 @@ describe('Reviews Data', () => {
     })
 
     it('should return top 10 popular tags', () => {
-      const stats = getReviewStats('1')
+      const stats = getReviewStats('ikebukuro')
       // The implementation returns top 10 tags, not 5
       expect(stats.popularTags.length).toBeLessThanOrEqual(10)
     })

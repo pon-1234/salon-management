@@ -10,12 +10,14 @@ import { requireAdmin } from '@/lib/auth/utils'
 import { handleApiError, ErrorResponses } from '@/lib/api/errors'
 import { SuccessResponses } from '@/lib/api/responses'
 import { Prisma } from '@prisma/client'
+import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
 
 export async function GET(request: NextRequest) {
   const authError = await requireAdmin()
   if (authError) return authError
 
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const searchParams = request.nextUrl.searchParams
     const id = searchParams.get('id')
     const castId = searchParams.get('castId')
@@ -24,8 +26,13 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate')
 
     if (id) {
-      const schedule = await db.castSchedule.findUnique({
-        where: { id },
+      const schedule = await db.castSchedule.findFirst({
+        where: {
+          id,
+          cast: {
+            storeId,
+          },
+        },
         include: {
           cast: true,
         },
@@ -39,7 +46,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Build filters for querying schedules
-    const where: Prisma.CastScheduleWhereInput = {}
+    const where: Prisma.CastScheduleWhereInput = {
+      cast: {
+        storeId,
+      },
+    }
 
     if (castId) where.castId = castId
     if (date) {
@@ -71,7 +82,16 @@ export async function POST(request: NextRequest) {
   if (authError) return authError
 
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const data = await request.json()
+
+    const cast = await db.cast.findFirst({
+      where: { id: data.castId, storeId },
+    })
+
+    if (!cast) {
+      return ErrorResponses.notFound('キャスト')
+    }
 
     const newSchedule = await db.castSchedule.create({
       data: {
@@ -98,11 +118,35 @@ export async function PUT(request: NextRequest) {
   if (authError) return authError
 
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const data = await request.json()
     const { id, ...updates } = data
 
     if (!id) {
       return ErrorResponses.badRequest('IDが必要です')
+    }
+
+    const existingSchedule = await db.castSchedule.findFirst({
+      where: {
+        id,
+        cast: {
+          storeId,
+        },
+      },
+    })
+
+    if (!existingSchedule) {
+      return ErrorResponses.notFound('スケジュール')
+    }
+
+    if (updates.castId) {
+      const cast = await db.cast.findFirst({
+        where: { id: updates.castId, storeId },
+      })
+
+      if (!cast) {
+        return ErrorResponses.notFound('キャスト')
+      }
     }
 
     const updatedSchedule = await db.castSchedule.update({
@@ -130,11 +174,25 @@ export async function DELETE(request: NextRequest) {
   if (authError) return authError
 
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const searchParams = request.nextUrl.searchParams
     const id = searchParams.get('id')
 
     if (!id) {
       return ErrorResponses.badRequest('IDが必要です')
+    }
+
+    const existingSchedule = await db.castSchedule.findFirst({
+      where: {
+        id,
+        cast: {
+          storeId,
+        },
+      },
+    })
+
+    if (!existingSchedule) {
+      return ErrorResponses.notFound('スケジュール')
     }
 
     await db.castSchedule.delete({

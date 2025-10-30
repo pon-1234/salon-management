@@ -12,6 +12,7 @@ import logger from '@/lib/logger'
 import { PrismaClient } from '@prisma/client'
 import { hasPermission } from '@/lib/auth/permissions'
 import { format } from 'date-fns'
+import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
 
 // Types
 interface AvailabilityCheck {
@@ -93,6 +94,7 @@ function valuesDiffer(a: unknown, b: unknown): boolean {
 
 // Helper function to check cast availability
 async function checkCastAvailability(
+  storeId: string,
   castId: string,
   startTime: Date,
   endTime: Date,
@@ -101,6 +103,7 @@ async function checkCastAvailability(
   // Find overlapping reservations
   const conflicts = await tx.reservation.findMany({
     where: {
+      storeId,
       castId,
       status: {
         not: 'cancelled',
@@ -193,6 +196,7 @@ function parseReservationDate(raw: string): Date {
 
 export async function GET(request: NextRequest) {
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const session = await getServerSession(authOptions)
     const isAdmin = session?.user?.role === 'admin'
     const sessionCustomerId = session?.user?.id
@@ -209,8 +213,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
       }
 
-      const reservation = await db.reservation.findUnique({
-        where: { id },
+      const reservation = await db.reservation.findFirst({
+        where: { id, storeId },
         include: {
           customer: true,
           cast: true,
@@ -238,7 +242,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 管理者は全予約を、顧客は自分の予約のみを取得
-    const where: any = {}
+    const where: any = { storeId }
     if (!isAdmin) {
       if (!sessionCustomerId) {
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
@@ -303,6 +307,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const session = await getServerSession(authOptions)
     const isAdmin = session?.user?.role === 'admin'
     const sessionCustomerId = session?.user?.id
@@ -359,12 +364,12 @@ export async function POST(request: NextRequest) {
     }
 
     const [castRecord, customerRecord, courseRecord, areaRecord, stationRecord] = await Promise.all([
-      db.cast.findUnique({ where: { id: reservationData.castId } }),
+      db.cast.findFirst({ where: { id: reservationData.castId, storeId } }),
       db.customer.findUnique({ where: { id: targetCustomerId } }),
-      db.coursePrice.findUnique({ where: { id: reservationData.courseId } }),
-      reservationData.areaId ? db.areaInfo.findUnique({ where: { id: reservationData.areaId } }) : Promise.resolve(null),
+      db.coursePrice.findFirst({ where: { id: reservationData.courseId, storeId } }),
+      reservationData.areaId ? db.areaInfo.findFirst({ where: { id: reservationData.areaId, storeId } }) : Promise.resolve(null),
       reservationData.stationId
-        ? db.stationInfo.findUnique({ where: { id: reservationData.stationId } })
+        ? db.stationInfo.findFirst({ where: { id: reservationData.stationId, storeId } })
         : Promise.resolve(null),
     ])
 
@@ -392,6 +397,7 @@ export async function POST(request: NextRequest) {
 
     // 事前の空き状況チェック（早期リターン）
     const preflightAvailability = await checkCastAvailability(
+      storeId,
       reservationData.castId,
       startTime,
       endTime
@@ -409,6 +415,7 @@ export async function POST(request: NextRequest) {
       const newReservation = await db.$transaction(async (tx) => {
         // トランザクション内で再度空き状況をチェック
         const availability = await checkCastAvailability(
+          storeId,
           reservationData.castId,
           startTime,
           endTime,
@@ -439,7 +446,7 @@ export async function POST(request: NextRequest) {
         if (optionIds.length) {
           const uniqueOptionIds = Array.from(new Set(optionIds))
           const optionRecords = await tx.optionPrice.findMany({
-            where: { id: { in: uniqueOptionIds } },
+            where: { id: { in: uniqueOptionIds }, storeId },
             select: {
               id: true,
               name: true,
@@ -473,6 +480,7 @@ export async function POST(request: NextRequest) {
             customerId: targetCustomerId,
             castId: reservationData.castId,
             courseId: reservationData.courseId,
+            storeId,
             status: reservationData.status ?? 'pending',
             price: reservationData.price ?? 0,
             designationType: reservationData.designationType ?? null,
@@ -608,7 +616,7 @@ export async function PUT(request: NextRequest) {
       }
 
       const castId = updates.castId || existingReservation.castId
-      const availability = await checkCastAvailability(castId, startTime, endTime, db)
+      const availability = await checkCastAvailability(storeId, castId, startTime, endTime, db)
       const filteredConflicts = availability.conflicts.filter((c) => c.id !== id)
 
       if (filteredConflicts.length > 0) {
@@ -628,14 +636,51 @@ export async function PUT(request: NextRequest) {
     // トランザクション内で予約更新とオプション更新を実行
     const updatedReservation = await db.$transaction(async (tx) => {
       // オプションが変更される場合は既存オプションを削除
-      const optionIds: string[] | null = Array.isArray(updates.options)
+      const rawOptionIds: string[] | null = Array.isArray(updates.options)
         ? updates.options
         : null
+      let normalizedOptionIds: string[] | null = null
 
-      if (optionIds) {
+      if (rawOptionIds) {
         await tx.reservationOption.deleteMany({
           where: { reservationId: id },
         })
+
+        const candidateOptionIds = rawOptionIds.filter(
+          (optionId): optionId is string =>
+            typeof optionId === 'string' && optionId.trim().length > 0
+        )
+
+        if (candidateOptionIds.length > 0) {
+          const uniqueOptionIds = Array.from(new Set(candidateOptionIds))
+          const existingOptionIds = await tx.optionPrice.findMany({
+            where: {
+              id: {
+                in: uniqueOptionIds,
+              },
+              storeId,
+            },
+            select: {
+              id: true,
+            },
+          })
+          const validOptionIds = new Set(existingOptionIds.map((option) => option.id))
+          if (validOptionIds.size !== uniqueOptionIds.length) {
+            logger.warn(
+              {
+                reservationId: id,
+                requestedOptionIds: candidateOptionIds,
+                validOptionIds: Array.from(validOptionIds),
+              },
+              'Some provided reservation option IDs were invalid for this store'
+            )
+          }
+          normalizedOptionIds = candidateOptionIds.filter((optionId) =>
+            validOptionIds.has(optionId)
+          )
+        } else {
+          normalizedOptionIds = []
+        }
       }
 
       // 予約を更新
@@ -669,15 +714,52 @@ export async function PUT(request: NextRequest) {
         updateData.endTime = new Date(updates.endTime)
       }
 
+      if (updateData.castId) {
+        const castExists = await tx.cast.findFirst({
+          where: { id: updateData.castId as string, storeId },
+        })
+        if (!castExists) {
+          throw new Error('指定されたキャストが存在しません。')
+        }
+      }
+
+      if (updateData.courseId) {
+        const courseExists = await tx.coursePrice.findFirst({
+          where: { id: updateData.courseId as string, storeId },
+        })
+        if (!courseExists) {
+          throw new Error('指定されたコースが存在しません。')
+        }
+      }
+
+      if (updateData.areaId) {
+        const areaExists = await tx.areaInfo.findFirst({
+          where: { id: updateData.areaId as string, storeId },
+        })
+        if (!areaExists) {
+          throw new Error('指定されたエリアが存在しません。')
+        }
+      }
+
+      if (updateData.stationId) {
+        const stationExists = await tx.stationInfo.findFirst({
+          where: { id: updateData.stationId as string, storeId },
+        })
+        if (!stationExists) {
+          throw new Error('指定された駅が存在しません。')
+        }
+      }
+
       const updated = await tx.reservation.update({
         where: { id },
         data: {
           ...updateData,
-          options: optionIds
-            ? {
-                create: optionIds.map((optionId) => ({ optionId })),
-              }
-            : undefined,
+          options:
+            normalizedOptionIds && normalizedOptionIds.length > 0
+              ? {
+                  create: normalizedOptionIds.map((optionId) => ({ optionId })),
+                }
+              : undefined,
         },
         include: {
           customer: true,
@@ -920,6 +1002,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const session = await getServerSession(authOptions)
     const isAdmin = session?.user?.role === 'admin'
     const sessionCustomerId = session?.user?.id
@@ -935,7 +1018,14 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const existingReservation = await db.reservation.findUnique({ where: { id } })
+    const existingReservation = await db.reservation.findFirst({
+      where: { id, storeId },
+      include: {
+        customer: true,
+        cast: true,
+        course: true,
+      },
+    })
 
     if (!existingReservation) {
       return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
@@ -957,7 +1047,7 @@ export async function DELETE(request: NextRequest) {
 
     const cancelledReservation = await db.reservation.update({
       where: { id },
-      data: { status: 'cancelled' },
+      data: { status: 'cancelled', storeId },
       include: {
         customer: true,
         cast: true,

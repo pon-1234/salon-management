@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
 import logger from '@/lib/logger'
 import { defaultOptions } from '@/lib/pricing/data'
+import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
 
 function normalizeNumber(value: any, fallback: number | null = null): number | null {
   if (value === null || value === undefined || value === '') return fallback
@@ -110,6 +111,7 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const id = searchParams.get('id')
   let isAdmin = false
+  const storeId = await ensureStoreId(await resolveStoreId(request))
 
   try {
     const session = await requireSession()
@@ -120,8 +122,8 @@ export async function GET(request: NextRequest) {
     isAdmin = session.user.role === 'admin'
 
     if (id) {
-      const option = await db.optionPrice.findUnique({
-        where: { id },
+      const option = await db.optionPrice.findFirst({
+        where: { id, storeId },
         include: {
           reservations: {
             include: {
@@ -152,6 +154,9 @@ export async function GET(request: NextRequest) {
     }
 
     const options = await db.optionPrice.findMany({
+      where: {
+        storeId,
+      },
       include: {
         reservations: {
           include: {
@@ -204,6 +209,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await request.json()
+    const storeId = await ensureStoreId(await resolveStoreId(request))
 
     let payload
     try {
@@ -226,7 +232,10 @@ export async function POST(request: NextRequest) {
     )
 
     const newOption = await db.optionPrice.create({
-      data: prismaPayload,
+      data: {
+        ...prismaPayload,
+        storeId,
+      },
       include: {
         reservations: true,
       },
@@ -251,6 +260,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const data = await request.json()
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const { id, ...updates } = data
 
     if (!id) {
@@ -277,8 +287,8 @@ export async function PUT(request: NextRequest) {
       Object.entries(payload).filter(([, value]) => value !== undefined)
     )
 
-    const existingOption = await db.optionPrice.findUnique({
-      where: { id },
+    const existingOption = await db.optionPrice.findFirst({
+      where: { id, storeId },
       include: {
         reservations: {
           include: {
@@ -343,6 +353,7 @@ export async function PUT(request: NextRequest) {
         note: existingOption.note,
         storeShare: existingOption.storeShare,
         castShare: existingOption.castShare,
+        storeId: existingOption.storeId,
       }
 
       return tx.optionPrice.create({
@@ -390,9 +401,18 @@ export async function DELETE(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams
     const id = searchParams.get('id')
+    const storeId = await ensureStoreId(await resolveStoreId(request))
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+    }
+
+    const existingOption = await db.optionPrice.findFirst({
+      where: { id, storeId },
+    })
+
+    if (!existingOption) {
+      return NextResponse.json({ error: 'Option not found' }, { status: 404 })
     }
 
     await db.optionPrice.update({

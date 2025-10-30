@@ -32,6 +32,7 @@ import {
   parseBusinessHoursString,
   minutesToIsoInJst,
 } from '@/lib/settings/business-hours'
+import { useStore } from '@/contexts/store-context'
 
 
 interface ScheduleEntry {
@@ -45,6 +46,7 @@ const JST_TIMEZONE = 'Asia/Tokyo'
 
 export function ReservationPageContent() {
   const useMockFallbacks = shouldUseMockFallbacks()
+  const { currentStore } = useStore()
   const [allCasts, setAllCasts] = useState<Cast[]>([])
   const [castData, setCastData] = useState<Cast[]>([])
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
@@ -58,7 +60,10 @@ export function ReservationPageContent() {
   const [rawReservations, setRawReservations] = useState<Reservation[]>([])
   const [currentDayReservations, setCurrentDayReservations] = useState<ReservationData[]>([])
   const [businessHours, setBusinessHours] = useState<BusinessHoursRange>(DEFAULT_BUSINESS_HOURS)
-  const reservationRepository = useMemo(() => new ReservationRepositoryImpl(), [])
+  const reservationRepository = useMemo(
+    () => new ReservationRepositoryImpl(undefined, currentStore.id),
+    [currentStore.id]
+  )
   const { data: session } = useSession()
   const customerUseCases = useMemo(
     () => new CustomerUseCases(new CustomerRepositoryImpl()),
@@ -154,11 +159,14 @@ export function ReservationPageContent() {
 
     const loadBusinessHours = async () => {
       try {
-        const response = await fetch('/api/settings/store', {
-          cache: 'no-store',
-          credentials: 'include',
-          signal: controller.signal,
-        })
+        const response = await fetch(
+          `/api/settings/store?storeId=${encodeURIComponent(currentStore.id)}`,
+          {
+            cache: 'no-store',
+            credentials: 'include',
+            signal: controller.signal,
+          }
+        )
         if (!response.ok) {
           throw new Error(`Failed to fetch store settings: ${response.status}`)
         }
@@ -181,15 +189,18 @@ export function ReservationPageContent() {
     return () => {
       controller.abort()
     }
-  }, [])
+  }, [currentStore.id])
 
   useEffect(() => {
     const loadCasts = async () => {
       try {
-        const response = await fetch('/api/cast', {
-          cache: 'no-store',
-          credentials: 'include',
-        })
+        const response = await fetch(
+          `/api/cast?storeId=${encodeURIComponent(currentStore.id)}`,
+          {
+            cache: 'no-store',
+            credentials: 'include',
+          }
+        )
         if (!response.ok) {
           throw new Error(`Failed to fetch casts: ${response.status}`)
         }
@@ -203,7 +214,7 @@ export function ReservationPageContent() {
     }
 
     loadCasts()
-  }, [])
+  }, [currentStore.id])
 
   const fetchData = useCallback(async (): Promise<ReservationData[]> => {
     if (allCasts.length === 0) {
@@ -213,7 +224,7 @@ export function ReservationPageContent() {
       return []
     }
 
-    const allReservations = await getAllReservations()
+    const allReservations = await getAllReservations({ storeId: currentStore.id })
     const normalizedReservations = allReservations.map((reservation) => ({
       ...reservation,
       startTime: new Date(reservation.startTime),
@@ -241,7 +252,7 @@ export function ReservationPageContent() {
       const scheduleEndUtc = zonedTimeToUtc(scheduleEndLocal, JST_TIMEZONE).toISOString()
 
       const response = await fetch(
-        `/api/cast-schedule?startDate=${scheduleStartUtc}&endDate=${scheduleEndUtc}`,
+        `/api/cast-schedule?startDate=${scheduleStartUtc}&endDate=${scheduleEndUtc}&storeId=${encodeURIComponent(currentStore.id)}`,
         {
           credentials: 'include',
           cache: 'no-store',
@@ -329,6 +340,7 @@ export function ReservationPageContent() {
     businessHours,
     formatInTimeZone,
     zonedTimeToUtc,
+    currentStore.id,
   ])
 
   useEffect(() => {
@@ -544,8 +556,6 @@ export function ReservationPageContent() {
         onFilter={handleFilterDialogOpen}
         onCustomerSelect={handleCustomerSelection}
         selectedCustomer={selectedCustomer}
-        onReservationCreated={handleRefresh}
-        businessHours={businessHours}
       />
 
       <FilterDialog

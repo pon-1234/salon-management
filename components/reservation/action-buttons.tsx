@@ -1,18 +1,14 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { RefreshCw, Filter, UserPlus, UserMinus } from 'lucide-react'
-import { QuickBookingDialog } from './quick-booking-dialog'
 import { CustomerSelectionDialog } from '@/components/customer/customer-selection-dialog'
 import { Customer } from '@/lib/customer/types'
-import { BusinessHoursRange } from '@/lib/settings/business-hours'
 
 interface ActionButtonsProps {
   onRefresh: () => void
   onFilter: () => void
   onCustomerSelect: (customer: Customer | null) => void
   selectedCustomer: Customer | null
-  onReservationCreated?: (reservationId?: string) => void
-  businessHours: BusinessHoursRange
 }
 
 export function ActionButtons({
@@ -20,10 +16,7 @@ export function ActionButtons({
   onFilter,
   onCustomerSelect,
   selectedCustomer,
-  onReservationCreated,
-  businessHours,
 }: ActionButtonsProps) {
-  const [openQuickBooking, setOpenQuickBooking] = useState(false)
   const [showCustomerDialog, setShowCustomerDialog] = useState(false)
 
   return (
@@ -49,18 +42,6 @@ export function ActionButtons({
           </Button>
         )}
       </div>
-      <div className="flex gap-2">
-        <Button onClick={() => setOpenQuickBooking(true)} variant="outline" size="sm">
-          新規予約
-        </Button>
-      </div>
-      <QuickBookingDialog
-        open={openQuickBooking}
-        onOpenChange={setOpenQuickBooking}
-        selectedCustomer={selectedCustomer}
-        onReservationCreated={onReservationCreated}
-        businessHours={businessHours}
-      />
       <CustomerSelectionDialog
         open={showCustomerDialog}
         onOpenChange={setShowCustomerDialog}

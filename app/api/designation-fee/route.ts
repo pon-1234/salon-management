@@ -12,6 +12,7 @@ import {
   DEFAULT_DESIGNATION_FEES,
   normalizeDesignationShares,
 } from '@/lib/designation/fees'
+import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
 
 function normalizeNumber(value: unknown, fallback: number | null = null): number | null {
   if (value === null || value === undefined || value === '') return fallback
@@ -105,7 +106,9 @@ function buildFallbackResponse(id: string | null, includeInactive: boolean) {
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const id = searchParams.get('id')
+  const storeId = await ensureStoreId(await resolveStoreId(request))
   const includeInactive = searchParams.get('includeInactive') === 'true'
+  const storeId = await ensureStoreId(await resolveStoreId(request))
 
   try {
     const session = await requireSession()
@@ -114,8 +117,8 @@ export async function GET(request: NextRequest) {
     }
 
     if (id) {
-      const fee = await db.designationFee.findUnique({
-        where: { id },
+      const fee = await db.designationFee.findFirst({
+        where: { id, storeId },
       })
 
       if (!fee || (!includeInactive && !fee.isActive)) {
@@ -125,7 +128,10 @@ export async function GET(request: NextRequest) {
     }
 
     const fees = await db.designationFee.findMany({
-      where: includeInactive ? {} : { isActive: true },
+      where: {
+        storeId,
+        ...(includeInactive ? {} : { isActive: true }),
+      },
       orderBy: [{ sortOrder: 'asc' }, { price: 'asc' }, { name: 'asc' }],
     })
 
@@ -148,10 +154,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const payload = buildDesignationPayload(body, 'create')
 
     const result = await db.designationFee.create({
-      data: payload,
+      data: {
+        ...payload,
+        storeId,
+      },
     })
 
     return NextResponse.json(result, { status: 201 })
@@ -173,9 +183,18 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const { id, ...rest } = body ?? {}
     if (!id || typeof id !== 'string') {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+    }
+
+    const existingFee = await db.designationFee.findFirst({
+      where: { id, storeId },
+    })
+
+    if (!existingFee) {
+      return NextResponse.json({ error: 'Designation fee not found' }, { status: 404 })
     }
 
     const payload = buildDesignationPayload(rest, 'update')
@@ -204,6 +223,14 @@ export async function DELETE(request: NextRequest) {
     const session = await requireSession()
     if (session instanceof NextResponse) {
       return session
+    }
+
+    const existingFee = await db.designationFee.findFirst({
+      where: { id, storeId },
+    })
+
+    if (!existingFee) {
+      return NextResponse.json({ error: 'Designation fee not found' }, { status: 404 })
     }
 
     await db.designationFee.delete({

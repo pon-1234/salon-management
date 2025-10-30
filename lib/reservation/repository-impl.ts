@@ -28,16 +28,31 @@ function normalizeApiError(error: ApiError): ApiError {
 }
 
 export class ReservationRepositoryImpl implements ReservationRepository {
-  constructor(private readonly client: ApiClient = defaultApiClient) {}
+  constructor(
+    private readonly client: ApiClient = defaultApiClient,
+    private readonly storeId?: string
+  ) {}
+
+  private withStore(path: string): string {
+    if (!this.storeId) {
+      return path
+    }
+    const separator = path.includes('?') ? '&' : '?'
+    return `${path}${separator}storeId=${encodeURIComponent(this.storeId)}`
+  }
 
   async getAll(): Promise<Reservation[]> {
-    return this.client.get<Reservation[]>(RESERVATION_ENDPOINT)
+    return this.client.get<Reservation[]>(this.withStore(RESERVATION_ENDPOINT))
   }
 
   async getById(id: string): Promise<Reservation | null> {
     try {
+      const params = new URLSearchParams({ id })
+      if (this.storeId) {
+        params.set('storeId', this.storeId)
+      }
       return await this.client.get<Reservation>(
-        `${RESERVATION_ENDPOINT}?id=${encodeURIComponent(id)}`
+        `${RESERVATION_ENDPOINT}?${params.toString()}`
       )
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
@@ -49,7 +64,7 @@ export class ReservationRepositoryImpl implements ReservationRepository {
 
   async create(data: Omit<Reservation, 'id' | 'createdAt' | 'updatedAt'>): Promise<Reservation> {
     try {
-      return await this.client.post<Reservation>(RESERVATION_ENDPOINT, data)
+      return await this.client.post<Reservation>(this.withStore(RESERVATION_ENDPOINT), data)
     } catch (error) {
       if (error instanceof ApiError) {
         throw normalizeApiError(error)
@@ -60,7 +75,10 @@ export class ReservationRepositoryImpl implements ReservationRepository {
 
   async update(id: string, data: Partial<Reservation>): Promise<Reservation> {
     try {
-      return await this.client.put<Reservation>(RESERVATION_ENDPOINT, { id, ...data })
+      return await this.client.put<Reservation>(this.withStore(RESERVATION_ENDPOINT), {
+        id,
+        ...data,
+      })
     } catch (error) {
       if (error instanceof ApiError) {
         throw normalizeApiError(error)
@@ -71,7 +89,7 @@ export class ReservationRepositoryImpl implements ReservationRepository {
 
   async delete(id: string): Promise<boolean> {
     try {
-      await this.client.delete(`${RESERVATION_ENDPOINT}?id=${encodeURIComponent(id)}`, {
+      await this.client.delete(this.withStore(`${RESERVATION_ENDPOINT}?id=${encodeURIComponent(id)}`), {
         parseJson: false,
       })
       return true
@@ -84,9 +102,11 @@ export class ReservationRepositoryImpl implements ReservationRepository {
   }
 
   async getReservationsByCustomer(customerId: string): Promise<Reservation[]> {
-    return this.client.get<Reservation[]>(
-      `${RESERVATION_ENDPOINT}?customerId=${encodeURIComponent(customerId)}`
-    )
+    const params = new URLSearchParams({ customerId })
+    if (this.storeId) {
+      params.set('storeId', this.storeId)
+    }
+    return this.client.get<Reservation[]>(`${RESERVATION_ENDPOINT}?${params.toString()}`)
   }
 
   async getReservationsByStaff(
@@ -99,14 +119,17 @@ export class ReservationRepositoryImpl implements ReservationRepository {
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
     })
+    if (this.storeId) {
+      params.set('storeId', this.storeId)
+    }
 
     return this.client.get<Reservation[]>(`${RESERVATION_ENDPOINT}?${params.toString()}`)
   }
 
   async getServices(): Promise<Service[]> {
     const [courses, options] = await Promise.all([
-      this.client.get<any[]>(COURSE_ENDPOINT),
-      this.client.get<any[]>(OPTION_ENDPOINT),
+      this.client.get<any[]>(this.withStore(COURSE_ENDPOINT)),
+      this.client.get<any[]>(this.withStore(OPTION_ENDPOINT)),
     ])
 
     return [
@@ -140,6 +163,9 @@ export class ReservationRepositoryImpl implements ReservationRepository {
       endTime: endTime.toISOString(),
     })
     params.set('mode', 'check')
+    if (this.storeId) {
+      params.set('storeId', this.storeId)
+    }
 
     return this.client.get<{ available: boolean; conflicts?: any[] }>(
       `${AVAILABILITY_ENDPOINT}?${params.toString()}`
@@ -156,6 +182,9 @@ export class ReservationRepositoryImpl implements ReservationRepository {
       date: formatInTimeZone(date, JST_TIMEZONE, 'yyyy-MM-dd'),
       duration: duration.toString(),
     })
+    if (this.storeId) {
+      params.set('storeId', this.storeId)
+    }
 
     const payload = await this.client.get<{ availableSlots?: { startTime: string; endTime: string }[] }>(
       `${AVAILABILITY_ENDPOINT}?${params.toString()}`

@@ -10,6 +10,7 @@ import { handleApiError } from '@/lib/api/errors'
 import { SuccessResponses } from '@/lib/api/responses'
 
 import { db } from '@/lib/db'
+import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
 // Validation schema
 const storeSettingsSchema = z.object({
   storeName: z.string().min(1),
@@ -33,13 +34,15 @@ export async function GET(request: NextRequest) {
   if (authError) return authError
 
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     // Get store settings from database
-    let settings = await db.storeSettings.findFirst()
+    let settings = await db.storeSettings.findUnique({ where: { storeId } })
 
     // If no settings exist, create default settings
     if (!settings) {
       settings = await db.storeSettings.create({
         data: {
+          storeId,
           storeName: '金の玉クラブ(池袋)',
           address: '東京都豊島区池袋2-1-1',
           phone: '03-1234-5678',
@@ -69,13 +72,14 @@ export async function PUT(request: NextRequest) {
   if (authError) return authError
 
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const body = await request.json()
 
     // Validate request body
     const validatedData = storeSettingsSchema.parse(body)
 
     // Find existing settings or create new one
-    const existingSettings = await db.storeSettings.findFirst()
+    const existingSettings = await db.storeSettings.findUnique({ where: { storeId } })
 
     let updatedSettings
     if (existingSettings) {
@@ -93,6 +97,7 @@ export async function PUT(request: NextRequest) {
       // Create new settings
       updatedSettings = await db.storeSettings.create({
         data: {
+          storeId,
           ...validatedData,
           website: validatedData.website || '',
           building: validatedData.building || '',

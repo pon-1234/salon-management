@@ -2,7 +2,7 @@ import { Store } from './types'
 
 export const storesData: Store[] = [
   {
-    id: '1',
+    id: 'ikebukuro',
     slug: 'ikebukuro',
     name: '池袋店',
     displayName: 'サロン池袋店',
@@ -37,7 +37,7 @@ export const storesData: Store[] = [
     updatedAt: new Date('2024-01-01'),
   },
   {
-    id: '2',
+    id: 'shinjuku',
     slug: 'shinjuku',
     name: '新宿店',
     displayName: 'サロン新宿店',
@@ -72,7 +72,7 @@ export const storesData: Store[] = [
     updatedAt: new Date('2024-02-01'),
   },
   {
-    id: '3',
+    id: 'shibuya',
     slug: 'shibuya',
     name: '渋谷店',
     displayName: 'サロン渋谷店',
