@@ -583,7 +583,7 @@ export function ReservationDialog({
       }
       onOpenChange(next)
     }}>
-      <DialogContent className="flex max-h-[90vh] max-w-3xl flex-col overflow-hidden p-0">
+      <DialogContent className="flex max-h-[90vh] max-w-4xl flex-col overflow-hidden p-0">
         <DialogTitle className="sr-only">{reservation.customerName} 様の予約詳細</DialogTitle>
         <DialogDescription className="sr-only">
           予約の詳細情報を表示し、必要に応じて編集できます。
