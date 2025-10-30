@@ -9,7 +9,6 @@ import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
 import { NotificationService } from '@/lib/notification/service'
 import logger from '@/lib/logger'
-import { zonedTimeToUtc } from 'date-fns-tz'
 import { PrismaClient } from '@prisma/client'
 import { hasPermission } from '@/lib/auth/permissions'
 
@@ -89,15 +88,43 @@ async function checkCastAvailability(
   }
 }
 
-const JST_TIMEZONE = 'Asia/Tokyo'
 const notificationService = new NotificationService()
 
 function parseReservationDate(raw: string): Date {
-  const direct = new Date(raw)
+  if (typeof raw !== 'string') {
+    throw new Error('Invalid date format')
+  }
+
+  const trimmed = raw.trim()
+  if (trimmed.length === 0) {
+    throw new Error('Invalid date format')
+  }
+
+  const direct = new Date(trimmed)
   if (!Number.isNaN(direct.getTime())) {
     return direct
   }
-  return zonedTimeToUtc(raw, JST_TIMEZONE)
+
+  const normalized = trimmed.replace(/\s+/g, 'T')
+  const hasTimePortion = normalized.includes('T')
+  let isoCandidate = normalized
+
+  if (!hasTimePortion) {
+    isoCandidate = `${isoCandidate}T00:00:00`
+  } else if (/T\d{2}:\d{2}$/.test(isoCandidate)) {
+    isoCandidate = `${isoCandidate}:00`
+  }
+
+  if (!/[Zz]|[+-]\d{2}:?\d{2}$/.test(isoCandidate)) {
+    isoCandidate = `${isoCandidate}+09:00`
+  }
+
+  const fallback = new Date(isoCandidate)
+  if (!Number.isNaN(fallback.getTime())) {
+    return fallback
+  }
+
+  throw new Error('Invalid date format')
 }
 
 export async function GET(request: NextRequest) {
@@ -242,8 +269,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const startTime = parseReservationDate(reservationData.startTime)
-    const endTime = parseReservationDate(reservationData.endTime)
+    let startTime: Date
+    let endTime: Date
+    try {
+      startTime = parseReservationDate(reservationData.startTime)
+      endTime = parseReservationDate(reservationData.endTime)
+    } catch {
+      return NextResponse.json({ error: 'Invalid date format' }, { status: 400 })
+    }
 
     if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
       return NextResponse.json({ error: 'Invalid date format' }, { status: 400 })

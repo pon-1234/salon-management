@@ -788,6 +788,10 @@ export function QuickBookingDialog({
         return
       }
 
+      const selectedOptionIds = Object.entries(optionSelections)
+        .filter(([, selected]) => Boolean(selected))
+        .map(([optionId]) => optionId)
+
       const response = await fetch('/api/reservation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -798,7 +802,7 @@ export function QuickBookingDialog({
           startTime: startTime.toISOString(),
           endTime: endTime.toISOString(),
           status: bookingDetails.bookingStatus === '確定済' ? 'confirmed' : 'pending',
-          options: optionSelections,
+          options: selectedOptionIds,
           price: priceBreakdown.total,
           designationType:
             selectedDesignationFee?.name ?? getDesignationLabel(designationType, currentStaff ?? undefined),
@@ -955,7 +959,17 @@ export function QuickBookingDialog({
       notes: '',
     }))
     setDesignationType('none')
-  }, [open, selectedCustomer, currentStaff, selectedTime, courseCatalog, areas, stations, designationFees])
+  }, [
+    open,
+    selectedCustomer,
+    currentStaff,
+    selectedTime,
+    courseCatalog,
+    areas,
+    stations,
+    designationFees,
+    businessHours.startLabel,
+  ])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

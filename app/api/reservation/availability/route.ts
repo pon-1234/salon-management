@@ -8,7 +8,7 @@ import { db } from '@/lib/db'
 import type { PrismaClient } from '@prisma/client'
 import logger from '@/lib/logger'
 import { differenceInCalendarDays, parse } from 'date-fns'
-import tz from 'date-fns-tz'
+import { formatInTimeZone } from 'date-fns-tz'
 import {
   BusinessHoursRange,
   DEFAULT_BUSINESS_HOURS,
@@ -18,7 +18,38 @@ import {
 import { getConfiguredBusinessHours } from '@/lib/settings/business-hours.server'
 
 const JST_TIMEZONE = 'Asia/Tokyo'
-const { formatInTimeZone, zonedTimeToUtc } = tz
+
+function convertJstStringToUtc(dateTime: string): Date {
+  if (typeof dateTime !== 'string') {
+    throw new Error('Invalid date format')
+  }
+
+  const trimmed = dateTime.trim()
+  if (trimmed.length === 0) {
+    throw new Error('Invalid date format')
+  }
+
+  let candidate = trimmed.replace(/\s+/g, 'T')
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(candidate)) {
+    candidate = `${candidate}T00:00:00`
+  }
+
+  if (/T\d{2}:\d{2}$/.test(candidate)) {
+    candidate = `${candidate}:00`
+  }
+
+  if (!/[Zz]|[+-]\d{2}:?\d{2}$/.test(candidate)) {
+    candidate = `${candidate}+09:00`
+  }
+
+  const parsed = new Date(candidate)
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error('Invalid date format')
+  }
+
+  return parsed
+}
 
 interface TimeSlot {
   startTime: string
@@ -203,13 +234,11 @@ async function handleAvailableSlots(searchParams: URLSearchParams): Promise<Next
     }
 
     const businessHours = await resolveBusinessHours()
-    const rangeStartUtc = zonedTimeToUtc(
-      minutesToIsoInJst(dateStr, businessHours.startMinutes),
-      JST_TIMEZONE
+    const rangeStartUtc = convertJstStringToUtc(
+      minutesToIsoInJst(dateStr, businessHours.startMinutes)
     )
-    const rangeEndUtc = zonedTimeToUtc(
-      minutesToIsoInJst(dateStr, businessHours.endMinutes),
-      JST_TIMEZONE
+    const rangeEndUtc = convertJstStringToUtc(
+      minutesToIsoInJst(dateStr, businessHours.endMinutes)
     )
 
     const reservations = await db.reservation.findMany({
@@ -263,13 +292,11 @@ async function handleAvailableSlots(searchParams: URLSearchParams): Promise<Next
 
       if (reservationStartMinute - currentMinute >= duration) {
         availableSlots.push({
-          startTime: zonedTimeToUtc(
-            minutesToIsoInJst(dateStr, currentMinute),
-            JST_TIMEZONE
+          startTime: convertJstStringToUtc(
+            minutesToIsoInJst(dateStr, currentMinute)
           ).toISOString(),
-          endTime: zonedTimeToUtc(
-            minutesToIsoInJst(dateStr, reservationStartMinute),
-            JST_TIMEZONE
+          endTime: convertJstStringToUtc(
+            minutesToIsoInJst(dateStr, reservationStartMinute)
           ).toISOString(),
         })
       }
@@ -279,13 +306,11 @@ async function handleAvailableSlots(searchParams: URLSearchParams): Promise<Next
 
     if (businessHours.endMinutes - currentMinute >= duration) {
       availableSlots.push({
-        startTime: zonedTimeToUtc(
-          minutesToIsoInJst(dateStr, currentMinute),
-          JST_TIMEZONE
+        startTime: convertJstStringToUtc(
+          minutesToIsoInJst(dateStr, currentMinute)
         ).toISOString(),
-        endTime: zonedTimeToUtc(
-          minutesToIsoInJst(dateStr, businessHours.endMinutes),
-          JST_TIMEZONE
+        endTime: convertJstStringToUtc(
+          minutesToIsoInJst(dateStr, businessHours.endMinutes)
         ).toISOString(),
       })
     }

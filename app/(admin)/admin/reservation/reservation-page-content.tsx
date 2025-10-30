@@ -72,7 +72,7 @@ export function ReservationPageContent() {
 
   const selectedDateKey = useMemo(
     () => formatInTimeZone(selectedDate, JST_TIMEZONE, 'yyyy-MM-dd'),
-    [selectedDate]
+    [selectedDate, formatInTimeZone]
   )
 
   useEffect(() => {
@@ -321,7 +321,15 @@ export function ReservationPageContent() {
 
     setCastData(updatedCastData)
     return todaysReservationData
-  }, [allCasts, selectedDateKey, selectedCustomer, customers, businessHours])
+  }, [
+    allCasts,
+    selectedDateKey,
+    selectedCustomer,
+    customers,
+    businessHours,
+    formatInTimeZone,
+    zonedTimeToUtc,
+  ])
 
   useEffect(() => {
     fetchData()
@@ -352,12 +360,47 @@ export function ReservationPageContent() {
         endTime: payload.endTime,
       }
 
+      if (payload.status) {
+        updatePayload.status = payload.status as Reservation['status']
+      }
+
       if (payload.notes !== undefined) {
         updatePayload.notes = payload.notes
       }
 
       if (payload.storeMemo !== undefined) {
         ;(updatePayload as any).storeMemo = payload.storeMemo
+      }
+
+      if (payload.designationType !== undefined) {
+        updatePayload.designationType = payload.designationType
+      }
+      if (payload.designationFee !== undefined) {
+        updatePayload.designationFee = payload.designationFee
+      }
+      if (payload.transportationFee !== undefined) {
+        updatePayload.transportationFee = payload.transportationFee
+      }
+      if (payload.additionalFee !== undefined) {
+        updatePayload.additionalFee = payload.additionalFee
+      }
+      if (payload.paymentMethod !== undefined) {
+        updatePayload.paymentMethod = payload.paymentMethod
+      }
+      if (payload.marketingChannel !== undefined) {
+        updatePayload.marketingChannel = payload.marketingChannel
+      }
+      if (payload.areaId !== undefined) {
+        updatePayload.areaId = payload.areaId
+      }
+      if (payload.stationId !== undefined) {
+        updatePayload.stationId = payload.stationId
+      }
+      if (payload.locationMemo !== undefined) {
+        updatePayload.locationMemo = payload.locationMemo
+      }
+      if (payload.price !== undefined) {
+        updatePayload.price = payload.price
       }
 
       await reservationRepository.update(reservationId, updatePayload)

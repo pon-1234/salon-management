@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -34,7 +34,12 @@ import {
   Clock,
   Loader2,
   AlertCircle,
+  ChevronDown,
+  CheckCircle2,
+  Ban,
+  ClipboardList,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { differenceInMinutes, addMinutes, format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { ModificationHistoryTable } from '@/components/reservation/modification-history-table'
@@ -52,6 +57,17 @@ import {
 import { getDesignationFees } from '@/lib/designation/data'
 import type { DesignationFee } from '@/lib/designation/types'
 import { hasPermission } from '@/lib/auth/permissions'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Separator } from '@/components/ui/separator'
+import { MARKETING_CHANNELS, PAYMENT_METHODS, ReservationStatus } from '@/lib/constants'
+import { toast } from '@/hooks/use-toast'
 
 type EditFormState = {
   date: string
@@ -60,6 +76,15 @@ type EditFormState = {
   designationId: string
   storeMemo: string
   notes: string
+  paymentMethod: string
+  marketingChannel: string
+  transportationFee: number
+  additionalFee: number
+  designationFee: number
+  price: number
+  areaId: string | null
+  stationId: string | null
+  locationMemo: string
 }
 
 const statusColorMap: Record<string, string> = {
@@ -78,6 +103,100 @@ const statusTextMap: Record<string, string> = {
   cancelled: 'キャンセル',
   modifiable: '修正可能',
   completed: '完了',
+}
+
+const STATUS_OPTIONS: Array<{
+  value: ReservationStatus
+  label: string
+  description: string
+}> = [
+  {
+    value: 'pending',
+    label: '仮予約',
+    description: '顧客からの問い合わせ段階。スケジュールを押さえておきたい場合に使用します。',
+  },
+  {
+    value: 'confirmed',
+    label: '確定',
+    description: '顧客・スタッフ双方の確認が取れた状態です。',
+  },
+  {
+    value: 'modifiable',
+    label: '修正待ち',
+    description: '詳細調整が残っている予約に設定してください。完了後に再度ステータスを更新します。',
+  },
+  {
+    value: 'cancelled',
+    label: 'キャンセル',
+    description: '顧客キャンセル・トラブル等で予約を取り消す場合に使用します。',
+  },
+  {
+    value: 'completed',
+    label: '対応済み',
+    description: '施術が完了しレポート作成などのフォローのみ残っている際に使用します。',
+  },
+]
+
+type QuickAction = {
+  target: ReservationStatus | 'completed'
+  label: string
+  description: string
+  icon: LucideIcon
+  isVisible: (status: ReservationStatus | 'completed') => boolean
+}
+
+const QUICK_ACTIONS: QuickAction[] = [
+  {
+    target: 'confirmed',
+    label: '予約を確定',
+    description: '顧客と確定したらこちらを選択しておくと管理しやすくなります。',
+    icon: CheckCircle2,
+    isVisible: (status) => status === 'pending' || status === 'modifiable',
+  },
+  {
+    target: 'modifiable',
+    label: '詳細調整中にする',
+    description: '追加ヒアリングや調整が必要な場合に使用します。',
+    icon: ClipboardList,
+    isVisible: (status) => status === 'pending' || status === 'confirmed',
+  },
+  {
+    target: 'cancelled',
+    label: 'キャンセルにする',
+    description: '顧客都合・スタッフ都合などでキャンセルする際に設定します。',
+    icon: Ban,
+    isVisible: (status) => status !== 'cancelled',
+  },
+  {
+    target: 'completed',
+    label: '対応済みにする',
+    description: '来店・施術が完了したらステータスを完了に更新します。',
+    icon: Check,
+    isVisible: (status) => status === 'confirmed' || status === 'modifiable',
+  },
+]
+
+const STATUS_META = STATUS_OPTIONS.reduce<Record<string, { label: string; description: string }>>(
+  (acc, item) => {
+    acc[item.value] = { label: item.label, description: item.description }
+    return acc
+  },
+  {}
+)
+
+function StatusBadge({ status }: { status: ReservationStatus | 'completed' }) {
+  const color = statusColorMap[status] ?? 'bg-gray-500'
+  const label = statusTextMap[status] ?? status
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold text-white shadow-sm',
+        color
+      )}
+    >
+      {label}
+    </span>
+  )
 }
 
 function formatRemainingTime(totalSeconds: number) {
@@ -108,6 +227,10 @@ export function ReservationDialog({
 }: ReservationDialogProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'history'>('overview')
   const [isEditMode, setIsEditMode] = useState(false)
+  const [status, setStatus] = useState<ReservationStatus | 'completed'>(
+    ((reservation?.status as ReservationStatus) ?? 'pending') as ReservationStatus
+  )
+  const [statusUpdating, setStatusUpdating] = useState(false)
   const [formState, setFormState] = useState<EditFormState>({
     date: '',
     startTime: '',
@@ -115,6 +238,15 @@ export function ReservationDialog({
     designationId: '',
     storeMemo: '',
     notes: '',
+    paymentMethod: '現金',
+    marketingChannel: 'WEB',
+    transportationFee: 0,
+    additionalFee: 0,
+    designationFee: 0,
+    price: 0,
+    areaId: null,
+    stationId: null,
+    locationMemo: '',
   })
   const [castOptions, setCastOptions] = useState<Cast[]>(casts ?? [])
   const [isLoadingCasts, setIsLoadingCasts] = useState(false)
@@ -162,6 +294,12 @@ export function ReservationDialog({
     }
   }, [])
 
+  useEffect(() => {
+    if (reservation?.status) {
+      setStatus(reservation.status as ReservationStatus)
+    }
+  }, [reservation?.status])
+
   const reservationDesignation = useMemo(() => {
     if (!reservation) return undefined
     return (
@@ -189,6 +327,12 @@ export function ReservationDialog({
   }, [designationOptions, reservationDesignation])
 
   useEffect(() => {
+    if (reservation?.status) {
+      setStatus(reservation.status as ReservationStatus)
+    }
+  }, [reservation?.status])
+
+  useEffect(() => {
     if (reservation) {
       setFormState({
         date: format(reservation.startTime, 'yyyy-MM-dd'),
@@ -197,10 +341,67 @@ export function ReservationDialog({
         designationId: reservationDesignation?.id || '',
         storeMemo: reservation.storeMemo || '',
         notes: reservation.notes || '',
+        paymentMethod: reservation.paymentMethod || '現金',
+        marketingChannel: reservation.marketingChannel || 'WEB',
+        transportationFee: reservation.transportationFee ?? 0,
+        additionalFee: reservation.additionalFee ?? 0,
+        designationFee: reservation.designationFee ?? 0,
+        price: reservation.totalPayment ?? reservation.price ?? 0,
+        areaId: reservation.areaId ?? null,
+        stationId: reservation.stationId ?? null,
+        locationMemo: reservation.locationMemo ?? '',
       })
       setValidationError(null)
     }
   }, [reservation, reservationDesignation])
+
+  const handleStatusChange = useCallback(
+    async (nextStatus: ReservationStatus | 'completed') => {
+      if (!reservation) {
+        return
+      }
+      if (!onSave || status === nextStatus) {
+        setStatus(nextStatus)
+        return
+      }
+
+      const effectiveCastId =
+        formState.castId || reservation.staffId || (reservation as any).castId || ''
+      if (!effectiveCastId) {
+        toast({
+          title: '担当キャスト未設定',
+          description: 'ステータスを変更する前に担当キャストを選択してください。',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      setStatusUpdating(true)
+      try {
+        await onSave(reservation.id, {
+          castId: effectiveCastId,
+          startTime: reservation.startTime,
+          endTime: reservation.endTime,
+          status: nextStatus as ReservationStatus,
+        })
+        setStatus(nextStatus)
+        toast({
+          title: 'ステータスを更新しました',
+          description: STATUS_META[nextStatus]?.label ?? nextStatus,
+        })
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'ステータスの更新に失敗しました。'
+        toast({
+          title: '更新に失敗しました',
+          description: message,
+          variant: 'destructive',
+        })
+      } finally {
+        setStatusUpdating(false)
+      }
+    },
+    [formState.castId, onSave, reservation, status]
+  )
 
   useEffect(() => {
     if (casts && casts.length > 0) {
@@ -270,6 +471,8 @@ export function ReservationDialog({
     [castOptions, activeCastId]
   )
 
+  const paymentMethodOptions = useMemo(() => Object.values(PAYMENT_METHODS), [])
+
   const computedEndTime = useMemo(() => {
     if (!formState.date || !formState.startTime) return ''
     const start = new Date(`${formState.date}T${formState.startTime}:00`)
@@ -285,12 +488,18 @@ export function ReservationDialog({
       .map(([key]) => key)
   }, [reservation?.options])
 
+  const statusMeta = STATUS_META[status] ?? {
+    label: statusTextMap[status] ?? status,
+    description: '',
+  }
+  const visibleQuickActions = useMemo(
+    () => QUICK_ACTIONS.filter((action) => action.isVisible(status)),
+    [status]
+  )
+
   if (!reservation) {
     return null
   }
-
-  const statusColor = statusColorMap[reservation.status || ''] || 'bg-gray-500'
-  const statusLabel = reservation.bookingStatus || statusTextMap[reservation.status || ''] || '予約'
 
   const rawDesignationId =
     formState.designationId || reservationDesignation?.id || ''
@@ -317,6 +526,15 @@ export function ReservationDialog({
       designationId: reservationDesignation?.id || '',
       storeMemo: reservation.storeMemo || '',
       notes: reservation.notes || '',
+      paymentMethod: reservation.paymentMethod || '現金',
+      marketingChannel: reservation.marketingChannel || 'WEB',
+      transportationFee: reservation.transportationFee ?? 0,
+      additionalFee: reservation.additionalFee ?? 0,
+      designationFee: reservation.designationFee ?? 0,
+      price: reservation.totalPayment ?? reservation.price ?? 0,
+      areaId: reservation.areaId ?? null,
+      stationId: reservation.stationId ?? null,
+      locationMemo: reservation.locationMemo ?? '',
     })
   }
 
@@ -380,7 +598,15 @@ export function ReservationDialog({
         storeMemo: formState.storeMemo,
         notes: formState.notes,
         designationType: designationForSave?.name,
-        designationFee: designationForSave?.price,
+        designationFee: designationForSave?.price ?? formState.designationFee,
+        transportationFee: formState.transportationFee,
+        additionalFee: formState.additionalFee,
+        paymentMethod: formState.paymentMethod,
+        marketingChannel: formState.marketingChannel,
+        areaId: formState.areaId ?? null,
+        stationId: formState.stationId ?? null,
+        locationMemo: formState.locationMemo,
+        price: formState.price,
       })
       setIsEditMode(false)
     } catch (error) {
@@ -408,68 +634,130 @@ export function ReservationDialog({
           予約の詳細情報を表示し、必要に応じて編集できます。
         </DialogDescription>
 
-        <div className="sticky top-0 z-20 flex items-start justify-between border-b bg-white p-4">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className={cn('h-3 w-3 rounded-full', statusColor)} />
-              <h2 className="text-xl font-semibold">{reservation.customerName} 様</h2>
-              <Badge variant="outline" className="text-xs">
-                {statusLabel}
-              </Badge>
-              {reservation.customerType && (
-                <Badge variant="secondary" className="text-xs">
-                  {reservation.customerType}
-                </Badge>
+        <div className="sticky top-0 z-20 border-b bg-white p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-xl font-semibold">{reservation.customerName} 様</h2>
+                <StatusBadge status={status} />
+                {reservation.customerType && (
+                  <Badge variant="secondary" className="text-xs">
+                    {reservation.customerType}
+                  </Badge>
+                )}
+              </div>
+              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                <span>予約ID: {reservation.id}</span>
+                {remainingTime !== null && (
+                  <span className="inline-flex items-center gap-1 text-orange-600">
+                    <AlertCircle className="h-3 w-3" />
+                    修正可能残り時間: {formatRemainingTime(remainingTime)}
+                  </span>
+                )}
+              </div>
+              {statusMeta.description && (
+                <p className="mt-1 text-xs text-muted-foreground">{statusMeta.description}</p>
               )}
             </div>
-            {remainingTime !== null && (
-              <p className="mt-2 flex items-center gap-1 text-xs text-orange-600">
-                <AlertCircle className="h-3 w-3" />
-                修正可能残り時間: {formatRemainingTime(remainingTime)}
-              </p>
-            )}
-            <p className="mt-1 text-xs text-muted-foreground">
-              予約ID: {reservation.id}
-            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={statusUpdating || !onSave}
+                    className="flex items-center gap-2"
+                  >
+                    ステータス変更
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-72">
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">
+                    ステータスを選択
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {STATUS_OPTIONS.map((option) => (
+                    <DropdownMenuItem
+                      key={option.value}
+                      disabled={statusUpdating || status === option.value}
+                      onSelect={() => handleStatusChange(option.value as ReservationStatus)}
+                      className="flex flex-col items-start gap-1 py-2"
+                    >
+                      <div className="flex w-full items-center justify-between">
+                        <span className="text-sm font-medium">{option.label}</span>
+                        {status === option.value && <Check className="h-4 w-4 text-primary" />}
+                      </div>
+                      <p className="text-xs leading-snug text-muted-foreground">
+                        {option.description}
+                      </p>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {isEditMode ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancelEdit}
+                    disabled={isSaving}
+                  >
+                    キャンセル
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                    onClick={handleSaveChanges}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Check className="mr-2 h-4 w-4" />
+                    )}
+                    保存
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" size="sm" onClick={handleEnterEditMode}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    編集
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">閉じる</span>
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {isEditMode ? (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCancelEdit}
-                  disabled={isSaving}
-                >
-                  キャンセル
-                </Button>
-                <Button
-                  size="sm"
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                  onClick={handleSaveChanges}
-                  disabled={isSaving}
-                >
-                  {isSaving ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Check className="mr-2 h-4 w-4" />
-                  )}
-                  保存
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="outline" size="sm" onClick={handleEnterEditMode}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  編集
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
-                  <X className="h-4 w-4" />
-                  <span className="sr-only">閉じる</span>
-                </Button>
-              </>
-            )}
-          </div>
+          {visibleQuickActions.length > 0 && (
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {visibleQuickActions.map((action) => {
+                const Icon = action.icon
+                return (
+                  <div
+                    key={action.target}
+                    className="flex flex-col gap-1 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/40 p-3"
+                  >
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="justify-start gap-2"
+                      disabled={statusUpdating || isEditMode || !onSave}
+                      onClick={() => handleStatusChange(action.target)}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {action.label}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">{action.description}</p>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -573,40 +861,130 @@ export function ReservationDialog({
                   <CardTitle className="text-sm font-medium">料金</CardTitle>
                   <CreditCard className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
-                <CardContent className="space-y-2 text-sm">
+                <CardContent className="space-y-3 text-sm">
                   {!canViewFinancialDetails ? (
-                    <p className="text-sm text-muted-foreground">
-                      売上情報は表示できません。
-                    </p>
-                  ) : (
-                    <>
-                      {isEditMode && (
-                        <div className="space-y-2">
-                          <Label htmlFor="reservation-designation">指名設定</Label>
-                          <Select
-                            value={designationSelectValue}
-                            onValueChange={(value) =>
+                    <p className="text-sm text-muted-foreground">売上情報は表示できません。</p>
+                  ) : isEditMode ? (
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="reservation-designation">指名設定</Label>
+                        <Select
+                          value={designationSelectValue}
+                          onValueChange={(value) => {
+                            const fee =
+                              value === 'none'
+                                ? undefined
+                                : selectableDesignationOptions.find((item) => item.id === value)
+                            setFormState((prev) => ({
+                              ...prev,
+                              designationId: value === 'none' ? '' : value,
+                              designationFee: fee?.price ?? 0,
+                            }))
+                          }}
+                        >
+                          <SelectTrigger id="reservation-designation">
+                            <SelectValue placeholder="指名を選択" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">指名なし</SelectItem>
+                            {selectableDesignationOptions.map((fee) => (
+                              <SelectItem key={fee.id} value={fee.id}>
+                                {fee.name}（¥{fee.price.toLocaleString()}）
+                                {!fee.isActive && ' (非表示)'}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="reservation-total">総額</Label>
+                        <Input
+                          id="reservation-total"
+                          type="number"
+                          value={formState.price}
+                          onChange={(event) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              price: Number(event.target.value || 0),
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <Label htmlFor="reservation-transportation">交通費</Label>
+                          <Input
+                            id="reservation-transportation"
+                            type="number"
+                            value={formState.transportationFee}
+                            onChange={(event) =>
                               setFormState((prev) => ({
                                 ...prev,
-                                designationId: value === 'none' ? '' : value,
+                                transportationFee: Number(event.target.value || 0),
                               }))
                             }
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="reservation-additional">追加料金</Label>
+                          <Input
+                            id="reservation-additional"
+                            type="number"
+                            value={formState.additionalFee}
+                            onChange={(event) =>
+                              setFormState((prev) => ({
+                                ...prev,
+                                additionalFee: Number(event.target.value || 0),
+                              }))
+                            }
+                          />
+                        </div>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <Label htmlFor="reservation-payment">支払い方法</Label>
+                          <Select
+                            value={formState.paymentMethod}
+                            onValueChange={(value) =>
+                              setFormState((prev) => ({ ...prev, paymentMethod: value }))
+                            }
                           >
-                            <SelectTrigger id="reservation-designation">
-                              <SelectValue placeholder="指名を選択" />
+                            <SelectTrigger id="reservation-payment">
+                              <SelectValue placeholder="支払い方法を選択" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="none">指名なし</SelectItem>
-                              {selectableDesignationOptions.map((fee) => (
-                                <SelectItem key={fee.id} value={fee.id}>
-                                  {fee.name}（¥{fee.price.toLocaleString()}）
-                                  {!fee.isActive && ' (非表示)'}
+                              {paymentMethodOptions.map((method) => (
+                                <SelectItem key={method} value={method}>
+                                  {method}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </div>
-                      )}
+                        <div>
+                          <Label htmlFor="reservation-channel">集客チャネル</Label>
+                          <Select
+                            value={formState.marketingChannel}
+                            onValueChange={(value) =>
+                              setFormState((prev) => ({ ...prev, marketingChannel: value }))
+                            }
+                          >
+                            <SelectTrigger id="reservation-channel">
+                              <SelectValue placeholder="チャネルを選択" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {MARKETING_CHANNELS.map((channel) => (
+                                <SelectItem key={channel} value={channel}>
+                                  {channel}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
                       <div className="flex items-center justify-between font-medium">
                         <span>総額</span>
                         <span>{formatCurrency(reservation.totalPayment)}</span>
@@ -628,8 +1006,8 @@ export function ReservationDialog({
                         <span>{reservation.paymentMethod || '未設定'}</span>
                       </div>
                       <div className="flex items-center justify-between text-muted-foreground">
-                        <span>割引</span>
-                        <span>{reservation.discount || 'なし'}</span>
+                        <span>集客チャネル</span>
+                        <span>{reservation.marketingChannel || '未設定'}</span>
                       </div>
                       <div className="flex items-center justify-between text-muted-foreground">
                         <span>交通費</span>
@@ -639,6 +1017,7 @@ export function ReservationDialog({
                         <span>追加料金</span>
                         <span>{formatCurrency(reservation.additionalFee)}</span>
                       </div>
+                      <Separator className="my-2" />
                       <div className="flex items-center justify-between text-muted-foreground">
                         <span>店舗取り分</span>
                         <span>{formatCurrency(reservation.storeRevenue)}</span>
@@ -647,7 +1026,7 @@ export function ReservationDialog({
                         <span>キャスト取り分</span>
                         <span>{formatCurrency(reservation.staffRevenue)}</span>
                       </div>
-                    </>
+                    </div>
                   )}
                 </CardContent>
               </Card>

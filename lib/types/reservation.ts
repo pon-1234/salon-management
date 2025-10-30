@@ -1,4 +1,5 @@
 import { BaseEntity } from '../shared'
+import { ReservationStatus } from '../constants'
 
 export interface Reservation extends BaseEntity {
   customerId: string
@@ -6,7 +7,7 @@ export interface Reservation extends BaseEntity {
   serviceId: string
   startTime: Date
   endTime: Date
-  status: 'confirmed' | 'pending' | 'cancelled' | 'modifiable'
+  status: ReservationStatus
   price: number
   notes?: string
   modifiableUntil?: Date
@@ -87,6 +88,7 @@ export interface ReservationUpdatePayload {
   startTime: Date
   endTime: Date
   castId: string
+  status?: ReservationStatus
   notes?: string
   storeMemo?: string
   price?: number

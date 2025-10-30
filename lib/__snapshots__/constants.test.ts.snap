@@ -51,6 +51,7 @@ exports[`Constants > should match the snapshot for all exported constants 1`] = 
   "RESERVATION_STATUS": {
     "CANCELLED": "cancelled",
     "CONFIRMED": "confirmed",
+    "COMPLETED": "completed",
     "MODIFIABLE": "modifiable",
     "PENDING": "pending",
   },

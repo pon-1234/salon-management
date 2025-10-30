@@ -11,6 +11,7 @@ export const RESERVATION_STATUS = {
   PENDING: 'pending',
   CANCELLED: 'cancelled',
   MODIFIABLE: 'modifiable',
+  COMPLETED: 'completed',
 } as const
 
 export const CUSTOMER_TYPES = {
