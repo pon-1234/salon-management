@@ -76,7 +76,7 @@ type EditFormState = {
   date: string
   startTime: string
   castId: string
-  courseId: string
+  courseId: string | null
   designationId: string
   storeMemo: string
   notes: string
@@ -202,7 +202,7 @@ export function ReservationDialog({
     date: '',
     startTime: '',
     castId: '',
-    courseId: '',
+    courseId: null,
     designationId: '',
     storeMemo: '',
     notes: '',
@@ -244,6 +244,7 @@ export function ReservationDialog({
   const [modificationAlerts, setModificationAlerts] = useState<ModificationAlert[]>([])
   const [isHistoryLoading, setIsHistoryLoading] = useState(false)
   const [historyReloadToken, setHistoryReloadToken] = useState(0)
+  const UNASSIGNED_VALUE = '__unassigned__'
 
   const reservationDurationMinutes = useMemo(() => {
     if (!reservation) return 0
@@ -611,7 +612,7 @@ useEffect(() => {
       date: format(reservation.startTime, 'yyyy-MM-dd'),
       startTime: format(reservation.startTime, 'HH:mm'),
       castId: reservation.staffId || '',
-      courseId: reservation.serviceId || '',
+      courseId: reservation.serviceId || null,
       designationId: reservationDesignation?.id || '',
       storeMemo: reservation.storeMemo || '',
       notes: reservation.notes || '',
@@ -689,7 +690,7 @@ useEffect(() => {
       date: format(reservation.startTime, 'yyyy-MM-dd'),
       startTime: format(reservation.startTime, 'HH:mm'),
       castId: reservation.staffId || '',
-      courseId: reservation.serviceId || '',
+      courseId: reservation.serviceId || null,
       designationId: reservationDesignation?.id || '',
       storeMemo: reservation.storeMemo || '',
       notes: reservation.notes || '',
@@ -760,7 +761,7 @@ useEffect(() => {
     setIsSaving(true)
 
     try {
-      const courseIdToSave = formState.courseId || reservation.serviceId || ''
+      const courseIdToSave = formState.courseId ?? reservation.serviceId ?? ''
       const updatePayload: ReservationUpdatePayload = {
         startTime: start,
         endTime: end,
@@ -1005,12 +1006,13 @@ useEffect(() => {
                       <div>
                         <Label htmlFor="reservation-area">対応エリア</Label>
                         <Select
-                          value={formState.areaId ?? ''}
+                          value={formState.areaId ?? UNASSIGNED_VALUE}
                           onValueChange={(value) =>
                             setFormState((prev) => ({
                               ...prev,
-                              areaId: value === '' ? null : value,
-                              stationId: value === '' ? null : prev.stationId,
+                              areaId: value === UNASSIGNED_VALUE ? null : value,
+                              stationId:
+                                value === UNASSIGNED_VALUE ? null : prev.stationId,
                             }))
                           }
                         >
@@ -1022,7 +1024,7 @@ useEffect(() => {
                             />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">未設定</SelectItem>
+                            <SelectItem value={UNASSIGNED_VALUE}>未設定</SelectItem>
                             {areas.map((area) => (
                               <SelectItem key={area.id} value={area.id}>
                                 {area.name}
@@ -1034,11 +1036,11 @@ useEffect(() => {
                       <div>
                         <Label htmlFor="reservation-station">最寄り駅</Label>
                         <Select
-                          value={formState.stationId ?? ''}
+                          value={formState.stationId ?? UNASSIGNED_VALUE}
                           onValueChange={(value) =>
                             setFormState((prev) => ({
                               ...prev,
-                              stationId: value === '' ? null : value,
+                              stationId: value === UNASSIGNED_VALUE ? null : value,
                             }))
                           }
                           disabled={filteredStations.length === 0}
@@ -1055,7 +1057,7 @@ useEffect(() => {
                             />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">未設定</SelectItem>
+                            <SelectItem value={UNASSIGNED_VALUE}>未設定</SelectItem>
                             {filteredStations.map((station) => (
                               <SelectItem key={station.id} value={station.id}>
                                 {station.name}
@@ -1400,11 +1402,11 @@ useEffect(() => {
                   <div className="text-muted-foreground">コース</div>
                   {isEditMode ? (
                     <Select
-                      value={formState.courseId}
+                      value={formState.courseId ?? UNASSIGNED_VALUE}
                       onValueChange={(value) =>
                         setFormState((prev) => ({
                           ...prev,
-                          courseId: value,
+                          courseId: value === UNASSIGNED_VALUE ? null : value,
                         }))
                       }
                     >
@@ -1416,7 +1418,7 @@ useEffect(() => {
                         />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">未設定</SelectItem>
+                        <SelectItem value={UNASSIGNED_VALUE}>未設定</SelectItem>
                         {courseOptions.length === 0 ? (
                           <SelectItem value="__empty" disabled>
                             コースが登録されていません
