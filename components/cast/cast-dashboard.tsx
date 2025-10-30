@@ -17,7 +17,6 @@ import {
   Mail,
   Settings,
   Edit,
-  Plus,
   DollarSign,
 } from 'lucide-react'
 import { ReservationDialog } from '@/components/reservation/reservation-dialog'
@@ -31,8 +30,6 @@ import {
   WeeklySchedule,
   WorkStatus,
 } from '@/components/cast/schedule-edit-dialog'
-import { useRouter } from 'next/navigation'
-
 interface CastDashboardProps {
   cast: Cast
   onUpdate: (data: Partial<Cast>) => void
@@ -60,7 +57,6 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
     [weekStart]
   )
   const { toast } = useToast()
-  const router = useRouter()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -561,20 +557,10 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
         {/* 予約状況 */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <CalendarDays className="h-5 w-5" />
-                予約状況
-              </CardTitle>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => router.push(`/admin/reservation?castId=${cast.id}`)}
-              >
-                <Plus className="mr-1 h-4 w-4" />
-                新規予約
-              </Button>
-            </div>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarDays className="h-5 w-5" />
+              予約状況
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
