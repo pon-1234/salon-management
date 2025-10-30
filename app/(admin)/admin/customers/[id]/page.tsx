@@ -184,7 +184,7 @@ export default function CustomerProfile() {
     }
 
     fetchCustomerData()
-  }, [id, form])
+  }, [id, form, router])
 
   const handleBooking = () => {
     router.push(`/admin/reservation?customerId=${id}`)
@@ -323,7 +323,7 @@ export default function CustomerProfile() {
       location: 'アパホテル',
       locationType: 'ホテル',
       specificLocation: '502号室',
-      staff: `スタッフ${reservation.staffId}`,
+      staff: reservation.staffName || '担当キャスト未設定',
       marketingChannel: 'WEB',
       date: format(reservation.startTime, 'yyyy-MM-dd'),
       time: format(reservation.startTime, 'HH:mm'),

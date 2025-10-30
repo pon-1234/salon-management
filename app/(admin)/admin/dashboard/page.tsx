@@ -276,7 +276,7 @@ export default function DashboardPage() {
       location: 'アパホテル',
       locationType: 'ホテル',
       specificLocation: '502号室',
-      staff: reservation.staffName || `スタッフ${reservation.staffId}`,
+      staff: reservation.staffName || '担当キャスト未設定',
       marketingChannel: 'WEB',
       date: format(reservation.startTime, 'yyyy-MM-dd'),
       time: format(reservation.startTime, 'HH:mm'),
@@ -400,9 +400,9 @@ export default function DashboardPage() {
     }
   }, [filteredReservations, previousPeriodReservations])
 
-  // 売上推移データの生成
-  const generateSalesData = () => {
-    const last7Days = Array.from({ length: 7 }, (_, i) => {
+  // 売上推移データ
+  const salesData = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => {
       const date = subDays(new Date(), 6 - i)
       const dayReservations = reservations.filter(
         (r) => format(r.startTime, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
@@ -413,11 +413,7 @@ export default function DashboardPage() {
         count: dayReservations.length,
       }
     })
-    return last7Days
-  }
-
-  // 時間帯別予約データ
-  const salesData = useMemo(() => generateSalesData(), [reservations])
+  }, [reservations])
   const hourlyData = useMemo(() => {
     const hourly = Array.from({ length: 24 }, (_, hour) => ({
       hour: `${hour}時`,
@@ -788,7 +784,7 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <p className="font-medium">キャスト管理</p>
-                  <p className="text-sm text-muted-foreground">スタッフ一覧</p>
+                  <p className="text-sm text-muted-foreground">担当キャスト一覧</p>
                 </div>
               </div>
               <ArrowUpRight className="h-5 w-5 text-muted-foreground" />
@@ -822,7 +818,7 @@ export default function DashboardPage() {
                 (reservation.customerId ? `顧客${reservation.customerId.slice(0, 8)}` : '顧客')
               const staffDisplayName =
                 reservation.staffName ??
-                (reservation.staffId ? `スタッフ${reservation.staffId.slice(0, 8)}` : 'スタッフ')
+                (reservation.staffId ? `担当キャスト${reservation.staffId.slice(0, 8)}` : '担当キャスト')
 
               return (
                 <div

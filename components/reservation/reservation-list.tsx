@@ -51,7 +51,7 @@ export function ReservationList({
               <TableHead className="w-[80px] whitespace-nowrap">NO.</TableHead>
               <TableHead className="w-[140px] whitespace-nowrap">お名前</TableHead>
               <TableHead className="whitespace-nowrap">日時指定</TableHead>
-              <TableHead className="whitespace-nowrap">スタッフ</TableHead>
+              <TableHead className="whitespace-nowrap">担当キャスト</TableHead>
               <TableHead className="whitespace-nowrap">コース</TableHead>
               <TableHead className="w-[80px] whitespace-nowrap">IN</TableHead>
               <TableHead className="w-[80px] whitespace-nowrap">OUT</TableHead>
@@ -87,7 +87,7 @@ export function ReservationList({
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <span>{reservation.staff}</span>
+                    <span>{reservation.staff || '担当キャスト未設定'}</span>
                   </div>
                 </TableCell>
                 <TableCell>{`${reservation.course}`}</TableCell>

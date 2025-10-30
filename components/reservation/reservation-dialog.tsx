@@ -38,6 +38,7 @@ import {
   CheckCircle2,
   Ban,
   ClipboardList,
+  Info,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { differenceInMinutes, addMinutes, format } from 'date-fns'
@@ -1228,7 +1229,13 @@ export function ReservationDialog({
             </Card>
           </TabsContent>
 
-          <TabsContent value="history" className="p-4">
+          <TabsContent value="history" className="p-4 space-y-4">
+            <Alert variant="default" className="bg-muted/40">
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                ステータス・時間帯・料金などの更新は自動で記録されます。スタッフ間の共有メモや監査対応の証跡として活用してください。
+              </AlertDescription>
+            </Alert>
             <ModificationHistoryTable
               modifications={modificationHistory}
               alerts={modificationAlerts}

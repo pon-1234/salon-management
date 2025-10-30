@@ -5,8 +5,8 @@ export interface ModificationHistory {
   userName: string
   fieldName: string
   fieldDisplayName: string
-  oldValue: any
-  newValue: any
+  oldValue: string | number | null
+  newValue: string | number | null
   reason: string
   ipAddress: string
   userAgent: string

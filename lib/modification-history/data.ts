@@ -23,10 +23,10 @@ const modificationHistoryData: ModificationHistory[] = [
     userId: 'user_001',
     userName: '管理者',
     fieldName: 'staff',
-    fieldDisplayName: 'スタッフ',
-    oldValue: 'スタッフA',
-    newValue: 'スタッフB',
-    reason: 'スタッフの都合により変更',
+    fieldDisplayName: '担当キャスト',
+    oldValue: '担当キャストA',
+    newValue: '担当キャストB',
+    reason: '担当キャストの都合により変更',
     ipAddress: '192.168.1.100',
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
     sessionId: 'session_12345',
@@ -47,18 +47,24 @@ const modificationAlertsData: ModificationAlert[] = [
     id: 'alert_2',
     reservationId: '1',
     type: 'info',
-    message: 'スタッフが変更されました',
+    message: '担当キャストが変更されました',
     timestamp: new Date('2024-01-15T11:00:00Z'),
     isRead: true,
   },
 ]
 
 export function getModificationHistory(reservationId: string): ModificationHistory[] {
-  return modificationHistoryData.filter((history) => history.reservationId === reservationId)
+  return modificationHistoryData
+    .filter((history) => history.reservationId === reservationId)
+    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+    .map((entry) => ({ ...entry }))
 }
 
 export function getModificationAlerts(reservationId: string): ModificationAlert[] {
-  return modificationAlertsData.filter((alert) => alert.reservationId === reservationId)
+  return modificationAlertsData
+    .filter((alert) => alert.reservationId === reservationId)
+    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+    .map((entry) => ({ ...entry }))
 }
 
 let modificationCounter = 0
@@ -70,8 +76,8 @@ export function recordModification(
   userName: string,
   fieldName: string,
   fieldDisplayName: string,
-  oldValue: any,
-  newValue: any,
+  oldValue: string | number | null,
+  newValue: string | number | null,
   reason: string,
   ipAddress: string,
   userAgent: string,

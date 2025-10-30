@@ -35,8 +35,14 @@ export function mapReservationToReservationData(
   const start = new Date(reservation.startTime)
   const end = new Date(reservation.endTime)
 
-  const staffId = reservation.staffId || (reservation as any).castId || ''
-  const cast = casts.find((member) => member.id === staffId)
+  const rawCast = (reservation as any).cast
+  const castId =
+    (reservation as any).castId ||
+    reservation.castId ||
+    reservation.staffId ||
+    (rawCast && rawCast.id) ||
+    ''
+  const cast = casts.find((member) => member.id === castId)
 
   const serviceId = reservation.serviceId || (reservation as any).courseId || ''
   const course = getCourseById(serviceId)
@@ -45,7 +51,11 @@ export function mapReservationToReservationData(
     customers.find((entry) => entry.id === reservation.customerId) || (reservation as any).customer
 
   const customerName = reservation.customerName || customer?.name || `顧客${reservation.customerId}`
-  const staffName = reservation.staffName || cast?.name || `スタッフ${staffId || '-'}`.trim()
+  const staffName =
+    reservation.staffName ||
+    cast?.name ||
+    (rawCast && rawCast.name) ||
+    '担当キャスト未設定'
 
   const totalPayment = reservation.price ?? course?.price ?? 0
   const storeRevenue = reservation.storeRevenue ?? Math.floor(totalPayment * 0.6)
@@ -84,7 +94,7 @@ export function mapReservationToReservationData(
     locationType: (reservation as any).locationType || '未設定',
     specificLocation: reservation.locationMemo || (reservation as any).specificLocation || '',
     staff: staffName,
-    staffId,
+    staffId: castId,
     marketingChannel: reservation.marketingChannel || (reservation as any).marketingChannel || '未設定',
     date: format(start, 'yyyy-MM-dd'),
     time: format(start, 'HH:mm'),
