@@ -151,6 +151,45 @@ const STATUS_META = STATUS_OPTIONS.reduce<Record<string, { label: string; descri
   {}
 )
 
+function toNumber(value: unknown, fallback = 0): number {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.replace(/[^\d.-]/g, '')
+    const parsed = Number(normalized)
+    if (Number.isFinite(parsed)) {
+      return parsed
+    }
+  }
+
+  return fallback
+}
+
+function toNullableNumber(value: unknown): number | null {
+  const parsed = toNumber(value, Number.NaN)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function formatMinutes(value: number | null | undefined): string {
+  if (!Number.isFinite(value ?? Number.NaN) || !value || value <= 0) {
+    return '0分'
+  }
+
+  const wholeMinutes = Math.round(value)
+  const hours = Math.floor(wholeMinutes / 60)
+  const minutes = wholeMinutes % 60
+
+  if (hours > 0 && minutes > 0) {
+    return `${hours}時間${minutes}分`
+  }
+  if (hours > 0) {
+    return `${hours}時間`
+  }
+  return `${minutes}分`
+}
+
 function StatusBadge({ status }: { status: ReservationStatus | 'completed' }) {
   const color = statusColorMap[status] ?? 'bg-gray-500'
   const label = statusTextMap[status] ?? status
@@ -317,12 +356,12 @@ export function ReservationDialog({
   const courseOptions = useMemo(
     () =>
       (coursePrices.length > 0 ? coursePrices : courses).map((course: any) => ({
-        id: course.id,
+        id: String(course.id),
         name: course.name,
-        duration: course.duration ?? 0,
-        price: course.price ?? 0,
-        storeShare: course.storeShare ?? null,
-        castShare: course.castShare ?? null,
+        duration: toNumber(course.duration, 0),
+        price: toNumber(course.price, 0),
+        storeShare: toNullableNumber(course.storeShare),
+        castShare: toNullableNumber(course.castShare),
       })),
     [coursePrices, courses]
   )
@@ -330,12 +369,13 @@ export function ReservationDialog({
   const optionChoices = useMemo(
     () =>
       (optionPrices.length > 0 ? optionPrices : options).map((option: any) => ({
-        id: option.id,
+        id: String(option.id),
         name: option.name,
-        price: option.price ?? 0,
+        price: toNumber(option.price, 0),
+        duration: toNumber(option.duration, 0),
         note: option.note ?? option.description ?? '',
-        storeShare: option.storeShare ?? null,
-        castShare: option.castShare ?? null,
+        storeShare: toNullableNumber(option.storeShare),
+        castShare: toNullableNumber(option.castShare),
       })),
     [optionPrices, options]
   )
@@ -565,10 +605,33 @@ export function ReservationDialog({
 
   const paymentMethodOptions = useMemo(() => Object.values(PAYMENT_METHODS), [])
 
+  const selectedOptionDurationTotal = useMemo(
+    () =>
+      selectedOptionDetails.reduce(
+        (sum, option) => sum + (typeof option.duration === 'number' ? option.duration : 0),
+        0
+      ),
+    [selectedOptionDetails]
+  )
+
   const effectiveDurationMinutes = useMemo(() => {
-    const duration = selectedCourse?.duration ?? 0
-    return duration > 0 ? duration : reservationDurationMinutes
-  }, [selectedCourse, reservationDurationMinutes])
+    const courseDuration = toNumber(selectedCourse?.duration, 0)
+    if (courseDuration > 0) {
+      return courseDuration + selectedOptionDurationTotal
+    }
+
+    const estimatedBase =
+      reservationDurationMinutes > 0
+        ? reservationDurationMinutes - initialOptionDurationTotal
+        : reservationDurationMinutes
+    const normalizedBase = estimatedBase > 0 ? estimatedBase : reservationDurationMinutes
+    return normalizedBase + selectedOptionDurationTotal
+  }, [
+    selectedCourse,
+    selectedOptionDurationTotal,
+    reservationDurationMinutes,
+    initialOptionDurationTotal,
+  ])
 
   const computedEndTime = useMemo(() => {
     if (!formState.date || !formState.startTime) return ''
@@ -601,26 +664,51 @@ export function ReservationDialog({
     )
   }, [initialOptionIdsRaw, optionChoices])
 
-const initialOptionNames = useMemo(() => initialOptionIdsRaw, [initialOptionIdsRaw])
+  const initialOptionDurationTotal = useMemo(() => {
+    if (normalizedInitialOptionIds.length === 0 || optionChoices.length === 0) {
+      return 0
+    }
 
-const displayOptionNames = selectedOptionDetails.length > 0
-  ? selectedOptionDetails.map((option) => option.name)
-  : initialOptionNames
+    return normalizedInitialOptionIds.reduce((sum, optionId) => {
+      const match = optionChoices.find((option) => option.id === optionId)
+      if (!match) {
+        return sum
+      }
+      const duration = typeof match.duration === 'number' ? match.duration : 0
+      return sum + duration
+    }, 0)
+  }, [normalizedInitialOptionIds, optionChoices])
+
+  const initialOptionNames = useMemo(
+    () =>
+      initialOptionIdsRaw.map((key) => {
+        const match = optionChoices.find((option) => option.id === key || option.name === key)
+        return match?.name ?? key
+      }),
+    [initialOptionIdsRaw, optionChoices]
+  )
+
+  const displayOptionNames =
+    selectedOptionDetails.length > 0
+      ? selectedOptionDetails.map((option) => option.name)
+      : initialOptionNames
 
   const originalTotal = useMemo(
-    () => reservation?.totalPayment ?? reservation?.price ?? 0,
+    () => toNumber(reservation?.totalPayment ?? reservation?.price, 0),
     [reservation?.price, reservation?.totalPayment]
   )
 
   const priceBreakdown = useMemo(() => {
-    const basePrice = selectedCourse?.price ?? reservation?.price ?? 0
+    const basePrice = selectedCourse
+      ? toNumber(selectedCourse.price, reservation?.price ?? 0)
+      : toNumber(reservation?.price, 0)
     const optionTotal = selectedOptionDetails.reduce(
-      (sum, option) => sum + (option.price ?? 0),
+      (sum, option) => sum + toNumber(option.price, 0),
       0
     )
-    const transportation = formState.transportationFee ?? 0
-    const additional = formState.additionalFee ?? 0
-    const designation = formState.designationFee ?? 0
+    const transportation = toNumber(formState.transportationFee, 0)
+    const additional = toNumber(formState.additionalFee, 0)
+    const designation = toNumber(formState.designationFee, 0)
     const total = basePrice + optionTotal + transportation + additional + designation
     return {
       basePrice,
@@ -640,6 +728,7 @@ const displayOptionNames = selectedOptionDetails.length > 0
   ])
 
   const priceDelta = priceBreakdown.total - originalTotal
+  const durationDelta = effectiveDurationMinutes - reservationDurationMinutes
 
 useEffect(() => {
   if (reservation) {
@@ -1515,6 +1604,7 @@ useEffect(() => {
                               <span className="flex-1">
                                 <span className="font-medium">{option.name}</span>
                                 <span className="ml-2 text-muted-foreground">
+                                  {option.duration ? `${formatMinutes(option.duration)} / ` : ''}
                                   ¥{option.price.toLocaleString()}
                                 </span>
                                 {option.note && (
@@ -1576,6 +1666,35 @@ useEffect(() => {
                     </div>
                   </div>
 
+                  <div className="space-y-1 pt-2">
+                    <div className="text-muted-foreground">施術時間</div>
+                    <div className="flex items-baseline justify-between gap-4">
+                      <span className="text-lg font-semibold">{formatMinutes(effectiveDurationMinutes)}</span>
+                      {durationDelta !== 0 && (
+                        <span
+                          className={cn(
+                            'text-sm font-semibold',
+                            durationDelta > 0 ? 'text-orange-600' : 'text-emerald-600'
+                          )}
+                        >
+                          {durationDelta > 0 ? '+' : '-'}
+                          {formatMinutes(Math.abs(durationDelta))}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>現在の時間</span>
+                      <span>{formatMinutes(reservationDurationMinutes)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>終了予定</span>
+                      <span>
+                        {computedEndTime ||
+                          (reservation?.endTime ? format(reservation.endTime, 'HH:mm') : '-')}
+                      </span>
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
                     <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                       内訳
@@ -1604,21 +1723,45 @@ useEffect(() => {
                     </dl>
                   </div>
 
-                  {selectedOptionDetails.length > 0 && (
-                    <div className="space-y-1">
-                      <div className="text-xs font-medium text-muted-foreground">
-                        選択オプション ({selectedOptionDetails.length})
-                      </div>
-                      <ul className="space-y-1 text-xs">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
+                      <span>選択オプション</span>
+                      <span>
+                        {selectedOptionDetails.length > 0
+                          ? `${selectedOptionDetails.length}件`
+                          : 'なし'}
+                      </span>
+                    </div>
+                    {selectedOptionDetails.length > 0 ? (
+                      <ul className="divide-y divide-muted/40 overflow-hidden rounded-md border border-muted/40 text-xs">
                         {selectedOptionDetails.map((option) => (
-                          <li key={option.id} className="flex items-center justify-between">
-                            <span>{option.name}</span>
-                            <span>{formatCurrency(option.price ?? 0)}</span>
+                          <li
+                            key={option.id}
+                            className="flex items-center justify-between gap-3 bg-white/30 px-3 py-2"
+                          >
+                            <div className="flex-1">
+                              <div className="font-medium">{option.name}</div>
+                              {option.note && (
+                                <div className="text-[11px] text-muted-foreground">
+                                  {option.note}
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-right text-muted-foreground">
+                              {option.duration ? (
+                                <div>{formatMinutes(option.duration)}</div>
+                              ) : null}
+                              <div>{formatCurrency(toNumber(option.price, 0))}</div>
+                            </div>
                           </li>
                         ))}
                       </ul>
-                    </div>
-                  )}
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        オプションは選択されていません。
+                      </p>
+                    )}
+                  </div>
 
                   <p className="text-xs text-muted-foreground">
                     変更内容は「保存する」で反映され、履歴にも記録されます。
