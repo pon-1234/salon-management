@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { format, addDays, startOfWeek } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -18,6 +18,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Calendar, Save, X, Clock, User } from 'lucide-react'
 import { CastScheduleStatus } from '@/lib/cast-schedule/old-types'
+import { useStore } from '@/contexts/store-context'
+import {
+  DEFAULT_BUSINESS_HOURS,
+  parseBusinessHoursString,
+  type BusinessHoursRange,
+  formatMinutesAsLabel,
+} from '@/lib/settings/business-hours'
 
 export interface DaySchedule {
   date: string // yyyy-mm-dd format
@@ -50,6 +57,8 @@ export function ScheduleEditDialog({
   startDate,
   onSave,
 }: ScheduleEditDialogProps) {
+  const { currentStore } = useStore()
+  const [businessHours, setBusinessHours] = useState<BusinessHoursRange>(DEFAULT_BUSINESS_HOURS)
   const [schedule, setSchedule] = useState<WeeklyScheduleEdit>(() => {
     const converted: WeeklyScheduleEdit = {}
     Object.entries(initialSchedule).forEach(([date, status]) => {
@@ -74,11 +83,54 @@ export function ScheduleEditDialog({
     { value: '休日', label: '休日', color: 'bg-red-100 text-red-700' },
   ]
 
-  const timeOptions = Array.from({ length: 48 }, (_, i) => {
-    const hour = Math.floor(i / 2)
-    const minute = i % 2 === 0 ? '00' : '30'
-    return `${hour.toString().padStart(2, '0')}:${minute}`
-  })
+  useEffect(() => {
+    let ignore = false
+    const loadBusinessHours = async () => {
+      try {
+        const params = new URLSearchParams()
+        if (currentStore.id) {
+          params.set('storeId', currentStore.id)
+        }
+        const response = await fetch(
+          `/api/settings/store${params.toString() ? `?${params.toString()}` : ''}`,
+          {
+            credentials: 'include',
+            cache: 'no-store',
+          }
+        )
+        if (!response.ok) {
+          throw new Error(`Failed to fetch store settings: ${response.status}`)
+        }
+        const payload = await response.json()
+        const settings = payload?.data ?? payload
+        const parsed = parseBusinessHoursString(settings?.businessHours)
+        if (!ignore) {
+          setBusinessHours(parsed)
+        }
+      } catch (error) {
+        console.error('Failed to load business hours for schedule editor:', error)
+        if (!ignore) {
+          setBusinessHours(DEFAULT_BUSINESS_HOURS)
+        }
+      }
+    }
+
+    loadBusinessHours()
+    return () => {
+      ignore = true
+    }
+  }, [currentStore.id])
+
+  const timeOptions = useMemo(() => {
+    const options: string[] = []
+    const incrementMinutes = 30
+    let minutes = businessHours.startMinutes
+    while (minutes <= businessHours.endMinutes) {
+      options.push(formatMinutesAsLabel(minutes))
+      minutes += incrementMinutes
+    }
+    return options.length > 0 ? options : ['00:00']
+  }, [businessHours])
 
   const handleScheduleChange = (dateKey: string, field: keyof DaySchedule, value: any) => {
     setSchedule((prev) => ({
