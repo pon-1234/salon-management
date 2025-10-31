@@ -59,4 +59,13 @@ export interface DailySalesData {
     }
     currentBalance: number
   }
+  hourlyBreakdown?: Array<{
+    hour: string
+    sales: number
+    customers: number
+  }>
+  weeklyTrend?: Array<{
+    date: string
+    sales: number
+  }>
 }

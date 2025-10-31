@@ -1,15 +1,35 @@
 import { DailySalesData } from '../types/daily-sales'
 import { DailySalesRepository } from './repository'
-import { mockDailySalesData } from './data'
+
+const ENDPOINT = '/api/analytics/daily-sales'
 
 export class DailySalesRepositoryImpl implements DailySalesRepository {
+  constructor(private readonly storeId?: string) {}
+
   async getDailySales(date: Date): Promise<DailySalesData> {
-    // In a real implementation, this would fetch from an API
-    return mockDailySalesData
+    const params = new URLSearchParams({
+      date: date.toISOString(),
+    })
+    if (this.storeId) {
+      params.set('storeId', this.storeId)
+    }
+
+    const response = await fetch(`${ENDPOINT}?${params.toString()}`, {
+      method: 'GET',
+      credentials: 'include',
+      cache: 'no-store',
+    })
+
+    if (!response.ok) {
+      const message = await response.text()
+      throw new Error(message || 'Failed to fetch daily sales data')
+    }
+
+    return response.json()
   }
 
-  async updateDailySales(date: Date, data: DailySalesData): Promise<void> {
-    // In a real implementation, this would update via an API
-    console.log('Updating daily sales:', { date, data })
+  async updateDailySales(): Promise<void> {
+    console.info('Daily sales manual update is not implemented yet.')
   }
 }
+

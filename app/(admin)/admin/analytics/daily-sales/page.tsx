@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { DailySalesData } from '@/lib/types/daily-sales'
 import { DailySalesUseCases } from '@/lib/daily-sales/usecases'
 import { DailySalesRepositoryImpl } from '@/lib/daily-sales/repository-impl'
@@ -38,9 +38,7 @@ import {
 } from 'recharts'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
-
-const dailySalesRepository = new DailySalesRepositoryImpl()
-const dailySalesUseCases = new DailySalesUseCases(dailySalesRepository)
+import { useStore } from '@/contexts/store-context'
 
 // KPIカードコンポーネント
 function KPICard({
@@ -58,15 +56,21 @@ function KPICard({
   trend?: 'up' | 'down' | 'neutral'
   subtitle?: string
 }) {
-  const isPositive = trend === 'up' || (change && change > 0)
+  const isPositive = trend === 'up' || (change !== undefined && change > 0)
+  const isNegative = trend === 'down' || (change !== undefined && change < 0)
   const TrendIcon = isPositive ? ArrowUpRight : ArrowDownRight
+  const badgeClass = isPositive
+    ? 'bg-emerald-100 text-emerald-600'
+    : isNegative
+      ? 'bg-red-100 text-red-600'
+      : 'bg-slate-100 text-slate-500'
 
   return (
     <Card className="overflow-hidden transition-shadow hover:shadow-lg">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        <div className={`rounded-lg p-2 ${isPositive ? 'bg-emerald-100' : 'bg-red-100'}`}>
-          <Icon className={`h-4 w-4 ${isPositive ? 'text-emerald-600' : 'text-red-600'}`} />
+        <div className={`rounded-lg p-2 ${badgeClass}`}>
+          <Icon className="h-4 w-4" />
         </div>
       </CardHeader>
       <CardContent>
@@ -100,49 +104,46 @@ export default function DailySalesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [hourlyData, setHourlyData] = useState<any[]>([])
   const [weeklyData, setWeeklyData] = useState<any[]>([])
+  const { currentStore } = useStore()
 
-  const fetchDailySales = async (date: Date) => {
+  const dailySalesUseCases = useMemo(() => {
+    const repository = new DailySalesRepositoryImpl(currentStore.id)
+    return new DailySalesUseCases(repository)
+  }, [currentStore.id])
+
+  const fetchDailySales = useCallback(async (date: Date) => {
     setIsLoading(true)
     try {
       const data = await dailySalesUseCases.getDailySales(date)
       setSalesData(data)
 
-      // モックの時間別データ
-      setHourlyData([
-        { hour: '10:00', sales: 45000, customers: 3 },
-        { hour: '11:00', sales: 62000, customers: 4 },
-        { hour: '12:00', sales: 98000, customers: 6 },
-        { hour: '13:00', sales: 125000, customers: 8 },
-        { hour: '14:00', sales: 143000, customers: 9 },
-        { hour: '15:00', sales: 167000, customers: 10 },
-        { hour: '16:00', sales: 195000, customers: 12 },
-        { hour: '17:00', sales: 234000, customers: 14 },
-        { hour: '18:00', sales: 289000, customers: 17 },
-        { hour: '19:00', sales: 356000, customers: 21 },
-        { hour: '20:00', sales: 412000, customers: 24 },
-        { hour: '21:00', sales: 468000, customers: 27 },
-      ])
+      setHourlyData(
+        data.hourlyBreakdown?.map((entry) => ({
+          hour: entry.hour,
+          sales: entry.sales,
+          customers: entry.customers,
+        })) ?? []
+      )
 
-      // モックの週間データ
-      setWeeklyData([
-        { day: '月', sales: 456000 },
-        { day: '火', sales: 512000 },
-        { day: '水', sales: 489000 },
-        { day: '木', sales: 534000 },
-        { day: '金', sales: 612000 },
-        { day: '土', sales: 756000 },
-        { day: '日', sales: 468000 },
-      ])
+      setWeeklyData(
+        data.weeklyTrend?.map((entry) => ({
+          day: entry.date,
+          sales: entry.sales,
+        })) ?? []
+      )
     } catch (error) {
       console.error('Failed to fetch daily sales:', error)
+      setSalesData(null)
+      setHourlyData([])
+      setWeeklyData([])
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [dailySalesUseCases])
 
   useEffect(() => {
     fetchDailySales(selectedDate)
-  }, [selectedDate])
+  }, [fetchDailySales, selectedDate])
 
   const handleDateChange = (date: Date) => {
     setSelectedDate(date)
@@ -162,23 +163,23 @@ export default function DailySalesPage() {
     ? {
         totalSales: {
           value: `¥${salesData.totals.sales.total.toLocaleString()}`,
-          change: 12.5,
-          trend: 'up' as const,
+          change: undefined,
+          trend: 'neutral' as const,
         },
         customerCount: {
           value: salesData.totals.totalTransactions,
-          change: -5.2,
-          trend: 'down' as const,
+          change: undefined,
+          trend: 'neutral' as const,
         },
         averageSpend: {
           value: `¥${Math.floor(salesData.totals.sales.total / Math.max(salesData.totals.totalTransactions, 1)).toLocaleString()}`,
-          change: 8.3,
-          trend: 'up' as const,
+          change: undefined,
+          trend: 'neutral' as const,
         },
         profitMargin: {
           value: `${Math.round((salesData.totals.staffSales / Math.max(salesData.totals.sales.total, 1)) * 100)}%`,
-          change: 2.1,
-          trend: 'up' as const,
+          change: undefined,
+          trend: 'neutral' as const,
         },
       }
     : null
