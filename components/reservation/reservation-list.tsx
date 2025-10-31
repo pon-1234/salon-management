@@ -8,9 +8,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import Link from 'next/link'
 import { format } from 'date-fns'
 import { ReservationData } from '@/lib/types/reservation'
+import Link from 'next/link'
+import { useMemo } from 'react'
+import { ReservationStatus } from '@/lib/constants'
 
 interface ReservationListProps {
   reservations: ReservationData[]
@@ -42,6 +44,65 @@ export function ReservationList({
     }
   }
 
+  const statusMeta = useMemo(
+    () =>
+      ({
+        confirmed: {
+          label: '確定済',
+          className: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+          dot: 'bg-emerald-500',
+        },
+        pending: {
+          label: '仮予約',
+          className: 'bg-amber-100 text-amber-700 border-amber-200',
+          dot: 'bg-amber-500',
+        },
+        tentative: {
+          label: '仮予約',
+          className: 'bg-amber-100 text-amber-700 border-amber-200',
+          dot: 'bg-amber-500',
+        },
+        cancelled: {
+          label: 'キャンセル',
+          className: 'bg-rose-100 text-rose-700 border-rose-200',
+          dot: 'bg-rose-500',
+        },
+        modifiable: {
+          label: '修正待ち',
+          className: 'bg-sky-100 text-sky-700 border-sky-200',
+          dot: 'bg-sky-500',
+        },
+        completed: {
+          label: '完了',
+          className: 'bg-slate-200 text-slate-700 border-slate-300',
+          dot: 'bg-slate-500',
+        },
+      }) as Record<
+        ReservationStatus | 'tentative' | string,
+        { label: string; className: string; dot: string }
+      >,
+    []
+  )
+
+  const renderStatusBadge = (status?: string | null, fallbackLabel?: string) => {
+    const normalized = status?.toLowerCase() ?? ''
+    const meta = statusMeta[normalized] ?? null
+    const label = meta?.label ?? fallbackLabel ?? '未設定'
+    const dotClass = meta?.dot ?? 'bg-slate-400'
+    const baseClass =
+      meta?.className ?? 'bg-slate-100 text-slate-600 border border-slate-200 shadow-none'
+
+    return (
+      <Badge
+        variant="outline"
+        className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-medium ${baseClass}`}
+      >
+        <span className={`h-2 w-2 rounded-full ${dotClass}`} aria-hidden="true" />
+        {label}
+      </Badge>
+    )
+  }
+
   return (
     <div className="space-y-4">
       <div className="rounded-lg border bg-white">
@@ -55,7 +116,7 @@ export function ReservationList({
               <TableHead className="whitespace-nowrap">コース</TableHead>
               <TableHead className="w-[80px] whitespace-nowrap">IN</TableHead>
               <TableHead className="w-[80px] whitespace-nowrap">OUT</TableHead>
-              <TableHead className="w-[180px] whitespace-nowrap">確認</TableHead>
+              <TableHead className="w-[180px] whitespace-nowrap">ステータス</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -94,20 +155,9 @@ export function ReservationList({
                 <TableCell>{format(reservation.startTime, 'HH:mm')}</TableCell>
                 <TableCell>{format(reservation.endTime, 'HH:mm')}</TableCell>
                 <TableCell>
-                  <div className="flex flex-nowrap items-center gap-2">
-                    <Badge
-                      variant={
-                        reservation.bookingStatus === '確定'
-                          ? 'default'
-                          : reservation.bookingStatus === '修正可能'
-                            ? 'outline'
-                            : 'secondary'
-                      }
-                      className="whitespace-nowrap"
-                    >
-                      {reservation.bookingStatus}
-                    </Badge>
-                    {reservation.bookingStatus === '確定' && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {renderStatusBadge(reservation.status, reservation.bookingStatus)}
+                    {reservation.status === 'confirmed' && (
                       <Button
                         size="sm"
                         variant="outline"
