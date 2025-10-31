@@ -1829,8 +1829,57 @@ useEffect(() => {
           </TabsContent>
         </Tabs>
         </div>
+        <div className="border-t bg-white px-4 py-3 shadow-inner">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-baseline gap-3">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">
+                  {isEditMode ? '変更後の合計' : '予約合計'}
+                </p>
+                <p className="text-xl font-semibold leading-none">
+                  {formatCurrency(isEditMode ? priceBreakdown.total : originalTotal)}
+                </p>
+              </div>
+              {isEditMode && priceDelta !== 0 && (
+                <span
+                  className={cn(
+                    'rounded-full px-2 py-0.5 text-xs font-semibold',
+                    priceDelta > 0
+                      ? 'bg-red-50 text-red-600 ring-1 ring-inset ring-red-200'
+                      : 'bg-emerald-50 text-emerald-600 ring-1 ring-inset ring-emerald-200'
+                  )}
+                >
+                  {priceDelta > 0 ? '+' : '-'}
+                  {formatCurrency(Math.abs(priceDelta))}
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:items-center sm:gap-4">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="font-medium text-foreground">
+                    {formatMinutes(effectiveDurationMinutes)}
+                  </p>
+                  <p>{isEditMode ? '変更後の施術時間' : '施術時間'}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="font-medium text-foreground">
+                    {computedEndTime ||
+                      (reservation?.endTime ? format(reservation.endTime, 'HH:mm') : '-')}
+                  </p>
+                  <p>{isEditMode ? '変更後の終了予定' : '終了予定'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   )
 }
-  
+ 

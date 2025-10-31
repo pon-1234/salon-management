@@ -1,7 +1,5 @@
 'use client'
 
-import { format } from 'date-fns'
-import { ja } from 'date-fns/locale'
 import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -14,9 +12,10 @@ import {
 } from '@/components/ui/table'
 import { MoreHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { ReservationDialog } from './reservation-dialog'
 import { ReservationData } from '@/lib/types/reservation'
+import { ReservationStatus } from '@/lib/constants'
 
 interface ReservationTableProps {
   reservations: ReservationData[]
@@ -25,6 +24,61 @@ interface ReservationTableProps {
 
 export function ReservationTable({ reservations, onOpenReservation }: ReservationTableProps) {
   const [selectedReservation, setSelectedReservation] = useState<ReservationData | null>(null)
+  const statusMeta = useMemo(
+    () =>
+      ({
+        confirmed: {
+          label: '確定済',
+          className: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+          dot: 'bg-emerald-500',
+        },
+        pending: {
+          label: '仮予約',
+          className: 'bg-amber-100 text-amber-700 border-amber-200',
+          dot: 'bg-amber-500',
+        },
+        tentative: {
+          label: '仮予約',
+          className: 'bg-amber-100 text-amber-700 border-amber-200',
+          dot: 'bg-amber-500',
+        },
+        cancelled: {
+          label: 'キャンセル',
+          className: 'bg-rose-100 text-rose-700 border-rose-200',
+          dot: 'bg-rose-500',
+        },
+        modifiable: {
+          label: '修正待ち',
+          className: 'bg-sky-100 text-sky-700 border-sky-200',
+          dot: 'bg-sky-500',
+        },
+        completed: {
+          label: '完了',
+          className: 'bg-slate-200 text-slate-700 border-slate-300',
+          dot: 'bg-slate-500',
+        },
+      }) as Record<ReservationStatus | 'tentative' | string, { label: string; className: string; dot: string }>,
+    []
+  )
+
+  const renderStatusBadge = (status?: string | null, fallbackLabel?: string) => {
+    const normalized = status?.toLowerCase() ?? ''
+    const meta = statusMeta[normalized] ?? null
+    const label = meta?.label ?? fallbackLabel ?? '未設定'
+    const dotClass = meta?.dot ?? 'bg-slate-400'
+    const baseClass =
+      meta?.className ?? 'bg-slate-100 text-slate-600 border border-slate-200 shadow-none'
+
+    return (
+      <Badge
+        variant="outline"
+        className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-medium ${baseClass}`}
+      >
+        <span className={`h-2 w-2 rounded-full ${dotClass}`} aria-hidden="true" />
+        {label}
+      </Badge>
+    )
+  }
 
   const handleOpenReservation = (reservation: ReservationData) => {
     if (onOpenReservation) {
@@ -46,7 +100,7 @@ export function ReservationTable({ reservations, onOpenReservation }: Reservatio
             <TableHead className="w-[160px] whitespace-nowrap">コース</TableHead>
             <TableHead className="w-[80px] whitespace-nowrap">IN</TableHead>
             <TableHead className="w-[80px] whitespace-nowrap">OUT</TableHead>
-            <TableHead className="w-[120px] whitespace-nowrap">確認</TableHead>
+            <TableHead className="w-[130px] whitespace-nowrap">ステータス</TableHead>
             <TableHead className="w-[200px]">詳細</TableHead>
             <TableHead className="w-[80px] text-right">操作</TableHead>
           </TableRow>
@@ -87,15 +141,8 @@ export function ReservationTable({ reservations, onOpenReservation }: Reservatio
               <TableCell>{reservation.course}</TableCell>
               <TableCell>{reservation.time}</TableCell>
               <TableCell>{reservation.inOutTime.split('-')[1] || '-'}</TableCell>
-              <TableCell>
-                <Badge
-                  variant={reservation.bookingStatus === '確定済' ? 'default' : 'outline'}
-                  className={`w-fit ${
-                    reservation.bookingStatus === '確定済' ? 'bg-emerald-600 text-white' : ''
-                  }`}
-                >
-                  {reservation.bookingStatus}
-                </Badge>
+              <TableCell className="whitespace-nowrap">
+                {renderStatusBadge(reservation.status, reservation.bookingStatus)}
               </TableCell>
               <TableCell>
                 <div className="flex flex-col">
