@@ -49,6 +49,7 @@ const castSchema = z.object({
   regularDesignationRank: z.coerce.number().int().min(0).optional().default(0),
   workStatus: z.string().optional().default('出勤'),
   availableOptions: z.array(z.string()).optional().default([]),
+  lineUserId: z.union([z.string().trim().min(1), z.null()]).optional(),
 })
 
 function normalizeAvailableOptions(raw: unknown): string[] {

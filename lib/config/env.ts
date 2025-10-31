@@ -25,6 +25,9 @@ function createEnv() {
     USE_MOCK_FALLBACK: z.string().optional(),
     NEXT_PUBLIC_USE_MOCK_FALLBACK: z.string().optional(),
     INITIAL_ADMIN_PASSWORD: z.string().optional(),
+    LINE_MESSAGING_CHANNEL_ACCESS_TOKEN: z.string().optional(),
+    LINE_MESSAGING_ENABLED: z.string().optional(),
+    LINE_MESSAGING_DEFAULT_USER_ID: z.string().optional(),
   })
 
   const rawEnv = rawEnvSchema.parse({
@@ -48,6 +51,9 @@ function createEnv() {
     USE_MOCK_FALLBACK: process.env.USE_MOCK_FALLBACK,
     NEXT_PUBLIC_USE_MOCK_FALLBACK: process.env.NEXT_PUBLIC_USE_MOCK_FALLBACK,
     INITIAL_ADMIN_PASSWORD: process.env.INITIAL_ADMIN_PASSWORD,
+    LINE_MESSAGING_CHANNEL_ACCESS_TOKEN: process.env.LINE_MESSAGING_CHANNEL_ACCESS_TOKEN,
+    LINE_MESSAGING_ENABLED: process.env.LINE_MESSAGING_ENABLED,
+    LINE_MESSAGING_DEFAULT_USER_ID: process.env.LINE_MESSAGING_DEFAULT_USER_ID,
   })
 
   const databaseUrl =
@@ -91,6 +97,17 @@ function createEnv() {
         : !isProduction
 
   const initialAdminPassword = rawEnv.INITIAL_ADMIN_PASSWORD ?? ''
+  const lineChannelAccessToken = rawEnv.LINE_MESSAGING_CHANNEL_ACCESS_TOKEN ?? ''
+  const lineMessagingEnabledRaw = rawEnv.LINE_MESSAGING_ENABLED?.toLowerCase()
+  const isLineMessagingExplicitlyEnabled =
+    lineMessagingEnabledRaw === 'true'
+      ? true
+      : lineMessagingEnabledRaw === 'false'
+        ? false
+        : undefined
+  const isLineMessagingEnabled =
+    isLineMessagingExplicitlyEnabled ?? lineChannelAccessToken.trim().length > 0
+  const lineDefaultUserId = rawEnv.LINE_MESSAGING_DEFAULT_USER_ID ?? ''
 
   const siteUrl =
     rawEnv.NEXT_PUBLIC_SITE_URL ??
@@ -128,6 +145,13 @@ function createEnv() {
       initialAdminPassword,
     },
     siteUrl,
+    line: {
+      messaging: {
+        enabled: isLineMessagingEnabled,
+        channelAccessToken: lineChannelAccessToken,
+        defaultUserId: lineDefaultUserId,
+      },
+    },
   }
 }
 

@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
 import { NotificationService } from '@/lib/notification/service'
+import { castNotificationService } from '@/lib/notification/cast-service'
 import logger from '@/lib/logger'
 import { PrismaClient } from '@prisma/client'
 import { hasPermission } from '@/lib/auth/permissions'
@@ -521,6 +522,12 @@ export async function POST(request: NextRequest) {
         await notificationService.sendReservationConfirmation(newReservation)
       } catch (notificationError) {
         logger.error({ err: notificationError }, 'Failed to send notification')
+      }
+
+      try {
+        await castNotificationService.sendReservationCreated(newReservation)
+      } catch {
+        // エラーログは CastNotificationService 内で出力済み
       }
 
       return NextResponse.json(newReservation, { status: 201 })

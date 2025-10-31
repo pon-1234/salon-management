@@ -10,6 +10,7 @@ import { requireAdmin } from '@/lib/auth/utils'
 import { handleApiError, ErrorResponses } from '@/lib/api/errors'
 import { SuccessResponses } from '@/lib/api/responses'
 import { Message, Prisma } from '@prisma/client'
+import { castNotificationService } from '@/lib/notification/cast-service'
 
 // Message validation schema
 const messageSchema = z.object({
@@ -89,6 +90,17 @@ export async function POST(request: NextRequest) {
     // Validate request body
     const validatedData = messageSchema.parse(body)
 
+    const castForNotification = validatedData.castId
+      ? await prisma.cast.findUnique({
+          where: { id: validatedData.castId },
+          select: {
+            id: true,
+            name: true,
+            lineUserId: true,
+          },
+        })
+      : null
+
     // Create new message in database
     const newMessage = await prisma.message.create({
       data: {
@@ -107,6 +119,26 @@ export async function POST(request: NextRequest) {
         reservationInfo: validatedData.reservationInfo || Prisma.JsonNull,
       },
     })
+
+    if (castForNotification && validatedData.sender !== 'cast') {
+      try {
+        await castNotificationService.sendChatMessageNotification({
+          cast: {
+            id: castForNotification.id,
+            name: castForNotification.name,
+            lineUserId: castForNotification.lineUserId,
+          },
+          message: {
+            id: newMessage.id,
+            sender: newMessage.sender as 'customer' | 'staff' | 'cast',
+            content: newMessage.content,
+            timestamp: newMessage.timestamp,
+          },
+        })
+      } catch {
+        // Error already logged inside CastNotificationService
+      }
+    }
 
     return SuccessResponses.created(newMessage, 'メッセージが送信されました')
   } catch (error) {

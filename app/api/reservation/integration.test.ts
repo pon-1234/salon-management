@@ -3,12 +3,8 @@
  * @related_to   reservation/route.ts, notification/service.ts
  * @known_issues None currently
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, vi, beforeAll } from 'vitest'
 import { NextRequest } from 'next/server'
-import { POST } from './route'
-import { db } from '@/lib/db'
-// Mock checkCastAvailability since it's now internal to route.ts
-import { NotificationService } from '@/lib/notification/service'
 import { getServerSession } from 'next-auth'
 
 // Mock dependencies
@@ -16,14 +12,35 @@ vi.mock('@/lib/db', () => ({
   db: {
     reservation: {
       create: vi.fn(),
+      findMany: vi.fn(),
     },
     $transaction: vi.fn((callback) =>
       callback({
         reservation: {
           create: vi.fn(),
+          findMany: vi.fn(),
         },
       })
     ),
+    cast: {
+      findFirst: vi.fn(),
+    },
+    customer: {
+      findUnique: vi.fn(),
+    },
+    coursePrice: {
+      findFirst: vi.fn(),
+    },
+    areaInfo: {
+      findFirst: vi.fn(),
+    },
+    stationInfo: {
+      findFirst: vi.fn(),
+    },
+    store: {
+      findUnique: vi.fn(),
+      upsert: vi.fn(),
+    },
   },
 }))
 
@@ -67,25 +84,52 @@ vi.mock('@/lib/notification/service', () => {
   }
 })
 
+vi.mock('@/lib/notification/cast-service', () => ({
+  castNotificationService: {
+    sendReservationCreated: vi.fn(),
+  },
+}))
+
+let POST: typeof import('./route')['POST']
+let db: typeof import('@/lib/db')['db']
+let castNotificationService: typeof import('@/lib/notification/cast-service')['castNotificationService']
+
+beforeAll(async () => {
+  ;({ db } = await import('@/lib/db'))
+  ;({ castNotificationService } = await import('@/lib/notification/cast-service'))
+  ;({ POST } = await import('./route'))
+})
+
 describe('Reservation API - Notification Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(castNotificationService.sendReservationCreated).mockResolvedValue(undefined)
+    vi.mocked(db.store.findUnique).mockResolvedValue({ id: 'store-1' } as any)
   })
 
   it('should send notification when reservation is created successfully', async () => {
     // Mock session
-    vi.mocked(getServerSession).mockResolvedValueOnce(null)
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: {
+        id: 'admin-1',
+        role: 'admin',
+        permissions: ['*'],
+      },
+    } as any)
 
     // Availability check is handled within the transaction
 
     // Mock customer data with preferences
+    const startTime = new Date(Date.now() + 24 * 60 * 60 * 1000)
+    const endTime = new Date(startTime.getTime() + 60 * 60 * 1000)
+
     const mockReservation = {
       id: 'reservation1',
       customerId: 'customer1',
       castId: 'cast1',
       courseId: 'course1',
-      startTime: new Date('2025-07-10T10:00:00Z'),
-      endTime: new Date('2025-07-10T11:00:00Z'),
+      startTime,
+      endTime,
       status: 'confirmed',
       customer: {
         id: 'customer1',
@@ -120,6 +164,36 @@ describe('Reservation API - Notification Integration', () => {
       }
       return callback(tx)
     })
+    vi.mocked(db.reservation.findMany).mockResolvedValueOnce([])
+    vi.mocked(db.cast.findFirst).mockResolvedValueOnce({
+      id: 'cast1',
+      storeId: 'store-1',
+    } as any)
+    vi.mocked(db.customer.findUnique).mockResolvedValueOnce({
+      id: 'customer1',
+      name: 'Test Customer',
+    } as any)
+    vi.mocked(db.coursePrice.findFirst).mockResolvedValueOnce({
+      id: 'course1',
+      name: '60-minute Course',
+    } as any)
+    vi.mocked(db.areaInfo.findFirst).mockResolvedValueOnce(null as any)
+    vi.mocked(db.stationInfo.findFirst).mockResolvedValueOnce(null as any)
+    vi.mocked(db.reservation.findMany).mockResolvedValueOnce([])
+    vi.mocked(db.cast.findFirst).mockResolvedValueOnce({
+      id: 'cast1',
+      storeId: 'store-1',
+    } as any)
+    vi.mocked(db.customer.findUnique).mockResolvedValueOnce({
+      id: 'customer1',
+      name: 'Test Customer',
+    } as any)
+    vi.mocked(db.coursePrice.findFirst).mockResolvedValueOnce({
+      id: 'course1',
+      name: '60-minute Course',
+    } as any)
+    vi.mocked(db.areaInfo.findFirst).mockResolvedValueOnce(null as any)
+    vi.mocked(db.stationInfo.findFirst).mockResolvedValueOnce(null as any)
 
     // Get the mocked notification function
     const notificationModule = (await import('@/lib/notification/service')) as any
@@ -130,8 +204,8 @@ describe('Reservation API - Notification Integration', () => {
       customerId: 'customer1',
       castId: 'cast1',
       courseId: 'course1',
-      startTime: '2025-07-10T10:00:00Z',
-      endTime: '2025-07-10T11:00:00Z',
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
     }
 
     const request = new NextRequest('http://localhost:3000/api/reservation', {
@@ -154,21 +228,31 @@ describe('Reservation API - Notification Integration', () => {
 
     // Verify notification was sent
     expect(mockSendReservationConfirmation).toHaveBeenCalledWith(mockReservation)
+    expect(castNotificationService.sendReservationCreated).toHaveBeenCalledWith(mockReservation)
   })
 
   it('should not fail reservation creation if notification fails', async () => {
     // Mock session
-    vi.mocked(getServerSession).mockResolvedValueOnce(null)
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: {
+        id: 'admin-1',
+        role: 'admin',
+        permissions: ['*'],
+      },
+    } as any)
 
     // Availability check is handled within the transaction
+
+    const startTime = new Date(Date.now() + 24 * 60 * 60 * 1000)
+    const endTime = new Date(startTime.getTime() + 60 * 60 * 1000)
 
     const mockReservation = {
       id: 'reservation1',
       customerId: 'customer1',
       castId: 'cast1',
       courseId: 'course1',
-      startTime: new Date('2025-07-10T10:00:00Z'),
-      endTime: new Date('2025-07-10T11:00:00Z'),
+      startTime,
+      endTime,
       status: 'confirmed',
       customer: { id: 'customer1', name: 'Test Customer' },
       cast: { id: 'cast1', name: 'Test Cast' },
@@ -191,13 +275,16 @@ describe('Reservation API - Notification Integration', () => {
     const notificationModule = (await import('@/lib/notification/service')) as any
     const mockSendReservationConfirmation = notificationModule.mockSendReservationConfirmation
     mockSendReservationConfirmation.mockRejectedValueOnce(new Error('Notification failed'))
+    vi.mocked(castNotificationService.sendReservationCreated).mockRejectedValueOnce(
+      new Error('LINE notification failed')
+    )
 
     const reservationData = {
       customerId: 'customer1',
       castId: 'cast1',
       courseId: 'course1',
-      startTime: '2025-07-10T10:00:00Z',
-      endTime: '2025-07-10T11:00:00Z',
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
     }
 
     const request = new NextRequest('http://localhost:3000/api/reservation', {
@@ -219,5 +306,6 @@ describe('Reservation API - Notification Integration', () => {
     expect(response.status).toBe(201)
     expect(data.id).toBe('reservation1')
     expect(mockSendReservationConfirmation).toHaveBeenCalled()
+    expect(castNotificationService.sendReservationCreated).toHaveBeenCalledWith(mockReservation)
   })
 })

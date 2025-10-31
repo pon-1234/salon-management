@@ -57,6 +57,7 @@ const buildInitialFormState = (cast?: Cast | null) => ({
   regularDesignationRank: cast?.regularDesignationRank ?? '',
   workStatus: cast?.workStatus || '出勤',
   availableOptions: cast?.availableOptions ? [...cast.availableOptions] : [],
+  lineUserId: cast?.lineUserId || '',
   phone: '',
   email: '',
   password: '',
@@ -242,6 +243,9 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
       workStatus: formData.workStatus,
       availableOptions: formData.availableOptions,
     }
+
+    const lineUserId = formData.lineUserId?.trim()
+    payload.lineUserId = lineUserId ? lineUserId : null
 
     const mainImage = formData.image.trim()
     if (mainImage) {
@@ -472,6 +476,20 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor={fieldId('lineUserId')}>LINEユーザーID</Label>
+            <Input
+              id={fieldId('lineUserId')}
+              name="lineUserId"
+              value={formData.lineUserId}
+              onChange={handleInputChange}
+              placeholder="例：Ua1b2c3d4e5f6g7h8i9j0"
+              autoComplete="off"
+            />
+            <p className="text-xs text-muted-foreground">
+              キャストのLINE公式アカウント連携で取得できるユーザーIDを入力してください。通知送付先として利用します。
+            </p>
           </div>
         </div>
         <div className="space-y-2">

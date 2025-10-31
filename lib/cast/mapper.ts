@@ -102,6 +102,7 @@ export const normalizeCast = (raw: any): Cast => {
     panelDesignationRank: Number(raw.panelDesignationRank ?? 0),
     regularDesignationRank: Number(raw.regularDesignationRank ?? 0),
     workStatus: raw.workStatus ?? '出勤',
+    lineUserId: raw.lineUserId ?? null,
     workStart: toDate(raw.workStart),
     workEnd: toDate(raw.workEnd),
     appointments,

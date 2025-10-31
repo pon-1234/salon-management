@@ -8,6 +8,7 @@ import { NextRequest } from 'next/server'
 import { GET, POST, PUT } from './route'
 import { db as prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
+import { castNotificationService } from '@/lib/notification/cast-service'
 
 // Import Prisma for error mocking
 import { Prisma } from '@prisma/client'
@@ -25,6 +26,15 @@ vi.mock('@/lib/db', () => ({
       create: vi.fn(),
       update: vi.fn(),
     },
+    cast: {
+      findUnique: vi.fn(),
+    },
+  },
+}))
+
+vi.mock('@/lib/notification/cast-service', () => ({
+  castNotificationService: {
+    sendChatMessageNotification: vi.fn(),
   },
 }))
 
@@ -49,6 +59,7 @@ const toJSON = (obj: any): any => {
 describe('Chat API', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(castNotificationService.sendChatMessageNotification).mockResolvedValue(undefined)
   })
 
   describe('GET /api/chat', () => {
@@ -82,6 +93,67 @@ describe('Chat API', () => {
         orderBy: { timestamp: 'asc' },
       })
       expect(data).toEqual({ data: toJSON(mockMessages) })
+    })
+
+    it('should notify cast via LINE when sending a message to a cast', async () => {
+      const mockSession = { user: { role: 'admin' } }
+      vi.mocked(getServerSession).mockResolvedValue(mockSession)
+
+      const newMessage = {
+        castId: 'cast-123',
+        sender: 'staff' as const,
+        content: '本日の出勤確認をお願いします。',
+      }
+
+      const createdMessage = {
+        id: 'msg-line-123',
+        ...newMessage,
+        customerId: null,
+        timestamp: new Date('2024-01-01T13:00:00.000Z'),
+        readStatus: '未読',
+        isReservationInfo: false,
+        reservationInfo: null,
+        createdAt: new Date('2024-01-01T13:00:00.000Z'),
+        updatedAt: new Date('2024-01-01T13:00:00.000Z'),
+      }
+
+      vi.mocked(prisma.cast.findUnique).mockResolvedValue({
+        id: 'cast-123',
+        name: '高橋 えみり',
+        lineUserId: 'U123456789',
+      } as any)
+      vi.mocked(prisma.message.create).mockResolvedValue(createdMessage)
+
+      const request = new NextRequest('http://localhost/api/chat', {
+        method: 'POST',
+        body: JSON.stringify(newMessage),
+      })
+
+      const response = await POST(request)
+      expect(response.status).toBe(201)
+
+      expect(prisma.cast.findUnique).toHaveBeenCalledWith({
+        where: { id: 'cast-123' },
+        select: {
+          id: true,
+          name: true,
+          lineUserId: true,
+        },
+      })
+
+      expect(castNotificationService.sendChatMessageNotification).toHaveBeenCalledWith({
+        cast: {
+          id: 'cast-123',
+          name: '高橋 えみり',
+          lineUserId: 'U123456789',
+        },
+        message: {
+          id: 'msg-line-123',
+          sender: 'staff',
+          content: '本日の出勤確認をお願いします。',
+          timestamp: createdMessage.timestamp,
+        },
+      })
     })
 
     it('should fetch all messages grouped by customer when no customerId provided', async () => {
@@ -196,6 +268,9 @@ describe('Chat API', () => {
         },
         message: 'メッセージが送信されました',
       })
+
+      expect(prisma.cast.findUnique).not.toHaveBeenCalled()
+      expect(castNotificationService.sendChatMessageNotification).not.toHaveBeenCalled()
     })
 
     it('should create message with reservation info when provided', async () => {

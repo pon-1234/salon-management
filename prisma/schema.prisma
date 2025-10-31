@@ -72,6 +72,7 @@ model Cast {
   regularDesignationRank Int
   workStatus             String
   availableOptions       String[]      @default([])
+  lineUserId             String?
   storeId                String
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @updatedAt

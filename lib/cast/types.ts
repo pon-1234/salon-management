@@ -18,6 +18,7 @@ export interface Cast extends BaseEntity {
   panelDesignationRank: number
   regularDesignationRank: number
   workStatus: '出勤' | '未出勤'
+  lineUserId?: string | null
   workStart?: Date
   workEnd?: Date
   appointments: Appointment[]
