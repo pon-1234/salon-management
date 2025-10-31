@@ -605,42 +605,6 @@ export function ReservationDialog({
 
   const paymentMethodOptions = useMemo(() => Object.values(PAYMENT_METHODS), [])
 
-  const selectedOptionDurationTotal = useMemo(
-    () =>
-      selectedOptionDetails.reduce(
-        (sum, option) => sum + (typeof option.duration === 'number' ? option.duration : 0),
-        0
-      ),
-    [selectedOptionDetails]
-  )
-
-  const effectiveDurationMinutes = useMemo(() => {
-    const courseDuration = toNumber(selectedCourse?.duration, 0)
-    if (courseDuration > 0) {
-      return courseDuration + selectedOptionDurationTotal
-    }
-
-    const estimatedBase =
-      reservationDurationMinutes > 0
-        ? reservationDurationMinutes - initialOptionDurationTotal
-        : reservationDurationMinutes
-    const normalizedBase = estimatedBase > 0 ? estimatedBase : reservationDurationMinutes
-    return normalizedBase + selectedOptionDurationTotal
-  }, [
-    selectedCourse,
-    selectedOptionDurationTotal,
-    reservationDurationMinutes,
-    initialOptionDurationTotal,
-  ])
-
-  const computedEndTime = useMemo(() => {
-    if (!formState.date || !formState.startTime) return ''
-    const start = new Date(`${formState.date}T${formState.startTime}:00`)
-    if (Number.isNaN(start.getTime())) return ''
-    const end = addMinutes(start, effectiveDurationMinutes)
-    return format(end, 'HH:mm')
-  }, [formState.date, formState.startTime, effectiveDurationMinutes])
-
   const initialOptionIdsRaw = useMemo(() => {
     if (!reservation?.options) return []
     return Object.entries(reservation.options)
@@ -688,10 +652,49 @@ export function ReservationDialog({
     [initialOptionIdsRaw, optionChoices]
   )
 
-  const displayOptionNames =
-    selectedOptionDetails.length > 0
-      ? selectedOptionDetails.map((option) => option.name)
-      : initialOptionNames
+  const displayOptionNames = useMemo(
+    () =>
+      selectedOptionDetails.length > 0
+        ? selectedOptionDetails.map((option) => option.name)
+        : initialOptionNames,
+    [selectedOptionDetails, initialOptionNames]
+  )
+
+  const selectedOptionDurationTotal = useMemo(
+    () =>
+      selectedOptionDetails.reduce(
+        (sum, option) => sum + (typeof option.duration === 'number' ? option.duration : 0),
+        0
+      ),
+    [selectedOptionDetails]
+  )
+
+  const effectiveDurationMinutes = useMemo(() => {
+    const courseDuration = toNumber(selectedCourse?.duration, 0)
+    if (courseDuration > 0) {
+      return courseDuration + selectedOptionDurationTotal
+    }
+
+    const estimatedBase =
+      reservationDurationMinutes > 0
+        ? reservationDurationMinutes - initialOptionDurationTotal
+        : reservationDurationMinutes
+    const normalizedBase = estimatedBase > 0 ? estimatedBase : reservationDurationMinutes
+    return normalizedBase + selectedOptionDurationTotal
+  }, [
+    selectedCourse,
+    selectedOptionDurationTotal,
+    reservationDurationMinutes,
+    initialOptionDurationTotal,
+  ])
+
+  const computedEndTime = useMemo(() => {
+    if (!formState.date || !formState.startTime) return ''
+    const start = new Date(`${formState.date}T${formState.startTime}:00`)
+    if (Number.isNaN(start.getTime())) return ''
+    const end = addMinutes(start, effectiveDurationMinutes)
+    return format(end, 'HH:mm')
+  }, [formState.date, formState.startTime, effectiveDurationMinutes])
 
   const originalTotal = useMemo(
     () => toNumber(reservation?.totalPayment ?? reservation?.price, 0),
