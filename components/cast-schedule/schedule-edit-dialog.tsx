@@ -190,6 +190,16 @@ export function ScheduleEditDialog({
     return statusOptions.find((opt) => opt.value === status)?.color || 'bg-gray-100 text-gray-600'
   }
 
+  const filteredTimeOptions = useMemo(() => {
+    return timeOptions.filter((time) => {
+      const [hours, minutes] = time.split(':').map(Number)
+      const totalMinutes = hours * 60 + minutes
+      return (
+        totalMinutes >= businessHours.startMinutes && totalMinutes <= businessHours.endMinutes
+      )
+    })
+  }, [timeOptions, businessHours])
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
