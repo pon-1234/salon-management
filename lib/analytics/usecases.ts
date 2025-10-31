@@ -3,9 +3,12 @@ import {
   MonthlyData,
   DailyData,
   StaffPerformanceData,
+  CourseSalesData,
+  OptionSalesData,
+  MarketingChannelData,
+  MonthlyStaffSummary,
+  MonthlyAreaSummary,
 } from '../types/analytics'
-import { CourseSalesData, OptionSalesData } from '../types/analytics' //追加インポート
-import { MarketingChannelData } from '../types/analytics' //追加インポート
 
 export class AnalyticsUseCases {
   constructor(private repository: AnalyticsRepository) {}
@@ -32,5 +35,13 @@ export class AnalyticsUseCases {
 
   async getMarketingChannelReport(year: number): Promise<MarketingChannelData[]> {
     return this.repository.getMarketingChannelData(year)
+  }
+
+  async getMonthlyStaffSummary(year: number, month: number): Promise<MonthlyStaffSummary[]> {
+    return this.repository.getMonthlyStaffSummary(year, month)
+  }
+
+  async getMonthlyAreaSummary(year: number, month: number): Promise<MonthlyAreaSummary[]> {
+    return this.repository.getMonthlyAreaSummary(year, month)
   }
 }

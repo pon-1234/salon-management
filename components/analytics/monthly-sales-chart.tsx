@@ -24,11 +24,24 @@ export function MonthlySalesChart({ year, month, analyticsUseCases }: MonthlySal
   const [data, setData] = useState<DailyData[]>([])
 
   useEffect(() => {
+    let isMounted = true
     const fetchData = async () => {
-      const result = await analyticsUseCases.getDailyReport(year, month)
-      setData(result)
+      try {
+        const result = await analyticsUseCases.getDailyReport(year, month)
+        if (isMounted) {
+          setData(result)
+        }
+      } catch (error) {
+        console.error('[MonthlySalesChart] failed to fetch daily analytics', error)
+        if (isMounted) {
+          setData([])
+        }
+      }
     }
     fetchData()
+    return () => {
+      isMounted = false
+    }
   }, [year, month, analyticsUseCases])
 
   const chartData = data.map((item) => ({

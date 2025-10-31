@@ -22,6 +22,8 @@ import {
   StaffPerformanceData,
   CourseSalesData,
   OptionSalesData,
+  MonthlyStaffSummary,
+  MonthlyAreaSummary,
 } from '@/lib/types/analytics'
 import { AreaSalesData } from '@/lib/types/area-sales'
 import { DistrictSalesReport } from '@/lib/types/district-sales'
@@ -223,6 +225,190 @@ export async function getMonthlyAnalytics(
       storeSalesRatio: totalSales > 0 ? Math.round((storeRevenue / totalSales) * 100) / 100 : 0,
     }
   })
+}
+
+export async function getMonthlyStaffSummary(
+  year: number,
+  month: number,
+  storeId?: string
+): Promise<MonthlyStaffSummary[]> {
+  const normalizedStoreId = normaliseStoreId(storeId)
+  const targetMonth = new Date(year, month - 1, 1)
+  const start = startOfMonth(targetMonth)
+  const end = endOfMonth(targetMonth)
+
+  const [reservations, firstReservationMap] = await Promise.all([
+    fetchReservationsBetween(normalizedStoreId, start, end),
+    buildCustomerFirstReservationMap(normalizedStoreId),
+  ])
+
+  const staffMap = new Map<
+    string,
+    {
+      name: string
+      days: Set<string>
+      customerCount: number
+      totalSales: number
+      newCustomers: number
+      repeaters: number
+    }
+  >()
+
+  reservations.forEach((reservation) => {
+    const castId = reservation.castId ?? 'unknown'
+    const castName = reservation.cast?.name ?? '未設定'
+    const price = reservation.price ?? 0
+    const workDay = reservation.startTime ? format(reservation.startTime, 'yyyy-MM-dd') : null
+
+    const entry =
+      staffMap.get(castId) ??
+      {
+        name: castName,
+        days: new Set<string>(),
+        customerCount: 0,
+        totalSales: 0,
+        newCustomers: 0,
+        repeaters: 0,
+      }
+
+    if (workDay) {
+      entry.days.add(workDay)
+    }
+
+    entry.customerCount += 1
+    entry.totalSales += price
+
+    let isNewCustomer = false
+    if (reservation.customerId) {
+      const firstReservation = firstReservationMap.get(reservation.customerId)
+      if (firstReservation && firstReservation >= start && firstReservation <= end) {
+        isNewCustomer = true
+      }
+    }
+
+    if (isNewCustomer) {
+      entry.newCustomers += 1
+    } else {
+      entry.repeaters += 1
+    }
+
+    entry.name = castName
+    staffMap.set(castId, entry)
+  })
+
+  return Array.from(staffMap.entries())
+    .map(([castId, data]) => ({
+      id: castId,
+      name: data.name,
+      workDays: data.days.size,
+      customerCount: data.customerCount,
+      totalSales: data.totalSales,
+      averagePerCustomer:
+        data.customerCount > 0 ? Math.round(data.totalSales / data.customerCount) : 0,
+      newCustomers: data.newCustomers,
+      repeaters: data.repeaters,
+    }))
+    .sort((a, b) => b.totalSales - a.totalSales)
+}
+
+export async function getMonthlyAreaSummary(
+  year: number,
+  month: number,
+  storeId?: string
+): Promise<MonthlyAreaSummary[]> {
+  const normalizedStoreId = normaliseStoreId(storeId)
+  const targetMonth = new Date(year, month - 1, 1)
+  const start = startOfMonth(targetMonth)
+  const end = endOfMonth(targetMonth)
+  const previousStart = startOfMonth(addMonths(targetMonth, -1))
+  const previousEnd = endOfMonth(previousStart)
+
+  const [reservations, previousReservations, firstReservationMap] = await Promise.all([
+    fetchReservationsBetween(normalizedStoreId, start, end),
+    fetchReservationsBetween(normalizedStoreId, previousStart, previousEnd),
+    buildCustomerFirstReservationMap(normalizedStoreId),
+  ])
+
+  const areaMap = new Map<
+    string,
+    {
+      customerCount: number
+      totalSales: number
+      newCustomers: number
+      repeaters: number
+    }
+  >()
+
+  reservations.forEach((reservation) => {
+    const areaName =
+      reservation.area?.name ??
+      reservation.area?.city ??
+      reservation.area?.prefecture ??
+      '未設定'
+    const price = reservation.price ?? 0
+
+    const entry =
+      areaMap.get(areaName) ??
+      {
+        customerCount: 0,
+        totalSales: 0,
+        newCustomers: 0,
+        repeaters: 0,
+      }
+
+    entry.customerCount += 1
+    entry.totalSales += price
+
+    let isNewCustomer = false
+    if (reservation.customerId) {
+      const firstReservation = firstReservationMap.get(reservation.customerId)
+      if (firstReservation && firstReservation >= start && firstReservation <= end) {
+        isNewCustomer = true
+      }
+    }
+
+    if (isNewCustomer) {
+      entry.newCustomers += 1
+    } else {
+      entry.repeaters += 1
+    }
+
+    areaMap.set(areaName, entry)
+  })
+
+  const previousSalesMap = new Map<string, number>()
+  previousReservations.forEach((reservation) => {
+    const areaName =
+      reservation.area?.name ??
+      reservation.area?.city ??
+      reservation.area?.prefecture ??
+      '未設定'
+    const price = reservation.price ?? 0
+    previousSalesMap.set(areaName, (previousSalesMap.get(areaName) ?? 0) + price)
+  })
+
+  return Array.from(areaMap.entries())
+    .map(([area, data]) => {
+      const previousSales = previousSalesMap.get(area) ?? 0
+      const growthRate =
+        previousSales > 0
+          ? Math.round(((data.totalSales - previousSales) / previousSales) * 1000) / 10
+          : data.totalSales > 0
+            ? 100
+            : 0
+
+      return {
+        area,
+        customerCount: data.customerCount,
+        newCustomers: data.newCustomers,
+        repeaters: data.repeaters,
+        totalSales: data.totalSales,
+        averagePerCustomer:
+          data.customerCount > 0 ? Math.round(data.totalSales / data.customerCount) : 0,
+        growthRate,
+      }
+    })
+    .sort((a, b) => b.totalSales - a.totalSales)
 }
 
 export async function getDailyAnalytics(

@@ -10,6 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { AnalyticsUseCases } from '@/lib/analytics/usecases'
+import { MonthlyAreaSummary } from '@/lib/types/analytics'
 
 interface MonthlyAreaTableProps {
   year: number
@@ -17,78 +18,37 @@ interface MonthlyAreaTableProps {
   analyticsUseCases: AnalyticsUseCases
 }
 
-interface AreaPerformance {
-  area: string
-  customerCount: number
-  newCustomers: number
-  repeaters: number
-  totalSales: number
-  averagePerCustomer: number
-  growthRate: number
-}
-
 export function MonthlyAreaTable({ year, month, analyticsUseCases }: MonthlyAreaTableProps) {
-  const [data, setData] = useState<AreaPerformance[]>([])
+  const [data, setData] = useState<MonthlyAreaSummary[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // ダミーデータ（実際にはuseCasesから取得）
-    const dummyData: AreaPerformance[] = [
-      {
-        area: '渋谷区',
-        customerCount: 234,
-        newCustomers: 42,
-        repeaters: 192,
-        totalSales: 2234500,
-        averagePerCustomer: 9550,
-        growthRate: 8.5,
-      },
-      {
-        area: '新宿区',
-        customerCount: 189,
-        newCustomers: 31,
-        repeaters: 158,
-        totalSales: 1823400,
-        averagePerCustomer: 9649,
-        growthRate: 5.2,
-      },
-      {
-        area: '港区',
-        customerCount: 156,
-        newCustomers: 28,
-        repeaters: 128,
-        totalSales: 1612300,
-        averagePerCustomer: 10336,
-        growthRate: 12.3,
-      },
-      {
-        area: '中央区',
-        customerCount: 98,
-        newCustomers: 15,
-        repeaters: 83,
-        totalSales: 943200,
-        averagePerCustomer: 9624,
-        growthRate: -2.1,
-      },
-      {
-        area: '千代田区',
-        customerCount: 67,
-        newCustomers: 10,
-        repeaters: 57,
-        totalSales: 678900,
-        averagePerCustomer: 10133,
-        growthRate: 3.8,
-      },
-      {
-        area: 'その他',
-        customerCount: 148,
-        newCustomers: 28,
-        repeaters: 120,
-        totalSales: 1345600,
-        averagePerCustomer: 9092,
-        growthRate: 6.7,
-      },
-    ]
-    setData(dummyData)
+    let isMounted = true
+    setIsLoading(true)
+
+    analyticsUseCases
+      .getMonthlyAreaSummary(year, month)
+      .then((result) => {
+        if (!isMounted) return
+        setData(result)
+        setError(null)
+      })
+      .catch((err) => {
+        console.error('[MonthlyAreaTable] failed to fetch area summary', err)
+        if (!isMounted) return
+        setError('エリア別の集計データを取得できませんでした。')
+        setData([])
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
   }, [year, month, analyticsUseCases])
 
   // 合計を計算
@@ -106,6 +66,30 @@ export function MonthlyAreaTable({ year, month, analyticsUseCases }: MonthlyArea
       totalSales: 0,
     }
   )
+
+  if (isLoading) {
+    return (
+      <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+        読み込み中...
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+        {error}
+      </div>
+    )
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+        データがありません。
+      </div>
+    )
+  }
 
   return (
     <div className="rounded-lg border">
@@ -134,12 +118,15 @@ export function MonthlyAreaTable({ year, month, analyticsUseCases }: MonthlyArea
                 ¥{area.averagePerCustomer.toLocaleString()}
               </TableCell>
               <TableCell className="text-right">
-                {((area.totalSales / totals.totalSales) * 100).toFixed(1)}%
+                {totals.totalSales > 0
+                  ? ((area.totalSales / totals.totalSales) * 100).toFixed(1)
+                  : '0.0'}
+                %
               </TableCell>
               <TableCell className="text-right">
                 <span className={area.growthRate > 0 ? 'text-green-600' : 'text-red-600'}>
                   {area.growthRate > 0 ? '+' : ''}
-                  {area.growthRate}%
+                  {area.growthRate.toFixed(1)}%
                 </span>
               </TableCell>
             </TableRow>

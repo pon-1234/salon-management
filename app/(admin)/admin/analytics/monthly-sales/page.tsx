@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -20,32 +20,93 @@ import { MonthlySalesChart } from '@/components/analytics/monthly-sales-chart'
 import { MonthlySalesTable } from '@/components/analytics/monthly-sales-table'
 import { MonthlyStaffTable } from '@/components/analytics/monthly-staff-table'
 import { MonthlyAreaTable } from '@/components/analytics/monthly-area-table'
+import { MonthlyData } from '@/lib/types/analytics'
 
 const analyticsRepository = new AnalyticsRepositoryImpl()
 const analyticsUseCases = new AnalyticsUseCases(analyticsRepository)
 
 export default function MonthlyReportPage() {
-  const [selectedYear, setSelectedYear] = useState(2024)
-  const [selectedMonth, setSelectedMonth] = useState(12)
+  const now = new Date()
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear())
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1)
+  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
+  const [isMonthlyLoading, setIsMonthlyLoading] = useState(true)
+  const [monthlyError, setMonthlyError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let isMounted = true
+    setIsMonthlyLoading(true)
+    analyticsUseCases
+      .getMonthlyReport(selectedYear)
+      .then((data) => {
+        if (!isMounted) return
+        setMonthlyData(data)
+        setMonthlyError(null)
+      })
+      .catch((err) => {
+        console.error('[MonthlyReportPage] failed to fetch monthly analytics', err)
+        if (!isMounted) return
+        setMonthlyError('月次データの取得に失敗しました。')
+        setMonthlyData([])
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsMonthlyLoading(false)
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [selectedYear, analyticsUseCases])
+
+  const currentMonthData = useMemo(
+    () => monthlyData.find((item) => item.month === selectedMonth),
+    [monthlyData, selectedMonth]
+  )
+
+  const previousMonthData = useMemo(() => {
+    if (selectedMonth > 1) {
+      return monthlyData.find((item) => item.month === selectedMonth - 1)
+    }
+    return null
+  }, [monthlyData, selectedMonth])
+
+  const totalSales = currentMonthData?.totalSales ?? 0
+  const previousSales = previousMonthData?.totalSales ?? 0
+  const customerCount = currentMonthData?.totalCount ?? 0
+  const previousCustomerCount = previousMonthData?.totalCount ?? 0
+  const averageSpending =
+    customerCount > 0 ? Math.round(totalSales / customerCount) : 0
+  const previousAverageSpending =
+    previousCustomerCount > 0
+      ? Math.round(previousSales / previousCustomerCount)
+      : 0
+  const cardSalesRatio =
+    totalSales > 0 ? ((currentMonthData?.cardSales ?? 0) / totalSales) * 100 : 0
+  const previousCardSalesRatio =
+    previousSales > 0
+      ? ((previousMonthData?.cardSales ?? 0) / previousSales) * 100
+      : 0
+
+  const calculateGrowthRate = (current: number, previous: number) => {
+    if (previous === 0) {
+      return current === 0 ? 0 : 100
+    }
+    return ((current - previous) / previous) * 100
+  }
+
+  const salesGrowth = calculateGrowthRate(totalSales, previousSales)
+  const customerGrowth = calculateGrowthRate(customerCount, previousCustomerCount)
+  const averageSpendingGrowth = calculateGrowthRate(
+    averageSpending,
+    previousAverageSpending
+  )
+  const cardRatioDiff = cardSalesRatio - previousCardSalesRatio
+  const hasMonthlyValues = !isMonthlyLoading && monthlyError === null
 
   const handlePrint = () => {
     window.print()
-  }
-
-  // ダミーデータ（実際にはuseCasesから取得）
-  const kpiData = {
-    totalSales: 8543200,
-    previousMonthSales: 7892300,
-    customerCount: 892,
-    previousMonthCustomers: 843,
-    averageSpending: 9581,
-    previousAverageSpending: 9366,
-    cardSalesRatio: 68.5,
-    previousCardSalesRatio: 65.2,
-  }
-
-  const calculateGrowthRate = (current: number, previous: number) => {
-    return (((current - previous) / previous) * 100).toFixed(1)
   }
 
   return (
@@ -78,25 +139,25 @@ export default function MonthlyReportPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">¥{kpiData.totalSales.toLocaleString()}</div>
+            <div className="text-2xl font-bold">
+              {hasMonthlyValues ? `¥${totalSales.toLocaleString()}` : '--'}
+            </div>
             <p className="flex items-center gap-1 text-xs text-muted-foreground">
-              {parseFloat(calculateGrowthRate(kpiData.totalSales, kpiData.previousMonthSales)) >
-              0 ? (
-                <TrendingUp className="h-3 w-3 text-green-600" />
+              {hasMonthlyValues ? (
+                <>
+                  {salesGrowth >= 0 ? (
+                    <TrendingUp className="h-3 w-3 text-green-600" />
+                  ) : (
+                    <TrendingDown className="h-3 w-3 text-red-600" />
+                  )}
+                  <span className={salesGrowth >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {`${salesGrowth >= 0 ? '+' : ''}${salesGrowth.toFixed(1)}%`}
+                  </span>
+                  前月比
+                </>
               ) : (
-                <TrendingDown className="h-3 w-3 text-red-600" />
+                <span className="text-muted-foreground">-</span>
               )}
-              <span
-                className={
-                  parseFloat(calculateGrowthRate(kpiData.totalSales, kpiData.previousMonthSales)) >
-                  0
-                    ? 'text-green-600'
-                    : 'text-red-600'
-                }
-              >
-                {calculateGrowthRate(kpiData.totalSales, kpiData.previousMonthSales)}%
-              </span>
-              前月比
             </p>
           </CardContent>
         </Card>
@@ -107,27 +168,25 @@ export default function MonthlyReportPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{kpiData.customerCount.toLocaleString()}人</div>
+            <div className="text-2xl font-bold">
+              {hasMonthlyValues ? `${customerCount.toLocaleString()}人` : '--'}
+            </div>
             <p className="flex items-center gap-1 text-xs text-muted-foreground">
-              {parseFloat(
-                calculateGrowthRate(kpiData.customerCount, kpiData.previousMonthCustomers)
-              ) > 0 ? (
-                <TrendingUp className="h-3 w-3 text-green-600" />
+              {hasMonthlyValues ? (
+                <>
+                  {customerGrowth >= 0 ? (
+                    <TrendingUp className="h-3 w-3 text-green-600" />
+                  ) : (
+                    <TrendingDown className="h-3 w-3 text-red-600" />
+                  )}
+                  <span className={customerGrowth >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {`${customerGrowth >= 0 ? '+' : ''}${customerGrowth.toFixed(1)}%`}
+                  </span>
+                  前月比
+                </>
               ) : (
-                <TrendingDown className="h-3 w-3 text-red-600" />
+                <span className="text-muted-foreground">-</span>
               )}
-              <span
-                className={
-                  parseFloat(
-                    calculateGrowthRate(kpiData.customerCount, kpiData.previousMonthCustomers)
-                  ) > 0
-                    ? 'text-green-600'
-                    : 'text-red-600'
-                }
-              >
-                {calculateGrowthRate(kpiData.customerCount, kpiData.previousMonthCustomers)}%
-              </span>
-              前月比
             </p>
           </CardContent>
         </Card>
@@ -138,27 +197,31 @@ export default function MonthlyReportPage() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">¥{kpiData.averageSpending.toLocaleString()}</div>
+            <div className="text-2xl font-bold">
+              {hasMonthlyValues ? `¥${averageSpending.toLocaleString()}` : '--'}
+            </div>
             <p className="flex items-center gap-1 text-xs text-muted-foreground">
-              {parseFloat(
-                calculateGrowthRate(kpiData.averageSpending, kpiData.previousAverageSpending)
-              ) > 0 ? (
-                <TrendingUp className="h-3 w-3 text-green-600" />
+              {hasMonthlyValues ? (
+                <>
+                  {averageSpendingGrowth >= 0 ? (
+                    <TrendingUp className="h-3 w-3 text-green-600" />
+                  ) : (
+                    <TrendingDown className="h-3 w-3 text-red-600" />
+                  )}
+                  <span
+                    className={
+                      averageSpendingGrowth >= 0 ? 'text-green-600' : 'text-red-600'
+                    }
+                  >
+                    {`${averageSpendingGrowth >= 0 ? '+' : ''}${averageSpendingGrowth.toFixed(
+                      1
+                    )}%`}
+                  </span>
+                  前月比
+                </>
               ) : (
-                <TrendingDown className="h-3 w-3 text-red-600" />
+                <span className="text-muted-foreground">-</span>
               )}
-              <span
-                className={
-                  parseFloat(
-                    calculateGrowthRate(kpiData.averageSpending, kpiData.previousAverageSpending)
-                  ) > 0
-                    ? 'text-green-600'
-                    : 'text-red-600'
-                }
-              >
-                {calculateGrowthRate(kpiData.averageSpending, kpiData.previousAverageSpending)}%
-              </span>
-              前月比
             </p>
           </CardContent>
         </Card>
@@ -169,27 +232,35 @@ export default function MonthlyReportPage() {
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{kpiData.cardSalesRatio}%</div>
+            <div className="text-2xl font-bold">
+              {hasMonthlyValues ? `${cardSalesRatio.toFixed(1)}%` : '--'}
+            </div>
             <p className="flex items-center gap-1 text-xs text-muted-foreground">
-              {kpiData.cardSalesRatio > kpiData.previousCardSalesRatio ? (
-                <TrendingUp className="h-3 w-3 text-green-600" />
+              {hasMonthlyValues ? (
+                <>
+                  {cardRatioDiff >= 0 ? (
+                    <TrendingUp className="h-3 w-3 text-green-600" />
+                  ) : (
+                    <TrendingDown className="h-3 w-3 text-red-600" />
+                  )}
+                  <span className={cardRatioDiff >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {`${cardRatioDiff >= 0 ? '+' : ''}${cardRatioDiff.toFixed(1)}pt`}
+                  </span>
+                  前月比
+                </>
               ) : (
-                <TrendingDown className="h-3 w-3 text-red-600" />
+                <span className="text-muted-foreground">-</span>
               )}
-              <span
-                className={
-                  kpiData.cardSalesRatio > kpiData.previousCardSalesRatio
-                    ? 'text-green-600'
-                    : 'text-red-600'
-                }
-              >
-                {(kpiData.cardSalesRatio - kpiData.previousCardSalesRatio).toFixed(1)}pt
-              </span>
-              前月比
             </p>
           </CardContent>
         </Card>
       </div>
+
+      {monthlyError && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+          {monthlyError}
+        </div>
+      )}
 
       {/* 売上推移グラフ */}
       <Card>

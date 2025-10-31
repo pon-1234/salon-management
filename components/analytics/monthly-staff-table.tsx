@@ -10,6 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { AnalyticsUseCases } from '@/lib/analytics/usecases'
+import { MonthlyStaffSummary } from '@/lib/types/analytics'
 
 interface MonthlyStaffTableProps {
   year: number
@@ -17,75 +18,36 @@ interface MonthlyStaffTableProps {
   analyticsUseCases: AnalyticsUseCases
 }
 
-interface StaffPerformance {
-  id: string
-  name: string
-  workDays: number
-  customerCount: number
-  totalSales: number
-  averagePerCustomer: number
-  newCustomers: number
-  repeaters: number
-}
-
 export function MonthlyStaffTable({ year, month, analyticsUseCases }: MonthlyStaffTableProps) {
-  const [data, setData] = useState<StaffPerformance[]>([])
+  const [data, setData] = useState<MonthlyStaffSummary[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // ダミーデータ（実際にはuseCasesから取得）
-    const dummyData: StaffPerformance[] = [
-      {
-        id: '1',
-        name: '田中 美咲',
-        workDays: 22,
-        customerCount: 156,
-        totalSales: 1523400,
-        averagePerCustomer: 9765,
-        newCustomers: 28,
-        repeaters: 128,
-      },
-      {
-        id: '2',
-        name: '佐藤 健太',
-        workDays: 20,
-        customerCount: 142,
-        totalSales: 1356200,
-        averagePerCustomer: 9550,
-        newCustomers: 21,
-        repeaters: 121,
-      },
-      {
-        id: '3',
-        name: '山田 花子',
-        workDays: 24,
-        customerCount: 189,
-        totalSales: 1892300,
-        averagePerCustomer: 10012,
-        newCustomers: 35,
-        repeaters: 154,
-      },
-      {
-        id: '4',
-        name: '鈴木 太郎',
-        workDays: 21,
-        customerCount: 134,
-        totalSales: 1234500,
-        averagePerCustomer: 9213,
-        newCustomers: 19,
-        repeaters: 115,
-      },
-      {
-        id: '5',
-        name: '高橋 さくら',
-        workDays: 23,
-        customerCount: 167,
-        totalSales: 1678900,
-        averagePerCustomer: 10053,
-        newCustomers: 31,
-        repeaters: 136,
-      },
-    ]
-    setData(dummyData)
+    let isMounted = true
+    setIsLoading(true)
+    analyticsUseCases
+      .getMonthlyStaffSummary(year, month)
+      .then((result) => {
+        if (!isMounted) return
+        setData(result)
+        setError(null)
+      })
+      .catch((err) => {
+        console.error('[MonthlyStaffTable] failed to fetch staff summary', err)
+        if (!isMounted) return
+        setError('スタッフ別の集計データを取得できませんでした。')
+        setData([])
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
   }, [year, month, analyticsUseCases])
 
   // 合計を計算
@@ -105,6 +67,30 @@ export function MonthlyStaffTable({ year, month, analyticsUseCases }: MonthlySta
       repeaters: 0,
     }
   )
+
+  if (isLoading) {
+    return (
+      <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+        読み込み中...
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+        {error}
+      </div>
+    )
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+        データがありません。
+      </div>
+    )
+  }
 
   return (
     <div className="rounded-lg border">
@@ -134,7 +120,10 @@ export function MonthlyStaffTable({ year, month, analyticsUseCases }: MonthlySta
               <TableCell className="text-right">{staff.newCustomers}人</TableCell>
               <TableCell className="text-right">{staff.repeaters}人</TableCell>
               <TableCell className="text-right">
-                ¥{Math.round(staff.totalSales / staff.workDays).toLocaleString()}
+                ¥
+                {staff.workDays > 0
+                  ? Math.round(staff.totalSales / staff.workDays).toLocaleString()
+                  : '0'}
               </TableCell>
             </TableRow>
           ))}
