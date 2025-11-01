@@ -69,19 +69,15 @@ const twelveHours = 12 * 60 * 60 * 1000
 function deriveReservationsNotifications(reservations: Reservation[]): Notification[] {
   const now = Date.now()
   const twentyFourHours = 24 * 60 * 60 * 1000
-  const fortyEightHours = 48 * 60 * 60 * 1000
 
   return reservations
     .filter((reservation) => {
-      const startTime = reservation.startTime instanceof Date ? reservation.startTime : new Date(reservation.startTime)
-      const diff = startTime.getTime() - now
-      if (reservation.status === 'pending') {
-        return now - (reservation.createdAt?.getTime() ?? now) <= twentyFourHours
+      if (reservation.status !== 'pending') {
+        return false
       }
-      if (reservation.status === 'confirmed') {
-        return diff >= 0 && diff <= fortyEightHours
-      }
-      return false
+
+      const createdAt = reservation.createdAt instanceof Date ? reservation.createdAt : new Date()
+      return now - createdAt.getTime() <= twentyFourHours
     })
     .map((reservation) => {
       const startTime = reservation.startTime instanceof Date ? reservation.startTime : new Date(reservation.startTime)
@@ -94,22 +90,10 @@ function deriveReservationsNotifications(reservations: Reservation[]): Notificat
       const customerName = customerMap.get(reservation.customerId ?? '') ?? `顧客${reservation.customerId ?? ''}`
 
       const reservationDateLabel = `${startTime.getMonth() + 1}/${startTime.getDate()}`
-      const message =
-        reservation.status === 'pending'
-          ? `${customerName}様からの予約が承認待ちです。`
-          : `${customerName}様の予約が迫っています。準備を確認してください。`
-
-      const statusType: Reservation['status'] | 'reminder' =
-        reservation.status === 'confirmed' && startTime.getTime() - now <= twelveHours
-          ? 'reminder'
-          : reservation.status
+      const message = `${customerName}様から新しい予約が入りました。内容を確認してください。`
 
       return {
-        id: buildNotificationId([
-          'reservation',
-          reservation.id,
-          statusType,
-        ]),
+        id: buildNotificationId(['reservation', reservation.id]),
         storeId,
         storeName,
         type: 'reservation' as const,
@@ -121,7 +105,7 @@ function deriveReservationsNotifications(reservations: Reservation[]): Notificat
           receivedTime: formatTime(createdAt),
           staffName: staffName,
           customerName,
-          status: statusType,
+          status: reservation.status,
           startTime: startTime.toISOString(),
           endTime: endTime.toISOString(),
           storeId,
