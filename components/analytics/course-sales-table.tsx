@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -9,27 +8,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { cn } from '@/lib/utils'
-import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 import { CourseSalesData } from '@/lib/types/analytics'
 
 interface CourseSalesTableProps {
   year: number
   month: number
-  analyticsUseCases: AnalyticsUseCases
+  courses: CourseSalesData[]
 }
 
-export function CourseSalesTable({ year, month, analyticsUseCases }: CourseSalesTableProps) {
-  const [data, setData] = useState<CourseSalesData[]>([])
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const result = await analyticsUseCases.getCourseSalesReport(year, month)
-      setData(result)
-    }
-    fetchData()
-  }, [year, month, analyticsUseCases])
-
+export function CourseSalesTable({ year, month, courses }: CourseSalesTableProps) {
   // 月の日数を取得
   const daysInMonth = new Date(year, month, 0).getDate()
 
@@ -44,6 +31,14 @@ export function CourseSalesTable({ year, month, analyticsUseCases }: CourseSales
   // 売上金額を計算
   const calculateRevenue = (course: CourseSalesData) => {
     return calculateTotal(course.sales) * course.price
+  }
+
+  if (courses.length === 0) {
+    return (
+      <div className="flex h-40 items-center justify-center rounded-lg border text-sm text-muted-foreground">
+        データがありません。
+      </div>
+    )
   }
 
   return (
@@ -64,7 +59,7 @@ export function CourseSalesTable({ year, month, analyticsUseCases }: CourseSales
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((course) => {
+          {courses.map((course) => {
             const total = calculateTotal(course.sales)
             const revenue = calculateRevenue(course)
 
@@ -91,10 +86,10 @@ export function CourseSalesTable({ year, month, analyticsUseCases }: CourseSales
           <TableRow className="bg-gray-50 font-bold">
             <TableCell colSpan={dates.length + 3}>合計</TableCell>
             <TableCell className="text-right">
-              {data.reduce((sum, course) => sum + calculateTotal(course.sales), 0)}
+              {courses.reduce((sum, course) => sum + calculateTotal(course.sales), 0).toLocaleString()}
             </TableCell>
             <TableCell className="text-right text-green-600">
-              ¥{data.reduce((sum, course) => sum + calculateRevenue(course), 0).toLocaleString()}
+              ¥{courses.reduce((sum, course) => sum + calculateRevenue(course), 0).toLocaleString()}
             </TableCell>
           </TableRow>
         </TableBody>

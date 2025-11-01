@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import {
   Table,
   TableBody,
@@ -9,7 +9,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 import { TrendingUp, TrendingDown } from 'lucide-react'
 import {
   LineChart,
@@ -22,76 +21,120 @@ import {
 } from 'recharts'
 
 interface CourseTrendTableProps {
-  year: number
-  month: number
-  analyticsUseCases: AnalyticsUseCases
+  series: CourseTrendSeries[]
 }
 
-interface CourseTrend {
+interface CourseTrendSeries {
+  label: string
+  year: number
+  month: number
+  summaries: CourseSummary[]
+}
+
+interface CourseSummary {
   id: string
   name: string
-  monthlyData: {
-    month: string
-    bookings: number
-    revenue: number
-  }[]
+  price: number
+  totalBookings: number
+  revenue: number
+}
+
+interface CourseTrendRow {
+  id: string
+  name: string
+  monthlyData: MonthlyTrendPoint[]
   totalBookings: number
   totalRevenue: number
-  growthRate: number
+  growthRate: number | null
   averagePrice: number
 }
 
-export function CourseTrendTable({ year, month, analyticsUseCases }: CourseTrendTableProps) {
-  const [data, setData] = useState<CourseTrend[]>([])
+interface MonthlyTrendPoint {
+  month: string
+  bookings: number
+  revenue: number
+}
+
+const calculateGrowthRate = (start: number, end: number) => {
+  if (start === 0) {
+    return end === 0 ? null : 100
+  }
+  return ((end - start) / start) * 100
+}
+
+export function CourseTrendTable({ series }: CourseTrendTableProps) {
+  const chronologicalSeries = useMemo(() => [...series].reverse(), [series])
+
+  const courses = useMemo<CourseTrendRow[]>(() => {
+    const labels = chronologicalSeries.map((item) => item.label)
+    const courseMap = new Map<string, CourseTrendRow>()
+
+    chronologicalSeries.forEach((entry) => {
+      entry.summaries.forEach((summary) => {
+        const trend = courseMap.get(summary.id) ?? {
+          id: summary.id,
+          name: summary.name,
+          monthlyData: [] as MonthlyTrendPoint[],
+          totalBookings: 0,
+          totalRevenue: 0,
+          growthRate: null as number | null,
+          averagePrice: summary.price,
+        }
+
+        trend.monthlyData.push({
+          month: entry.label,
+          bookings: summary.totalBookings,
+          revenue: summary.revenue,
+        })
+        trend.totalBookings += summary.totalBookings
+        trend.totalRevenue += summary.revenue
+        trend.averagePrice = summary.price
+
+        courseMap.set(summary.id, trend)
+      })
+    })
+
+    // Fill missing months with zero values and calculate growth
+    courseMap.forEach((trend) => {
+      const monthMap = new Map(trend.monthlyData.map((item) => [item.month, item]))
+      labels.forEach((label) => {
+        if (!monthMap.has(label)) {
+          trend.monthlyData.push({ month: label, bookings: 0, revenue: 0 })
+        }
+      })
+      trend.monthlyData.sort(
+        (a, b) => labels.indexOf(a.month) - labels.indexOf(b.month)
+      )
+      if (trend.monthlyData.length >= 2) {
+        const firstRevenue = trend.monthlyData[0].revenue
+        const lastRevenue = trend.monthlyData[trend.monthlyData.length - 1].revenue
+        trend.growthRate = calculateGrowthRate(firstRevenue, lastRevenue)
+      }
+    })
+
+    return Array.from(courseMap.values()).sort((a, b) => b.totalRevenue - a.totalRevenue)
+  }, [chronologicalSeries])
+
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null)
 
   useEffect(() => {
-    // ダミーデータ（実際にはuseCasesから取得）
-    const dummyData: CourseTrend[] = [
-      {
-        id: '1',
-        name: 'リラクゼーション90分',
-        monthlyData: [
-          { month: '10月', bookings: 165, revenue: 1980000 },
-          { month: '11月', bookings: 172, revenue: 2064000 },
-          { month: '12月', bookings: 178, revenue: 2136000 },
-        ],
-        totalBookings: 515,
-        totalRevenue: 6180000,
-        growthRate: 7.8,
-        averagePrice: 12000,
-      },
-      {
-        id: '2',
-        name: 'ボディケア60分',
-        monthlyData: [
-          { month: '10月', bookings: 148, revenue: 1184000 },
-          { month: '11月', bookings: 152, revenue: 1216000 },
-          { month: '12月', bookings: 156, revenue: 1248000 },
-        ],
-        totalBookings: 456,
-        totalRevenue: 3648000,
-        growthRate: 5.4,
-        averagePrice: 8000,
-      },
-      {
-        id: '3',
-        name: 'フェイシャル45分',
-        monthlyData: [
-          { month: '10月', bookings: 142, revenue: 923000 },
-          { month: '11月', bookings: 138, revenue: 897000 },
-          { month: '12月', bookings: 134, revenue: 871000 },
-        ],
-        totalBookings: 414,
-        totalRevenue: 2691000,
-        growthRate: -5.6,
-        averagePrice: 6500,
-      },
-    ]
-    setData(dummyData)
-  }, [year, month, analyticsUseCases])
+    if (!selectedCourse && courses.length > 0) {
+      setSelectedCourse(courses[0].id)
+    }
+    if (selectedCourse && !courses.find((course) => course.id === selectedCourse)) {
+      setSelectedCourse(courses[0]?.id ?? null)
+    }
+  }, [courses, selectedCourse])
 
-  const selectedCourseData = data.find((course) => course.id === selectedCourse)
+  const selectedCourseData = courses.find((course) => course.id === selectedCourse)
+
+  if (courses.length === 0) {
+    return (
+      <div className="flex h-40 items-center justify-center rounded-lg border text-sm text-muted-foreground">
+        データがありません。
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">
@@ -108,10 +151,10 @@ export function CourseTrendTable({ year, month, analyticsUseCases }: CourseTrend
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.map((course) => (
+            {courses.map((course) => (
               <TableRow key={course.id}>
                 <TableCell className="font-medium">{course.name}</TableCell>
-                <TableCell className="text-right">{course.totalBookings}件</TableCell>
+                <TableCell className="text-right">{course.totalBookings.toLocaleString()}件</TableCell>
                 <TableCell className="text-right">
                   ¥{course.totalRevenue.toLocaleString()}
                 </TableCell>
@@ -120,15 +163,19 @@ export function CourseTrendTable({ year, month, analyticsUseCases }: CourseTrend
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
-                    {course.growthRate > 0 ? (
+                    {course.growthRate === null ? null : course.growthRate > 0 ? (
                       <TrendingUp className="h-4 w-4 text-green-600" />
                     ) : (
                       <TrendingDown className="h-4 w-4 text-red-600" />
                     )}
-                    <span className={course.growthRate > 0 ? 'text-green-600' : 'text-red-600'}>
-                      {course.growthRate > 0 ? '+' : ''}
-                      {course.growthRate}%
-                    </span>
+                    {course.growthRate === null ? (
+                      <span className="text-muted-foreground">-</span>
+                    ) : (
+                      <span className={course.growthRate > 0 ? 'text-green-600' : 'text-red-600'}>
+                        {course.growthRate > 0 ? '+' : ''}
+                        {course.growthRate.toFixed(1)}%
+                      </span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="text-center">

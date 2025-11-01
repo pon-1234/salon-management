@@ -9,12 +9,7 @@ import {
   MonthlyStaffSummary,
   MonthlyAreaSummary,
 } from '../types/analytics'
-import {
-  staffPerformanceData,
-  generateCourseSalesData,
-  generateOptionSalesData,
-  generateMarketingChannelData,
-} from './data'
+import { staffPerformanceData, generateOptionSalesData, generateMarketingChannelData } from './data'
 
 export class AnalyticsRepositoryImpl implements AnalyticsRepository {
   constructor(private readonly storeId?: string) {}
@@ -59,7 +54,10 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
   }
 
   async getCourseSalesData(year: number, month: number): Promise<CourseSalesData[]> {
-    return generateCourseSalesData(year, month)
+    return this.fetchWithQuery<CourseSalesData[]>('/api/analytics/course-sales', {
+      year: String(year),
+      month: String(month),
+    })
   }
 
   async getOptionSalesData(year: number): Promise<OptionSalesData[]> {
