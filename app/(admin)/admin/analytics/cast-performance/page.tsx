@@ -3,12 +3,9 @@
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
 import {
   Printer,
   Sparkles,
-  Filter as FilterIcon,
   AlertTriangle,
   RotateCcw,
   Users,
@@ -70,147 +67,108 @@ export default function CastPerformancePage() {
   const lastUpdated = useMemo(() => new Date(), [])
 
   return (
-    <div className="mx-auto w-full max-w-screen-xl space-y-8">
-      <Card className="border-none bg-gradient-to-br from-purple-600 via-indigo-500 to-sky-500 text-white shadow-xl">
-        <CardContent className="flex flex-col gap-6 p-6 pb-8 md:flex-row md:items-end md:justify-between md:p-8">
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-white/80">
-              <Sparkles className="h-4 w-4" />
-              キャスト実績ダッシュボード
-            </div>
-            <div className="space-y-2">
-              <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">キャスト実績概要</h1>
-              <p className="max-w-2xl text-sm leading-relaxed text-white/85">
-                稼働状況・売上・指名状況を統合したキャストパフォーマンスレポートです。評価面談やシフト計画の意思決定をスムーズにします。
-              </p>
-            </div>
-          </div>
-          <div className="flex w-full flex-col gap-3 rounded-xl border border-white/20 bg-white/10 p-4 text-sm md:w-64">
-            <div className="flex items-center justify-between font-medium">
-              <span className="text-white/75">対象期間</span>
-              <span>{periodLabel}</span>
-            </div>
-            <div className="flex items-center justify-between text-xs font-semibold">
-              <span className="text-white/75">表示条件</span>
-              <span>{displayType}</span>
-            </div>
-            <div className="flex items-center justify-between text-xs font-semibold">
-              <span className="text-white/75">キャスト</span>
-              <span>{selectedCastLabel}</span>
-            </div>
-            {hasCustomFilters && (
-              <Button
-                variant="ghost"
-                className="h-9 justify-center rounded-lg border border-white/30 bg-white/10 text-white hover:bg-white/20"
-                onClick={handleResetFilters}
-              >
-                <RotateCcw className="h-4 w-4" />
-                条件をリセット
-              </Button>
-            )}
-            <Button
-              onClick={handlePrint}
-              variant="ghost"
-              className="h-9 justify-center rounded-lg border border-white/30 bg-white/10 text-white hover:bg-white/20 print:hidden"
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap items-center gap-4">
+          <h1 className="text-2xl font-bold">キャスト実績</h1>
+          <div className="flex flex-wrap gap-2">
+            <Select
+              value={selectedYear.toString()}
+              onValueChange={(value) => setSelectedYear(parseInt(value))}
             >
-              <Printer className="h-4 w-4" />
-              印刷する
+              <SelectTrigger className="w-[100px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}年
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={selectedMonth.toString()}
+              onValueChange={(value) => setSelectedMonth(parseInt(value))}
+            >
+              <SelectTrigger className="w-[80px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {months.map((month) => (
+                  <SelectItem key={month} value={month.toString()}>
+                    {month}月
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={displayType} onValueChange={setDisplayType}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {displayTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedCast} onValueChange={setSelectedCast}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="キャスト：" />
+              </SelectTrigger>
+              <SelectContent>
+                {castList.map((cast) => (
+                  <SelectItem key={cast} value={cast}>
+                    {cast}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
+          {hasCustomFilters && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleResetFilters}
+              className="flex items-center gap-1"
+            >
+              <RotateCcw className="h-4 w-4" />
+              条件をリセット
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+          )}
+          <Button
+            onClick={handlePrint}
+            className="bg-emerald-600 text-white hover:bg-emerald-700"
+          >
+            <Printer className="mr-2 h-4 w-4" />
+            印刷する
+          </Button>
+        </div>
+      </div>
 
-      <Card className="shadow-sm">
-        <CardHeader className="space-y-1 border-b pb-4">
-          <CardTitle className="flex items-center gap-2 text-base font-semibold">
-            <FilterIcon className="h-4 w-4 text-muted-foreground" />
-            集計条件
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            年月・表示区分・キャストで絞り込みが可能です。フィルター変更後は各指標が即時に再集計されます。
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4 pt-4">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="cast-performance-year">対象年</Label>
-              <Select
-                value={selectedYear.toString()}
-                onValueChange={(value) => setSelectedYear(parseInt(value))}
-              >
-                <SelectTrigger id="cast-performance-year">
-                  <SelectValue placeholder="年を選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}年
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="cast-performance-month">対象月</Label>
-              <Select
-                value={selectedMonth.toString()}
-                onValueChange={(value) => setSelectedMonth(parseInt(value))}
-              >
-                <SelectTrigger id="cast-performance-month">
-                  <SelectValue placeholder="月を選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  {months.map((month) => (
-                    <SelectItem key={month} value={month.toString()}>
-                      {month}月
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="cast-performance-display">表示区分</Label>
-              <Select id="cast-performance-display" value={displayType} onValueChange={setDisplayType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="表示区分を選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  {displayTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                シフト状況ごとの絞り込み（出勤・休み・当日欠勤）を切り替えできます。
-              </p>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="cast-performance-cast">キャスト</Label>
-              <Select id="cast-performance-cast" value={selectedCast} onValueChange={setSelectedCast}>
-                <SelectTrigger>
-                  <SelectValue placeholder="全キャスト" />
-                </SelectTrigger>
-                <SelectContent>
-                  {castList.map((cast) => (
-                    <SelectItem key={cast} value={cast}>
-                      {cast === '----------' ? '全キャスト' : cast}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">個別面談や評価時の比較に。</p>
-            </div>
-          </div>
-          <Separator />
-          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-            <span>表示対象: {displayType}</span>
-            <span>キャスト: {selectedCastLabel}</span>
-            <span>期間: {periodLabel}</span>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+        <span>対象期間: {periodLabel}</span>
+        <span>表示: {displayType}</span>
+        <span>キャスト: {selectedCastLabel}</span>
+        <span>
+          最終更新:{' '}
+          {lastUpdated.toLocaleDateString('ja-JP', {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
+        </span>
+      </div>
+
+      <div className="rounded-md border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-700">
+        ※ 厚生費は未払いも含めて全て表示しています
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
         <div className="space-y-6">

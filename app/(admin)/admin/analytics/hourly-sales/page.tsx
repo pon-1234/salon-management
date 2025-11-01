@@ -24,8 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
 import { HourlySalesChart } from '@/components/analytics/hourly-sales-chart'
 import { HourlySalesTable } from '@/components/analytics/hourly-sales-table'
 import { HourlyHeatmap } from '@/components/analytics/hourly-heatmap'
@@ -351,77 +349,15 @@ export default function HourlySalesPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-screen-xl space-y-8">
-      <Card className="border-none bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-500 text-white shadow-xl">
-        <CardContent className="flex flex-col gap-6 p-6 pb-8 md:flex-row md:items-end md:justify-between md:p-8">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <p className="text-sm font-medium uppercase tracking-wide text-white/80">
-                {currentStore.name}・{selectedPeriodLabel}
-              </p>
-              <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">時間別売上分析</h1>
-              <p className="max-w-2xl text-sm leading-relaxed text-white/85">
-                ピーク時間帯や稼働効率を一目で把握できるレポートです。混雑コントロールや人員配置の判断に役立つ主要指標をまとめています。
-              </p>
-            </div>
-          </div>
-          <div className="flex w-full flex-col gap-3 rounded-xl border border-white/20 bg-white/10 p-4 text-sm md:w-auto">
-            <div className="flex items-center justify-between">
-              <span className="text-white/80">月間来客数</span>
-              <span className="text-lg font-semibold">
-                {kpiData.totalCustomers.toLocaleString()}人
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-xs font-medium">
-              <span className="text-white/70">{previousPeriodLabel}比</span>
-              <span
-                className={
-                  totalDifference >= 0 ? 'text-emerald-200' : 'text-rose-200'
-                }
-              >
-                {formatDelta(totalDifference, '人')}（{growthRateDisplay}）
-              </span>
-            </div>
-            <Separator className="border-white/20 bg-white/20" />
-            <div className="flex items-center justify-between text-xs font-medium">
-              <span className="text-white/70">稼働効率</span>
-              <span
-                className={
-                  efficiencyDelta >= 0 ? 'text-emerald-200' : 'text-rose-200'
-                }
-              >
-                {kpiData.efficiency}%（{efficiencyDeltaDisplay}）
-              </span>
-            </div>
-            <Button
-              onClick={handlePrint}
-              variant="ghost"
-              className="h-9 justify-center rounded-lg border border-white/30 bg-white/10 text-white hover:bg-white/20 print:hidden"
-            >
-              <Printer className="h-4 w-4" />
-              印刷する
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-sm">
-        <CardHeader className="flex flex-col gap-2 border-b pb-4">
-          <CardTitle className="text-base font-semibold">対象期間と表示設定</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            マネージャーが意思決定しやすいよう、前月との比較とピーク帯を自動でハイライトします。
-          </p>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4 pt-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2 md:max-w-xl md:grid-cols-4 lg:max-w-2xl">
-            <div className="space-y-1.5">
-              <Label htmlFor="hourly-year">対象年</Label>
-              <Select
-                value={year.toString()}
-                onValueChange={(value) => setYear(parseInt(value))}
-              >
-                <SelectTrigger id="hourly-year">
-                  <SelectValue placeholder="年を選択" />
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-4">
+            <h1 className="text-3xl font-bold">時間別売上分析</h1>
+            <div className="flex flex-wrap gap-2">
+              <Select value={year.toString()} onValueChange={(value) => setYear(parseInt(value))}>
+                <SelectTrigger className="w-[100px]">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {years.map((y) => (
@@ -431,15 +367,9 @@ export default function HourlySalesPage() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="hourly-month">対象月</Label>
-              <Select
-                value={month.toString()}
-                onValueChange={(value) => setMonth(parseInt(value))}
-              >
-                <SelectTrigger id="hourly-month">
-                  <SelectValue placeholder="月を選択" />
+              <Select value={month.toString()} onValueChange={(value) => setMonth(parseInt(value))}>
+                <SelectTrigger className="w-[80px]">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {months.map((m) => (
@@ -450,34 +380,48 @@ export default function HourlySalesPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-transparent">spacer</Label>
-              <Button
-                variant="outline"
-                className="w-full bg-muted/30"
-                onClick={() => handleShiftMonth(-1)}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                前月
-              </Button>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-transparent">spacer</Label>
-              <Button
-                variant="outline"
-                className="w-full bg-muted/30"
-                onClick={() => handleShiftMonth(1)}
-              >
-                来月
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
           </div>
-          {isLoading && (
-            <span className="text-sm text-muted-foreground">データを読み込み中です…</span>
-          )}
-        </CardContent>
-      </Card>
+          <p className="text-sm text-muted-foreground">
+            {currentStore.name}の時間帯別実績です。ピーク時間帯や稼働効率の変化を前月比で確認できます。
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleShiftMonth(-1)}
+            className="flex items-center gap-1"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            前月
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleShiftMonth(1)}
+            className="flex items-center gap-1"
+          >
+            来月
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button
+            onClick={handlePrint}
+            className="bg-emerald-600 text-white hover:bg-emerald-700"
+          >
+            <Printer className="mr-2 h-4 w-4" />
+            印刷する
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+        <span>対象期間: {selectedPeriodLabel}</span>
+        <span>比較期間: {previousPeriodLabel}</span>
+        <span>
+          来客数差 {formatDelta(totalDifference, '人')}（{growthRateDisplay}） / 稼働効率{' '}
+          {kpiData.efficiency}%（{efficiencyDeltaDisplay}）
+        </span>
+      </div>
 
       {error && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">

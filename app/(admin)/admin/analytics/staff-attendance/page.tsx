@@ -4,8 +4,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
 import {
   Printer,
   Users,
@@ -463,147 +461,108 @@ export default function StaffAttendancePage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-screen-xl space-y-8">
-      <Card className="border-none bg-gradient-to-br from-sky-600 via-cyan-500 to-emerald-500 text-white shadow-xl">
-        <CardContent className="flex flex-col gap-6 p-6 pb-8 md:flex-row md:items-end md:justify-between md:p-8">
-          <div className="space-y-4">
-            <p className="text-sm font-medium uppercase tracking-wide text-white/80">
-              {currentStore.name}・{selectedPeriodLabel}
-            </p>
-            <div className="space-y-2">
-              <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">就業データ管理</h1>
-              <p className="max-w-2xl text-sm leading-relaxed text-white/85">
-                スタッフの稼働状況や欠勤傾向を把握し、迅速なケアとシフト調整を支援するマネージャー向けダッシュボードです。
-              </p>
-            </div>
-          </div>
-          <div className="grid w-full gap-3 rounded-xl border border-white/20 bg-white/10 p-4 text-sm md:w-80">
-            <div className="flex items-center justify-between font-semibold">
-              <span className="text-white/80">稼働スタッフ</span>
-              <span className="text-lg">
-                {activeStaff}/{totalStaff}人
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-xs font-semibold">
-              <span className="text-white/75">稼働率</span>
-              <span>{activeStaffRate.toFixed(1)}%</span>
-            </div>
-            <Separator className="border-white/20 bg-white/20" />
-            <div className="flex items-center justify-between text-xs font-semibold">
-              <span className="text-white/75">出勤率</span>
-              <span>
-                {attendanceRate.toFixed(1)}%（{formatDecimalDelta(attendanceRateDelta, 'pt', 1)}）
-              </span>
-            </div>
-            <Button
-              onClick={handlePrint}
-              variant="ghost"
-              className="h-9 justify-center rounded-lg border border-white/30 bg-white/10 text-white hover:bg-white/20 print:hidden"
-            >
-              <Printer className="h-4 w-4" />
-              印刷する
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap items-center gap-4">
+          <h1 className="text-3xl font-bold">就業データ管理</h1>
+          <div className="flex flex-wrap gap-2">
+            <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+              <SelectTrigger className="w-[100px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}年
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-      <Card className="shadow-sm">
-        <CardHeader className="space-y-1 border-b pb-4">
-          <CardTitle className="text-base font-semibold">表示条件</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            対象期間・ステータス・スタッフで絞り込むと、グラフとタブの内容がリアルタイムに更新されます。
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4 pt-4">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="attendance-year">対象年</Label>
-              <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
-                <SelectTrigger id="attendance-year">
-                  <SelectValue placeholder="年を選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}年
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="attendance-month">対象月</Label>
-              <Select value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(parseInt(value))}>
-                <SelectTrigger id="attendance-month">
-                  <SelectValue placeholder="月を選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  {months.map((month) => (
-                    <SelectItem key={month} value={month.toString()}>
-                      {month}月
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="attendance-status">出勤ステータス</Label>
-              <Select
-                id="attendance-status"
-                value={selectedStatus}
-                onValueChange={(value) => setSelectedStatus(value as StatusFilter)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="ステータスを選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="attendance-staff">スタッフ</Label>
-              <Select id="attendance-staff" value={selectedStaff} onValueChange={setSelectedStaff}>
-                <SelectTrigger>
-                  <SelectValue placeholder="全スタッフ" />
-                </SelectTrigger>
-                <SelectContent>
-                  {staffOptions.map((staff) => (
-                    <SelectItem key={staff} value={staff}>
-                      {staff}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">個別フォロー時に対象スタッフだけを表示可能です。</p>
-            </div>
+            <Select value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(parseInt(value))}>
+              <SelectTrigger className="w-[80px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {months.map((month) => (
+                  <SelectItem key={month} value={month.toString()}>
+                    {month}月
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as StatusFilter)}>
+              <SelectTrigger className="w-[130px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {status}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={selectedStaff} onValueChange={setSelectedStaff}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {staffOptions.map((staff) => (
+                  <SelectItem key={staff} value={staff}>
+                    {staff}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Button variant="outline" className="bg-muted/30" onClick={() => handleShiftMonth(-1)}>
-                <ChevronLeft className="h-4 w-4" />
-                前月
-              </Button>
-              <Button variant="outline" className="bg-muted/30" onClick={() => handleShiftMonth(1)}>
-                来月
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <span>表示: {selectedStatus}</span>
-              <span>スタッフ: {selectedStaff}</span>
-              <span>期間: {selectedPeriodLabel}</span>
-            </div>
-          </div>
-          {isLoading && !error && (
-            <p className="text-xs text-muted-foreground">最新データを取得しています...</p>
-          )}
-        </CardContent>
-      </Card>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleShiftMonth(-1)}
+            className="flex items-center gap-1"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            前月
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleShiftMonth(1)}
+            className="flex items-center gap-1"
+          >
+            来月
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button
+            onClick={handlePrint}
+            className="bg-emerald-600 text-white hover:bg-emerald-700"
+          >
+            <Printer className="mr-2 h-4 w-4" />
+            印刷する
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+        <span>対象期間: {selectedPeriodLabel}</span>
+        <span>比較期間: {previousPeriodLabel}</span>
+        <span>表示: {selectedStatus}</span>
+        <span>スタッフ: {selectedStaff}</span>
+        <span>
+          稼働率 {activeStaffRate.toFixed(1)}% / 出勤率 {attendanceRate.toFixed(1)}%
+        </span>
+      </div>
+
+      {isLoading && !error && (
+        <div className="rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+          データを読み込み中です...
+        </div>
+      )}
 
       {error && (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
