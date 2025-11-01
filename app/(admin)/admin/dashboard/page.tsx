@@ -40,6 +40,9 @@ import {
   endOfMonth,
   subDays,
   subMonths,
+  addHours,
+  subHours,
+  differenceInMinutes,
 } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { Reservation } from '@/lib/types/reservation'
@@ -215,6 +218,44 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
+function getUpcomingTimingBadge(startTime: Date) {
+  const now = new Date()
+  const minutesUntil = differenceInMinutes(startTime, now)
+
+  if (minutesUntil <= 0) {
+    return {
+      label: '施術中',
+      variant: 'secondary' as const,
+    }
+  }
+
+  if (minutesUntil <= 30) {
+    return {
+      label: 'まもなく開始',
+      variant: 'default' as const,
+    }
+  }
+
+  if (minutesUntil < 60) {
+    return {
+      label: `${minutesUntil}分後に開始`,
+      variant: 'success' as const,
+    }
+  }
+
+  if (minutesUntil < 180) {
+    return {
+      label: `開始まで約${Math.round(minutesUntil / 60)}時間`,
+      variant: 'success' as const,
+    }
+  }
+
+  return {
+    label: `${format(startTime, 'MM月dd日 HH:mm')} 開始予定`,
+    variant: 'outline' as const,
+  }
+}
+
 export default function DashboardPage() {
   const { data: session, status } = useSession()
   const { currentStore } = useStore()
@@ -366,6 +407,49 @@ export default function DashboardPage() {
       previousBookings: previousPeriodReservations.length,
     }
   }, [filteredReservations, previousPeriodReservations])
+
+  const { displayReservations, hasUpcomingReservations } = useMemo(() => {
+    if (!reservations.length) {
+      return {
+        displayReservations: [] as Reservation[],
+        hasUpcomingReservations: false,
+      }
+    }
+
+    const now = new Date()
+    const windowStart = subHours(now, 1)
+    const windowEnd = addHours(now, 48)
+
+    const upcoming = reservations
+      .filter((reservation) => {
+        const start =
+          reservation.startTime instanceof Date ? reservation.startTime : new Date(reservation.startTime)
+        return start >= windowStart && start <= windowEnd
+      })
+      .sort((a, b) => {
+        const aStart = a.startTime instanceof Date ? a.startTime : new Date(a.startTime)
+        const bStart = b.startTime instanceof Date ? b.startTime : new Date(b.startTime)
+        return aStart.getTime() - bStart.getTime()
+      })
+
+    if (upcoming.length > 0) {
+      return {
+        displayReservations: upcoming.slice(0, 5),
+        hasUpcomingReservations: true,
+      }
+    }
+
+    const latest = [...reservations].sort((a, b) => {
+      const aStart = a.startTime instanceof Date ? a.startTime : new Date(a.startTime)
+      const bStart = b.startTime instanceof Date ? b.startTime : new Date(b.startTime)
+      return bStart.getTime() - aStart.getTime()
+    })
+
+    return {
+      displayReservations: latest.slice(0, 5),
+      hasUpcomingReservations: false,
+    }
+  }, [reservations])
 
   // 売上推移データ
   const salesData = useMemo(() => {
@@ -768,7 +852,11 @@ export default function DashboardPage() {
               <Clock className="h-5 w-5" />
               最近の予約
             </CardTitle>
-            <CardDescription>直近の予約状況</CardDescription>
+            <CardDescription>
+              {hasUpcomingReservations
+                ? '今後48時間以内に開始する予約を表示しています'
+                : '最新の予約5件を表示しています'}
+            </CardDescription>
           </div>
           <Button variant="outline" size="sm" asChild>
             <Link href="/admin/reservation-list">
@@ -779,45 +867,62 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {reservations.slice(0, 5).map((reservation) => {
-              const customerDisplayName =
-                reservation.customerName ??
-                (reservation.customerId ? `顧客${reservation.customerId.slice(0, 8)}` : '顧客')
-              const staffDisplayName =
-                reservation.staffName ??
-                (reservation.staffId ? `担当キャスト${reservation.staffId.slice(0, 8)}` : '担当キャスト')
+            {displayReservations.length === 0 ? (
+              <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-muted-foreground/40 text-sm text-muted-foreground">
+                表示できる予約がありません
+              </div>
+            ) : (
+              displayReservations.map((reservation) => {
+                const customerDisplayName =
+                  reservation.customerName ??
+                  (reservation.customerId ? `顧客${reservation.customerId.slice(0, 8)}` : '顧客')
+                const staffDisplayName =
+                  reservation.staffName ??
+                  (reservation.staffId ? `担当キャスト${reservation.staffId.slice(0, 8)}` : '担当キャスト')
+                const startAt =
+                  reservation.startTime instanceof Date ? reservation.startTime : new Date(reservation.startTime)
+                const endAt =
+                  reservation.endTime instanceof Date ? reservation.endTime : new Date(reservation.endTime)
+                const timingBadge = hasUpcomingReservations ? getUpcomingTimingBadge(startAt) : null
 
-              return (
-                <div
-                  key={reservation.id}
-                  className="flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50"
-                  onClick={() => setSelectedReservation(reservation)}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400" />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{customerDisplayName}</p>
-                        <Badge variant="outline" className="font-mono text-[10px] uppercase">
-                          {reservation.id.slice(0, 8)}
-                        </Badge>
+                return (
+                  <div
+                    key={reservation.id}
+                    className="flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50"
+                    onClick={() => setSelectedReservation(reservation)}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400" />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{customerDisplayName}</p>
+                          <Badge variant="outline" className="font-mono text-[10px] uppercase">
+                            {reservation.id.slice(0, 8)}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">担当: {staffDisplayName}</p>
+                        <p className="whitespace-nowrap text-xs text-muted-foreground">
+                          {format(startAt, 'MM月dd日 HH:mm')} - {format(endAt, 'HH:mm')}
+                        </p>
                       </div>
-                      <p className="text-sm text-muted-foreground">担当: {staffDisplayName}</p>
-                      <p className="text-xs text-muted-foreground whitespace-nowrap">
-                        {format(reservation.startTime, 'MM月dd日 HH:mm')} -{' '}
-                        {format(reservation.endTime, 'HH:mm')}
-                      </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className="font-medium">¥{reservation.price.toLocaleString()}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        {timingBadge && (
+                          <Badge variant={timingBadge.variant} className="whitespace-nowrap">
+                            {timingBadge.label}
+                          </Badge>
+                        )}
+                        <StatusBadge status={reservation.status} />
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="font-medium">¥{reservation.price.toLocaleString()}</p>
-                    </div>
-                    <StatusBadge status={reservation.status} />
-                  </div>
-                </div>
-              )
-            })}
+                )
+              })
+            )}
           </div>
         </CardContent>
       </Card>
