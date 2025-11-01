@@ -351,9 +351,9 @@ export default function HourlySalesPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto w-full max-w-6xl space-y-6 pb-8">
       <Card className="border-none bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-500 text-white shadow-xl">
-        <CardContent className="flex flex-col gap-6 p-6 pb-8 md:flex-row md:items-end md:justify-between md:p-8">
+        <CardContent className="flex flex-col gap-5 p-5 pb-7 md:flex-row md:items-end md:justify-between md:p-7">
           <div className="space-y-4">
             <div className="space-y-2">
               <p className="text-sm font-medium uppercase tracking-wide text-white/80">
@@ -485,7 +485,7 @@ export default function HourlySalesPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
         {keyMetrics.map((metric) => {
           const Icon = metric.icon
           const deltaColor =
@@ -517,8 +517,8 @@ export default function HourlySalesPage() {
         })}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[2fr,1fr]">
-        <div className="space-y-6">
+      <div className="grid gap-5 xl:grid-cols-[2fr,1fr]">
+        <div className="space-y-5">
           <Card className="shadow-sm">
             <CardHeader className="space-y-1">
               <CardTitle className="text-lg font-semibold">時間別来客数の推移</CardTitle>
@@ -559,7 +559,7 @@ export default function HourlySalesPage() {
           </Card>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           <Card className="shadow-sm">
             <CardHeader className="space-y-2">
               <CardTitle className="text-base font-semibold">前月対比サマリー</CardTitle>
