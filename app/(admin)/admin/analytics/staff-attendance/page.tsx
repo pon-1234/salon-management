@@ -600,12 +600,11 @@ export default function StaffAttendancePage() {
         })}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[2fr,1fr]">
-        <div className="space-y-6">
-          <Card className="shadow-sm">
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-lg font-semibold">月間出勤推移</CardTitle>
-              <p className="text-sm text-muted-foreground">
+      <div className="space-y-6">
+        <Card className="shadow-sm">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-lg font-semibold">月間出勤推移</CardTitle>
+            <p className="text-sm text-muted-foreground">
                 日別の出勤人数を可視化しています。ピークや谷間を確認し、人員配置の調整に活用してください。
               </p>
             </CardHeader>
@@ -625,10 +624,10 @@ export default function StaffAttendancePage() {
                   data={filteredAttendance}
                 />
               )}
-            </CardContent>
-          </Card>
+          </CardContent>
+        </Card>
 
-          <Card className="shadow-sm">
+        <Card className="shadow-sm">
             <CardHeader className="space-y-1">
               <CardTitle className="text-lg font-semibold">詳細データビュー</CardTitle>
               <p className="text-sm text-muted-foreground">
@@ -670,105 +669,101 @@ export default function StaffAttendancePage() {
                   </TabsContent>
                 </Tabs>
               )}
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="space-y-6">
-          <Card className="shadow-sm">
-            <CardHeader className="space-y-2">
-              <CardTitle className="text-base font-semibold">前月対比サマリー</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                主要指標の推移を俯瞰し、優先的に着手すべき論点を把握できます。
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm">
+          <CardHeader className="space-y-2">
+            <CardTitle className="text-base font-semibold">前月対比サマリー</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              主要指標の推移を俯瞰し、優先的に着手すべき論点を把握できます。
+            </p>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">平均出勤人数</span>
+                <span className="font-semibold">{averageAttendance.toFixed(1)}人/日</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">{previousPeriodLabel}</span>
+                <span className={averageAttendanceDiff >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
+                  {formatDecimalDelta(averageAttendanceDiff, '人', 1)}
+                </span>
+              </div>
+            </div>
+            <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">出勤率</span>
+                <span className="font-semibold">{attendanceRate.toFixed(1)}%</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">{previousPeriodLabel}</span>
+                <span className={attendanceRateDelta >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
+                  {formatDecimalDelta(attendanceRateDelta, 'pt', 1)}
+                </span>
+              </div>
+            </div>
+            <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">未出勤日数</span>
+                <span className="font-semibold">{totalAbsences.toLocaleString()}日</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">{previousPeriodLabel}</span>
+                <span className={totalAbsenceDelta <= 0 ? 'text-emerald-600' : 'text-rose-600'}>
+                  {formatIntegerDelta(totalAbsenceDelta, '日')}
+                </span>
+              </div>
+            </div>
+            <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
+              <div className="flex items-center justify_between text-sm">
+                <span className="text-muted-foreground">週末出勤率</span>
+                <span className="font-semibold">{weekendAttendanceRateRounded.toFixed(1)}%</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                週末 {weekendDaysInMonth}日中 {weekendAttendanceTotal.toLocaleString()}日出勤
               </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">平均出勤人数</span>
-                  <span className="font-semibold">{averageAttendance.toFixed(1)}人/日</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">{previousPeriodLabel}</span>
-                  <span className={averageAttendanceDiff >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
-                    {formatDecimalDelta(averageAttendanceDiff, '人', 1)}
-                  </span>
-                </div>
+            </div>
+            <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
+              <div className="flex items-center justify_between text-sm">
+                <span className="text-muted-foreground">当日欠勤</span>
+                <span className={suddenAbsenceCount > 0 ? 'font-semibold text-amber-600' : 'text-muted-foreground'}>
+                  {suddenAbsenceCount}名
+                </span>
               </div>
-              <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">出勤率</span>
-                  <span className="font-semibold">{attendanceRate.toFixed(1)}%</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">{previousPeriodLabel}</span>
-                  <span className={attendanceRateDelta >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
-                    {formatDecimalDelta(attendanceRateDelta, 'pt', 1)}
-                  </span>
-                </div>
-              </div>
-              <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">未出勤日数</span>
-                  <span className="font-semibold">{totalAbsences.toLocaleString()}日</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">{previousPeriodLabel}</span>
-                  <span className={totalAbsenceDelta <= 0 ? 'text-emerald-600' : 'text-rose-600'}>
-                    {formatIntegerDelta(totalAbsenceDelta, '日')}
-                  </span>
-                </div>
-              </div>
-              <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">週末出勤率</span>
-                  <span className="font-semibold">{weekendAttendanceRateRounded.toFixed(1)}%</span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  週末 {weekendDaysInMonth}日中 {weekendAttendanceTotal.toLocaleString()}日出勤
-                </p>
-              </div>
-              <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">当日欠勤</span>
-                  <span className={suddenAbsenceCount > 0 ? 'font-semibold text-amber-600' : 'text-muted-foreground'}>
-                    {suddenAbsenceCount}名
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  欠勤理由のヒアリングとフォロー計画を設定してください。
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-sm">
-            <CardHeader className="space-y-2">
-              <CardTitle className="text-base font-semibold">マネージャー向けインサイト</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                指標から抽出した要点です。会議やスタッフケアのアクションにご活用ください。
+              <p className="text-xs text-muted-foreground">
+                欠勤理由のヒアリングとフォロー計画を設定してください。
               </p>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {insights.map((insight) => {
-                const meta = insightToneMeta[insight.tone]
-                const InsightIcon = meta.icon
-                return (
-                  <div
-                    key={insight.title}
-                    className={`space-y-2 rounded-lg border px-4 py-3 text-sm ${meta.container}`}
-                  >
-                    <div className="flex items-center gap-2 font-semibold">
-                      <InsightIcon className={`h-4 w-4 ${meta.iconColor}`} />
-                      <span>{insight.title}</span>
-                    </div>
-                    <p className="leading-relaxed text-muted-foreground">{insight.description}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm">
+          <CardHeader className="space-y-2">
+            <CardTitle className="text-base font-semibold">マネージャー向けインサイト</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              指標から抽出した要点です。会議やスタッフケアのアクションにご活用ください。
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {insights.map((insight) => {
+              const meta = insightToneMeta[insight.tone]
+              const InsightIcon = meta.icon
+              return (
+                <div
+                  key={insight.title}
+                  className={`space-y-2 rounded-lg border px-4 py-3 text-sm ${meta.container}`}
+                >
+                  <div className="flex items-center gap-2 font-semibold">
+                    <InsightIcon className={`h-4 w-4 ${meta.iconColor}`} />
+                    <span>{insight.title}</span>
                   </div>
-                )
-              })}
-            </CardContent>
-          </Card>
-        </div>
+                  <p className="leading-relaxed text-muted-foreground">{insight.description}</p>
+                </div>
+              )
+            })}
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
