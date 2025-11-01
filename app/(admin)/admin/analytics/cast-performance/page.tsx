@@ -70,9 +70,9 @@ export default function CastPerformancePage() {
   const lastUpdated = useMemo(() => new Date(), [])
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 pb-8">
+    <div className="space-y-8">
       <Card className="border-none bg-gradient-to-br from-purple-600 via-indigo-500 to-sky-500 text-white shadow-xl">
-        <CardContent className="flex flex-col gap-5 p-5 pb-7 md:flex-row md:items-end md:justify-between md:p-7">
+        <CardContent className="flex flex-col gap-6 p-6 pb-8 md:flex-row md:items-end md:justify-between md:p-8">
           <div className="space-y-4">
             <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-white/80">
               <Sparkles className="h-4 w-4" />
@@ -212,11 +212,11 @@ export default function CastPerformancePage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-5 lg:grid-cols-[2fr,1fr]">
-        <div className="space-y-5">
+      <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
+        <div className="space-y-6">
           <CastPerformanceTable analyticsUseCases={analyticsUseCases} />
         </div>
-        <div className="space-y-5">
+        <div className="space-y-6">
           <Card className="shadow-sm">
             <CardHeader className="space-y-2">
               <CardTitle className="text-base font-semibold">運用メモ</CardTitle>

@@ -463,9 +463,9 @@ export default function StaffAttendancePage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 pb-8">
+    <div className="space-y-8">
       <Card className="border-none bg-gradient-to-br from-sky-600 via-cyan-500 to-emerald-500 text-white shadow-xl">
-        <CardContent className="flex flex-col gap-5 p-5 pb-7 md:flex-row md:items-end md:justify-between md:p-7">
+        <CardContent className="flex flex-col gap-6 p-6 pb-8 md:flex-row md:items-end md:justify-between md:p-8">
           <div className="space-y-4">
             <p className="text-sm font-medium uppercase tracking-wide text-white/80">
               {currentStore.name}・{selectedPeriodLabel}
@@ -611,7 +611,7 @@ export default function StaffAttendancePage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {keyMetrics.map((metric) => {
           const Icon = metric.icon
           const deltaClass =
@@ -641,8 +641,8 @@ export default function StaffAttendancePage() {
         })}
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[2fr,1fr]">
-        <div className="space-y-5">
+      <div className="grid gap-6 xl:grid-cols-[2fr,1fr]">
+        <div className="space-y-6">
           <Card className="shadow-sm">
             <CardHeader className="space-y-1">
               <CardTitle className="text-lg font-semibold">月間出勤推移</CardTitle>
@@ -715,7 +715,7 @@ export default function StaffAttendancePage() {
           </Card>
         </div>
 
-        <div className="space-y-5">
+        <div className="space-y-6">
           <Card className="shadow-sm">
             <CardHeader className="space-y-2">
               <CardTitle className="text-base font-semibold">前月対比サマリー</CardTitle>
