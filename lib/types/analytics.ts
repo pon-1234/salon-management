@@ -81,6 +81,7 @@ export interface AnalyticsRepository {
   getStaffPerformanceData(): Promise<StaffPerformanceData[]>
   getCourseSalesData(year: number, month: number): Promise<CourseSalesData[]>
   getOptionSalesData(year: number): Promise<OptionSalesData[]>
+  getOptionCombinationData(year: number): Promise<OptionCombinationData[]>
   getMarketingChannelData(year: number): Promise<MarketingChannelData[]>
   getMonthlyStaffSummary(year: number, month: number): Promise<MonthlyStaffSummary[]>
   getMonthlyAreaSummary(year: number, month: number): Promise<MonthlyAreaSummary[]>
@@ -99,6 +100,17 @@ export interface OptionSalesData {
   name: string
   price: number
   monthlySales: number[]
+}
+
+export interface OptionCombinationData {
+  courseId: string
+  courseName: string
+  optionId: string
+  optionName: string
+  count: number
+  revenue: number
+  attachRate: number
+  averageSpending: number
 }
 
 export interface MarketingChannelData {

@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import {
   LineChart,
   Line,
@@ -11,48 +10,35 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts'
-import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 
 interface OptionTrendChartProps {
-  year: number
-  analyticsUseCases: AnalyticsUseCases
+  data: {
+    month: string
+    revenue: number
+    attachRate: number
+  }[]
 }
 
-interface MonthlyData {
-  month: string
-  sales: number
-  attachRate: number
-}
-
-export function OptionTrendChart({ year, analyticsUseCases }: OptionTrendChartProps) {
-  const [data, setData] = useState<MonthlyData[]>([])
-
-  useEffect(() => {
-    // ダミーデータ（実際にはuseCasesから取得）
-    const dummyData: MonthlyData[] = [
-      { month: '1月', sales: 156700, attachRate: 38.5 },
-      { month: '2月', sales: 167800, attachRate: 39.2 },
-      { month: '3月', sales: 178900, attachRate: 40.1 },
-      { month: '4月', sales: 182300, attachRate: 40.8 },
-      { month: '5月', sales: 175600, attachRate: 39.5 },
-      { month: '6月', sales: 189200, attachRate: 41.2 },
-      { month: '7月', sales: 195600, attachRate: 42.1 },
-      { month: '8月', sales: 201200, attachRate: 42.8 },
-      { month: '9月', sales: 187600, attachRate: 41.5 },
-      { month: '10月', sales: 193400, attachRate: 42.3 },
-      { month: '11月', sales: 198700, attachRate: 42.7 },
-      { month: '12月', sales: 207500, attachRate: 43.2 },
-    ]
-    setData(dummyData)
-  }, [year, analyticsUseCases])
-
+export function OptionTrendChart({ data }: OptionTrendChartProps) {
   const formatYAxis = (value: number) => {
     if (value >= 1000000) {
       return `${(value / 1000000).toFixed(1)}M`
-    } else if (value >= 1000) {
+    }
+    if (value >= 1000) {
       return `${(value / 1000).toFixed(0)}K`
     }
     return value.toString()
+  }
+
+  const attachRateMax = data.reduce((max, point) => Math.max(max, point.attachRate), 0)
+  const attachRateDomain = Math.max(100, Math.ceil(attachRateMax / 5) * 5)
+
+  if (data.length === 0) {
+    return (
+      <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+        データがありません。
+      </div>
+    )
   }
 
   return (
@@ -61,11 +47,11 @@ export function OptionTrendChart({ year, analyticsUseCases }: OptionTrendChartPr
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="month" />
         <YAxis yAxisId="left" tickFormatter={formatYAxis} />
-        <YAxis yAxisId="right" orientation="right" domain={[35, 45]} />
+        <YAxis yAxisId="right" orientation="right" domain={[0, attachRateDomain]} />
         <Tooltip
           formatter={(value: number, name: string) => {
             if (name === '売上額') return [`¥${value.toLocaleString()}`, name]
-            if (name === '装着率') return [`${value}%`, name]
+            if (name === '装着率') return [`${value.toFixed(1)}%`, name]
             return [value, name]
           }}
         />
@@ -73,7 +59,7 @@ export function OptionTrendChart({ year, analyticsUseCases }: OptionTrendChartPr
         <Line
           yAxisId="left"
           type="monotone"
-          dataKey="sales"
+          dataKey="revenue"
           stroke="#10b981"
           strokeWidth={2}
           name="売上額"

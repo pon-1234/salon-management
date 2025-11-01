@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import {
   BarChart,
   Bar,
@@ -10,35 +9,43 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  TooltipProps,
 } from 'recharts'
-import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 
 interface OptionSalesChartProps {
-  year: number
-  analyticsUseCases: AnalyticsUseCases
+  data: {
+    id: string
+    name: string
+    revenue: number
+    count: number
+    share: number
+  }[]
 }
 
-interface OptionData {
-  name: string
-  sales: number
-  count: number
-}
+export function OptionSalesChart({ data }: OptionSalesChartProps) {
+  const chartData = data.map((option) => ({
+    name: option.name,
+    revenue: option.revenue,
+    count: option.count,
+    share: option.share,
+  }))
 
-export function OptionSalesChart({ year, analyticsUseCases }: OptionSalesChartProps) {
-  const [data, setData] = useState<OptionData[]>([])
+  const renderTooltip = ({ active, payload }: TooltipProps<number, string>) => {
+    if (!active || !payload || payload.length === 0) {
+      return null
+    }
 
-  useEffect(() => {
-    // ダミーデータ（実際にはuseCasesから取得）
-    const dummyData: OptionData[] = [
-      { name: 'アロマオイル', sales: 678900, count: 234 },
-      { name: 'ホットストーン', sales: 456700, count: 98 },
-      { name: 'ヘッドマッサージ', sales: 345600, count: 156 },
-      { name: 'フットケア', sales: 234500, count: 87 },
-      { name: 'ハンドケア', sales: 198700, count: 112 },
-      { name: 'その他', sales: 220100, count: 78 },
-    ]
-    setData(dummyData)
-  }, [year, analyticsUseCases])
+    const point = payload[0].payload as { name: string; revenue: number; count: number; share: number }
+
+    return (
+      <div className="rounded border bg-white p-2 text-sm shadow-lg">
+        <p className="font-semibold">{point.name}</p>
+        <p>売上: ¥{point.revenue.toLocaleString()}</p>
+        <p>販売数: {point.count.toLocaleString()}件</p>
+        <p>構成比: {point.share.toFixed(1)}%</p>
+      </div>
+    )
+  }
 
   const formatYAxis = (value: number) => {
     if (value >= 1000000) {
@@ -51,18 +58,13 @@ export function OptionSalesChart({ year, analyticsUseCases }: OptionSalesChartPr
 
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+      <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
         <YAxis tickFormatter={formatYAxis} />
-        <Tooltip
-          formatter={(value: number, name: string) => {
-            if (name === '売上額') return [`¥${value.toLocaleString()}`, name]
-            return [value, name]
-          }}
-        />
+        <Tooltip content={renderTooltip} />
         <Legend />
-        <Bar dataKey="sales" name="売上額" fill="#10b981" />
+        <Bar dataKey="revenue" name="売上額" fill="#10b981" />
       </BarChart>
     </ResponsiveContainer>
   )

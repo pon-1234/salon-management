@@ -8,6 +8,7 @@ import {
   MarketingChannelData,
   MonthlyStaffSummary,
   MonthlyAreaSummary,
+  OptionCombinationData,
 } from '../types/analytics'
 
 export class AnalyticsUseCases {
@@ -31,6 +32,10 @@ export class AnalyticsUseCases {
 
   async getOptionSalesReport(year: number): Promise<OptionSalesData[]> {
     return this.repository.getOptionSalesData(year)
+  }
+
+  async getOptionCombinationReport(year: number): Promise<OptionCombinationData[]> {
+    return this.repository.getOptionCombinationData(year)
   }
 
   async getMarketingChannelReport(year: number): Promise<MarketingChannelData[]> {

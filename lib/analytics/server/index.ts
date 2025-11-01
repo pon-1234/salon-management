@@ -22,6 +22,7 @@ import {
   StaffPerformanceData,
   CourseSalesData,
   OptionSalesData,
+  OptionCombinationData,
   MonthlyStaffSummary,
   MonthlyAreaSummary,
 } from '@/lib/types/analytics'
@@ -752,6 +753,101 @@ export async function getOptionSalesReport(
     price: data.price,
     monthlySales: data.monthlySales,
   }))
+}
+
+export async function getOptionCombinationReport(
+  year: number,
+  storeId?: string
+): Promise<OptionCombinationData[]> {
+  const normalizedStoreId = normaliseStoreId(storeId)
+  const yearStart = startOfYear(new Date(year, 0, 1))
+  const yearEnd = endOfYear(yearStart)
+
+  const reservations = await fetchReservationsBetween(normalizedStoreId, yearStart, yearEnd)
+
+  const courseTotals = new Map<
+    string,
+    {
+      name: string
+      count: number
+    }
+  >()
+
+  const combinationMap = new Map<
+    string,
+    {
+      courseId: string
+      courseName: string
+      optionId: string
+      optionName: string
+      count: number
+      optionRevenue: number
+      reservationRevenue: number
+    }
+  >()
+
+  reservations.forEach((reservation) => {
+    const courseId = reservation.courseId
+    if (!courseId) return
+
+    const courseName = reservation.course?.name ?? '未設定'
+    const courseEntry = courseTotals.get(courseId) ?? {
+      name: courseName,
+      count: 0,
+    }
+    courseEntry.count += 1
+    courseTotals.set(courseId, courseEntry)
+
+    const reservationTotal = reservation.price ?? 0
+
+    reservation.options?.forEach((optionEntry) => {
+      const optionId = optionEntry.optionId ?? optionEntry.option?.id
+      if (!optionId) return
+
+      const optionName = optionEntry.option?.name ?? optionEntry.optionName ?? '未設定'
+      const key = `${courseId}:${optionId}`
+      const combination =
+        combinationMap.get(key) ??
+        {
+          courseId,
+          courseName,
+          optionId,
+          optionName,
+          count: 0,
+          optionRevenue: 0,
+          reservationRevenue: 0,
+        }
+
+      combination.count += 1
+      combination.optionRevenue += optionEntry.optionPrice ?? optionEntry.option?.price ?? 0
+      combination.reservationRevenue += reservationTotal
+
+      combinationMap.set(key, combination)
+    })
+  })
+
+  return Array.from(combinationMap.values())
+    .map((entry) => {
+      const courseStats = courseTotals.get(entry.courseId)
+      const attachRate = courseStats && courseStats.count > 0
+        ? Math.round((entry.count / courseStats.count) * 1000) / 10
+        : 0
+      const averageSpending = entry.count > 0
+        ? Math.round(entry.reservationRevenue / entry.count)
+        : 0
+
+      return {
+        courseId: entry.courseId,
+        courseName: entry.courseName,
+        optionId: entry.optionId,
+        optionName: entry.optionName,
+        count: entry.count,
+        revenue: entry.optionRevenue,
+        attachRate,
+        averageSpending,
+      }
+    })
+    .sort((a, b) => b.revenue - a.revenue)
 }
 
 export async function getMarketingChannelReport(

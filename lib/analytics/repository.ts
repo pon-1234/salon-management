@@ -5,11 +5,12 @@ import {
   StaffPerformanceData,
   CourseSalesData,
   OptionSalesData,
+  OptionCombinationData,
   MarketingChannelData,
   MonthlyStaffSummary,
   MonthlyAreaSummary,
 } from '../types/analytics'
-import { staffPerformanceData, generateOptionSalesData, generateMarketingChannelData } from './data'
+import { staffPerformanceData, generateMarketingChannelData } from './data'
 
 export class AnalyticsRepositoryImpl implements AnalyticsRepository {
   constructor(private readonly storeId?: string) {}
@@ -61,7 +62,15 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
   }
 
   async getOptionSalesData(year: number): Promise<OptionSalesData[]> {
-    return generateOptionSalesData(year)
+    return this.fetchWithQuery<OptionSalesData[]>('/api/analytics/option-sales', {
+      year: String(year),
+    })
+  }
+
+  async getOptionCombinationData(year: number): Promise<OptionCombinationData[]> {
+    return this.fetchWithQuery<OptionCombinationData[]>('/api/analytics/option-combinations', {
+      year: String(year),
+    })
   }
 
   async getMarketingChannelData(year: number): Promise<MarketingChannelData[]> {
