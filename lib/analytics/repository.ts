@@ -17,6 +17,8 @@ import {
 } from './data'
 
 export class AnalyticsRepositoryImpl implements AnalyticsRepository {
+  constructor(private readonly storeId?: string) {}
+
   private async fetchJson<T>(endpoint: string): Promise<T> {
     const response = await fetch(endpoint, { cache: 'no-store' })
     if (!response.ok) {
@@ -26,17 +28,30 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
     return (await response.json()) as T
   }
 
+  private buildQuery(params: Record<string, string>): string {
+    const searchParams = new URLSearchParams(params)
+    if (this.storeId) {
+      searchParams.set('storeId', this.storeId)
+    }
+    return searchParams.toString()
+  }
+
+  private fetchWithQuery<T>(endpoint: string, params: Record<string, string>): Promise<T> {
+    const query = this.buildQuery(params)
+    return this.fetchJson<T>(`${endpoint}?${query}`)
+  }
+
   async getMonthlyData(year: number): Promise<MonthlyData[]> {
-    const params = new URLSearchParams({ year: String(year) })
-    return this.fetchJson<MonthlyData[]>(`/api/analytics/monthly?${params.toString()}`)
+    return this.fetchWithQuery<MonthlyData[]>('/api/analytics/monthly', {
+      year: String(year),
+    })
   }
 
   async getDailyData(year: number, month: number): Promise<DailyData[]> {
-    const params = new URLSearchParams({
+    return this.fetchWithQuery<DailyData[]>('/api/analytics/daily', {
       year: String(year),
       month: String(month),
     })
-    return this.fetchJson<DailyData[]>(`/api/analytics/daily?${params.toString()}`)
   }
 
   async getStaffPerformanceData(): Promise<StaffPerformanceData[]> {
@@ -56,22 +71,16 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
   }
 
   async getMonthlyStaffSummary(year: number, month: number): Promise<MonthlyStaffSummary[]> {
-    const params = new URLSearchParams({
+    return this.fetchWithQuery<MonthlyStaffSummary[]>('/api/analytics/monthly-staff', {
       year: String(year),
       month: String(month),
     })
-    return this.fetchJson<MonthlyStaffSummary[]>(
-      `/api/analytics/monthly-staff?${params.toString()}`
-    )
   }
 
   async getMonthlyAreaSummary(year: number, month: number): Promise<MonthlyAreaSummary[]> {
-    const params = new URLSearchParams({
+    return this.fetchWithQuery<MonthlyAreaSummary[]>('/api/analytics/monthly-area', {
       year: String(year),
       month: String(month),
     })
-    return this.fetchJson<MonthlyAreaSummary[]>(
-      `/api/analytics/monthly-area?${params.toString()}`
-    )
   }
 }

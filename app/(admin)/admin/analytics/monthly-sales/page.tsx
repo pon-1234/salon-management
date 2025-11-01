@@ -21,9 +21,7 @@ import { MonthlySalesTable } from '@/components/analytics/monthly-sales-table'
 import { MonthlyStaffTable } from '@/components/analytics/monthly-staff-table'
 import { MonthlyAreaTable } from '@/components/analytics/monthly-area-table'
 import { MonthlyData } from '@/lib/types/analytics'
-
-const analyticsRepository = new AnalyticsRepositoryImpl()
-const analyticsUseCases = new AnalyticsUseCases(analyticsRepository)
+import { useStore } from '@/contexts/store-context'
 
 export default function MonthlyReportPage() {
   const now = new Date()
@@ -32,6 +30,12 @@ export default function MonthlyReportPage() {
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
   const [isMonthlyLoading, setIsMonthlyLoading] = useState(true)
   const [monthlyError, setMonthlyError] = useState<string | null>(null)
+  const { currentStore } = useStore()
+
+  const analyticsUseCases = useMemo(() => {
+    const repository = new AnalyticsRepositoryImpl(currentStore.id)
+    return new AnalyticsUseCases(repository)
+  }, [currentStore.id])
 
   useEffect(() => {
     let isMounted = true
