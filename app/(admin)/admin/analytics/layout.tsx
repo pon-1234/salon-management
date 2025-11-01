@@ -40,7 +40,9 @@ export default function AnalyticsRootLayout({ children }: { children: ReactNode 
   return (
     <div className="flex">
       <AnalyticsLayout />
-      <div className="flex-1 min-w-0 p-8">{children}</div>
+      <div className="flex-1 min-w-0 overflow-x-hidden p-6 lg:p-8">
+        <div className="mx-auto w-full max-w-screen-xl">{children}</div>
+      </div>
     </div>
   )
 }

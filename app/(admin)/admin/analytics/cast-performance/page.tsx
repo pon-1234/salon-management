@@ -70,7 +70,7 @@ export default function CastPerformancePage() {
   const lastUpdated = useMemo(() => new Date(), [])
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto w-full max-w-screen-xl space-y-8">
       <Card className="border-none bg-gradient-to-br from-purple-600 via-indigo-500 to-sky-500 text-white shadow-xl">
         <CardContent className="flex flex-col gap-6 p-6 pb-8 md:flex-row md:items-end md:justify-between md:p-8">
           <div className="space-y-4">
