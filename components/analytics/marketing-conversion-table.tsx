@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -10,14 +9,8 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Progress } from '@/components/ui/progress'
-import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 
-interface MarketingConversionTableProps {
-  year: number
-  analyticsUseCases: AnalyticsUseCases
-}
-
-interface ConversionData {
+export interface MarketingConversionRow {
   channel: string
   impressions: number
   clicks: number
@@ -30,78 +23,18 @@ interface ConversionData {
   conversionRate: number
 }
 
-export function MarketingConversionTable({
-  year,
-  analyticsUseCases,
-}: MarketingConversionTableProps) {
-  const [data, setData] = useState<ConversionData[]>([])
+interface MarketingConversionTableProps {
+  data: MarketingConversionRow[]
+}
 
-  useEffect(() => {
-    // ダミーデータ（実際にはuseCasesから取得）
-    const dummyData: ConversionData[] = [
-      {
-        channel: 'ホットペッパー',
-        impressions: 125000,
-        clicks: 15625,
-        visits: 12500,
-        bookings: 4688,
-        customers: 3945,
-        ctr: 12.5,
-        visitRate: 80.0,
-        bookingRate: 37.5,
-        conversionRate: 31.6,
-      },
-      {
-        channel: 'Instagram',
-        impressions: 85000,
-        clicks: 8500,
-        visits: 6800,
-        bookings: 3060,
-        customers: 2456,
-        ctr: 10.0,
-        visitRate: 80.0,
-        bookingRate: 45.0,
-        conversionRate: 28.9,
-      },
-      {
-        channel: 'Google広告',
-        impressions: 68000,
-        clicks: 5440,
-        visits: 4352,
-        bookings: 2176,
-        customers: 1678,
-        ctr: 8.0,
-        visitRate: 80.0,
-        bookingRate: 50.0,
-        conversionRate: 24.7,
-      },
-      {
-        channel: '紹介',
-        impressions: 0,
-        clicks: 0,
-        visits: 2864,
-        bookings: 1718,
-        customers: 1432,
-        ctr: 0,
-        visitRate: 0,
-        bookingRate: 60.0,
-        conversionRate: 50.0,
-      },
-      {
-        channel: 'ウォークイン',
-        impressions: 0,
-        clicks: 0,
-        visits: 1705,
-        bookings: 1279,
-        customers: 1023,
-        ctr: 0,
-        visitRate: 0,
-        bookingRate: 75.0,
-        conversionRate: 60.0,
-      },
-    ]
-    setData(dummyData)
-  }, [year, analyticsUseCases])
+export function MarketingConversionTable({ data }: MarketingConversionTableProps) {
+  if (data.length === 0) {
+    return (
+      <div className="flex h-40 items-center justify-center rounded-lg border text-sm text-muted-foreground">
+        データがありません。
+      </div>
+    )
+  }
 
   return (
     <div className="rounded-lg border">
@@ -137,7 +70,7 @@ export function MarketingConversionTable({
               <TableCell className="text-center">
                 {item.ctr > 0 ? (
                   <div className="flex flex-col items-center gap-1">
-                    <span className="text-sm">{item.ctr}%</span>
+                    <span className="text-sm">{item.ctr.toFixed(1)}%</span>
                     <Progress value={item.ctr} className="h-2 w-16" />
                   </div>
                 ) : (
@@ -146,13 +79,15 @@ export function MarketingConversionTable({
               </TableCell>
               <TableCell className="text-center">
                 <div className="flex flex-col items-center gap-1">
-                  <span className="text-sm">{item.bookingRate}%</span>
+                  <span className="text-sm">{item.bookingRate.toFixed(1)}%</span>
                   <Progress value={item.bookingRate} className="h-2 w-16" />
                 </div>
               </TableCell>
               <TableCell className="text-center">
                 <div className="flex flex-col items-center gap-1">
-                  <span className="text-sm font-medium text-green-600">{item.conversionRate}%</span>
+                  <span className="text-sm font-medium text-green-600">
+                    {item.conversionRate.toFixed(1)}%
+                  </span>
                   <Progress value={item.conversionRate} className="h-2 w-16" />
                 </div>
               </TableCell>

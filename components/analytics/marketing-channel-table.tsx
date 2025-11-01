@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -9,38 +8,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 import { MarketingChannelData } from '@/lib/types/analytics'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { AlertCircle } from 'lucide-react'
-import { Skeleton } from '@/components/ui/skeleton'
 
 interface MarketingChannelTableProps {
-  year: number
-  analyticsUseCases: AnalyticsUseCases
+  data: MarketingChannelData[]
 }
 
-export function MarketingChannelTable({ year, analyticsUseCases }: MarketingChannelTableProps) {
-  const [data, setData] = useState<MarketingChannelData[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true)
-      setError(null)
-      try {
-        const result = await analyticsUseCases.getMarketingChannelReport(year)
-        setData(result)
-      } catch (err) {
-        setError('データの取得中にエラーが発生しました。')
-        console.error(err)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    fetchData()
-  }, [year, analyticsUseCases])
+export function MarketingChannelTable({ data }: MarketingChannelTableProps) {
 
   const months = Array.from({ length: 12 }, (_, i) => i + 1)
 
@@ -57,17 +31,11 @@ export function MarketingChannelTable({ year, analyticsUseCases }: MarketingChan
         }, [] as number[])
       : []
 
-  if (isLoading) {
-    return <TableSkeleton />
-  }
-
-  if (error) {
+  if (data.length === 0) {
     return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>エラー</AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
+      <div className="flex h-40 items-center justify-center rounded-lg border text-sm text-muted-foreground">
+        データがありません。
+      </div>
     )
   }
 
@@ -91,11 +59,11 @@ export function MarketingChannelTable({ year, analyticsUseCases }: MarketingChan
               <TableCell>{channel.channel}</TableCell>
               {channel.monthlySales.map((sales, index) => (
                 <TableCell key={index} className="text-right text-blue-600">
-                  {sales || '-'}
+                  {sales ? sales.toLocaleString() : '-'}
                 </TableCell>
               ))}
               <TableCell className="bg-gray-50 text-right font-medium text-blue-600">
-                {channel.total}
+                {channel.total.toLocaleString()}
               </TableCell>
             </TableRow>
           ))}
@@ -103,27 +71,17 @@ export function MarketingChannelTable({ year, analyticsUseCases }: MarketingChan
             <TableCell>TOTAL</TableCell>
             {totals.map((total, index) => (
               <TableCell key={index} className="text-right text-blue-600">
-                {total}
+                {total.toLocaleString()}
               </TableCell>
             ))}
             <TableCell className="text-right text-blue-600">
-              {data.length > 0 ? data.reduce((acc, curr) => acc + (curr.total || 0), 0) : 0}
+              {data.length > 0
+                ? data.reduce((acc, curr) => acc + (curr.total || 0), 0).toLocaleString()
+                : 0}
             </TableCell>
           </TableRow>
         </TableBody>
       </Table>
-    </div>
-  )
-}
-
-function TableSkeleton() {
-  return (
-    <div className="space-y-2">
-      <Skeleton className="h-10 w-full" />
-      <Skeleton className="h-10 w-full" />
-      <Skeleton className="h-10 w-full" />
-      <Skeleton className="h-10 w-full" />
-      <Skeleton className="h-10 w-full" />
     </div>
   )
 }
