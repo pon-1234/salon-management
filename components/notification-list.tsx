@@ -1,46 +1,103 @@
-import { X, Archive } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
-interface Notification {
+interface ReservationNotification {
   id: string
+  storeId: string
   storeName: string
-  type: 'reservation' | 'message' | 'system' | 'incoming_call'
+  type: 'reservation'
   message: string
   details: {
-    reservationDate?: string
-    reservationTime?: string
+    reservationId: string
+    reservationDate: string
+    reservationTime: string
     receivedTime: string
-    staff?: string
-    customer: string
-    phoneNumber?: string
-    callDuration?: string
-    callStatus?: 'answered' | 'rejected' | 'missed'
+    staffName?: string
+    customerName: string
+    status: string
+    startTime: string
+    endTime: string
+    storeId?: string
   }
   read: boolean
+  readAt?: string | null
+  createdAt: string
+  assignedTo?: string | null
+  resolvedAt?: string | null
 }
 
 interface NotificationListProps {
-  notifications: Notification[]
+  notifications: ReservationNotification[]
   onClose: () => void
-  onNotificationClick: (id: string) => void
-  onViewDetails: (id: string) => void
-  onArchive: (id: string) => void
+  onMarkAsRead: (id: string) => void
+  onMarkAsUnread: (id: string) => void
+  onSelect: (notification: ReservationNotification) => void
+}
+
+const statusVariantMap: Record<string, 'default' | 'secondary' | 'destructive' | 'success'> = {
+  reminder: 'default',
+  confirmed: 'success',
+  pending: 'secondary',
+  cancelled: 'destructive',
+}
+
+const statusLabelMap: Record<string, string> = {
+  reminder: 'リマインド',
+  confirmed: '確定',
+  pending: '承認待ち',
+  cancelled: 'キャンセル',
 }
 
 export function NotificationList({
   notifications,
   onClose,
-  onNotificationClick,
-  onViewDetails,
-  onArchive,
+  onMarkAsRead,
+  onMarkAsUnread,
+  onSelect,
 }: NotificationListProps) {
+  const [search, setSearch] = useState('')
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false)
+
+  const filteredNotifications = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase()
+
+    return notifications.filter((notification) => {
+      if (showUnreadOnly && notification.read) {
+        return false
+      }
+
+      if (!normalizedSearch) {
+        return true
+      }
+
+      const haystack = [
+        notification.storeName,
+        notification.message,
+        notification.details.customerName,
+        notification.details.staffName,
+        notification.details.reservationDate,
+        notification.details.reservationTime,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+
+      return haystack.includes(normalizedSearch)
+    })
+  }, [notifications, search, showUnreadOnly])
+
   return (
-    <div className="w-[400px] overflow-hidden rounded-lg border bg-white">
+    <div className="w-[440px] overflow-hidden rounded-lg border bg-white">
       <div className="flex items-center justify-between bg-emerald-600 p-4 text-white">
-        <h2 className="text-lg font-semibold">お知らせ一覧</h2>
+        <div>
+          <h2 className="text-lg font-semibold">予約通知</h2>
+          <p className="text-xs opacity-80">過去24時間以内のイベントを表示しています</p>
+        </div>
         <Button
           variant="ghost"
           size="icon"
@@ -50,119 +107,135 @@ export function NotificationList({
           <X className="h-5 w-5" />
         </Button>
       </div>
-      <ScrollArea className="h-[400px]">
-        {notifications.map((notification) => (
-          <div
-            key={notification.id}
-            className={cn(
-              'cursor-pointer border-b p-4 transition-colors hover:bg-gray-50',
-              !notification.read && 'bg-emerald-50'
-            )}
-            onClick={() => onNotificationClick(notification.id)}
+
+      <div className="border-b p-4">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              className="pl-9"
+              placeholder="店舗・キャスト・顧客で検索"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </div>
+          <Button
+            variant={showUnreadOnly ? 'default' : 'outline'}
+            onClick={() => setShowUnreadOnly((prev) => !prev)}
+            className="whitespace-nowrap"
           >
-            <div className="rounded-lg">
-              <div className="mb-1 text-sm font-medium text-emerald-600">
-                {notification.storeName}
-              </div>
-              <div className="mb-2 font-medium">{notification.message}</div>
-              <div className="space-y-1 text-sm text-gray-600">
-                {notification.type === 'incoming_call' ? (
-                  <>
-                    {notification.details.phoneNumber && (
-                      <div className="flex justify-between">
-                        <span>電話番号：</span>
-                        <span>{notification.details.phoneNumber}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span>着信日時：</span>
-                      <span>{notification.details.receivedTime}</span>
+            未読のみ
+          </Button>
+        </div>
+      </div>
+
+      <ScrollArea className="h-[420px]">
+        {filteredNotifications.length === 0 ? (
+          <div className="p-6 text-sm text-muted-foreground">該当する通知はありません。</div>
+        ) : (
+          filteredNotifications.map((notification) => {
+            const statusVariant = statusVariantMap[notification.details.status] ?? 'secondary'
+            const statusLabel = statusLabelMap[notification.details.status] ?? notification.details.status
+
+            return (
+              <div
+                key={notification.id}
+                className={cn(
+                  'cursor-pointer border-b p-4 transition-colors hover:bg-emerald-50/70',
+                  notification.read ? 'bg-white' : 'bg-emerald-50'
+                )}
+                onClick={() => onSelect(notification)}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-emerald-600">
+                      <span className="font-medium">{notification.storeName}</span>
+                      <Badge variant={statusVariant} className="capitalize">
+                        {statusLabel}
+                      </Badge>
+                      {notification.assignedTo && (
+                        <Badge variant="outline" className="text-xs">
+                          担当 {notification.assignedTo}
+                        </Badge>
+                      )}
+                      {notification.resolvedAt && (
+                        <Badge variant="outline" className="text-[10px] text-emerald-700">
+                          確認済み
+                        </Badge>
+                      )}
                     </div>
-                    {notification.details.callStatus && (
-                      <div className="flex justify-between">
-                        <span>対応状況：</span>
-                        <span
-                          className={
-                            notification.details.callStatus === 'answered'
-                              ? 'text-green-600'
-                              : notification.details.callStatus === 'rejected'
-                                ? 'text-red-600'
-                                : 'text-yellow-600'
-                          }
-                        >
-                          {notification.details.callStatus === 'answered'
-                            ? '応答済み'
-                            : notification.details.callStatus === 'rejected'
-                              ? '拒否'
-                              : '不在着信'}
-                        </span>
-                      </div>
-                    )}
-                    {notification.details.callDuration && (
-                      <div className="flex justify-between">
-                        <span>通話時間：</span>
-                        <span>{notification.details.callDuration}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span>顧客：</span>
-                      <span>{notification.details.customer} 様</span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    {notification.details.reservationDate && (
-                      <div className="flex justify-between">
-                        <span>ご予約日時：</span>
-                        <span>
+                    <p className="text-sm font-semibold text-foreground">{notification.message}</p>
+                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground sm:grid-cols-3">
+                      <div>
+                        <span className="block text-[11px] uppercase text-muted-foreground">ご予約</span>
+                        <span className="font-medium text-foreground">
                           {notification.details.reservationDate}{' '}
                           {notification.details.reservationTime}
                         </span>
                       </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span>受付日時：</span>
-                      <span>{notification.details.receivedTime}</span>
-                    </div>
-                    {notification.details.staff && (
-                      <div className="flex justify-between">
-                        <span>キャスト：</span>
-                        <span>{notification.details.staff}</span>
+                      <div>
+                        <span className="block text-[11px] uppercase text-muted-foreground">顧客</span>
+                        <span className="font-medium text-foreground">
+                          {notification.details.customerName}
+                        </span>
                       </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span>顧客：</span>
-                      <span>{notification.details.customer} 様</span>
+                      <div>
+                        <span className="block text-[11px] uppercase text-muted-foreground">キャスト</span>
+                        <span className="font-medium text-foreground">
+                          {notification.details.staffName ?? '未割当'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="block text-[11px] uppercase text-muted-foreground">受付</span>
+                        <span>{notification.details.receivedTime}</span>
+                      </div>
+                      <div>
+                        <span className="block text-[11px] uppercase text-muted-foreground">予約ID</span>
+                        <span>{notification.details.reservationId}</span>
+                      </div>
                     </div>
-                  </>
-                )}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {notification.read ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          onMarkAsUnread(notification.id)
+                        }}
+                      >
+                        未読に戻す
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          onMarkAsRead(notification.id)
+                        }}
+                      >
+                        既読にする
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-emerald-600 hover:text-emerald-700"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        onSelect(notification)
+                      }}
+                    >
+                      詳細を見る →
+                    </Button>
+                  </div>
+                </div>
               </div>
-              <div className="mt-2 flex justify-end">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-gray-500 hover:text-gray-700"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onArchive(notification.id)
-                  }}
-                >
-                  <Archive className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="link"
-                  className="h-auto p-0 text-emerald-600 hover:text-emerald-700"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onViewDetails(notification.id)
-                  }}
-                >
-                  詳細を見る →
-                </Button>
-              </div>
-            </div>
-          </div>
-        ))}
+            )
+          })
+        )}
       </ScrollArea>
     </div>
   )

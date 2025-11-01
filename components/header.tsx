@@ -27,12 +27,12 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Input } from '@/components/ui/input'
 import { NotificationList } from '@/components/notification-list'
+import { NotificationDetailDialog } from '@/components/notification-detail-dialog'
 import Link from 'next/link'
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
-import { ReservationDialog } from './reservation/reservation-dialog'
 import { Cast } from '@/lib/cast/types'
 import { normalizeCastList } from '@/lib/cast/mapper'
 import { useNotifications } from '@/contexts/notification-context'
@@ -51,9 +51,18 @@ export function Header() {
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState('')
   const [notificationOpen, setNotificationOpen] = useState(false)
-  const { notifications, markAsRead, removeNotification, unreadCount } = useNotifications()
+  const {
+    notifications,
+    markAsRead,
+    markAsUnread,
+    assignNotification,
+    resolveNotification,
+    unreadCount,
+  } = useNotifications()
   const router = useRouter()
-  const [selectedReservation, setSelectedReservation] = useState<any>(null)
+  const [selectedNotification, setSelectedNotification] = useState<
+    (typeof notifications)[number] | null
+  >(null)
   const [showCustomerSelection, setShowCustomerSelection] = useState(false)
 
   useEffect(() => {
@@ -83,25 +92,30 @@ export function Header() {
     }
   }
 
-  const handleNotificationClick = (id: string) => {
-    markAsRead(id)
-    console.log('Notification clicked:', id)
-  }
-
-  const handleViewDetails = (id: string) => {
-    const notification = notifications.find((n) => n.id === id)
-    if (notification && notification.type === 'reservation') {
-      setSelectedReservation(notification)
-    }
-    setNotificationOpen(false)
-  }
-
-  const handleArchive = useCallback(
-    (id: string) => {
-      removeNotification(id)
+  const handleNotificationSelect = useCallback(
+    (notification: (typeof notifications)[number]) => {
+      setSelectedNotification(notification)
+      setNotificationOpen(false)
     },
-    [removeNotification]
+    []
   )
+
+  const handleNavigateFromNotification = useCallback(
+    (notification: (typeof notifications)[number]) => {
+      const reservationId = notification.details.reservationId
+      router.push(`/admin/reservation-list?highlight=${encodeURIComponent(reservationId)}`)
+      setSelectedNotification(null)
+    },
+    [router]
+  )
+
+  useEffect(() => {
+    if (!selectedNotification) return
+    const latest = notifications.find((notification) => notification.id === selectedNotification.id)
+    if (latest && latest !== selectedNotification) {
+      setSelectedNotification(latest)
+    }
+  }, [notifications, selectedNotification])
 
   return (
     <>
@@ -277,9 +291,9 @@ export function Header() {
             <NotificationList
               notifications={notifications}
               onClose={() => setNotificationOpen(false)}
-              onNotificationClick={handleNotificationClick}
-              onViewDetails={handleViewDetails}
-              onArchive={handleArchive}
+              onMarkAsRead={markAsRead}
+              onMarkAsUnread={markAsUnread}
+              onSelect={handleNotificationSelect}
             />
           </PopoverContent>
         </Popover>
@@ -293,10 +307,14 @@ export function Header() {
           <span className="text-xs">ログアウト</span>
         </Button>
 
-        <ReservationDialog
-          open={!!selectedReservation}
-          onOpenChange={(open) => !open && setSelectedReservation(null)}
-          reservation={selectedReservation}
+        <NotificationDetailDialog
+          open={!!selectedNotification}
+          notification={selectedNotification}
+          onOpenChange={(open) => !open && setSelectedNotification(null)}
+          onAssign={assignNotification}
+          onResolve={resolveNotification}
+          onMarkAsRead={markAsRead}
+          onNavigate={handleNavigateFromNotification}
         />
         <CustomerSelectionDialog
           open={showCustomerSelection}
