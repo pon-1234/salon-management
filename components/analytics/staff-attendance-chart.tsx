@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import {
   Line,
   LineChart,
@@ -11,37 +10,44 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts'
+import { StaffAttendanceSummary } from '@/lib/types/staff-attendance'
+import { getDaysInMonth } from 'date-fns'
 
 interface StaffAttendanceChartProps {
   year: number
   month: number
+  data: StaffAttendanceSummary[]
 }
 
-interface ChartData {
-  date: number
-  出勤数: number
-  予定数: number
-  欠勤数: number
-}
+export function StaffAttendanceChart({ year, month, data }: StaffAttendanceChartProps) {
+  const daysInMonth = getDaysInMonth(new Date(year, month - 1, 1))
+  const totalStaff = data.length
 
-export function StaffAttendanceChart({ year, month }: StaffAttendanceChartProps) {
-  const [data, setData] = useState<ChartData[]>([])
+  if (totalStaff === 0) {
+    return (
+      <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+        表示できるデータがありません。
+      </div>
+    )
+  }
 
-  useEffect(() => {
-    // ダミーデータ（実際にはAPIから取得）
-    const daysInMonth = new Date(year, month, 0).getDate()
-    const dummyData: ChartData[] = Array.from({ length: daysInMonth }, (_, i) => ({
-      date: i + 1,
-      出勤数: Math.floor(Math.random() * 4) + 6,
-      予定数: Math.floor(Math.random() * 2) + 8,
-      欠勤数: Math.random() > 0.8 ? 1 : 0,
-    }))
-    setData(dummyData)
-  }, [year, month])
+  const chartData = Array.from({ length: daysInMonth }, (_, index) => {
+    const attendanceCount = data.reduce(
+      (sum, staff) => sum + (staff.attendance[index] ?? 0),
+      0
+    )
+    const absenceCount = Math.max(totalStaff - attendanceCount, 0)
+    return {
+      date: index + 1,
+      出勤数: attendanceCount,
+      予定数: totalStaff,
+      欠勤数: absenceCount,
+    }
+  })
 
   return (
     <ResponsiveContainer width="100%" height={350}>
-      <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+      <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="date" label={{ value: '日', position: 'insideBottomRight', offset: -10 }} />
         <YAxis label={{ value: '人数', angle: -90, position: 'insideLeft' }} />

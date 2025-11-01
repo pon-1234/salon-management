@@ -11,6 +11,9 @@ import {
   OptionCombinationData,
 } from '../types/analytics'
 import { AreaSalesData } from '@/lib/types/area-sales'
+import { DistrictSalesReport } from '@/lib/types/district-sales'
+import { HourlySalesReport } from '@/lib/types/hourly-sales'
+import { StaffAttendanceSummary } from '@/lib/types/staff-attendance'
 
 export class AnalyticsUseCases {
   constructor(private repository: AnalyticsRepository) {}
@@ -47,11 +50,23 @@ export class AnalyticsUseCases {
     return this.repository.getAreaSalesData(year)
   }
 
+  async getDistrictSalesReport(year: number, prefecture: string): Promise<DistrictSalesReport> {
+    return this.repository.getDistrictSalesData(year, prefecture)
+  }
+
   async getMonthlyStaffSummary(year: number, month: number): Promise<MonthlyStaffSummary[]> {
     return this.repository.getMonthlyStaffSummary(year, month)
   }
 
   async getMonthlyAreaSummary(year: number, month: number): Promise<MonthlyAreaSummary[]> {
     return this.repository.getMonthlyAreaSummary(year, month)
+  }
+
+  async getHourlySalesReport(year: number, month: number): Promise<HourlySalesReport> {
+    return this.repository.getHourlySalesReport(year, month)
+  }
+
+  async getStaffAttendanceReport(year: number, month: number): Promise<StaffAttendanceSummary[]> {
+    return this.repository.getStaffAttendanceReport(year, month)
   }
 }

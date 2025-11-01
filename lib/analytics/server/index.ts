@@ -29,6 +29,7 @@ import {
 import { AreaSalesData } from '@/lib/types/area-sales'
 import { DistrictSalesReport } from '@/lib/types/district-sales'
 import { HourlySalesReport, TimeSlotSummary } from '@/lib/types/hourly-sales'
+import { StaffAttendanceSummary } from '@/lib/types/staff-attendance'
 import { DailyReport } from '@/lib/report/types'
 import {
   ReservationWithRelations,
@@ -900,6 +901,8 @@ export async function getAreaSalesReport(
   const areaMap = new Map<
     string,
     {
+      displayName: string
+      prefecture: string
       monthlySales: number[]
       monthlyCustomers: number[]
     }
@@ -911,30 +914,43 @@ export async function getAreaSalesReport(
 
     const monthIndex = startTime.getMonth()
     const price = reservation.price ?? 0
-    const areaName =
-      reservation.area?.name ??
-      reservation.area?.city ??
-      reservation.area?.prefecture ??
-      '未設定'
+    const areaInfo = reservation.area
+    const prefecture = areaInfo?.prefecture?.trim()
+    const city = areaInfo?.city?.trim()
+    const name = areaInfo?.name?.trim()
+
+    const displayName = prefecture || name || city || '未設定'
+    const groupingKey = (prefecture || displayName).toLowerCase()
 
     const entry =
-      areaMap.get(areaName) ?? {
+      areaMap.get(groupingKey) ??
+      {
+        displayName,
+        prefecture: prefecture || displayName,
         monthlySales: Array(12).fill(0),
         monthlyCustomers: Array(12).fill(0),
       }
 
+    if (entry.displayName === '未設定' && displayName !== '未設定') {
+      entry.displayName = displayName
+    }
+    if ((!entry.prefecture || entry.prefecture === '未設定') && prefecture) {
+      entry.prefecture = prefecture
+    }
+
     entry.monthlySales[monthIndex] += price
     entry.monthlyCustomers[monthIndex] += 1
-    areaMap.set(areaName, entry)
+    areaMap.set(groupingKey, entry)
   })
 
   return Array.from(areaMap.entries())
-    .map(([area, values]) => {
+    .map(([, values]) => {
       const total = values.monthlySales.reduce((sum, sale) => sum + sale, 0)
       const customerTotal = values.monthlyCustomers.reduce((sum, count) => sum + count, 0)
 
       return {
-        area,
+        area: values.displayName,
+        prefecture: values.prefecture,
         monthlySales: values.monthlySales,
         total,
         monthlyCustomers: values.monthlyCustomers,
@@ -953,51 +969,97 @@ export async function getDistrictSalesReport(
   const yearStart = startOfYear(new Date(year, 0, 1))
   const yearEnd = endOfYear(yearStart)
 
-  const reservations = await fetchReservationsBetween(normalizedStoreId, yearStart, yearEnd)
+  const [reservations, firstReservationMap] = await Promise.all([
+    fetchReservationsBetween(normalizedStoreId, yearStart, yearEnd),
+    buildCustomerFirstReservationMap(normalizedStoreId),
+  ])
 
   const districtMap = new Map<
     string,
     {
       monthlySales: number[]
+      monthlyCustomers: number[]
+      monthlyNewCustomers: number[]
+      customerIds: Set<string>
     }
   >()
 
   reservations
     .filter((reservation) => extractPrefecture(reservation) === prefecture)
     .forEach((reservation) => {
-      if (!reservation.startTime) return
+      const startTime = reservation.startTime
+      if (!startTime) return
       const district = extractDistrict(reservation)
-      const month = reservation.startTime.getMonth()
+      const month = startTime.getMonth()
+      const price = reservation.price ?? 0
 
-      const entry = districtMap.get(district) ?? {
-        monthlySales: Array(12).fill(0),
+      const entry =
+        districtMap.get(district) ??
+        {
+          monthlySales: Array(12).fill(0),
+          monthlyCustomers: Array(12).fill(0),
+          monthlyNewCustomers: Array(12).fill(0),
+          customerIds: new Set<string>(),
+        }
+
+      entry.monthlySales[month] += price
+      entry.monthlyCustomers[month] += 1
+
+      if (reservation.customerId) {
+        entry.customerIds.add(reservation.customerId)
+        const firstReservation = firstReservationMap.get(reservation.customerId)
+        if (firstReservation && firstReservation >= yearStart && firstReservation <= yearEnd) {
+          entry.monthlyNewCustomers[month] += 1
+        }
       }
 
-      entry.monthlySales[month] += reservation.price ?? 0
       districtMap.set(district, entry)
     })
 
-  const districts = Array.from(districtMap.entries()).map(([district, data]) => ({
-    district,
-    code: prefecture,
-    monthlySales: data.monthlySales,
-    total: data.monthlySales.reduce((sum, value) => sum + value, 0),
-  }))
+  const districts = Array.from(districtMap.entries()).map(([district, data]) => {
+    const total = data.monthlySales.reduce((sum, value) => sum + value, 0)
+    const customerTotal = data.monthlyCustomers.reduce((sum, value) => sum + value, 0)
+    const newCustomerTotal = data.monthlyNewCustomers.reduce((sum, value) => sum + value, 0)
+
+    return {
+      district,
+      code: prefecture,
+      monthlySales: data.monthlySales,
+      total,
+      monthlyCustomers: data.monthlyCustomers,
+      customerTotal,
+      monthlyNewCustomers: data.monthlyNewCustomers,
+      newCustomerTotal,
+    }
+  })
 
   const totalMonthlySales = Array(12).fill(0)
+  const totalMonthlyCustomers = Array(12).fill(0)
+  const totalMonthlyNewCustomers = Array(12).fill(0)
+
   districts.forEach((district) => {
     district.monthlySales.forEach((sale, index) => {
       totalMonthlySales[index] += sale
+    })
+    district.monthlyCustomers?.forEach((count, index) => {
+      totalMonthlyCustomers[index] += count
+    })
+    district.monthlyNewCustomers?.forEach((count, index) => {
+      totalMonthlyNewCustomers[index] += count
     })
   })
 
   return {
     year,
     area: prefecture,
-    districts,
+    districts: districts.sort((a, b) => b.total - a.total),
     total: {
       monthlySales: totalMonthlySales,
       total: totalMonthlySales.reduce((sum, value) => sum + value, 0),
+      monthlyCustomers: totalMonthlyCustomers,
+      customerTotal: totalMonthlyCustomers.reduce((sum, value) => sum + value, 0),
+      monthlyNewCustomers: totalMonthlyNewCustomers,
+      newCustomerTotal: totalMonthlyNewCustomers.reduce((sum, value) => sum + value, 0),
     },
   }
 }
@@ -1057,13 +1119,6 @@ export async function getDailyReport(
   return generateDailyReport(date, normalizedStoreId)
 }
 
-export interface StaffAttendanceSummary {
-  id: string
-  name: string
-  attendance: (0 | 1)[]
-  total: number
-}
-
 export async function getStaffAttendanceReport(
   year: number,
   month: number,
@@ -1073,6 +1128,16 @@ export async function getStaffAttendanceReport(
   const start = startOfMonth(new Date(year, month - 1, 1))
   const end = endOfMonth(start)
   const daysInMonth = getDaysInMonth(start)
+
+  const casts = await db.cast.findMany({
+    where: {
+      storeId: normalizedStoreId,
+    },
+    select: {
+      id: true,
+      name: true,
+    },
+  })
 
   const schedules = await db.castSchedule.findMany({
     where: {
@@ -1094,8 +1159,21 @@ export async function getStaffAttendanceReport(
     {
       name: string
       attendance: (0 | 1)[]
+      weekdayAttendance: number
+      weekendAttendance: number
+      totalMinutes: number
     }
   >()
+
+  casts.forEach((cast) => {
+    attendanceMap.set(cast.id, {
+      name: cast.name,
+      attendance: Array(daysInMonth).fill(0) as (0 | 1)[],
+      weekdayAttendance: 0,
+      weekendAttendance: 0,
+      totalMinutes: 0,
+    })
+  })
 
   schedules.forEach((schedule) => {
     const castId = schedule.castId
@@ -1107,16 +1185,41 @@ export async function getStaffAttendanceReport(
       {
         name: castName,
         attendance: Array(daysInMonth).fill(0) as (0 | 1)[],
+        weekdayAttendance: 0,
+        weekendAttendance: 0,
+        totalMinutes: 0,
       }
 
+    if (!schedule.isAvailable) {
+      attendanceMap.set(castId, entry)
+      return
+    }
+
     entry.attendance[day - 1] = 1
+    const isWeekend = [0, 6].includes(schedule.date.getDay())
+    if (isWeekend) {
+      entry.weekendAttendance += 1
+    } else {
+      entry.weekdayAttendance += 1
+    }
+    const minutes = differenceInMinutes(schedule.endTime, schedule.startTime)
+    if (minutes > 0) {
+      entry.totalMinutes += minutes
+    }
+
     attendanceMap.set(castId, entry)
   })
 
-  return Array.from(attendanceMap.entries()).map(([castId, data]) => ({
-    id: castId,
-    name: data.name,
-    attendance: data.attendance,
-    total: data.attendance.reduce((sum, value) => sum + value, 0),
-  }))
+  return Array.from(attendanceMap.entries()).map(([castId, data]) => {
+    const total = data.attendance.reduce((sum, value) => sum + value, 0)
+    return {
+      id: castId,
+      name: data.name,
+      attendance: data.attendance,
+      total,
+      weekdayAttendance: data.weekdayAttendance,
+      weekendAttendance: data.weekendAttendance,
+      totalMinutes: data.totalMinutes,
+    }
+  })
 }

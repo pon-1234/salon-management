@@ -3,6 +3,10 @@ export interface DistrictSalesData {
   code: string
   monthlySales: number[]
   total: number
+  monthlyCustomers?: number[]
+  customerTotal?: number
+  monthlyNewCustomers?: number[]
+  newCustomerTotal?: number
 }
 
 export interface DistrictSalesReport {
@@ -12,5 +16,9 @@ export interface DistrictSalesReport {
   total: {
     monthlySales: number[]
     total: number
+    monthlyCustomers?: number[]
+    customerTotal?: number
+    monthlyNewCustomers?: number[]
+    newCustomerTotal?: number
   }
 }

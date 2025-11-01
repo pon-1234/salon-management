@@ -11,6 +11,9 @@ import {
   MonthlyAreaSummary,
 } from '../types/analytics'
 import { AreaSalesData } from '@/lib/types/area-sales'
+import { DistrictSalesReport } from '@/lib/types/district-sales'
+import { HourlySalesReport } from '@/lib/types/hourly-sales'
+import { StaffAttendanceSummary } from '@/lib/types/staff-attendance'
 import { staffPerformanceData } from './data'
 
 export class AnalyticsRepositoryImpl implements AnalyticsRepository {
@@ -86,6 +89,13 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
     })
   }
 
+  async getDistrictSalesData(year: number, prefecture: string): Promise<DistrictSalesReport> {
+    return this.fetchWithQuery<DistrictSalesReport>('/api/analytics/district-sales', {
+      year: String(year),
+      prefecture,
+    })
+  }
+
   async getMonthlyStaffSummary(year: number, month: number): Promise<MonthlyStaffSummary[]> {
     return this.fetchWithQuery<MonthlyStaffSummary[]>('/api/analytics/monthly-staff', {
       year: String(year),
@@ -95,6 +105,20 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
   async getMonthlyAreaSummary(year: number, month: number): Promise<MonthlyAreaSummary[]> {
     return this.fetchWithQuery<MonthlyAreaSummary[]>('/api/analytics/monthly-area', {
+      year: String(year),
+      month: String(month),
+    })
+  }
+
+  async getHourlySalesReport(year: number, month: number): Promise<HourlySalesReport> {
+    return this.fetchWithQuery<HourlySalesReport>('/api/analytics/hourly-sales', {
+      year: String(year),
+      month: String(month),
+    })
+  }
+
+  async getStaffAttendanceReport(year: number, month: number): Promise<StaffAttendanceSummary[]> {
+    return this.fetchWithQuery<StaffAttendanceSummary[]>('/api/analytics/staff-attendance', {
       year: String(year),
       month: String(month),
     })

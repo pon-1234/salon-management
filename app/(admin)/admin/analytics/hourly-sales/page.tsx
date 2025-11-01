@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { Printer, Clock, Users, TrendingUp, Activity } from 'lucide-react'
+import { Printer, Clock, Users, TrendingUp, TrendingDown, Activity } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -16,35 +16,137 @@ import { HourlySalesChart } from '@/components/analytics/hourly-sales-chart'
 import { HourlySalesTable } from '@/components/analytics/hourly-sales-table'
 import { HourlyHeatmap } from '@/components/analytics/hourly-heatmap'
 import { PeakTimeAnalysis } from '@/components/analytics/peak-time-analysis'
-import { generateHourlySalesData } from '@/lib/hourly-sales/data'
+import { AnalyticsUseCases } from '@/lib/analytics/usecases'
+import { AnalyticsRepositoryImpl } from '@/lib/analytics/repository'
+import { useStore } from '@/contexts/store-context'
+import { HourlySalesReport } from '@/lib/types/hourly-sales'
+
+function createEmptyReport(year: number, month: number): HourlySalesReport {
+  const hours = Array.from({ length: 21 }, (_, i) => i + 7)
+  return {
+    year,
+    month,
+    data: [],
+    hourlyTotals: hours.map(() => 0),
+    grandTotal: 0,
+    timeSlots: hours.map((hour) => ({
+      range: `${hour}:00`,
+      count: 0,
+      percentage: 0,
+    })),
+  }
+}
+
+function calculateEfficiency(report: HourlySalesReport): number {
+  if (!report.hourlyTotals.length) return 0
+  const average = report.hourlyTotals.reduce((sum, count) => sum + count, 0) / report.hourlyTotals.length
+  if (average === 0) return 0
+  const busyHours = report.hourlyTotals.filter((count) => count >= average).length
+  return Math.round((busyHours / report.hourlyTotals.length) * 1000) / 10
+}
 
 export default function HourlySalesPage() {
-  const [year, setYear] = useState(2024)
-  const [month, setMonth] = useState(12)
+  const now = new Date()
+  const [year, setYear] = useState(now.getFullYear())
+  const [month, setMonth] = useState(now.getMonth() + 1)
+  const [report, setReport] = useState<HourlySalesReport | null>(null)
+  const [previousReport, setPreviousReport] = useState<HourlySalesReport | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const { currentStore } = useStore()
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i)
   const months = Array.from({ length: 12 }, (_, i) => i + 1)
 
-  const salesData = generateHourlySalesData(year, month)
+  const analyticsUseCases = useMemo(() => {
+    const repository = new AnalyticsRepositoryImpl(currentStore.id)
+    return new AnalyticsUseCases(repository)
+  }, [currentStore.id])
+
+  useEffect(() => {
+    let isMounted = true
+    setIsLoading(true)
+    setError(null)
+
+    const fetchReports = async () => {
+      try {
+        const current = await analyticsUseCases.getHourlySalesReport(year, month)
+        let previous: HourlySalesReport | null = null
+        const previousDate = new Date(year, month - 1, 1)
+        previousDate.setMonth(previousDate.getMonth() - 1)
+        const previousYear = previousDate.getFullYear()
+        const previousMonth = previousDate.getMonth() + 1
+
+        try {
+          previous = await analyticsUseCases.getHourlySalesReport(previousYear, previousMonth)
+        } catch (prevError) {
+          console.warn('[HourlySalesPage] failed to fetch previous month hourly analytics', prevError)
+        }
+
+        if (!isMounted) return
+        setReport(current)
+        setPreviousReport(previous)
+      } catch (err) {
+        console.error('[HourlySalesPage] failed to fetch hourly analytics', err)
+        if (!isMounted) return
+        setReport(null)
+        setPreviousReport(null)
+        setError('時間帯別の集計データを取得できませんでした。')
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    fetchReports()
+
+    return () => {
+      isMounted = false
+    }
+  }, [analyticsUseCases, year, month])
+
+  const salesData = report ?? createEmptyReport(year, month)
+  const previousTotal = previousReport?.grandTotal ?? 0
+  const efficiency = calculateEfficiency(salesData)
+  const previousEfficiency = previousReport ? calculateEfficiency(previousReport) : 0
 
   const handlePrint = () => {
     window.print()
   }
 
-  // ダミーデータ（実際にはsalesDataから計算）
-  const kpiData = {
-    peakHour: '19:00-20:00',
-    peakCustomers: 245,
-    averagePerHour: 28,
-    busyHours: 8,
-    totalCustomers: salesData.grandTotal,
-    previousMonthTotal: 9876,
-    efficiency: 78.5,
-    previousEfficiency: 72.3,
-  }
+  const peakIndex = salesData.hourlyTotals.reduce(
+    (acc, value, idx) => (value > acc.value ? { value, idx } : acc),
+    { value: 0, idx: -1 }
+  )
+  const peakHour =
+    peakIndex.idx >= 0 ? `${peakIndex.idx + 7}:00-${peakIndex.idx + 8}:00` : '--'
+  const averagePerHour =
+    salesData.hourlyTotals.length > 0
+      ? Math.round(
+          salesData.hourlyTotals.reduce((sum, value) => sum + value, 0) / salesData.hourlyTotals.length
+        )
+      : 0
+  const busyHours = salesData.hourlyTotals.filter(
+    (value) => value >= averagePerHour && averagePerHour > 0
+  ).length
 
   const calculateGrowthRate = (current: number, previous: number) => {
+    if (previous === 0) {
+      return current === 0 ? '0.0' : '100.0'
+    }
     return (((current - previous) / previous) * 100).toFixed(1)
+  }
+
+  const kpiData = {
+    peakHour,
+    peakCustomers: peakIndex.value,
+    averagePerHour,
+    busyHours,
+    totalCustomers: salesData.grandTotal,
+    previousMonthTotal: previousTotal,
+    efficiency,
+    previousEfficiency,
   }
 
   return (
@@ -89,6 +191,18 @@ export default function HourlySalesPage() {
         </Button>
       </div>
 
+      {error && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
+      {isLoading && (
+        <div className="rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+          データを読み込み中です...
+        </div>
+      )}
+
       {/* KPIカード */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -110,11 +224,21 @@ export default function HourlySalesPage() {
           <CardContent>
             <div className="text-2xl font-bold">{kpiData.totalCustomers.toLocaleString()}人</div>
             <p className="flex items-center gap-1 text-xs text-muted-foreground">
-              <TrendingUp className="h-3 w-3 text-green-600" />
-              <span className="text-green-600">
+              {kpiData.totalCustomers >= kpiData.previousMonthTotal ? (
+                <TrendingUp className="h-3 w-3 text-green-600" />
+              ) : (
+                <TrendingDown className="h-3 w-3 text-red-600" />
+              )}
+              <span
+                className={
+                  kpiData.totalCustomers >= kpiData.previousMonthTotal
+                    ? 'text-green-600'
+                    : 'text-red-600'
+                }
+              >
                 {calculateGrowthRate(kpiData.totalCustomers, kpiData.previousMonthTotal)}%
               </span>
-              前月比
+              <span>前月比</span>
             </p>
           </CardContent>
         </Card>
@@ -144,40 +268,44 @@ export default function HourlySalesPage() {
         </Card>
       </div>
 
-      {/* 時間別推移グラフ */}
-      <Card>
-        <CardHeader>
-          <CardTitle>時間別来客数推移</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <HourlySalesChart data={salesData} />
-        </CardContent>
-      </Card>
+      {!isLoading && (
+        <>
+          {/* 時間別推移グラフ */}
+          <Card>
+            <CardHeader>
+              <CardTitle>時間別来客数推移</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <HourlySalesChart data={salesData} />
+            </CardContent>
+          </Card>
 
-      {/* 詳細データテーブル */}
-      <Card>
-        <CardHeader>
-          <CardTitle>詳細データ</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="daily" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="daily">日別明細</TabsTrigger>
-              <TabsTrigger value="heatmap">ヒートマップ</TabsTrigger>
-              <TabsTrigger value="peak">ピーク分析</TabsTrigger>
-            </TabsList>
-            <TabsContent value="daily" className="mt-4">
-              <HourlySalesTable data={salesData} />
-            </TabsContent>
-            <TabsContent value="heatmap" className="mt-4">
-              <HourlyHeatmap data={salesData} />
-            </TabsContent>
-            <TabsContent value="peak" className="mt-4">
-              <PeakTimeAnalysis data={salesData} />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+          {/* 詳細データテーブル */}
+          <Card>
+            <CardHeader>
+              <CardTitle>詳細データ</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="daily" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="daily">日別明細</TabsTrigger>
+                  <TabsTrigger value="heatmap">ヒートマップ</TabsTrigger>
+                  <TabsTrigger value="peak">ピーク分析</TabsTrigger>
+                </TabsList>
+                <TabsContent value="daily" className="mt-4">
+                  <HourlySalesTable data={salesData} />
+                </TabsContent>
+                <TabsContent value="heatmap" className="mt-4">
+                  <HourlyHeatmap data={salesData} />
+                </TabsContent>
+                <TabsContent value="peak" className="mt-4">
+                  <PeakTimeAnalysis data={salesData} />
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   )
 }

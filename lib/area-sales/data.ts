@@ -7,6 +7,7 @@ export function generateAreaSalesData(_year: number): AreaSalesData[] {
   const areas: AreaSalesData[] = [
     {
       area: '東京都',
+      prefecture: '東京都',
       monthlySales: Array.from({ length: 12 }, () =>
         Math.floor(baseValue * 3 + (Math.random() - 0.5) * baseValue * 0.5)
       ),
@@ -16,6 +17,7 @@ export function generateAreaSalesData(_year: number): AreaSalesData[] {
     },
     {
       area: '神奈川県',
+      prefecture: '神奈川県',
       monthlySales: Array.from({ length: 12 }, () =>
         Math.floor(baseValue * 1.5 + (Math.random() - 0.5) * baseValue * 0.3)
       ),
@@ -25,6 +27,7 @@ export function generateAreaSalesData(_year: number): AreaSalesData[] {
     },
     {
       area: '千葉県',
+      prefecture: '千葉県',
       monthlySales: Array.from({ length: 12 }, () =>
         Math.floor(baseValue * 0.8 + (Math.random() - 0.5) * baseValue * 0.2)
       ),
@@ -34,6 +37,7 @@ export function generateAreaSalesData(_year: number): AreaSalesData[] {
     },
     {
       area: '埼玉県',
+      prefecture: '埼玉県',
       monthlySales: Array.from({ length: 12 }, () =>
         Math.floor(baseValue * 0.7 + (Math.random() - 0.5) * baseValue * 0.2)
       ),

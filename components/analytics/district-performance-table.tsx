@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -11,13 +10,14 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { DistrictSalesData } from '@/lib/types/district-sales'
 
 interface DistrictPerformanceTableProps {
-  area: string
-  year: number
+  current: DistrictSalesData[]
+  previous: DistrictSalesData[]
 }
 
-interface PerformanceData {
+interface PerformanceRow {
   district: string
   revenue: number
   customers: number
@@ -26,54 +26,54 @@ interface PerformanceData {
   repeatRate: number
   growthRate: number
   rank: number
-  previousRank: number
+  previousRank: number | null
 }
 
-export function DistrictPerformanceTable({ area, year }: DistrictPerformanceTableProps) {
-  const [data, setData] = useState<PerformanceData[]>([])
+export function DistrictPerformanceTable({ current, previous }: DistrictPerformanceTableProps) {
+  if (current.length === 0) {
+    return (
+      <div className="flex h-64 items-center justify-center text-gray-500">データがありません</div>
+    )
+  }
 
-  useEffect(() => {
-    // ダミーデータ（実際にはAPIから取得）
-    const districts =
-      area === '東京都'
-        ? [
-            '渋谷区',
-            '新宿区',
-            '港区',
-            '中央区',
-            '千代田区',
-            '品川区',
-            '目黒区',
-            '世田谷区',
-            '豊島区',
-            '台東区',
-          ]
-        : ['横浜市', '川崎市', '相模原市', '藤沢市', '鎌倉市', '茅ヶ崎市', '平塚市', '小田原市']
+  const previousMap = new Map(previous.map((district) => [district.district, district]))
 
-    const dummyData: PerformanceData[] = districts.map((district, index) => ({
-      district,
-      revenue: Math.floor(Math.random() * 10000000) + 5000000,
-      customers: Math.floor(Math.random() * 1000) + 500,
-      averageSpending: Math.floor(Math.random() * 2000) + 8000,
-      newCustomerRate: Math.random() * 30 + 10,
-      repeatRate: Math.random() * 40 + 50,
-      growthRate: (Math.random() - 0.5) * 40,
-      rank: index + 1,
-      previousRank: Math.floor(Math.random() * districts.length) + 1,
-    }))
+  const rows: PerformanceRow[] = current
+    .map((district) => {
+      const revenue = district.total
+      const customers = district.customerTotal ?? 0
+      const previousEntry = previousMap.get(district.district)
+      const previousRevenue = previousEntry?.total ?? 0
+      const previousCustomers = previousEntry?.customerTotal ?? 0
+      const averageSpending = customers > 0 ? revenue / customers : 0
+      const newCustomers = district.newCustomerTotal ?? 0
+      const newCustomerRate = customers > 0 ? (newCustomers / customers) * 100 : 0
+      const repeatRate = 100 - newCustomerRate
+      const growthRate = previousRevenue > 0
+        ? ((revenue - previousRevenue) / previousRevenue) * 100
+        : revenue > 0
+          ? 100
+          : 0
 
-    // 売上高でソート
-    dummyData.sort((a, b) => b.revenue - a.revenue)
-    dummyData.forEach((item, index) => {
-      item.rank = index + 1
+      return {
+        district: district.district,
+        revenue,
+        customers,
+        averageSpending,
+        newCustomerRate,
+        repeatRate,
+        growthRate,
+        rank: 0,
+        previousRank: previousEntry ? previous.indexOf(previousEntry) + 1 : null,
+      }
     })
+    .sort((a, b) => b.revenue - a.revenue)
+    .map((row, index) => ({ ...row, rank: index + 1 }))
 
-    setData(dummyData)
-  }, [area, year])
-
-  const getRankingIcon = (current: number, previous: number) => {
-    if (current < previous) return <TrendingUp className="h-4 w-4 text-green-600" />
-    if (current > previous) return <TrendingDown className="h-4 w-4 text-red-600" />
+  const getRankingIcon = (currentRank: number, previousRank: number | null) => {
+    if (!previousRank) return <Badge variant="outline">NEW</Badge>
+    if (currentRank < previousRank) return <TrendingUp className="h-4 w-4 text-green-600" />
+    if (currentRank > previousRank) return <TrendingDown className="h-4 w-4 text-red-600" />
     return <Minus className="h-4 w-4 text-gray-400" />
   }
 
@@ -100,10 +100,10 @@ export function DistrictPerformanceTable({ area, year }: DistrictPerformanceTabl
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((item) => (
+          {rows.map((item) => (
             <TableRow key={item.district}>
               <TableCell>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                   <span className="font-medium">{item.rank}</span>
                   {getRankingIcon(item.rank, item.previousRank)}
                 </div>
@@ -111,13 +111,13 @@ export function DistrictPerformanceTable({ area, year }: DistrictPerformanceTabl
               <TableCell className="font-medium">{item.district}</TableCell>
               <TableCell className="text-right">¥{item.revenue.toLocaleString()}</TableCell>
               <TableCell className="text-right">{item.customers.toLocaleString()}人</TableCell>
-              <TableCell className="text-right">¥{item.averageSpending.toLocaleString()}</TableCell>
+              <TableCell className="text-right">¥{Math.round(item.averageSpending).toLocaleString()}</TableCell>
               <TableCell className="text-right">{item.newCustomerRate.toFixed(1)}%</TableCell>
               <TableCell className="text-right">{item.repeatRate.toFixed(1)}%</TableCell>
               <TableCell className="text-center">{getPerformanceBadge(item.repeatRate)}</TableCell>
               <TableCell className="text-right">
-                <span className={item.growthRate > 0 ? 'text-green-600' : 'text-red-600'}>
-                  {item.growthRate > 0 ? '+' : ''}
+                <span className={item.growthRate >= 0 ? 'text-green-600' : 'text-red-600'}>
+                  {item.growthRate >= 0 ? '+' : ''}
                   {item.growthRate.toFixed(1)}%
                 </span>
               </TableCell>

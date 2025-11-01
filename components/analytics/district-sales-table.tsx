@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -12,7 +11,6 @@ import {
 import { DistrictSalesReport } from '@/lib/types/district-sales'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
-import { Skeleton } from '@/components/ui/skeleton'
 
 interface DistrictSalesTableProps {
   data: DistrictSalesReport
@@ -20,6 +18,16 @@ interface DistrictSalesTableProps {
 
 export function DistrictSalesTable({ data }: DistrictSalesTableProps) {
   const months = Array.from({ length: 12 }, (_, i) => i + 1)
+
+  if (!data || data.districts.length === 0) {
+    return (
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>データがありません</AlertTitle>
+        <AlertDescription>表示する地区データがありません。</AlertDescription>
+      </Alert>
+    )
+  }
 
   return (
     <div className="overflow-x-auto">
@@ -37,18 +45,18 @@ export function DistrictSalesTable({ data }: DistrictSalesTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.districts.map((district, index) => (
-              <TableRow key={`${district.district}-${district.code}-${index}`}>
+            {data.districts.map((district) => (
+              <TableRow key={`${district.district}-${district.code}`}>
                 <TableCell>
                   {district.district} ({district.code})
                 </TableCell>
                 {district.monthlySales.map((sales, index) => (
                   <TableCell key={index} className="text-right text-blue-600">
-                    {sales || '-'}
+                    {sales ? `¥${sales.toLocaleString()}` : '-'}
                   </TableCell>
                 ))}
                 <TableCell className="bg-gray-50 text-right font-medium text-blue-600">
-                  {district.total}
+                  ¥{district.total.toLocaleString()}
                 </TableCell>
               </TableRow>
             ))}
@@ -56,11 +64,11 @@ export function DistrictSalesTable({ data }: DistrictSalesTableProps) {
               <TableCell>TOTAL</TableCell>
               {data.total.monthlySales.map((sales, index) => (
                 <TableCell key={index} className="text-right text-blue-600">
-                  {sales}
+                  ¥{sales.toLocaleString()}
                 </TableCell>
               ))}
               <TableCell className="bg-gray-50 text-right text-blue-600">
-                {data.total.total}
+                ¥{data.total.total.toLocaleString()}
               </TableCell>
             </TableRow>
           </TableBody>

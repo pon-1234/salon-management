@@ -8,6 +8,14 @@ interface HourlySalesTableProps {
 export function HourlySalesTable({ data }: HourlySalesTableProps) {
   const hours = Array.from({ length: 21 }, (_, i) => i + 7)
 
+  if (data.data.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+        データがありません。
+      </div>
+    )
+  }
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">

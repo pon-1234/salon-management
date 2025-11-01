@@ -17,10 +17,19 @@ interface PeakTimeAnalysisProps {
 }
 
 export function PeakTimeAnalysis({ data }: PeakTimeAnalysisProps) {
+  if (!data.data.length || data.grandTotal === 0) {
+    return (
+      <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+        データがありません。
+      </div>
+    )
+  }
+
   // 時間帯別の分析データを作成
   const hourlyAnalysis = data.hourlyTotals.map((total, index) => {
     const hour = index + 7
-    const percentage = ((total / data.grandTotal) * 100).toFixed(1)
+    const percentage =
+      data.grandTotal > 0 ? ((total / data.grandTotal) * 100).toFixed(1) : '0.0'
     return {
       hour: `${hour}:00-${hour + 1}:00`,
       total,
@@ -66,7 +75,10 @@ export function PeakTimeAnalysis({ data }: PeakTimeAnalysisProps) {
   const periodData = periodAnalysis.map((p) => ({
     period: p.period,
     total: p.hours.reduce((sum, h) => sum + h.total, 0),
-    percentage: ((p.hours.reduce((sum, h) => sum + h.total, 0) / data.grandTotal) * 100).toFixed(1),
+    percentage:
+      data.grandTotal > 0
+        ? ((p.hours.reduce((sum, h) => sum + h.total, 0) / data.grandTotal) * 100).toFixed(1)
+        : '0.0',
     color: p.color,
   }))
 

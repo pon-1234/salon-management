@@ -7,6 +7,7 @@ import {
   MarketingChannelData,
 } from '../types/analytics'
 import { courses, options } from '@/lib/course-option/data'
+import { StaffAttendanceSummary } from '@/lib/types/staff-attendance'
 
 export function generateMonthlyData(year: number): MonthlyData[] {
   return Array.from({ length: 12 }, (_, index) => ({
@@ -207,5 +208,38 @@ export function generateDailyData(year: number, month: number): DailyData[] {
     day.storeSales = day.totalSales - day.staffSales
     day.cashSales = day.totalSales - day.cardSales
     return day
+  })
+}
+
+export function generateStaffAttendanceData(
+  year: number,
+  month: number
+): StaffAttendanceSummary[] {
+  const daysInMonth = new Date(year, month, 0).getDate()
+  const staffNames = ['みお', 'みるく', 'しほ', 'みなみ', 'ななみ', 'しのん']
+
+  return staffNames.map((name, index) => {
+    const attendance = Array.from({ length: daysInMonth }, () =>
+      Math.random() > 0.6 ? 1 : 0
+    ) as (0 | 1)[]
+    const total = attendance.reduce((sum, value) => sum + value, 0)
+    const weekdayAttendance = attendance.reduce((sum, value, dayIndex) => {
+      const date = new Date(year, month - 1, dayIndex + 1)
+      const isWeekend = date.getDay() === 0 || date.getDay() === 6
+      if (isWeekend) return sum
+      return sum + value
+    }, 0)
+    const weekendAttendance = total - weekdayAttendance
+    const totalMinutes = total * 8 * 60 * Math.random()
+
+    return {
+      id: `staff-${index + 1}`,
+      name,
+      attendance,
+      total,
+      weekdayAttendance,
+      weekendAttendance,
+      totalMinutes,
+    }
   })
 }

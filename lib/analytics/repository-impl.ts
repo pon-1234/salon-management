@@ -17,9 +17,15 @@ import {
   generateCourseSalesData,
   generateOptionSalesData,
   generateMarketingChannelData,
+  generateStaffAttendanceData,
 } from './data'
 import { generateAreaSalesData } from '@/lib/area-sales/data'
 import { AreaSalesData } from '@/lib/types/area-sales'
+import { generateDistrictSalesData } from '@/lib/district-sales/data'
+import { DistrictSalesReport } from '@/lib/types/district-sales'
+import { generateHourlySalesData } from '@/lib/hourly-sales/data'
+import { HourlySalesReport } from '@/lib/types/hourly-sales'
+import { StaffAttendanceSummary } from '@/lib/types/staff-attendance'
 
 export class AnalyticsRepositoryImpl implements AnalyticsRepository {
   async getMonthlyData(year: number): Promise<MonthlyData[]> {
@@ -52,5 +58,17 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
   async getAreaSalesData(year: number): Promise<AreaSalesData[]> {
     return generateAreaSalesData(year)
+  }
+
+  async getDistrictSalesData(year: number, prefecture: string): Promise<DistrictSalesReport> {
+    return generateDistrictSalesData(year, prefecture)
+  }
+
+  async getHourlySalesReport(year: number, month: number): Promise<HourlySalesReport> {
+    return generateHourlySalesData(year, month)
+  }
+
+  async getStaffAttendanceReport(year: number, month: number): Promise<StaffAttendanceSummary[]> {
+    return generateStaffAttendanceData(year, month)
   }
 }

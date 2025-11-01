@@ -76,6 +76,9 @@ export interface StaffPerformanceData {
 }
 
 import { AreaSalesData } from '@/lib/types/area-sales'
+import { DistrictSalesReport } from '@/lib/types/district-sales'
+import { HourlySalesReport } from '@/lib/types/hourly-sales'
+import { StaffAttendanceSummary } from '@/lib/types/staff-attendance'
 
 export interface AnalyticsRepository {
   getMonthlyData(year: number): Promise<MonthlyData[]>
@@ -86,8 +89,11 @@ export interface AnalyticsRepository {
   getOptionCombinationData(year: number): Promise<OptionCombinationData[]>
   getMarketingChannelData(year: number): Promise<MarketingChannelData[]>
   getAreaSalesData(year: number): Promise<AreaSalesData[]>
+  getDistrictSalesData(year: number, prefecture: string): Promise<DistrictSalesReport>
   getMonthlyStaffSummary(year: number, month: number): Promise<MonthlyStaffSummary[]>
   getMonthlyAreaSummary(year: number, month: number): Promise<MonthlyAreaSummary[]>
+  getHourlySalesReport(year: number, month: number): Promise<HourlySalesReport>
+  getStaffAttendanceReport(year: number, month: number): Promise<StaffAttendanceSummary[]>
 }
 
 export interface CourseSalesData {

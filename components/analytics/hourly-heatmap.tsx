@@ -10,12 +10,21 @@ interface HourlyHeatmapProps {
 export function HourlyHeatmap({ data }: HourlyHeatmapProps) {
   const hours = Array.from({ length: 21 }, (_, i) => i + 7)
 
+  if (!data.data.length) {
+    return (
+      <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+        データがありません。
+      </div>
+    )
+  }
+
   // 最大値を取得（色の濃さを計算するため）
-  const maxValue = Math.max(...data.data.flatMap((d) => d.hours))
+  const flattened = data.data.flatMap((d) => d.hours).filter((value) => value > 0)
+  const maxValue = flattened.length > 0 ? Math.max(...flattened) : 0
 
   // 値に基づいて背景色の濃さを計算
   const getCellColor = (value: number) => {
-    if (value === 0) return ''
+    if (value === 0 || maxValue === 0) return ''
     const intensity = (value / maxValue) * 100
     if (intensity >= 80) return 'bg-red-600 text-white'
     if (intensity >= 60) return 'bg-orange-500 text-white'
