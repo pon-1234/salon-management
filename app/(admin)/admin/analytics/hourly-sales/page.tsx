@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -79,6 +80,15 @@ function formatDelta(value: number, unit = ''): string {
   }
   const prefix = value > 0 ? '+' : '-'
   return `${prefix}${Math.abs(value).toLocaleString()}${unit}`
+}
+
+function formatPeopleValue(value: number): string {
+  if (!Number.isFinite(value)) {
+    return '0'
+  }
+  return Number.isInteger(value)
+    ? value.toLocaleString()
+    : value.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 }
 
 export default function HourlySalesPage() {
@@ -348,6 +358,67 @@ export default function HourlySalesPage() {
     },
   }
 
+  const dailyHighlights = useMemo(() => {
+    if (!salesData.data.length || salesData.grandTotal === 0) {
+      return null
+    }
+
+    const describeDay = (day: (typeof salesData.data)[number]) => {
+      const peak = day.hours.reduce(
+        (acc, value, index) => (value > acc.value ? { value, index } : acc),
+        { value: 0, index: -1 }
+      )
+      const peakRange =
+        peak.index >= 0 ? `${peak.index + 7}:00-${peak.index + 8}:00` : '--'
+      const averagePerHour =
+        day.hours.length > 0 ? Math.round((day.total / day.hours.length) * 10) / 10 : 0
+
+      return {
+        ...day,
+        peakRange,
+        peakCount: peak.value,
+        averagePerHour,
+      }
+    }
+
+    const sortedByTotal = [...salesData.data].sort((a, b) => b.total - a.total)
+    const busiest = describeDay(sortedByTotal[0])
+    const quietest = describeDay(sortedByTotal[sortedByTotal.length - 1])
+
+    const averagePerDay =
+      Math.round((salesData.grandTotal / sortedByTotal.length) * 10) / 10
+
+    const weekendDays = sortedByTotal.filter((day) => day.dayOfWeek === '土' || day.dayOfWeek === '日')
+    const weekdayDays = sortedByTotal.filter((day) => day.dayOfWeek !== '土' && day.dayOfWeek !== '日')
+
+    const weekendTotal = weekendDays.reduce((sum, day) => sum + day.total, 0)
+    const weekdayTotal = weekdayDays.reduce((sum, day) => sum + day.total, 0)
+
+    const weekendAverage =
+      weekendDays.length > 0
+        ? Math.round((weekendTotal / weekendDays.length) * 10) / 10
+        : 0
+    const weekdayAverage =
+      weekdayDays.length > 0
+        ? Math.round((weekdayTotal / weekdayDays.length) * 10) / 10
+        : 0
+    const weekendShare =
+      salesData.grandTotal > 0
+        ? Math.round((weekendTotal / salesData.grandTotal) * 1000) / 10
+        : 0
+
+    return {
+      busiest,
+      quietest,
+      averagePerDay,
+      weekendAverage,
+      weekdayAverage,
+      weekendShare,
+      weekendDays: weekendDays.length,
+      weekdayDays: weekdayDays.length,
+    }
+  }, [salesData])
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -489,7 +560,109 @@ export default function HourlySalesPage() {
                   <TabsTrigger value="heatmap">ヒートマップ</TabsTrigger>
                   <TabsTrigger value="peak">ピーク分析</TabsTrigger>
                 </TabsList>
-                <TabsContent value="daily" className="mt-4">
+                <TabsContent value="daily" className="mt-4 space-y-4">
+                  {dailyHighlights && (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-semibold">日別ハイライト</CardTitle>
+                          <p className="text-xs text-muted-foreground">
+                            平均 {formatPeopleValue(dailyHighlights.averagePerDay)}人/日
+                          </p>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <p className="text-xs text-muted-foreground">最多来客日</p>
+                                <div className="text-lg font-semibold">
+                                  {salesData.month}/
+                                  {String(dailyHighlights.busiest.date).padStart(2, '0')}(
+                                  {dailyHighlights.busiest.dayOfWeek})
+                                </div>
+                              </div>
+                              <Badge variant="secondary">
+                                {dailyHighlights.busiest.peakRange}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              総来客数 {dailyHighlights.busiest.total.toLocaleString()}人（平均比{' '}
+                              {formatDelta(
+                                dailyHighlights.busiest.total - dailyHighlights.averagePerDay,
+                                '人'
+                              )}
+                              ）
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              平均 {formatPeopleValue(dailyHighlights.busiest.averagePerHour)}人/時 ・
+                              ピーク {dailyHighlights.busiest.peakCount.toLocaleString()}人
+                            </p>
+                          </div>
+                          <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <p className="text-xs text-muted-foreground">要フォロー日</p>
+                                <div className="text-lg font-semibold">
+                                  {salesData.month}/
+                                  {String(dailyHighlights.quietest.date).padStart(2, '0')}(
+                                  {dailyHighlights.quietest.dayOfWeek})
+                                </div>
+                              </div>
+                              <Badge variant="outline">
+                                {dailyHighlights.quietest.peakRange}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              総来客数 {dailyHighlights.quietest.total.toLocaleString()}人（平均比{' '}
+                              {formatDelta(
+                                dailyHighlights.quietest.total - dailyHighlights.averagePerDay,
+                                '人'
+                              )}
+                              ）
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              平均 {formatPeopleValue(dailyHighlights.quietest.averagePerHour)}人/時 ・
+                              ピーク {dailyHighlights.quietest.peakCount.toLocaleString()}人
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-semibold">曜日別傾向</CardTitle>
+                          <p className="text-xs text-muted-foreground">
+                            週末 {dailyHighlights.weekendDays}日 / 平日 {dailyHighlights.weekdayDays}日
+                          </p>
+                        </CardHeader>
+                        <CardContent className="grid gap-3 sm:grid-cols-2">
+                          <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                            <p className="text-xs text-muted-foreground">週末平均</p>
+                            <div className="text-lg font-semibold">
+                              {formatPeopleValue(dailyHighlights.weekendAverage)}人/日
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              シェア {dailyHighlights.weekendShare.toFixed(1)}%
+                            </p>
+                          </div>
+                          <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                            <p className="text-xs text-muted-foreground">平日平均</p>
+                            <div className="text-lg font-semibold">
+                              {formatPeopleValue(dailyHighlights.weekdayAverage)}人/日
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              平均比{' '}
+                              {formatDelta(
+                                dailyHighlights.weekdayAverage - dailyHighlights.averagePerDay,
+                                '人'
+                              )}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+
                   <HourlySalesTable data={salesData} />
                 </TabsContent>
                 <TabsContent value="heatmap" className="mt-4">
