@@ -944,43 +944,6 @@ export async function getAreaSalesReport(
     .sort((a, b) => b.total - a.total)
 }
 
-export async function getAreaSalesReport(
-  year: number,
-  storeId?: string
-): Promise<AreaSalesData[]> {
-  const normalizedStoreId = normaliseStoreId(storeId)
-  const yearStart = startOfYear(new Date(year, 0, 1))
-  const yearEnd = endOfYear(yearStart)
-
-  const reservations = await fetchReservationsBetween(normalizedStoreId, yearStart, yearEnd)
-
-  const areaMap = new Map<
-    string,
-    {
-      monthlySales: number[]
-    }
-  >()
-
-  reservations.forEach((reservation) => {
-    if (!reservation.startTime) return
-    const prefecture = extractPrefecture(reservation)
-    const month = reservation.startTime.getMonth()
-
-    const entry = areaMap.get(prefecture) ?? {
-      monthlySales: Array(12).fill(0),
-    }
-
-    entry.monthlySales[month] += reservation.price ?? 0
-    areaMap.set(prefecture, entry)
-  })
-
-  return Array.from(areaMap.entries()).map(([area, data]) => ({
-    area,
-    monthlySales: data.monthlySales,
-    total: data.monthlySales.reduce((sum, value) => sum + value, 0),
-  }))
-}
-
 export async function getDistrictSalesReport(
   year: number,
   prefecture: string,
