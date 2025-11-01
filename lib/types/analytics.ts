@@ -75,6 +75,8 @@ export interface StaffPerformanceData {
   storeRevenue: number
 }
 
+import { AreaSalesData } from '@/lib/types/area-sales'
+
 export interface AnalyticsRepository {
   getMonthlyData(year: number): Promise<MonthlyData[]>
   getDailyData(year: number, month: number): Promise<DailyData[]>
@@ -83,6 +85,7 @@ export interface AnalyticsRepository {
   getOptionSalesData(year: number): Promise<OptionSalesData[]>
   getOptionCombinationData(year: number): Promise<OptionCombinationData[]>
   getMarketingChannelData(year: number): Promise<MarketingChannelData[]>
+  getAreaSalesData(year: number): Promise<AreaSalesData[]>
   getMonthlyStaffSummary(year: number, month: number): Promise<MonthlyStaffSummary[]>
   getMonthlyAreaSummary(year: number, month: number): Promise<MonthlyAreaSummary[]>
 }

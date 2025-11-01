@@ -901,6 +901,63 @@ export async function getAreaSalesReport(
     string,
     {
       monthlySales: number[]
+      monthlyCustomers: number[]
+    }
+  >()
+
+  reservations.forEach((reservation) => {
+    const startTime = reservation.startTime
+    if (!startTime) return
+
+    const monthIndex = startTime.getMonth()
+    const price = reservation.price ?? 0
+    const areaName =
+      reservation.area?.name ??
+      reservation.area?.city ??
+      reservation.area?.prefecture ??
+      '未設定'
+
+    const entry =
+      areaMap.get(areaName) ?? {
+        monthlySales: Array(12).fill(0),
+        monthlyCustomers: Array(12).fill(0),
+      }
+
+    entry.monthlySales[monthIndex] += price
+    entry.monthlyCustomers[monthIndex] += 1
+    areaMap.set(areaName, entry)
+  })
+
+  return Array.from(areaMap.entries())
+    .map(([area, values]) => {
+      const total = values.monthlySales.reduce((sum, sale) => sum + sale, 0)
+      const customerTotal = values.monthlyCustomers.reduce((sum, count) => sum + count, 0)
+
+      return {
+        area,
+        monthlySales: values.monthlySales,
+        total,
+        monthlyCustomers: values.monthlyCustomers,
+        customerTotal,
+      }
+    })
+    .sort((a, b) => b.total - a.total)
+}
+
+export async function getAreaSalesReport(
+  year: number,
+  storeId?: string
+): Promise<AreaSalesData[]> {
+  const normalizedStoreId = normaliseStoreId(storeId)
+  const yearStart = startOfYear(new Date(year, 0, 1))
+  const yearEnd = endOfYear(yearStart)
+
+  const reservations = await fetchReservationsBetween(normalizedStoreId, yearStart, yearEnd)
+
+  const areaMap = new Map<
+    string,
+    {
+      monthlySales: number[]
     }
   >()
 

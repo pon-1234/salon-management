@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -12,7 +11,6 @@ import {
 import { AreaSalesData } from '@/lib/types/area-sales'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
-import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 
 interface AreaSalesTableProps {

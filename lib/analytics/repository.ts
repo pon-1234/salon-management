@@ -10,6 +10,7 @@ import {
   MonthlyStaffSummary,
   MonthlyAreaSummary,
 } from '../types/analytics'
+import { AreaSalesData } from '@/lib/types/area-sales'
 import { staffPerformanceData } from './data'
 
 export class AnalyticsRepositoryImpl implements AnalyticsRepository {
@@ -75,6 +76,12 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
   async getMarketingChannelData(year: number): Promise<MarketingChannelData[]> {
     return this.fetchWithQuery<MarketingChannelData[]>('/api/analytics/marketing-channels', {
+      year: String(year),
+    })
+  }
+
+  async getAreaSalesData(year: number): Promise<AreaSalesData[]> {
+    return this.fetchWithQuery<AreaSalesData[]>('/api/analytics/area-sales', {
       year: String(year),
     })
   }

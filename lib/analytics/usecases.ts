@@ -10,6 +10,7 @@ import {
   MonthlyAreaSummary,
   OptionCombinationData,
 } from '../types/analytics'
+import { AreaSalesData } from '@/lib/types/area-sales'
 
 export class AnalyticsUseCases {
   constructor(private repository: AnalyticsRepository) {}
@@ -40,6 +41,10 @@ export class AnalyticsUseCases {
 
   async getMarketingChannelReport(year: number): Promise<MarketingChannelData[]> {
     return this.repository.getMarketingChannelData(year)
+  }
+
+  async getAreaSalesReport(year: number): Promise<AreaSalesData[]> {
+    return this.repository.getAreaSalesData(year)
   }
 
   async getMonthlyStaffSummary(year: number, month: number): Promise<MonthlyStaffSummary[]> {

@@ -7,6 +7,8 @@ import {
   OptionSalesData,
   OptionCombinationData,
   MarketingChannelData,
+  MonthlyStaffSummary,
+  MonthlyAreaSummary,
 } from '../types/analytics'
 import {
   generateMonthlyData,
@@ -16,6 +18,8 @@ import {
   generateOptionSalesData,
   generateMarketingChannelData,
 } from './data'
+import { generateAreaSalesData } from '@/lib/area-sales/data'
+import { AreaSalesData } from '@/lib/types/area-sales'
 
 export class AnalyticsRepositoryImpl implements AnalyticsRepository {
   async getMonthlyData(year: number): Promise<MonthlyData[]> {
@@ -44,5 +48,9 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
   async getMarketingChannelData(year: number): Promise<MarketingChannelData[]> {
     return generateMarketingChannelData(year)
+  }
+
+  async getAreaSalesData(year: number): Promise<AreaSalesData[]> {
+    return generateAreaSalesData(year)
   }
 }

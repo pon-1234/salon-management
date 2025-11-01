@@ -51,7 +51,16 @@ export function AreaTrendChart({ data, year }: AreaTrendChartProps) {
     return monthData
   })
 
-  const colors = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6']
+  const colors = [
+    '#10b981',
+    '#3b82f6',
+    '#f59e0b',
+    '#8b5cf6',
+    '#ef4444',
+    '#14b8a6',
+    '#a855f7',
+    '#f97316',
+  ]
 
   const formatYAxis = (value: number) => {
     if (value >= 1000000) {
