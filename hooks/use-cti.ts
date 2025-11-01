@@ -44,19 +44,17 @@ export function useCTI() {
   const answerCall = useCallback(() => {
     if (incomingCall) {
       console.log('着信に応答しました:', incomingCall.phoneNumber)
-
       setIncomingCall(null)
     }
-  }, [incomingCall, currentStore])
+  }, [incomingCall])
 
   // 着信拒否
   const rejectCall = useCallback(() => {
     if (incomingCall) {
       console.log('着信を拒否しました:', incomingCall.phoneNumber)
-
       setIncomingCall(null)
     }
-  }, [incomingCall, currentStore])
+  }, [incomingCall])
 
   return {
     incomingCall,
