@@ -64,7 +64,6 @@ export async function buildCustomerFirstReservationMap(
     where: {
       storeId,
       status: { not: 'cancelled' },
-      customerId: { not: null },
     },
     _min: {
       startTime: true,
