@@ -1,17 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
 import Link from 'next/link'
 import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 import { StaffPerformanceData } from '@/lib/types/analytics'
@@ -272,157 +263,200 @@ export function CastPerformanceTable({ analyticsUseCases }: CastPerformanceTable
         </Card>
       </div>
 
-      {/* 詳細テーブル */}
-      <Card>
-        <CardHeader>
-          <CardTitle>キャスト別詳細実績</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[120px] whitespace-nowrap">キャスト</TableHead>
-                  <TableHead className="whitespace-nowrap">就業日数/時間</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">現金本数</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">現金金額</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">カード本数</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">カード金額</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">合計本数</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">新規(フリー)</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">新規(パネル)</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">本指名</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">指名合計</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">指名率</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">値引き</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">合計金額</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">厚生費</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">キャスト収益</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">店舗収益</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.map((row) => (
-                  <TableRow key={row.id} className="hover:bg-gray-50">
-                    <TableCell className="font-medium">
-                      <div>
-                        <Link
-                          href={`/admin/cast/manage/${row.id}`}
-                          className="font-medium text-blue-600 hover:underline"
-                        >
-                          {row.name}
-                        </Link>
-                        <span className="ml-1 text-gray-500">({row.age}歳)</span>
-                      </div>
-                      <div className="text-xs text-gray-400">{row.id}</div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs">
-                        {row.workDays}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {row.cashTransactions.count}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      ¥{row.cashTransactions.amount.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {row.cardTransactions.count}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      ¥{row.cardTransactions.amount.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right font-bold text-blue-600">
-                      {row.totalTransactions}
-                    </TableCell>
-                    <TableCell className="text-right">{row.newCustomers.free}</TableCell>
-                    <TableCell className="text-right">{row.newCustomers.paid}</TableCell>
-                    <TableCell className="text-right font-medium">
-                      {row.designations.regular}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {row.designations.total}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Badge
-                        variant={
-                          row.designations.rate >= 70
-                            ? 'default'
-                            : row.designations.rate >= 50
-                              ? 'secondary'
-                              : 'destructive'
-                        }
-                        className="text-xs"
-                      >
-                        {row.designations.rate}%
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right text-red-600">
-                      {row.discount > 0 ? `-¥${row.discount.toLocaleString()}` : '-'}
-                    </TableCell>
-                    <TableCell className="text-right font-bold">
-                      ¥{row.totalAmount.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right">¥{row.staffFee.toLocaleString()}</TableCell>
-                    <TableCell className="text-right font-medium text-green-600">
-                      ¥{row.staffRevenue.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right font-medium text-blue-600">
-                      ¥{row.storeRevenue.toLocaleString()}
-                    </TableCell>
-                  </TableRow>
-                ))}
+      <div className="space-y-4">
+        {data.map((row) => {
+          const designationVariant: 'default' | 'secondary' | 'destructive' =
+            row.designations.rate >= 70
+              ? 'default'
+              : row.designations.rate >= 50
+                ? 'secondary'
+                : 'destructive'
 
-                {/* 合計行 */}
-                <TableRow className="border-t-2 bg-gray-50 font-bold">
-                  <TableCell>
-                    <div className="flex items-center gap-2">
+          const averageSessionAmount =
+            row.totalTransactions > 0 ? Math.round(row.totalAmount / row.totalTransactions) : 0
+
+          return (
+            <Card key={row.id} className="shadow-sm">
+              <CardHeader className="flex flex-col gap-2 justify-between md:flex-row md:items-center">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      href={`/admin/cast/manage/${row.id}`}
+                      className="text-lg font-semibold text-blue-600 hover:underline"
+                    >
+                      {row.name}
+                    </Link>
+                    <Badge variant="outline">{row.workDays}</Badge>
+                    <span className="text-sm text-gray-500">ID: {row.id}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    年齢 {row.age}歳 ・ 就業時間 {row.workDays.split('/')[1]}h
+                  </p>
+                </div>
+                <Badge variant={designationVariant} className="text-xs uppercase">
+                  指名率 {row.designations.rate}%
+                </Badge>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  <div className="rounded-lg border border-border/60 bg-muted/10 p-4">
+                    <p className="text-xs uppercase text-muted-foreground">サービス実績</p>
+                    <div className="mt-1 text-2xl font-semibold text-blue-600">
+                      {row.totalTransactions.toLocaleString()}本
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      客単価 ¥{averageSessionAmount.toLocaleString()}
+                    </p>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                       <div>
-                        <div className="font-bold">TOTAL</div>
-                        <div className="text-sm font-normal text-gray-600">
-                          稼働 {totals.workingCasts}人・{totals.totalHours}時間
-                        </div>
+                        <span className="block font-medium text-foreground">現金</span>
+                        <span>
+                          {row.cashTransactions.count}本 · ¥
+                          {row.cashTransactions.amount.toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="block font-medium text-foreground">カード</span>
+                        <span>
+                          {row.cardTransactions.count}本 · ¥
+                          {row.cardTransactions.amount.toLocaleString()}
+                        </span>
                       </div>
                     </div>
-                  </TableCell>
-                  <TableCell></TableCell>
-                  <TableCell className="text-right">{totals.cashTransactions.count}</TableCell>
-                  <TableCell className="text-right">
-                    ¥{totals.cashTransactions.amount.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">{totals.cardTransactions.count}</TableCell>
-                  <TableCell className="text-right">
-                    ¥{totals.cardTransactions.amount.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right text-blue-600">
-                    {totals.totalTransactions}
-                  </TableCell>
-                  <TableCell className="text-right">{totals.newCustomers.free}</TableCell>
-                  <TableCell className="text-right">{totals.newCustomers.paid}</TableCell>
-                  <TableCell className="text-right">{totals.designations.regular}</TableCell>
-                  <TableCell className="text-right">{totals.designations.total}</TableCell>
-                  <TableCell className="text-right">
-                    <Badge variant="default" className="text-xs">
-                      {totals.designations.rate}%
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right text-red-600">
-                    -¥{totals.discount.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right text-lg">
-                    ¥{totals.totalAmount.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">¥{totals.castFee.toLocaleString()}</TableCell>
-                  <TableCell className="text-right text-green-600">
-                    ¥{totals.castRevenue.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right text-blue-600">
-                    ¥{totals.storeRevenue.toLocaleString()}
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
+                  </div>
+
+                  <div className="rounded-lg border border-border/60 bg-muted/10 p-4">
+                    <p className="text-xs uppercase text-muted-foreground">売上概要</p>
+                    <div className="mt-1 text-2xl font-semibold">
+                      ¥{row.totalAmount.toLocaleString()}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      値引 {row.discount > 0 ? `-¥${row.discount.toLocaleString()}` : '-'}
+                    </p>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                      <div>
+                        <span className="block font-medium text-foreground">キャスト収益</span>
+                        <span>¥{row.staffRevenue.toLocaleString()}</span>
+                      </div>
+                      <div>
+                        <span className="block font-medium text-foreground">店舗収益</span>
+                        <span>¥{row.storeRevenue.toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      厚生費 ¥{row.staffFee.toLocaleString()}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border border-border/60 bg-muted/10 p-4">
+                    <p className="text-xs uppercase text-muted-foreground">顧客動向</p>
+                    <div className="mt-1 flex items-baseline gap-2 text-2xl font-semibold">
+                      {row.designations.total}
+                      <span className="text-xs text-muted-foreground">指名/本指名</span>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                      <div>
+                        <span className="block font-medium text-foreground">本指名</span>
+                        <span>{row.designations.regular}本</span>
+                      </div>
+                      <div>
+                        <span className="block font-medium text-foreground">総指名</span>
+                        <span>{row.designations.total}本</span>
+                      </div>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                      <div>
+                        <span className="block font-medium text-foreground">新規(フリー)</span>
+                        <span>{row.newCustomers.free}人</span>
+                      </div>
+                      <div>
+                        <span className="block font-medium text-foreground">新規(パネル)</span>
+                        <span>{row.newCustomers.paid}人</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-border/60 bg-muted/10 p-4">
+                    <p className="text-xs uppercase text-muted-foreground">時間配分</p>
+                    <div className="mt-1 text-2xl font-semibold">
+                      {row.workDays.split('/')[1]}時間
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      稼働日 {row.workDays.split('/')[0]}日
+                    </p>
+                    <div className="mt-3 space-y-2 text-xs text-muted-foreground">
+                      <div className="flex items-center justify-between font-medium text-foreground">
+                        <span>現金比率</span>
+                        <span>
+                          {row.totalTransactions > 0
+                            ? Math.round(
+                                (row.cashTransactions.count / row.totalTransactions) * 100
+                              )
+                            : 0}
+                          %
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between font-medium text-foreground">
+                        <span>カード比率</span>
+                        <span>
+                          {row.totalTransactions > 0
+                            ? Math.round(
+                                (row.cardTransactions.count / row.totalTransactions) * 100
+                              )
+                            : 0}
+                          %
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+
+      <Card className="border-dashed">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold">TOTAL サマリー</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            稼働 {totals.workingCasts}人 ・ 就業時間 {totals.totalHours}h ・ 総売上 ¥
+            {totals.totalAmount.toLocaleString()}
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-lg border border-border/60 bg-muted/10 p-3 text-sm">
+              <p className="text-xs uppercase text-muted-foreground">サービス数</p>
+              <div className="text-lg font-semibold text-blue-600">
+                {totals.totalTransactions.toLocaleString()}本
+              </div>
+              <p className="text-xs text-muted-foreground">
+                客単価 ¥{averageServiceAmount.toLocaleString()}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border/60 bg-muted/10 p-3 text-sm">
+              <p className="text-xs uppercase text-muted-foreground">新規顧客</p>
+              <div className="text-lg font-semibold">
+                {(totals.newCustomers.free + totals.newCustomers.paid).toLocaleString()}人
+              </div>
+              <p className="text-xs text-muted-foreground">新規率 {newCustomerRate}%</p>
+            </div>
+            <div className="rounded-lg border border-border/60 bg-muted/10 p-3 text-sm">
+              <p className="text-xs uppercase text-muted-foreground">指名</p>
+              <div className="text-lg font-semibold">{totals.designations.total}本</div>
+              <p className="text-xs text-muted-foreground">本指名 {totals.designations.regular}本</p>
+            </div>
+            <div className="rounded-lg border border-border/60 bg-muted/10 p-3 text-sm">
+              <p className="text-xs uppercase text-muted-foreground">収益</p>
+              <div className="text-lg font-semibold">
+                キャスト ¥{totals.castRevenue.toLocaleString()}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                店舗 ¥{totals.storeRevenue.toLocaleString()} / 厚生費 ¥
+                {totals.castFee.toLocaleString()}
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
