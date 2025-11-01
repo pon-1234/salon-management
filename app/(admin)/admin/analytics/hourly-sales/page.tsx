@@ -532,151 +532,149 @@ export default function HourlySalesPage() {
         })}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[2fr,1fr]">
-        <div className="space-y-6">
-          <Card className="shadow-sm">
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-lg font-semibold">時間別来客数の推移</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                選択期間の時間帯別来客数をプロットしています。ピーク帯とアイドル帯のギャップを視覚的に確認できます。
-              </p>
-            </CardHeader>
-            <CardContent>
-              <HourlySalesChart data={salesData} />
-            </CardContent>
-          </Card>
+      <div className="space-y-6">
+        <Card className="shadow-sm">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-lg font-semibold">時間別来客数の推移</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              選択期間の時間帯別来客数をプロットしています。ピーク帯とアイドル帯のギャップを視覚的に確認できます。
+            </p>
+          </CardHeader>
+          <CardContent>
+            <HourlySalesChart data={salesData} />
+          </CardContent>
+        </Card>
 
-          <Card className="shadow-sm">
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-lg font-semibold">詳細データビュー</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                日別明細・ヒートマップ・ピーク分析の3種類で深掘りできます。施策検討前の下調べに活用してください。
-              </p>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="daily" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="daily">日別明細</TabsTrigger>
-                  <TabsTrigger value="heatmap">ヒートマップ</TabsTrigger>
-                  <TabsTrigger value="peak">ピーク分析</TabsTrigger>
-                </TabsList>
-                <TabsContent value="daily" className="mt-4 space-y-4">
-                  {dailyHighlights && (
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <Card>
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-sm font-semibold">日別ハイライト</CardTitle>
-                          <p className="text-xs text-muted-foreground">
-                            平均 {formatPeopleValue(dailyHighlights.averagePerDay)}人/日
-                          </p>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                          <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <p className="text-xs text-muted-foreground">最多来客日</p>
-                                <div className="text-lg font-semibold">
-                                  {salesData.month}/
-                                  {String(dailyHighlights.busiest.date).padStart(2, '0')}(
-                                  {dailyHighlights.busiest.dayOfWeek})
-                                </div>
+        <Card className="shadow-sm">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-lg font-semibold">詳細データビュー</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              日別明細・ヒートマップ・ピーク分析の3種類で深掘りできます。施策検討前の下調べに活用してください。
+            </p>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="daily" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="daily">日別明細</TabsTrigger>
+                <TabsTrigger value="heatmap">ヒートマップ</TabsTrigger>
+                <TabsTrigger value="peak">ピーク分析</TabsTrigger>
+              </TabsList>
+              <TabsContent value="daily" className="mt-4 space-y-4">
+                {dailyHighlights && (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-semibold">日別ハイライト</CardTitle>
+                        <p className="text-xs text-muted-foreground">
+                          平均 {formatPeopleValue(dailyHighlights.averagePerDay)}人/日
+                        </p>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="text-xs text-muted-foreground">最多来客日</p>
+                              <div className="text-lg font-semibold">
+                                {salesData.month}/
+                                {String(dailyHighlights.busiest.date).padStart(2, '0')}(
+                                {dailyHighlights.busiest.dayOfWeek})
                               </div>
-                              <Badge variant="secondary">
-                                {dailyHighlights.busiest.peakRange}
-                              </Badge>
                             </div>
-                            <p className="text-xs text-muted-foreground">
-                              総来客数 {dailyHighlights.busiest.total.toLocaleString()}人（平均比{' '}
-                              {formatDelta(
-                                dailyHighlights.busiest.total - dailyHighlights.averagePerDay,
-                                '人'
-                              )}
-                              ）
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              平均 {formatPeopleValue(dailyHighlights.busiest.averagePerHour)}人/時 ・
-                              ピーク {dailyHighlights.busiest.peakCount.toLocaleString()}人
-                            </p>
+                            <Badge variant="secondary">
+                              {dailyHighlights.busiest.peakRange}
+                            </Badge>
                           </div>
-                          <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <p className="text-xs text-muted-foreground">要フォロー日</p>
-                                <div className="text-lg font-semibold">
-                                  {salesData.month}/
-                                  {String(dailyHighlights.quietest.date).padStart(2, '0')}(
-                                  {dailyHighlights.quietest.dayOfWeek})
-                                </div>
-                              </div>
-                              <Badge variant="outline">
-                                {dailyHighlights.quietest.peakRange}
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              総来客数 {dailyHighlights.quietest.total.toLocaleString()}人（平均比{' '}
-                              {formatDelta(
-                                dailyHighlights.quietest.total - dailyHighlights.averagePerDay,
-                                '人'
-                              )}
-                              ）
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              平均 {formatPeopleValue(dailyHighlights.quietest.averagePerHour)}人/時 ・
-                              ピーク {dailyHighlights.quietest.peakCount.toLocaleString()}人
-                            </p>
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      <Card>
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-sm font-semibold">曜日別傾向</CardTitle>
                           <p className="text-xs text-muted-foreground">
-                            週末 {dailyHighlights.weekendDays}日 / 平日 {dailyHighlights.weekdayDays}日
+                            総来客数 {dailyHighlights.busiest.total.toLocaleString()}人（平均比{' '}
+                            {formatDelta(
+                              dailyHighlights.busiest.total - dailyHighlights.averagePerDay,
+                              '人'
+                            )}
+                            ）
                           </p>
-                        </CardHeader>
-                        <CardContent className="grid gap-3 sm:grid-cols-2">
-                          <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
-                            <p className="text-xs text-muted-foreground">週末平均</p>
-                            <div className="text-lg font-semibold">
-                              {formatPeopleValue(dailyHighlights.weekendAverage)}人/日
+                          <p className="text-xs text-muted-foreground">
+                            平均 {formatPeopleValue(dailyHighlights.busiest.averagePerHour)}人/時 ・
+                            ピーク {dailyHighlights.busiest.peakCount.toLocaleString()}人
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="text-xs text-muted-foreground">要フォロー日</p>
+                              <div className="text-lg font-semibold">
+                                {salesData.month}/
+                                {String(dailyHighlights.quietest.date).padStart(2, '0')}(
+                                {dailyHighlights.quietest.dayOfWeek})
+                              </div>
                             </div>
-                            <p className="text-xs text-muted-foreground">
-                              シェア {dailyHighlights.weekendShare.toFixed(1)}%
-                            </p>
+                            <Badge variant="outline">
+                              {dailyHighlights.quietest.peakRange}
+                            </Badge>
                           </div>
-                          <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
-                            <p className="text-xs text-muted-foreground">平日平均</p>
-                            <div className="text-lg font-semibold">
-                              {formatPeopleValue(dailyHighlights.weekdayAverage)}人/日
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              平均比{' '}
-                              {formatDelta(
-                                dailyHighlights.weekdayAverage - dailyHighlights.averagePerDay,
-                                '人'
-                              )}
-                            </p>
+                          <p className="text-xs text-muted-foreground">
+                            総来客数 {dailyHighlights.quietest.total.toLocaleString()}人（平均比{' '}
+                            {formatDelta(
+                              dailyHighlights.quietest.total - dailyHighlights.averagePerDay,
+                              '人'
+                            )}
+                            ）
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            平均 {formatPeopleValue(dailyHighlights.quietest.averagePerHour)}人/時 ・
+                            ピーク {dailyHighlights.quietest.peakCount.toLocaleString()}人
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-semibold">曜日別傾向</CardTitle>
+                        <p className="text-xs text-muted-foreground">
+                          週末 {dailyHighlights.weekendDays}日 / 平日 {dailyHighlights.weekdayDays}日
+                        </p>
+                      </CardHeader>
+                      <CardContent className="grid gap-3 sm:grid-cols-2">
+                        <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                          <p className="text-xs text-muted-foreground">週末平均</p>
+                          <div className="text-lg font-semibold">
+                            {formatPeopleValue(dailyHighlights.weekendAverage)}人/日
                           </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  )}
+                          <p className="text-xs text-muted-foreground">
+                            シェア {dailyHighlights.weekendShare.toFixed(1)}%
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                          <p className="text-xs text-muted-foreground">平日平均</p>
+                          <div className="text-lg font-semibold">
+                            {formatPeopleValue(dailyHighlights.weekdayAverage)}人/日
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            平均比{' '}
+                            {formatDelta(
+                              dailyHighlights.weekdayAverage - dailyHighlights.averagePerDay,
+                              '人'
+                            )}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
 
-                  <HourlySalesTable data={salesData} />
-                </TabsContent>
-                <TabsContent value="heatmap" className="mt-4">
-                  <HourlyHeatmap data={salesData} />
-                </TabsContent>
-                <TabsContent value="peak" className="mt-4">
-                  <PeakTimeAnalysis data={salesData} />
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-        </div>
+                <HourlySalesTable data={salesData} />
+              </TabsContent>
+              <TabsContent value="heatmap" className="mt-4">
+                <HourlyHeatmap data={salesData} />
+              </TabsContent>
+              <TabsContent value="peak" className="mt-4">
+                <PeakTimeAnalysis data={salesData} />
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
 
-        <div className="space-y-6">
+        <div className="grid gap-6 lg:grid-cols-2">
           <Card className="shadow-sm">
             <CardHeader className="space-y-2">
               <CardTitle className="text-base font-semibold">前月対比サマリー</CardTitle>
