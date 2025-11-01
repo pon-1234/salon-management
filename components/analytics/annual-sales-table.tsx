@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 import {
   Table,
   TableBody,
@@ -9,50 +9,65 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 import { MonthlyData } from '@/lib/types/analytics'
 
 interface AnnualSalesTableProps {
-  year: number
-  analyticsUseCases: AnalyticsUseCases
+  data: MonthlyData[]
+  previousData: MonthlyData[]
 }
 
-export function AnnualSalesTable({ year, analyticsUseCases }: AnnualSalesTableProps) {
-  const [data, setData] = useState<MonthlyData[]>([])
+export function AnnualSalesTable({ data, previousData }: AnnualSalesTableProps) {
+  const previousMap = useMemo(() => {
+    return new Map(previousData.map((entry) => [entry.month, entry]))
+  }, [previousData])
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const result = await analyticsUseCases.getMonthlyReport(year)
-      setData(result)
-    }
-    fetchData()
-  }, [year, analyticsUseCases])
+  const totals = useMemo(() => {
+    return data.reduce(
+      (acc, curr) => ({
+        workingDays: acc.workingDays + curr.workingDays,
+        totalCount: acc.totalCount + curr.totalCount,
+        totalSales: acc.totalSales + curr.totalSales,
+        cashSales: acc.cashSales + curr.cashSales,
+        cardSales: acc.cardSales + curr.cardSales,
+        newCustomerCount: acc.newCustomerCount + curr.newCustomerCount,
+        repeatCustomerCount: acc.repeatCustomerCount + curr.repeatCustomerCount,
+        discounts: acc.discounts + curr.discounts,
+        pointRewards: acc.pointRewards + curr.pointRewards,
+      }),
+      {
+        workingDays: 0,
+        totalCount: 0,
+        totalSales: 0,
+        cashSales: 0,
+        cardSales: 0,
+        newCustomerCount: 0,
+        repeatCustomerCount: 0,
+        discounts: 0,
+        pointRewards: 0,
+      }
+    )
+  }, [data])
 
-  // 合計を計算
-  const totals = data.reduce(
-    (acc, curr) => ({
-      workingDays: acc.workingDays + curr.workingDays,
-      totalCount: acc.totalCount + curr.totalCount,
-      totalSales: acc.totalSales + curr.totalSales,
-      cashSales: acc.cashSales + curr.cashSales,
-      cardSales: acc.cardSales + curr.cardSales,
-      newCustomerCount: acc.newCustomerCount + curr.newCustomerCount,
-      repeatCustomerCount: acc.repeatCustomerCount + curr.repeatCustomerCount,
-      discounts: acc.discounts + curr.discounts,
-      pointRewards: acc.pointRewards + curr.pointRewards,
-    }),
-    {
-      workingDays: 0,
-      totalCount: 0,
-      totalSales: 0,
-      cashSales: 0,
-      cardSales: 0,
-      newCustomerCount: 0,
-      repeatCustomerCount: 0,
-      discounts: 0,
-      pointRewards: 0,
-    }
-  )
+  const previousTotals = useMemo(() => {
+    return previousData.reduce(
+      (acc, curr) => ({
+        totalSales: acc.totalSales + curr.totalSales,
+        totalCount: acc.totalCount + curr.totalCount,
+      }),
+      {
+        totalSales: 0,
+        totalCount: 0,
+      }
+    )
+  }, [previousData])
+
+  if (data.length === 0) {
+    return (
+      <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+        データがありません。
+      </div>
+    )
+  }
 
   return (
     <div className="rounded-lg border">
@@ -84,9 +99,25 @@ export function AnnualSalesTable({ year, analyticsUseCases }: AnnualSalesTablePr
               <TableCell className="text-right">¥{row.cardSales.toLocaleString()}</TableCell>
               <TableCell className="text-right">¥{row.salesPerCustomer.toLocaleString()}</TableCell>
               <TableCell className="text-right">
-                <span className={row.previousYearRatio > 1 ? 'text-green-600' : 'text-red-600'}>
-                  {(row.previousYearRatio * 100).toFixed(1)}%
-                </span>
+                {(() => {
+                  const previous = previousMap.get(row.month)
+                  const growthRate =
+                    previous && previous.totalSales > 0
+                      ? ((row.totalSales - previous.totalSales) / previous.totalSales) * 100
+                      : row.totalSales > 0
+                        ? 100
+                        : 0
+
+                  if (!previous || previous.totalSales === 0) {
+                    return <span className="text-muted-foreground">-</span>
+                  }
+
+                  return (
+                    <span className={growthRate >= 0 ? 'text-green-600' : 'text-red-600'}>
+                      {`${growthRate >= 0 ? '+' : ''}${growthRate.toFixed(1)}%`}
+                    </span>
+                  )
+                })()}
               </TableCell>
             </TableRow>
           ))}
@@ -107,7 +138,27 @@ export function AnnualSalesTable({ year, analyticsUseCases }: AnnualSalesTablePr
                 ? Math.round(totals.totalSales / totals.totalCount).toLocaleString()
                 : 0}
             </TableCell>
-            <TableCell className="text-right">-</TableCell>
+            <TableCell className="text-right">
+              {previousTotals.totalSales > 0 ? (
+                <span
+                  className={
+                    totals.totalSales - previousTotals.totalSales >= 0
+                      ? 'text-green-600'
+                      : 'text-red-600'
+                  }
+                >
+                  {(() => {
+                    const rate =
+                      ((totals.totalSales - previousTotals.totalSales) /
+                        previousTotals.totalSales) *
+                      100
+                    return `${rate >= 0 ? '+' : ''}${rate.toFixed(1)}%`
+                  })()}
+                </span>
+              ) : (
+                <span className="text-muted-foreground">-</span>
+              )}
+            </TableCell>
           </TableRow>
         </TableBody>
       </Table>

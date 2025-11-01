@@ -1,9 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 import {
   Bar,
-  BarChart,
   Line,
   ComposedChart,
   XAxis,
@@ -13,31 +12,41 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts'
-import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 import { MonthlyData } from '@/lib/types/analytics'
 
 interface AnnualSalesChartProps {
-  year: number
-  analyticsUseCases: AnalyticsUseCases
+  data: MonthlyData[]
+  previousData: MonthlyData[]
 }
 
-export function AnnualSalesChart({ year, analyticsUseCases }: AnnualSalesChartProps) {
-  const [data, setData] = useState<MonthlyData[]>([])
+export function AnnualSalesChart({ data, previousData }: AnnualSalesChartProps) {
+  const previousMap = useMemo(() => {
+    return new Map(previousData.map((entry) => [entry.month, entry]))
+  }, [previousData])
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const result = await analyticsUseCases.getMonthlyReport(year)
-      setData(result)
-    }
-    fetchData()
-  }, [year, analyticsUseCases])
+  const chartData = useMemo(() => {
+    return data.map((item) => {
+      const previous = previousMap.get(item.month)
+      const previousSales = previous?.totalSales ?? 0
+      const yearRatio =
+        previousSales > 0 ? (item.totalSales / previousSales) * 100 : item.totalSales > 0 ? 100 : 0
 
-  const chartData = data.map((item) => ({
-    month: `${item.month}月`,
-    売上高: item.totalSales,
-    来客数: item.totalCount,
-    前年比: item.previousYearRatio * 100,
-  }))
+      return {
+        month: `${item.month}月`,
+        売上高: item.totalSales,
+        来客数: item.totalCount,
+        前年比: Number.isFinite(yearRatio) ? Number(yearRatio.toFixed(1)) : 0,
+      }
+    })
+  }, [data, previousMap])
+
+  if (chartData.length === 0) {
+    return (
+      <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+        データがありません。
+      </div>
+    )
+  }
 
   const formatYAxis = (value: number) => {
     if (value >= 1000000) {
@@ -73,7 +82,7 @@ export function AnnualSalesChart({ year, analyticsUseCases }: AnnualSalesChartPr
           }}
         />
         <Legend />
-        <Bar yAxisId="left" dataKey="売上高" fill="#10b981" />
+        <Bar yAxisId="left" dataKey="売上高" fill="#10b981" name="売上高" />
         <Line
           yAxisId="right"
           type="monotone"

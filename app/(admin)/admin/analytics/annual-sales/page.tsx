@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -18,34 +18,102 @@ import { AnnualSalesChart } from '@/components/analytics/annual-sales-chart'
 import { AnnualSalesTable } from '@/components/analytics/annual-sales-table'
 import { AnnualQuarterTable } from '@/components/analytics/annual-quarter-table'
 import { AnnualStoreTable } from '@/components/analytics/annual-store-table'
-
-const analyticsRepository = new AnalyticsRepositoryImpl()
-const analyticsUseCases = new AnalyticsUseCases(analyticsRepository)
+import { MonthlyData } from '@/lib/types/analytics'
+import { useStore } from '@/contexts/store-context'
 
 export default function AnnualReportPage() {
-  const [selectedYear, setSelectedYear] = useState(2024)
   const currentYear = new Date().getFullYear()
-  const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i)
+  const [selectedYear, setSelectedYear] = useState(currentYear)
+  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
+  const [previousMonthlyData, setPreviousMonthlyData] = useState<MonthlyData[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const { currentStore, availableStores } = useStore()
+  const analyticsUseCases = useMemo(() => {
+    const repository = new AnalyticsRepositoryImpl(currentStore.id)
+    return new AnalyticsUseCases(repository)
+  }, [currentStore.id])
+
+  useEffect(() => {
+    let isMounted = true
+    setIsLoading(true)
+    setError(null)
+
+    const fetchData = async () => {
+      try {
+        const current = await analyticsUseCases.getMonthlyReport(selectedYear)
+        let previous: MonthlyData[] = []
+
+        if (selectedYear > 0) {
+          try {
+            previous = await analyticsUseCases.getMonthlyReport(selectedYear - 1)
+          } catch (prevError) {
+            console.warn('[AnnualReportPage] failed to fetch previous year analytics', prevError)
+          }
+        }
+
+        if (!isMounted) return
+        setMonthlyData(current)
+        setPreviousMonthlyData(previous)
+        setError(null)
+      } catch (err) {
+        console.error('[AnnualReportPage] failed to fetch annual analytics', err)
+        if (!isMounted) return
+        setMonthlyData([])
+        setPreviousMonthlyData([])
+        setError('年次データの取得に失敗しました。')
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    fetchData()
+
+    return () => {
+      isMounted = false
+    }
+  }, [analyticsUseCases, selectedYear])
+
+  const years = useMemo(
+    () => Array.from({ length: 5 }, (_, i) => currentYear - 2 + i),
+    [currentYear]
+  )
 
   const handlePrint = () => {
     window.print()
   }
 
-  // ダミーデータ（実際にはuseCasesから取得）
-  const kpiData = {
-    totalSales: 102518400,
-    previousYearSales: 94673200,
-    customerCount: 10704,
-    previousYearCustomers: 10123,
-    storeCount: 3,
-    newStoreCount: 1,
-    averageMonthly: 8543200,
-    previousAverageMonthly: 7889433,
-  }
+  const totalSales = monthlyData.reduce((sum, item) => sum + item.totalSales, 0)
+  const previousYearSales = previousMonthlyData.reduce((sum, item) => sum + item.totalSales, 0)
+  const customerCount = monthlyData.reduce((sum, item) => sum + item.totalCount, 0)
+  const previousYearCustomers = previousMonthlyData.reduce(
+    (sum, item) => sum + item.totalCount,
+    0
+  )
+  const averageMonthly =
+    monthlyData.length > 0 ? Math.round(totalSales / monthlyData.length) : 0
+  const previousAverageMonthly =
+    previousMonthlyData.length > 0 ? Math.round(previousYearSales / previousMonthlyData.length) : 0
+  const storeCount = availableStores.length
+  const newStoreCount = availableStores.filter((store) => {
+    const createdAt =
+      store.createdAt instanceof Date ? store.createdAt : new Date(store.createdAt)
+    return createdAt.getFullYear() === selectedYear
+  }).length
 
   const calculateGrowthRate = (current: number, previous: number) => {
-    return (((current - previous) / previous) * 100).toFixed(1)
+    if (previous === 0) {
+      return current === 0 ? 0 : 100
+    }
+    return ((current - previous) / previous) * 100
   }
+
+  const salesGrowth = calculateGrowthRate(totalSales, previousYearSales)
+  const customerGrowth = calculateGrowthRate(customerCount, previousYearCustomers)
+  const averageMonthlyGrowth = calculateGrowthRate(averageMonthly, previousAverageMonthly)
+  const hasKpiValues = !isLoading && !error && monthlyData.length > 0
 
   return (
     <div className="space-y-6">
@@ -78,6 +146,18 @@ export default function AnnualReportPage() {
         </Button>
       </div>
 
+      {error && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
+      {isLoading && (
+        <div className="rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+          データを読み込み中です...
+        </div>
+      )}
+
       {/* KPIカード */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -86,23 +166,24 @@ export default function AnnualReportPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">¥{kpiData.totalSales.toLocaleString()}</div>
+            <div className="text-2xl font-bold">
+              {hasKpiValues ? `¥${totalSales.toLocaleString()}` : '--'}
+            </div>
             <p className="flex items-center gap-1 text-xs text-muted-foreground">
-              {parseFloat(calculateGrowthRate(kpiData.totalSales, kpiData.previousYearSales)) >
-              0 ? (
-                <TrendingUp className="h-3 w-3 text-green-600" />
+              {hasKpiValues ? (
+                salesGrowth >= 0 ? (
+                  <TrendingUp className="h-3 w-3 text-green-600" />
+                ) : (
+                  <TrendingDown className="h-3 w-3 text-red-600" />
+                )
+              ) : null}
+              {hasKpiValues ? (
+                <span className={salesGrowth >= 0 ? 'text-green-600' : 'text-red-600'}>
+                  {`${salesGrowth >= 0 ? '+' : ''}${salesGrowth.toFixed(1)}%`}
+                </span>
               ) : (
-                <TrendingDown className="h-3 w-3 text-red-600" />
+                <span className="text-muted-foreground">-</span>
               )}
-              <span
-                className={
-                  parseFloat(calculateGrowthRate(kpiData.totalSales, kpiData.previousYearSales)) > 0
-                    ? 'text-green-600'
-                    : 'text-red-600'
-                }
-              >
-                {calculateGrowthRate(kpiData.totalSales, kpiData.previousYearSales)}%
-              </span>
               前年比
             </p>
           </CardContent>
@@ -114,26 +195,24 @@ export default function AnnualReportPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{kpiData.customerCount.toLocaleString()}人</div>
+            <div className="text-2xl font-bold">
+              {hasKpiValues ? `${customerCount.toLocaleString()}人` : '--'}
+            </div>
             <p className="flex items-center gap-1 text-xs text-muted-foreground">
-              {parseFloat(
-                calculateGrowthRate(kpiData.customerCount, kpiData.previousYearCustomers)
-              ) > 0 ? (
-                <TrendingUp className="h-3 w-3 text-green-600" />
+              {hasKpiValues ? (
+                customerGrowth >= 0 ? (
+                  <TrendingUp className="h-3 w-3 text-green-600" />
+                ) : (
+                  <TrendingDown className="h-3 w-3 text-red-600" />
+                )
+              ) : null}
+              {hasKpiValues ? (
+                <span className={customerGrowth >= 0 ? 'text-green-600' : 'text-red-600'}>
+                  {`${customerGrowth >= 0 ? '+' : ''}${customerGrowth.toFixed(1)}%`}
+                </span>
               ) : (
-                <TrendingDown className="h-3 w-3 text-red-600" />
+                <span className="text-muted-foreground">-</span>
               )}
-              <span
-                className={
-                  parseFloat(
-                    calculateGrowthRate(kpiData.customerCount, kpiData.previousYearCustomers)
-                  ) > 0
-                    ? 'text-green-600'
-                    : 'text-red-600'
-                }
-              >
-                {calculateGrowthRate(kpiData.customerCount, kpiData.previousYearCustomers)}%
-              </span>
               前年比
             </p>
           </CardContent>
@@ -145,26 +224,24 @@ export default function AnnualReportPage() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">¥{kpiData.averageMonthly.toLocaleString()}</div>
+            <div className="text-2xl font-bold">
+              {hasKpiValues ? `¥${averageMonthly.toLocaleString()}` : '--'}
+            </div>
             <p className="flex items-center gap-1 text-xs text-muted-foreground">
-              {parseFloat(
-                calculateGrowthRate(kpiData.averageMonthly, kpiData.previousAverageMonthly)
-              ) > 0 ? (
-                <TrendingUp className="h-3 w-3 text-green-600" />
+              {hasKpiValues ? (
+                averageMonthlyGrowth >= 0 ? (
+                  <TrendingUp className="h-3 w-3 text-green-600" />
+                ) : (
+                  <TrendingDown className="h-3 w-3 text-red-600" />
+                )
+              ) : null}
+              {hasKpiValues ? (
+                <span className={averageMonthlyGrowth >= 0 ? 'text-green-600' : 'text-red-600'}>
+                  {`${averageMonthlyGrowth >= 0 ? '+' : ''}${averageMonthlyGrowth.toFixed(1)}%`}
+                </span>
               ) : (
-                <TrendingDown className="h-3 w-3 text-red-600" />
+                <span className="text-muted-foreground">-</span>
               )}
-              <span
-                className={
-                  parseFloat(
-                    calculateGrowthRate(kpiData.averageMonthly, kpiData.previousAverageMonthly)
-                  ) > 0
-                    ? 'text-green-600'
-                    : 'text-red-600'
-                }
-              >
-                {calculateGrowthRate(kpiData.averageMonthly, kpiData.previousAverageMonthly)}%
-              </span>
               前年比
             </p>
           </CardContent>
@@ -176,10 +253,12 @@ export default function AnnualReportPage() {
             <Store className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{kpiData.storeCount}店舗</div>
+            <div className="text-2xl font-bold">{storeCount}店舗</div>
             <p className="text-xs text-muted-foreground">
-              {kpiData.newStoreCount > 0 && (
-                <span className="text-green-600">+{kpiData.newStoreCount}店舗（新規）</span>
+              {newStoreCount > 0 ? (
+                <span className="text-green-600">+{newStoreCount}店舗（新規）</span>
+              ) : (
+                '新規店舗なし'
               )}
             </p>
           </CardContent>
@@ -192,7 +271,7 @@ export default function AnnualReportPage() {
           <CardTitle>月別売上推移</CardTitle>
         </CardHeader>
         <CardContent>
-          <AnnualSalesChart year={selectedYear} analyticsUseCases={analyticsUseCases} />
+          <AnnualSalesChart data={monthlyData} previousData={previousMonthlyData} />
         </CardContent>
       </Card>
 
@@ -209,13 +288,18 @@ export default function AnnualReportPage() {
               <TabsTrigger value="store">店舗別</TabsTrigger>
             </TabsList>
             <TabsContent value="monthly" className="mt-4">
-              <AnnualSalesTable year={selectedYear} analyticsUseCases={analyticsUseCases} />
+              <AnnualSalesTable data={monthlyData} previousData={previousMonthlyData} />
             </TabsContent>
             <TabsContent value="quarter" className="mt-4">
-              <AnnualQuarterTable year={selectedYear} analyticsUseCases={analyticsUseCases} />
+              <AnnualQuarterTable data={monthlyData} previousData={previousMonthlyData} />
             </TabsContent>
             <TabsContent value="store" className="mt-4">
-              <AnnualStoreTable year={selectedYear} analyticsUseCases={analyticsUseCases} />
+              <AnnualStoreTable
+                data={monthlyData}
+                previousData={previousMonthlyData}
+                storeName={currentStore.displayName ?? currentStore.name}
+                storeAddress={currentStore.address}
+              />
             </TabsContent>
           </Tabs>
         </CardContent>
