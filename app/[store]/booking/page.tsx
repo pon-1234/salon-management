@@ -1,10 +1,10 @@
 import { StoreFooter } from '@/components/store-footer'
-import { getStoreBySlug } from '@/lib/store/data'
+import { fetchStoreBySlug } from '@/lib/store/public-api'
 import { notFound } from 'next/navigation'
 
 export default async function StoreBookingPage({ params }: { params: Promise<{ store: string }> }) {
   const { store: storeSlug } = await params
-  const store = getStoreBySlug(storeSlug)
+  const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {
     notFound()

@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getStoreBySlug } from '@/lib/store/data'
+import { fetchStoreBySlug } from '@/lib/store/public-api'
 import { StoreNavigation } from '@/components/store-navigation'
 import { StoreFooter } from '@/components/store-footer'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,7 +8,7 @@ import { Sparkles, Heart, Star, Shield } from 'lucide-react'
 
 export default async function ServicesPage({ params }: { params: Promise<{ store: string }> }) {
   const { store: storeSlug } = await params
-  const store = getStoreBySlug(storeSlug)
+  const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {
     notFound()

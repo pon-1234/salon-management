@@ -110,16 +110,14 @@ function buildFallbackOptionResponse(id: string | null, isAdmin: boolean) {
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const id = searchParams.get('id')
-  let isAdmin = false
   const storeId = await ensureStoreId(await resolveStoreId(request))
+  let isAdmin = false
 
   try {
-    const session = await requireSession()
-    if (session instanceof NextResponse) {
-      return session
+    const session = await getServerSession(authOptions)
+    if (session?.user?.role === 'admin') {
+      isAdmin = true
     }
-
-    isAdmin = session.user.role === 'admin'
 
     if (id) {
       const option = await db.optionPrice.findFirst({

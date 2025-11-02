@@ -7,14 +7,14 @@ import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { notFound } from 'next/navigation'
-import { getStoreBySlug } from '@/lib/store/data'
+import { fetchStoreBySlug } from '@/lib/store/public-api'
 import { MyPageContent } from '@/components/mypage/mypage-content'
 import { StoreNavigation } from '@/components/store-navigation'
 import { StoreFooter } from '@/components/store-footer'
 
 export default async function MyPage({ params }: { params: Promise<{ store: string }> }) {
   const { store: storeSlug } = await params
-  const store = getStoreBySlug(storeSlug)
+  const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {
     notFound()

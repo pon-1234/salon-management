@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getStoreBySlug } from '@/lib/store/data'
+import { fetchStoreBySlug } from '@/lib/store/public-api'
 import { CastDetailContent } from '@/components/cast/cast-detail-content'
 import { StoreNavigation } from '@/components/store-navigation'
 import { StoreFooter } from '@/components/store-footer'
@@ -13,7 +13,7 @@ export default async function CastDetailPage({
   params: Promise<{ store: string; id: string }>
 }) {
   const { store: storeSlug, id } = await params
-  const store = getStoreBySlug(storeSlug)
+  const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {
     notFound()

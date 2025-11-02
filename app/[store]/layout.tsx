@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getStoreBySlug } from '@/lib/store/data'
+import { fetchStoreBySlug } from '@/lib/store/public-api'
 import { StoreProvider } from '@/components/store-provider'
 
 export default async function StoreLayout({
@@ -10,7 +10,7 @@ export default async function StoreLayout({
   params: Promise<{ store: string }>
 }) {
   const { store: storeSlug } = await params
-  const store = getStoreBySlug(storeSlug)
+  const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {
     notFound()

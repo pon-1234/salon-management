@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getStoreBySlug } from '@/lib/store/data'
+import { fetchStoreBySlug } from '@/lib/store/public-api'
 import { StoreNavigation } from '@/components/store-navigation'
 import { StoreFooter } from '@/components/store-footer'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -13,7 +13,7 @@ import { normalizeCastList } from '@/lib/cast/mapper'
 
 export default async function CastListPage({ params }: { params: Promise<{ store: string }> }) {
   const { store: storeSlug } = await params
-  const store = getStoreBySlug(storeSlug)
+  const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {
     notFound()

@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react'
 import { AgeVerification } from '@/components/age-verification'
 import { Store } from '@/lib/store/types'
 import { StoreHomeContent } from '@/components/store-home-content'
+import type { PublicStoreHomeData } from '@/lib/store/public-types'
 
 interface StoreHomeClientProps {
   store: Store
+  initialData: PublicStoreHomeData | null
 }
 
-export function StoreHomeClient({ store }: StoreHomeClientProps) {
+export function StoreHomeClient({ store, initialData }: StoreHomeClientProps) {
   const [isVerified, setIsVerified] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -38,5 +40,5 @@ export function StoreHomeClient({ store }: StoreHomeClientProps) {
     return <AgeVerification onVerify={handleVerification} />
   }
 
-  return <StoreHomeContent store={store} />
+  return <StoreHomeContent store={store} data={initialData} />
 }

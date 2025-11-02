@@ -27,8 +27,8 @@ vi.mock('next/navigation', () => ({
 }))
 
 // Mock store data
-vi.mock('@/lib/store/data', () => ({
-  getStoreBySlug: vi.fn(() => ({ id: 'store1', slug: 'store1', name: 'Test Store' })),
+vi.mock('@/lib/store/public-api', () => ({
+  fetchStoreBySlug: vi.fn(async () => ({ id: 'store1', slug: 'store1', name: 'Test Store' })),
 }))
 
 // Mock auth config
