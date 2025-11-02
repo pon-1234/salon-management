@@ -5,10 +5,21 @@ import { StoreFooter } from '@/components/store-footer'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Sparkles, Calendar, Star, Heart, Gift, Crown } from 'lucide-react'
+import { Sparkles, Calendar, Heart, Gift, Crown, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
-import { format, subDays } from 'date-fns'
+import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
+import { getPublicRecruitmentData } from '@/lib/store/public-casts'
+
+function buildMeasurementLabel(cast: { height: number | null; bust: string | null; waist: string | null; hip: string | null }) {
+  const segments = [
+    cast.height ? `T${cast.height}` : null,
+    cast.bust ? `B${cast.bust}` : null,
+    cast.waist ? `W${cast.waist}` : null,
+    cast.hip ? `H${cast.hip}` : null,
+  ].filter(Boolean)
+  return segments.join(' ')
+}
 
 export default async function RecruitmentPage({ params }: { params: Promise<{ store: string }> }) {
   const { store: storeSlug } = await params
@@ -18,52 +29,8 @@ export default async function RecruitmentPage({ params }: { params: Promise<{ st
     notFound()
   }
 
-  // Mock new cast data - in production, this would come from database
-  const newCasts = [
-    {
-      id: 'new1',
-      name: 'ひかる',
-      age: 28,
-      height: 156,
-      measurements: { bust: 83, cup: 'D', waist: 57, hip: 82 },
-      joinDate: new Date('2024-06-10'),
-      introMessage: '初めまして！ひかるです。お客様に最高の癒しをお届けできるよう頑張ります♪',
-      specialties: ['オイルマッサージ', 'フェザータッチ', '癒し系'],
-      welcomeBonus: '指名料無料',
-      imageUrl: '/images/cast/hikaru.jpg',
-    },
-    {
-      id: 'new2',
-      name: 'ゆりこ',
-      age: 27,
-      height: 161,
-      measurements: { bust: 86, cup: 'E', waist: 60, hip: 88 },
-      joinDate: new Date('2024-06-08'),
-      introMessage: 'ゆりこです！明るく楽しい時間を一緒に過ごしましょう。よろしくお願いします！',
-      specialties: ['密着マッサージ', 'リンパケア', '会話上手'],
-      welcomeBonus: '30分延長無料',
-      imageUrl: '/images/cast/yuriko.jpg',
-    },
-    {
-      id: 'new3',
-      name: 'せな',
-      age: 32,
-      height: 157,
-      measurements: { bust: 84, cup: 'E', waist: 57, hip: 83 },
-      joinDate: new Date('2024-06-05'),
-      introMessage: 'せなと申します。大人の魅力でお客様を虜にします。ご指名お待ちしております。',
-      specialties: ['テクニシャン', '回春マッサージ', 'Mっ気あり'],
-      welcomeBonus: 'オプション1つ無料',
-      imageUrl: '/images/cast/sena.jpg',
-    },
-  ]
-
-  const getDaysFromJoin = (joinDate: Date) => {
-    const today = new Date()
-    const diffTime = Math.abs(today.getTime() - joinDate.getTime())
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    return diffDays
-  }
+  const recruitmentData = await getPublicRecruitmentData(store.id)
+  const { newcomers, graduates } = recruitmentData
 
   return (
     <>
@@ -103,90 +70,105 @@ export default async function RecruitmentPage({ params }: { params: Promise<{ st
         {/* New Cast List */}
         <section className="py-8">
           <div className="mx-auto max-w-7xl px-4">
-            <div className="space-y-8">
-              {newCasts.map((cast, index) => (
-                <Card key={cast.id} className="overflow-hidden transition-shadow hover:shadow-xl">
-                  <div className="md:flex">
-                    {/* Cast Image */}
-                    <div className="md:w-1/3 lg:w-1/4">
-                      <div className="relative aspect-[3/4] bg-gradient-to-br from-pink-300 to-purple-400">
-                        {/* New Badge */}
-                        <Badge className="absolute left-4 top-4 bg-pink-500 px-3 py-1 text-lg text-white">
-                          NEW
-                        </Badge>
-                        {/* Days Badge */}
-                        <Badge className="absolute right-4 top-4 bg-purple-600 text-white">
-                          入店{getDaysFromJoin(cast.joinDate)}日目
-                        </Badge>
-                      </div>
-                    </div>
+            {newcomers.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center gap-3 p-8 text-muted-foreground">
+                  <Sparkles className="h-10 w-10 text-purple-400" />
+                  <p className="text-lg font-semibold">現在、表示できる新人キャストはありません。</p>
+                  <p className="text-sm">最新の入店情報は順次更新されますので、少々お待ちください。</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-8">
+                {newcomers.map((entry, index) => {
+                  const cast = entry.cast
+                  const joinDate = new Date(cast.createdAt)
+                  const daysSinceJoin = entry.daysSinceJoin
+                  const measurement = buildMeasurementLabel(cast)
+                  const services = cast.availableServices.slice(0, 4)
+                  const introMessage = cast.introMessage ?? 'よろしくお願いします！'
 
-                    {/* Cast Information */}
-                    <div className="p-6 md:w-2/3 lg:w-3/4">
-                      <div className="mb-4 flex items-start justify-between">
-                        <div>
-                          <h3 className="mb-2 text-2xl font-bold">{cast.name}</h3>
-                          <p className="text-muted-foreground">
-                            {cast.age}歳 T{cast.height} B{cast.measurements.bust}(
-                            {cast.measurements.cup}) W{cast.measurements.waist} H
-                            {cast.measurements.hip}
-                          </p>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            <Calendar className="mr-1 inline h-4 w-4" />
-                            入店日: {format(cast.joinDate, 'yyyy年MM月dd日', { locale: ja })}
-                          </p>
-                        </div>
-                        {index === 0 && (
-                          <Badge className="bg-yellow-500 text-black">
-                            <Crown className="mr-1 h-4 w-4" />
-                            注目
+                  return (
+                    <Card key={cast.id} className="overflow-hidden transition-shadow hover:shadow-xl">
+                      <div className="md:flex">
+                        <div className="relative md:w-1/3 lg:w-1/4">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={cast.image ?? '/placeholder-user.jpg'}
+                            alt={cast.name}
+                            className="h-full w-full object-cover"
+                          />
+                          <Badge className="absolute left-4 top-4 bg-pink-500 px-3 py-1 text-lg text-white">
+                            NEW
                           </Badge>
-                        )}
-                      </div>
+                          <Badge className="absolute right-4 top-4 bg-purple-600 text-white">
+                            入店{daysSinceJoin}日目
+                          </Badge>
+                        </div>
 
-                      {/* Introduction Message */}
-                      <Card className="mb-4 border-pink-200 bg-pink-50">
-                        <CardContent className="p-4">
-                          <p className="text-sm italic">&ldquo;{cast.introMessage}&rdquo;</p>
-                        </CardContent>
-                      </Card>
+                        <div className="p-6 md:w-2/3 lg:w-3/4">
+                          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <h3 className="mb-2 text-2xl font-bold">{cast.name}</h3>
+                              <p className="text-muted-foreground">
+                                {cast.age ? `${cast.age}歳` : '年齢非公開'} {measurement}
+                              </p>
+                              <p className="mt-1 text-sm text-muted-foreground">
+                                <Calendar className="mr-1 inline h-4 w-4" />
+                                入店日: {format(joinDate, 'yyyy年MM月dd日', { locale: ja })}
+                              </p>
+                            </div>
+                            {index === 0 && (
+                              <Badge className="bg-yellow-500 text-black">
+                                <Crown className="mr-1 h-4 w-4" />注目
+                              </Badge>
+                            )}
+                          </div>
 
-                      {/* Specialties */}
-                      <div className="mb-4">
-                        <p className="mb-2 text-sm font-semibold">得意なプレイ:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {cast.specialties.map((specialty) => (
-                            <Badge key={specialty} variant="secondary">
-                              {specialty}
-                            </Badge>
-                          ))}
+                          <Card className="mb-4 border-pink-200 bg-pink-50">
+                            <CardContent className="p-4">
+                              <p className="text-sm italic">&ldquo;{introMessage}&rdquo;</p>
+                            </CardContent>
+                          </Card>
+
+                          {services.length > 0 && (
+                            <div className="mb-4">
+                              <p className="mb-2 text-sm font-semibold">得意なプレイ:</p>
+                              <div className="flex flex-wrap gap-2">
+                                {services.map((service) => (
+                                  <Badge key={service} variant="secondary">
+                                    {service}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="mb-4 flex items-center gap-2 rounded-lg bg-yellow-50 p-3">
+                            <Gift className="h-5 w-5 text-yellow-600" />
+                            <span className="font-semibold text-yellow-800">入店特典:</span>
+                            <span className="text-yellow-700">
+                              {index === 0 ? '指名料無料キャンペーン' : 'オプション1つ無料'}
+                            </span>
+                          </div>
+
+                          <div className="flex gap-4">
+                            <Button asChild className="flex-1">
+                              <Link href={`/${store.slug}/cast/${cast.id}`}>
+                                <Heart className="mr-2 h-4 w-4" />詳細を見る
+                              </Link>
+                            </Button>
+                            <Button asChild variant="outline" className="flex-1">
+                              <Link href={`/${store.slug}/booking?cast=${cast.id}`}>予約する</Link>
+                            </Button>
+                          </div>
                         </div>
                       </div>
-
-                      {/* Welcome Bonus */}
-                      <div className="mb-4 flex items-center gap-2 rounded-lg bg-yellow-50 p-3">
-                        <Gift className="h-5 w-5 text-yellow-600" />
-                        <span className="font-semibold text-yellow-800">入店特典:</span>
-                        <span className="text-yellow-700">{cast.welcomeBonus}</span>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex gap-4">
-                        <Button asChild className="flex-1">
-                          <Link href={`/${store.slug}/cast/${cast.id}`}>
-                            <Heart className="mr-2 h-4 w-4" />
-                            詳細を見る
-                          </Link>
-                        </Button>
-                        <Button asChild variant="outline" className="flex-1">
-                          <Link href={`/${store.slug}/booking?cast=${cast.id}`}>予約する</Link>
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
+                    </Card>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </section>
 
@@ -195,22 +177,41 @@ export default async function RecruitmentPage({ params }: { params: Promise<{ st
           <div className="mx-auto max-w-7xl px-4">
             <h2 className="mb-8 text-center text-2xl font-bold">新人卒業キャスト</h2>
             <p className="mb-8 text-center text-muted-foreground">
-              入店から3ヶ月が経過し、新人を卒業したキャストたち
+              入店から一定期間が経過し、新人を卒業したキャストたち
             </p>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-              {['ことね', 'みるく', 'あいり', 'れいな'].map((name) => (
-                <Card key={name} className="text-center">
-                  <CardContent className="p-4">
-                    <div className="mb-3 aspect-square rounded-lg bg-gradient-to-br from-blue-300 to-purple-400" />
-                    <h4 className="font-bold">{name}</h4>
-                    <Badge variant="outline" className="mt-2">
-                      <Star className="mr-1 h-3 w-3" />
-                      人気上昇中
-                    </Badge>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            {graduates.length === 0 ? (
+              <Card>
+                <CardContent className="p-6 text-center text-muted-foreground">
+                  現在表示できる卒業キャストはありません。
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                {graduates.map((entry) => {
+                  const cast = entry.cast
+                  const measurement = buildMeasurementLabel(cast)
+                  return (
+                    <Card key={cast.id} className="text-center">
+                      <CardContent className="space-y-2 p-4">
+                        <div className="mx-auto mb-3 aspect-square w-20 overflow-hidden rounded-full bg-gradient-to-br from-blue-300 to-purple-400">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={cast.image ?? '/placeholder-user.jpg'}
+                            alt={cast.name}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <h4 className="font-bold">{cast.name}</h4>
+                        <p className="text-xs text-muted-foreground">{measurement}</p>
+                        <Badge variant="outline" className="mt-2">
+                          <TrendingUp className="mr-1 h-3 w-3" />人気上昇中
+                        </Badge>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </section>
 
