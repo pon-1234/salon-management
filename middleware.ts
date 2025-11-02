@@ -96,6 +96,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Allow public API routes (e.g., /api/public/*) without auth
+  if (isApiRoute && pathname.startsWith('/api/public')) {
+    return NextResponse.next()
+  }
+
   // Handle protected API routes
   if (isApiRoute) {
     if (!token) {
