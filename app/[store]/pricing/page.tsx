@@ -5,7 +5,7 @@ import { StoreFooter } from '@/components/store-footer'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Clock, Star } from 'lucide-react'
-import { getPricingUseCases } from '@/lib/pricing'
+import { getPublicStorePricing } from '@/lib/store/public-pricing'
 
 const DEFAULT_STORE_RATIO = 0.6
 
@@ -17,9 +17,7 @@ export default async function PricingPage({ params }: { params: Promise<{ store:
     notFound()
   }
 
-  // Get pricing data from the centralized pricing system
-  const pricingUseCases = getPricingUseCases()
-  const storePricing = await pricingUseCases.getStorePricing(store.id)
+  const storePricing = await getPublicStorePricing(store.id)
   const { courses, options, additionalFees, notes } = storePricing
   const sortedCourses = courses.slice().sort((a, b) => a.duration - b.duration || a.price - b.price)
 
