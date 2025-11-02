@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
-import { startOfDay, endOfDay } from 'date-fns'
+import { addHours, startOfDay, endOfDay } from 'date-fns'
 import { db } from '@/lib/db'
 import logger from '@/lib/logger'
 import { parseBusinessHoursString, DEFAULT_BUSINESS_HOURS } from '@/lib/settings/business-hours'
-import { getFallbackStoreBySlug, getDefaultBanners, buildFallbackHomeData } from '@/lib/store/public-fallbacks'
+import { getFallbackStoreBySlug, buildFallbackHomeData } from '@/lib/store/public-fallbacks'
 
 function buildSizeLabel(cast: any): string {
   const height = cast?.height ? `T${cast.height}` : ''
@@ -34,13 +34,16 @@ function normalizeOpeningHours(store: any, storeSettings: any, fallback: any) {
 }
 
 function mapCastToSummary(cast: any) {
-  const images = Array.isArray(cast?.images)
+  const rawImages = Array.isArray(cast?.images)
     ? cast.images
     : cast?.images
       ? [cast.images]
       : cast?.image
         ? [cast.image]
         : []
+
+  const images = rawImages.filter((url) => typeof url === 'string' && url.length > 0)
+  const primaryImage = images[0] ?? '/placeholder-user.jpg'
 
   return {
     id: cast?.id ?? '',
@@ -51,8 +54,8 @@ function mapCastToSummary(cast: any) {
     waist: cast?.waist ?? null,
     hip: cast?.hip ?? null,
     type: cast?.type ?? null,
-    image: cast?.image ?? images[0] ?? null,
-    images,
+    image: primaryImage,
+    images: images.length > 0 ? images : [primaryImage],
     panelDesignationRank: cast?.panelDesignationRank ?? 0,
     regularDesignationRank: cast?.regularDesignationRank ?? 0,
     netReservation: cast?.netReservation ?? true,
@@ -151,14 +154,14 @@ export async function GET(
       take: 8,
     })
 
-    const today = new Date()
-    const start = startOfDay(today)
-    const end = endOfDay(today)
+    const now = new Date()
+    const start = startOfDay(now)
+    const end = endOfDay(now)
 
-    const todaysSchedulesRaw = await db.castSchedule.findMany({
+    let todaysSchedulesRaw = await db.castSchedule.findMany({
       where: {
         cast: { storeId: storeRecord.id },
-        date: {
+        startTime: {
           gte: start,
           lte: end,
         },
@@ -173,6 +176,26 @@ export async function GET(
       ],
       take: 12,
     })
+
+    if (todaysSchedulesRaw.length === 0) {
+      todaysSchedulesRaw = await db.castSchedule.findMany({
+        where: {
+          cast: { storeId: storeRecord.id },
+          startTime: {
+            gte: addHours(now, -3),
+          },
+          isAvailable: true,
+        },
+        include: {
+          cast: true,
+        },
+        orderBy: [
+          { startTime: 'asc' },
+          { endTime: 'asc' },
+        ],
+        take: 12,
+      })
+    }
 
     const reviewsRaw = await db.review.findMany({
       where: {
@@ -224,7 +247,14 @@ export async function GET(
       area: null,
     }))
 
-    const banners = getDefaultBanners(store.slug)
+    const bannerSources = ranking.length > 0 ? ranking : newcomers
+    const banners = bannerSources.slice(0, 3).map((cast) => ({
+      id: `banner-${cast.id}`,
+      title: `${cast.name} 最新情報`,
+      imageUrl: cast.image ?? '/placeholder-user.jpg',
+      mobileImageUrl: cast.image ?? '/placeholder-user.jpg',
+      link: `/${store.slug}/cast/${cast.id}`,
+    }))
 
     return NextResponse.json({
       store,
