@@ -1,98 +1,90 @@
-/**
- * @design_doc   Customer registration API route
- * @related_to   NextAuth.js configuration, customer authentication
- * @known_issues None currently
- */
-import { NextRequest, NextResponse } from 'next/server'
-import { hash } from 'bcryptjs'
-import { emailClient } from '@/lib/email/client'
-import { randomBytes } from 'crypto'
+import { NextResponse } from 'next/server'
+import { z } from 'zod'
+import bcrypt from 'bcryptjs'
 import { db } from '@/lib/db'
-import { env } from '@/lib/config/env'
+import logger from '@/lib/logger'
 
-export async function POST(request: NextRequest) {
+const registerPayloadSchema = z.object({
+  nickname: z.string().min(1),
+  email: z.string().email(),
+  phone: z.string().min(7),
+  password: z.string().min(8),
+  birthDate: z.union([z.string().datetime(), z.string().min(1), z.null()]).optional(),
+  smsNotifications: z.boolean().optional(),
+  storeId: z.string().optional(),
+})
+
+function sanitizePhone(phone: string) {
+  return phone.replace(/\D/g, '')
+}
+
+export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { nickname, email, phone, password, birthDate, smsNotifications, storeId } = body
+    const parsed = registerPayloadSchema.safeParse(body)
 
-    // Validate required fields
-    if (!nickname || !email || !phone || !password || !storeId) {
-      return NextResponse.json({ error: '必須項目が入力されていません' }, { status: 400 })
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? '入力内容に誤りがあります'
+      return NextResponse.json({ error: message }, { status: 400 })
     }
 
-    // Check if user already exists
-    const existingCustomer = await db.customer.findUnique({
-      where: { email },
-    })
-    if (existingCustomer) {
+    const data = parsed.data
+    const normalizedPhone = sanitizePhone(data.phone)
+
+    if (normalizedPhone.length < 10) {
       return NextResponse.json(
-        { error: 'このメールアドレスは既に使用されています' },
-        { status: 409 }
+        { error: '電話番号は数字のみで10桁以上で入力してください' },
+        { status: 400 }
       )
     }
 
-    // Hash password
-    const hashedPassword = await hash(password, 12)
+    const existingEmail = await db.customer.findUnique({ where: { email: data.email } })
+    if (existingEmail) {
+      return NextResponse.json({ error: 'このメールアドレスは既に登録されています' }, { status: 409 })
+    }
 
-    // Generate email verification token
-    const verificationToken = randomBytes(32).toString('hex')
-    const verificationExpiry = new Date(Date.now() + 86400000) // 24 hours from now
+    const existingPhone = await db.customer.findFirst({ where: { phone: normalizedPhone } })
+    if (existingPhone) {
+      return NextResponse.json({ error: 'この電話番号は既に登録されています' }, { status: 409 })
+    }
 
-    // Create customer with email verification fields
+    const hashedPassword = await bcrypt.hash(data.password, 10)
+    let birthDate = new Date('1970-01-01T00:00:00Z')
+    if (data.birthDate && !['', null].includes(data.birthDate as any)) {
+      const parsedBirthDate = new Date(data.birthDate as string)
+      if (!Number.isNaN(parsedBirthDate.getTime())) {
+        birthDate = parsedBirthDate
+      }
+    }
+
     const customer = await db.customer.create({
       data: {
-        name: nickname,
-        nameKana: nickname, // Using nickname as nameKana for now
-        email,
-        phone,
+        name: data.nickname,
+        nameKana: data.nickname,
+        email: data.email,
+        phone: normalizedPhone,
         password: hashedPassword,
-        birthDate: birthDate ? new Date(birthDate) : new Date(),
+        birthDate,
         memberType: 'regular',
-        points: 1000, // Initial signup bonus
-        emailVerified: false,
-        emailVerificationToken: verificationToken,
-        emailVerificationExpiry: verificationExpiry,
+        points: 0,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        createdAt: true,
       },
     })
 
-    // Send verification email
-    try {
-      const verificationUrl = `${env.nextAuth.url}/verify-email?token=${verificationToken}`
-      await emailClient.send({
-        to: email,
-        subject: 'メールアドレスの確認',
-        body: `
-          <h2>メールアドレスの確認</h2>
-          <p>${nickname}様</p>
-          <p>ご登録ありがとうございます。</p>
-          <p>以下のリンクをクリックして、メールアドレスを確認してください：</p>
-          <p><a href="${verificationUrl}">${verificationUrl}</a></p>
-          <p>このリンクは24時間後に無効になります。</p>
-          <p>このメールに心当たりがない場合は、無視してください。</p>
-        `,
-      })
-    } catch (emailError) {
-      console.error('Failed to send verification email:', emailError)
-      // Continue with registration even if email fails
+    return NextResponse.json({ customer }, { status: 201 })
+  } catch (error: any) {
+    logger.error({ err: error }, 'Failed to register customer')
+
+    if (error?.code === 'P2002') {
+      return NextResponse.json({ error: '既に登録済みの情報が含まれています' }, { status: 409 })
     }
 
-    // Remove sensitive fields from response
-    const {
-      password: _,
-      emailVerificationToken: __,
-      resetToken: ___,
-      ...customerWithoutSensitive
-    } = customer
-
-    return NextResponse.json(
-      {
-        message: '会員登録が完了しました。メールアドレスに確認メールを送信しました。',
-        customer: customerWithoutSensitive,
-      },
-      { status: 201 }
-    )
-  } catch (error) {
-    console.error('Registration error:', error)
-    return NextResponse.json({ error: '登録中にエラーが発生しました' }, { status: 500 })
+    return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 })
   }
 }
