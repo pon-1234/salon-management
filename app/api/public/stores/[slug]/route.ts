@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { startOfDay, endOfDay } from 'date-fns'
 import { db } from '@/lib/db'
+import logger from '@/lib/logger'
 import { parseBusinessHoursString, DEFAULT_BUSINESS_HOURS } from '@/lib/settings/business-hours'
-import { getFallbackStoreBySlug, getDefaultBanners } from '@/lib/store/public-fallbacks'
+import { getFallbackStoreBySlug, getDefaultBanners, buildFallbackHomeData } from '@/lib/store/public-fallbacks'
 
 function buildSizeLabel(cast: any): string {
   const height = cast?.height ? `T${cast.height}` : ''
@@ -90,143 +91,156 @@ export async function GET(
     return NextResponse.json({ error: 'Store not found' }, { status: 404 })
   }
 
-  const storeRecord = await db.store.findFirst({
-    where: { slug: normalizedSlug },
-    include: {
-      storeSettings: true,
-    },
-  })
+  const fallbackPayload = buildFallbackHomeData(normalizedSlug)
 
-  if (!storeRecord) {
-    return NextResponse.json({ error: 'Store not found' }, { status: 404 })
-  }
-
-  const fallbackStore = getFallbackStoreBySlug(normalizedSlug)
-  const openingHours = normalizeOpeningHours(
-    storeRecord,
-    storeRecord.storeSettings,
-    fallbackStore
-  )
-
-  const store = {
-    id: storeRecord.id,
-    slug: storeRecord.slug,
-    name: storeRecord.name,
-    displayName: storeRecord.displayName ?? fallbackStore?.displayName ?? storeRecord.name,
-    address: storeRecord.address ?? fallbackStore?.address ?? '',
-    phone: storeRecord.phone ?? fallbackStore?.phone ?? '',
-    email: storeRecord.email ?? fallbackStore?.email ?? '',
-    openingHours,
-    location: fallbackStore?.location ?? { lat: 0, lng: 0 },
-    features: fallbackStore?.features ?? [],
-    images: fallbackStore?.images ?? { main: '', gallery: [] },
-    theme: fallbackStore?.theme ?? null,
-    seoTitle: fallbackStore?.seoTitle ?? null,
-    seoDescription: fallbackStore?.seoDescription ?? null,
-    isActive: storeRecord.isActive,
-    createdAt: storeRecord.createdAt.toISOString(),
-    updatedAt: storeRecord.updatedAt.toISOString(),
-  }
-
-  const rankingCastsRaw = await db.cast.findMany({
-    where: { storeId: storeRecord.id, panelDesignationRank: { gt: 0 } },
-    orderBy: [
-      { panelDesignationRank: 'asc' },
-      { regularDesignationRank: 'asc' },
-      { createdAt: 'asc' },
-    ],
-    take: 8,
-  })
-
-  const newcomersRaw = await db.cast.findMany({
-    where: { storeId: storeRecord.id },
-    orderBy: [{ createdAt: 'desc' }],
-    take: 8,
-  })
-
-  const today = new Date()
-  const start = startOfDay(today)
-  const end = endOfDay(today)
-
-  const todaysSchedulesRaw = await db.castSchedule.findMany({
-    where: {
-      cast: { storeId: storeRecord.id },
-      date: {
-        gte: start,
-        lte: end,
+  try {
+    const storeRecord = await db.store.findFirst({
+      where: { slug: normalizedSlug },
+      include: {
+        storeSettings: true,
       },
-      isAvailable: true,
-    },
-    include: {
-      cast: true,
-    },
-    orderBy: [
-      { startTime: 'asc' },
-      { endTime: 'asc' },
-    ],
-    take: 12,
-  })
+    })
 
-  const reviewsRaw = await db.review.findMany({
-    where: {
-      cast: {
-        storeId: storeRecord.id,
+    if (!storeRecord) {
+      if (fallbackPayload) {
+        return NextResponse.json(fallbackPayload)
+      }
+      return NextResponse.json({ error: 'Store not found' }, { status: 404 })
+    }
+
+    const fallbackStore = getFallbackStoreBySlug(normalizedSlug)
+    const openingHours = normalizeOpeningHours(
+      storeRecord,
+      storeRecord.storeSettings,
+      fallbackStore
+    )
+
+    const store = {
+      id: storeRecord.id,
+      slug: storeRecord.slug,
+      name: storeRecord.name,
+      displayName: storeRecord.displayName ?? fallbackStore?.displayName ?? storeRecord.name,
+      address: storeRecord.address ?? fallbackStore?.address ?? '',
+      phone: storeRecord.phone ?? fallbackStore?.phone ?? '',
+      email: storeRecord.email ?? fallbackStore?.email ?? '',
+      openingHours,
+      location: fallbackStore?.location ?? { lat: 0, lng: 0 },
+      features: fallbackStore?.features ?? [],
+      images: fallbackStore?.images ?? { main: '', gallery: [] },
+      theme: fallbackStore?.theme ?? null,
+      seoTitle: fallbackStore?.seoTitle ?? null,
+      seoDescription: fallbackStore?.seoDescription ?? null,
+      isActive: storeRecord.isActive,
+      createdAt: storeRecord.createdAt.toISOString(),
+      updatedAt: storeRecord.updatedAt.toISOString(),
+    }
+
+    const rankingCastsRaw = await db.cast.findMany({
+      where: { storeId: storeRecord.id, panelDesignationRank: { gt: 0 } },
+      orderBy: [
+        { panelDesignationRank: 'asc' },
+        { regularDesignationRank: 'asc' },
+        { createdAt: 'asc' },
+      ],
+      take: 8,
+    })
+
+    const newcomersRaw = await db.cast.findMany({
+      where: { storeId: storeRecord.id },
+      orderBy: [{ createdAt: 'desc' }],
+      take: 8,
+    })
+
+    const today = new Date()
+    const start = startOfDay(today)
+    const end = endOfDay(today)
+
+    const todaysSchedulesRaw = await db.castSchedule.findMany({
+      where: {
+        cast: { storeId: storeRecord.id },
+        date: {
+          gte: start,
+          lte: end,
+        },
+        isAvailable: true,
       },
-    },
-    include: {
-      cast: true,
-      customer: true,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-    take: 10,
-  })
+      include: {
+        cast: true,
+      },
+      orderBy: [
+        { startTime: 'asc' },
+        { endTime: 'asc' },
+      ],
+      take: 12,
+    })
 
-  const ranking = uniqueBy(rankingCastsRaw.map(mapCastToSummary)).slice(0, 4)
+    const reviewsRaw = await db.review.findMany({
+      where: {
+        cast: {
+          storeId: storeRecord.id,
+        },
+      },
+      include: {
+        cast: true,
+        customer: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: 10,
+    })
 
-  const newcomers = uniqueBy(
-    newcomersRaw
-      .map((cast) => ({
-        ...mapCastToSummary(cast),
-        netReservation: cast.netReservation ?? true,
+    const ranking = uniqueBy(rankingCastsRaw.map(mapCastToSummary)).slice(0, 4)
+
+    const newcomers = uniqueBy(
+      newcomersRaw
+        .map((cast) => ({
+          ...mapCastToSummary(cast),
+          netReservation: cast.netReservation ?? true,
+        }))
+    ).slice(0, 4)
+
+    const todaysSchedules = uniqueBy(
+      todaysSchedulesRaw.map((entry) => ({
+        id: entry.castId,
+        castId: entry.castId,
+        castName: entry.cast?.name ?? '匿名キャスト',
+        startTime: entry.startTime.toISOString(),
+        endTime: entry.endTime.toISOString(),
+        cast: mapCastToSummary(entry.cast),
       }))
-  ).slice(0, 4)
+    )
+      .map(({ id, ...rest }) => rest)
+      .slice(0, 6)
 
-  const todaysSchedules = uniqueBy(
-    todaysSchedulesRaw.map((entry) => ({
-      id: entry.castId,
-      castId: entry.castId,
-      castName: entry.cast?.name ?? '匿名キャスト',
-      startTime: entry.startTime.toISOString(),
-      endTime: entry.endTime.toISOString(),
-      cast: mapCastToSummary(entry.cast),
+    const reviews = reviewsRaw.map((review) => ({
+      id: review.id,
+      castId: review.castId,
+      castName: review.cast?.name ?? '匿名キャスト',
+      rating: review.rating,
+      comment: review.comment,
+      createdAt: review.createdAt.toISOString(),
+      customerAlias: anonymizeCustomerName(review.customer?.name),
+      area: null,
     }))
-  )
-    .map(({ id, ...rest }) => rest)
-    .slice(0, 6)
 
-  const reviews = reviewsRaw.map((review) => ({
-    id: review.id,
-    castId: review.castId,
-    castName: review.cast?.name ?? '匿名キャスト',
-    rating: review.rating,
-    comment: review.comment,
-    createdAt: review.createdAt.toISOString(),
-    customerAlias: anonymizeCustomerName(review.customer?.name),
-    area: null,
-  }))
+    const banners = getDefaultBanners(store.slug)
 
-  const banners = getDefaultBanners(store.slug)
-
-  return NextResponse.json({
-    store,
-    banners,
-    highlights: {
-      ranking,
-      newcomers,
-      todaysSchedules,
-    },
-    reviews,
-  })
+    return NextResponse.json({
+      store,
+      banners,
+      highlights: {
+        ranking,
+        newcomers,
+        todaysSchedules,
+      },
+      reviews,
+    })
+  } catch (error) {
+    logger.error({ err: error, slug: normalizedSlug }, 'Failed to build public store payload')
+    if (fallbackPayload) {
+      return NextResponse.json(fallbackPayload)
+    }
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }
