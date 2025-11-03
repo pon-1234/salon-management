@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import type { PaymentMethod, PaymentProviderType } from '@/lib/payment/types'
 import { ProcessPaymentRequest } from '@/lib/payment/types'
 import {
   getPaymentProviderDisabledReason,
@@ -34,23 +35,32 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     const { reservationId, customerId, amount, currency, paymentMethod } = body
-    const provider = body.provider ?? 'manual'
+    const provider: PaymentProviderType =
+      typeof body.provider === 'string' && ['manual', 'bank_transfer', 'cash'].includes(body.provider)
+        ? body.provider
+        : 'manual'
 
-    if (!reservationId || !customerId || !amount || !currency || !paymentMethod) {
+    if (
+      typeof reservationId !== 'string' ||
+      typeof customerId !== 'string' ||
+      typeof amount !== 'number' ||
+      typeof currency !== 'string' ||
+      typeof paymentMethod !== 'string'
+    ) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     const paymentRequest: ProcessPaymentRequest = {
-      reservationId: reservationId as string,
+      reservationId,
       customerId,
       amount,
       currency,
-      paymentMethod,
+      paymentMethod: paymentMethod as PaymentMethod,
       provider,
       metadata: body.metadata,
     }
 
-    const providerErrorResponse = ensureProvider(paymentRequest.provider)
+    const providerErrorResponse = ensureProvider(provider)
     if (providerErrorResponse) {
       return providerErrorResponse
     }

@@ -21,7 +21,14 @@ describe('AnalyticsUseCases', () => {
       getStaffPerformanceData: vi.fn(),
       getCourseSalesData: vi.fn(),
       getOptionSalesData: vi.fn(),
+      getOptionCombinationData: vi.fn(),
       getMarketingChannelData: vi.fn(),
+      getAreaSalesData: vi.fn(),
+      getDistrictSalesData: vi.fn(),
+      getMonthlyStaffSummary: vi.fn(),
+      getMonthlyAreaSummary: vi.fn(),
+      getHourlySalesReport: vi.fn(),
+      getStaffAttendanceReport: vi.fn(),
     }
     useCases = new AnalyticsUseCases(mockRepository)
   })

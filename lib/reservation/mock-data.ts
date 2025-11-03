@@ -1,5 +1,10 @@
 import { Reservation, Service } from '../types/reservation'
 
+type ReservationSeed = Omit<Reservation, 'storeId' | 'castId'> & {
+  storeId?: string
+  castId?: string
+}
+
 export const mockServices: Service[] = [
   // キャンペーンコース
   {
@@ -109,7 +114,7 @@ export const mockServices: Service[] = [
   },
 ]
 
-let mockReservations: Reservation[] = [
+const reservationSeeds: ReservationSeed[] = [
   {
     id: '1',
     customerId: '1',
@@ -233,6 +238,12 @@ let mockReservations: Reservation[] = [
     updatedAt: new Date(),
   },
 ]
+
+let mockReservations: Reservation[] = reservationSeeds.map((reservation) => ({
+  ...reservation,
+  storeId: reservation.storeId ?? 'ikebukuro',
+  castId: reservation.castId ?? reservation.staffId,
+}))
 
 export function getMockReservations(): Reservation[] {
   return [...mockReservations]

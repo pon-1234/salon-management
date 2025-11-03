@@ -222,8 +222,8 @@ export function generateStaffAttendanceData(
     const attendance = Array.from({ length: daysInMonth }, () =>
       Math.random() > 0.6 ? 1 : 0
     ) as (0 | 1)[]
-    const total = attendance.reduce((sum, value) => sum + value, 0)
-    const weekdayAttendance = attendance.reduce((sum, value, dayIndex) => {
+    const total = attendance.reduce<number>((sum, value) => sum + value, 0)
+    const weekdayAttendance = attendance.reduce<number>((sum, value, dayIndex) => {
       const date = new Date(year, month - 1, dayIndex + 1)
       const isWeekend = date.getDay() === 0 || date.getDay() === 6
       if (isWeekend) return sum

@@ -50,7 +50,7 @@ import { isVipMember } from '@/lib/utils'
 import { resolveOptionId } from '@/lib/options/data'
 import { getDesignationFees } from '@/lib/designation/data'
 import type { DesignationFee } from '@/lib/designation/types'
-import { BusinessHoursRange } from '@/lib/settings/business-hours'
+import { BusinessHoursRange, formatMinutesAsLabel } from '@/lib/settings/business-hours'
 import { useStore } from '@/contexts/store-context'
 
 type DesignationType = 'none' | 'regular' | 'special'

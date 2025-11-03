@@ -7,7 +7,7 @@ import { castMembers } from '@/lib/cast/data'
 import { customers } from '@/lib/customer/data'
 import type { Reservation } from '@/lib/types/reservation'
 
-interface NotificationDetails {
+export interface ReservationNotificationDetails {
   reservationId: string
   reservationDate: string
   reservationTime: string
@@ -20,13 +20,13 @@ interface NotificationDetails {
   storeId?: string
 }
 
-interface Notification {
+export interface ReservationNotification {
   id: string
   storeId: string
   storeName: string
   type: 'reservation'
   message: string
-  details: NotificationDetails
+  details: ReservationNotificationDetails
   read: boolean
   readAt?: string | null
   createdAt: string
@@ -35,8 +35,8 @@ interface Notification {
 }
 
 interface NotificationContextType {
-  notifications: Notification[]
-  addNotification: (notification: Notification) => void
+  notifications: ReservationNotification[]
+  addNotification: (notification: ReservationNotification) => void
   markAsRead: (id: string) => void
   markAsUnread: (id: string) => void
   assignNotification: (id: string, assignee: string) => void
@@ -66,7 +66,7 @@ const castMap = new Map(castMembers.map((cast) => [cast.id, cast.name]))
 const customerMap = new Map(customers.map((customer) => [customer.id, customer.name ?? customer.id]))
 const twelveHours = 12 * 60 * 60 * 1000
 
-function deriveReservationsNotifications(reservations: Reservation[]): Notification[] {
+function deriveReservationsNotifications(reservations: Reservation[]): ReservationNotification[] {
   const now = Date.now()
   const twentyFourHours = 24 * 60 * 60 * 1000
 
@@ -112,11 +112,14 @@ function deriveReservationsNotifications(reservations: Reservation[]): Notificat
         },
         read: false,
         createdAt: createdAt.toISOString(),
-      } satisfies Notification
+      } satisfies ReservationNotification
     })
 }
 
-function mergeNotifications(prev: Notification[], next: Notification[]) {
+function mergeNotifications(
+  prev: ReservationNotification[],
+  next: ReservationNotification[]
+) {
   const now = Date.now()
   const twentyFourHours = 24 * 60 * 60 * 1000
   const base = prev.filter((notification) => now - new Date(notification.createdAt).getTime() <= twentyFourHours)
@@ -141,7 +144,7 @@ function mergeNotifications(prev: Notification[], next: Notification[]) {
 }
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
-  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [notifications, setNotifications] = useState<ReservationNotification[]>([])
 
   useEffect(() => {
     let isMounted = true
@@ -167,7 +170,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, [])
 
-  const addNotification = useCallback((notification: Notification) => {
+  const addNotification = useCallback((notification: ReservationNotification) => {
     setNotifications((prev) => mergeNotifications(prev, [notification]))
   }, [])
 

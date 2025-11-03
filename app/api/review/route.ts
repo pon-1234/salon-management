@@ -19,6 +19,16 @@ import {
 } from '@/lib/reviews/service'
 import type { ReviewStatus } from '@/lib/reviews/types'
 
+type AppSession = (
+  Awaited<ReturnType<typeof getServerSession>> & {
+    user?: {
+      id?: string
+      role?: string
+      name?: string
+    }
+  }
+) | null
+
 const reviewStatusSchema = z.enum(['pending', 'published', 'hidden'])
 
 const createReviewSchema = z.object({
@@ -68,17 +78,17 @@ function parseStatusParam(param: string | null): ReviewStatus[] | undefined {
   return statuses.length > 0 ? Array.from(new Set(statuses)) : undefined
 }
 
-function resolveActorRole(session: Awaited<ReturnType<typeof getServerSession>>): 'admin' | 'customer' | 'staff' {
-  if (!session) return 'staff'
-  if (session.user.role === 'admin') return 'admin'
-  if (session.user.role === 'customer') return 'customer'
+function resolveActorRole(session: AppSession): 'admin' | 'customer' | 'staff' {
+  const role = session?.user?.role
+  if (role === 'admin') return 'admin'
+  if (role === 'customer') return 'customer'
   return 'staff'
 }
 
 function resolveStatusesForAudience(
   requested: ReviewStatus[] | undefined,
   actorRole: 'admin' | 'customer' | 'staff',
-  session: Awaited<ReturnType<typeof getServerSession>>,
+  session: AppSession,
   targetCustomerId?: string | null
 ): ReviewStatus[] | undefined {
   const isAdmin = actorRole === 'admin'
@@ -123,7 +133,7 @@ function mapServiceErrorToResponse(error: ReviewServiceError) {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = (await getServerSession(authOptions)) as AppSession
     const actorRole = resolveActorRole(session)
     const searchParams = request.nextUrl.searchParams
 
@@ -184,7 +194,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = (await getServerSession(authOptions)) as AppSession
     if (!session) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
@@ -200,12 +210,17 @@ export async function POST(request: NextRequest) {
     }
 
     try {
+      const actorId = session.user?.id
+      if (!actorId) {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+      }
+
       const review = await createReview({
         reservationId: payload.data.reservationId,
         rating: payload.data.rating,
         comment: payload.data.comment,
         status: payload.data.status,
-        actorId: session.user.id,
+        actorId,
         actorRole,
       })
 
@@ -224,7 +239,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = (await getServerSession(authOptions)) as AppSession
     if (!session) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
@@ -240,12 +255,17 @@ export async function PUT(request: NextRequest) {
     }
 
     try {
+      const actorId = session.user?.id
+      if (!actorId) {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+      }
+
       const updated = await updateReview({
         id: payload.data.id,
         rating: payload.data.rating,
         comment: payload.data.comment,
         status: payload.data.status,
-        actorId: session.user.id,
+        actorId,
         actorRole,
       })
 
@@ -264,7 +284,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = (await getServerSession(authOptions)) as AppSession
     if (!session) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
@@ -280,9 +300,14 @@ export async function DELETE(request: NextRequest) {
     }
 
     try {
+      const actorId = session.user?.id
+      if (!actorId) {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+      }
+
       await removeReview({
         id,
-        actorId: session.user.id,
+        actorId,
         actorRole,
       })
       return new NextResponse(null, { status: 204 })

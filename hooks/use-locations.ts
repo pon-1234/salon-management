@@ -10,6 +10,7 @@ export interface LocationArea {
   prefecture?: string | null
   city?: string | null
   description?: string | null
+  stations?: LocationStation[]
 }
 
 export interface LocationStation {

@@ -37,7 +37,7 @@ export function convertOptionPriceToOption(optionPrice: OptionPrice): Option {
     castShare: optionPrice.castShare ?? null,
     isActive: optionPrice.isActive,
     isPopular: optionPrice.isPopular,
-    note: optionPrice.note,
+    note: optionPrice.note ?? undefined,
   }
 }
 

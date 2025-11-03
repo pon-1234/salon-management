@@ -195,6 +195,6 @@ export async function DELETE(request: NextRequest) {
     if (error?.code === 'P2025') {
       return ErrorResponses.notFound('エリア')
     }
-    return ErrorResponses.internalError(error)
+    return handleApiError(error)
   }
 }

@@ -77,8 +77,8 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
       const allReservations = await getAllReservations({ storeId: currentStore.id })
       const castReservations = allReservations
         .filter((reservation) => {
-          const castId = (reservation as any).castId || reservation.castId || reservation.staffId
-          return castId === cast.id
+          const reservationCastId = reservation.castId ?? reservation.staffId
+          return reservationCastId === cast.id
         })
         .map(
           (reservation) =>

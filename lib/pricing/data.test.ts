@@ -199,11 +199,11 @@ describe('Pricing Data', () => {
   })
 
   describe('data consistency', () => {
-    it('should have sequential display orders for courses', () => {
-      const orders = defaultCourses.map((c) => c.displayOrder).sort((a, b) => a - b)
-      orders.forEach((order, index) => {
+    it('should list course durations in ascending order', () => {
+      const durations = defaultCourses.map((c) => c.duration)
+      durations.forEach((duration, index) => {
         if (index > 0) {
-          expect(order).toBeGreaterThanOrEqual(orders[index - 1])
+          expect(duration).toBeGreaterThanOrEqual(durations[index - 1])
         }
       })
     })

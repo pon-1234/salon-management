@@ -185,7 +185,7 @@ export async function getPublicRankingData(storeId: string): Promise<PublicRanki
       profile.panelDesignationRank && profile.panelDesignationRank > 0
         ? `指名順位 ${profile.panelDesignationRank}`
         : `予約数 ${reservationsMap.get(profile.id) ?? 0}`,
-    trend: index === 0 ? 'up' : 'same',
+    trend: (index === 0 ? 'up' : 'same') as PublicRankingEntry['trend'],
   }))
 
   const newcomers = [...profiles]

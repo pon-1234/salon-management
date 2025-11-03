@@ -162,6 +162,7 @@ export class PricingUseCases {
           price: entry.price,
           storeShare: entry.storeShare,
           castShare: entry.castShare,
+          isActive: oldCourse.isActive ?? true,
         })
       }
     }

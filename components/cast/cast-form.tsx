@@ -76,7 +76,7 @@ const PROFILE_TYPES = [
   'おっとり系',
 ]
 
-const WORK_STATUS_OPTIONS: Cast['workStatus'][] = ['出勤', '未出勤']
+const WORK_STATUS_OPTIONS: Cast['workStatus'][] = ['出勤', '未出勤', '休日']
 
 const OptionPill = ({
   label,
@@ -294,6 +294,12 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
 
   const handleSwitchChange = (name: string, checked: boolean) => {
     setFormData((prev) => ({ ...prev, [name]: checked }))
+  }
+
+  const handleWorkStatusChange = (value: string) => {
+    if (WORK_STATUS_OPTIONS.includes(value as Cast['workStatus'])) {
+      setFormData((prev) => ({ ...prev, workStatus: value as Cast['workStatus'] }))
+    }
   }
 
   const handleOptionChange = (optionId: string, checked: boolean) => {
@@ -529,7 +535,7 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
             <Label htmlFor={fieldId('workStatus')}>稼働ステータス</Label>
             <Select
               value={formData.workStatus}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, workStatus: value }))}
+              onValueChange={handleWorkStatusChange}
             >
               <SelectTrigger id={fieldId('workStatus')}>
                 <SelectValue placeholder="稼働ステータスを選択" />

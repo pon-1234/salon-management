@@ -37,6 +37,8 @@ const normalizeAvailableOptions = (value: unknown): string[] => {
   return Array.from(new Set(mapped))
 }
 
+const isAppointment = (value: Appointment | null): value is Appointment => Boolean(value)
+
 const normalizeAppointment = (raw: any): Appointment | null => {
   if (!raw) return null
   const start = toDate(raw.startTime)
@@ -65,13 +67,13 @@ export const normalizeCast = (raw: any): Cast => {
   const appointmentsFromApi = Array.isArray(raw.appointments)
     ? raw.appointments
         .map(normalizeAppointment)
-        .filter((appointment): appointment is Appointment => Boolean(appointment))
+        .filter(isAppointment)
     : []
 
   const reservationAppointments = Array.isArray(raw.reservations)
     ? raw.reservations
         .map(normalizeAppointment)
-        .filter((appointment): appointment is Appointment => Boolean(appointment))
+        .filter(isAppointment)
     : []
 
   const appointments =

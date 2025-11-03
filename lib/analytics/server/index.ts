@@ -144,8 +144,11 @@ export async function getMonthlyAnalytics(
         reservation.startTime <= addYears(monthEnd, -1)
     )
 
-    const uniqueCastIds = new Set(monthReservations.map((reservation) => reservation.castId))
-    uniqueCastIds.delete(null)
+    const uniqueCastIds = new Set(
+      monthReservations
+        .map((reservation) => reservation.castId ?? null)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0)
+    )
 
     const uniqueWorkDays = new Set(
       monthReservations
@@ -455,8 +458,11 @@ export async function getDailyAnalytics(
       0
     )
 
-    const uniqueCastIds = new Set(dayReservations.map((reservation) => reservation.castId))
-    uniqueCastIds.delete(null)
+    const uniqueCastIds = new Set(
+      dayReservations
+        .map((reservation) => reservation.castId ?? null)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0)
+    )
 
     const totalMinutes = dayReservations.reduce(
       (sum, reservation) => sum + getReservationDuration(reservation),
@@ -1211,7 +1217,7 @@ export async function getStaffAttendanceReport(
   })
 
   return Array.from(attendanceMap.entries()).map(([castId, data]) => {
-    const total = data.attendance.reduce((sum, value) => sum + value, 0)
+    const total = data.attendance.reduce<number>((sum, value) => sum + value, 0)
     return {
       id: castId,
       name: data.name,

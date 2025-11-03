@@ -10,7 +10,11 @@ export type ReservationWithRelations = Prisma.ReservationGetPayload<{
     customer: true
     cast: true
     course: true
-    options: true
+    options: {
+      include: {
+        option: true
+      }
+    }
   }
 }>
 
@@ -33,7 +37,11 @@ export async function fetchReservationsBetween(
       customer: true,
       cast: true,
       course: true,
-      options: true,
+      options: {
+        include: {
+          option: true,
+        },
+      },
     },
   })
 }
@@ -51,7 +59,11 @@ export async function fetchAllReservationsForStore(
       customer: true,
       cast: true,
       course: true,
-      options: true,
+      options: {
+        include: {
+          option: true,
+        },
+      },
     },
   })
 }

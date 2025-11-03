@@ -432,7 +432,8 @@ export async function POST(request: NextRequest) {
 
         const optionIds: string[] = Array.isArray(reservationData.options)
           ? reservationData.options.filter(
-              (optionId): optionId is string => typeof optionId === 'string' && optionId.trim().length > 0
+              (optionId: unknown): optionId is string =>
+                typeof optionId === 'string' && optionId.trim().length > 0
             )
           : []
 
@@ -583,7 +584,15 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const existingReservation = await db.reservation.findUnique({ where: { id } })
+    const existingReservation = await db.reservation.findUnique({
+      where: { id },
+      include: {
+        cast: true,
+        course: true,
+        area: true,
+        station: true,
+      },
+    })
 
     if (!existingReservation) {
       return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })

@@ -16,14 +16,26 @@ export function normalizePhoneQuery(value: string): string {
 
 function toDate(value: unknown, fallback: Date): Date {
   if (!value) return fallback
-  const candidate = value instanceof Date ? value : new Date(value)
-  return Number.isNaN(candidate.getTime()) ? fallback : candidate
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? fallback : value
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    const candidate = new Date(value)
+    return Number.isNaN(candidate.getTime()) ? fallback : candidate
+  }
+  return fallback
 }
 
 function toOptionalDate(value: unknown): Date | undefined {
   if (!value) return undefined
-  const candidate = value instanceof Date ? value : new Date(value)
-  return Number.isNaN(candidate.getTime()) ? undefined : candidate
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? undefined : value
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    const candidate = new Date(value)
+    return Number.isNaN(candidate.getTime()) ? undefined : candidate
+  }
+  return undefined
 }
 
 export function deserializeCustomer(raw: any): Customer {

@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest'
 import { generateDailyReport } from './usecases'
 
 describe('generateDailyReport', () => {
-  it('should generate a daily report with valid structure', () => {
+  it('should generate a daily report with valid structure', async () => {
     const date = '2024-01-15'
-    const report = generateDailyReport(date)
+    const report = await generateDailyReport(date)
 
     // Check report structure
     expect(report).toHaveProperty('date', date)
@@ -15,9 +15,9 @@ describe('generateDailyReport', () => {
     expect(Array.isArray(report.staffReports)).toBe(true)
   })
 
-  it('should generate staff reports with valid data', () => {
+  it('should generate staff reports with valid data', async () => {
     const date = '2024-01-15'
-    const report = generateDailyReport(date)
+    const report = await generateDailyReport(date)
 
     expect(report.staffReports.length).toBeGreaterThan(0)
 
@@ -47,9 +47,9 @@ describe('generateDailyReport', () => {
     })
   })
 
-  it('should calculate totals correctly', () => {
+  it('should calculate totals correctly', async () => {
     const date = '2024-01-15'
-    const report = generateDailyReport(date)
+    const report = await generateDailyReport(date)
 
     // Calculate expected totals
     const expectedTotalSales = report.staffReports.reduce(
@@ -70,10 +70,10 @@ describe('generateDailyReport', () => {
     expect(report.totalWorkingHours).toBe(expectedTotalWorkingHours)
   })
 
-  it('should generate different reports for different calls', () => {
+  it('should generate different reports for different calls', async () => {
     const date = '2024-01-15'
-    const report1 = generateDailyReport(date)
-    const report2 = generateDailyReport(date)
+    const report1 = await generateDailyReport(date)
+    const report2 = await generateDailyReport(date)
 
     // Due to random data generation, the reports should be different
     // (although there's a very small chance they could be the same)
@@ -85,13 +85,13 @@ describe('generateDailyReport', () => {
     expect(areReportsDifferent).toBe(true)
   })
 
-  it('should handle different date formats', () => {
+  it('should handle different date formats', async () => {
     const dates = ['2024-01-15', '2024/01/15', '15-01-2024']
 
-    dates.forEach((date) => {
-      const report = generateDailyReport(date)
+    for (const date of dates) {
+      const report = await generateDailyReport(date)
       expect(report.date).toBe(date)
       expect(report.staffReports.length).toBeGreaterThan(0)
-    })
+    }
   })
 })

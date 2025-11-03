@@ -181,7 +181,7 @@ describe('PaymentService', () => {
       status: 'completed',
       type: 'payment',
       paymentIntentId: 'pi_123',
-      stripePaymentId: undefined,
+      stripePaymentId: null,
       refundedAt: null,
       refundAmount: null,
       metadata: { reservationId: 'res_123', customerId: 'cust_123' },
@@ -233,7 +233,7 @@ describe('PaymentService', () => {
         amount: 10000,
         currency: 'jpy',
         paymentMethod: 'card' as PaymentMethod,
-        provider: 'payjp',
+        provider: 'payjp' as unknown as PaymentProviderType,
       }
 
       await expect(service.processPayment(request)).rejects.toBeInstanceOf(

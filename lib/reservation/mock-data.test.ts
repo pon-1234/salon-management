@@ -14,11 +14,13 @@ const baseMockReservation: Reservation = {
   id: '1',
   customerId: '1',
   staffId: '1',
+  castId: '1',
   serviceId: 'service1',
   startTime: new Date('2024-01-01T10:00:00Z'),
   endTime: new Date('2024-01-01T11:00:00Z'),
   status: 'confirmed',
   price: 10000,
+  storeId: 'ikebukuro',
   createdAt: new Date('2024-01-01T09:00:00Z'),
   updatedAt: new Date('2024-01-01T09:00:00Z'),
 }
@@ -54,6 +56,8 @@ describe('mock reservation data helpers', () => {
     const created = addMockReservation({
       customerId: '2',
       staffId: '1',
+      castId: '1',
+      storeId: 'ikebukuro',
       serviceId: 'service2',
       startTime: new Date('2024-01-02T10:00:00Z'),
       endTime: new Date('2024-01-02T11:00:00Z'),

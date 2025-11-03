@@ -4,6 +4,7 @@ import { ReservationStatus } from '../constants'
 export interface Reservation extends BaseEntity {
   customerId: string
   staffId: string
+  castId?: string
   serviceId: string
   courseId?: string
   optionIds?: string[]
@@ -34,6 +35,20 @@ export interface Reservation extends BaseEntity {
   stationName?: string
   stationTravelTime?: number
   locationMemo?: string
+  options?: Array<{
+    id?: string
+    reservationId?: string
+    optionId?: string | null
+    optionName?: string | null
+    optionPrice?: number | null
+    storeShare?: number | null
+    castShare?: number | null
+    option?: {
+      id?: string | null
+      name?: string | null
+      price?: number | null
+    } | null
+  }>
 }
 
 export interface ReservationData {
@@ -71,6 +86,7 @@ export interface ReservationData {
   discount: string
   additionalFee: number
   totalPayment: number
+  price?: number
   storeRevenue: number
   staffRevenue: number
   staffBonusFee: number

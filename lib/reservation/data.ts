@@ -50,6 +50,7 @@ function normalizeReservation(entry: any): Reservation {
     id: entry.id,
     customerId: entry.customerId,
     staffId: entry.staffId || entry.castId || '',
+    castId: entry.castId ?? entry.staffId ?? undefined,
     serviceId: entry.serviceId || entry.courseId || '',
     storeId: entry.storeId || entry.cast?.storeId || 'ikebukuro',
     startTime: new Date(entry.startTime),
@@ -80,6 +81,7 @@ function normalizeReservation(entry: any): Reservation {
     stationName: entry.station?.name ?? undefined,
     stationTravelTime: entry.station?.travelTime ?? undefined,
     locationMemo: entry.locationMemo ?? undefined,
+    options: Array.isArray(entry.options) ? entry.options : undefined,
   }
 }
 

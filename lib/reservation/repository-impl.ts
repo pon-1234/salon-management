@@ -140,6 +140,8 @@ export class ReservationRepositoryImpl implements ReservationRepository {
         duration: course.duration,
         price: course.price,
         description: course.description,
+        createdAt: course.createdAt ? new Date(course.createdAt) : new Date(),
+        updatedAt: course.updatedAt ? new Date(course.updatedAt) : new Date(),
       })),
       ...options.map((option) => ({
         id: option.id,
@@ -148,6 +150,8 @@ export class ReservationRepositoryImpl implements ReservationRepository {
         duration: 0,
         price: option.price,
         description: '',
+        createdAt: option.createdAt ? new Date(option.createdAt) : new Date(),
+        updatedAt: option.updatedAt ? new Date(option.updatedAt) : new Date(),
       })),
     ]
   }

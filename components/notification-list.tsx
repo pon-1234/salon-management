@@ -5,31 +5,7 @@ import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-
-interface ReservationNotification {
-  id: string
-  storeId: string
-  storeName: string
-  type: 'reservation'
-  message: string
-  details: {
-    reservationId: string
-    reservationDate: string
-    reservationTime: string
-    receivedTime: string
-    staffName?: string
-    customerName: string
-    status: string
-    startTime: string
-    endTime: string
-    storeId?: string
-  }
-  read: boolean
-  readAt?: string | null
-  createdAt: string
-  assignedTo?: string | null
-  resolvedAt?: string | null
-}
+import type { ReservationNotification } from '@/contexts/notification-context'
 
 interface NotificationListProps {
   notifications: ReservationNotification[]

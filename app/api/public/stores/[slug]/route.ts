@@ -42,7 +42,7 @@ function mapCastToSummary(cast: any) {
         ? [cast.image]
         : []
 
-  const images = rawImages.filter((url): url is string => typeof url === 'string' && url.length > 0)
+  const images = rawImages.filter((url: unknown): url is string => typeof url === 'string' && url.length > 0)
   const primaryImage = images[0] ?? '/placeholder-user.jpg'
 
   return {

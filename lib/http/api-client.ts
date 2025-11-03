@@ -73,15 +73,14 @@ export class ApiClient {
         ? JSON.stringify(body)
         : ((body as BodyInit) ?? undefined)
 
-    const finalHeaders =
-      method === 'GET' || method === 'HEAD' || !shouldSerialize
-        ? headers
-        : mergeHeaders(
-            headers,
-            {
-              'Content-Type': 'application/json',
-            } satisfies HeadersInit
-          )
+    const finalHeaders = shouldSerialize
+      ? mergeHeaders(
+          headers,
+          {
+            'Content-Type': 'application/json',
+          } satisfies HeadersInit
+        )
+      : headers
 
     const response = await fetch(url, {
       ...this.defaults,

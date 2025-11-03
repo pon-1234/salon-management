@@ -53,12 +53,14 @@ describe('ReservationRepositoryImpl', () => {
     id: '1',
     customerId: 'customer1',
     staffId: 'cast1',
+    castId: 'cast1',
     serviceId: 'service1',
     startTime: new Date('2024-01-01T10:00:00'),
     endTime: new Date('2024-01-01T11:00:00'),
     status: 'confirmed',
     price: 5000,
     notes: 'テスト予約',
+    storeId: 'ikebukuro',
     createdAt: new Date('2023-12-01'),
     updatedAt: new Date('2023-12-01'),
   }
@@ -133,6 +135,7 @@ describe('ReservationRepositoryImpl', () => {
       const newReservationData = {
         customerId: 'customer1',
         staffId: 'cast1',
+        storeId: 'ikebukuro',
         serviceId: 'service1',
         startTime: new Date('2024-01-15T14:00:00'),
         endTime: new Date('2024-01-15T15:00:00'),
@@ -182,6 +185,7 @@ describe('ReservationRepositoryImpl', () => {
         repository.create({
           customerId: 'customer1',
           staffId: 'cast1',
+          storeId: 'ikebukuro',
           serviceId: 'service1',
           startTime: new Date('2024-01-15T14:00:00'),
           endTime: new Date('2024-01-15T15:00:00'),
@@ -209,6 +213,7 @@ describe('ReservationRepositoryImpl', () => {
       const promise = repository.create({
         customerId: 'customer1',
         staffId: 'cast1',
+        storeId: 'ikebukuro',
         serviceId: 'service1',
         startTime: new Date('2024-01-15T14:00:00'),
         endTime: new Date('2024-01-15T15:00:00'),

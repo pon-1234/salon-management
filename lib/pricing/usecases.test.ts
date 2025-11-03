@@ -47,12 +47,13 @@ describe('PricingUseCases', () => {
             name: 'Standard Course',
             description: 'Standard course description',
             duration: 60,
-            price: 10000,
-            storeShare: 6000,
-            castShare: 4000,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          },
+          price: 10000,
+          storeShare: 6000,
+          castShare: 4000,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
         ]
         vi.mocked(mockRepository.getCourses).mockResolvedValue(mockCourses)
 
@@ -73,6 +74,7 @@ describe('PricingUseCases', () => {
           price: 10000,
           storeShare: 6000,
           castShare: 4000,
+          isActive: true,
           createdAt: new Date(),
           updatedAt: new Date(),
         }
@@ -167,6 +169,7 @@ describe('PricingUseCases', () => {
         price: 15000,
         storeShare: 9000,
         castShare: 6000,
+        isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
       }
@@ -221,6 +224,7 @@ describe('PricingUseCases', () => {
         price: 10000,
         storeShare: 6000,
         castShare: 4000,
+        isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
       }

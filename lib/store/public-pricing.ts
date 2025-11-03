@@ -18,8 +18,8 @@ function ensureCourseSerializable(course: any): CoursePrice {
     castShare: course.castShare ?? null,
     isActive: course.isActive,
     archivedAt: course.archivedAt ?? null,
-    createdAt: course.createdAt,
-    updatedAt: course.updatedAt,
+    createdAt: course.createdAt ? new Date(course.createdAt) : new Date(),
+    updatedAt: course.updatedAt ? new Date(course.updatedAt) : new Date(),
   }
 }
 
@@ -37,8 +37,8 @@ function ensureOptionSerializable(option: any): OptionPrice {
     storeShare: option.storeShare ?? null,
     castShare: option.castShare ?? null,
     archivedAt: option.archivedAt ?? null,
-    createdAt: option.createdAt,
-    updatedAt: option.updatedAt,
+    createdAt: option.createdAt ? new Date(option.createdAt) : new Date(),
+    updatedAt: option.updatedAt ? new Date(option.updatedAt) : new Date(),
   }
 
   if (option.note !== undefined) {
@@ -73,11 +73,7 @@ export async function getPublicStorePricing(storeId: string): Promise<StorePrici
       options: normalizedOptions,
       additionalFees: defaultAdditionalFees as AdditionalFee[],
       notes: defaultPricingNotes,
-      lastUpdated:
-        courses[0]?.updatedAt ??
-        options[0]?.updatedAt ??
-        normalizedCourses[0]?.updatedAt ??
-        new Date(),
+      lastUpdated: new Date(),
     }
   } catch (error) {
     console.error('Failed to load public store pricing, falling back to defaults:', error)

@@ -103,7 +103,7 @@ describe('CustomerUseCases', () => {
       expect(mockCustomerRepository.delete).toHaveBeenCalledWith(customerId)
     })
   })
-})
+
   describe('searchByPhone', () => {
     it("should call repository's searchByPhone and return customers", async () => {
       const phone = '090'
@@ -116,3 +116,4 @@ describe('CustomerUseCases', () => {
       expect(result).toEqual(customers)
     })
   })
+})
