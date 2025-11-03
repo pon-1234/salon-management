@@ -7,9 +7,18 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Star, Heart, Crown } from 'lucide-react'
 import Link from 'next/link'
-import { Cast } from '@/lib/cast/types'
-import { resolveApiUrl } from '@/lib/http/base-url'
-import { normalizeCastList } from '@/lib/cast/mapper'
+import { getPublicCastProfiles, type PublicCastProfile } from '@/lib/store/public-casts'
+
+function buildMeasurementLabel(cast: PublicCastProfile) {
+  const parts = [
+    cast.height ? `T${cast.height}` : null,
+    cast.bust ? `B${cast.bust}` : null,
+    cast.waist ? `W${cast.waist}` : null,
+    cast.hip ? `H${cast.hip}` : null,
+  ].filter(Boolean)
+
+  return parts.join(' ')
+}
 
 export default async function CastListPage({ params }: { params: Promise<{ store: string }> }) {
   const { store: storeSlug } = await params
@@ -19,26 +28,13 @@ export default async function CastListPage({ params }: { params: Promise<{ store
     notFound()
   }
 
-  let casts: Cast[] = []
-  try {
-    const response = await fetch(resolveApiUrl('/api/cast'), {
-      cache: 'no-store',
-    })
-    if (response.ok) {
-      const payload = await response.json()
-      const data = Array.isArray(payload?.data) ? payload.data : payload
-      casts = normalizeCastList(data)
-    }
-  } catch (error) {
-    console.error('Failed to load cast data:', error)
-  }
+  const casts: PublicCastProfile[] = await getPublicCastProfiles(store.id)
 
   return (
     <>
       <StoreNavigation />
 
       <main className="min-h-screen bg-gray-50">
-        {/* Header */}
         <div className="bg-gradient-to-r from-purple-600 to-pink-600 py-12 text-white">
           <div className="mx-auto max-w-7xl px-4">
             <h1 className="mb-4 text-center text-4xl font-bold">在籍一覧</h1>
@@ -46,7 +42,6 @@ export default async function CastListPage({ params }: { params: Promise<{ store
           </div>
         </div>
 
-        {/* Filters */}
         <div className="sticky top-16 z-40 bg-white shadow-sm">
           <div className="mx-auto max-w-7xl px-4 py-4">
             <div className="flex flex-wrap gap-2">
@@ -60,106 +55,111 @@ export default async function CastListPage({ params }: { params: Promise<{ store
                 本日出勤
               </Button>
               <Button variant="outline" size="sm">
-                巨乳
+                指名上位
               </Button>
               <Button variant="outline" size="sm">
-                スレンダー
-              </Button>
-              <Button variant="outline" size="sm">
-                20代
-              </Button>
-              <Button variant="outline" size="sm">
-                30代
+                ネット予約可
               </Button>
             </div>
           </div>
         </div>
 
-        {/* Cast Grid */}
         <section className="py-8">
           <div className="mx-auto max-w-7xl px-4">
-            <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4">
-              {casts.map((cast) => (
-                <Card key={cast.id} className="transition-shadow hover:shadow-lg">
-                  <CardHeader className="p-4 pb-2">
-                    <div className="relative">
-                      <div className="mb-3 aspect-[3/4] overflow-hidden rounded-lg bg-gradient-to-br from-pink-300 to-purple-400">
-                        {cast.images[0] && (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={cast.images[0]}
-                            alt={cast.name}
-                            className="h-full w-full object-cover"
-                          />
-                        )}
-                      </div>
-                      {cast.panelDesignationRank <= 3 && cast.panelDesignationRank > 0 && (
-                        <Badge
-                          className={`absolute left-2 top-2 ${
-                            cast.panelDesignationRank === 1
-                              ? 'bg-yellow-500'
-                              : cast.panelDesignationRank === 2
-                                ? 'bg-gray-400'
-                                : 'bg-orange-600'
-                          }`}
-                        >
-                          <Crown className="mr-1 h-3 w-3" />
-                          {cast.panelDesignationRank}位
-                        </Badge>
-                      )}
-                      {cast.workStatus === '出勤' && (
-                        <Badge className="absolute bottom-2 left-2 bg-green-500">出勤中</Badge>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3 p-4 pt-0">
-                    <div>
-                      <h3 className="text-lg font-bold">{cast.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {cast.age}歳 T{cast.height}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        B{cast.bust} W{cast.waist} H{cast.hip}
-                      </p>
-                    </div>
+            {casts.length === 0 ? (
+              <Card>
+                <CardContent className="p-10 text-center text-muted-foreground">
+                  現在、表示できるキャスト情報がありません。最新の在籍状況はお問い合わせください。
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4">
+                {casts.map((cast) => {
+                  const measurement = buildMeasurementLabel(cast)
+                  return (
+                    <Card key={cast.id} className="transition-shadow hover:shadow-lg">
+                      <CardHeader className="p-4 pb-2">
+                        <div className="relative">
+                          <div className="mb-3 aspect-[3/4] overflow-hidden rounded-lg bg-gradient-to-br from-pink-300 to-purple-400">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={cast.image ?? '/placeholder-user.jpg'}
+                              alt={cast.name}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                          {cast.panelDesignationRank > 0 && cast.panelDesignationRank <= 3 && (
+                            <Badge
+                              className={`absolute left-2 top-2 ${
+                                cast.panelDesignationRank === 1
+                                  ? 'bg-yellow-500'
+                                  : cast.panelDesignationRank === 2
+                                    ? 'bg-gray-400'
+                                    : 'bg-orange-600'
+                              }`}
+                            >
+                              <Crown className="mr-1 h-3 w-3" />
+                              {cast.panelDesignationRank}位
+                            </Badge>
+                          )}
+                          {cast.workStatus === '出勤' && (
+                            <Badge className="absolute bottom-2 left-2 bg-green-500">出勤中</Badge>
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3 p-4 pt-0">
+                        <div>
+                          <h3 className="text-lg font-bold">{cast.name}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {cast.age ? `${cast.age}歳` : '年齢非公開'} {measurement}
+                          </p>
+                        </div>
 
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm font-medium">
-                          {cast.panelDesignationRank > 0 ? `Rank ${cast.panelDesignationRank}` : ''}
-                        </span>
-                      </div>
-                      <Heart className="h-4 w-4 text-pink-400" />
-                    </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1">
+                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                            <span className="text-sm font-medium">
+                              {cast.panelDesignationRank > 0 ? `Rank ${cast.panelDesignationRank}` : '注目キャスト'}
+                            </span>
+                          </div>
+                          <Heart className="h-4 w-4 text-pink-400" />
+                        </div>
 
-                    <div className="flex flex-wrap gap-1">
-                      <Badge variant="secondary" className="text-xs">
-                        {cast.type}
-                      </Badge>
-                      {cast.netReservation && (
-                        <Badge variant="secondary" className="text-xs">
-                          ネット予約可
-                        </Badge>
-                      )}
-                    </div>
+                        <div className="flex flex-wrap gap-1">
+                          {cast.type && (
+                            <Badge variant="secondary" className="text-xs">
+                              {cast.type}
+                            </Badge>
+                          )}
+                          {cast.netReservation && (
+                            <Badge variant="secondary" className="text-xs">
+                              ネット予約可
+                            </Badge>
+                          )}
+                          {cast.availableServices.slice(0, 2).map((service) => (
+                            <Badge key={service} variant="outline" className="text-xs">
+                              {service}
+                            </Badge>
+                          ))}
+                        </div>
 
-                    <div className="space-y-2 pt-2">
-                      <Button asChild className="w-full" size="sm">
-                        <Link href={`/${store.slug}/cast/${cast.id}`}>詳細を見る</Link>
-                      </Button>
-                      <Button asChild variant="outline" className="w-full" size="sm">
-                        <Link href={`/${store.slug}/booking?cast=${cast.id}`}>予約する</Link>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                        <div className="space-y-2 pt-2">
+                          <Button asChild className="w-full" size="sm">
+                            <Link href={`/${store.slug}/cast/${cast.id}`}>詳細を見る</Link>
+                          </Button>
+                          <Button asChild variant="outline" className="w-full" size="sm">
+                            <Link href={`/${store.slug}/booking?cast=${cast.id}`}>予約する</Link>
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </section>
 
-        {/* Pagination */}
         <div className="py-8">
           <div className="mx-auto max-w-7xl px-4">
             <div className="flex justify-center gap-2">
