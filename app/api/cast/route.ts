@@ -50,6 +50,9 @@ const castSchema = z.object({
   workStatus: z.string().optional().default('出勤'),
   availableOptions: z.array(z.string()).optional().default([]),
   lineUserId: z.union([z.string().trim().min(1), z.null()]).optional(),
+  welfareExpenseRate: z
+    .union([z.coerce.number().min(0).max(100), z.null()])
+    .optional(),
 })
 
 function normalizeAvailableOptions(raw: unknown): string[] {
@@ -228,9 +231,11 @@ export async function POST(request: NextRequest) {
     const validatedData = castSchema.parse(body)
 
     // Remove fields that don't exist in DB
-    const { nameKana, availableOptions, ...dbData } = validatedData
+    const { nameKana, availableOptions, welfareExpenseRate, ...dbData } = validatedData
     const normalizedOptions = normalizeAvailableOptions(availableOptions)
     const images = Array.isArray(validatedData.images) ? validatedData.images : []
+    const normalizedWelfare =
+      welfareExpenseRate === null || welfareExpenseRate === undefined ? null : welfareExpenseRate
 
     // Create cast in database
     const cast = await db.cast.create({
@@ -239,6 +244,7 @@ export async function POST(request: NextRequest) {
         storeId,
         images,
         availableOptions: normalizedOptions,
+        welfareExpenseRate: normalizedWelfare,
       },
     })
 
@@ -285,7 +291,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Remove fields that don't exist in DB
-    const { nameKana, availableOptions, ...dbData } = validatedData
+    const { nameKana, availableOptions, welfareExpenseRate, ...dbData } = validatedData
     const updatePayload: Record<string, unknown> = {
       ...dbData,
     }
@@ -296,6 +302,11 @@ export async function PUT(request: NextRequest) {
 
     if (availableOptions !== undefined) {
       updatePayload.availableOptions = normalizeAvailableOptions(availableOptions)
+    }
+
+    if (welfareExpenseRate !== undefined) {
+      updatePayload.welfareExpenseRate =
+        welfareExpenseRate === null ? null : Number(welfareExpenseRate)
     }
 
     // Update cast in database

@@ -27,6 +27,7 @@ const storeSettingsSchema = z.object({
   businessDays: z.string(),
   lastOrder: z.string(),
   parkingInfo: z.string().optional(),
+  welfareExpenseRate: z.coerce.number().min(0).max(100).optional(),
 })
 
 export async function GET(request: NextRequest) {
@@ -57,11 +58,15 @@ export async function GET(request: NextRequest) {
           businessDays: '年中無休',
           lastOrder: '23:30',
           parkingInfo: '近隣にコインパーキングあり',
+          welfareExpenseRate: 10,
         },
       })
     }
 
-    return SuccessResponses.ok(settings)
+    return SuccessResponses.ok({
+      ...settings,
+      welfareExpenseRate: Number(settings.welfareExpenseRate ?? 10),
+    })
   } catch (error) {
     return handleApiError(error)
   }
@@ -77,6 +82,7 @@ export async function PUT(request: NextRequest) {
 
     // Validate request body
     const validatedData = storeSettingsSchema.parse(body)
+    const welfareExpenseRate = validatedData.welfareExpenseRate ?? 10
 
     // Find existing settings or create new one
     const existingSettings = await db.storeSettings.findUnique({ where: { storeId } })
@@ -91,6 +97,7 @@ export async function PUT(request: NextRequest) {
           website: validatedData.website || '',
           building: validatedData.building || '',
           parkingInfo: validatedData.parkingInfo || '',
+          welfareExpenseRate,
         },
       })
     } else {
@@ -102,11 +109,15 @@ export async function PUT(request: NextRequest) {
           website: validatedData.website || '',
           building: validatedData.building || '',
           parkingInfo: validatedData.parkingInfo || '',
+          welfareExpenseRate,
         },
       })
     }
 
-    return SuccessResponses.updated(updatedSettings)
+    return SuccessResponses.updated({
+      ...updatedSettings,
+      welfareExpenseRate: Number(updatedSettings.welfareExpenseRate ?? 10),
+    })
   } catch (error) {
     return handleApiError(error)
   }

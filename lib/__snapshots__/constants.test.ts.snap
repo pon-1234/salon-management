@@ -38,9 +38,8 @@ exports[`Constants > should match the snapshot for all exported constants 1`] = 
     "SNS",
   ],
   "PAYMENT_METHODS": {
-    "CARD": "カード",
+    "CARD": "クレジットカード",
     "CASH": "現金",
-    "TRANSFER": "振込",
   },
   "PREFECTURES": [
     "東京都",

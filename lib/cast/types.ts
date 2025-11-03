@@ -19,6 +19,7 @@ export interface Cast extends BaseEntity {
   regularDesignationRank: number
   workStatus: '出勤' | '未出勤' | '休日'
   lineUserId?: string | null
+  welfareExpenseRate?: number | null
   workStart?: Date
   workEnd?: Date
   appointments: Appointment[]

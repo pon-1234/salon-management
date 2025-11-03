@@ -28,6 +28,7 @@ export default function StoreInfoPage() {
     businessDays: '',
     lastOrder: '',
     parkingInfo: '',
+    welfareExpenseRate: '10',
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -39,7 +40,13 @@ export default function StoreInfoPage() {
 
       const payload = await response.json()
       const settings = payload?.data ?? payload
-      setFormData((prev) => ({ ...prev, ...settings }))
+      setFormData((prev) => ({
+        ...prev,
+        ...settings,
+        welfareExpenseRate: settings?.welfareExpenseRate !== undefined
+          ? String(Number(settings.welfareExpenseRate))
+          : prev.welfareExpenseRate,
+      }))
     } catch (error) {
       console.error('Error fetching store settings:', error)
       toast({
@@ -63,20 +70,31 @@ export default function StoreInfoPage() {
   const handleSave = async () => {
     setSaving(true)
     try {
+      const payload = {
+        ...formData,
+        welfareExpenseRate: Number(formData.welfareExpenseRate || 0),
+      }
       const response = await fetch('/api/settings/store', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       })
 
       if (!response.ok) throw new Error('Failed to save store settings')
 
-      const payload = await response.json().catch(() => null)
-      const updated = payload?.data ?? payload
+      const payloadData = await response.json().catch(() => null)
+      const updated = payloadData?.data ?? payloadData
       if (updated && typeof updated === 'object') {
-        setFormData((prev) => ({ ...prev, ...updated }))
+        setFormData((prev) => ({
+          ...prev,
+          ...updated,
+          welfareExpenseRate:
+            updated?.welfareExpenseRate !== undefined
+              ? String(Number(updated.welfareExpenseRate))
+              : prev.welfareExpenseRate,
+        }))
       }
 
       toast({
@@ -182,6 +200,34 @@ export default function StoreInfoPage() {
                     onChange={(e) => handleInputChange('description', e.target.value)}
                     rows={3}
                   />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 厚生費設定 */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Store className="h-5 w-5 text-emerald-600" />
+                  厚生費（雑費）設定
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="welfareExpenseRate">厚生費率（%）</Label>
+                  <Input
+                    id="welfareExpenseRate"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    max={100}
+                    step={0.1}
+                    value={formData.welfareExpenseRate}
+                    onChange={(e) => handleInputChange('welfareExpenseRate', e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    コース料金に対して自動計上される厚生費（店舗取り分）の割合です。未入力の場合は10%が適用されます。
+                  </p>
                 </div>
               </CardContent>
             </Card>

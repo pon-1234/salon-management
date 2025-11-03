@@ -24,10 +24,11 @@ export interface Reservation extends BaseEntity {
   transportationFee?: number
   additionalFee?: number
   discountAmount?: number
-  paymentMethod?: string
-  marketingChannel?: string
+  welfareExpense?: number
   storeRevenue?: number
   staffRevenue?: number
+  paymentMethod?: string
+  marketingChannel?: string
   areaId?: string | null
   areaName?: string
   areaPrefecture?: string
@@ -87,6 +88,7 @@ export interface ReservationData {
   discount: string
   additionalFee: number
   discountAmount?: number
+  welfareExpense?: number
   totalPayment: number
   price?: number
   storeRevenue: number
@@ -120,6 +122,9 @@ export interface ReservationUpdatePayload {
   transportationFee?: number
   additionalFee?: number
   discountAmount?: number
+  welfareExpense?: number
+  storeRevenue?: number
+  staffRevenue?: number
   paymentMethod?: string
   marketingChannel?: string
   areaId?: string | null

@@ -22,8 +22,7 @@ export const CUSTOMER_TYPES = {
 
 export const PAYMENT_METHODS = {
   CASH: '現金',
-  CARD: 'カード',
-  TRANSFER: '振込',
+  CARD: 'クレジットカード',
 } as const
 
 // Default Values

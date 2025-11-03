@@ -14,6 +14,8 @@ import { PrismaClient } from '@prisma/client'
 import { hasPermission } from '@/lib/auth/permissions'
 import { format } from 'date-fns'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
+import { PAYMENT_METHODS, type PaymentMethod } from '@/lib/constants'
+import { calculateReservationRevenue } from '@/lib/reservation/revenue'
 
 // Types
 interface AvailabilityCheck {
@@ -45,6 +47,10 @@ const DESIGNATION_LABEL_MAP: Record<string, string> = {
   none: 'フリー',
 }
 
+const ALLOWED_PAYMENT_METHODS = new Set<PaymentMethod>(
+  Object.values(PAYMENT_METHODS) as PaymentMethod[]
+)
+
 function formatCurrency(value: number | null | undefined): string {
   if (value === null || value === undefined) {
     return '未設定'
@@ -71,6 +77,27 @@ function formatDesignation(value: string | null | undefined): string {
     return '未設定'
   }
   return DESIGNATION_LABEL_MAP[value] ?? value
+}
+
+function normalizePaymentMethodInput(input: unknown): PaymentMethod | null {
+  if (typeof input !== 'string') {
+    return null
+  }
+  const trimmed = input.trim()
+  if (trimmed.length === 0) {
+    return null
+  }
+  const lower = trimmed.toLowerCase()
+  if (lower.includes('card') || trimmed.includes('カード')) {
+    return PAYMENT_METHODS.CARD
+  }
+  if (lower.includes('cash') || trimmed.includes('現金')) {
+    return PAYMENT_METHODS.CASH
+  }
+  if (ALLOWED_PAYMENT_METHODS.has(trimmed as PaymentMethod)) {
+    return trimmed as PaymentMethod
+  }
+  return null
 }
 
 function formatSchedule(value: Date | null | undefined): string {
@@ -364,7 +391,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const [castRecord, customerRecord, courseRecord, areaRecord, stationRecord] = await Promise.all([
+    const [
+      castRecord,
+      customerRecord,
+      courseRecord,
+      areaRecord,
+      stationRecord,
+      storeSettings,
+    ] = await Promise.all([
       db.cast.findFirst({ where: { id: reservationData.castId, storeId } }),
       db.customer.findUnique({ where: { id: targetCustomerId } }),
       db.coursePrice.findFirst({ where: { id: reservationData.courseId, storeId } }),
@@ -372,6 +406,7 @@ export async function POST(request: NextRequest) {
       reservationData.stationId
         ? db.stationInfo.findFirst({ where: { id: reservationData.stationId, storeId } })
         : Promise.resolve(null),
+      db.storeSettings.findUnique({ where: { storeId } }),
     ])
 
     if (!customerRecord) {
@@ -395,6 +430,27 @@ export async function POST(request: NextRequest) {
     const resolvedAreaId = reservationData.areaId && areaRecord ? reservationData.areaId : null
     const resolvedStationId =
       reservationData.stationId && stationRecord ? reservationData.stationId : null
+
+    const rawWelfareRate =
+      castRecord?.welfareExpenseRate ?? storeSettings?.welfareExpenseRate ?? 10
+    const normalizedWelfareRate =
+      typeof rawWelfareRate === 'number' && Number.isFinite(Number(rawWelfareRate))
+        ? Number(rawWelfareRate)
+        : 10
+
+    const providedPaymentMethod = reservationData.paymentMethod
+    let paymentMethodToPersist: PaymentMethod = PAYMENT_METHODS.CASH
+    if (providedPaymentMethod !== undefined && providedPaymentMethod !== null) {
+      const normalized = normalizePaymentMethodInput(providedPaymentMethod)
+      if (!normalized) {
+        return NextResponse.json(
+          { error: '支払い方法は現金またはクレジットカードのみ選択できます。' },
+          { status: 400 }
+        )
+      }
+      paymentMethodToPersist = normalized
+    }
+
 
     // 事前の空き状況チェック（早期リターン）
     const preflightAvailability = await checkCastAvailability(
@@ -477,6 +533,69 @@ export async function POST(request: NextRequest) {
             }))
         }
 
+        const designationAmount = Number.isFinite(Number(reservationData.designationFee))
+          ? Number(reservationData.designationFee)
+          : 0
+
+        let designationShare: { storeShare: number | null; castShare: number | null } | null = null
+        if (designationAmount > 0 && reservationData.designationType) {
+          designationShare = await tx.designationFee.findFirst({
+            where: { storeId, name: reservationData.designationType },
+            select: {
+              storeShare: true,
+              castShare: true,
+            },
+          })
+        }
+
+        const revenue = calculateReservationRevenue({
+          basePrice: Number(courseRecord.price ?? 0),
+          options: optionsToCreate.map((option) => ({
+            price: option.optionPrice,
+            storeShare: option.storeShare ?? undefined,
+            castShare: option.castShare ?? undefined,
+          })),
+          designation:
+            designationAmount > 0
+              ? {
+                  amount: designationAmount,
+                  storeShare: designationShare?.storeShare ?? 0,
+                  castShare: designationShare?.castShare ?? designationAmount,
+                }
+              : null,
+          transportationFee: reservationData.transportationFee ?? 0,
+          additionalFee: reservationData.additionalFee ?? 0,
+          discountAmount: reservationData.discountAmount ?? 0,
+          welfareRate: normalizedWelfareRate,
+        })
+
+        const providedStoreRevenue =
+          typeof reservationData.storeRevenue === 'number' &&
+          Number.isFinite(reservationData.storeRevenue)
+            ? reservationData.storeRevenue
+            : null
+
+        let storeRevenue =
+          providedStoreRevenue !== null
+            ? Math.max(providedStoreRevenue, revenue.storeRevenue)
+            : revenue.storeRevenue
+
+        if (storeRevenue > revenue.total) {
+          storeRevenue = revenue.total
+        }
+
+        let staffRevenue =
+          typeof reservationData.staffRevenue === 'number' &&
+          Number.isFinite(reservationData.staffRevenue)
+            ? reservationData.staffRevenue
+            : revenue.staffRevenue
+
+        if (providedStoreRevenue !== null && providedStoreRevenue < revenue.storeRevenue) {
+          staffRevenue = Math.max(revenue.total - storeRevenue, 0)
+        } else if (!Number.isFinite(staffRevenue) || staffRevenue < 0) {
+          staffRevenue = Math.max(revenue.total - storeRevenue, 0)
+        }
+
         const createdReservation = await tx.reservation.create({
           data: {
             customerId: targetCustomerId,
@@ -484,20 +603,21 @@ export async function POST(request: NextRequest) {
             courseId: reservationData.courseId,
             storeId,
             status: reservationData.status ?? 'pending',
-            price: reservationData.price ?? 0,
+            price: reservationData.price ?? revenue.total,
             designationType: reservationData.designationType ?? null,
             designationFee: reservationData.designationFee ?? 0,
             transportationFee: reservationData.transportationFee ?? 0,
             additionalFee: reservationData.additionalFee ?? 0,
             discountAmount: reservationData.discountAmount ?? 0,
-            paymentMethod: reservationData.paymentMethod ?? '現金',
+            paymentMethod: paymentMethodToPersist,
             marketingChannel: reservationData.marketingChannel ?? null,
             areaId: resolvedAreaId,
             stationId: resolvedStationId,
             locationMemo: reservationData.locationMemo ?? null,
             notes: reservationData.notes ?? null,
-            storeRevenue: reservationData.storeRevenue ?? null,
-            staffRevenue: reservationData.staffRevenue ?? null,
+            welfareExpense: revenue.welfareExpense,
+            storeRevenue,
+            staffRevenue,
             startTime,
             endTime,
             options: optionsToCreate.length
@@ -592,6 +712,11 @@ export async function PUT(request: NextRequest) {
         course: true,
         area: true,
         station: true,
+        options: {
+          include: {
+            option: true,
+          },
+        },
       },
     })
 
@@ -624,6 +749,21 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    const previousPaymentNormalized =
+      normalizePaymentMethodInput(existingReservation.paymentMethod) ?? PAYMENT_METHODS.CASH
+
+    const requestedPaymentMethod =
+      updates.paymentMethod !== undefined
+        ? normalizePaymentMethodInput(updates.paymentMethod)
+        : undefined
+
+    if (updates.paymentMethod !== undefined && !requestedPaymentMethod) {
+      return NextResponse.json(
+        { error: '支払い方法は現金またはクレジットカードのみ選択できます。' },
+        { status: 400 }
+      )
+    }
+
     if (updates.startTime || updates.endTime) {
       // 日付文字列を直接Dateオブジェクトに変換（タイムゾーン処理を簡略化）
       const startTime = updates.startTime
@@ -650,6 +790,8 @@ export async function PUT(request: NextRequest) {
         )
       }
     }
+
+    const storeSettings = await db.storeSettings.findUnique({ where: { storeId } })
 
     const actorId = session?.user?.id ?? 'system'
     const actorName = session?.user?.name ?? 'システム'
@@ -727,6 +869,10 @@ export async function PUT(request: NextRequest) {
         }
       }
 
+      let effectiveCast = previousReservation.cast ?? null
+      let effectiveCourse = previousReservation.course ?? null
+      let nextPaymentMethod = requestedPaymentMethod ?? previousPaymentNormalized
+
       // 予約を更新
       const updateData: Record<string, unknown> = {}
 
@@ -739,7 +885,6 @@ export async function PUT(request: NextRequest) {
       if (typeof updates.transportationFee === 'number') updateData.transportationFee = updates.transportationFee
       if (typeof updates.additionalFee === 'number') updateData.additionalFee = updates.additionalFee
       if (typeof updates.discountAmount === 'number') updateData.discountAmount = updates.discountAmount
-      if (updates.paymentMethod) updateData.paymentMethod = updates.paymentMethod
       if (updates.marketingChannel) updateData.marketingChannel = updates.marketingChannel
       if ('areaId' in updates) updateData.areaId = updates.areaId ?? null
       if ('stationId' in updates) updateData.stationId = updates.stationId ?? null
@@ -766,6 +911,7 @@ export async function PUT(request: NextRequest) {
         if (!castExists) {
           throw new Error('指定されたキャストが存在しません。')
         }
+        effectiveCast = castExists
       }
 
       if (updateData.courseId) {
@@ -775,6 +921,7 @@ export async function PUT(request: NextRequest) {
         if (!courseExists) {
           throw new Error('指定されたコースが存在しません。')
         }
+        effectiveCourse = courseExists
       }
 
       if (updateData.areaId) {
@@ -794,6 +941,139 @@ export async function PUT(request: NextRequest) {
           throw new Error('指定された駅が存在しません。')
         }
       }
+
+      if (
+        updates.paymentMethod !== undefined ||
+        nextPaymentMethod !== previousReservation.paymentMethod
+      ) {
+        updateData.paymentMethod = nextPaymentMethod
+      }
+
+      const transportFee =
+        typeof updates.transportationFee === 'number'
+          ? updates.transportationFee
+          : previousReservation.transportationFee ?? 0
+      const additionalFee =
+        typeof updates.additionalFee === 'number'
+          ? updates.additionalFee
+          : previousReservation.additionalFee ?? 0
+      const discountAmount =
+        typeof updates.discountAmount === 'number'
+          ? updates.discountAmount
+          : previousReservation.discountAmount ?? 0
+
+      const currentOptionShares =
+        normalizedOptionIds === null
+          ? (previousReservation.options ?? []).map((option: any) => ({
+              price: Number(option?.option?.price ?? option?.optionPrice ?? 0),
+              storeShare:
+                option?.storeShare ?? option?.option?.storeShare ?? null,
+              castShare: option?.castShare ?? option?.option?.castShare ?? null,
+            }))
+          : (normalizedOptionIds ?? []).map((optionId) => {
+              const record = optionRecordMap?.get(optionId)
+              if (record) {
+                return {
+                  price: record.price,
+                  storeShare: record.storeShare,
+                  castShare: record.castShare,
+                }
+              }
+              const fallback = previousReservation.options?.find(
+                (entry: any) =>
+                  entry.optionId === optionId ||
+                  entry.option?.id === optionId ||
+                  entry.option?.name === optionId
+              )
+              return {
+                price: Number(fallback?.option?.price ?? fallback?.optionPrice ?? 0),
+                storeShare: fallback?.storeShare ?? fallback?.option?.storeShare ?? null,
+                castShare: fallback?.castShare ?? fallback?.option?.castShare ?? null,
+              }
+            })
+
+      const nextDesignationType =
+        'designationType' in updates
+          ? updates.designationType ?? null
+          : previousReservation.designationType
+      const designationAmount =
+        typeof updates.designationFee === 'number'
+          ? updates.designationFee
+          : previousReservation.designationFee ?? 0
+
+      let designationShare: { storeShare: number | null; castShare: number | null } | null = null
+      if (designationAmount > 0 && nextDesignationType) {
+        designationShare = await tx.designationFee.findFirst({
+          where: { storeId, name: nextDesignationType },
+          select: { storeShare: true, castShare: true },
+        })
+      }
+
+      const rawWelfareRate =
+        effectiveCast?.welfareExpenseRate ?? storeSettings?.welfareExpenseRate ?? 10
+      const normalizedWelfareRate =
+        typeof rawWelfareRate === 'number' && Number.isFinite(Number(rawWelfareRate))
+          ? Number(rawWelfareRate)
+          : 10
+
+      const baseCoursePrice = Number(
+        effectiveCourse?.price ??
+          previousReservation.course?.price ??
+          previousReservation.price ??
+          0
+      )
+
+      const revenue = calculateReservationRevenue({
+        basePrice: baseCoursePrice,
+        options: currentOptionShares,
+        designation:
+          designationAmount > 0
+            ? {
+                amount: designationAmount,
+                storeShare: designationShare?.storeShare ?? 0,
+                castShare: designationShare?.castShare ?? designationAmount,
+              }
+            : null,
+        transportationFee: transportFee,
+        additionalFee,
+        discountAmount,
+        welfareRate: normalizedWelfareRate,
+      })
+
+      const providedStoreRevenue =
+        typeof updates.storeRevenue === 'number' && Number.isFinite(updates.storeRevenue)
+          ? updates.storeRevenue
+          : null
+
+      let storeRevenue =
+        providedStoreRevenue !== null
+          ? Math.max(providedStoreRevenue, revenue.storeRevenue)
+          : revenue.storeRevenue
+
+      if (storeRevenue > revenue.total) {
+        storeRevenue = revenue.total
+      }
+
+      const providedStaffRevenue =
+        typeof updates.staffRevenue === 'number' && Number.isFinite(updates.staffRevenue)
+          ? updates.staffRevenue
+          : null
+      let staffRevenue =
+        providedStaffRevenue !== null ? providedStaffRevenue : revenue.staffRevenue
+
+      if (providedStoreRevenue !== null && providedStoreRevenue < revenue.storeRevenue) {
+        staffRevenue = Math.max(revenue.total - storeRevenue, 0)
+      } else if (!Number.isFinite(staffRevenue) || staffRevenue < 0) {
+        staffRevenue = Math.max(revenue.total - storeRevenue, 0)
+      }
+
+      if (typeof updates.price !== 'number') {
+        updateData.price = revenue.total
+      }
+
+      updateData.storeRevenue = storeRevenue
+      updateData.staffRevenue = staffRevenue
+      updateData.welfareExpense = revenue.welfareExpense
 
       const updated = await tx.reservation.update({
         where: { id },

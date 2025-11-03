@@ -547,8 +547,10 @@ export async function getStaffPerformanceReport(
     const payment = categorizePayment(reservation.paymentMethod)
     const price = reservation.price ?? 0
     const staffRevenue = reservation.staffRevenue ?? 0
-    const storeRevenue =
-      reservation.storeRevenue ?? Math.max(price - staffRevenue - (reservation.transportationFee ?? 0), 0)
+    const baseStoreRevenue =
+      reservation.storeRevenue ??
+      Math.max(price - staffRevenue - (reservation.transportationFee ?? 0), 0)
+    const storeRevenue = Math.max(baseStoreRevenue, reservation.welfareExpense ?? 0)
 
     const entry =
       castMap.get(castId) ?? {

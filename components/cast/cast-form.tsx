@@ -58,6 +58,10 @@ const buildInitialFormState = (cast?: Cast | null) => ({
   workStatus: cast?.workStatus || '出勤',
   availableOptions: cast?.availableOptions ? [...cast.availableOptions] : [],
   lineUserId: cast?.lineUserId || '',
+  welfareExpenseRate:
+    cast?.welfareExpenseRate !== undefined && cast?.welfareExpenseRate !== null
+      ? String(cast.welfareExpenseRate)
+      : '',
   phone: '',
   email: '',
   password: '',
@@ -278,6 +282,9 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
 
     const regularFee = toOptionalMoney(formData.regularDesignationFee as number | string | null)
     if (regularFee !== undefined) payload.regularDesignationFee = regularFee
+
+    const welfareRate = toOptionalNumber(formData.welfareExpenseRate)
+    if (welfareRate !== undefined) payload.welfareExpenseRate = welfareRate
 
     onSubmit({
       ...payload,
@@ -548,6 +555,21 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={fieldId('welfareExpenseRate')}>厚生費率 (%)</Label>
+            <Input
+              id={fieldId('welfareExpenseRate')}
+              name="welfareExpenseRate"
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              value={formData.welfareExpenseRate}
+              onChange={handleInputChange}
+              placeholder="10"
+            />
+            <p className="text-xs text-muted-foreground">コース料金に対する厚生費の割合です。未設定の場合は店舗既定値が適用されます。</p>
           </div>
         </div>
         <div className="grid gap-6 md:grid-cols-2">

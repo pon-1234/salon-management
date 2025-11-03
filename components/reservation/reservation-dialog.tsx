@@ -66,12 +66,18 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
-import { MARKETING_CHANNELS, PAYMENT_METHODS, ReservationStatus } from '@/lib/constants'
+import {
+  MARKETING_CHANNELS,
+  PAYMENT_METHODS,
+  type PaymentMethod,
+  ReservationStatus,
+} from '@/lib/constants'
 import { toast } from '@/hooks/use-toast'
 import { usePricing } from '@/hooks/use-pricing'
 import { useLocations } from '@/hooks/use-locations'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useStore } from '@/contexts/store-context'
+import { calculateReservationRevenue } from '@/lib/reservation/revenue'
 
 type EditFormState = {
   date: string
@@ -81,7 +87,7 @@ type EditFormState = {
   designationId: string
   storeMemo: string
   notes: string
-  paymentMethod: string
+  paymentMethod: PaymentMethod
   marketingChannel: string
   transportationFee: number
   additionalFee: number
@@ -217,6 +223,29 @@ function formatCurrency(amount: number | undefined) {
   return `¥${amount.toLocaleString()}`
 }
 
+const PAYMENT_METHOD_OPTIONS = Object.values(PAYMENT_METHODS) as PaymentMethod[]
+
+function normalizePaymentMethodValue(input?: string | null): PaymentMethod {
+  if (!input) {
+    return PAYMENT_METHODS.CASH
+  }
+  const trimmed = input.trim()
+  if (trimmed.length === 0) {
+    return PAYMENT_METHODS.CASH
+  }
+  const lower = trimmed.toLowerCase()
+  if (trimmed.includes('カード') || lower.includes('card')) {
+    return PAYMENT_METHODS.CARD
+  }
+  if (trimmed.includes('現金') || lower.includes('cash')) {
+    return PAYMENT_METHODS.CASH
+  }
+  if (PAYMENT_METHOD_OPTIONS.includes(trimmed as PaymentMethod)) {
+    return trimmed as PaymentMethod
+  }
+  return PAYMENT_METHODS.CASH
+}
+
 interface ReservationDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -247,7 +276,7 @@ export function ReservationDialog({
     designationId: '',
     storeMemo: '',
     notes: '',
-    paymentMethod: '現金',
+    paymentMethod: PAYMENT_METHODS.CASH,
     marketingChannel: 'WEB',
     transportationFee: 0,
     additionalFee: 0,
@@ -605,7 +634,7 @@ export function ReservationDialog({
     [castOptions, activeCastId]
   )
 
-  const paymentMethodOptions = useMemo(() => Object.values(PAYMENT_METHODS), [])
+  const paymentMethodOptions = useMemo(() => PAYMENT_METHOD_OPTIONS, [])
 
   const initialOptionIdsRaw = useMemo(() => {
     if (!reservation?.options) return []
@@ -703,27 +732,92 @@ export function ReservationDialog({
     [reservation?.price, reservation?.totalPayment]
   )
 
+  const rawDesignationId = formState.designationId || reservationDesignation?.id || ''
+
+  const selectedDesignation = useMemo(() => {
+    if (!rawDesignationId || rawDesignationId.length === 0) {
+      return undefined
+    }
+    return designationOptions.find((fee) => fee.id === rawDesignationId)
+  }, [rawDesignationId, designationOptions])
+
+  const designationForDisplay = selectedDesignation || reservationDesignation
+
+  const welfareRate = useMemo(() => {
+    const candidateRates: Array<number | undefined | null> = [
+      selectedCast?.welfareExpenseRate,
+      (reservation as any)?.cast?.welfareExpenseRate,
+      currentStore?.welfareExpenseRate,
+    ]
+
+    for (const rate of candidateRates) {
+      if (typeof rate === 'number' && Number.isFinite(rate)) {
+        return rate
+      }
+    }
+
+    if (reservation?.welfareExpense && reservation?.price) {
+      const inferred = (reservation.welfareExpense / reservation.price) * 100
+      if (Number.isFinite(inferred) && inferred > 0) {
+        return inferred
+      }
+    }
+
+    return 10
+  }, [
+    selectedCast?.welfareExpenseRate,
+    (reservation as any)?.cast?.welfareExpenseRate,
+    currentStore?.welfareExpenseRate,
+    reservation?.welfareExpense,
+    reservation?.price,
+  ])
+
   const priceBreakdown = useMemo(() => {
+    const fallbackCoursePrice = reservation?.price ?? 0
     const basePrice = selectedCourse
-      ? toNumber(selectedCourse.price, reservation?.price ?? 0)
-      : toNumber(reservation?.price, 0)
-    const optionTotal = selectedOptionDetails.reduce(
-      (sum, option) => sum + toNumber(option.price, 0),
-      0
-    )
+      ? toNumber(selectedCourse.price, fallbackCoursePrice)
+      : toNumber(fallbackCoursePrice, 0)
+
     const transportation = toNumber(formState.transportationFee, 0)
     const additional = toNumber(formState.additionalFee, 0)
     const discount = Math.max(toNumber(formState.discountAmount, 0), 0)
-    const designation = toNumber(formState.designationFee, 0)
-    const computedTotal = basePrice + optionTotal + transportation + additional + designation - discount
+    const designationAmount = Math.max(toNumber(formState.designationFee, 0), 0)
+
+    const effectiveDesignation = selectedDesignation || reservationDesignation
+
+    const revenue = calculateReservationRevenue({
+      basePrice,
+      options: selectedOptionDetails.map((option) => ({
+        price: toNumber(option.price, 0),
+        storeShare: option.storeShare ?? undefined,
+        castShare: option.castShare ?? undefined,
+      })),
+      designation:
+        designationAmount > 0
+          ? {
+              amount: designationAmount,
+              storeShare: effectiveDesignation?.storeShare ?? 0,
+              castShare: effectiveDesignation?.castShare ?? designationAmount,
+            }
+          : null,
+      transportationFee: transportation,
+      additionalFee: additional,
+      discountAmount: discount,
+      welfareRate,
+    })
+
     return {
       basePrice,
-      optionTotal,
-      transportation,
-      additional,
-      designation,
+      optionTotal: revenue.optionsTotal,
+      transportation: revenue.transportationFee,
+      additional: revenue.additionalFee,
+      designation: designationAmount,
       discount,
-      total: Math.max(computedTotal, 0),
+      total: revenue.total,
+      storeRevenue: revenue.storeRevenue,
+      staffRevenue: revenue.staffRevenue,
+      welfareExpense: revenue.welfareExpense,
+      welfareRate: revenue.welfareRate,
     }
   }, [
     selectedCourse,
@@ -733,6 +827,9 @@ export function ReservationDialog({
     formState.additionalFee,
     formState.discountAmount,
     formState.designationFee,
+    selectedDesignation,
+    reservationDesignation,
+    welfareRate,
   ])
 
   const priceDelta = priceBreakdown.total - originalTotal
@@ -748,7 +845,7 @@ useEffect(() => {
       designationId: reservationDesignation?.id || '',
       storeMemo: reservation.storeMemo || '',
       notes: reservation.notes || '',
-      paymentMethod: reservation.paymentMethod || '現金',
+      paymentMethod: normalizePaymentMethodValue(reservation.paymentMethod),
       marketingChannel: reservation.marketingChannel || 'WEB',
       transportationFee: reservation.transportationFee ?? 0,
       additionalFee: reservation.additionalFee ?? 0,
@@ -786,16 +883,7 @@ useEffect(() => {
     return null
   }
 
-  const rawDesignationId =
-    formState.designationId || reservationDesignation?.id || ''
-
-  const selectedDesignation =
-    rawDesignationId && rawDesignationId.length > 0
-      ? designationOptions.find((fee) => fee.id === rawDesignationId)
-      : undefined
-
   const designationSelectValue = rawDesignationId && rawDesignationId.length > 0 ? rawDesignationId : 'none'
-  const designationForDisplay = selectedDesignation || reservationDesignation
 
   const handleEnterEditMode = () => {
     if (!reservation) return
@@ -812,7 +900,7 @@ useEffect(() => {
       designationId: reservationDesignation?.id || '',
       storeMemo: reservation.storeMemo || '',
       notes: reservation.notes || '',
-      paymentMethod: reservation.paymentMethod || '現金',
+      paymentMethod: normalizePaymentMethodValue(reservation.paymentMethod),
       marketingChannel: reservation.marketingChannel || 'WEB',
       transportationFee: reservation.transportationFee ?? 0,
       additionalFee: reservation.additionalFee ?? 0,
@@ -893,13 +981,16 @@ useEffect(() => {
         additionalFee: formState.additionalFee,
         discountAmount: formState.discountAmount,
         paymentMethod: formState.paymentMethod,
-        marketingChannel: formState.marketingChannel,
-        areaId: formState.areaId ?? null,
-        stationId: formState.stationId ?? null,
-        locationMemo: formState.locationMemo,
-        price: formState.price,
-        options: formState.optionIds,
-      }
+      marketingChannel: formState.marketingChannel,
+      areaId: formState.areaId ?? null,
+      stationId: formState.stationId ?? null,
+      locationMemo: formState.locationMemo,
+      price: priceBreakdown.total,
+      welfareExpense: priceBreakdown.welfareExpense,
+      storeRevenue: priceBreakdown.storeRevenue,
+      staffRevenue: priceBreakdown.staffRevenue,
+      options: formState.optionIds,
+    }
 
       if (courseIdToSave) {
         updatePayload.courseId = courseIdToSave
@@ -1333,7 +1424,10 @@ useEffect(() => {
                           <Select
                             value={formState.paymentMethod}
                             onValueChange={(value) =>
-                              setFormState((prev) => ({ ...prev, paymentMethod: value }))
+                              setFormState((prev) => ({
+                                ...prev,
+                                paymentMethod: value as PaymentMethod,
+                              }))
                             }
                           >
                             <SelectTrigger id="reservation-payment">
@@ -1390,7 +1484,11 @@ useEffect(() => {
                       </div>
                       <div className="flex items-center justify-between text-muted-foreground">
                         <span>支払い方法</span>
-                        <span>{reservation.paymentMethod || '未設定'}</span>
+                        <span>
+                          {reservation.paymentMethod
+                            ? normalizePaymentMethodValue(reservation.paymentMethod)
+                            : '未設定'}
+                        </span>
                       </div>
                       <div className="flex items-center justify-between text-muted-foreground">
                         <span>集客チャネル</span>
@@ -1755,6 +1853,12 @@ useEffect(() => {
                         <div className="flex items-center justify-between text-red-600">
                           <dt>割引</dt>
                           <dd>-{formatCurrency(priceBreakdown.discount)}</dd>
+                        </div>
+                      )}
+                      {priceBreakdown.welfareExpense > 0 && (
+                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                          <dt>厚生費（{priceBreakdown.welfareRate.toFixed(1).replace(/\.0$/, '')}%）</dt>
+                          <dd>{formatCurrency(priceBreakdown.welfareExpense)}</dd>
                         </div>
                       )}
                     </dl>

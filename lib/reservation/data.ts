@@ -70,6 +70,7 @@ function normalizeReservation(entry: any): Reservation {
     transportationFee: entry.transportationFee ?? undefined,
     additionalFee: entry.additionalFee ?? undefined,
     discountAmount: entry.discountAmount ?? undefined,
+    welfareExpense: entry.welfareExpense ?? undefined,
     paymentMethod: entry.paymentMethod ?? undefined,
     marketingChannel: entry.marketingChannel ?? undefined,
     storeRevenue: entry.storeRevenue ?? undefined,

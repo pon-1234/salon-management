@@ -25,6 +25,7 @@ export interface Store {
   }
   seoTitle?: string
   seoDescription?: string
+  welfareExpenseRate?: number
   isActive: boolean
   createdAt: Date
   updatedAt: Date

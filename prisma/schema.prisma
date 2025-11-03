@@ -73,6 +73,7 @@ model Cast {
   workStatus             String
   availableOptions       String[]      @default([])
   lineUserId             String?
+  welfareExpenseRate     Decimal?
   storeId                String
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @updatedAt
@@ -111,6 +112,7 @@ model Reservation {
   transportationFee Int          @default(0)
   additionalFee     Int          @default(0)
   discountAmount    Int          @default(0)
+  welfareExpense    Int          @default(0)
   paymentMethod     String?      @default("現金")
   marketingChannel  String?
   storeRevenue      Int?
@@ -387,6 +389,7 @@ model StoreSettings {
   businessDays  String
   lastOrder     String
   parkingInfo   String?
+  welfareExpenseRate Decimal @default(10)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   store         Store    @relation(fields: [storeId], references: [id])

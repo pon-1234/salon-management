@@ -52,6 +52,8 @@ import { getDesignationFees } from '@/lib/designation/data'
 import type { DesignationFee } from '@/lib/designation/types'
 import { BusinessHoursRange, formatMinutesAsLabel } from '@/lib/settings/business-hours'
 import { useStore } from '@/contexts/store-context'
+import { calculateReservationRevenue } from '@/lib/reservation/revenue'
+import { PAYMENT_METHODS } from '@/lib/constants'
 
 type DesignationType = 'none' | 'regular' | 'special'
 
@@ -65,11 +67,13 @@ type PriceBreakdown = {
   total: number
   storeRevenue: number
   staffRevenue: number
+  welfareExpense: number
+  welfareRate: number
 }
 
 const marketingChannels = ['WEB', '店リピート', '電話', '紹介', 'SNS']
 
-const paymentMethods = ['現金', 'クレジットカード', 'ポイント利用', '振込']
+const paymentMethods = Object.values(PAYMENT_METHODS)
 
 const formatYen = (amount: number) => `${amount.toLocaleString()}円`
 
@@ -347,7 +351,7 @@ export function QuickBookingDialog({
     transportationFee: 0,
     additionalFee: 0,
     discountAmount: 0,
-    paymentMethod: '現金',
+    paymentMethod: PAYMENT_METHODS.CASH,
     locationMemo: '',
     notes: '',
   })
@@ -527,62 +531,59 @@ export function QuickBookingDialog({
     return designationFees.find((fee) => fee.id === selectedDesignationId) ?? null
   }, [selectedDesignationId, designationFees])
 
+  const welfareRate = useMemo(() => {
+    const castRate = currentStaff?.welfareExpenseRate
+    if (typeof castRate === 'number' && Number.isFinite(castRate)) {
+      return castRate
+    }
+    const storeRate = currentStore?.welfareExpenseRate
+    if (typeof storeRate === 'number' && Number.isFinite(storeRate)) {
+      return storeRate
+    }
+    return 10
+  }, [currentStaff?.welfareExpenseRate, currentStore?.welfareExpenseRate])
+
   const priceBreakdown = useMemo<PriceBreakdown>(() => {
     const basePrice = selectedCourse?.price ?? 0
     const designationFeeAmount =
       selectedDesignationFee?.price ?? getDesignationFeeAmount(designationType, currentStaff ?? undefined)
-    const optionsTotal = selectedOptionDetails.reduce((sum, option) => sum + option.price, 0)
     const transportationFee = bookingDetails.transportationFee || 0
     const additionalFee = bookingDetails.additionalFee || 0
     const discountAmount = Math.max(bookingDetails.discountAmount || 0, 0)
 
-    const computedTotal =
-      basePrice +
-      designationFeeAmount +
-      optionsTotal +
-      transportationFee +
-      additionalFee -
-      discountAmount
-
-    const courseStoreShare = selectedCourse
-      ? Math.min(selectedCourse.storeShare ?? Math.round(basePrice * 0.6), basePrice)
-      : 0
-    const courseCastShare = selectedCourse
-      ? Math.max(selectedCourse.castShare ?? basePrice - courseStoreShare, 0)
-      : 0
-
-    const optionStoreShare = selectedOptionDetails.reduce((sum, option) => {
-      const store = Math.min(option.storeShare ?? Math.round(option.price * 0.6), option.price)
-      return sum + store
-    }, 0)
-    const optionCastShare = selectedOptionDetails.reduce((sum, option) => {
-      const store = Math.min(option.storeShare ?? Math.round(option.price * 0.6), option.price)
-      const cast = Math.max(option.castShare ?? option.price - store, 0)
-      return sum + cast
-    }, 0)
-
-    const designationStoreShare = selectedDesignationFee?.storeShare ?? 0
-    const designationCastShare = selectedDesignationFee?.castShare ?? designationFeeAmount
-
-    const storeRevenue =
-      courseStoreShare +
-      optionStoreShare +
-      transportationFee +
-      additionalFee +
-      designationStoreShare -
-      discountAmount
-    const staffRevenue = courseCastShare + optionCastShare + designationCastShare
+    const revenue = calculateReservationRevenue({
+      basePrice,
+      options: selectedOptionDetails.map((option) => ({
+        price: option.price,
+        storeShare: option.storeShare ?? undefined,
+        castShare: option.castShare ?? undefined,
+      })),
+      designation:
+        designationFeeAmount > 0
+          ? {
+              amount: designationFeeAmount,
+              storeShare: selectedDesignationFee?.storeShare ?? 0,
+              castShare: selectedDesignationFee?.castShare ?? designationFeeAmount,
+            }
+          : null,
+      transportationFee,
+      additionalFee,
+      discountAmount,
+      welfareRate,
+    })
 
     return {
       basePrice,
       designationFee: designationFeeAmount,
-      optionsTotal,
+      optionsTotal: revenue.optionsTotal,
       transportationFee,
       additionalFee,
       discount: discountAmount,
-      total: Math.max(computedTotal, 0),
-      storeRevenue: Math.max(storeRevenue, 0),
-      staffRevenue,
+      total: revenue.total,
+      storeRevenue: revenue.storeRevenue,
+      staffRevenue: revenue.staffRevenue,
+      welfareExpense: revenue.welfareExpense,
+      welfareRate: revenue.welfareRate,
     }
   }, [
     bookingDetails.additionalFee,
@@ -593,6 +594,7 @@ export function QuickBookingDialog({
     selectedOptionDetails,
     currentStaff,
     selectedDesignationFee,
+    welfareRate,
   ])
 
   const handleTextChange = (
@@ -836,6 +838,7 @@ export function QuickBookingDialog({
           notes: bookingDetails.notes,
           storeRevenue: priceBreakdown.storeRevenue,
           staffRevenue: priceBreakdown.staffRevenue,
+          welfareExpense: priceBreakdown.welfareExpense,
         }),
       })
 
@@ -973,7 +976,7 @@ export function QuickBookingDialog({
       transportationFee: stationOptions[0]?.transportationFee ?? 0,
       additionalFee: 0,
       discountAmount: 0,
-      paymentMethod: '現金',
+      paymentMethod: PAYMENT_METHODS.CASH,
       marketingChannel: 'WEB',
       locationMemo: stationOptions[0]?.name ?? '',
       notes: '',
@@ -1511,6 +1514,14 @@ export function QuickBookingDialog({
                       <div className="flex justify-between text-red-600">
                         <span>割引</span>
                         <span>-{formatYen(priceBreakdown.discount)}</span>
+                      </div>
+                    )}
+                    {priceBreakdown.welfareExpense > 0 && (
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>
+                          厚生費（{priceBreakdown.welfareRate.toFixed(1).replace(/\.0$/, '')}%）
+                        </span>
+                        <span>{formatYen(priceBreakdown.welfareExpense)}</span>
                       </div>
                     )}
                     <hr className="my-2" />
