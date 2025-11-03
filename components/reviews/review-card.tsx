@@ -24,6 +24,14 @@ export function ReviewCard({ review }: ReviewCardProps) {
     }
   }
 
+  const visitDate = review.visitDate instanceof Date ? review.visitDate : new Date(review.visitDate)
+  const statusBadge = review.status !== 'published'
+    ? {
+        pending: { label: '審査中', className: 'bg-amber-100 text-amber-700' },
+        hidden: { label: '非公開', className: 'bg-gray-100 text-gray-600' },
+      }[review.status]
+    : null
+
   return (
     <Card className="overflow-hidden">
       <CardContent className="p-6">
@@ -38,13 +46,22 @@ export function ReviewCard({ review }: ReviewCardProps) {
                   <span className="text-xs">確認済み</span>
                 </div>
               )}
+              {statusBadge && (
+                <Badge className={statusBadge.className}>{statusBadge.label}</Badge>
+              )}
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500">
-              <span>{format(review.visitDate, 'yyyy年MM月dd日', { locale: ja })}</span>
+              <span>{format(visitDate, 'yyyy年MM月dd日', { locale: ja })}</span>
               {review.customerArea && (
                 <>
                   <span>•</span>
                   <span>{review.customerArea}でご利用</span>
+                </>
+              )}
+              {review.customerAlias && (
+                <>
+                  <span>•</span>
+                  <span>{review.customerAlias}</span>
                 </>
               )}
             </div>
@@ -63,7 +80,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
 
         {/* Course and Options */}
         <div className="mb-3 flex flex-wrap gap-2">
-          {review.courseType && <Badge variant="outline">{review.courseType}</Badge>}
+          {review.courseName && <Badge variant="outline">{review.courseName}</Badge>}
           {review.options?.map((option) => (
             <Badge key={option} variant="secondary">
               {option}
@@ -72,7 +89,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
         </div>
 
         {/* Review Content */}
-        <p className="mb-4 leading-relaxed text-gray-700">{review.content}</p>
+        <p className="mb-4 leading-relaxed text-gray-700 whitespace-pre-wrap">{review.comment}</p>
 
         {/* Tags */}
         {review.tags && review.tags.length > 0 && (

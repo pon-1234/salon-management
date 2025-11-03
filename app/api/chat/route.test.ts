@@ -70,6 +70,7 @@ describe('Chat API', () => {
       const mockMessages = [
         {
           id: '1',
+          castId: null,
           customerId: 'customer1',
           sender: 'customer',
           content: 'Hello',
@@ -163,6 +164,7 @@ describe('Chat API', () => {
       const mockMessages = [
         {
           id: '1',
+          castId: null,
           customerId: 'customer1',
           sender: 'customer',
           content: 'Hello',
@@ -175,6 +177,7 @@ describe('Chat API', () => {
         },
         {
           id: '2',
+          castId: null,
           customerId: 'customer2',
           sender: 'customer',
           content: 'Hi',
@@ -221,6 +224,7 @@ describe('Chat API', () => {
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
       const newMessage = {
+        castId: null,
         customerId: 'customer1',
         sender: 'staff' as const,
         content: 'How can I help you?',
@@ -278,6 +282,7 @@ describe('Chat API', () => {
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
       const newMessage = {
+        castId: null,
         customerId: 'customer1',
         sender: 'staff' as const,
         content: 'Reservation confirmed',
@@ -346,6 +351,7 @@ describe('Chat API', () => {
 
       const updatedMessage = {
         id: 'msg123',
+        castId: null,
         customerId: 'customer1',
         sender: 'customer',
         content: 'Hello',

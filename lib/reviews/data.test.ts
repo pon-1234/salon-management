@@ -1,160 +1,76 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { reviewsData, getReviewsByStoreId, getReviewStats } from './data'
+import { describe, it, expect } from 'vitest'
+import { calculateReviewStats } from './utils'
+import type { Review } from './types'
 
-describe('Reviews Data', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
+function createReview(overrides: Partial<Review> = {}): Review {
+  const now = new Date('2025-01-01T12:00:00Z')
+  return {
+    id: overrides.id ?? 'review-default',
+    storeId: overrides.storeId ?? 'store-1',
+    reservationId: overrides.reservationId ?? 'reservation-1',
+    castId: overrides.castId ?? 'cast-1',
+    castName: overrides.castName ?? 'テストキャスト',
+    customerId: overrides.customerId ?? 'customer-1',
+    customerName: overrides.customerName ?? 'テスト太郎',
+    customerAlias: overrides.customerAlias ?? 'テ***',
+    customerArea: overrides.customerArea ?? '豊島区',
+    rating: overrides.rating ?? 5,
+    comment: overrides.comment ?? 'とても丁寧な施術で癒されました。',
+    visitDate: overrides.visitDate ?? now,
+    courseName: overrides.courseName ?? '90分コース',
+    options: overrides.options ?? ['指名'],
+    isVerified: overrides.isVerified ?? true,
+    helpful: overrides.helpful ?? 0,
+    tags: overrides.tags ?? ['丁寧', '癒し'],
+    response: overrides.response,
+    status: overrides.status ?? 'published',
+    publishedAt: overrides.publishedAt ?? now,
+    createdAt: overrides.createdAt ?? now,
+    updatedAt: overrides.updatedAt ?? now,
+  }
+}
+
+describe('calculateReviewStats', () => {
+  it('computes aggregates for a given review collection', () => {
+    const reviews: Review[] = [
+      createReview({
+        id: 'review-1',
+        rating: 5,
+        tags: ['丁寧', '接客'],
+      }),
+      createReview({
+        id: 'review-2',
+        rating: 4,
+      }),
+      createReview({
+        id: 'review-3',
+        rating: 3,
+        tags: [],
+      }),
+    ]
+
+    const stats = calculateReviewStats(reviews)
+
+    expect(stats.totalReviews).toBe(3)
+    expect(stats.averageRating).toBeCloseTo((5 + 4 + 3) / 3, 5)
+    expect(stats.ratingDistribution[5]).toBe(1)
+    expect(stats.ratingDistribution[4]).toBe(1)
+    expect(stats.ratingDistribution[3]).toBe(1)
+    expect(stats.ratingDistribution[2]).toBe(0)
+    expect(stats.ratingDistribution[1]).toBe(0)
+
+    expect(stats.popularTags).toEqual([
+      { tag: '丁寧', count: 2 },
+      { tag: '接客', count: 1 },
+      { tag: '癒し', count: 1 },
+    ])
   })
 
-  describe('reviewsData', () => {
-    it('should export an array of reviews', () => {
-      expect(Array.isArray(reviewsData)).toBe(true)
-      expect(reviewsData.length).toBeGreaterThan(0)
-    })
-
-    it('should have valid review structure', () => {
-      reviewsData.forEach((review) => {
-        expect(review).toHaveProperty('id')
-        expect(review).toHaveProperty('storeId')
-        expect(review).toHaveProperty('castName')
-        expect(review).toHaveProperty('customerArea')
-        expect(review).toHaveProperty('rating')
-        expect(review).toHaveProperty('content')
-        expect(review).toHaveProperty('visitDate')
-        expect(review).toHaveProperty('createdAt')
-        expect(review).toHaveProperty('updatedAt')
-
-        expect(review.rating).toBeGreaterThanOrEqual(1)
-        expect(review.rating).toBeLessThanOrEqual(5)
-        expect(review.visitDate).toBeInstanceOf(Date)
-        expect(review.createdAt).toBeInstanceOf(Date)
-        expect(review.updatedAt).toBeInstanceOf(Date)
-      })
-    })
-
-    it('should have unique review IDs', () => {
-      const ids = reviewsData.map((review) => review.id)
-      const uniqueIds = [...new Set(ids)]
-      expect(ids.length).toBe(uniqueIds.length)
-    })
-
-    it('should have reviews with optional fields', () => {
-      const reviewsWithOptions = reviewsData.filter((r) => r.options && r.options.length > 0)
-      const reviewsWithImages = reviewsData.filter((r) => r.images && r.images.length > 0)
-      const reviewsWithTags = reviewsData.filter((r) => r.tags && r.tags.length > 0)
-      const reviewsWithResponse = reviewsData.filter((r) => r.response)
-
-      expect(reviewsWithOptions.length).toBeGreaterThan(0)
-      // Images field may not be present in all reviews
-      expect(reviewsWithImages.length).toBeGreaterThanOrEqual(0)
-      expect(reviewsWithTags.length).toBeGreaterThan(0)
-      expect(reviewsWithResponse.length).toBeGreaterThan(0)
-    })
-
-    it('should have valid response structure when present', () => {
-      const reviewsWithResponse = reviewsData.filter((r) => r.response)
-
-      reviewsWithResponse.forEach((review) => {
-        expect(review.response).toHaveProperty('content')
-        expect(review.response).toHaveProperty('respondedAt')
-        expect(review.response).toHaveProperty('respondedBy')
-        expect(review.response!.respondedAt).toBeInstanceOf(Date)
-      })
-    })
-  })
-
-  describe('getReviewsByStoreId', () => {
-    it('should return reviews for a specific store', () => {
-      const storeId = 'ikebukuro'
-      const reviews = getReviewsByStoreId(storeId)
-
-      expect(Array.isArray(reviews)).toBe(true)
-      reviews.forEach((review) => {
-        expect(review.storeId).toBe(storeId)
-      })
-    })
-
-    it('should return empty array for non-existent store', () => {
-      const reviews = getReviewsByStoreId('non-existent')
-      expect(reviews).toEqual([])
-    })
-
-    it('should return different number of reviews for different stores', () => {
-      const store1Reviews = getReviewsByStoreId('ikebukuro')
-      const store2Reviews = getReviewsByStoreId('shinjuku')
-      const store3Reviews = getReviewsByStoreId('shibuya')
-
-      const totalReviews = store1Reviews.length + store2Reviews.length + store3Reviews.length
-      expect(totalReviews).toBe(reviewsData.length)
-    })
-  })
-
-  describe('getReviewStats', () => {
-    it('should return review statistics for a store', () => {
-      const stats = getReviewStats('ikebukuro')
-
-      expect(stats).toHaveProperty('totalReviews')
-      expect(stats).toHaveProperty('averageRating')
-      expect(stats).toHaveProperty('ratingDistribution')
-      expect(stats).toHaveProperty('popularTags')
-
-      expect(typeof stats.totalReviews).toBe('number')
-      expect(typeof stats.averageRating).toBe('number')
-      expect(stats.averageRating).toBeGreaterThanOrEqual(0)
-      expect(stats.averageRating).toBeLessThanOrEqual(5)
-    })
-
-    it('should return correct rating distribution', () => {
-      const stats = getReviewStats('ikebukuro')
-      const distribution = stats.ratingDistribution
-
-      expect(distribution).toHaveProperty('1')
-      expect(distribution).toHaveProperty('2')
-      expect(distribution).toHaveProperty('3')
-      expect(distribution).toHaveProperty('4')
-      expect(distribution).toHaveProperty('5')
-
-      const totalFromDistribution = Object.values(distribution).reduce(
-        (sum, count) => sum + count,
-        0
-      )
-      expect(totalFromDistribution).toBe(stats.totalReviews)
-    })
-
-    it('should calculate correct average rating', () => {
-      const storeId = 'ikebukuro'
-      const reviews = getReviewsByStoreId(storeId)
-      const stats = getReviewStats(storeId)
-
-      if (reviews.length > 0) {
-        const expectedAverage = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-        expect(stats.averageRating).toBeCloseTo(expectedAverage, 1)
-      }
-    })
-
-    it('should return empty stats for non-existent store', () => {
-      const stats = getReviewStats('non-existent')
-
-      expect(stats.totalReviews).toBe(0)
-      expect(stats.averageRating).toBe(0)
-      expect(Object.values(stats.ratingDistribution).every((v) => v === 0)).toBe(true)
-      expect(stats.popularTags).toEqual([])
-    })
-
-    it('should return popular tags sorted by count', () => {
-      const stats = getReviewStats('ikebukuro')
-
-      if (stats.popularTags.length > 1) {
-        for (let i = 1; i < stats.popularTags.length; i++) {
-          expect(stats.popularTags[i - 1].count).toBeGreaterThanOrEqual(stats.popularTags[i].count)
-        }
-      }
-    })
-
-    it('should return top 10 popular tags', () => {
-      const stats = getReviewStats('ikebukuro')
-      // The implementation returns top 10 tags, not 5
-      expect(stats.popularTags.length).toBeLessThanOrEqual(10)
-    })
+  it('returns zeroed stats when no reviews are provided', () => {
+    const stats = calculateReviewStats([])
+    expect(stats.totalReviews).toBe(0)
+    expect(stats.averageRating).toBe(0)
+    expect(Object.values(stats.ratingDistribution).every((value) => value === 0)).toBe(true)
+    expect(stats.popularTags).toEqual([])
   })
 })

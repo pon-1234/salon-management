@@ -31,6 +31,7 @@ describe('Chat Message Persistence', () => {
 
     // Step 1: Create a new message
     const newMessage = {
+      castId: null,
       customerId: 'test-customer-1',
       sender: 'staff' as const,
       content: 'This message should persist across page refreshes',
@@ -96,6 +97,7 @@ describe('Chat Message Persistence', () => {
     const persistedMessages = [
       {
         id: 'msg-1',
+        castId: null,
         customerId: 'customer-1',
         sender: 'customer',
         content: 'Initial customer message',
@@ -108,6 +110,7 @@ describe('Chat Message Persistence', () => {
       },
       {
         id: 'msg-2',
+        castId: null,
         customerId: 'customer-1',
         sender: 'staff',
         content: 'Staff response',
@@ -120,6 +123,7 @@ describe('Chat Message Persistence', () => {
       },
       {
         id: 'msg-3',
+        castId: null,
         customerId: 'customer-1',
         sender: 'customer',
         content: 'Follow-up question',

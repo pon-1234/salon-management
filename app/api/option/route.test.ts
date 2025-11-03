@@ -466,6 +466,8 @@ describe('PUT /api/option', () => {
       castShare: 1400,
     }
 
+    const { id: _updateId, ...updateDataWithoutId } = updateData
+
     const existingOption = {
       id: 'option1',
       name: 'Existing Service',
@@ -484,7 +486,7 @@ describe('PUT /api/option', () => {
 
     const newOptionVersion = {
       id: 'option1-v2',
-      ...updateData,
+      ...updateDataWithoutId,
       duration: null,
       archivedAt: null,
       reservations: [],

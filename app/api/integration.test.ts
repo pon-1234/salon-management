@@ -39,10 +39,6 @@ vi.mock('@/lib/db', () => ({
       findMany: vi.fn(),
     },
     $transaction: vi.fn(),
-    review: {
-      create: vi.fn(),
-      findMany: vi.fn(),
-    },
     coursePrice: {
       findMany: vi.fn(),
       findUnique: vi.fn(),
@@ -51,6 +47,44 @@ vi.mock('@/lib/db', () => ({
       findMany: vi.fn(),
     },
   },
+}))
+
+const reviewServiceMocks = vi.hoisted(() => ({
+  createReview: vi.fn(),
+  searchReviews: vi.fn(),
+  getReviewById: vi.fn(),
+  updateReview: vi.fn(),
+  deleteReview: vi.fn(),
+  getReviewStatsForStore: vi.fn(),
+}))
+
+const mockCreateReview = reviewServiceMocks.createReview
+const mockSearchReviews = reviewServiceMocks.searchReviews
+const mockGetReviewById = reviewServiceMocks.getReviewById
+const mockUpdateReview = reviewServiceMocks.updateReview
+const mockDeleteReview = reviewServiceMocks.deleteReview
+const mockGetReviewStatsForStore = reviewServiceMocks.getReviewStatsForStore
+
+const IntegrationReviewServiceError = vi.hoisted(
+  () =>
+    class extends Error {
+      code: string
+      constructor(code: string, message: string) {
+        super(message)
+        this.name = 'ReviewServiceError'
+        this.code = code
+      }
+    }
+)
+
+vi.mock('@/lib/reviews/service', () => ({
+  createReview: reviewServiceMocks.createReview,
+  searchReviews: reviewServiceMocks.searchReviews,
+  getReviewById: reviewServiceMocks.getReviewById,
+  updateReview: reviewServiceMocks.updateReview,
+  deleteReview: reviewServiceMocks.deleteReview,
+  getReviewStatsForStore: reviewServiceMocks.getReviewStatsForStore,
+  ReviewServiceError: IntegrationReviewServiceError,
 }))
 
 vi.mock('./reservation/availability/route', () => ({
@@ -179,21 +213,36 @@ describe('Customer Journey Integration Tests', () => {
 
     // Step 3: Leave a Review
     const reviewData = {
-      customerId: 'customer-integration-1',
-      castId: 'cast1',
+      reservationId: 'reservation-integration-1',
       rating: 5,
       comment: 'Excellent service from the integration test!',
     }
 
     const mockReview = {
       id: 'review-integration-1',
-      ...reviewData,
+      storeId: 'store-1',
+      reservationId: reviewData.reservationId,
+      castId: 'cast1',
+      castName: 'Test Cast',
+      customerId: 'customer-integration-1',
+      customerName: 'Integration Test Customer',
+      customerAlias: 'イ***',
+      customerArea: '豊島区',
+      rating: reviewData.rating,
+      comment: reviewData.comment,
+      visitDate: new Date('2025-07-15T12:00:00Z'),
+      courseName: '60-minute Course',
+      options: [],
+      isVerified: true,
+      helpful: 0,
+      tags: [],
+      status: 'pending',
+      publishedAt: null,
       createdAt: new Date('2025-07-15T12:00:00Z'),
-      customer: mockCustomer,
-      cast: { id: 'cast1', name: 'Test Cast' },
+      updatedAt: new Date('2025-07-15T12:00:00Z'),
     }
 
-    vi.mocked(db.review.create).mockResolvedValueOnce(mockReview as any)
+    mockCreateReview.mockResolvedValueOnce(mockReview as any)
 
     const reviewRequest = new NextRequest('http://localhost:3000/api/review', {
       method: 'POST',
@@ -206,11 +255,12 @@ describe('Customer Journey Integration Tests', () => {
     expect(reviewResponse.status).toBe(201)
     expect(reviewResult.id).toBe('review-integration-1')
     expect(reviewResult.rating).toBe(5)
+    expect(reviewResult.customerAlias).toBe('イ***')
 
     // Step 4: Verify the complete customer journey
     expect(customerResult.email).toBe('integration@test.com')
     expect(reservationResult.cast.name).toBe('Test Cast')
-    expect(reviewResult.customer.name).toBe('Integration Test Customer')
+    expect(reviewResult.castName).toBe('Test Cast')
   })
 
   it('should handle pricing calculation across course and options', async () => {
@@ -384,17 +434,30 @@ describe('Customer Journey Integration Tests', () => {
     const mockReviews = [
       {
         id: 'review1',
-        customerId,
+        storeId: 'store-1',
+        reservationId: 'res1',
         castId: 'cast1',
+        castName: 'Cast 1',
+        customerId,
+        customerName: 'Test Customer',
+        customerAlias: 'テ***',
+        customerArea: '豊島区',
         rating: 5,
         comment: 'Great service!',
+        visitDate: new Date('2025-07-15T12:00:00Z'),
+        courseName: '60-minute Course',
+        options: [],
+        isVerified: true,
+        helpful: 0,
+        tags: [],
+        status: 'published',
+        publishedAt: new Date('2025-07-15T12:30:00Z'),
         createdAt: new Date('2025-07-15T12:00:00Z'),
-        customer: { id: customerId, name: 'Test Customer' },
-        cast: { id: 'cast1', name: 'Cast 1' },
+        updatedAt: new Date('2025-07-15T12:00:00Z'),
       },
     ]
 
-    vi.mocked(db.review.findMany).mockResolvedValueOnce(mockReviews as any)
+    mockSearchReviews.mockResolvedValueOnce(mockReviews as any)
 
     // Get customer reservations
     const reservationRequest = new NextRequest(
@@ -486,26 +549,54 @@ describe('Cast Performance Analytics Integration', () => {
     const mockCastReviews = [
       {
         id: 'review1',
-        customerId: 'customer1',
+        storeId: 'store-1',
+        reservationId: 'res1',
         castId,
+        castName: 'Test Cast',
+        customerId: 'customer1',
+        customerName: 'Customer 1',
+        customerAlias: 'カ***',
+        customerArea: '新宿区',
         rating: 5,
         comment: 'Excellent!',
-        customer: { id: 'customer1', name: 'Customer 1' },
-        cast: { id: castId, name: 'Test Cast' },
+        visitDate: new Date('2025-07-15T12:00:00Z'),
+        courseName: '60-minute Course',
+        options: [],
+        isVerified: true,
+        helpful: 0,
+        tags: [],
+        status: 'published',
+        publishedAt: new Date('2025-07-15T12:30:00Z'),
+        createdAt: new Date('2025-07-15T12:00:00Z'),
+        updatedAt: new Date('2025-07-15T12:00:00Z'),
       },
       {
         id: 'review2',
-        customerId: 'customer2',
+        storeId: 'store-1',
+        reservationId: 'res2',
         castId,
+        castName: 'Test Cast',
+        customerId: 'customer2',
+        customerName: 'Customer 2',
+        customerAlias: 'ク***',
+        customerArea: '豊島区',
         rating: 4,
         comment: 'Very good',
-        customer: { id: 'customer2', name: 'Customer 2' },
-        cast: { id: castId, name: 'Test Cast' },
+        visitDate: new Date('2025-07-16T12:00:00Z'),
+        courseName: '60-minute Course',
+        options: [],
+        isVerified: true,
+        helpful: 0,
+        tags: [],
+        status: 'published',
+        publishedAt: new Date('2025-07-16T12:30:00Z'),
+        createdAt: new Date('2025-07-16T12:00:00Z'),
+        updatedAt: new Date('2025-07-16T12:00:00Z'),
       },
     ]
 
     vi.mocked(db.reservation.findMany).mockResolvedValueOnce(mockCastReservations as any)
-    vi.mocked(db.review.findMany).mockResolvedValueOnce(mockCastReviews as any)
+    mockSearchReviews.mockResolvedValueOnce(mockCastReviews as any)
 
     // Get cast reservations
     const reservationRequest = new NextRequest(

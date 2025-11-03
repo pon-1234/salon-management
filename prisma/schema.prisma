@@ -127,6 +127,7 @@ model Reservation {
   station    StationInfo?        @relation(fields: [stationId], references: [id])
   options    ReservationOption[]
   histories  ReservationHistory[]
+  reviews    Review[]
   store      Store               @relation(fields: [storeId], references: [id])
 
   @@index([storeId])
@@ -260,15 +261,29 @@ model DesignationFee {
   @@index([storeId])
 }
 
+enum ReviewStatus {
+  pending
+  published
+  hidden
+}
+
 model Review {
-  id         String   @id @default(cuid())
-  customerId String
-  castId     String
-  rating     Int
-  comment    String
-  createdAt  DateTime @default(now())
-  cast       Cast     @relation(fields: [castId], references: [id])
-  customer   Customer @relation(fields: [customerId], references: [id])
+  id            String        @id @default(cuid())
+  customerId    String
+  castId        String
+  reservationId String?
+  rating        Int
+  comment       String
+  status        ReviewStatus  @default(pending)
+  publishedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @default(now()) @updatedAt
+  cast          Cast          @relation(fields: [castId], references: [id])
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  reservation   Reservation?  @relation(fields: [reservationId], references: [id])
+
+  @@index([status])
+  @@index([reservationId])
 }
 
 model CastSchedule {

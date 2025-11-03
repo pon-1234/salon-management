@@ -86,6 +86,7 @@ describe('Chat Customers API', () => {
       const mockMessages = [
         {
           id: 'msg1',
+          castId: null,
           customerId: '1',
           content: 'お問い合わせありがとうございます。どのような内容でしょうか？',
           sender: 'staff',
@@ -98,6 +99,7 @@ describe('Chat Customers API', () => {
         },
         {
           id: 'msg2',
+          castId: null,
           customerId: '2',
           content: '明日の予約を変更したいのですが可能でしょうか？',
           sender: 'customer',
@@ -172,6 +174,7 @@ describe('Chat Customers API', () => {
 
       const mockLastMessage = {
         id: 'msg1',
+        castId: null,
         customerId: '1',
         content: 'お問い合わせありがとうございます。どのような内容でしょうか？',
         sender: 'staff',

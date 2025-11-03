@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
+import { Prisma } from '@prisma/client'
 import logger from '@/lib/logger'
 import {
   DEFAULT_DESIGNATION_FEES,
@@ -158,7 +159,7 @@ export async function POST(request: NextRequest) {
 
     const result = await db.designationFee.create({
       data: {
-        ...payload,
+        ...(payload as Prisma.DesignationFeeUncheckedCreateInput),
         storeId,
       },
     })

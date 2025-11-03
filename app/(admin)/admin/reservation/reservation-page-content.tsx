@@ -22,7 +22,7 @@ import { normalizeCastList } from '@/lib/cast/mapper'
 import { mapReservationToReservationData } from '@/lib/reservation/transformers'
 import { ReservationRepositoryImpl } from '@/lib/reservation/repository-impl'
 import { toast } from '@/hooks/use-toast'
-import tz from 'date-fns-tz'
+import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz'
 import { CustomerUseCases } from '@/lib/customer/usecases'
 import { CustomerRepositoryImpl } from '@/lib/customer/repository-impl'
 import { shouldUseMockFallbacks } from '@/lib/config/feature-flags'
@@ -72,8 +72,6 @@ export function ReservationPageContent() {
 
   const searchParams = useSearchParams()
   const customerId = searchParams.get('customerId')
-
-  const { formatInTimeZone, zonedTimeToUtc } = tz
 
   const selectedDateKey = useMemo(
     () => formatInTimeZone(selectedDate, JST_TIMEZONE, 'yyyy-MM-dd'),
@@ -272,8 +270,8 @@ export function ReservationPageContent() {
       console.error('Failed to load schedule data:', error)
     }
 
-    let updatedCastData = allCasts
-      .map((member) => {
+    let updatedCastData: Cast[] = allCasts
+      .map<Cast | null>((member) => {
         const scheduleEntry = schedulesByCast.get(member.id)
         const baseWorkStart = member.workStart ? new Date(member.workStart) : undefined
         const baseWorkEnd = member.workEnd ? new Date(member.workEnd) : undefined
@@ -320,9 +318,9 @@ export function ReservationPageContent() {
           workStart,
           workEnd,
           workStatus: scheduleEntry?.isAvailable === false ? '休日' : member.workStatus,
-        }
+        } satisfies Cast
       })
-      .filter((member): member is Cast & { appointments: Appointment[] } => member !== null)
+      .filter((member): member is Cast => member !== null)
 
     if (selectedCustomer) {
       const ngCastIds =

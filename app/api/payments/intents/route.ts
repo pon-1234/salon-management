@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     const paymentRequest: ProcessPaymentRequest = {
-      reservationId,
+      reservationId: reservationId as string,
       customerId,
       amount,
       currency,

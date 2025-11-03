@@ -40,6 +40,7 @@ type CourseFormState = {
   price: number
   storeShare: number
   castShare: number
+  isActive: boolean
 }
 
 function toCurrency(amount: number | null | undefined) {
@@ -93,6 +94,7 @@ export default function CourseInfoPage() {
     price: 0,
     storeShare: 0,
     castShare: 0,
+    isActive: true,
   })
 
   const pricingUseCases = getPricingUseCases()
@@ -146,6 +148,7 @@ export default function CourseInfoPage() {
       price: 0,
       storeShare: 0,
       castShare: 0,
+      isActive: true,
     })
     setDialogOpen(true)
   }
@@ -160,6 +163,7 @@ export default function CourseInfoPage() {
       price: normalized.price,
       storeShare: normalized.storeShare ?? 0,
       castShare: normalized.castShare ?? 0,
+      isActive: normalized.isActive,
     })
     setDialogOpen(true)
   }
@@ -200,6 +204,7 @@ export default function CourseInfoPage() {
       price: Math.max(0, formData.price || 0),
       storeShare: Math.max(0, formData.storeShare || 0),
       castShare: Math.max(0, formData.castShare || 0),
+      isActive: formData.isActive,
     }
 
     try {

@@ -9,7 +9,6 @@ import { getServerSession } from 'next-auth'
 import { GET, POST, PUT, DELETE } from './route'
 import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
-import { getServerSession } from 'next-auth'
 
 vi.mock('next-auth', () => ({
   getServerSession: vi.fn(),

@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
+import { Prisma } from '@prisma/client'
 import logger from '@/lib/logger'
 import { defaultCourses } from '@/lib/pricing/data'
 import { env } from '@/lib/config/env'
@@ -232,7 +233,7 @@ export async function POST(request: NextRequest) {
 
     const newCourse = await db.coursePrice.create({
       data: {
-        ...payload,
+        ...(payload as Prisma.CoursePriceUncheckedCreateInput),
         storeId,
       },
       include: {

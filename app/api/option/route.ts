@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
+import { Prisma } from '@prisma/client'
 import logger from '@/lib/logger'
 import { defaultOptions } from '@/lib/pricing/data'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
@@ -231,7 +232,7 @@ export async function POST(request: NextRequest) {
 
     const newOption = await db.optionPrice.create({
       data: {
-        ...prismaPayload,
+        ...(prismaPayload as Prisma.OptionPriceUncheckedCreateInput),
         storeId,
       },
       include: {

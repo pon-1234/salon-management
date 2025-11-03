@@ -7,7 +7,7 @@
 import { BaseEntity } from '../shared'
 
 // Payment provider types
-export type PaymentProviderType = 'manual'
+export type PaymentProviderType = 'manual' | 'bank_transfer' | 'cash'
 export type PaymentMethod = 'card' | 'bank_transfer' | 'cash'
 export type PaymentStatus =
   | 'pending'

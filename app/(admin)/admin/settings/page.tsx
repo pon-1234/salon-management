@@ -63,6 +63,14 @@ export default function SettingsPage() {
       category: '顧客対応',
     },
     {
+      id: 'reviews',
+      title: '口コミ管理',
+      description: '公開中・審査中の口コミを確認し、公開ステータスを変更',
+      icon: <Shield className="h-5 w-5" />,
+      status: 'available',
+      category: '顧客対応',
+    },
+    {
       id: 'events',
       title: 'イベント(PC)',
       description: 'PCサイト向けのイベント情報を管理',
@@ -249,6 +257,9 @@ export default function SettingsPage() {
                       break
                     case 'designation-fees':
                       window.location.href = '/admin/settings/designation-fees'
+                      break
+                    case 'reviews':
+                      window.location.href = '/admin/reviews'
                       break
                     default:
                       console.log(`${item.title}の設定ページは準備中です`)

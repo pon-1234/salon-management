@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Store } from '@/lib/store/types'
-import { getReviewsByStoreId, getReviewStats } from '@/lib/reviews/data'
+import type { Review, ReviewStats as ReviewStatsType } from '@/lib/reviews/types'
+import { calculateReviewStats } from '@/lib/reviews/utils'
 import { ReviewCard } from './review-card'
 import { ReviewStats } from './review-stats'
 import { ReviewFilters } from './review-filters'
@@ -11,60 +12,85 @@ import { StoreFooter } from '../store-footer'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Search } from 'lucide-react'
+import { ReviewSubmissionForm } from './review-submission-form'
 
 interface ReviewsContentProps {
   store: Store
+  initialReviews: Review[]
+  initialStats: ReviewStatsType
 }
 
-export function ReviewsContent({ store }: ReviewsContentProps) {
+export function ReviewsContent({ store, initialReviews, initialStats }: ReviewsContentProps) {
+  const [reviews, setReviews] = useState<Review[]>(initialReviews)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedRating, setSelectedRating] = useState<number | null>(null)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [sortBy, setSortBy] = useState<'newest' | 'helpful' | 'rating'>('newest')
 
-  const reviews = getReviewsByStoreId(store.id)
-  const stats = getReviewStats(store.id)
+  const availableTags = useMemo(() => {
+    const tagSet = new Set<string>()
+    reviews.forEach((review) => {
+      review.tags?.forEach((tag) => tagSet.add(tag))
+    })
+    return Array.from(tagSet)
+  }, [reviews])
 
-  // Filter reviews
-  let filteredReviews = reviews.filter((review) => {
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase()
-      const matchesSearch =
-        review.content.toLowerCase().includes(searchLower) ||
-        review.castName.toLowerCase().includes(searchLower) ||
-        review.tags?.some((tag) => tag.toLowerCase().includes(searchLower))
-      if (!matchesSearch) return false
+  const stats = useMemo(() => {
+    if (reviews.length === initialReviews.length) {
+      return initialStats
     }
+    return calculateReviewStats(reviews)
+  }, [reviews, initialReviews.length, initialStats])
 
-    if (selectedRating && review.rating !== selectedRating) return false
+  const filteredReviews = useMemo(() => {
+    const normalized = searchTerm.trim().toLowerCase()
 
-    if (selectedTags.length > 0) {
-      const hasSelectedTag = selectedTags.some((tag) => review.tags?.includes(tag))
-      if (!hasSelectedTag) return false
-    }
+    return [...reviews]
+      .filter((review) => {
+        if (normalized) {
+          const matchesSearch =
+            review.comment.toLowerCase().includes(normalized) ||
+            review.castName.toLowerCase().includes(normalized) ||
+            review.tags?.some((tag) => tag.toLowerCase().includes(normalized))
+          if (!matchesSearch) return false
+        }
 
-    return true
-  })
+        if (selectedRating && review.rating !== selectedRating) {
+          return false
+        }
 
-  // Sort reviews
-  filteredReviews.sort((a, b) => {
-    switch (sortBy) {
-      case 'helpful':
-        return (b.helpful || 0) - (a.helpful || 0)
-      case 'rating':
-        return b.rating - a.rating
-      case 'newest':
-      default:
-        return new Date(b.visitDate).getTime() - new Date(a.visitDate).getTime()
-    }
-  })
+        if (selectedTags.length > 0) {
+          const hasSelectedTag = selectedTags.some((tag) => review.tags?.includes(tag))
+          if (!hasSelectedTag) return false
+        }
+
+        return true
+      })
+      .sort((a, b) => {
+        switch (sortBy) {
+          case 'helpful':
+            return (b.helpful ?? 0) - (a.helpful ?? 0)
+          case 'rating':
+            return b.rating - a.rating
+          case 'newest':
+          default: {
+            const aDate = a.visitDate instanceof Date ? a.visitDate : new Date(a.visitDate)
+            const bDate = b.visitDate instanceof Date ? b.visitDate : new Date(b.visitDate)
+            return bDate.getTime() - aDate.getTime()
+          }
+        }
+      })
+  }, [reviews, searchTerm, selectedRating, selectedTags, sortBy])
+
+  const handleReviewCreated = useCallback((review: Review) => {
+    setReviews((prev) => [review, ...prev])
+  }, [])
 
   return (
     <>
       <StoreNavigation />
 
       <main className="min-h-screen bg-gray-50">
-        {/* Header */}
         <section className="bg-gradient-to-b from-purple-900 to-pink-900 py-16 text-white">
           <div className="mx-auto max-w-7xl px-4">
             <h1 className="mb-4 text-4xl font-bold">{store.name} 口コミ・評価</h1>
@@ -74,22 +100,25 @@ export function ReviewsContent({ store }: ReviewsContentProps) {
 
         <div className="mx-auto max-w-7xl px-4 py-8">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
-            {/* Sidebar */}
-            <aside className="lg:col-span-1">
+            <aside className="lg:col-span-1 space-y-6">
               <ReviewStats stats={stats} />
               <ReviewFilters
                 selectedRating={selectedRating}
                 onRatingChange={setSelectedRating}
                 selectedTags={selectedTags}
                 onTagsChange={setSelectedTags}
-                availableTags={stats.popularTags.map((t) => t.tag)}
+                availableTags={availableTags}
               />
             </aside>
 
-            {/* Main Content */}
-            <div className="lg:col-span-3">
-              {/* Search and Sort */}
-              <div className="mb-6 rounded-lg bg-white p-4 shadow">
+            <div className="lg:col-span-3 space-y-6">
+              <ReviewSubmissionForm
+                storeId={store.id}
+                storeSlug={store.slug}
+                onReviewCreated={handleReviewCreated}
+              />
+
+              <div className="rounded-lg bg-white p-4 shadow">
                 <div className="flex flex-col gap-4 sm:flex-row">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-gray-400" />
@@ -127,12 +156,10 @@ export function ReviewsContent({ store }: ReviewsContentProps) {
                 </div>
               </div>
 
-              {/* Results count */}
-              <p className="mb-4 text-gray-600">
+              <p className="text-gray-600">
                 {filteredReviews.length}件の口コミが見つかりました
               </p>
 
-              {/* Reviews List */}
               <div className="space-y-4">
                 {filteredReviews.map((review) => (
                   <ReviewCard key={review.id} review={review} />

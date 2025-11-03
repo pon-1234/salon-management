@@ -110,15 +110,24 @@ export default function DesignationFeesPage() {
   }, [])
 
   const handlePriceChange = useCallback((price: number) => {
-    setFormData((prev) => normalizeDesignationShares(price, prev.storeShare, prev.castShare))
+    setFormData((prev) => {
+      const normalized = normalizeDesignationShares(price, prev.storeShare, prev.castShare)
+      return { ...prev, ...normalized }
+    })
   }, [])
 
   const handleStoreShareChange = useCallback((storeShare: number) => {
-    setFormData((prev) => normalizeDesignationShares(prev.price, storeShare, prev.castShare))
+    setFormData((prev) => {
+      const normalized = normalizeDesignationShares(prev.price, storeShare, prev.castShare)
+      return { ...prev, ...normalized }
+    })
   }, [])
 
   const handleCastShareChange = useCallback((castShare: number) => {
-    setFormData((prev) => normalizeDesignationShares(prev.price, prev.storeShare, castShare))
+    setFormData((prev) => {
+      const normalized = normalizeDesignationShares(prev.price, prev.storeShare, castShare)
+      return { ...prev, ...normalized }
+    })
   }, [])
 
   const saveFee = useCallback(async () => {

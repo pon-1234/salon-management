@@ -1,26 +1,31 @@
 import { BaseEntity } from '../shared'
 
+export type ReviewStatus = 'pending' | 'published' | 'hidden'
+
 export interface Review extends BaseEntity {
   storeId: string
+  reservationId?: string | null
+  castId: string
   castName: string
-  castId?: string
-  customerName?: string
-  customerArea?: string
+  customerId: string
+  customerName?: string | null
+  customerAlias: string
+  customerArea?: string | null
   rating: number
-  title?: string
-  content: string
+  comment: string
   visitDate: Date
-  courseType?: string
+  courseName?: string | null
   options?: string[]
-  isVerified?: boolean
+  isVerified: boolean
   helpful?: number
-  images?: string[]
   tags?: string[]
   response?: {
     content: string
     respondedAt: Date
     respondedBy: string
   }
+  status: ReviewStatus
+  publishedAt?: Date | null
 }
 
 export interface ReviewStats {

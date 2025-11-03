@@ -4,7 +4,7 @@
  * @known_issues None currently
  */
 import { useState, useCallback } from 'react'
-import tz from 'date-fns-tz'
+import { zonedTimeToUtc } from 'date-fns-tz'
 import { BusinessHoursRange, DEFAULT_BUSINESS_HOURS, minutesToIsoInJst } from '@/lib/settings/business-hours'
 import { useStore } from '@/contexts/store-context'
 
@@ -129,8 +129,6 @@ export function useAvailability() {
       businessHours: BusinessHoursRange = DEFAULT_BUSINESS_HOURS
     ) => {
       const slots: TimeSlot[] = []
-
-      const { zonedTimeToUtc } = tz
 
       const nowUtc = new Date()
 

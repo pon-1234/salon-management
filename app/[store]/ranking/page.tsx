@@ -12,12 +12,24 @@ import { getPublicRankingData } from '@/lib/store/public-casts'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 
-function buildMeasurementLabel(cast: { height: number | null; bust: string | null; waist: string | null; hip: string | null }) {
+function buildMeasurementLabel(cast: {
+  height: number | null
+  bust: string | number | null
+  waist: string | number | null
+  hip: string | number | null
+}) {
+  const formatPart = (prefix: string, value: string | number | null) => {
+    if (value === null || value === undefined || value === '') {
+      return null
+    }
+    return `${prefix}${value}`
+  }
+
   const parts = [
-    cast.height ? `T${cast.height}` : null,
-    cast.bust ? `B${cast.bust}` : null,
-    cast.waist ? `W${cast.waist}` : null,
-    cast.hip ? `H${cast.hip}` : null,
+    cast.height !== null ? `T${cast.height}` : null,
+    formatPart('B', cast.bust),
+    formatPart('W', cast.waist),
+    formatPart('H', cast.hip),
   ].filter(Boolean)
   return parts.join(' ')
 }

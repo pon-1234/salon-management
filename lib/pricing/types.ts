@@ -24,6 +24,7 @@ export interface OptionPrice extends BaseEntity {
   isPopular?: boolean
   storeShare?: number
   castShare?: number
+  note?: string | null
   archivedAt?: Date | null
 }
 

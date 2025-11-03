@@ -45,6 +45,18 @@ export async function getModificationAlerts(_reservationId: string): Promise<Mod
   return []
 }
 
-export async function recordModification(): Promise<void> {
+export async function recordModification(
+  _reservationId?: string,
+  _actorId?: string,
+  _actorName?: string,
+  _fieldName?: string,
+  _fieldDisplayName?: string,
+  _oldValue?: string,
+  _newValue?: string,
+  _reason?: string,
+  _actorIp?: string,
+  _actorAgent?: string,
+  _sessionId?: string
+): Promise<void> {
   // サーバー側で自動的に履歴を記録するため、クライアントからの手動記録は不要
 }
