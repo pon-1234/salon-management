@@ -3,9 +3,7 @@ import { fetchStoreBySlug } from '@/lib/store/public-api'
 import { CastDetailContent } from '@/components/cast/cast-detail-content'
 import { StoreNavigation } from '@/components/store-navigation'
 import { StoreFooter } from '@/components/store-footer'
-import { Cast } from '@/lib/cast/types'
-import { resolveApiUrl } from '@/lib/http/base-url'
-import { normalizeCast } from '@/lib/cast/mapper'
+import { getPublicCastDetail } from '@/lib/store/public-casts'
 
 export default async function CastDetailPage({
   params,
@@ -19,22 +17,7 @@ export default async function CastDetailPage({
     notFound()
   }
 
-  let cast: Cast | null = null
-  try {
-    const response = await fetch(resolveApiUrl(`/api/cast?id=${id}`), {
-      cache: 'no-store',
-    })
-    if (response.status === 404) {
-      notFound()
-    }
-    if (response.ok) {
-      const payload = await response.json()
-      const data = payload?.data ?? payload
-      cast = normalizeCast(data)
-    }
-  } catch (error) {
-    console.error('Failed to load cast data:', error)
-  }
+  const cast = await getPublicCastDetail(store.id, id)
 
   if (!cast) {
     notFound()

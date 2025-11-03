@@ -1,6 +1,8 @@
 import { differenceInDays } from 'date-fns'
 import { db } from '@/lib/db'
 import type { PublicCastSummary } from '@/lib/store/public-types'
+import { normalizeCast } from '@/lib/cast/mapper'
+import type { Cast } from '@/lib/cast/types'
 
 interface CastRecord {
   id: string
@@ -267,4 +269,32 @@ export async function getPublicRecruitmentData(storeId: string): Promise<PublicR
     newcomers: newcomers.slice(0, 6),
     graduates: graduates.slice(0, 6),
   }
+}
+
+export async function getPublicCastDetail(
+  storeId: string,
+  castId: string
+): Promise<Cast | null> {
+  const record = await db.cast.findFirst({
+    where: { id: castId, storeId },
+    include: {
+      reservations: {
+        include: {
+          customer: true,
+          course: true,
+          options: {
+            include: {
+              option: true,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!record) {
+    return null
+  }
+
+  return normalizeCast(record)
 }
