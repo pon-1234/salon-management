@@ -69,6 +69,7 @@ function normalizeReservation(entry: any): Reservation {
     designationFee: entry.designationFee ?? undefined,
     transportationFee: entry.transportationFee ?? undefined,
     additionalFee: entry.additionalFee ?? undefined,
+    discountAmount: entry.discountAmount ?? undefined,
     paymentMethod: entry.paymentMethod ?? undefined,
     marketingChannel: entry.marketingChannel ?? undefined,
     storeRevenue: entry.storeRevenue ?? undefined,

@@ -61,6 +61,7 @@ type PriceBreakdown = {
   optionsTotal: number
   transportationFee: number
   additionalFee: number
+  discount: number
   total: number
   storeRevenue: number
   staffRevenue: number
@@ -180,6 +181,7 @@ interface BookingDetails {
   options: Record<string, boolean>
   transportationFee: number
   additionalFee: number
+  discountAmount: number
   paymentMethod: string
   locationMemo: string
   notes: string
@@ -344,6 +346,7 @@ export function QuickBookingDialog({
     options: {},
     transportationFee: 0,
     additionalFee: 0,
+    discountAmount: 0,
     paymentMethod: '現金',
     locationMemo: '',
     notes: '',
@@ -531,9 +534,15 @@ export function QuickBookingDialog({
     const optionsTotal = selectedOptionDetails.reduce((sum, option) => sum + option.price, 0)
     const transportationFee = bookingDetails.transportationFee || 0
     const additionalFee = bookingDetails.additionalFee || 0
+    const discountAmount = Math.max(bookingDetails.discountAmount || 0, 0)
 
-    const total =
-      basePrice + designationFeeAmount + optionsTotal + transportationFee + additionalFee
+    const computedTotal =
+      basePrice +
+      designationFeeAmount +
+      optionsTotal +
+      transportationFee +
+      additionalFee -
+      discountAmount
 
     const courseStoreShare = selectedCourse
       ? Math.min(selectedCourse.storeShare ?? Math.round(basePrice * 0.6), basePrice)
@@ -556,7 +565,12 @@ export function QuickBookingDialog({
     const designationCastShare = selectedDesignationFee?.castShare ?? designationFeeAmount
 
     const storeRevenue =
-      courseStoreShare + optionStoreShare + transportationFee + additionalFee + designationStoreShare
+      courseStoreShare +
+      optionStoreShare +
+      transportationFee +
+      additionalFee +
+      designationStoreShare -
+      discountAmount
     const staffRevenue = courseCastShare + optionCastShare + designationCastShare
 
     return {
@@ -565,13 +579,15 @@ export function QuickBookingDialog({
       optionsTotal,
       transportationFee,
       additionalFee,
-      total,
-      storeRevenue,
+      discount: discountAmount,
+      total: Math.max(computedTotal, 0),
+      storeRevenue: Math.max(storeRevenue, 0),
       staffRevenue,
     }
   }, [
     bookingDetails.additionalFee,
     bookingDetails.transportationFee,
+    bookingDetails.discountAmount,
     designationType,
     selectedCourse,
     selectedOptionDetails,
@@ -811,6 +827,7 @@ export function QuickBookingDialog({
           designationFee: priceBreakdown.designationFee,
           transportationFee: priceBreakdown.transportationFee,
           additionalFee: priceBreakdown.additionalFee,
+          discountAmount: priceBreakdown.discount,
           paymentMethod: bookingDetails.paymentMethod,
           marketingChannel: bookingDetails.marketingChannel,
           areaId: bookingDetails.areaId || null,
@@ -955,6 +972,7 @@ export function QuickBookingDialog({
       options: {},
       transportationFee: stationOptions[0]?.transportationFee ?? 0,
       additionalFee: 0,
+      discountAmount: 0,
       paymentMethod: '現金',
       marketingChannel: 'WEB',
       locationMemo: stationOptions[0]?.name ?? '',
@@ -1332,17 +1350,19 @@ export function QuickBookingDialog({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-4 sm:grid-cols-3">
                     <div>
                       <Label>交通費（円）</Label>
                       <Input
                         type="number"
                         value={bookingDetails.transportationFee}
-                        onChange={(event) =>
-                          handleNumberChange('transportationFee', Number(event.target.value))
-                        }
-                        min={0}
+                        readOnly
+                        disabled
+                        className="bg-gray-100"
                       />
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        エリア・駅の選択内容から自動設定されます
+                      </p>
                     </div>
                     <div>
                       <Label>追加料金（円）</Label>
@@ -1351,6 +1371,17 @@ export function QuickBookingDialog({
                         value={bookingDetails.additionalFee}
                         onChange={(event) =>
                           handleNumberChange('additionalFee', Number(event.target.value))
+                        }
+                        min={0}
+                      />
+                    </div>
+                    <div>
+                      <Label>割引（円）</Label>
+                      <Input
+                        type="number"
+                        value={bookingDetails.discountAmount}
+                        onChange={(event) =>
+                          handleNumberChange('discountAmount', Math.max(Number(event.target.value), 0))
                         }
                         min={0}
                       />
@@ -1474,6 +1505,12 @@ export function QuickBookingDialog({
                       <div className="flex justify-between">
                         <span>追加料金</span>
                         <span>{formatYen(priceBreakdown.additionalFee)}</span>
+                      </div>
+                    )}
+                    {priceBreakdown.discount > 0 && (
+                      <div className="flex justify-between text-red-600">
+                        <span>割引</span>
+                        <span>-{formatYen(priceBreakdown.discount)}</span>
                       </div>
                     )}
                     <hr className="my-2" />

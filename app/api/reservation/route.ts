@@ -489,6 +489,7 @@ export async function POST(request: NextRequest) {
             designationFee: reservationData.designationFee ?? 0,
             transportationFee: reservationData.transportationFee ?? 0,
             additionalFee: reservationData.additionalFee ?? 0,
+            discountAmount: reservationData.discountAmount ?? 0,
             paymentMethod: reservationData.paymentMethod ?? '現金',
             marketingChannel: reservationData.marketingChannel ?? null,
             areaId: resolvedAreaId,
@@ -737,6 +738,7 @@ export async function PUT(request: NextRequest) {
       if (typeof updates.designationFee === 'number') updateData.designationFee = updates.designationFee
       if (typeof updates.transportationFee === 'number') updateData.transportationFee = updates.transportationFee
       if (typeof updates.additionalFee === 'number') updateData.additionalFee = updates.additionalFee
+      if (typeof updates.discountAmount === 'number') updateData.discountAmount = updates.discountAmount
       if (updates.paymentMethod) updateData.paymentMethod = updates.paymentMethod
       if (updates.marketingChannel) updateData.marketingChannel = updates.marketingChannel
       if ('areaId' in updates) updateData.areaId = updates.areaId ?? null
@@ -929,6 +931,16 @@ export async function PUT(request: NextRequest) {
           oldValue: formatCurrency(previousReservation.additionalFee ?? null),
           newValue: formatCurrency(updated.additionalFee ?? null),
           reason: '追加料金を更新',
+        })
+      }
+
+      if (valuesDiffer(previousReservation.discountAmount, updated.discountAmount)) {
+        historyEntries.push({
+          fieldName: 'discountAmount',
+          fieldDisplayName: '割引',
+          oldValue: formatCurrency(previousReservation.discountAmount ?? null),
+          newValue: formatCurrency(updated.discountAmount ?? null),
+          reason: '割引額を更新',
         })
       }
 

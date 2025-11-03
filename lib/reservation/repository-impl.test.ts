@@ -60,6 +60,7 @@ describe('ReservationRepositoryImpl', () => {
     status: 'confirmed',
     price: 5000,
     notes: 'テスト予約',
+    discountAmount: 0,
     storeId: 'ikebukuro',
     createdAt: new Date('2023-12-01'),
     updatedAt: new Date('2023-12-01'),

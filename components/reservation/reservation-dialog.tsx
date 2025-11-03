@@ -85,6 +85,7 @@ type EditFormState = {
   marketingChannel: string
   transportationFee: number
   additionalFee: number
+  discountAmount: number
   designationFee: number
   price: number
   areaId: string | null
@@ -250,6 +251,7 @@ export function ReservationDialog({
     marketingChannel: 'WEB',
     transportationFee: 0,
     additionalFee: 0,
+    discountAmount: 0,
     designationFee: 0,
     price: 0,
     areaId: null,
@@ -711,15 +713,17 @@ export function ReservationDialog({
     )
     const transportation = toNumber(formState.transportationFee, 0)
     const additional = toNumber(formState.additionalFee, 0)
+    const discount = Math.max(toNumber(formState.discountAmount, 0), 0)
     const designation = toNumber(formState.designationFee, 0)
-    const total = basePrice + optionTotal + transportation + additional + designation
+    const computedTotal = basePrice + optionTotal + transportation + additional + designation - discount
     return {
       basePrice,
       optionTotal,
       transportation,
       additional,
       designation,
-      total,
+      discount,
+      total: Math.max(computedTotal, 0),
     }
   }, [
     selectedCourse,
@@ -727,6 +731,7 @@ export function ReservationDialog({
     selectedOptionDetails,
     formState.transportationFee,
     formState.additionalFee,
+    formState.discountAmount,
     formState.designationFee,
   ])
 
@@ -747,6 +752,7 @@ useEffect(() => {
       marketingChannel: reservation.marketingChannel || 'WEB',
       transportationFee: reservation.transportationFee ?? 0,
       additionalFee: reservation.additionalFee ?? 0,
+      discountAmount: reservation.discountAmount ?? 0,
       designationFee: Number(reservation.designationFee ?? 0),
       price: Number(reservation.totalPayment ?? reservation.price ?? 0),
       areaId: reservation.areaId ?? null,
@@ -810,6 +816,7 @@ useEffect(() => {
       marketingChannel: reservation.marketingChannel || 'WEB',
       transportationFee: reservation.transportationFee ?? 0,
       additionalFee: reservation.additionalFee ?? 0,
+      discountAmount: reservation.discountAmount ?? 0,
       designationFee: Number(reservation.designationFee ?? 0),
       price: Number(reservation.totalPayment ?? reservation.price ?? 0),
       areaId: reservation.areaId ?? null,
@@ -884,6 +891,7 @@ useEffect(() => {
         designationFee: designationForSave?.price ?? formState.designationFee,
         transportationFee: formState.transportationFee,
         additionalFee: formState.additionalFee,
+        discountAmount: formState.discountAmount,
         paymentMethod: formState.paymentMethod,
         marketingChannel: formState.marketingChannel,
         areaId: formState.areaId ?? null,
@@ -1275,20 +1283,20 @@ useEffect(() => {
                           }
                         />
                       </div>
-                      <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="grid gap-3 sm:grid-cols-3">
                         <div>
                           <Label htmlFor="reservation-transportation">交通費</Label>
                           <Input
                             id="reservation-transportation"
                             type="number"
                             value={formState.transportationFee}
-                            onChange={(event) =>
-                              setFormState((prev) => ({
-                                ...prev,
-                                transportationFee: Number(event.target.value || 0),
-                              }))
-                            }
+                            readOnly
+                            disabled
+                            className="bg-gray-100"
                           />
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            駅選択に応じて自動計算されます
+                          </p>
                         </div>
                         <div>
                           <Label htmlFor="reservation-additional">追加料金</Label>
@@ -1300,6 +1308,20 @@ useEffect(() => {
                               setFormState((prev) => ({
                                 ...prev,
                                 additionalFee: Number(event.target.value || 0),
+                              }))
+                            }
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="reservation-discount">割引</Label>
+                          <Input
+                            id="reservation-discount"
+                            type="number"
+                            value={formState.discountAmount}
+                            onChange={(event) =>
+                              setFormState((prev) => ({
+                                ...prev,
+                                discountAmount: Math.max(Number(event.target.value || 0), 0),
                               }))
                             }
                           />
@@ -1382,6 +1404,12 @@ useEffect(() => {
                         <span>追加料金</span>
                         <span>{formatCurrency(reservation.additionalFee)}</span>
                       </div>
+                      {reservation.discountAmount ? (
+                        <div className="flex items-center justify-between text-red-600">
+                          <span>割引</span>
+                          <span>-{formatCurrency(reservation.discountAmount)}</span>
+                        </div>
+                      ) : null}
                       <Separator className="my-2" />
                       <div className="flex items-center justify-between text-muted-foreground">
                         <span>店舗取り分</span>
@@ -1723,6 +1751,12 @@ useEffect(() => {
                         <dt>追加料金</dt>
                         <dd>{formatCurrency(priceBreakdown.additional)}</dd>
                       </div>
+                      {priceBreakdown.discount > 0 && (
+                        <div className="flex items-center justify-between text-red-600">
+                          <dt>割引</dt>
+                          <dd>-{formatCurrency(priceBreakdown.discount)}</dd>
+                        </div>
+                      )}
                     </dl>
                   </div>
 

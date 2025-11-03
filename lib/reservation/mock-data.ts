@@ -241,6 +241,7 @@ const reservationSeeds: ReservationSeed[] = [
 
 let mockReservations: Reservation[] = reservationSeeds.map((reservation) => ({
   ...reservation,
+  discountAmount: reservation.discountAmount ?? 0,
   storeId: reservation.storeId ?? 'ikebukuro',
   castId: reservation.castId ?? reservation.staffId,
 }))

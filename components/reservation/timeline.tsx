@@ -7,12 +7,12 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { QuickBookingDialog } from './quick-booking-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Clock, User, AlertCircle, Plus } from 'lucide-react'
+import { Clock, User, AlertCircle } from 'lucide-react'
 import { Cast, Appointment } from '@/lib/cast/types'
 import { logError } from '@/lib/error-utils'
 import { StaffDialog } from '@/components/cast/cast-dialog'
 import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz'
-import { differenceInCalendarDays, parse } from 'date-fns'
+import { addMinutes, differenceInCalendarDays, differenceInMinutes, parse } from 'date-fns'
 import { getCourseById } from '@/lib/course-option/utils'
 import { Customer } from '@/lib/customer/types'
 import { ReservationData } from '@/lib/types/reservation'
@@ -24,6 +24,9 @@ import {
 
 const JST_TIMEZONE = 'Asia/Tokyo'
 const MINUTES_IN_DAY = 24 * 60
+const START_INTERVAL_MINUTES = 10
+const FLEX_INTERVAL_MINUTES = 5
+const MIN_DISPLAY_SLOT_MINUTES = 10
 
 // safeMapを安全に実装（undefinedやnullでも空配列を返す）
 function safeMap<T, U>(arr: T[] | undefined | null, callback: (item: T, index: number) => U): U[] {
@@ -48,11 +51,6 @@ interface AvailableSlot {
   staffName: string
 }
 
-interface TimeSlot {
-  time: Date
-  isStart: boolean
-}
-
 export function Timeline({
   staff,
   selectedDate,
@@ -65,7 +63,6 @@ export function Timeline({
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null)
   const [selectedStaff, setSelectedStaff] = useState<Cast | null>(null)
   const [zoomLevel, setZoomLevel] = useState(1)
-  const SLOT_DURATION = 30 // 30分単位
   const HOUR_WIDTH = 120 * zoomLevel // ズームに応じた幅
   const startMinutes = businessHours.startMinutes
   const endMinutes = businessHours.endMinutes
@@ -135,22 +132,6 @@ export function Timeline({
     }
   }
 
-  const generateTimeSlots = (startTime: Date, endTime: Date): TimeSlot[] => {
-    const slots: TimeSlot[] = []
-    const current = new Date(startTime)
-    const end = new Date(endTime)
-
-    while (current < end) {
-      slots.push({
-        time: new Date(current),
-        isStart: current.getTime() === startTime.getTime(),
-      })
-      current.setMinutes(current.getMinutes() + SLOT_DURATION)
-    }
-
-    return slots
-  }
-
   const filteredStaff = safeMap(staff, (member) => {
     const filteredAppointments = safeMap(
       member.appointments,
@@ -218,10 +199,10 @@ export function Timeline({
         )
         const appointmentEndMinute = Math.min(
           getMinutesFromDate(appointment.endTime),
-          endMinutes
-        )
+        endMinutes
+      )
 
-        if (appointmentStartMinute - currentMinute >= SLOT_DURATION) {
+        if (appointmentStartMinute - currentMinute >= MIN_DISPLAY_SLOT_MINUTES) {
           slots.push({
             startTime: minutesToUtcDate(currentMinute),
             endTime: minutesToUtcDate(appointmentStartMinute),
@@ -234,7 +215,7 @@ export function Timeline({
         currentMinute = Math.max(currentMinute, appointmentEndMinute)
       })
 
-      if (workEndMinute - currentMinute >= SLOT_DURATION) {
+      if (workEndMinute - currentMinute >= MIN_DISPLAY_SLOT_MINUTES) {
         slots.push({
           startTime: minutesToUtcDate(currentMinute),
           endTime: minutesToUtcDate(workEndMinute),
@@ -252,11 +233,42 @@ export function Timeline({
   }
 
   const handleTimeSlotClick = (slot: AvailableSlot, selectedTime: Date) => {
+    const effectiveDuration = Math.max(
+      differenceInMinutes(slot.endTime, selectedTime),
+      FLEX_INTERVAL_MINUTES
+    )
     setSelectedSlot({
       ...slot,
       startTime: selectedTime,
-      duration: SLOT_DURATION,
+      duration: effectiveDuration,
     })
+  }
+
+  const buildSelectableStartTimes = useCallback((slot: AvailableSlot): Date[] => {
+    const times: Date[] = []
+    let cursor = new Date(slot.startTime)
+
+    while (cursor < slot.endTime) {
+      const remaining = differenceInMinutes(slot.endTime, cursor)
+      if (remaining < FLEX_INTERVAL_MINUTES) {
+        break
+      }
+      times.push(new Date(cursor))
+      cursor = addMinutes(cursor, START_INTERVAL_MINUTES)
+    }
+
+    if (times.length === 0 && differenceInMinutes(slot.endTime, slot.startTime) >= FLEX_INTERVAL_MINUTES) {
+      times.push(new Date(slot.startTime))
+    }
+
+    return times
+  }, [])
+
+  const canOffsetByFive = (slot: AvailableSlot, baseTime: Date, allTimes: Date[]) => {
+    const adjusted = addMinutes(baseTime, FLEX_INTERVAL_MINUTES)
+    if (adjusted >= slot.endTime) return false
+    if (differenceInMinutes(slot.endTime, adjusted) < FLEX_INTERVAL_MINUTES) return false
+    return !allTimes.some((time) => Math.abs(time.getTime() - adjusted.getTime()) < 60 * 1000)
   }
 
   // 現在時刻の位置を計算
@@ -440,8 +452,8 @@ export function Timeline({
                 ))}
 
                 {safeMap(getAvailableSlots(member), (slot, index) => {
-                  if (slot.duration < 30) return null
-
+                  if (slot.duration < FLEX_INTERVAL_MINUTES) return null
+                  const selectableTimes = buildSelectableStartTimes(slot)
                   const disabled = !selectedCustomer
 
                   return (
@@ -452,31 +464,55 @@ export function Timeline({
                     >
                       <div
                         className={cn(
-                          'flex h-full w-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 p-2 text-center',
+                          'flex h-full w-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 p-2 text-center transition-all',
                           disabled
                             ? 'bg-gray-50/80 text-gray-400'
-                            : 'bg-white/60 text-gray-500 transition-all hover:border-emerald-500 hover:bg-emerald-50'
+                            : 'bg-white/80 text-gray-600 hover:border-emerald-500 hover:bg-emerald-50'
                         )}
                       >
-                        <span className={cn('text-xs', disabled ? 'text-gray-400' : 'text-gray-500')}>
-                          {formatInTimeZone(slot.startTime, JST_TIMEZONE, 'HH:mm')}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          className={cn(
-                            'mt-1 h-10 w-10 rounded-full border-emerald-500 text-emerald-600',
-                            disabled ? 'cursor-not-allowed opacity-60' : 'hover:bg-emerald-500 hover:text-white'
-                          )}
-                          onClick={() => handleTimeSlotClick(slot, slot.startTime)}
-                          disabled={disabled}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                        <span className={cn('mt-1 text-xs', disabled ? 'text-gray-400' : 'text-gray-500')}>
-                          {slot.duration}分可
-                        </span>
+                        <div className="mb-2 text-xs text-gray-500">
+                          空き {slot.duration}分
+                        </div>
+                        <div className="flex flex-wrap items-center justify-center gap-2">
+                          {selectableTimes.map((startTime) => {
+                            const label = formatInTimeZone(startTime, JST_TIMEZONE, 'HH:mm')
+                            const adjustedTime = addMinutes(startTime, FLEX_INTERVAL_MINUTES)
+                            const showAdjusted = canOffsetByFive(slot, startTime, selectableTimes)
+
+                            return (
+                              <div key={`${startTime.toISOString()}`} className="flex items-center gap-1">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="secondary"
+                                  className={cn(
+                                    'rounded-full px-3 text-xs',
+                                    disabled && 'cursor-not-allowed opacity-60'
+                                  )}
+                                  onClick={() => handleTimeSlotClick(slot, startTime)}
+                                  disabled={disabled}
+                                >
+                                  {label}
+                                </Button>
+                                {showAdjusted && (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    className={cn(
+                                      'rounded-full px-3 text-xs',
+                                      disabled && 'cursor-not-allowed opacity-60'
+                                    )}
+                                    onClick={() => handleTimeSlotClick(slot, adjustedTime)}
+                                    disabled={disabled}
+                                  >
+                                    {formatInTimeZone(adjustedTime, JST_TIMEZONE, 'HH:mm')}
+                                  </Button>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
                         {disabled && (
                           <span className="mt-1 text-[10px] text-gray-400">顧客を選択してください</span>
                         )}

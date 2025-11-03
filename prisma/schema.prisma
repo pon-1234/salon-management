@@ -110,6 +110,7 @@ model Reservation {
   designationFee    Int          @default(0)
   transportationFee Int          @default(0)
   additionalFee     Int          @default(0)
+  discountAmount    Int          @default(0)
   paymentMethod     String?      @default("現金")
   marketingChannel  String?
   storeRevenue      Int?

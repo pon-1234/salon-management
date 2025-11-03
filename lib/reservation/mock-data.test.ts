@@ -20,6 +20,7 @@ const baseMockReservation: Reservation = {
   endTime: new Date('2024-01-01T11:00:00Z'),
   status: 'confirmed',
   price: 10000,
+  discountAmount: 0,
   storeId: 'ikebukuro',
   createdAt: new Date('2024-01-01T09:00:00Z'),
   updatedAt: new Date('2024-01-01T09:00:00Z'),
@@ -63,6 +64,7 @@ describe('mock reservation data helpers', () => {
       endTime: new Date('2024-01-02T11:00:00Z'),
       status: 'confirmed',
       price: 12000,
+      discountAmount: 0,
     } as any)
 
     expect(created.id).toBe('2')
