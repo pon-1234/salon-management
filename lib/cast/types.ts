@@ -20,6 +20,7 @@ export interface Cast extends BaseEntity {
   workStatus: '出勤' | '未出勤' | '休日'
   lineUserId?: string | null
   welfareExpenseRate?: number | null
+  loginEmail?: string | null
   workStart?: Date
   workEnd?: Date
   appointments: Appointment[]

@@ -134,5 +134,7 @@ export function mapReservationToReservationData(
     stationName: reservation.stationName ?? undefined,
     stationTravelTime: reservation.stationTravelTime ?? undefined,
     locationMemo: reservation.locationMemo ?? undefined,
+    castCheckedInAt: reservation.castCheckedInAt ?? null,
+    castCheckedOutAt: reservation.castCheckedOutAt ?? null,
   }
 }

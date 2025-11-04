@@ -37,6 +37,8 @@ export interface Reservation extends BaseEntity {
   stationName?: string
   stationTravelTime?: number
   locationMemo?: string
+  castCheckedInAt?: Date
+  castCheckedOutAt?: Date
   options?: Array<{
     id?: string
     reservationId?: string
@@ -106,6 +108,8 @@ export interface ReservationData {
   stationName?: string
   stationTravelTime?: number
   locationMemo?: string
+  castCheckedInAt?: Date | null
+  castCheckedOutAt?: Date | null
 }
 
 export interface ReservationUpdatePayload {
@@ -131,6 +135,8 @@ export interface ReservationUpdatePayload {
   stationId?: string | null
   locationMemo?: string
   options?: string[]
+  castCheckedInAt?: Date | null
+  castCheckedOutAt?: Date | null
 }
 
 export interface Service extends BaseEntity {

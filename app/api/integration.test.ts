@@ -37,15 +37,41 @@ vi.mock('@/lib/db', () => ({
     reservation: {
       create: vi.fn(),
       findMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
     },
-    $transaction: vi.fn(),
+    cast: {
+      findFirst: vi.fn(),
+    },
     coursePrice: {
       findMany: vi.fn(),
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
     },
     optionPrice: {
       findMany: vi.fn(),
     },
+    store: {
+      findUnique: vi.fn(),
+      upsert: vi.fn(),
+    },
+    storeSettings: {
+      findUnique: vi.fn(),
+    },
+    areaInfo: {
+      findFirst: vi.fn(),
+    },
+    stationInfo: {
+      findFirst: vi.fn(),
+    },
+    designationFee: {
+      findFirst: vi.fn(),
+    },
+    reservationOption: {
+      deleteMany: vi.fn(),
+    },
+    $transaction: vi.fn(),
   },
 }))
 
@@ -115,9 +141,51 @@ vi.mock('bcryptjs', () => ({
 
 // checkCastAvailability is now internal to route files
 
+function bootstrapDbDefaults() {
+  const defaultStore = {
+    id: 'ikebukuro',
+    name: '池袋店',
+    displayName: 'サロン池袋店',
+    slug: 'ikebukuro',
+  }
+
+  vi.mocked(db.store.findUnique).mockResolvedValue(null as any)
+  vi.mocked(db.store.upsert).mockResolvedValue(defaultStore as any)
+  vi.mocked(db.storeSettings.findUnique).mockResolvedValue({
+    storeId: 'ikebukuro',
+    welfareExpenseRate: 10,
+  } as any)
+
+  vi.mocked(db.reservation.findMany).mockResolvedValue([] as any)
+  vi.mocked(db.reservation.findFirst).mockResolvedValue(null as any)
+  vi.mocked(db.reservation.findUnique).mockResolvedValue(null as any)
+  vi.mocked(db.reservation.create).mockResolvedValue(null as any)
+  vi.mocked(db.reservation.update).mockResolvedValue(null as any)
+
+  vi.mocked(db.coursePrice.findMany).mockResolvedValue([] as any)
+  vi.mocked(db.coursePrice.findFirst).mockResolvedValue(null as any)
+
+  vi.mocked(db.optionPrice.findMany).mockResolvedValue([] as any)
+
+  vi.mocked(db.cast.findFirst).mockResolvedValue(null as any)
+  vi.mocked(db.customer.findUnique).mockResolvedValue(null as any)
+  vi.mocked(db.areaInfo.findFirst).mockResolvedValue(null as any)
+  vi.mocked(db.stationInfo.findFirst).mockResolvedValue(null as any)
+
+  vi.mocked(db.designationFee.findFirst).mockResolvedValue(null as any)
+  vi.mocked(db.reservationOption.deleteMany).mockResolvedValue({ count: 0 } as any)
+}
+
 describe('Customer Journey Integration Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    bootstrapDbDefaults()
+    mockCreateReview.mockReset()
+    mockSearchReviews.mockReset()
+    mockGetReviewById.mockReset()
+    mockUpdateReview.mockReset()
+    mockDeleteReview.mockReset()
+    mockGetReviewStatsForStore.mockReset()
   })
 
   it('should complete a full customer journey: registration -> reservation -> review', async () => {
@@ -169,8 +237,8 @@ describe('Customer Journey Integration Tests', () => {
     const reservationData = {
       castId: 'cast1',
       courseId: 'course1',
-      startTime: '2025-07-15T10:00:00+09:00',
-      endTime: '2025-07-15T11:00:00+09:00',
+      startTime: '2035-07-15T10:00:00+09:00',
+      endTime: '2035-07-15T11:00:00+09:00',
       options: ['option1'],
     }
 
@@ -178,8 +246,8 @@ describe('Customer Journey Integration Tests', () => {
       id: 'reservation-integration-1',
       customerId: 'customer-integration-1',
       ...reservationData,
-      startTime: new Date('2025-07-15T01:00:00Z'),
-      endTime: new Date('2025-07-15T02:00:00Z'),
+      startTime: new Date('2035-07-15T01:00:00Z'),
+      endTime: new Date('2035-07-15T02:00:00Z'),
       status: 'confirmed',
       customer: mockCustomer,
       cast: { id: 'cast1', name: 'Test Cast' },
@@ -188,12 +256,49 @@ describe('Customer Journey Integration Tests', () => {
     }
 
     // Availability check is handled within route
+    vi.mocked(db.cast.findFirst).mockResolvedValueOnce({
+      id: 'cast1',
+      name: 'Test Cast',
+      welfareExpenseRate: 12,
+    } as any)
+    vi.mocked(db.customer.findUnique).mockResolvedValueOnce(mockCustomer as any)
+    vi.mocked(db.coursePrice.findFirst).mockResolvedValueOnce({
+      id: 'course1',
+      name: '60-minute Course',
+      price: 10000,
+      storeShare: 6000,
+      castShare: 4000,
+    } as any)
+    vi.mocked(db.areaInfo.findFirst).mockResolvedValueOnce(null as any)
+    vi.mocked(db.stationInfo.findFirst).mockResolvedValueOnce(null as any)
+    vi.mocked(db.storeSettings.findUnique).mockResolvedValueOnce({
+      storeId: 'ikebukuro',
+      welfareExpenseRate: 10,
+    } as any)
+    vi.mocked(db.reservation.findMany).mockResolvedValueOnce([] as any)
 
     vi.mocked(db.$transaction).mockImplementationOnce(async (fn: any) => {
       const txDb = {
         reservation: {
           create: vi.fn().mockResolvedValue(mockReservation),
           findMany: vi.fn().mockResolvedValue([]), // No conflicts
+        },
+        optionPrice: {
+          findMany: vi.fn().mockResolvedValue([
+            {
+              id: 'option1',
+              name: 'Extra Service',
+              price: 2000,
+              storeShare: null,
+              castShare: null,
+            },
+          ]),
+        },
+        designationFee: {
+          findFirst: vi.fn().mockResolvedValue(null),
+        },
+        reservationOption: {
+          deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
         },
       }
       return await fn(txDb)
@@ -206,7 +311,6 @@ describe('Customer Journey Integration Tests', () => {
 
     const reservationResponse = await ReservationPOST(reservationRequest)
     const reservationResult = await reservationResponse.json()
-
     expect(reservationResponse.status).toBe(201)
     expect(reservationResult.id).toBe('reservation-integration-1')
     expect(reservationResult.customerId).toBe('customer-integration-1')
@@ -230,7 +334,7 @@ describe('Customer Journey Integration Tests', () => {
       customerArea: '豊島区',
       rating: reviewData.rating,
       comment: reviewData.comment,
-      visitDate: new Date('2025-07-15T12:00:00Z'),
+      visitDate: new Date('2035-07-15T12:00:00Z'),
       courseName: '60-minute Course',
       options: [],
       isVerified: true,
@@ -238,8 +342,8 @@ describe('Customer Journey Integration Tests', () => {
       tags: [],
       status: 'pending',
       publishedAt: null,
-      createdAt: new Date('2025-07-15T12:00:00Z'),
-      updatedAt: new Date('2025-07-15T12:00:00Z'),
+      createdAt: new Date('2035-07-15T12:00:00Z'),
+      updatedAt: new Date('2035-07-15T12:00:00Z'),
     }
 
     mockCreateReview.mockResolvedValueOnce(mockReview as any)
@@ -347,11 +451,36 @@ describe('Customer Journey Integration Tests', () => {
     const conflictingReservationData = {
       castId: 'cast1',
       courseId: 'course1',
-      startTime: '2025-07-15T10:00:00+09:00',
-      endTime: '2025-07-15T11:00:00+09:00',
+      startTime: '2035-07-15T10:00:00+09:00',
+      endTime: '2035-07-15T11:00:00+09:00',
     }
 
     // Availability check returning conflicts is handled within transaction mock
+    vi.mocked(db.customer.findUnique).mockResolvedValueOnce({
+      id: 'customer1',
+      name: 'Customer',
+    } as any)
+    vi.mocked(db.cast.findFirst).mockResolvedValueOnce({
+      id: 'cast1',
+      name: 'Test Cast',
+      welfareExpenseRate: 10,
+    } as any)
+    vi.mocked(db.coursePrice.findFirst).mockResolvedValueOnce({
+      id: 'course1',
+      name: '60-minute Course',
+      price: 10000,
+    } as any)
+    vi.mocked(db.storeSettings.findUnique).mockResolvedValueOnce({
+      storeId: 'ikebukuro',
+      welfareExpenseRate: 10,
+    } as any)
+    vi.mocked(db.reservation.findMany).mockResolvedValueOnce([
+      {
+        id: 'existing-res-1',
+        startTime: new Date('2035-07-15T01:00:00Z'),
+        endTime: new Date('2035-07-15T02:00:00Z'),
+      },
+    ] as any)
 
     vi.mocked(db.$transaction).mockImplementationOnce(async (fn: any) => {
       const txDb = {
@@ -360,8 +489,8 @@ describe('Customer Journey Integration Tests', () => {
           findMany: vi.fn().mockResolvedValue([
             {
               id: 'existing-res-1',
-              startTime: new Date('2025-07-15T01:00:00Z'),
-              endTime: new Date('2025-07-15T02:00:00Z'),
+              startTime: new Date('2035-07-15T01:00:00Z'),
+              endTime: new Date('2035-07-15T02:00:00Z'),
             },
           ]), // Has conflicts
         },
@@ -406,8 +535,8 @@ describe('Customer Journey Integration Tests', () => {
         id: 'res1',
         customerId,
         castId: 'cast1',
-        startTime: new Date('2025-07-15T10:00:00Z'),
-        endTime: new Date('2025-07-15T11:00:00Z'),
+        startTime: new Date('2035-07-15T10:00:00Z'),
+        endTime: new Date('2035-07-15T11:00:00Z'),
         status: 'confirmed',
         customer: { id: customerId, name: 'Test Customer' },
         cast: { id: 'cast1', name: 'Cast 1' },
@@ -418,8 +547,8 @@ describe('Customer Journey Integration Tests', () => {
         id: 'res2',
         customerId,
         castId: 'cast2',
-        startTime: new Date('2025-07-16T10:00:00Z'),
-        endTime: new Date('2025-07-16T11:00:00Z'),
+        startTime: new Date('2035-07-16T10:00:00Z'),
+        endTime: new Date('2035-07-16T11:00:00Z'),
         status: 'confirmed',
         customer: { id: customerId, name: 'Test Customer' },
         cast: { id: 'cast2', name: 'Cast 2' },
@@ -444,16 +573,16 @@ describe('Customer Journey Integration Tests', () => {
         customerArea: '豊島区',
         rating: 5,
         comment: 'Great service!',
-        visitDate: new Date('2025-07-15T12:00:00Z'),
+        visitDate: new Date('2035-07-15T12:00:00Z'),
         courseName: '60-minute Course',
         options: [],
         isVerified: true,
         helpful: 0,
         tags: [],
         status: 'published',
-        publishedAt: new Date('2025-07-15T12:30:00Z'),
-        createdAt: new Date('2025-07-15T12:00:00Z'),
-        updatedAt: new Date('2025-07-15T12:00:00Z'),
+        publishedAt: new Date('2035-07-15T12:30:00Z'),
+        createdAt: new Date('2035-07-15T12:00:00Z'),
+        updatedAt: new Date('2035-07-15T12:00:00Z'),
       },
     ]
 
@@ -502,6 +631,13 @@ describe('Customer Journey Integration Tests', () => {
 describe('Cast Performance Analytics Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    bootstrapDbDefaults()
+    mockCreateReview.mockReset()
+    mockSearchReviews.mockReset()
+    mockGetReviewById.mockReset()
+    mockUpdateReview.mockReset()
+    mockDeleteReview.mockReset()
+    mockGetReviewStatsForStore.mockReset()
   })
 
   it('should calculate cast performance metrics across reservations and reviews', async () => {
@@ -513,6 +649,7 @@ describe('Cast Performance Analytics Integration', () => {
         id: 'admin1',
         role: 'admin',
         email: 'admin@test.com',
+        permissions: ['reservation:read'],
       },
       expires: new Date(Date.now() + 86400000).toISOString(),
     })
@@ -559,16 +696,16 @@ describe('Cast Performance Analytics Integration', () => {
         customerArea: '新宿区',
         rating: 5,
         comment: 'Excellent!',
-        visitDate: new Date('2025-07-15T12:00:00Z'),
+        visitDate: new Date('2035-07-15T12:00:00Z'),
         courseName: '60-minute Course',
         options: [],
         isVerified: true,
         helpful: 0,
         tags: [],
         status: 'published',
-        publishedAt: new Date('2025-07-15T12:30:00Z'),
-        createdAt: new Date('2025-07-15T12:00:00Z'),
-        updatedAt: new Date('2025-07-15T12:00:00Z'),
+        publishedAt: new Date('2035-07-15T12:30:00Z'),
+        createdAt: new Date('2035-07-15T12:00:00Z'),
+        updatedAt: new Date('2035-07-15T12:00:00Z'),
       },
       {
         id: 'review2',
@@ -582,16 +719,16 @@ describe('Cast Performance Analytics Integration', () => {
         customerArea: '豊島区',
         rating: 4,
         comment: 'Very good',
-        visitDate: new Date('2025-07-16T12:00:00Z'),
+        visitDate: new Date('2035-07-16T12:00:00Z'),
         courseName: '60-minute Course',
         options: [],
         isVerified: true,
         helpful: 0,
         tags: [],
         status: 'published',
-        publishedAt: new Date('2025-07-16T12:30:00Z'),
-        createdAt: new Date('2025-07-16T12:00:00Z'),
-        updatedAt: new Date('2025-07-16T12:00:00Z'),
+        publishedAt: new Date('2035-07-16T12:30:00Z'),
+        createdAt: new Date('2035-07-16T12:00:00Z'),
+        updatedAt: new Date('2035-07-16T12:00:00Z'),
       },
     ]
 

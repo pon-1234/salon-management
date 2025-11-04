@@ -20,6 +20,7 @@ import { FormSection } from '@/components/cast/form-section'
 import { cn } from '@/lib/utils'
 import { usePricing } from '@/hooks/use-pricing'
 import { resolveOptionId } from '@/lib/options/data'
+import { toast } from '@/hooks/use-toast'
 
 type OptionChoice = {
   id: string
@@ -33,7 +34,7 @@ type OptionChoice = {
 
 interface CastFormProps {
   cast?: Cast | null
-  onSubmit: (data: Partial<Cast>) => Promise<void> | void
+  onSubmit: (data: Partial<Cast> & { loginPassword?: string | null }) => Promise<void> | void
   onCancel?: () => void
   isSubmitting?: boolean
 }
@@ -62,6 +63,9 @@ const buildInitialFormState = (cast?: Cast | null) => ({
     cast?.welfareExpenseRate !== undefined && cast?.welfareExpenseRate !== null
       ? String(cast.welfareExpenseRate)
       : '',
+  loginEmail: cast?.loginEmail || '',
+  loginPassword: '',
+  loginPasswordConfirm: '',
   phone: '',
   email: '',
   password: '',
@@ -236,6 +240,29 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
       .filter((url): url is string => Boolean(url && url.length > 0))
       .filter((value, index, array) => array.indexOf(value) === index)
 
+    const loginEmail = formData.loginEmail?.trim() ?? ''
+    const loginPassword = formData.loginPassword?.trim() ?? ''
+    const loginPasswordConfirm = formData.loginPasswordConfirm?.trim() ?? ''
+
+    if (loginPassword || loginPasswordConfirm) {
+      if (loginPassword !== loginPasswordConfirm) {
+        toast({
+          title: 'エラー',
+          description: 'ログイン用パスワードが一致しません。',
+          variant: 'destructive',
+        })
+        return
+      }
+      if (loginPassword.length < 6) {
+        toast({
+          title: 'エラー',
+          description: 'パスワードは6文字以上で入力してください。',
+          variant: 'destructive',
+        })
+        return
+      }
+    }
+
     const payload: Partial<Cast> = {
       name: formData.name.trim(),
       nameKana: formData.nameKana.trim(),
@@ -250,6 +277,8 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
 
     const lineUserId = formData.lineUserId?.trim()
     payload.lineUserId = lineUserId ? lineUserId : null
+
+    payload.loginEmail = loginEmail ? loginEmail : null
 
     const mainImage = formData.image.trim()
     if (mainImage) {
@@ -289,6 +318,7 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
     onSubmit({
       ...payload,
       images: sanitizedImages,
+      loginPassword: loginPassword ? loginPassword : undefined,
     })
   }
 
@@ -515,6 +545,52 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
             placeholder="キャストの雰囲気や得意なサービスなどを記載します。"
             className="min-h-[120px]"
           />
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="アカウント情報"
+        description="キャスト本人がマイページへログインするための認証情報です。"
+      >
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor={fieldId('loginEmail')}>ログイン用メールアドレス</Label>
+            <Input
+              id={fieldId('loginEmail')}
+              name="loginEmail"
+              type="email"
+              value={formData.loginEmail}
+              onChange={handleInputChange}
+              placeholder="cast@example.com"
+              autoComplete="off"
+            />
+            <p className="text-xs text-muted-foreground">キャスト本人がログインする際に使用します。未設定の場合はログインできません。</p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={fieldId('loginPassword')}>新しいパスワード</Label>
+            <Input
+              id={fieldId('loginPassword')}
+              name="loginPassword"
+              type="password"
+              value={formData.loginPassword}
+              onChange={handleInputChange}
+              placeholder="••••••••"
+              autoComplete="new-password"
+            />
+            <p className="text-xs text-muted-foreground">変更が不要な場合は空欄のままにしてください。</p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={fieldId('loginPasswordConfirm')}>パスワード（確認）</Label>
+            <Input
+              id={fieldId('loginPasswordConfirm')}
+              name="loginPasswordConfirm"
+              type="password"
+              value={formData.loginPasswordConfirm}
+              onChange={handleInputChange}
+              placeholder="••••••••"
+              autoComplete="new-password"
+            />
+          </div>
         </div>
       </FormSection>
 

@@ -5,6 +5,7 @@
  */
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import type { Session } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { hasAllPermissions, type Permission } from '@/lib/auth/permissions'
 
@@ -32,4 +33,25 @@ export async function requireAdmin(options?: RequireAdminOptions) {
   }
 
   return null
+}
+
+interface RequireCastResult {
+  error: NextResponse | null
+  session: Session | null
+}
+
+export async function requireCast(): Promise<RequireCastResult> {
+  const session = await getServerSession(authOptions)
+
+  if (!session || session.user.role !== 'cast') {
+    return {
+      error: NextResponse.json({ error: '認証が必要です' }, { status: 401 }),
+      session: null,
+    }
+  }
+
+  return {
+    error: null,
+    session,
+  }
 }

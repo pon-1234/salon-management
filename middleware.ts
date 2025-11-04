@@ -12,7 +12,7 @@ import { env } from '@/lib/config/env'
 const publicRoutes = ['/', '/_next', '/favicon.ico']
 
 // Auth routes that should be accessible without authentication
-const authRoutes = ['/login', '/register', '/admin/login', '/auth', '/api/auth']
+const authRoutes = ['/login', '/register', '/admin/login', '/auth', '/api/auth', '/cast/login']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -23,7 +23,7 @@ export async function middleware(request: NextRequest) {
     !isApiRoute &&
     (publicRoutes.some((route) => pathname.startsWith(route)) ||
       authRoutes.some((route) => pathname.startsWith(route)) ||
-      pathname.match(/^\/((?!admin|mypage).)*$/)) // All non-admin, non-mypage page routes
+      pathname.match(/^\/((?!admin|mypage|cast).)*$/)) // All non-admin, non-mypage, non-cast routes
 
   // Get session token
   const token = await getToken({
@@ -77,6 +77,32 @@ export async function middleware(request: NextRequest) {
     // Special redirect for /admin to /admin/dashboard
     if (pathname === '/admin') {
       return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+    }
+
+    return NextResponse.next()
+  }
+
+  // Handle cast portal routes
+  if (pathname.startsWith('/cast')) {
+    // Allow unauthenticated access to cast login
+    if (pathname.startsWith('/cast/login')) {
+      return NextResponse.next()
+    }
+
+    if (!token) {
+      const url = new URL('/cast/login', request.url)
+      url.searchParams.set('callbackUrl', pathname)
+      return NextResponse.redirect(url, { status: 307 })
+    }
+
+    if (token.role !== 'cast') {
+      const url = new URL('/cast/login', request.url)
+      url.searchParams.set('callbackUrl', pathname)
+      return NextResponse.redirect(url, { status: 307 })
+    }
+
+    if (pathname === '/cast') {
+      return NextResponse.redirect(new URL('/cast/dashboard', request.url))
     }
 
     return NextResponse.next()

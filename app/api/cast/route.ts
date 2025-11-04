@@ -7,9 +7,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import logger from '@/lib/logger'
 import { z } from 'zod'
+import bcrypt from 'bcryptjs'
 import { requireAdmin } from '@/lib/auth/utils'
-import { handleApiError } from '@/lib/api/errors'
-import { SuccessResponses } from '@/lib/api/responses'
 import { castMembers } from '@/lib/cast/data'
 import { env } from '@/lib/config/env'
 import { Prisma } from '@prisma/client'
@@ -53,6 +52,33 @@ const castSchema = z.object({
   welfareExpenseRate: z
     .union([z.coerce.number().min(0).max(100), z.null()])
     .optional(),
+  loginEmail: z
+    .preprocess(
+      (value) => {
+        if (value === null || value === undefined) {
+          return null
+        }
+        if (typeof value !== 'string') {
+          return value
+        }
+        const trimmed = value.trim()
+        return trimmed.length === 0 ? null : trimmed.toLowerCase()
+      },
+      z.string().email().nullable()
+    )
+    .optional(),
+  loginPassword: z
+    .preprocess(
+      (value) => {
+        if (typeof value !== 'string') {
+          return undefined
+        }
+        const trimmed = value.trim()
+        return trimmed.length === 0 ? undefined : trimmed
+      },
+      z.string().min(6).max(128).optional()
+    )
+    .optional(),
 })
 
 function normalizeAvailableOptions(raw: unknown): string[] {
@@ -93,18 +119,21 @@ function normalizeAvailableOptions(raw: unknown): string[] {
 }
 
 function transformCast(cast: any) {
+  const { passwordHash, ...safeCast } = cast ?? {}
+  const base = safeCast ?? {}
+
   return {
-    ...cast,
-    nameKana: cast.nameKana ?? cast.name,
-    schedules: cast.schedules ?? [],
-    reservations: cast.reservations ?? [],
-    images: Array.isArray(cast.images)
-      ? cast.images
-      : typeof cast.images === 'string'
-        ? JSON.parse(cast.images)
+    ...base,
+    nameKana: base.nameKana ?? base.name,
+    schedules: base.schedules ?? [],
+    reservations: base.reservations ?? [],
+    images: Array.isArray(base.images)
+      ? base.images
+      : typeof base.images === 'string'
+        ? JSON.parse(base.images)
         : [],
-    availableOptions: normalizeAvailableOptions(cast.availableOptions),
-    appointments: cast.appointments ?? [],
+    availableOptions: normalizeAvailableOptions(base.availableOptions),
+    appointments: base.appointments ?? [],
   }
 }
 
@@ -230,27 +259,46 @@ export async function POST(request: NextRequest) {
     // Validate request body
     const validatedData = castSchema.parse(body)
 
-    // Remove fields that don't exist in DB
-    const { nameKana, availableOptions, welfareExpenseRate, ...dbData } = validatedData
+    const {
+      nameKana, // currently unused
+      availableOptions,
+      welfareExpenseRate,
+      images: imageList,
+      loginEmail,
+      loginPassword,
+      ...dbData
+    } = validatedData
+
     const normalizedOptions = normalizeAvailableOptions(availableOptions)
-    const images = Array.isArray(validatedData.images) ? validatedData.images : []
+    const images = Array.isArray(imageList) ? imageList : []
     const normalizedWelfare =
-      welfareExpenseRate === null || welfareExpenseRate === undefined ? null : welfareExpenseRate
+      welfareExpenseRate === null || welfareExpenseRate === undefined ? null : Number(welfareExpenseRate)
+
+    const normalizedEmail =
+      loginEmail === null || loginEmail === undefined ? null : loginEmail.trim().toLowerCase()
+
+    let passwordHash: string | undefined
+    if (loginPassword) {
+      passwordHash = await bcrypt.hash(loginPassword, 12)
+    }
 
     // Create cast in database
     const cast = await db.cast.create({
       data: {
         ...dbData,
+        loginEmail: normalizedEmail,
+        passwordHash,
         storeId,
         images,
         availableOptions: normalizedOptions,
-        welfareExpenseRate: normalizedWelfare,
+        welfareExpenseRate:
+          normalizedWelfare === null ? null : new Prisma.Decimal(normalizedWelfare),
       },
     })
 
     logger.info({ castId: cast.id }, 'Cast created successfully')
 
-    return NextResponse.json(cast, { status: 201 })
+    return NextResponse.json(transformCast(cast), { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -290,14 +338,26 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Cast not found' }, { status: 404 })
     }
 
-    // Remove fields that don't exist in DB
-    const { nameKana, availableOptions, welfareExpenseRate, ...dbData } = validatedData
-    const updatePayload: Record<string, unknown> = {
-      ...dbData,
-    }
+    const {
+      nameKana, // unused field
+      availableOptions,
+      welfareExpenseRate,
+      images: imageList,
+      loginEmail,
+      loginPassword,
+      ...dbData
+    } = validatedData
 
-    if (Array.isArray(validatedData.images)) {
-      updatePayload.images = validatedData.images
+    const updatePayload: Record<string, unknown> = {}
+
+    Object.entries(dbData).forEach(([key, value]) => {
+      if (value !== undefined) {
+        updatePayload[key] = value
+      }
+    })
+
+    if (imageList !== undefined) {
+      updatePayload.images = Array.isArray(imageList) ? imageList : []
     }
 
     if (availableOptions !== undefined) {
@@ -306,7 +366,18 @@ export async function PUT(request: NextRequest) {
 
     if (welfareExpenseRate !== undefined) {
       updatePayload.welfareExpenseRate =
-        welfareExpenseRate === null ? null : Number(welfareExpenseRate)
+        welfareExpenseRate === null
+          ? null
+          : new Prisma.Decimal(Number(welfareExpenseRate))
+    }
+
+    if (loginEmail !== undefined) {
+      updatePayload.loginEmail =
+        loginEmail === null ? null : loginEmail.trim().toLowerCase()
+    }
+
+    if (loginPassword) {
+      updatePayload.passwordHash = await bcrypt.hash(loginPassword, 12)
     }
 
     // Update cast in database
@@ -317,7 +388,7 @@ export async function PUT(request: NextRequest) {
 
     logger.info({ castId: cast.id }, 'Cast updated successfully')
 
-    return NextResponse.json(cast)
+    return NextResponse.json(transformCast(cast))
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

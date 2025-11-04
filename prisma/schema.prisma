@@ -74,6 +74,8 @@ model Cast {
   availableOptions       String[]      @default([])
   lineUserId             String?
   welfareExpenseRate     Decimal?
+  loginEmail             String?       @unique
+  passwordHash           String?
   storeId                String
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @updatedAt
@@ -83,6 +85,7 @@ model Cast {
   reviews                Review[]
   messages               Message[]
   lineLogs               ReservationLineLog[]
+  attendanceRequests     ReservationAttendanceRequest[]
   store                  Store          @relation(fields: [storeId], references: [id])
 
   @@index([storeId])
@@ -122,6 +125,8 @@ model Reservation {
   stationId         String?
   locationMemo      String?
   notes             String?
+  castCheckedInAt   DateTime?
+  castCheckedOutAt  DateTime?
   createdAt  DateTime            @default(now())
   updatedAt  DateTime            @updatedAt
   cast       Cast                @relation(fields: [castId], references: [id])
@@ -134,6 +139,7 @@ model Reservation {
   reviews    Review[]
   store      Store               @relation(fields: [storeId], references: [id])
   lineLogs   ReservationLineLog[]
+  attendanceRequests ReservationAttendanceRequest[]
 
   @@index([storeId])
 }
@@ -410,6 +416,26 @@ model ReservationLineLog {
   createdAt     DateTime    @default(now())
   reservation   Reservation @relation(fields: [reservationId], references: [id])
   cast          Cast?       @relation(fields: [castId], references: [id])
+
+  @@index([reservationId])
+  @@index([castId])
+}
+
+model ReservationAttendanceRequest {
+  id             String      @id @default(cuid())
+  reservationId  String
+  castId         String
+  type           String
+  requestedTime  DateTime
+  reason         String?
+  status         String      @default("pending")
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @default(now()) @updatedAt
+  handledByAdmin String?
+  handledAt      DateTime?
+  responseNote   String?
+  reservation    Reservation @relation(fields: [reservationId], references: [id])
+  cast           Cast        @relation(fields: [castId], references: [id])
 
   @@index([reservationId])
   @@index([castId])

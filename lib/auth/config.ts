@@ -17,9 +17,10 @@ declare module 'next-auth' {
       id: string
       email: string
       name: string
-      role: 'admin' | 'customer'
+      role: 'admin' | 'customer' | 'cast'
       adminRole?: string
       permissions?: string[]
+      storeId?: string
     }
   }
 
@@ -27,18 +28,20 @@ declare module 'next-auth' {
     id: string
     email: string
     name: string
-    role: 'admin' | 'customer'
+    role: 'admin' | 'customer' | 'cast'
     adminRole?: string
     permissions?: string[]
+    storeId?: string
   }
 }
 
 declare module 'next-auth/jwt' {
   interface JWT {
     id: string
-    role: 'admin' | 'customer'
+    role: 'admin' | 'customer' | 'cast'
     adminRole?: string
     permissions?: string[]
+    storeId?: string
   }
 }
 
@@ -176,6 +179,67 @@ export const authOptions: NextAuthOptions = {
         }
       },
     }),
+    CredentialsProvider({
+      id: 'cast-credentials',
+      name: 'Cast Login',
+      credentials: {
+        email: { label: 'Email', type: 'email', placeholder: 'cast@example.com' },
+        password: { label: 'Password', type: 'password' },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          return null
+        }
+
+        const email = credentials.email.trim().toLowerCase()
+
+        const rateLimitResult = checkRateLimit(`cast:${email}`)
+        if (!rateLimitResult.allowed) {
+          throw new Error(
+            `Too many login attempts. Please try again in ${rateLimitResult.retryAfter} seconds.`
+          )
+        }
+
+        try {
+          const cast = await db.cast.findFirst({
+            where: { loginEmail: email },
+            include: {
+              store: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          })
+
+          if (!cast || !cast.passwordHash) {
+            recordLoginAttempt(`cast:${email}`, false)
+            return null
+          }
+
+          const isPasswordValid = await bcrypt.compare(credentials.password, cast.passwordHash)
+          if (!isPasswordValid) {
+            recordLoginAttempt(`cast:${email}`, false)
+            return null
+          }
+
+          recordLoginAttempt(`cast:${email}`, true)
+
+          return {
+            id: cast.id,
+            email: cast.loginEmail ?? email,
+            name: cast.name,
+            role: 'cast',
+            storeId: cast.storeId,
+          } as User
+        } catch (error) {
+          console.error('Error during cast authentication:', error)
+          recordLoginAttempt(`cast:${email}`, false)
+          return null
+        }
+      },
+    }),
   ],
   callbacks: {
     async jwt({ token, user }) {
@@ -187,6 +251,9 @@ export const authOptions: NextAuthOptions = {
         }
         if (user.permissions) {
           token.permissions = user.permissions
+        }
+        if (user.storeId) {
+          token.storeId = user.storeId
         }
       }
       return token
@@ -200,6 +267,9 @@ export const authOptions: NextAuthOptions = {
         }
         if (token.permissions) {
           session.user.permissions = token.permissions
+        }
+        if (token.storeId) {
+          session.user.storeId = token.storeId
         }
       }
       return session

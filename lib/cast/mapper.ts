@@ -109,6 +109,7 @@ export const normalizeCast = (raw: any): Cast => {
       raw.welfareExpenseRate === null || raw.welfareExpenseRate === undefined
         ? null
         : Number(raw.welfareExpenseRate),
+    loginEmail: raw.loginEmail ?? null,
     workStart: toDate(raw.workStart),
     workEnd: toDate(raw.workEnd),
     appointments,

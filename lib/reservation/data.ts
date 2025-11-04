@@ -83,6 +83,8 @@ function normalizeReservation(entry: any): Reservation {
     stationName: entry.station?.name ?? undefined,
     stationTravelTime: entry.station?.travelTime ?? undefined,
     locationMemo: entry.locationMemo ?? undefined,
+    castCheckedInAt: entry.castCheckedInAt ? new Date(entry.castCheckedInAt) : undefined,
+    castCheckedOutAt: entry.castCheckedOutAt ? new Date(entry.castCheckedOutAt) : undefined,
     options: Array.isArray(entry.options) ? entry.options : undefined,
   }
 }
