@@ -103,7 +103,7 @@ export function CastChatPanel() {
   const hasMessages = messages.length > 0
 
   return (
-    <Card className="min-h-[480px]">
+    <Card className="min-h-[420px] md:min-h-[500px]">
       <CardHeader className="flex flex-col gap-3 space-y-0 md:flex-row md:items-center md:justify-between">
         <div>
           <CardTitle className="text-lg">店舗スタッフとのチャット</CardTitle>
@@ -118,9 +118,9 @@ export function CastChatPanel() {
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="flex h-[480px] flex-col gap-4">
+      <CardContent className="flex h-[65vh] flex-col gap-4 md:h-[480px]">
         <div className="flex-1 overflow-hidden rounded-md border">
-          <ScrollArea className="h-full" ref={scrollAreaRef}>
+          <ScrollArea className="max-h-full" ref={scrollAreaRef}>
             {isLoading ? (
               <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 読み込み中です...

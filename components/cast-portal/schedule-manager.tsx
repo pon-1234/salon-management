@@ -27,6 +27,27 @@ export function CastScheduleManager() {
   const [isLoading, setIsLoading] = useState(true)
   const [isPending, startTransition] = useTransition()
 
+  const handleBulkUpdate = useCallback(
+    (mode: 'working' | 'off') => {
+      setEntries((prev) =>
+        prev.map((entry) =>
+          mode === 'working'
+            ? {
+                ...entry,
+                isAvailable: true,
+                startTime: entry.startTime || '10:00',
+                endTime: entry.endTime || '18:00',
+              }
+            : {
+                ...entry,
+                isAvailable: false,
+              }
+        )
+      )
+    },
+    []
+  )
+
   const hasChanges = useMemo(() => {
     if (entries.length !== initialEntries.length) {
       return true
@@ -164,9 +185,17 @@ export function CastScheduleManager() {
       <CardHeader className="flex flex-col gap-3 space-y-0 md:flex-row md:items-center md:justify-between">
         <div>
           <CardTitle className="text-lg">出勤予定の管理</CardTitle>
-          <p className="text-sm text-muted-foreground">今週のシフトを編集して、管理側と情報を同期しましょう。</p>
+          <p className="text-sm text-muted-foreground">
+            今週のシフトを編集して、管理側と最新の情報を共有しましょう。
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => handleBulkUpdate('off')} disabled={isLoading || isPending}>
+            全て休日
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => handleBulkUpdate('working')} disabled={isLoading || isPending}>
+            全て出勤
+          </Button>
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading || isPending}>
             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             再読み込み
@@ -214,39 +243,43 @@ function ScheduleRow({
   )
 
   return (
-    <div className="grid gap-3 rounded-lg border border-border bg-muted/20 p-3 md:grid-cols-[140px,140px,1fr,1fr] md:items-center">
-      <div className="text-sm font-medium text-muted-foreground">{dayLabel}</div>
-      <Select
-        value={entry.isAvailable ? 'working' : 'off'}
-        onValueChange={(value) => onStatusChange(entry.date, value as 'working' | 'off')}
-      >
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {STATUS_OPTIONS.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Input
-        type="time"
-        step={900}
-        value={entry.startTime}
-        onChange={(event) => onTimeChange(entry.date, 'startTime', event.target.value)}
-        disabled={!entry.isAvailable}
-        className={cn(!entry.isAvailable && 'opacity-60')}
-      />
-      <Input
-        type="time"
-        step={900}
-        value={entry.endTime}
-        onChange={(event) => onTimeChange(entry.date, 'endTime', event.target.value)}
-        disabled={!entry.isAvailable}
-        className={cn(!entry.isAvailable && 'opacity-60')}
-      />
+    <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
+      <div className="flex items-center justify-between gap-2 text-sm font-medium text-muted-foreground">
+        <span>{dayLabel}</span>
+        <Select
+          value={entry.isAvailable ? 'working' : 'off'}
+          onValueChange={(value) => onStatusChange(entry.date, value as 'working' | 'off')}
+        >
+          <SelectTrigger className="h-8 w-28 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {STATUS_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Input
+          type="time"
+          step={900}
+          value={entry.startTime}
+          onChange={(event) => onTimeChange(entry.date, 'startTime', event.target.value)}
+          disabled={!entry.isAvailable}
+          className={cn('h-11 text-base', !entry.isAvailable && 'opacity-60')}
+        />
+        <Input
+          type="time"
+          step={900}
+          value={entry.endTime}
+          onChange={(event) => onTimeChange(entry.date, 'endTime', event.target.value)}
+          disabled={!entry.isAvailable}
+          className={cn('h-11 text-base', !entry.isAvailable && 'opacity-60')}
+        />
+      </div>
     </div>
   )
 }

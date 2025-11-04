@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import { format } from 'date-fns'
 import { Loader2 } from 'lucide-react'
 import type {
@@ -17,6 +17,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { cn } from '@/lib/utils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { useSearchParams } from 'next/navigation'
 
 const SCOPES: CastReservationScope[] = ['upcoming', 'today', 'past']
 
@@ -27,6 +28,7 @@ export function CastReservationsContent({ initialData }: { initialData: CastRese
   const { toast } = useToast()
   const [selectedReservation, setSelectedReservation] = useState<CastReservationDetail | null>(null)
   const [isDetailLoading, setIsDetailLoading] = useState(false)
+  const searchParams = useSearchParams()
 
   const fetchReservations = useCallback(
     async (nextScope: CastReservationScope) => {
@@ -99,6 +101,12 @@ export function CastReservationsContent({ initialData }: { initialData: CastRese
     },
     [toast]
   )
+
+  useEffect(() => {
+    const highlight = searchParams.get('highlight')
+    if (!highlight) return
+    void loadReservationDetail(highlight)
+  }, [searchParams, loadReservationDetail])
 
   return (
     <div className="space-y-6">

@@ -8,6 +8,7 @@ import type { CastDashboardData, CastPortalReservation } from '@/lib/cast-portal
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import Link from 'next/link'
 import { useToast } from '@/components/ui/use-toast'
 import { cn } from '@/lib/utils'
 import { CastScheduleManager } from '@/components/cast-portal/schedule-manager'
@@ -152,29 +153,21 @@ export function CastDashboardContent({ initialData }: Props) {
         onCheckOut={() => handleAttendanceAction('check-out', data.attendance.currentReservationId ?? undefined)}
         isPending={isPending}
       />
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <div>
-              <CardTitle className="text-lg">本日のスケジュール</CardTitle>
-              <p className="text-sm text-muted-foreground">チェックイン・アウト状況を確認し、抜け漏れなく対応しましょう。</p>
-            </div>
-            <Badge variant="secondary">{data.todayReservations.length} 件</Badge>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {data.todayReservations.length === 0 ? (
-              <EmptyState message="本日の予約はありません。" />
-            ) : (
-              <div className="space-y-3">
-                {data.todayReservations.map((reservation) => (
-                  <ReservationItem key={reservation.id} reservation={reservation} />
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-      </div>
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-foreground">今日の予定</h3>
+          <Badge variant="secondary">{data.todayReservations.length} 件</Badge>
+        </div>
+        <div className="space-y-3">
+          {data.todayReservations.length === 0 ? (
+            <EmptyState message="本日の予約はありません。" />
+          ) : (
+            data.todayReservations.map((reservation) => (
+              <ReservationItem key={reservation.id} reservation={reservation} />
+            ))
+          )}
+        </div>
+      </section>
 
       <CastScheduleManager />
     </div>
@@ -223,36 +216,37 @@ function AttendanceCard({
 }) {
   return (
     <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
-      <CardHeader>
-        <CardTitle className="text-lg">次のアクション</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <CardContent className="space-y-4 py-6">
         <div>
-          <p className="text-sm text-muted-foreground">次の予約</p>
-          <p className="text-lg font-semibold">
+          <p className="text-xs font-semibold uppercase text-primary">次のアクション</p>
+          <p className="text-lg font-semibold text-foreground">
             {reservation ? formatTimeline(reservation) : '現在、対応する予約はありません'}
           </p>
           {reservation ? (
             <p className="text-sm text-muted-foreground">
               {format(new Date(reservation.startTime), 'HH:mm')} - {format(new Date(reservation.endTime), 'HH:mm')} / {reservation.courseName ?? 'コース未設定'}
             </p>
-          ) : null}
+          ) : (
+            <p className="text-sm text-muted-foreground">予定が入るとこちらに表示されます。</p>
+          )}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid gap-2 sm:grid-cols-2">
           <Button
             variant="secondary"
+            className="h-14 w-full justify-center text-base"
             onClick={onCheckIn}
             disabled={!canCheckIn || isPending}
           >
-            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+            {isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle2 className="mr-2 h-5 w-5" />}
             チェックイン
           </Button>
           <Button
             variant="default"
+            className="h-14 w-full justify-center text-base"
             onClick={onCheckOut}
             disabled={!canCheckOut || isPending}
           >
-            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Clock className="mr-2 h-4 w-4" />}
+            {isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Clock className="mr-2 h-5 w-5" />}
             チェックアウト
           </Button>
         </div>
@@ -289,6 +283,14 @@ function ReservationItem({ reservation }: { reservation: CastPortalReservation }
             {reservation.durationMinutes} 分
           </span>
         </div>
+      </div>
+      <div className="mt-3 text-right">
+        <Link
+          href={`/cast/reservations?highlight=${encodeURIComponent(reservation.id)}`}
+          className="text-sm font-medium text-primary underline-offset-2 hover:underline"
+        >
+          詳細を確認する
+        </Link>
       </div>
     </div>
   )
