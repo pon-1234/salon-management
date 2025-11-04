@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ChatWindow } from '@/components/chat/chat-window'
 import { CustomerList } from '@/components/chat/customer-list'
 import { CustomerHeader } from '@/components/chat/customer-header'
@@ -8,11 +8,64 @@ import { CastList } from '@/components/chat/cast-list'
 import { CastHeader } from '@/components/chat/cast-header'
 import { Customer, CastChatEntry } from '@/lib/types/chat'
 import { Button } from '@/components/ui/button'
+import { useSearchParams } from 'next/navigation'
 
 export default function ChatPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [selectedCast, setSelectedCast] = useState<CastChatEntry | null>(null)
   const [activePane, setActivePane] = useState<'customer' | 'cast'>('customer')
+  const searchParams = useSearchParams()
+  const initialCastId = searchParams.get('castId')
+
+  useEffect(() => {
+    if (!initialCastId) {
+      return
+    }
+
+    setActivePane('cast')
+    setSelectedCustomer(null)
+
+    const loadCast = async () => {
+      try {
+        const response = await fetch(`/api/chat/casts?id=${encodeURIComponent(initialCastId)}`, {
+          credentials: 'include',
+        })
+        if (!response.ok) {
+          throw new Error(`Failed to fetch cast: ${response.status}`)
+        }
+        const payload = await response.json()
+        const cast = (payload?.data ?? payload) as CastChatEntry | null
+        if (cast) {
+          setSelectedCast(cast)
+        } else {
+          setSelectedCast({
+            id: initialCastId,
+            name: `キャスト(${initialCastId.slice(0, 6)})`,
+            lastMessage: '',
+            lastMessageTime: '',
+            hasUnread: false,
+            unreadCount: 0,
+            isOnline: false,
+            status: 'オフライン',
+          })
+        }
+      } catch (error) {
+        console.warn('Failed to hydrate cast selection from query:', error)
+        setSelectedCast({
+          id: initialCastId,
+          name: `キャスト(${initialCastId.slice(0, 6)})`,
+          lastMessage: '',
+          lastMessageTime: '',
+          hasUnread: false,
+          unreadCount: 0,
+          isOnline: false,
+          status: 'オフライン',
+        })
+      }
+    }
+
+    void loadCast()
+  }, [initialCastId])
 
   return (
     <div className="flex h-full flex-col">

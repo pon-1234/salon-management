@@ -1,15 +1,22 @@
 'use client'
 
-import { useCallback, useState, useTransition } from 'react'
+import { useCallback, useMemo, useState, useTransition } from 'react'
 import { format } from 'date-fns'
 import { Loader2 } from 'lucide-react'
-import type { CastReservationListResponse, CastPortalReservation, CastReservationScope } from '@/lib/cast-portal/types'
+import type {
+  CastReservationListResponse,
+  CastPortalReservation,
+  CastReservationScope,
+  CastReservationDetail,
+} from '@/lib/cast-portal/types'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/use-toast'
 import { cn } from '@/lib/utils'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 const SCOPES: CastReservationScope[] = ['upcoming', 'today', 'past']
 
@@ -18,6 +25,8 @@ export function CastReservationsContent({ initialData }: { initialData: CastRese
   const [reservations, setReservations] = useState<CastPortalReservation[]>(initialData.items)
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
+  const [selectedReservation, setSelectedReservation] = useState<CastReservationDetail | null>(null)
+  const [isDetailLoading, setIsDetailLoading] = useState(false)
 
   const fetchReservations = useCallback(
     async (nextScope: CastReservationScope) => {
@@ -65,6 +74,32 @@ export function CastReservationsContent({ initialData }: { initialData: CastRese
     })
   }
 
+  const loadReservationDetail = useCallback(
+    async (reservationId: string) => {
+      setIsDetailLoading(true)
+      try {
+        const response = await fetch(`/api/cast-portal/reservations/${reservationId}`, {
+          cache: 'no-store',
+        })
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}))
+          throw new Error(payload.error ?? '予約詳細の取得に失敗しました。')
+        }
+        const detail = (await response.json()) as CastReservationDetail
+        setSelectedReservation(detail)
+      } catch (error) {
+        toast({
+          title: '読み込みに失敗しました',
+          description: error instanceof Error ? error.message : undefined,
+          variant: 'destructive',
+        })
+      } finally {
+        setIsDetailLoading(false)
+      }
+    },
+    [toast]
+  )
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -100,14 +135,38 @@ export function CastReservationsContent({ initialData }: { initialData: CastRese
             表示する予約がありません。
           </div>
         ) : (
-          reservations.map((reservation) => <ReservationCard key={reservation.id} reservation={reservation} />)
+          reservations.map((reservation) => (
+            <ReservationCard
+              key={reservation.id}
+              reservation={reservation}
+              onViewDetail={() => loadReservationDetail(reservation.id)}
+            />
+          ))
         )}
       </div>
+
+      <Dialog open={Boolean(selectedReservation)} onOpenChange={(open) => !open && setSelectedReservation(null)}>
+        <DialogContent className="max-w-3xl">
+          {isDetailLoading ? (
+            <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 読み込み中です...
+            </div>
+          ) : selectedReservation ? (
+            <ReservationDetailView reservation={selectedReservation} />
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
 
-function ReservationCard({ reservation }: { reservation: CastPortalReservation }) {
+function ReservationCard({
+  reservation,
+  onViewDetail,
+}: {
+  reservation: CastPortalReservation
+  onViewDetail: () => void
+}) {
   const startTime = new Date(reservation.startTime)
   const endTime = new Date(reservation.endTime)
 
@@ -138,6 +197,11 @@ function ReservationCard({ reservation }: { reservation: CastPortalReservation }
         <div className="flex flex-wrap gap-3 text-xs">
           <StatusBadge active={Boolean(reservation.checkedInAt)} label="チェックイン" />
           <StatusBadge active={Boolean(reservation.checkedOutAt)} label="チェックアウト" />
+        </div>
+        <div className="pt-2">
+          <Button variant="outline" size="sm" onClick={onViewDetail}>
+            詳細を見る
+          </Button>
         </div>
       </CardContent>
     </Card>
@@ -187,4 +251,102 @@ function renderDesignation(type?: string | null) {
     default:
       return 'フリー'
   }
+}
+
+function ReservationDetailView({ reservation }: { reservation: CastReservationDetail }) {
+  const startTime = new Date(reservation.startTime)
+  const endTime = new Date(reservation.endTime)
+
+  const pricingItems = useMemo(() => {
+    const rows: Array<{ label: string; value: string }> = []
+    if (reservation.courseName) {
+      rows.push({ label: 'コース', value: `${reservation.courseName} ${reservation.courseDuration ?? ''}分` })
+    }
+    if (reservation.coursePrice) {
+      rows.push({ label: 'コース料金', value: `¥${reservation.coursePrice.toLocaleString()}` })
+    }
+    if (reservation.designationFee) {
+      rows.push({ label: '指名料', value: `¥${reservation.designationFee.toLocaleString()}` })
+    }
+    if (reservation.transportationFee) {
+      rows.push({ label: '交通費', value: `¥${reservation.transportationFee.toLocaleString()}` })
+    }
+    if (reservation.additionalFee) {
+      rows.push({ label: '追加費用', value: `¥${reservation.additionalFee.toLocaleString()}` })
+    }
+    if (reservation.discountAmount) {
+      rows.push({ label: '割引', value: `-¥${reservation.discountAmount.toLocaleString()}` })
+    }
+    rows.push({ label: '店舗取り分', value: `¥${(reservation.storeRevenue ?? 0).toLocaleString()}` })
+    rows.push({ label: 'キャスト取り分', value: `¥${(reservation.staffRevenue ?? 0).toLocaleString()}` })
+    return rows
+  }, [reservation])
+
+  return (
+    <div className="space-y-6">
+      <DialogHeader>
+        <DialogTitle className="text-lg">予約詳細</DialogTitle>
+      </DialogHeader>
+      <ScrollArea className="max-h-[480px] pr-4">
+        <div className="space-y-6">
+          <section className="grid gap-4 rounded-lg border border-border/60 bg-muted/20 p-4 sm:grid-cols-2">
+            <InfoItem label="日時" value={`${format(startTime, 'yyyy/MM/dd (EEE) HH:mm')} - ${format(endTime, 'HH:mm')}`} />
+            <InfoItem label="顧客" value={reservation.customerAlias} />
+            <InfoItem label="電話番号" value={reservation.customerPhone ?? '未登録'} />
+            <InfoItem label="支払い方法" value={reservation.paymentMethod ?? '未設定'} />
+            <InfoItem label="マーケティング経路" value={reservation.marketingChannel ?? '未設定'} />
+            <InfoItem label="指名種別" value={renderDesignation(reservation.designationType)} />
+          </section>
+
+          <section className="space-y-3 rounded-lg border border-border/60 p-4">
+            <h3 className="text-sm font-semibold text-foreground">料金内訳</h3>
+            <div className="grid gap-2 text-sm sm:grid-cols-2">
+              {pricingItems.map((item) => (
+                <InfoItem key={item.label} label={item.label} value={item.value} inline />
+              ))}
+            </div>
+          </section>
+
+          <section className="space-y-3 rounded-lg border border-border/60 p-4">
+            <h3 className="text-sm font-semibold text-foreground">備考・移動情報</h3>
+            <InfoItem label="集合場所" value={reservation.areaName ?? '未設定'} />
+            <InfoItem label="詳細" value={reservation.locationMemo ?? reservation.areaMemo ?? '特記事項なし'} />
+            <InfoItem label="メモ" value={reservation.notes ?? '入力されていません'} />
+          </section>
+
+          <section className="space-y-3 rounded-lg border border-border/60 p-4">
+            <h3 className="text-sm font-semibold text-foreground">オプション</h3>
+            {reservation.options.length === 0 ? (
+              <p className="text-sm text-muted-foreground">選択されたオプションはありません。</p>
+            ) : (
+              <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
+                {reservation.options.map((option) => (
+                  <li key={option.id}>{option.name}</li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
+      </ScrollArea>
+    </div>
+  )
+}
+
+function InfoItem({
+  label,
+  value,
+  inline = false,
+}: {
+  label: string
+  value?: string | number | null
+  inline?: boolean
+}) {
+  return (
+    <div className={cn('flex', inline ? 'items-center justify-between' : 'flex-col gap-1')}>
+      <span className="text-xs font-medium uppercase text-muted-foreground">{label}</span>
+      <span className="text-sm text-foreground">
+        {value !== undefined && value !== null && String(value).trim().length > 0 ? String(value) : '未設定'}
+      </span>
+    </div>
+  )
 }

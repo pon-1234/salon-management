@@ -5,14 +5,18 @@ import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import type { ReservationNotification } from '@/contexts/notification-context'
+import type {
+  AdminNotification,
+  ReservationNotification,
+  ChatNotification,
+} from '@/contexts/notification-context'
 
 interface NotificationListProps {
-  notifications: ReservationNotification[]
+  notifications: AdminNotification[]
   onClose: () => void
   onMarkAsRead: (id: string) => void
   onMarkAsUnread: (id: string) => void
-  onSelect: (notification: ReservationNotification) => void
+  onSelect: (notification: AdminNotification) => void
 }
 
 const statusVariantMap: Record<string, 'default' | 'secondary' | 'destructive' | 'success'> = {
@@ -27,6 +31,16 @@ const statusLabelMap: Record<string, string> = {
   confirmed: '確定',
   pending: '承認待ち',
   cancelled: 'キャンセル',
+}
+
+function isReservationNotification(
+  notification: AdminNotification
+): notification is ReservationNotification {
+  return notification.type === 'reservation'
+}
+
+function isChatNotification(notification: AdminNotification): notification is ChatNotification {
+  return notification.type === 'chat'
 }
 
 export function NotificationList({
@@ -51,17 +65,16 @@ export function NotificationList({
         return true
       }
 
-      const haystack = [
-        notification.storeName,
-        notification.message,
-        notification.details.customerName,
-        notification.details.staffName,
-        notification.details.reservationDate,
-        notification.details.reservationTime,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
+      let haystack = notification.storeName + ' ' + notification.message
+
+      if (isReservationNotification(notification)) {
+        haystack += ` ${notification.details.customerName ?? ''} ${notification.details.staffName ?? ''}`
+        haystack += ` ${notification.details.reservationDate ?? ''} ${notification.details.reservationTime ?? ''}`
+      } else if (isChatNotification(notification)) {
+        haystack += ` ${notification.details.castName ?? ''}`
+      }
+
+      haystack = haystack.toLowerCase()
 
       return haystack.includes(normalizedSearch)
     })
@@ -71,8 +84,10 @@ export function NotificationList({
     <div className="w-[440px] overflow-hidden rounded-lg border bg-white">
       <div className="flex items-center justify-between bg-emerald-600 p-4 text-white">
         <div>
-          <h2 className="text-lg font-semibold">予約通知</h2>
-          <p className="text-xs opacity-80">過去24時間以内のイベントを表示しています</p>
+          <h2 className="text-lg font-semibold">通知センター</h2>
+          <p className="text-xs opacity-80">
+            予約・チャットの最新イベントを表示しています
+          </p>
         </div>
         <Button
           variant="ghost"
@@ -110,8 +125,91 @@ export function NotificationList({
           <div className="p-6 text-sm text-muted-foreground">該当する通知はありません。</div>
         ) : (
           filteredNotifications.map((notification) => {
-            const statusVariant = statusVariantMap[notification.details.status] ?? 'secondary'
-            const statusLabel = statusLabelMap[notification.details.status] ?? notification.details.status
+            if (isChatNotification(notification)) {
+              return (
+                <div
+                  key={notification.id}
+                  className={cn(
+                    'cursor-pointer border-b p-4 transition-colors hover:bg-emerald-50/70',
+                    notification.read ? 'bg-white' : 'bg-emerald-50'
+                  )}
+                  onClick={() => onSelect(notification)}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-emerald-600">
+                        <span className="font-medium">{notification.storeName}</span>
+                        <Badge variant="outline" className="capitalize text-xs">
+                          チャット
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs text-emerald-700">
+                          {notification.details.castName}
+                        </Badge>
+                      </div>
+                      <p className="text-sm font-semibold text-foreground">{notification.message}</p>
+                      <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                        <div>
+                          <span className="block text-[11px] uppercase text-muted-foreground">
+                            未読メッセージ
+                          </span>
+                          <span className="font-semibold text-foreground">
+                            {notification.details.unreadCount} 件
+                          </span>
+                        </div>
+                        {notification.details.lastMessageTime && (
+                          <div>
+                            <span className="block text-[11px] uppercase text-muted-foreground">
+                              最終受信
+                            </span>
+                            <span>{notification.details.lastMessageTime}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {notification.read ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            onMarkAsUnread(notification.id)
+                          }}
+                        >
+                          未読に戻す
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            onMarkAsRead(notification.id)
+                          }}
+                        >
+                          既読にする
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          onSelect(notification)
+                        }}
+                      >
+                        チャットを開く
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+
+            const statusVariant =
+              statusVariantMap[notification.details.status] ?? 'secondary'
+            const statusLabel =
+              statusLabelMap[notification.details.status] ?? notification.details.status
 
             return (
               <div

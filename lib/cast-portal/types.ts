@@ -81,6 +81,22 @@ export interface CastReservationListResponse {
   }
 }
 
+export interface CastReservationDetail extends CastPortalReservation {
+  customerPhone?: string
+  marketingChannel?: string | null
+  paymentMethod?: string | null
+  designationFee?: number
+  transportationFee?: number
+  additionalFee?: number
+  discountAmount?: number
+  notes?: string | null
+  areaMemo?: string | null
+  locationMemo?: string | null
+  coursePrice?: number | null
+  storeRevenue?: number | null
+  staffRevenue?: number | null
+}
+
 export interface CastScheduleEntry {
   id: string | null
   date: string // yyyy-MM-dd

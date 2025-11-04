@@ -36,6 +36,7 @@ import { Badge } from '@/components/ui/badge'
 import { Cast } from '@/lib/cast/types'
 import { normalizeCastList } from '@/lib/cast/mapper'
 import { useNotifications } from '@/contexts/notification-context'
+import type { AdminNotification, ReservationNotification } from '@/contexts/notification-context'
 import { StoreSelector } from '@/components/store/store-selector'
 import { useSession, signOut } from 'next-auth/react'
 import { CustomerSelectionDialog } from '@/components/customer/customer-selection-dialog'
@@ -60,9 +61,9 @@ export function Header() {
     unreadCount,
   } = useNotifications()
   const router = useRouter()
-  const [selectedNotification, setSelectedNotification] = useState<
-    (typeof notifications)[number] | null
-  >(null)
+  const [selectedNotification, setSelectedNotification] = useState<ReservationNotification | null>(
+    null
+  )
   const [showCustomerSelection, setShowCustomerSelection] = useState(false)
 
   useEffect(() => {
@@ -93,25 +94,33 @@ export function Header() {
   }
 
   const handleNotificationSelect = useCallback(
-    (notification: (typeof notifications)[number]) => {
+    (notification: AdminNotification) => {
+      if (notification.type === 'chat') {
+        markAsRead(notification.id)
+        setNotificationOpen(false)
+        const params = new URLSearchParams({ castId: notification.details.castId })
+        router.push(`/admin/chat?${params.toString()}`)
+        return
+      }
+
       setSelectedNotification(notification)
       setNotificationOpen(false)
     },
-    []
+    [markAsRead, router]
   )
 
-  const handleNavigateFromNotification = useCallback(
-    (notification: (typeof notifications)[number]) => {
-      const reservationId = notification.details.reservationId
-      router.push(`/admin/reservation-list?highlight=${encodeURIComponent(reservationId)}`)
-      setSelectedNotification(null)
-    },
-    [router]
-  )
+  const handleNavigateFromNotification = useCallback((notification: ReservationNotification) => {
+    const reservationId = notification.details.reservationId
+    router.push(`/admin/reservation-list?highlight=${encodeURIComponent(reservationId)}`)
+    setSelectedNotification(null)
+  }, [router])
 
   useEffect(() => {
     if (!selectedNotification) return
-    const latest = notifications.find((notification) => notification.id === selectedNotification.id)
+    const latest = notifications.find(
+      (notification): notification is ReservationNotification =>
+        notification.type === 'reservation' && notification.id === selectedNotification.id
+    )
     if (latest && latest !== selectedNotification) {
       setSelectedNotification(latest)
     }

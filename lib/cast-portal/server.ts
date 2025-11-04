@@ -20,6 +20,7 @@ import type {
   CastPortalReservation,
   CastReservationListResponse,
   CastReservationScope,
+  CastReservationDetail,
   CastScheduleEntry,
   CastScheduleUpdateInput,
   CastScheduleWindow,
@@ -412,6 +413,68 @@ export async function getCastReservations(
       scope,
       count: items.length,
     },
+  }
+}
+
+export async function getCastReservationDetail(
+  castId: string,
+  storeId: string,
+  reservationId: string
+): Promise<CastReservationDetail | null> {
+  const reservation = await db.reservation.findFirst({
+    where: {
+      id: reservationId,
+      castId,
+      storeId,
+    },
+    include: {
+      customer: {
+        select: {
+          name: true,
+          phone: true,
+          email: true,
+        },
+      },
+      course: {
+        select: {
+          name: true,
+          price: true,
+          duration: true,
+        },
+      },
+      options: {
+        include: {
+          option: true,
+        },
+      },
+      area: true,
+      station: true,
+    },
+  })
+
+  if (!reservation) {
+    return null
+  }
+
+  const mapped = serializeCastReservation(reservation as ReservationWithRelations, new Date())
+
+  const memoSource = reservation.area?.description ?? reservation.locationMemo ?? null
+
+  return {
+    ...mapped,
+    customerPhone: reservation.customer?.phone ?? undefined,
+    marketingChannel: reservation.marketingChannel ?? null,
+    paymentMethod: reservation.paymentMethod ?? null,
+    designationFee: reservation.designationFee ?? undefined,
+    transportationFee: reservation.transportationFee ?? undefined,
+    additionalFee: reservation.additionalFee ?? undefined,
+    discountAmount: reservation.discountAmount ?? undefined,
+    notes: reservation.notes ?? null,
+    areaMemo: memoSource ?? null,
+    locationMemo: reservation.locationMemo ?? null,
+    coursePrice: reservation.course?.price ?? null,
+    storeRevenue: reservation.storeRevenue ?? null,
+    staffRevenue: reservation.staffRevenue ?? null,
   }
 }
 
