@@ -223,6 +223,12 @@ export function CastScheduleManager() {
             ))}
           </div>
         )}
+        <div className="flex justify-end">
+          <Button onClick={handleSave} size="sm" disabled={isLoading || isPending || !hasChanges}>
+            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            変更を保存
+          </Button>
+        </div>
       </CardContent>
     </Card>
   )
