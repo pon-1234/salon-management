@@ -9,8 +9,11 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { MARKETING_CHANNELS } from '@/lib/constants'
 import { ArrowLeft, Store, MapPin, Phone, Mail, Clock, Globe } from 'lucide-react'
 import Link from 'next/link'
+
+const DEFAULT_MARKETING_CHANNEL_INPUT = MARKETING_CHANNELS.join('\n')
 
 export default function StoreInfoPage() {
   const [formData, setFormData] = useState({
@@ -29,6 +32,7 @@ export default function StoreInfoPage() {
     lastOrder: '',
     parkingInfo: '',
     welfareExpenseRate: '10',
+    marketingChannelsInput: DEFAULT_MARKETING_CHANNEL_INPUT,
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -46,6 +50,9 @@ export default function StoreInfoPage() {
         welfareExpenseRate: settings?.welfareExpenseRate !== undefined
           ? String(Number(settings.welfareExpenseRate))
           : prev.welfareExpenseRate,
+        marketingChannelsInput: Array.isArray(settings?.marketingChannels) && settings.marketingChannels.length > 0
+          ? settings.marketingChannels.join('\n')
+          : prev.marketingChannelsInput,
       }))
     } catch (error) {
       console.error('Error fetching store settings:', error)
@@ -70,9 +77,16 @@ export default function StoreInfoPage() {
   const handleSave = async () => {
     setSaving(true)
     try {
+      const { marketingChannelsInput, ...restForm } = formData
+      const marketingChannels = String(marketingChannelsInput || '')
+        .split(/\r?\n/)
+        .map((channel) => channel.trim())
+        .filter((channel, index, array) => channel.length > 0 && array.indexOf(channel) === index)
+
       const payload = {
-        ...formData,
+        ...restForm,
         welfareExpenseRate: Number(formData.welfareExpenseRate || 0),
+        marketingChannels: marketingChannels.length > 0 ? marketingChannels : [...MARKETING_CHANNELS],
       }
       const response = await fetch('/api/settings/store', {
         method: 'PUT',
@@ -94,6 +108,9 @@ export default function StoreInfoPage() {
             updated?.welfareExpenseRate !== undefined
               ? String(Number(updated.welfareExpenseRate))
               : prev.welfareExpenseRate,
+          marketingChannelsInput: Array.isArray(updated?.marketingChannels) && updated.marketingChannels.length > 0
+            ? updated.marketingChannels.join('\n')
+            : prev.marketingChannelsInput,
         }))
       }
 
@@ -227,6 +244,31 @@ export default function StoreInfoPage() {
                   />
                   <p className="text-xs text-muted-foreground">
                     コース料金に対して自動計上される厚生費（店舗取り分）の割合です。未入力の場合は10%が適用されます。
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 集客チャネル設定 */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Store className="h-5 w-5 text-emerald-600" />
+                  集客チャネル（マスタ）
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="marketingChannelsInput">利用チャネル一覧</Label>
+                  <Textarea
+                    id="marketingChannelsInput"
+                    value={formData.marketingChannelsInput}
+                    onChange={(e) => handleInputChange('marketingChannelsInput', e.target.value)}
+                    rows={6}
+                    placeholder="例）&#10;店リピート&#10;電話&#10;紹介&#10;SNS&#10;WEB&#10;Heaven"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    1行につき1つのチャネル名を入力してください。保存後は予約画面などで選択肢として利用できます。
                   </p>
                 </div>
               </CardContent>

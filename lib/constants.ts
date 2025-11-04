@@ -57,7 +57,7 @@ export const AREAS = [
 export const PREFECTURES = ['東京都', '神奈川県', '埼玉県', '千葉県'] as const
 
 // Marketing Channels
-export const MARKETING_CHANNELS = ['WEB', '電話', '紹介', 'リピート', 'SNS'] as const
+export const MARKETING_CHANNELS = ['店リピート', '電話', '紹介', 'SNS', 'WEB', 'Heaven'] as const
 
 // Staff Work Status
 export const WORK_STATUS = {

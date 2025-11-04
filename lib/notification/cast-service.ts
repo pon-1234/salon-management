@@ -210,6 +210,24 @@ export class CastNotificationService {
       throw error
     }
   }
+
+  async sendManualMessage(params: { cast: CastRecipient; message: string }): Promise<void> {
+    if (!this.ensureConfigured()) {
+      throw new Error('LINE通知機能が未設定のため送信できません。')
+    }
+
+    const recipient = this.resolveRecipient(params.cast)
+    if (!recipient) {
+      throw new Error('キャストのLINEユーザーIDが登録されていません。')
+    }
+
+    const trimmed = params.message?.trim()
+    if (!trimmed) {
+      throw new Error('送信メッセージが空です。')
+    }
+
+    await this.lineClient.pushText(recipient, trimmed)
+  }
 }
 
 export const castNotificationService = new CastNotificationService()

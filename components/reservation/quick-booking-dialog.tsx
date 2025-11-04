@@ -53,7 +53,7 @@ import type { DesignationFee } from '@/lib/designation/types'
 import { BusinessHoursRange, formatMinutesAsLabel } from '@/lib/settings/business-hours'
 import { useStore } from '@/contexts/store-context'
 import { calculateReservationRevenue } from '@/lib/reservation/revenue'
-import { PAYMENT_METHODS } from '@/lib/constants'
+import { MARKETING_CHANNELS, PAYMENT_METHODS } from '@/lib/constants'
 
 type DesignationType = 'none' | 'regular' | 'special'
 
@@ -71,9 +71,8 @@ type PriceBreakdown = {
   welfareRate: number
 }
 
-const marketingChannels = ['WEB', '店リピート', '電話', '紹介', 'SNS']
-
 const paymentMethods = Object.values(PAYMENT_METHODS)
+const DEFAULT_MARKETING_CHANNELS = [...MARKETING_CHANNELS]
 
 const formatYen = (amount: number) => `${amount.toLocaleString()}円`
 
@@ -218,6 +217,7 @@ export function QuickBookingDialog({
       ? selectedStaff
       : null
   )
+  const [marketingChannels, setMarketingChannels] = useState<string[]>(DEFAULT_MARKETING_CHANNELS)
 
   const {
     courses,
@@ -344,7 +344,7 @@ export function QuickBookingDialog({
     stationTravelTime: 0,
     bookingStatus: '仮予約',
     staff: selectedStaff?.name ?? '',
-    marketingChannel: 'WEB',
+    marketingChannel: DEFAULT_MARKETING_CHANNELS[0] ?? 'WEB',
     date: selectedTime ? formatDateInJst(selectedTime) : formatDateInJst(new Date()),
     time: selectedTime ? formatTimeInJst(selectedTime) : businessHours.startLabel,
     options: {},
@@ -361,6 +361,66 @@ export function QuickBookingDialog({
       setSelectedCourseId((prev) => prev || courseCatalog[0].id)
     }
   }, [courseCatalog, pricingLoading])
+
+  useEffect(() => {
+    let ignore = false
+    const controller = new AbortController()
+
+    const loadStoreSettings = async () => {
+      try {
+        const params = new URLSearchParams()
+        if (currentStore?.id) {
+          params.set('storeId', currentStore.id)
+        }
+        const response = await fetch(`/api/settings/store?${params.toString()}`, {
+          method: 'GET',
+          signal: controller.signal,
+        })
+
+        if (!response.ok) {
+          return
+        }
+
+        const payload = await response.json().catch(() => null)
+        const data = payload?.data ?? payload
+        const channels = Array.isArray(data?.marketingChannels) ? data.marketingChannels : null
+        if (!ignore && channels) {
+          const normalized = channels
+            .map((channel: unknown) => (typeof channel === 'string' ? channel.trim() : ''))
+            .filter((channel: string) => channel.length > 0)
+          if (normalized.length > 0) {
+            setMarketingChannels(Array.from(new Set(normalized)))
+          }
+        }
+      } catch (error) {
+        if (!ignore && !(error instanceof DOMException && error.name === 'AbortError')) {
+          console.warn('[QuickBookingDialog] Failed to load store marketing channels', error)
+        }
+      }
+    }
+
+    loadStoreSettings()
+
+    return () => {
+      ignore = true
+      controller.abort()
+    }
+  }, [currentStore?.id])
+
+  useEffect(() => {
+    if (marketingChannels.length === 0) {
+      return
+    }
+    setBookingDetails((prev) => {
+      if (prev.marketingChannel && marketingChannels.includes(prev.marketingChannel)) {
+        return prev
+      }
+      return {
+        ...prev,
+        marketingChannel: marketingChannels[0],
+      }
+    })
+  }, [marketingChannels])
 
   useEffect(() => {
     let ignore = false
@@ -425,10 +485,13 @@ export function QuickBookingDialog({
     if (area) {
       setBookingDetails((prev) => ({
         ...prev,
-        marketingChannel: prev.marketingChannel || 'WEB',
+        marketingChannel:
+          prev.marketingChannel && marketingChannels.includes(prev.marketingChannel)
+            ? prev.marketingChannel
+            : marketingChannels[0] ?? prev.marketingChannel ?? DEFAULT_MARKETING_CHANNELS[0] ?? 'WEB',
       }))
     }
-  }, [selectedAreaId, selectedStationId, areas, stations])
+  }, [selectedAreaId, selectedStationId, areas, stations, marketingChannels])
 
   useEffect(() => {
     setBookingDetails((prev) => ({
@@ -977,7 +1040,10 @@ export function QuickBookingDialog({
       additionalFee: 0,
       discountAmount: 0,
       paymentMethod: PAYMENT_METHODS.CASH,
-      marketingChannel: 'WEB',
+      marketingChannel:
+        marketingChannels.includes(prev.marketingChannel) && prev.marketingChannel.length > 0
+          ? prev.marketingChannel
+          : marketingChannels[0] ?? DEFAULT_MARKETING_CHANNELS[0] ?? 'WEB',
       locationMemo: stationOptions[0]?.name ?? '',
       notes: '',
     }))
@@ -992,6 +1058,7 @@ export function QuickBookingDialog({
     stations,
     designationFees,
     businessHours.startLabel,
+    marketingChannels,
   ])
 
   return (

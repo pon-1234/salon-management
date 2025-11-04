@@ -28,7 +28,13 @@ const storeSettingsSchema = z.object({
   lastOrder: z.string(),
   parkingInfo: z.string().optional(),
   welfareExpenseRate: z.coerce.number().min(0).max(100).optional(),
+  marketingChannels: z
+    .array(z.string().trim().min(1))
+    .min(1)
+    .optional(),
 })
+
+const DEFAULT_MARKETING_CHANNELS = ['店リピート', '電話', '紹介', 'SNS', 'WEB', 'Heaven']
 
 export async function GET(request: NextRequest) {
   const authError = await requireAdmin()
@@ -59,6 +65,7 @@ export async function GET(request: NextRequest) {
           lastOrder: '23:30',
           parkingInfo: '近隣にコインパーキングあり',
           welfareExpenseRate: 10,
+          marketingChannels: DEFAULT_MARKETING_CHANNELS,
         },
       })
     }
@@ -66,6 +73,9 @@ export async function GET(request: NextRequest) {
     return SuccessResponses.ok({
       ...settings,
       welfareExpenseRate: Number(settings.welfareExpenseRate ?? 10),
+      marketingChannels: Array.isArray(settings.marketingChannels) && settings.marketingChannels.length > 0
+        ? settings.marketingChannels
+        : DEFAULT_MARKETING_CHANNELS,
     })
   } catch (error) {
     return handleApiError(error)
@@ -83,6 +93,9 @@ export async function PUT(request: NextRequest) {
     // Validate request body
     const validatedData = storeSettingsSchema.parse(body)
     const welfareExpenseRate = validatedData.welfareExpenseRate ?? 10
+    const marketingChannels =
+      validatedData.marketingChannels?.map((channel) => channel.trim()).filter(Boolean) ??
+      DEFAULT_MARKETING_CHANNELS
 
     // Find existing settings or create new one
     const existingSettings = await db.storeSettings.findUnique({ where: { storeId } })
@@ -98,6 +111,7 @@ export async function PUT(request: NextRequest) {
           building: validatedData.building || '',
           parkingInfo: validatedData.parkingInfo || '',
           welfareExpenseRate,
+          marketingChannels,
         },
       })
     } else {
@@ -110,6 +124,7 @@ export async function PUT(request: NextRequest) {
           building: validatedData.building || '',
           parkingInfo: validatedData.parkingInfo || '',
           welfareExpenseRate,
+          marketingChannels,
         },
       })
     }
@@ -117,6 +132,10 @@ export async function PUT(request: NextRequest) {
     return SuccessResponses.updated({
       ...updatedSettings,
       welfareExpenseRate: Number(updatedSettings.welfareExpenseRate ?? 10),
+      marketingChannels:
+        Array.isArray(updatedSettings.marketingChannels) && updatedSettings.marketingChannels.length > 0
+          ? updatedSettings.marketingChannels
+          : DEFAULT_MARKETING_CHANNELS,
     })
   } catch (error) {
     return handleApiError(error)

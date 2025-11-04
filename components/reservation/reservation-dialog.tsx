@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,17 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import {
   Calendar,
   MapPin,
@@ -99,6 +110,17 @@ type EditFormState = {
   optionIds: string[]
   locationMemo: string
 }
+
+type LineLogEntry = {
+  id: string
+  message: string
+  status: 'sent' | 'failed' | string
+  errorMessage: string | null
+  createdAt: Date
+  castName: string | null
+}
+
+const MAX_LINE_MESSAGE_LENGTH = 1000
 
 const statusColorMap: Record<string, string> = {
   confirmed: 'bg-emerald-600',
@@ -246,6 +268,28 @@ function normalizePaymentMethodValue(input?: string | null): PaymentMethod {
   return PAYMENT_METHODS.CASH
 }
 
+const DEFAULT_MARKETING_CHANNELS = [...MARKETING_CHANNELS]
+
+function normalizeMarketingChannelValue(
+  input: string | null | undefined,
+  available: string[]
+): string {
+  const fallback = available[0] ?? DEFAULT_MARKETING_CHANNELS[0] ?? 'WEB'
+  if (typeof input !== 'string') {
+    return fallback
+  }
+  const trimmed = input.trim()
+  if (trimmed.length === 0) {
+    return fallback
+  }
+  if (available.includes(trimmed)) {
+    return trimmed
+  }
+  const lower = trimmed.toLowerCase()
+  const match = available.find((channel) => channel.toLowerCase() === lower)
+  return match ?? trimmed
+}
+
 interface ReservationDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -277,7 +321,7 @@ export function ReservationDialog({
     storeMemo: '',
     notes: '',
     paymentMethod: PAYMENT_METHODS.CASH,
-    marketingChannel: 'WEB',
+    marketingChannel: DEFAULT_MARKETING_CHANNELS[0] ?? 'WEB',
     transportationFee: 0,
     additionalFee: 0,
     discountAmount: 0,
@@ -316,6 +360,87 @@ export function ReservationDialog({
   const [isHistoryLoading, setIsHistoryLoading] = useState(false)
   const [historyReloadToken, setHistoryReloadToken] = useState(0)
   const UNASSIGNED_VALUE = '__unassigned__'
+  const [marketingChannelOptions, setMarketingChannelOptions] = useState<string[]>(() => {
+    const seed = new Set<string>(DEFAULT_MARKETING_CHANNELS)
+    if (reservation?.marketingChannel) {
+      seed.add(reservation.marketingChannel)
+    }
+    return Array.from(seed)
+  })
+
+  const [lineMessage, setLineMessage] = useState('')
+  const [lineLogs, setLineLogs] = useState<LineLogEntry[]>([])
+  const [isLoadingLineLogs, setIsLoadingLineLogs] = useState(false)
+  const [lineSending, setLineSending] = useState(false)
+  const [lineSendError, setLineSendError] = useState<string | null>(null)
+  const [lineSendSuccess, setLineSendSuccess] = useState<string | null>(null)
+  const [lineConfirmOpen, setLineConfirmOpen] = useState(false)
+  const lastDefaultLineMessageRef = useRef<string>('')
+
+  useEffect(() => {
+    let ignore = false
+    const controller = new AbortController()
+
+    const loadStoreSettings = async () => {
+      try {
+        const params = new URLSearchParams()
+        if (currentStore?.id) {
+          params.set('storeId', currentStore.id)
+        }
+        const response = await fetch(`/api/settings/store?${params.toString()}`, {
+          method: 'GET',
+          signal: controller.signal,
+        })
+
+        if (!response.ok) {
+          return
+        }
+
+        const payload = await response.json().catch(() => null)
+        const data = payload?.data ?? payload
+        const channels = Array.isArray(data?.marketingChannels) ? data.marketingChannels : null
+        if (!ignore && channels) {
+          const normalized = channels
+            .map((channel: unknown) => (typeof channel === 'string' ? channel.trim() : ''))
+            .filter((channel: string) => channel.length > 0)
+          const merged = Array.from(
+            new Set([
+              ...normalized,
+              ...DEFAULT_MARKETING_CHANNELS,
+              reservation?.marketingChannel ?? '',
+            ].filter((channel) => channel.length > 0))
+          )
+          if (merged.length > 0) {
+            setMarketingChannelOptions(merged)
+          }
+        }
+      } catch (error) {
+        if (!ignore && !(error instanceof DOMException && error.name === 'AbortError')) {
+          console.warn('[ReservationDialog] Failed to load store marketing channels', error)
+        }
+      }
+    }
+
+    loadStoreSettings()
+
+    return () => {
+      ignore = true
+      controller.abort()
+    }
+  }, [currentStore?.id, reservation?.marketingChannel])
+
+  useEffect(() => {
+    setFormState((prev) => {
+      const normalized = normalizeMarketingChannelValue(prev.marketingChannel, marketingChannelOptions)
+      if (normalized === prev.marketingChannel) {
+        return prev
+      }
+      return {
+        ...prev,
+        marketingChannel: normalized,
+      }
+    })
+  }, [marketingChannelOptions])
 
   const reservationDurationMinutes = useMemo(() => {
     if (!reservation) return 0
@@ -772,6 +897,207 @@ export function ReservationDialog({
     reservation?.price,
   ])
 
+  const mapLineLogEntry = useCallback((raw: any): LineLogEntry => ({
+    id: String(raw.id),
+    message: String(raw.message ?? ''),
+    status: String(raw.status ?? 'sent'),
+    errorMessage: raw.errorMessage ? String(raw.errorMessage) : null,
+    createdAt: raw.createdAt ? new Date(raw.createdAt) : new Date(),
+    castName: raw.cast?.name ?? null,
+  }), [])
+
+  const refreshLineLogs = useCallback(async () => {
+    if (!reservation?.id) {
+      setLineLogs([])
+      return
+    }
+
+    const storeQuery = currentStore?.id ? `?storeId=${currentStore.id}` : ''
+    setIsLoadingLineLogs(true)
+    try {
+      const response = await fetch(`/api/reservation/${reservation.id}/line${storeQuery}`, {
+        method: 'GET',
+        cache: 'no-store',
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch LINE logs (${response.status})`)
+      }
+
+      const payload = await response.json().catch(() => null)
+      const rawLogs: any[] = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : []
+      setLineLogs(
+        rawLogs
+          .map((entry: any) => mapLineLogEntry(entry))
+          .sort((a: LineLogEntry, b: LineLogEntry) => b.createdAt.getTime() - a.createdAt.getTime())
+      )
+    } catch (error) {
+      console.warn('[ReservationDialog] Failed to fetch LINE logs', error)
+    } finally {
+      setIsLoadingLineLogs(false)
+    }
+  }, [currentStore?.id, mapLineLogEntry, reservation?.id])
+
+  useEffect(() => {
+    if (!open) return
+    refreshLineLogs()
+  }, [open, refreshLineLogs])
+
+  useEffect(() => {
+    if (!reservation?.id) {
+      setLineLogs([])
+    }
+  }, [reservation?.id])
+
+  const buildDefaultLineMessage = useCallback(() => {
+    if (!reservation) return ''
+    const castName = selectedCast?.name ?? reservation.staff ?? 'キャスト'
+    const customerName = reservation.customerName ?? 'お客様'
+    const start = format(reservation.startTime, 'yyyy/MM/dd HH:mm')
+    const end = format(reservation.endTime, 'HH:mm')
+    const lines: string[] = [
+      `【予約共有】${castName}さん`,
+      '',
+      `日時: ${start} 〜 ${end}`,
+      `お客様: ${customerName}`,
+    ]
+
+    if (reservation.course) {
+      lines.push(`コース: ${reservation.course}`)
+    }
+    if (reservation.designation) {
+      lines.push(`指名: ${reservation.designation}`)
+    }
+    if (reservation.locationMemo) {
+      lines.push(`現地メモ: ${reservation.locationMemo}`)
+    }
+    if (reservation.notes) {
+      lines.push(`店舗メモ: ${reservation.notes}`)
+    }
+
+    lines.push('')
+    lines.push('ご対応よろしくお願いいたします。')
+
+    return lines.join('\n')
+  }, [reservation, selectedCast])
+
+  useEffect(() => {
+    if (!reservation) return
+    const nextDefault = buildDefaultLineMessage()
+    setLineMessage((prev) => {
+      if (!prev || prev === lastDefaultLineMessageRef.current) {
+        lastDefaultLineMessageRef.current = nextDefault
+        return nextDefault
+      }
+      return prev
+    })
+  }, [buildDefaultLineMessage, reservation?.id])
+
+  useEffect(() => {
+    if (!open) {
+      setLineSendError(null)
+      setLineSendSuccess(null)
+    }
+  }, [open])
+
+  const trimmedLineMessage = lineMessage.trim()
+  const lineMessageLength = trimmedLineMessage.length
+  const isLineMessageTooLong = lineMessageLength > MAX_LINE_MESSAGE_LENGTH
+
+  const canSendLineMessage = lineMessageLength > 0 && !isLineMessageTooLong && Boolean(selectedCast?.lineUserId)
+
+  const handleLineMessageChange = (value: string) => {
+    setLineMessage(value)
+    setLineSendError(null)
+    setLineSendSuccess(null)
+  }
+
+  const handleResetLineMessage = () => {
+    const template = buildDefaultLineMessage()
+    lastDefaultLineMessageRef.current = template
+    setLineMessage(template)
+    setLineSendError(null)
+    setLineSendSuccess(null)
+  }
+
+  const handleConfirmSendLineMessage = useCallback(async () => {
+    if (!reservation?.id) {
+      setLineConfirmOpen(false)
+      return
+    }
+
+    if (!selectedCast?.lineUserId) {
+      setLineSendError('キャストのLINEユーザーIDが登録されていません。')
+      setLineConfirmOpen(false)
+      return
+    }
+
+    const messageToSend = trimmedLineMessage
+    if (messageToSend.length === 0) {
+      setLineSendError('メッセージを入力してください。')
+      setLineConfirmOpen(false)
+      return
+    }
+
+    if (messageToSend.length > MAX_LINE_MESSAGE_LENGTH) {
+      setLineSendError(`メッセージは${MAX_LINE_MESSAGE_LENGTH}文字以内で入力してください。`)
+      setLineConfirmOpen(false)
+      return
+    }
+
+    setLineSending(true)
+    setLineSendError(null)
+    setLineSendSuccess(null)
+
+    const storeQuery = currentStore?.id ? `?storeId=${currentStore.id}` : ''
+
+    try {
+      const response = await fetch(`/api/reservation/${reservation.id}/line${storeQuery}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: messageToSend }),
+      })
+
+      const payload = await response.json().catch(() => null)
+      const rawLog = payload?.data ?? payload
+
+      if (response.ok) {
+        if (rawLog) {
+          const entry = mapLineLogEntry(rawLog)
+          setLineLogs((prev) => [entry, ...prev.filter((log) => log.id !== entry.id)])
+        } else {
+          await refreshLineLogs()
+        }
+        setLineSendSuccess('LINE通知を送信しました。')
+        lastDefaultLineMessageRef.current = messageToSend
+      } else {
+        if (rawLog) {
+          const entry = mapLineLogEntry(rawLog)
+          setLineLogs((prev) => [entry, ...prev.filter((log) => log.id !== entry.id)])
+        }
+        const apiError =
+          (payload?.error as string | undefined) ??
+          `LINE通知の送信に失敗しました（${response.status}）`
+        setLineSendError(apiError)
+      }
+    } catch (error) {
+      console.error('[ReservationDialog] Failed to send LINE message', error)
+      setLineSendError('LINE通知の送信に失敗しました。時間を置いて再度お試しください。')
+    } finally {
+      setLineSending(false)
+      setLineConfirmOpen(false)
+    }
+  }, [
+    currentStore?.id,
+    mapLineLogEntry,
+    refreshLineLogs,
+    reservation?.id,
+    selectedCast?.lineUserId,
+    trimmedLineMessage,
+  ])
+
   const priceBreakdown = useMemo(() => {
     const fallbackCoursePrice = reservation?.price ?? 0
     const basePrice = selectedCourse
@@ -846,7 +1172,7 @@ useEffect(() => {
       storeMemo: reservation.storeMemo || '',
       notes: reservation.notes || '',
       paymentMethod: normalizePaymentMethodValue(reservation.paymentMethod),
-      marketingChannel: reservation.marketingChannel || 'WEB',
+      marketingChannel: normalizeMarketingChannelValue(reservation.marketingChannel, marketingChannelOptions),
       transportationFee: reservation.transportationFee ?? 0,
       additionalFee: reservation.additionalFee ?? 0,
       discountAmount: reservation.discountAmount ?? 0,
@@ -859,7 +1185,7 @@ useEffect(() => {
     })
     setValidationError(null)
   }
-}, [reservation, reservationDesignation, normalizedInitialOptionIds])
+}, [reservation, reservationDesignation, normalizedInitialOptionIds, marketingChannelOptions])
 
 useEffect(() => {
   if (!isEditMode) return
@@ -901,7 +1227,7 @@ useEffect(() => {
       storeMemo: reservation.storeMemo || '',
       notes: reservation.notes || '',
       paymentMethod: normalizePaymentMethodValue(reservation.paymentMethod),
-      marketingChannel: reservation.marketingChannel || 'WEB',
+      marketingChannel: normalizeMarketingChannelValue(reservation.marketingChannel, marketingChannelOptions),
       transportationFee: reservation.transportationFee ?? 0,
       additionalFee: reservation.additionalFee ?? 0,
       discountAmount: reservation.discountAmount ?? 0,
@@ -1454,7 +1780,7 @@ useEffect(() => {
                               <SelectValue placeholder="チャネルを選択" />
                             </SelectTrigger>
                             <SelectContent>
-                              {MARKETING_CHANNELS.map((channel) => (
+                              {marketingChannelOptions.map((channel) => (
                                 <SelectItem key={channel} value={channel}>
                                   {channel}
                                 </SelectItem>
@@ -1628,6 +1954,145 @@ useEffect(() => {
                 </CardContent>
               </Card>
             </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">LINE通知</CardTitle>
+                <Phone className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                {!selectedCast?.lineUserId && (
+                  <Alert variant="destructive">
+                    <AlertDescription>キャストにLINEユーザーIDが未登録のため送信できません。キャスト管理でLINEユーザーIDを設定してください。</AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="line-message">メッセージ本文</Label>
+                  <Textarea
+                    id="line-message"
+                    value={lineMessage}
+                    onChange={(event) => handleLineMessageChange(event.target.value)}
+                    rows={6}
+                    maxLength={MAX_LINE_MESSAGE_LENGTH}
+                    placeholder={buildDefaultLineMessage()}
+                  />
+                  <div className="flex items-center justify-between text-xs">
+                    <span className={cn('text-muted-foreground', isLineMessageTooLong && 'text-red-600')}>
+                      {lineMessageLength} / {MAX_LINE_MESSAGE_LENGTH} 文字
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleResetLineMessage}
+                      disabled={lineSending}
+                    >
+                      テンプレートに戻す
+                    </Button>
+                  </div>
+                  {isLineMessageTooLong && (
+                    <p className="text-xs text-red-600">メッセージは{MAX_LINE_MESSAGE_LENGTH}文字以内で入力してください。</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label>送信プレビュー</Label>
+                  <div className="whitespace-pre-wrap rounded-md border bg-muted/40 p-3 font-mono text-xs leading-relaxed">
+                    {lineMessageLength > 0 ? lineMessage : 'メッセージを入力してください。'}
+                  </div>
+                </div>
+
+                {lineSendError && (
+                  <p className="text-sm text-red-600">{lineSendError}</p>
+                )}
+                {lineSendSuccess && (
+                  <p className="text-sm text-emerald-600">{lineSendSuccess}</p>
+                )}
+
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <p className="text-xs text-muted-foreground">送信先: {selectedCast?.name ?? 'キャスト未設定'}</p>
+                  <AlertDialog open={lineConfirmOpen} onOpenChange={setLineConfirmOpen}>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        type="button"
+                        disabled={lineSending || !canSendLineMessage}
+                      >
+                        LINE送信
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>LINE通知を送信しますか？</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {selectedCast?.name
+                            ? `${selectedCast.name}さんに以下の内容でLINE通知を送信します。`
+                            : '以下の内容でLINE通知を送信します。'}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <div className="whitespace-pre-wrap rounded-md border bg-muted/40 p-3 font-mono text-sm leading-relaxed">
+                        {lineMessageLength > 0 ? lineMessage : 'メッセージを入力してください。'}
+                      </div>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel disabled={lineSending}>キャンセル</AlertDialogCancel>
+                        <AlertDialogAction disabled={lineSending} onClick={handleConfirmSendLineMessage}>
+                          {lineSending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />送信中...
+                            </>
+                          ) : (
+                            '送信する'
+                          )}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-medium">送信ログ</h4>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={refreshLineLogs}
+                      disabled={isLoadingLineLogs}
+                    >
+                      {isLoadingLineLogs ? (
+                        <span className="flex items-center gap-1">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> 更新中
+                        </span>
+                      ) : (
+                        '更新'
+                      )}
+                    </Button>
+                  </div>
+                  {isLoadingLineLogs ? (
+                    <p className="text-xs text-muted-foreground">送信履歴を読み込んでいます...</p>
+                  ) : lineLogs.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">送信履歴はまだありません。</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {lineLogs.map((log) => (
+                        <div key={log.id} className="rounded-md border p-3">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-medium">{format(log.createdAt, 'yyyy/MM/dd HH:mm')}</span>
+                            <Badge variant={log.status === 'sent' ? 'default' : 'destructive'}>
+                              {log.status === 'sent' ? '送信済み' : '送信失敗'}
+                            </Badge>
+                          </div>
+                          <p className="mt-1 text-xs text-muted-foreground">{log.castName ?? 'キャスト未設定'}</p>
+                          <pre className="mt-2 whitespace-pre-wrap rounded bg-muted/40 p-2 text-xs leading-relaxed">{log.message}</pre>
+                          {log.errorMessage && (
+                            <p className="mt-2 text-xs text-red-600">エラー: {log.errorMessage}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
           </TabsContent>
 
           <TabsContent value="details" className="space-y-6 p-4">

@@ -82,6 +82,7 @@ model Cast {
   reservations           Reservation[]
   reviews                Review[]
   messages               Message[]
+  lineLogs               ReservationLineLog[]
   store                  Store          @relation(fields: [storeId], references: [id])
 
   @@index([storeId])
@@ -132,6 +133,7 @@ model Reservation {
   histories  ReservationHistory[]
   reviews    Review[]
   store      Store               @relation(fields: [storeId], references: [id])
+  lineLogs   ReservationLineLog[]
 
   @@index([storeId])
 }
@@ -390,11 +392,27 @@ model StoreSettings {
   lastOrder     String
   parkingInfo   String?
   welfareExpenseRate Decimal @default(10)
+  marketingChannels   String[] @default(["店リピート", "電話", "紹介", "SNS", "WEB", "Heaven"])
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   store         Store    @relation(fields: [storeId], references: [id])
 
   @@index([storeId])
+}
+
+model ReservationLineLog {
+  id            String      @id @default(cuid())
+  reservationId String
+  castId        String?
+  message       String
+  status        String      @default("sent")
+  errorMessage  String?
+  createdAt     DateTime    @default(now())
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+  cast          Cast?       @relation(fields: [castId], references: [id])
+
+  @@index([reservationId])
+  @@index([castId])
 }
 
 model HotelSettings {

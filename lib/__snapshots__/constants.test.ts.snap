@@ -31,11 +31,12 @@ exports[`Constants > should match the snapshot for all exported constants 1`] = 
     "PHONE_NUMBER": "090-1234-5678",
   },
   "MARKETING_CHANNELS": [
-    "WEB",
+    "店リピート",
     "電話",
     "紹介",
-    "リピート",
     "SNS",
+    "WEB",
+    "Heaven",
   ],
   "PAYMENT_METHODS": {
     "CARD": "クレジットカード",
