@@ -2,14 +2,14 @@ import type { ReactNode } from 'react'
 import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
-import { CastPortalNavigation } from '@/components/cast-portal/navigation'
+import { CastPortalNavigation, type CastPortalNavigationProps } from '@/components/cast-portal/navigation'
 import { CastPortalHeader } from '@/components/cast-portal/portal-header'
 
-export const NAV_ITEMS = [
-  { href: '/cast/dashboard', label: 'ダッシュボード' },
-  { href: '/cast/reservations', label: '予約一覧' },
-  { href: '/cast/settlements', label: '精算・売上' },
-  { href: '/cast/chat', label: 'スタッフチャット' },
+const NAV_ITEMS: CastPortalNavigationProps['items'] = [
+  { href: '/cast/dashboard', label: 'ホーム', icon: 'home' },
+  { href: '/cast/reservations', label: '予約', icon: 'calendar' },
+  { href: '/cast/settlements', label: '精算', icon: 'wallet' },
+  { href: '/cast/chat', label: 'チャット', icon: 'chat' },
 ]
 
 export default async function CastPortalLayout({

@@ -3,13 +3,19 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { Home, CalendarCheck, Wallet2, MessageCircle } from 'lucide-react'
 
-interface NavigationItem {
+export interface NavigationItem {
   href: string
   label: string
+  icon: 'home' | 'calendar' | 'wallet' | 'chat'
 }
 
-export function CastPortalNavigation({ items }: { items: NavigationItem[] }) {
+export interface CastPortalNavigationProps {
+  items: NavigationItem[]
+}
+
+export function CastPortalNavigation({ items }: CastPortalNavigationProps) {
   const pathname = usePathname()
 
   return (
@@ -27,6 +33,12 @@ export function CastPortalNavigation({ items }: { items: NavigationItem[] }) {
                 isActive && 'bg-primary/10 text-primary'
               )}
             >
+              <span className="mr-2 flex h-5 w-5 items-center justify-center">
+                {item.icon === 'home' && <Home className="h-4 w-4" />}
+                {item.icon === 'calendar' && <CalendarCheck className="h-4 w-4" />}
+                {item.icon === 'wallet' && <Wallet2 className="h-4 w-4" />}
+                {item.icon === 'chat' && <MessageCircle className="h-4 w-4" />}
+              </span>
               {item.label}
             </Link>
           )
