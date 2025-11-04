@@ -1,6 +1,8 @@
 import { db } from '@/lib/db'
 import {
+  addDays,
   addMinutes,
+  differenceInCalendarDays,
   endOfDay,
   endOfMonth,
   format,
@@ -18,11 +20,25 @@ import type {
   CastPortalReservation,
   CastReservationListResponse,
   CastReservationScope,
+  CastScheduleEntry,
+  CastScheduleUpdateInput,
+  CastScheduleWindow,
   CastSettlementRecord,
   CastSettlementsData,
 } from './types'
 
 type ReservationWithRelations = Awaited<ReturnType<typeof fetchReservationsForCast>>[number]
+
+const DEFAULT_SCHEDULE_START_TIME = '10:00'
+const DEFAULT_SCHEDULE_END_TIME = '18:00'
+const MAX_SCHEDULE_WINDOW_DAYS = 31
+
+export class CastScheduleValidationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'CastScheduleValidationError'
+  }
+}
 
 async function fetchReservationsForCast(params: {
   castId: string
@@ -479,6 +495,164 @@ export async function getCastSettlements(castId: string, storeId: string): Promi
     },
     recent,
   }
+}
+
+function parseDateKey(dateKey: string): Date {
+  const parsed = new Date(`${dateKey}T00:00:00`)
+  if (Number.isNaN(parsed.getTime())) {
+    throw new CastScheduleValidationError('日付の形式が正しくありません。')
+  }
+  return startOfDay(parsed)
+}
+
+function combineDateAndTime(dateKey: string, time: string): Date {
+  const parsed = new Date(`${dateKey}T${time}:00`)
+  if (Number.isNaN(parsed.getTime())) {
+    throw new CastScheduleValidationError('時刻の形式が正しくありません。')
+  }
+  return parsed
+}
+
+function toScheduleEntry(record: { id: string; date: Date; startTime: Date; endTime: Date; isAvailable: boolean } | undefined, dateKey: string): CastScheduleEntry {
+  if (!record) {
+    return {
+      id: null,
+      date: dateKey,
+      isAvailable: false,
+      startTime: DEFAULT_SCHEDULE_START_TIME,
+      endTime: DEFAULT_SCHEDULE_END_TIME,
+    }
+  }
+
+  return {
+    id: record.id,
+    date: dateKey,
+    isAvailable: record.isAvailable,
+    startTime: format(record.startTime, 'HH:mm'),
+    endTime: format(record.endTime, 'HH:mm'),
+  }
+}
+
+export async function getCastScheduleWindow(
+  castId: string,
+  storeId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<CastScheduleWindow> {
+  const normalizedStart = startOfDay(startDate)
+  const normalizedEnd = startOfDay(endDate)
+
+  const safeEnd = differenceInCalendarDays(normalizedEnd, normalizedStart) >= MAX_SCHEDULE_WINDOW_DAYS
+    ? addDays(normalizedStart, MAX_SCHEDULE_WINDOW_DAYS - 1)
+    : normalizedEnd
+
+  const rawSchedules = await db.castSchedule.findMany({
+    where: {
+      castId,
+      date: {
+        gte: normalizedStart,
+        lte: safeEnd,
+      },
+      cast: {
+        storeId,
+      },
+    },
+    orderBy: [{ date: 'asc' }],
+  })
+
+  const scheduleMap = new Map<string, (typeof rawSchedules)[number]>()
+  rawSchedules.forEach((record) => {
+    const key = format(record.date, 'yyyy-MM-dd')
+    scheduleMap.set(key, record)
+  })
+
+  const daysDiff = Math.max(0, differenceInCalendarDays(safeEnd, normalizedStart))
+  const items: CastScheduleEntry[] = []
+
+  for (let index = 0; index <= daysDiff; index += 1) {
+    const currentDate = addDays(normalizedStart, index)
+    const key = format(currentDate, 'yyyy-MM-dd')
+    const record = scheduleMap.get(key)
+    items.push(toScheduleEntry(record, key))
+  }
+
+  return {
+    items,
+    meta: {
+      startDate: format(normalizedStart, 'yyyy-MM-dd'),
+      endDate: format(safeEnd, 'yyyy-MM-dd'),
+    },
+  }
+}
+
+export async function updateCastScheduleWindow(
+  castId: string,
+  storeId: string,
+  updates: CastScheduleUpdateInput[],
+  range: { startDate: Date; endDate: Date }
+): Promise<CastScheduleWindow> {
+  if (!updates.length) {
+    return getCastScheduleWindow(castId, storeId, range.startDate, range.endDate)
+  }
+
+  const today = startOfDay(new Date())
+
+  await db.$transaction(async (tx) => {
+    for (const update of updates) {
+      const scheduleDate = parseDateKey(update.date)
+
+      if (scheduleDate < today) {
+        throw new CastScheduleValidationError('過去の日付は編集できません。')
+      }
+
+      if (update.status === 'off') {
+        await tx.castSchedule.deleteMany({
+          where: {
+            castId,
+            date: scheduleDate,
+          },
+        })
+        continue
+      }
+
+      if (!update.startTime || !update.endTime) {
+        throw new CastScheduleValidationError('出勤予定には開始時刻と終了時刻が必要です。')
+      }
+
+      const startTime = combineDateAndTime(update.date, update.startTime)
+      const endTime = combineDateAndTime(update.date, update.endTime)
+
+      if (endTime <= startTime) {
+        throw new CastScheduleValidationError('終了時刻は開始時刻より後に設定してください。')
+      }
+
+      await tx.castSchedule.upsert({
+        where: {
+          castId_date: {
+            castId,
+            date: scheduleDate,
+          },
+        },
+        create: {
+          castId,
+          date: scheduleDate,
+          startTime,
+          endTime,
+          isAvailable: true,
+        },
+        update: {
+          startTime,
+          endTime,
+          isAvailable: true,
+        },
+      })
+    }
+  })
+
+  const normalizedStart = startOfDay(range.startDate)
+  const normalizedEnd = startOfDay(range.endDate)
+
+  return getCastScheduleWindow(castId, storeId, normalizedStart, normalizedEnd)
 }
 
 export async function resolveCastStoreId(castId: string, fallback?: string): Promise<string> {

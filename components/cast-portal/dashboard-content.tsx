@@ -23,6 +23,7 @@ import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/components/ui/use-toast'
 import { cn } from '@/lib/utils'
 import { Label } from '@/components/ui/label'
+import { CastScheduleManager } from '@/components/cast-portal/schedule-manager'
 
 interface Props {
   initialData: CastDashboardData
@@ -360,6 +361,8 @@ export function CastDashboardContent({ initialData }: Props) {
           </CardContent>
         </Card>
       </div>
+
+      <CastScheduleManager />
     </div>
   )
 }

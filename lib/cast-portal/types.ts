@@ -81,6 +81,29 @@ export interface CastReservationListResponse {
   }
 }
 
+export interface CastScheduleEntry {
+  id: string | null
+  date: string // yyyy-MM-dd
+  isAvailable: boolean
+  startTime: string
+  endTime: string
+}
+
+export interface CastScheduleWindow {
+  items: CastScheduleEntry[]
+  meta: {
+    startDate: string
+    endDate: string
+  }
+}
+
+export interface CastScheduleUpdateInput {
+  date: string
+  status: 'working' | 'off'
+  startTime?: string
+  endTime?: string
+}
+
 export interface CastSettlementSummary {
   month: string
   totalRevenue: number
