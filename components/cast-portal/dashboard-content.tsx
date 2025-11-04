@@ -152,6 +152,8 @@ export function CastDashboardContent({ initialData }: Props) {
     [data.cast.workStatus, toast]
   )
 
+  const shouldShowWorkStatusControl = data.cast.workStatus !== '休日'
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -188,11 +190,13 @@ export function CastDashboardContent({ initialData }: Props) {
         />
       </div>
 
-      <CastWorkStatusControl
-        currentStatus={data.cast.workStatus}
-        isPending={isStatusPending}
-        onChange={handleWorkStatusChange}
-      />
+      {shouldShowWorkStatusControl ? (
+        <CastWorkStatusControl
+          currentStatus={data.cast.workStatus}
+          isPending={isStatusPending}
+          onChange={handleWorkStatusChange}
+        />
+      ) : null}
 
       <AttendanceCard
         reservation={currentReservation}
