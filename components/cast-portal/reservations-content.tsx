@@ -146,7 +146,7 @@ export function CastReservationsContent({ initialData }: { initialData: CastRese
       </div>
 
       <Dialog open={Boolean(selectedReservation)} onOpenChange={(open) => !open && setSelectedReservation(null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden">
           {isDetailLoading ? (
             <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 読み込み中です...
