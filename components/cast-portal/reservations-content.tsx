@@ -16,7 +16,6 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/use-toast'
 import { cn } from '@/lib/utils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { useSearchParams } from 'next/navigation'
 
 const SCOPES: CastReservationScope[] = ['upcoming', 'today', 'past']
@@ -153,17 +152,17 @@ export function CastReservationsContent({ initialData }: { initialData: CastRese
         )}
       </div>
 
-      <Dialog open={Boolean(selectedReservation)} onOpenChange={(open) => !open && setSelectedReservation(null)}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden">
-          {isDetailLoading ? (
-            <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 読み込み中です...
-            </div>
-          ) : selectedReservation ? (
-            <ReservationDetailView reservation={selectedReservation} />
-          ) : null}
-        </DialogContent>
-      </Dialog>
+        <Dialog open={Boolean(selectedReservation)} onOpenChange={(open) => !open && setSelectedReservation(null)}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto p-0">
+            {isDetailLoading ? (
+              <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 読み込み中です...
+              </div>
+            ) : selectedReservation ? (
+              <ReservationDetailView reservation={selectedReservation} />
+            ) : null}
+          </DialogContent>
+        </Dialog>
     </div>
   )
 }
@@ -291,51 +290,49 @@ function ReservationDetailView({ reservation }: { reservation: CastReservationDe
   }, [reservation])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <DialogHeader>
         <DialogTitle className="text-lg">予約詳細</DialogTitle>
       </DialogHeader>
-      <ScrollArea className="max-h-[480px] pr-4">
-        <div className="space-y-6">
-          <section className="grid gap-4 rounded-lg border border-border/60 bg-muted/20 p-4 sm:grid-cols-2">
-            <InfoItem label="日時" value={`${format(startTime, 'yyyy/MM/dd (EEE) HH:mm')} - ${format(endTime, 'HH:mm')}`} />
-            <InfoItem label="顧客" value={reservation.customerAlias} />
-            <InfoItem label="電話番号" value={reservation.customerPhone ?? '未登録'} />
-            <InfoItem label="支払い方法" value={reservation.paymentMethod ?? '未設定'} />
-            <InfoItem label="マーケティング経路" value={reservation.marketingChannel ?? '未設定'} />
-            <InfoItem label="指名種別" value={renderDesignation(reservation.designationType)} />
-          </section>
+      <div className="space-y-6">
+        <section className="grid gap-4 rounded-lg border border-border/60 bg-muted/20 p-4 sm:grid-cols-2">
+          <InfoItem label="日時" value={`${format(startTime, 'yyyy/MM/dd (EEE) HH:mm')} - ${format(endTime, 'HH:mm')}`} />
+          <InfoItem label="顧客" value={reservation.customerAlias} />
+          <InfoItem label="電話番号" value={reservation.customerPhone ?? '未登録'} />
+          <InfoItem label="支払い方法" value={reservation.paymentMethod ?? '未設定'} />
+          <InfoItem label="マーケティング経路" value={reservation.marketingChannel ?? '未設定'} />
+          <InfoItem label="指名種別" value={renderDesignation(reservation.designationType)} />
+        </section>
 
-          <section className="space-y-3 rounded-lg border border-border/60 p-4">
-            <h3 className="text-sm font-semibold text-foreground">料金内訳</h3>
-            <div className="grid gap-2 text-sm sm:grid-cols-2">
-              {pricingItems.map((item) => (
-                <InfoItem key={item.label} label={item.label} value={item.value} inline />
+        <section className="space-y-3 rounded-lg border border-border/60 p-4">
+          <h3 className="text-sm font-semibold text-foreground">料金内訳</h3>
+          <div className="grid gap-2 text-sm sm:grid-cols-2">
+            {pricingItems.map((item) => (
+              <InfoItem key={item.label} label={item.label} value={item.value} inline />
+            ))}
+          </div>
+        </section>
+
+        <section className="space-y-3 rounded-lg border border-border/60 p-4">
+          <h3 className="text-sm font-semibold text-foreground">備考・移動情報</h3>
+          <InfoItem label="集合場所" value={reservation.areaName ?? '未設定'} />
+          <InfoItem label="詳細" value={reservation.locationMemo ?? reservation.areaMemo ?? '特記事項なし'} />
+          <InfoItem label="メモ" value={reservation.notes ?? '入力されていません'} />
+        </section>
+
+        <section className="space-y-3 rounded-lg border border-border/60 p-4">
+          <h3 className="text-sm font-semibold text-foreground">オプション</h3>
+          {reservation.options.length === 0 ? (
+            <p className="text-sm text-muted-foreground">選択されたオプションはありません。</p>
+          ) : (
+            <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
+              {reservation.options.map((option) => (
+                <li key={option.id}>{option.name}</li>
               ))}
-            </div>
-          </section>
-
-          <section className="space-y-3 rounded-lg border border-border/60 p-4">
-            <h3 className="text-sm font-semibold text-foreground">備考・移動情報</h3>
-            <InfoItem label="集合場所" value={reservation.areaName ?? '未設定'} />
-            <InfoItem label="詳細" value={reservation.locationMemo ?? reservation.areaMemo ?? '特記事項なし'} />
-            <InfoItem label="メモ" value={reservation.notes ?? '入力されていません'} />
-          </section>
-
-          <section className="space-y-3 rounded-lg border border-border/60 p-4">
-            <h3 className="text-sm font-semibold text-foreground">オプション</h3>
-            {reservation.options.length === 0 ? (
-              <p className="text-sm text-muted-foreground">選択されたオプションはありません。</p>
-            ) : (
-              <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
-                {reservation.options.map((option) => (
-                  <li key={option.id}>{option.name}</li>
-                ))}
-              </ul>
-            )}
-          </section>
-        </div>
-      </ScrollArea>
+            </ul>
+          )}
+        </section>
+      </div>
     </div>
   )
 }
