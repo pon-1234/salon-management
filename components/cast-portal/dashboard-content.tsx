@@ -20,6 +20,7 @@ interface Props {
 export function CastDashboardContent({ initialData }: Props) {
   const [data, setData] = useState<CastDashboardData>(initialData)
   const [isPending, startTransition] = useTransition()
+  const [isStatusPending, startStatusTransition] = useTransition()
   const { toast } = useToast()
 
   const currentReservation = useMemo(() => {
@@ -109,6 +110,48 @@ export function CastDashboardContent({ initialData }: Props) {
     })
   }, [refreshDashboard, toast])
 
+  const handleWorkStatusChange = useCallback(
+    (nextStatus: '出勤' | '未出勤' | '休日') => {
+      if (nextStatus === data.cast.workStatus) {
+        return
+      }
+
+      startStatusTransition(async () => {
+        try {
+          const response = await fetch('/api/cast-portal/work-status', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ workStatus: nextStatus }),
+          })
+
+          if (!response.ok) {
+            const payload = await response.json().catch(() => ({}))
+            throw new Error(payload.error ?? 'ステータスの更新に失敗しました。')
+          }
+
+          setData((prev) => ({
+            ...prev,
+            cast: {
+              ...prev.cast,
+              workStatus: nextStatus,
+            },
+          }))
+
+          toast({ title: `ステータスを「${nextStatus}」に更新しました。` })
+        } catch (error) {
+          toast({
+            title: '更新に失敗しました',
+            description: error instanceof Error ? error.message : undefined,
+            variant: 'destructive',
+          })
+        }
+      })
+    },
+    [data.cast.workStatus, toast]
+  )
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -144,6 +187,12 @@ export function CastDashboardContent({ initialData }: Props) {
           helper={`本日 ¥${data.stats.todayRevenue.toLocaleString()} / 厚生費 ¥${data.stats.welfareThisMonth.toLocaleString()}`}
         />
       </div>
+
+      <CastWorkStatusControl
+        currentStatus={data.cast.workStatus}
+        isPending={isStatusPending}
+        onChange={handleWorkStatusChange}
+      />
 
       <AttendanceCard
         reservation={currentReservation}
@@ -316,6 +365,75 @@ function ReservationItem({ reservation }: { reservation: CastPortalReservation }
         </Link>
       </div>
     </div>
+  )
+}
+
+function CastWorkStatusControl({
+  currentStatus,
+  isPending,
+  onChange,
+}: {
+  currentStatus: string
+  isPending: boolean
+  onChange: (status: '出勤' | '未出勤' | '休日') => void
+}) {
+  const options: Array<{
+    value: '出勤' | '未出勤' | '休日'
+    label: string
+    description: string
+    className: string
+  }> = [
+    {
+      value: '出勤',
+      label: '出勤中',
+      description: '対応可能な状態です',
+      className: 'bg-primary text-primary-foreground',
+    },
+    {
+      value: '未出勤',
+      label: '待機中',
+      description: 'まだ出勤していません',
+      className: 'bg-muted text-muted-foreground',
+    },
+    {
+      value: '休日',
+      label: '休日',
+      description: '本日はお休みです',
+      className: 'bg-amber-100 text-amber-700',
+    },
+  ]
+
+  return (
+    <Card>
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-sm">今日の出勤ステータス</CardTitle>
+        <p className="text-xs text-muted-foreground">
+          予約とは別に、管理側へ現在の稼働状況を共有できます。
+        </p>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {options.map((option) => {
+            const isActive = currentStatus === option.value
+            return (
+              <Button
+                key={option.value}
+                variant={isActive ? 'default' : 'outline'}
+                className={cn(
+                  'h-16 flex-col items-start justify-center text-left',
+                  isActive && option.className,
+                  isPending && 'pointer-events-none opacity-70'
+                )}
+                onClick={() => onChange(option.value)}
+              >
+                <span className="text-sm font-semibold">{option.label}</span>
+                <span className="text-xs text-muted-foreground/90">{option.description}</span>
+              </Button>
+            )
+          })}
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 

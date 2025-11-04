@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/use-toast'
 import { cn } from '@/lib/utils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 const SCOPES: CastReservationScope[] = ['upcoming', 'today', 'past']
 
@@ -28,6 +28,8 @@ export function CastReservationsContent({ initialData }: { initialData: CastRese
   const [selectedReservation, setSelectedReservation] = useState<CastReservationDetail | null>(null)
   const [isDetailLoading, setIsDetailLoading] = useState(false)
   const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
 
   const fetchReservations = useCallback(
     async (nextScope: CastReservationScope) => {
@@ -77,23 +79,33 @@ export function CastReservationsContent({ initialData }: { initialData: CastRese
 
   const loadReservationDetail = useCallback(
     async (reservationId: string) => {
+      setSelectedReservation(null)
       setIsDetailLoading(true)
       try {
         const response = await fetch(`/api/cast-portal/reservations/${reservationId}`, {
           cache: 'no-store',
         })
+        if (response.status === 404) {
+          toast({
+            title: '予約が見つかりません',
+            description: '対象の予約は削除されたか、アクセスできなくなっています。',
+          })
+          return null
+        }
         if (!response.ok) {
           const payload = await response.json().catch(() => ({}))
           throw new Error(payload.error ?? '予約詳細の取得に失敗しました。')
         }
         const detail = (await response.json()) as CastReservationDetail
         setSelectedReservation(detail)
+        return detail
       } catch (error) {
         toast({
           title: '読み込みに失敗しました',
           description: error instanceof Error ? error.message : undefined,
           variant: 'destructive',
         })
+        return null
       } finally {
         setIsDetailLoading(false)
       }
@@ -104,8 +116,13 @@ export function CastReservationsContent({ initialData }: { initialData: CastRese
   useEffect(() => {
     const highlight = searchParams.get('highlight')
     if (!highlight) return
-    void loadReservationDetail(highlight)
-  }, [searchParams, loadReservationDetail])
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete('highlight')
+    void loadReservationDetail(highlight).finally(() => {
+      const next = params.toString()
+      router.replace(next ? `${pathname}?${next}` : pathname, { scroll: false })
+    })
+  }, [searchParams, loadReservationDetail, router, pathname])
 
   return (
     <div className="space-y-6">
@@ -152,7 +169,15 @@ export function CastReservationsContent({ initialData }: { initialData: CastRese
         )}
       </div>
 
-        <Dialog open={Boolean(selectedReservation)} onOpenChange={(open) => !open && setSelectedReservation(null)}>
+        <Dialog
+          open={isDetailLoading || Boolean(selectedReservation)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedReservation(null)
+              setIsDetailLoading(false)
+            }
+          }}
+        >
           <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto p-0">
             {isDetailLoading ? (
               <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
@@ -264,7 +289,7 @@ function ReservationDetailView({ reservation }: { reservation: CastReservationDe
   const startTime = new Date(reservation.startTime)
   const endTime = new Date(reservation.endTime)
 
-  const pricingItems = useMemo(() => {
+  const pricingItems = useMemo<Array<{ label: string; value: string }>>(() => {
     const rows: Array<{ label: string; value: string }> = []
     if (reservation.courseName) {
       rows.push({ label: 'コース', value: `${reservation.courseName} ${reservation.courseDuration ?? ''}分` })
