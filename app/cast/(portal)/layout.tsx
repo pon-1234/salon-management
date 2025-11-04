@@ -9,6 +9,7 @@ export const NAV_ITEMS = [
   { href: '/cast/dashboard', label: 'ダッシュボード' },
   { href: '/cast/reservations', label: '予約一覧' },
   { href: '/cast/settlements', label: '精算・売上' },
+  { href: '/cast/chat', label: 'スタッフチャット' },
 ]
 
 export default async function CastPortalLayout({
