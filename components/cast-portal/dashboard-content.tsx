@@ -8,21 +8,8 @@ import type { CastDashboardData, CastPortalReservation } from '@/lib/cast-portal
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/components/ui/use-toast'
 import { cn } from '@/lib/utils'
-import { Label } from '@/components/ui/label'
 import { CastScheduleManager } from '@/components/cast-portal/schedule-manager'
 
 interface Props {
@@ -33,12 +20,6 @@ export function CastDashboardContent({ initialData }: Props) {
   const [data, setData] = useState<CastDashboardData>(initialData)
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
-  const [isRequestDialogOpen, setRequestDialogOpen] = useState(false)
-  const [requestForm, setRequestForm] = useState({
-    type: 'check-in' as 'check-in' | 'check-out' | 'adjustment',
-    requestedTime: '',
-    reason: '',
-  })
 
   const currentReservation = useMemo(() => {
     if (!data.attendance.currentReservationId) {
@@ -127,82 +108,6 @@ export function CastDashboardContent({ initialData }: Props) {
     })
   }, [refreshDashboard, toast])
 
-  const openAttendanceRequest = useCallback(() => {
-    const target = currentReservation ?? data.nextReservation ?? null
-    const baseDate = target ? new Date(target.checkedInAt ?? target.startTime) : new Date()
-    setRequestForm({
-      type: 'adjustment',
-      requestedTime: formatLocalInputValue(baseDate),
-      reason: '',
-    })
-    setRequestDialogOpen(true)
-  }, [currentReservation, data.nextReservation])
-
-  const handleRequestFormChange = useCallback(
-    (field: 'type' | 'requestedTime' | 'reason', value: string) => {
-      setRequestForm((prev) => ({ ...prev, [field]: value }))
-    },
-    []
-  )
-
-  const handleSubmitAttendanceRequest = useCallback(() => {
-    const targetReservation = currentReservation ?? data.nextReservation
-    if (!targetReservation) {
-      toast({
-        title: '申請できません',
-        description: '対象となる予約がありません。',
-        variant: 'destructive',
-      })
-      return
-    }
-
-    if (!requestForm.requestedTime) {
-      toast({
-        title: '申請できません',
-        description: '対象時刻を入力してください。',
-        variant: 'destructive',
-      })
-      return
-    }
-
-    startTransition(async () => {
-      try {
-        const payload = {
-          type: requestForm.type,
-          requestedTime: new Date(requestForm.requestedTime).toISOString(),
-          reason: requestForm.reason.trim() || undefined,
-        }
-
-        const response = await fetch(
-          `/api/cast-portal/reservations/${targetReservation.id}/attendance-request`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-          }
-        )
-
-        if (!response.ok) {
-          const body = await response.json().catch(() => ({}))
-          throw new Error(body.error ?? '勤怠修正の申請に失敗しました。')
-        }
-
-        const result = await response.json()
-        setData((prev) => ({ ...prev, attendanceRequests: result.requests }))
-        setRequestDialogOpen(false)
-        toast({ title: '勤怠修正を申請しました。' })
-      } catch (error) {
-        toast({
-          title: '申請に失敗しました',
-          description: error instanceof Error ? error.message : undefined,
-          variant: 'destructive',
-        })
-      }
-    })
-  }, [currentReservation, data.nextReservation, requestForm, toast])
-
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -245,67 +150,8 @@ export function CastDashboardContent({ initialData }: Props) {
         canCheckOut={data.attendance.canCheckOut}
         onCheckIn={() => handleAttendanceAction('check-in', data.attendance.currentReservationId ?? undefined)}
         onCheckOut={() => handleAttendanceAction('check-out', data.attendance.currentReservationId ?? undefined)}
-        onOpenRequest={openAttendanceRequest}
         isPending={isPending}
       />
-
-      <Dialog open={isRequestDialogOpen} onOpenChange={setRequestDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>勤怠修正の申請</DialogTitle>
-            <DialogDescription>
-              チェックイン・アウトの修正や時刻調整が必要な場合に申請してください。
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>修正対象</Label>
-              <Select
-                value={requestForm.type}
-                onValueChange={(value) => handleRequestFormChange('type', value as typeof requestForm.type)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="修正内容を選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="check-in">チェックイン</SelectItem>
-                  <SelectItem value="check-out">チェックアウト</SelectItem>
-                  <SelectItem value="adjustment">時間調整</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="attendance-request-time">希望時刻</Label>
-              <Input
-                id="attendance-request-time"
-                type="datetime-local"
-                value={requestForm.requestedTime}
-                onChange={(event) => handleRequestFormChange('requestedTime', event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="attendance-request-reason">理由 / メモ</Label>
-              <Textarea
-                id="attendance-request-reason"
-                placeholder="修正の理由や補足事項を記載してください。"
-                value={requestForm.reason}
-                onChange={(event) => handleRequestFormChange('reason', event.target.value)}
-                rows={4}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRequestDialogOpen(false)} disabled={isPending}>
-              キャンセル
-            </Button>
-            <Button onClick={handleSubmitAttendanceRequest} disabled={isPending}>
-              {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              申請する
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -328,38 +174,6 @@ export function CastDashboardContent({ initialData }: Props) {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">勤怠修正リクエスト</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {data.attendanceRequests.length === 0 ? (
-              <EmptyState message="申請中の修正リクエストはありません。" compact />
-            ) : (
-              <div className="space-y-3">
-                {data.attendanceRequests.map((request) => (
-                  <div key={request.id} className="rounded-lg border bg-muted/30 p-3 text-sm">
-                    <div className="flex items-center justify-between">
-                      <Badge variant="outline">{renderRequestType(request.type)}</Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(request.createdAt), 'M月d日 HH:mm')}
-                      </span>
-                    </div>
-                    <Separator className="my-2" />
-                    <p className="text-sm font-medium">
-                      申請時刻: {format(new Date(request.requestedTime), 'M月d日 HH:mm')}
-                    </p>
-                    {request.reason ? <p className="mt-1 text-xs text-muted-foreground">{request.reason}</p> : null}
-                    <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>予約ID: {request.reservationId.slice(0, 8)}</span>
-                      <span>{renderRequestStatus(request.status)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </div>
 
       <CastScheduleManager />
@@ -398,7 +212,6 @@ function AttendanceCard({
   canCheckOut,
   onCheckIn,
   onCheckOut,
-  onOpenRequest,
   isPending,
 }: {
   reservation: CastPortalReservation | null
@@ -406,7 +219,6 @@ function AttendanceCard({
   canCheckOut: boolean
   onCheckIn: () => void
   onCheckOut: () => void
-  onOpenRequest: () => void
   isPending: boolean
 }) {
   return (
@@ -442,13 +254,6 @@ function AttendanceCard({
           >
             {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Clock className="mr-2 h-4 w-4" />}
             チェックアウト
-          </Button>
-          <Button
-            variant="outline"
-            onClick={onOpenRequest}
-            disabled={isPending}
-          >
-            修正申請
           </Button>
         </div>
       </CardContent>
@@ -521,16 +326,6 @@ function formatTimeline(reservation: CastPortalReservation) {
   return `${start}〜${end} ${reservation.customerAlias}`
 }
 
-function formatLocalInputValue(date: Date) {
-  const pad = (value: number) => String(value).padStart(2, '0')
-  const year = date.getFullYear()
-  const month = pad(date.getMonth() + 1)
-  const day = pad(date.getDate())
-  const hours = pad(date.getHours())
-  const minutes = pad(date.getMinutes())
-  return `${year}-${month}-${day}T${hours}:${minutes}`
-}
-
 function renderDesignation(type?: string | null) {
   if (!type) return 'フリー'
   switch (type) {
@@ -551,30 +346,4 @@ function renderReservationStatus(reservation: CastPortalReservation) {
     return <Badge variant="outline" className="border-primary/30 text-primary">対応中</Badge>
   }
   return <Badge variant="outline" className="border-muted-foreground/20 text-muted-foreground">待機</Badge>
-}
-
-function renderRequestType(type: string) {
-  switch (type) {
-    case 'check-in':
-      return 'IN 修正'
-    case 'check-out':
-      return 'OUT 修正'
-    default:
-      return '時間調整'
-  }
-}
-
-function renderRequestStatus(status: string) {
-  switch (status) {
-    case 'pending':
-      return '確認待ち'
-    case 'in_review':
-      return '審査中'
-    case 'approved':
-      return '承認済み'
-    case 'rejected':
-      return '却下'
-    default:
-      return status
-  }
 }
