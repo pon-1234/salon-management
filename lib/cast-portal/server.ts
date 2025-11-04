@@ -12,6 +12,7 @@ import {
   startOfDay,
   startOfMonth,
 } from 'date-fns'
+import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz'
 import type {
   CastAttendanceRequestSummary,
   CastAttendanceState,
@@ -33,6 +34,7 @@ type ReservationWithRelations = Awaited<ReturnType<typeof fetchReservationsForCa
 const DEFAULT_SCHEDULE_START_TIME = '10:00'
 const DEFAULT_SCHEDULE_END_TIME = '18:00'
 const MAX_SCHEDULE_WINDOW_DAYS = 31
+const DEFAULT_TIME_ZONE = 'Asia/Tokyo'
 
 export class CastScheduleValidationError extends Error {
   constructor(message: string) {
@@ -265,12 +267,12 @@ export function serializeAttendanceRequests(
 
 export async function getCastDashboardData(castId: string, storeId: string): Promise<CastDashboardData> {
   const now = new Date()
-  const todayStart = startOfDay(now)
-  const todayEnd = endOfDay(now)
-  const monthStart = startOfMonth(now)
-  const monthEnd = endOfMonth(now)
+  const todayStart = startOfDayInTimeZone(now, DEFAULT_TIME_ZONE)
+  const todayEnd = endOfDayInTimeZone(now, DEFAULT_TIME_ZONE)
+  const monthStart = startOfMonthInTimeZone(now, DEFAULT_TIME_ZONE)
+  const monthEnd = endOfMonthInTimeZone(now, DEFAULT_TIME_ZONE)
 
-  const [cast, todayReservationsRaw, upcomingReservationsRaw, monthReservationsRaw, attendanceRequestsRaw] =
+  const [cast, todayReservationsRaw, upcomingReservationsRaw, monthReservationsRaw, attendanceRequestsRaw, todaySchedule] =
     await Promise.all([
       db.cast.findFirst({
         where: { id: castId, storeId },
@@ -328,6 +330,19 @@ export async function getCastDashboardData(castId: string, storeId: string): Pro
         },
         take: 5,
       }),
+      db.castSchedule.findFirst({
+        where: {
+          castId,
+          date: {
+            gte: todayStart,
+            lt: addDays(todayStart, 1),
+          },
+          isAvailable: true,
+          cast: {
+            storeId,
+          },
+        },
+      }),
     ])
 
   if (!cast) {
@@ -365,6 +380,7 @@ export async function getCastDashboardData(castId: string, storeId: string): Pro
     stats,
     attendance,
     attendanceRequests,
+    isScheduledToday: Boolean(todaySchedule),
   }
 }
 
@@ -560,23 +576,50 @@ export async function getCastSettlements(castId: string, storeId: string): Promi
   }
 }
 
+function startOfDayInTimeZone(date: Date, timeZone: string): Date {
+  const zoned = utcToZonedTime(date, timeZone)
+  const start = startOfDay(zoned)
+  return zonedTimeToUtc(start, timeZone)
+}
+
+function endOfDayInTimeZone(date: Date, timeZone: string): Date {
+  const zoned = utcToZonedTime(date, timeZone)
+  const end = endOfDay(zoned)
+  return zonedTimeToUtc(end, timeZone)
+}
+
+function startOfMonthInTimeZone(date: Date, timeZone: string): Date {
+  const zoned = utcToZonedTime(date, timeZone)
+  const start = startOfMonth(zoned)
+  return zonedTimeToUtc(start, timeZone)
+}
+
+function endOfMonthInTimeZone(date: Date, timeZone: string): Date {
+  const zoned = utcToZonedTime(date, timeZone)
+  const end = endOfMonth(zoned)
+  return zonedTimeToUtc(end, timeZone)
+}
+
 function parseDateKey(dateKey: string): Date {
-  const parsed = new Date(`${dateKey}T00:00:00`)
+  const parsed = zonedTimeToUtc(`${dateKey}T00:00:00`, DEFAULT_TIME_ZONE)
   if (Number.isNaN(parsed.getTime())) {
     throw new CastScheduleValidationError('日付の形式が正しくありません。')
   }
-  return startOfDay(parsed)
+  return parsed
 }
 
 function combineDateAndTime(dateKey: string, time: string): Date {
-  const parsed = new Date(`${dateKey}T${time}:00`)
+  const parsed = zonedTimeToUtc(`${dateKey}T${time}:00`, DEFAULT_TIME_ZONE)
   if (Number.isNaN(parsed.getTime())) {
     throw new CastScheduleValidationError('時刻の形式が正しくありません。')
   }
   return parsed
 }
 
-function toScheduleEntry(record: { id: string; date: Date; startTime: Date; endTime: Date; isAvailable: boolean } | undefined, dateKey: string): CastScheduleEntry {
+function toScheduleEntry(
+  record: { id: string; date: Date; startTime: Date; endTime: Date; isAvailable: boolean } | undefined,
+  dateKey: string
+): CastScheduleEntry {
   if (!record) {
     return {
       id: null,
@@ -587,12 +630,15 @@ function toScheduleEntry(record: { id: string; date: Date; startTime: Date; endT
     }
   }
 
+  const startLocal = utcToZonedTime(record.startTime, DEFAULT_TIME_ZONE)
+  const endLocal = utcToZonedTime(record.endTime, DEFAULT_TIME_ZONE)
+
   return {
     id: record.id,
     date: dateKey,
     isAvailable: record.isAvailable,
-    startTime: format(record.startTime, 'HH:mm'),
-    endTime: format(record.endTime, 'HH:mm'),
+    startTime: format(startLocal, 'HH:mm'),
+    endTime: format(endLocal, 'HH:mm'),
   }
 }
 
@@ -602,12 +648,13 @@ export async function getCastScheduleWindow(
   startDate: Date,
   endDate: Date
 ): Promise<CastScheduleWindow> {
-  const normalizedStart = startOfDay(startDate)
-  const normalizedEnd = startOfDay(endDate)
+  const normalizedStart = startOfDayInTimeZone(startDate, DEFAULT_TIME_ZONE)
+  const normalizedEnd = startOfDayInTimeZone(endDate, DEFAULT_TIME_ZONE)
 
-  const safeEnd = differenceInCalendarDays(normalizedEnd, normalizedStart) >= MAX_SCHEDULE_WINDOW_DAYS
-    ? addDays(normalizedStart, MAX_SCHEDULE_WINDOW_DAYS - 1)
-    : normalizedEnd
+  const safeEnd =
+    differenceInCalendarDays(normalizedEnd, normalizedStart) >= MAX_SCHEDULE_WINDOW_DAYS
+      ? addDays(normalizedStart, MAX_SCHEDULE_WINDOW_DAYS - 1)
+      : normalizedEnd
 
   const rawSchedules = await db.castSchedule.findMany({
     where: {
@@ -625,7 +672,7 @@ export async function getCastScheduleWindow(
 
   const scheduleMap = new Map<string, (typeof rawSchedules)[number]>()
   rawSchedules.forEach((record) => {
-    const key = format(record.date, 'yyyy-MM-dd')
+    const key = format(utcToZonedTime(record.date, DEFAULT_TIME_ZONE), 'yyyy-MM-dd')
     scheduleMap.set(key, record)
   })
 
@@ -634,16 +681,16 @@ export async function getCastScheduleWindow(
 
   for (let index = 0; index <= daysDiff; index += 1) {
     const currentDate = addDays(normalizedStart, index)
-    const key = format(currentDate, 'yyyy-MM-dd')
-    const record = scheduleMap.get(key)
-    items.push(toScheduleEntry(record, key))
+    const localKey = format(utcToZonedTime(currentDate, DEFAULT_TIME_ZONE), 'yyyy-MM-dd')
+    const record = scheduleMap.get(localKey)
+    items.push(toScheduleEntry(record, localKey))
   }
 
   return {
     items,
     meta: {
-      startDate: format(normalizedStart, 'yyyy-MM-dd'),
-      endDate: format(safeEnd, 'yyyy-MM-dd'),
+      startDate: format(utcToZonedTime(normalizedStart, DEFAULT_TIME_ZONE), 'yyyy-MM-dd'),
+      endDate: format(utcToZonedTime(safeEnd, DEFAULT_TIME_ZONE), 'yyyy-MM-dd'),
     },
   }
 }
@@ -658,7 +705,7 @@ export async function updateCastScheduleWindow(
     return getCastScheduleWindow(castId, storeId, range.startDate, range.endDate)
   }
 
-  const today = startOfDay(new Date())
+  const today = startOfDayInTimeZone(new Date(), DEFAULT_TIME_ZONE)
 
   await db.$transaction(async (tx) => {
     for (const update of updates) {
@@ -712,8 +759,8 @@ export async function updateCastScheduleWindow(
     }
   })
 
-  const normalizedStart = startOfDay(range.startDate)
-  const normalizedEnd = startOfDay(range.endDate)
+  const normalizedStart = startOfDayInTimeZone(range.startDate, DEFAULT_TIME_ZONE)
+  const normalizedEnd = startOfDayInTimeZone(range.endDate, DEFAULT_TIME_ZONE)
 
   return getCastScheduleWindow(castId, storeId, normalizedStart, normalizedEnd)
 }

@@ -1,4 +1,6 @@
 import { addDays, startOfDay } from 'date-fns'
+import { format as formatDateFns, formatISO } from 'date-fns'
+import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz'
 import { db } from '@/lib/db'
 
 export interface PublicCastSchedule {
@@ -29,6 +31,14 @@ export interface PublicScheduleDay {
   entries: PublicCastSchedule[]
 }
 
+const DEFAULT_TIME_ZONE = 'Asia/Tokyo'
+
+function startOfDayInTimeZone(date: Date, timeZone: string): Date {
+  const zoned = utcToZonedTime(date, timeZone)
+  const start = startOfDay(zoned)
+  return zonedTimeToUtc(start, timeZone)
+}
+
 function normalizeCastImage(images: any, image: any) {
   const raw = Array.isArray(images)
     ? images
@@ -44,13 +54,16 @@ function normalizeCastImage(images: any, image: any) {
 
 function normalizeSchedule(entry: any): PublicCastSchedule {
   const { primary, all } = normalizeCastImage(entry.cast?.images, entry.cast?.image)
+  const dateLocal = utcToZonedTime(entry.date, DEFAULT_TIME_ZONE)
+  const startLocal = utcToZonedTime(entry.startTime, DEFAULT_TIME_ZONE)
+  const endLocal = utcToZonedTime(entry.endTime, DEFAULT_TIME_ZONE)
 
   return {
     id: entry.id,
     castId: entry.castId,
-    date: entry.date.toISOString(),
-    startTime: entry.startTime.toISOString(),
-    endTime: entry.endTime.toISOString(),
+    date: formatISO(dateLocal),
+    startTime: formatISO(startLocal),
+    endTime: formatISO(endLocal),
     isAvailable: entry.isAvailable ?? true,
     cast: {
       id: entry.cast?.id ?? entry.castId,
@@ -75,8 +88,8 @@ export async function getPublicStoreSchedule(
 ): Promise<PublicScheduleDay[]> {
   try {
     const days = options?.days ?? 7
-    const start = startOfDay(new Date())
-    const end = addDays(start, days)
+    const start = startOfDayInTimeZone(new Date(), DEFAULT_TIME_ZONE)
+    const end = startOfDayInTimeZone(addDays(new Date(), days), DEFAULT_TIME_ZONE)
 
     const schedules = await db.castSchedule.findMany({
       where: {
@@ -100,7 +113,7 @@ export async function getPublicStoreSchedule(
     const grouped = new Map<string, PublicScheduleDay>()
 
     normalized.forEach((entry) => {
-      const dayKey = entry.date.slice(0, 10)
+      const dayKey = formatDateFns(utcToZonedTime(new Date(entry.date), DEFAULT_TIME_ZONE), 'yyyy-MM-dd')
       if (!grouped.has(dayKey)) {
         grouped.set(dayKey, { date: entry.date, entries: [] })
       }
@@ -113,10 +126,10 @@ export async function getPublicStoreSchedule(
     if (daysResult.length < days) {
       for (let i = 0; i < days; i++) {
         const current = addDays(start, i)
-        const dateKey = current.toISOString().slice(0, 10)
+        const dateKey = formatDateFns(utcToZonedTime(current, DEFAULT_TIME_ZONE), 'yyyy-MM-dd')
         if (!grouped.has(dateKey)) {
           daysResult.push({
-            date: current.toISOString(),
+            date: formatISO(utcToZonedTime(current, DEFAULT_TIME_ZONE)),
             entries: [],
           })
         }

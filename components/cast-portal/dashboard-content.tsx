@@ -152,7 +152,7 @@ export function CastDashboardContent({ initialData }: Props) {
     [data.cast.workStatus, toast]
   )
 
-  const shouldShowWorkStatusControl = data.cast.workStatus !== '休日'
+  const shouldShowWorkStatusControl = data.cast.workStatus !== '休日' || data.isScheduledToday
 
   return (
     <div className="space-y-8">

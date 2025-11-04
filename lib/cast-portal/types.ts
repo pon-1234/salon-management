@@ -71,6 +71,7 @@ export interface CastDashboardData {
   stats: CastDashboardStats
   attendance: CastAttendanceState
   attendanceRequests: CastAttendanceRequestSummary[]
+  isScheduledToday: boolean
 }
 
 export interface CastReservationListResponse {
