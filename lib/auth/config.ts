@@ -21,6 +21,7 @@ declare module 'next-auth' {
       adminRole?: string
       permissions?: string[]
       storeId?: string
+      image?: string | null
     }
   }
 
@@ -32,6 +33,7 @@ declare module 'next-auth' {
     adminRole?: string
     permissions?: string[]
     storeId?: string
+    image?: string | null
   }
 }
 
@@ -42,6 +44,7 @@ declare module 'next-auth/jwt' {
     adminRole?: string
     permissions?: string[]
     storeId?: string
+    image?: string | null
   }
 }
 
@@ -232,6 +235,7 @@ export const authOptions: NextAuthOptions = {
             name: cast.name,
             role: 'cast',
             storeId: cast.storeId,
+            image: Array.isArray(cast.images) && cast.images.length > 0 ? cast.images[0] : null,
           } as User
         } catch (error) {
           console.error('Error during cast authentication:', error)
