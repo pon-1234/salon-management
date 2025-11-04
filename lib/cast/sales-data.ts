@@ -1,11 +1,19 @@
 import { SalesRecord, PaymentRecord, SettlementSummary } from './types'
+import { zonedTimeToUtc } from 'date-fns-tz'
+
+const JST_TIMEZONE = 'Asia/Tokyo'
+
+const jstDate = (localIso: string) => {
+  const iso = localIso.includes('T') ? localIso : `${localIso}T00:00:00`
+  return zonedTimeToUtc(iso, JST_TIMEZONE)
+}
 
 // 売上記録のモックデータ
 export const mockSalesRecords: SalesRecord[] = [
   {
     id: 'sales_001',
     castId: '1',
-    date: new Date('2025-06-05T14:00:00'),
+    date: jstDate('2025-06-05T14:00:00'),
     serviceName: 'スタンダード120分',
     customerName: '田中様',
     serviceAmount: 15000,
@@ -21,7 +29,7 @@ export const mockSalesRecords: SalesRecord[] = [
   {
     id: 'sales_002',
     castId: '1',
-    date: new Date('2025-06-04T19:30:00'),
+    date: jstDate('2025-06-04T19:30:00'),
     serviceName: 'プレミアム90分',
     customerName: '佐藤様',
     serviceAmount: 18000,
@@ -36,7 +44,7 @@ export const mockSalesRecords: SalesRecord[] = [
   {
     id: 'sales_003',
     castId: '1',
-    date: new Date('2025-06-03T16:00:00'),
+    date: jstDate('2025-06-03T16:00:00'),
     serviceName: 'リラクゼーション60分',
     customerName: '山田様',
     serviceAmount: 10000,
@@ -51,7 +59,7 @@ export const mockSalesRecords: SalesRecord[] = [
   {
     id: 'sales_004',
     castId: '1',
-    date: new Date('2025-06-02T20:00:00'),
+    date: jstDate('2025-06-02T20:00:00'),
     serviceName: 'スタンダード120分',
     customerName: '鈴木様',
     serviceAmount: 15000,
@@ -66,7 +74,7 @@ export const mockSalesRecords: SalesRecord[] = [
   {
     id: 'sales_005',
     castId: '1',
-    date: new Date('2025-06-01T13:00:00'),
+    date: jstDate('2025-06-01T13:00:00'),
     serviceName: 'プレミアム150分',
     customerName: '高橋様',
     serviceAmount: 25000,
@@ -86,7 +94,7 @@ export const mockPaymentRecords: PaymentRecord[] = [
   {
     id: 'payment_001',
     castId: '1',
-    date: new Date('2025-06-04T10:00:00'),
+    date: jstDate('2025-06-04T10:00:00'),
     paymentType: '現金精算',
     amount: 23400,
     salesRecordIds: ['sales_002', 'sales_004'],
@@ -96,7 +104,7 @@ export const mockPaymentRecords: PaymentRecord[] = [
   {
     id: 'payment_002',
     castId: '1',
-    date: new Date('2025-05-30T15:30:00'),
+    date: jstDate('2025-05-30T15:30:00'),
     paymentType: '現金精算',
     amount: 35000,
     salesRecordIds: ['sales_006', 'sales_007', 'sales_008'],
@@ -106,7 +114,7 @@ export const mockPaymentRecords: PaymentRecord[] = [
   {
     id: 'payment_003',
     castId: '1',
-    date: new Date('2025-05-25T11:00:00'),
+    date: jstDate('2025-05-25T11:00:00'),
     paymentType: '振込',
     amount: 45000,
     salesRecordIds: ['sales_009', 'sales_010'],
@@ -119,8 +127,8 @@ export const mockPaymentRecords: PaymentRecord[] = [
 export const mockSettlementSummary: SettlementSummary = {
   castId: '1',
   period: {
-    from: new Date('2025-06-01'),
-    to: new Date('2025-06-05'),
+    from: jstDate('2025-06-01'),
+    to: jstDate('2025-06-05'),
   },
   totalSales: 106500,
   totalCastShare: 63900,

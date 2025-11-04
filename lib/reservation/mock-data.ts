@@ -1,4 +1,20 @@
 import { Reservation, Service } from '../types/reservation'
+import { zonedTimeToUtc } from 'date-fns-tz'
+
+const JST_TIMEZONE = 'Asia/Tokyo'
+
+const createJstDate = (
+  year: number,
+  monthIndex: number,
+  day: number,
+  hours: number,
+  minutes = 0
+) => {
+  const month = monthIndex + 1
+  const datePart = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  const timePart = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
+  return zonedTimeToUtc(`${datePart}T${timePart}`, JST_TIMEZONE)
+}
 
 type ReservationSeed = Omit<Reservation, 'storeId' | 'castId'> & {
   storeId?: string
@@ -120,8 +136,8 @@ const reservationSeeds: ReservationSeed[] = [
     customerId: '1',
     staffId: '1',
     serviceId: '60min',
-    startTime: new Date(2024, 11, 15, 14, 0),
-    endTime: new Date(2024, 11, 15, 15, 0),
+    startTime: createJstDate(2024, 11, 15, 14, 0),
+    endTime: createJstDate(2024, 11, 15, 15, 0),
     status: 'confirmed',
     price: 13000,
     createdAt: new Date(),
@@ -132,8 +148,8 @@ const reservationSeeds: ReservationSeed[] = [
     customerId: '2',
     staffId: '2',
     serviceId: '90min',
-    startTime: new Date(2024, 11, 15, 16, 0),
-    endTime: new Date(2024, 11, 15, 17, 30),
+    startTime: createJstDate(2024, 11, 15, 16, 0),
+    endTime: createJstDate(2024, 11, 15, 17, 30),
     status: 'pending',
     price: 18000,
     notes: '初めてのご利用です。丁寧な対応をお願いします。',
@@ -145,8 +161,8 @@ const reservationSeeds: ReservationSeed[] = [
     customerId: '3',
     staffId: '3',
     serviceId: '120min',
-    startTime: new Date(2024, 11, 16, 10, 0),
-    endTime: new Date(2024, 11, 16, 12, 0),
+    startTime: createJstDate(2024, 11, 16, 10, 0),
+    endTime: createJstDate(2024, 11, 16, 12, 0),
     status: 'confirmed',
     price: 22000,
     createdAt: new Date(),
@@ -157,8 +173,8 @@ const reservationSeeds: ReservationSeed[] = [
     customerId: '4',
     staffId: '4',
     serviceId: '150min',
-    startTime: new Date(2024, 11, 16, 14, 0),
-    endTime: new Date(2024, 11, 16, 16, 30),
+    startTime: createJstDate(2024, 11, 16, 14, 0),
+    endTime: createJstDate(2024, 11, 16, 16, 30),
     status: 'confirmed',
     price: 26000,
     createdAt: new Date(),
@@ -169,8 +185,8 @@ const reservationSeeds: ReservationSeed[] = [
     customerId: '5',
     staffId: '1',
     serviceId: 'event70',
-    startTime: new Date(2024, 11, 17, 18, 0),
-    endTime: new Date(2024, 11, 17, 19, 10),
+    startTime: createJstDate(2024, 11, 17, 18, 0),
+    endTime: createJstDate(2024, 11, 17, 19, 10),
     status: 'pending',
     price: 15000,
     createdAt: new Date(),
@@ -181,8 +197,8 @@ const reservationSeeds: ReservationSeed[] = [
     customerId: '6',
     staffId: '2',
     serviceId: 'event110',
-    startTime: new Date(2024, 11, 17, 20, 0),
-    endTime: new Date(2024, 11, 17, 21, 50),
+    startTime: createJstDate(2024, 11, 17, 20, 0),
+    endTime: createJstDate(2024, 11, 17, 21, 50),
     status: 'confirmed',
     price: 21000,
     createdAt: new Date(),
@@ -193,8 +209,8 @@ const reservationSeeds: ReservationSeed[] = [
     customerId: '7',
     staffId: '3',
     serviceId: '80min',
-    startTime: new Date(2024, 11, 18, 12, 0),
-    endTime: new Date(2024, 11, 18, 13, 20),
+    startTime: createJstDate(2024, 11, 18, 12, 0),
+    endTime: createJstDate(2024, 11, 18, 13, 20),
     status: 'confirmed',
     price: 16000,
     createdAt: new Date(),
@@ -205,8 +221,8 @@ const reservationSeeds: ReservationSeed[] = [
     customerId: '8',
     staffId: '4',
     serviceId: '100min',
-    startTime: new Date(2024, 11, 18, 15, 0),
-    endTime: new Date(2024, 11, 18, 16, 40),
+    startTime: createJstDate(2024, 11, 18, 15, 0),
+    endTime: createJstDate(2024, 11, 18, 16, 40),
     status: 'pending',
     price: 19000,
     notes: 'アロマオイルマッサージをリクエスト',
@@ -218,8 +234,8 @@ const reservationSeeds: ReservationSeed[] = [
     customerId: '9',
     staffId: '1',
     serviceId: '180min',
-    startTime: new Date(2024, 11, 19, 19, 0),
-    endTime: new Date(2024, 11, 19, 22, 0),
+    startTime: createJstDate(2024, 11, 19, 19, 0),
+    endTime: createJstDate(2024, 11, 19, 22, 0),
     status: 'confirmed',
     price: 30000,
     createdAt: new Date(),
@@ -230,8 +246,8 @@ const reservationSeeds: ReservationSeed[] = [
     customerId: '10',
     staffId: '2',
     serviceId: 'extension30',
-    startTime: new Date(2024, 11, 19, 22, 30),
-    endTime: new Date(2024, 11, 19, 23, 0),
+    startTime: createJstDate(2024, 11, 19, 22, 30),
+    endTime: createJstDate(2024, 11, 19, 23, 0),
     status: 'confirmed',
     price: 5000,
     createdAt: new Date(),
