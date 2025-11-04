@@ -10,10 +10,17 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/use-toast'
 
-export function CastLoginForm() {
+interface CastLoginFormProps {
+  storeSlug?: string
+}
+
+export function CastLoginForm({ storeSlug }: CastLoginFormProps = {}) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get('callbackUrl') ?? '/cast/dashboard'
+  const defaultCallback = storeSlug
+    ? `/cast/dashboard?store=${encodeURIComponent(storeSlug)}`
+    : '/cast/dashboard'
+  const callbackUrl = searchParams.get('callbackUrl') ?? defaultCallback
   const { toast } = useToast()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

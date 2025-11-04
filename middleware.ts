@@ -13,16 +13,20 @@ const publicRoutes = ['/', '/_next', '/favicon.ico']
 
 // Auth routes that should be accessible without authentication
 const authRoutes = ['/login', '/register', '/admin/login', '/auth', '/api/auth', '/cast/login']
+const storeCastLoginPattern = /^\/[^/]+\/cast\/login$/
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isApiRoute = pathname.startsWith('/api')
 
   // Check if route is public
+  const isStoreCastAuthRoute = storeCastLoginPattern.test(pathname)
+
   const isPublicRoute =
     !isApiRoute &&
     (publicRoutes.some((route) => pathname.startsWith(route)) ||
       authRoutes.some((route) => pathname.startsWith(route)) ||
+      isStoreCastAuthRoute ||
       pathname.match(/^\/((?!admin|mypage|cast).)*$/)) // All non-admin, non-mypage, non-cast routes
 
   // Get session token
@@ -31,7 +35,7 @@ export async function middleware(request: NextRequest) {
     secret: env.nextAuth.secret,
   })
 
-  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route))
+  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route)) || isStoreCastAuthRoute
 
   // Handle authentication routes
   if (isAuthRoute) {
@@ -53,6 +57,10 @@ export async function middleware(request: NextRequest) {
         const storeMatch = pathname.match(/^\/([^/]+)\/(login|register)/)
         const fallbackPath = storeMatch ? `/${storeMatch[1]}` : '/'
         return NextResponse.redirect(new URL(fallbackPath, request.url))
+      }
+
+      if (token.role === 'cast') {
+        return NextResponse.redirect(new URL('/cast/dashboard', request.url))
       }
     }
 
