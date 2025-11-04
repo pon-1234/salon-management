@@ -103,6 +103,29 @@ export function Timeline({
     [selectedDateKey]
   )
 
+  const buildSelectableStartTimes = useCallback((slot: AvailableSlot): Date[] => {
+    const times: Date[] = []
+    let cursor = new Date(slot.startTime)
+
+    while (cursor < slot.endTime) {
+      const remaining = differenceInMinutes(slot.endTime, cursor)
+      if (remaining < FLEX_INTERVAL_MINUTES) {
+        break
+      }
+      times.push(new Date(cursor))
+      cursor = addMinutes(cursor, START_INTERVAL_MINUTES)
+    }
+
+    if (
+      times.length === 0 &&
+      differenceInMinutes(slot.endTime, slot.startTime) >= FLEX_INTERVAL_MINUTES
+    ) {
+      times.push(new Date(slot.startTime))
+    }
+
+    return times
+  }, [])
+
   if (!staff) {
     return (
       <div className="flex h-64 items-center justify-center text-gray-500">
@@ -243,26 +266,6 @@ export function Timeline({
       duration: effectiveDuration,
     })
   }
-
-  const buildSelectableStartTimes = useCallback((slot: AvailableSlot): Date[] => {
-    const times: Date[] = []
-    let cursor = new Date(slot.startTime)
-
-    while (cursor < slot.endTime) {
-      const remaining = differenceInMinutes(slot.endTime, cursor)
-      if (remaining < FLEX_INTERVAL_MINUTES) {
-        break
-      }
-      times.push(new Date(cursor))
-      cursor = addMinutes(cursor, START_INTERVAL_MINUTES)
-    }
-
-    if (times.length === 0 && differenceInMinutes(slot.endTime, slot.startTime) >= FLEX_INTERVAL_MINUTES) {
-      times.push(new Date(slot.startTime))
-    }
-
-    return times
-  }, [])
 
   const canOffsetByFive = (slot: AvailableSlot, baseTime: Date, allTimes: Date[]) => {
     const adjusted = addMinutes(baseTime, FLEX_INTERVAL_MINUTES)
