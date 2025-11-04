@@ -43,6 +43,8 @@ interface ScheduleEntry {
 }
 
 const JST_TIMEZONE = 'Asia/Tokyo'
+const formatDateKey = (date: Date) => formatInTimeZone(date, JST_TIMEZONE, 'yyyy-MM-dd')
+const toUtcIsoString = (isoString: string) => zonedTimeToUtc(isoString, JST_TIMEZONE).toISOString()
 
 export function ReservationPageContent() {
   const useMockFallbacks = shouldUseMockFallbacks()
@@ -73,10 +75,7 @@ export function ReservationPageContent() {
   const searchParams = useSearchParams()
   const customerId = searchParams.get('customerId')
 
-  const selectedDateKey = useMemo(
-    () => formatInTimeZone(selectedDate, JST_TIMEZONE, 'yyyy-MM-dd'),
-    [selectedDate, formatInTimeZone]
-  )
+  const selectedDateKey = useMemo(() => formatDateKey(selectedDate), [selectedDate])
 
   useEffect(() => {
     let ignore = false
@@ -231,10 +230,7 @@ export function ReservationPageContent() {
     setRawReservations(normalizedReservations)
 
     const todaysReservationData = normalizedReservations
-      .filter(
-        (reservation) =>
-          formatInTimeZone(reservation.startTime, JST_TIMEZONE, 'yyyy-MM-dd') === selectedDateKey
-      )
+      .filter((reservation) => formatDateKey(reservation.startTime) === selectedDateKey)
       .map((reservation) =>
         mapReservationToReservationData(reservation, { casts: allCasts, customers })
       )
@@ -242,12 +238,9 @@ export function ReservationPageContent() {
 
     let schedulesByCast = new Map<string, ScheduleEntry>()
     try {
-      const scheduleStartUtc = zonedTimeToUtc(
-        `${selectedDateKey}T00:00:00`,
-        JST_TIMEZONE
-      ).toISOString()
+      const scheduleStartUtc = toUtcIsoString(`${selectedDateKey}T00:00:00`)
       const scheduleEndLocal = minutesToIsoInJst(selectedDateKey, businessHours.endMinutes)
-      const scheduleEndUtc = zonedTimeToUtc(scheduleEndLocal, JST_TIMEZONE).toISOString()
+      const scheduleEndUtc = toUtcIsoString(scheduleEndLocal)
 
       const response = await fetch(
         `/api/cast-schedule?startDate=${scheduleStartUtc}&endDate=${scheduleEndUtc}&storeId=${encodeURIComponent(currentStore.id)}`,
@@ -336,8 +329,6 @@ export function ReservationPageContent() {
     selectedCustomer,
     customers,
     businessHours,
-    formatInTimeZone,
-    zonedTimeToUtc,
     currentStore.id,
   ])
 
