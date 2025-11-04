@@ -214,11 +214,34 @@ function AttendanceCard({
   onCheckOut: () => void
   isPending: boolean
 }) {
+  const statusMeta = useMemo(() => {
+    if (!reservation) {
+      return { label: '待機中', className: 'bg-muted text-muted-foreground' }
+    }
+    if (reservation.checkedOutAt) {
+      return { label: '対応済み', className: 'bg-emerald-100 text-emerald-700' }
+    }
+    if (reservation.checkedInAt) {
+      return { label: '出勤中', className: 'bg-primary text-primary-foreground' }
+    }
+    if (canCheckIn) {
+      return { label: '出勤前', className: 'bg-amber-100 text-amber-700' }
+    }
+    return { label: '待機中', className: 'bg-muted text-muted-foreground' }
+  }, [reservation, canCheckIn])
+
   return (
     <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
       <CardContent className="space-y-4 py-6">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase text-primary">次のアクション</p>
+          </div>
+          <span className={cn('rounded-full px-3 py-1 text-xs font-semibold', statusMeta.className)}>
+            {statusMeta.label}
+          </span>
+        </div>
         <div>
-          <p className="text-xs font-semibold uppercase text-primary">次のアクション</p>
           <p className="text-lg font-semibold text-foreground">
             {reservation ? formatTimeline(reservation) : '現在、対応する予約はありません'}
           </p>
