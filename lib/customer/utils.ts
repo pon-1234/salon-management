@@ -18,6 +18,10 @@ export function normalizePhoneNumber(value: string): string {
   return normalizePhoneQuery(value)
 }
 
+export function isValidPhoneInput(value: string): boolean {
+  return /^[0-9+\-\sー－]+$/.test(value)
+}
+
 export function formatPhoneNumber(value: string): string {
   const digits = normalizePhoneNumber(value)
   if (digits.length === 11) {

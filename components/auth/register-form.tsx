@@ -32,7 +32,12 @@ import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { normalizePhoneNumber, normalizePhoneQuery, formatPhoneNumber } from '@/lib/customer/utils'
+import {
+  normalizePhoneNumber,
+  normalizePhoneQuery,
+  formatPhoneNumber,
+  isValidPhoneInput,
+} from '@/lib/customer/utils'
 
 const registerSchema = z
   .object({
@@ -44,7 +49,7 @@ const registerSchema = z
     phone: z
       .string()
       .min(1, '電話番号を入力してください')
-      .refine((value) => /^[0-9ー－\-+\s]+$/.test(value), '数字とハイフンのみ入力してください')
+      .refine(isValidPhoneInput, '数字とハイフンのみ入力してください')
       .refine((value) => {
         const digits = normalizePhoneQuery(value)
         return digits.length >= 10 && digits.length <= 11

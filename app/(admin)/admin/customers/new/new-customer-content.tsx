@@ -24,12 +24,17 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { normalizePhoneNumber, normalizePhoneQuery, formatPhoneNumber } from '@/lib/customer/utils'
+import {
+  normalizePhoneNumber,
+  normalizePhoneQuery,
+  formatPhoneNumber,
+  isValidPhoneInput,
+} from '@/lib/customer/utils'
 
 const phoneSchema = z
   .string()
   .min(1, '電話番号は必須です')
-  .refine((value) => /^[0-9ー－\\-+\\s]+$/.test(value), '数字とハイフンのみ入力してください')
+  .refine(isValidPhoneInput, '数字とハイフンのみ入力してください')
   .refine((value) => {
     const digits = normalizePhoneQuery(value)
     return digits.length >= 10 && digits.length <= 11
