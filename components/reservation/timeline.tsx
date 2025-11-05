@@ -12,7 +12,7 @@ import { Cast, Appointment } from '@/lib/cast/types'
 import { logError } from '@/lib/error-utils'
 import { StaffDialog } from '@/components/cast/cast-dialog'
 import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz'
-import { addMinutes, differenceInCalendarDays, differenceInMinutes, parse } from 'date-fns'
+import { differenceInCalendarDays, differenceInMinutes, parse } from 'date-fns'
 import { getCourseById } from '@/lib/course-option/utils'
 import { Customer } from '@/lib/customer/types'
 import { ReservationData } from '@/lib/types/reservation'
@@ -24,7 +24,7 @@ import {
 
 const JST_TIMEZONE = 'Asia/Tokyo'
 const MINUTES_IN_DAY = 24 * 60
-const START_INTERVAL_MINUTES = 10
+const TIMELINE_INTERVAL_MINUTES = 60
 const MIN_BOOKING_DURATION_MINUTES = 10
 const MIN_DISPLAY_SLOT_MINUTES = 10
 
@@ -103,28 +103,37 @@ export function Timeline({
     [selectedDateKey]
   )
 
-  const buildSelectableStartTimes = useCallback((slot: AvailableSlot): Date[] => {
-    const times: Date[] = []
-    let cursor = new Date(slot.startTime)
+  const buildSelectableStartTimes = useCallback(
+    (slot: AvailableSlot): Date[] => {
+      const startMinute = getMinutesFromDate(slot.startTime)
+      const endMinute = getMinutesFromDate(slot.endTime)
 
-    while (cursor < slot.endTime) {
-      const remaining = differenceInMinutes(slot.endTime, cursor)
-      if (remaining < MIN_BOOKING_DURATION_MINUTES) {
-        break
+      if (endMinute - startMinute < MIN_BOOKING_DURATION_MINUTES) {
+        return []
       }
-      times.push(new Date(cursor))
-      cursor = addMinutes(cursor, START_INTERVAL_MINUTES)
-    }
 
-    if (
-      times.length === 0 &&
-      differenceInMinutes(slot.endTime, slot.startTime) >= MIN_BOOKING_DURATION_MINUTES
-    ) {
-      times.push(new Date(slot.startTime))
-    }
+      const candidates: number[] = []
+      let cursor = startMinute
 
-    return times
-  }, [])
+      while (cursor + TIMELINE_INTERVAL_MINUTES <= endMinute) {
+        candidates.push(cursor)
+        cursor += TIMELINE_INTERVAL_MINUTES
+      }
+
+      if (candidates.length === 0) {
+        candidates.push(startMinute)
+      } else if (candidates[0] !== startMinute) {
+        candidates.unshift(startMinute)
+      }
+
+      const validMinutes = Array.from(new Set(candidates))
+        .filter((minute) => minute + MIN_BOOKING_DURATION_MINUTES <= endMinute)
+        .sort((a, b) => a - b)
+
+      return validMinutes.map(minutesToUtcDate)
+    },
+    [getMinutesFromDate, minutesToUtcDate]
+  )
 
   if (!staff) {
     return (
