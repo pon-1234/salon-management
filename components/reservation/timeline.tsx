@@ -25,8 +25,11 @@ import {
 const JST_TIMEZONE = 'Asia/Tokyo'
 const MINUTES_IN_DAY = 24 * 60
 const TIMELINE_INTERVAL_MINUTES = 60
+const BOOKING_STEP_MINUTES = 10
 const MIN_BOOKING_DURATION_MINUTES = 10
 const MIN_DISPLAY_SLOT_MINUTES = 10
+
+const snapToStep = (minute: number) => Math.ceil(minute / BOOKING_STEP_MINUTES) * BOOKING_STEP_MINUTES
 
 // safeMapを安全に実装（undefinedやnullでも空配列を返す）
 function safeMap<T, U>(arr: T[] | undefined | null, callback: (item: T, index: number) => U): U[] {
@@ -239,11 +242,13 @@ export function Timeline({
         currentMinute = Math.max(currentMinute, timeLimitMinute)
       }
 
+      currentMinute = snapToStep(currentMinute)
+
       if (currentMinute >= workEndMinute) {
         return []
       }
 
-      sortedAppointments.forEach((appointment) => {
+      for (const appointment of sortedAppointments) {
         const appointmentStartMinute = Math.max(
           getMinutesFromDate(appointment.startTime),
           startMinutes
@@ -252,19 +257,17 @@ export function Timeline({
           getMinutesFromDate(appointment.endTime),
           endMinutes
         )
-        if (timeLimitMinute !== null && appointmentEndMinute <= timeLimitMinute) {
-          currentMinute = Math.max(currentMinute, timeLimitMinute)
-          return
+
+        if (appointmentEndMinute <= currentMinute) {
+          continue
         }
 
-        const slotStartMinute = currentMinute
-        const slotEndMinute = appointmentStartMinute
-
-        if (slotEndMinute - slotStartMinute >= MIN_DISPLAY_SLOT_MINUTES) {
+        const gapEndMinute = Math.min(appointmentStartMinute, workEndMinute)
+        if (gapEndMinute - currentMinute >= MIN_DISPLAY_SLOT_MINUTES) {
           slots.push({
-            startTime: minutesToUtcDate(slotStartMinute),
-            endTime: minutesToUtcDate(slotEndMinute),
-            duration: slotEndMinute - slotStartMinute,
+            startTime: minutesToUtcDate(currentMinute),
+            endTime: minutesToUtcDate(gapEndMinute),
+            duration: gapEndMinute - currentMinute,
             staffId: staff.id,
             staffName: staff.name,
           })
@@ -274,7 +277,12 @@ export function Timeline({
         if (timeLimitMinute !== null) {
           currentMinute = Math.max(currentMinute, timeLimitMinute)
         }
-      })
+        currentMinute = snapToStep(currentMinute)
+
+        if (currentMinute >= workEndMinute) {
+          break
+        }
+      }
 
       if (workEndMinute - currentMinute >= MIN_DISPLAY_SLOT_MINUTES) {
         slots.push({
