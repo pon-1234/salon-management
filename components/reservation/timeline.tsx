@@ -103,6 +103,11 @@ export function Timeline({
     [selectedDateKey]
   )
 
+  const now = new Date()
+  const todayKey = formatInTimeZone(now, JST_TIMEZONE, 'yyyy-MM-dd')
+  const isSelectedDateToday = todayKey === selectedDateKey
+  const nowMinutes = isSelectedDateToday ? getMinutesFromDate(now) : null
+
   const buildSelectableStartTimes = useCallback(
     (slot: AvailableSlot): Date[] => {
       const startMinute = getMinutesFromDate(slot.startTime)
@@ -130,9 +135,14 @@ export function Timeline({
         .filter((minute) => minute + MIN_BOOKING_DURATION_MINUTES <= endMinute)
         .sort((a, b) => a - b)
 
-      return validMinutes.map(minutesToUtcDate)
+      const filteredMinutes =
+        nowMinutes !== null
+          ? validMinutes.filter((minute) => minute >= nowMinutes)
+          : validMinutes
+
+      return filteredMinutes.map(minutesToUtcDate)
     },
-    [getMinutesFromDate, minutesToUtcDate]
+    [getMinutesFromDate, minutesToUtcDate, nowMinutes]
   )
 
   if (!staff) {
@@ -212,6 +222,7 @@ export function Timeline({
 
       const workStartMinute = Math.max(getMinutesFromDate(staff.workStart), startMinutes)
       const workEndMinute = Math.min(getMinutesFromDate(staff.workEnd), endMinutes)
+      const timeLimitMinute = nowMinutes
 
       if (workEndMinute <= workStartMinute) {
         return []
@@ -224,6 +235,14 @@ export function Timeline({
 
       let currentMinute = workStartMinute
 
+      if (timeLimitMinute !== null) {
+        currentMinute = Math.max(currentMinute, timeLimitMinute)
+      }
+
+      if (currentMinute >= workEndMinute) {
+        return []
+      }
+
       sortedAppointments.forEach((appointment) => {
         const appointmentStartMinute = Math.max(
           getMinutesFromDate(appointment.startTime),
@@ -231,20 +250,30 @@ export function Timeline({
         )
         const appointmentEndMinute = Math.min(
           getMinutesFromDate(appointment.endTime),
-        endMinutes
-      )
+          endMinutes
+        )
+        if (timeLimitMinute !== null && appointmentEndMinute <= timeLimitMinute) {
+          currentMinute = Math.max(currentMinute, timeLimitMinute)
+          return
+        }
 
-        if (appointmentStartMinute - currentMinute >= MIN_DISPLAY_SLOT_MINUTES) {
+        const slotStartMinute = currentMinute
+        const slotEndMinute = appointmentStartMinute
+
+        if (slotEndMinute - slotStartMinute >= MIN_DISPLAY_SLOT_MINUTES) {
           slots.push({
-            startTime: minutesToUtcDate(currentMinute),
-            endTime: minutesToUtcDate(appointmentStartMinute),
-            duration: appointmentStartMinute - currentMinute,
+            startTime: minutesToUtcDate(slotStartMinute),
+            endTime: minutesToUtcDate(slotEndMinute),
+            duration: slotEndMinute - slotStartMinute,
             staffId: staff.id,
             staffName: staff.name,
           })
         }
 
         currentMinute = Math.max(currentMinute, appointmentEndMinute)
+        if (timeLimitMinute !== null) {
+          currentMinute = Math.max(currentMinute, timeLimitMinute)
+        }
       })
 
       if (workEndMinute - currentMinute >= MIN_DISPLAY_SLOT_MINUTES) {
@@ -277,7 +306,7 @@ export function Timeline({
   }
 
   // 現在時刻の位置を計算
-  const currentTime = new Date()
+  const currentTime = now
   const currentTimePosition = (() => {
     const now = new Date()
     const nowMinutes = getMinutesFromDate(now)
