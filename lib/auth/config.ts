@@ -9,6 +9,8 @@ import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import { checkRateLimit, recordLoginAttempt } from './rate-limit'
 import { env } from '@/lib/config/env'
+import { shouldUseMockFallbacks } from '@/lib/config/feature-flags'
+import { customers as fallbackCustomers } from '@/lib/customer/data'
 
 // Extend the default session interface
 declare module 'next-auth' {
@@ -148,38 +150,61 @@ export const authOptions: NextAuthOptions = {
           )
         }
 
+        const normalizedEmail = credentials.email.trim().toLowerCase()
+
+        let customer: typeof db.customer.$inferFindUnique | null = null
         try {
-          const customer = await db.customer.findUnique({
-            where: { email: credentials.email },
+          customer = await db.customer.findUnique({
+            where: { email: normalizedEmail },
           })
-
-          if (!customer) {
-            recordLoginAttempt(`customer:${credentials.email}`, false)
-            return null
-          }
-
-          // Compare password with bcrypt
-          const isPasswordValid = await bcrypt.compare(credentials.password, customer.password)
-
-          if (!isPasswordValid) {
-            recordLoginAttempt(`customer:${credentials.email}`, false)
-            return null
-          }
-
-          // Success - clear rate limit
-          recordLoginAttempt(`customer:${credentials.email}`, true)
-
-          return {
-            id: customer.id,
-            email: customer.email,
-            name: customer.name || 'Customer',
-            role: 'customer',
-          } as User
         } catch (error) {
-          console.error('Error during authentication:', error)
-          recordLoginAttempt(`customer:${credentials.email}`, false)
-          return null
+          console.error('Error fetching customer during authentication:', error)
         }
+
+        if (customer) {
+          try {
+            const isPasswordValid = await bcrypt.compare(credentials.password, customer.password)
+
+            if (!isPasswordValid) {
+              recordLoginAttempt(`customer:${credentials.email}`, false)
+              return null
+            }
+
+            recordLoginAttempt(`customer:${credentials.email}`, false)
+            recordLoginAttempt(`customer:${credentials.email}`, true)
+
+            return {
+              id: customer.id,
+              email: customer.email,
+              name: customer.name || 'Customer',
+              role: 'customer',
+            } as User
+          } catch (error) {
+            console.error('Error during password verification:', error)
+            recordLoginAttempt(`customer:${credentials.email}`, false)
+            return null
+          }
+        }
+
+        if (shouldUseMockFallbacks()) {
+          const fallback = fallbackCustomers.find(
+            (entry) => entry.email?.toLowerCase() === normalizedEmail
+          )
+
+          if (fallback && fallback.password === credentials.password) {
+            recordLoginAttempt(`customer:${credentials.email}`, true)
+
+            return {
+              id: fallback.id ?? `mock-${normalizedEmail}`,
+              email: fallback.email,
+              name: fallback.name || 'Customer',
+              role: 'customer',
+            } as User
+          }
+        }
+
+        recordLoginAttempt(`customer:${credentials.email}`, false)
+        return null
       },
     }),
     CredentialsProvider({

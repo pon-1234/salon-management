@@ -21,6 +21,24 @@ export const customers: Customer[] = [
     createdAt: new Date(2023, 5, 1),
     updatedAt: new Date(2023, 6, 7),
   },
+  {
+    id: 'demo-tanaka',
+    name: '田中 太郎',
+    nameKana: 'タナカ タロウ',
+    phone: '08012345678',
+    email: 'tanaka@example.com',
+    password: 'password123',
+    birthDate: new Date(1992, 4, 12),
+    age: 32,
+    memberType: 'vip',
+    smsEnabled: true,
+    points: 12500,
+    registrationDate: new Date(2024, 0, 10),
+    lastVisitDate: new Date(2024, 9, 5),
+    notes: 'デモ用顧客。ログイン検証に使用。',
+    createdAt: new Date(2024, 0, 10),
+    updatedAt: new Date(2024, 9, 5),
+  },
 ]
 
 export async function getCustomerUsageHistory(customerId: string): Promise<CustomerUsageRecord[]> {
