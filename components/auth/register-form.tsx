@@ -32,6 +32,7 @@ import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { normalizePhoneNumber, normalizePhoneQuery, formatPhoneNumber } from '@/lib/customer/utils'
 
 const registerSchema = z
   .object({
@@ -42,7 +43,12 @@ const registerSchema = z
       .min(1, 'メールアドレスを入力してください'),
     phone: z
       .string()
-      .regex(/^[0-9]{3}-[0-9]{4}-[0-9]{4}$/, '090-1234-5678の形式で入力してください'),
+      .min(1, '電話番号を入力してください')
+      .refine((value) => /^[0-9ー－\-+\s]+$/.test(value), '数字とハイフンのみ入力してください')
+      .refine((value) => {
+        const digits = normalizePhoneQuery(value)
+        return digits.length >= 10 && digits.length <= 11
+      }, '電話番号は10〜11桁の数字で入力してください'),
     password: z.string().min(8, 'パスワードは8文字以上で入力してください'),
     confirmPassword: z.string().min(8, 'パスワードを再入力してください'),
     birthDate: z.date().optional(),
@@ -104,7 +110,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
         body: JSON.stringify({
           nickname: data.nickname,
           email: data.email,
-          phone: data.phone,
+          phone: normalizePhoneNumber(data.phone),
           password: data.password,
           birthDate: data.birthDate,
           smsNotifications: data.smsNotifications,
@@ -211,13 +217,14 @@ export function RegisterForm({ store }: RegisterFormProps) {
               <Input
                 id="phone"
                 type="tel"
-                placeholder="090-1234-5678"
+                placeholder="09012345678 または 090-1234-5678"
                 className="pl-10"
                 {...register('phone')}
                 disabled={loading}
               />
             </div>
             {errors.phone && <p className="text-sm text-red-600">{errors.phone.message}</p>}
+            <p className="text-xs text-gray-500">ハイフンの有無は問いません。入力内容は自動で整形されます。</p>
           </div>
 
           {/* Birth Date */}

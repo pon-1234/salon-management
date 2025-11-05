@@ -14,6 +14,21 @@ export function normalizePhoneQuery(value: string): string {
   return value.replace(/\D/g, '')
 }
 
+export function normalizePhoneNumber(value: string): string {
+  return normalizePhoneQuery(value)
+}
+
+export function formatPhoneNumber(value: string): string {
+  const digits = normalizePhoneNumber(value)
+  if (digits.length === 11) {
+    return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`
+  }
+  if (digits.length === 10) {
+    return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`
+  }
+  return value
+}
+
 function toDate(value: unknown, fallback: Date): Date {
   if (!value) return fallback
   if (value instanceof Date) {

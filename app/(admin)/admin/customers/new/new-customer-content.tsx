@@ -24,11 +24,21 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { normalizePhoneNumber, normalizePhoneQuery, formatPhoneNumber } from '@/lib/customer/utils'
+
+const phoneSchema = z
+  .string()
+  .min(1, '電話番号は必須です')
+  .refine((value) => /^[0-9ー－\\-+\\s]+$/.test(value), '数字とハイフンのみ入力してください')
+  .refine((value) => {
+    const digits = normalizePhoneQuery(value)
+    return digits.length >= 10 && digits.length <= 11
+  }, '電話番号は10〜11桁の数字で入力してください')
 
 const formSchema = z.object({
   store: z.string().min(1, '登録店舗を選択してください'),
   name: z.string().min(1, '名前は必須です'),
-  phone: z.string().min(1, '電話番号は必須です'),
+  phone: phoneSchema,
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -54,7 +64,8 @@ export function NewCustomerContent() {
   }, [searchParams, form])
 
   const onSubmit = (data: FormData) => {
-    console.log('Form submitted:', data)
+    const normalizedPhone = normalizePhoneNumber(data.phone)
+    console.log('Form submitted:', { ...data, phone: normalizedPhone })
     // 登録後は顧客詳細ページにリダイレクト（詳細情報は後で編集可能）
     router.push('/admin/customers/1')
   }
@@ -127,9 +138,21 @@ export function NewCustomerContent() {
                       電話番号 <span className="text-red-500">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="090-1234-5678" {...field} />
+                      <Input
+                        placeholder="09012345678 または 090-1234-5678"
+                        {...field}
+                        onBlur={(event) => {
+                          field.onBlur()
+                          const normalized = normalizePhoneNumber(event.target.value)
+                          const formatted = formatPhoneNumber(normalized)
+                          form.setValue('phone', formatted, { shouldValidate: true })
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
+                    <p className="text-xs text-gray-500">
+                      ハイフンの有無は問いません。入力後は自動で整形されます。
+                    </p>
                   </FormItem>
                 )}
               />
