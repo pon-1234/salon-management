@@ -195,6 +195,7 @@ interface QuickBookingDialogProps {
   onOpenChange: (open: boolean) => void
   selectedStaff?: Cast
   selectedTime?: Date
+  selectedSlot?: { startTime: Date; endTime: Date } | null
   selectedCustomer: Customer | null
   onReservationCreated?: (reservationId?: string) => void
   businessHours: BusinessHoursRange
@@ -205,6 +206,7 @@ export function QuickBookingDialog({
   onOpenChange,
   selectedStaff,
   selectedTime,
+  selectedSlot,
   selectedCustomer,
   onReservationCreated,
   businessHours,
@@ -218,6 +220,22 @@ export function QuickBookingDialog({
       : null
   )
   const [marketingChannels, setMarketingChannels] = useState<string[]>(DEFAULT_MARKETING_CHANNELS)
+
+  const slotWindowStart = selectedSlot?.startTime ?? selectedTime ?? null
+  const slotWindowEndLimit = selectedSlot?.endTime ?? null
+  const slotHourWindowEnd =
+    slotWindowStart !== null
+      ? new Date(
+          Math.min(
+            slotWindowStart.getTime() + 60 * 60 * 1000,
+            slotWindowEndLimit ? slotWindowEndLimit.getTime() : slotWindowStart.getTime() + 60 * 60 * 1000
+          )
+        )
+      : slotWindowEndLimit ?? null
+  const normalizedSlotHourWindowEnd =
+    slotWindowStart && slotHourWindowEnd && slotHourWindowEnd.getTime() <= slotWindowStart.getTime()
+      ? null
+      : slotHourWindowEnd
 
   const {
     courses,
@@ -1154,6 +1172,9 @@ export function QuickBookingDialog({
                             }))
                           }}
                           businessHours={businessHours}
+                          windowStart={slotWindowStart ?? undefined}
+                          windowEnd={normalizedSlotHourWindowEnd ?? undefined}
+                          stepMinutes={10}
                         />
                       ) : (
                         <div className="rounded-lg bg-gray-50 p-4 text-center text-gray-500">

@@ -126,16 +126,18 @@ export function useAvailability() {
     (
       dateString: string,
       duration: number,
-      businessHours: BusinessHoursRange = DEFAULT_BUSINESS_HOURS
+      businessHours: BusinessHoursRange = DEFAULT_BUSINESS_HOURS,
+      stepMinutes = 30
     ) => {
       const slots: TimeSlot[] = []
+      const increment = Math.max(1, stepMinutes)
 
       const nowUtc = new Date()
 
       for (
         let minute = businessHours.startMinutes;
         minute + duration <= businessHours.endMinutes;
-        minute += 30
+        minute += increment
       ) {
         const slotStartIso = minutesToIsoInJst(dateString, minute)
         const slotEndIso = minutesToIsoInJst(dateString, minute + duration)

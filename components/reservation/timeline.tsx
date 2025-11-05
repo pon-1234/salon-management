@@ -548,6 +548,7 @@ export function Timeline({
             : null
         }
         selectedTime={selectedSlot?.startTime}
+        selectedSlot={selectedSlot}
         selectedCustomer={selectedCustomer}
         onReservationCreated={(reservationId) => {
           onReservationCreated?.(reservationId)

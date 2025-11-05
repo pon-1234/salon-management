@@ -5,7 +5,7 @@
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { formatInTimeZone } from 'date-fns-tz'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -21,6 +21,9 @@ interface TimeSlotPickerProps {
   selectedTime?: string
   onTimeSelect: (time: string) => void
   businessHours: BusinessHoursRange
+  windowStart?: Date
+  windowEnd?: Date
+  stepMinutes?: number
 }
 
 export function TimeSlotPicker({
@@ -30,6 +33,9 @@ export function TimeSlotPicker({
   selectedTime,
   onTimeSelect,
   businessHours,
+  windowStart,
+  windowEnd,
+  stepMinutes = 30,
 }: TimeSlotPickerProps) {
   const { loading, error, availableSlots, getAvailableSlots, generateTimeSlots, isSlotAvailable } =
     useAvailability()
@@ -40,12 +46,12 @@ export function TimeSlotPicker({
 
   useEffect(() => {
     if (castId && date && duration) {
-      const slots = generateTimeSlots(date, duration, businessHours)
+      const slots = generateTimeSlots(date, duration, businessHours, stepMinutes)
       setAllSlots(slots.map((slot) => ({ ...slot, available: false })))
 
       getAvailableSlots(castId, date, duration, businessHours)
     }
-  }, [castId, date, duration, businessHours, generateTimeSlots, getAvailableSlots])
+  }, [castId, date, duration, businessHours, stepMinutes, generateTimeSlots, getAvailableSlots])
 
   useEffect(() => {
     setAllSlots((prev) =>
@@ -57,9 +63,33 @@ export function TimeSlotPicker({
     )
   }, [availableSlots, isSlotAvailable])
 
+  const windowStartMs = useMemo(() => windowStart?.getTime() ?? null, [windowStart])
+  const windowEndMs = useMemo(() => windowEnd?.getTime() ?? null, [windowEnd])
+
+  const visibleSlots = useMemo(() => {
+    if (windowStartMs === null && windowEndMs === null) {
+      return allSlots
+    }
+    return allSlots.filter((slot) => {
+      const slotStart = new Date(slot.startTime).getTime()
+      if (windowStartMs !== null && slotStart < windowStartMs) {
+        return false
+      }
+      if (windowEndMs !== null && slotStart >= windowEndMs) {
+        return false
+      }
+      return true
+    })
+  }, [allSlots, windowStartMs, windowEndMs])
+
   const formatTime = (isoString: string) => {
     return formatInTimeZone(new Date(isoString), 'Asia/Tokyo', 'HH:mm')
   }
+
+  const availableCount = useMemo(
+    () => visibleSlots.filter((slot) => slot.available).length,
+    [visibleSlots]
+  )
 
   if (loading) {
     return (
@@ -88,11 +118,11 @@ export function TimeSlotPicker({
           <Clock className="mr-2 h-4 w-4" />
           時間を選択
         </h4>
-        <Badge variant="outline">{availableSlots.filter((s) => s.available).length} 枠空き</Badge>
+        <Badge variant="outline">{availableCount} 枠空き</Badge>
       </div>
 
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
-        {allSlots.map((slot, index) => {
+        {visibleSlots.map((slot, index) => {
           const timeStr = formatTime(slot.startTime)
           const isSelected = selectedTime === slot.startTime
           const isAvailable = slot.available
@@ -121,7 +151,7 @@ export function TimeSlotPicker({
         })}
       </div>
 
-      {allSlots.length === 0 && (
+      {visibleSlots.length === 0 && (
         <div className="rounded-lg bg-gray-50 p-4 text-center text-gray-500">
           この日は予約可能な時間がありません
         </div>
