@@ -25,7 +25,7 @@ import {
 const JST_TIMEZONE = 'Asia/Tokyo'
 const MINUTES_IN_DAY = 24 * 60
 const START_INTERVAL_MINUTES = 10
-const FLEX_INTERVAL_MINUTES = 5
+const MIN_BOOKING_DURATION_MINUTES = 10
 const MIN_DISPLAY_SLOT_MINUTES = 10
 
 // safeMapを安全に実装（undefinedやnullでも空配列を返す）
@@ -109,7 +109,7 @@ export function Timeline({
 
     while (cursor < slot.endTime) {
       const remaining = differenceInMinutes(slot.endTime, cursor)
-      if (remaining < FLEX_INTERVAL_MINUTES) {
+      if (remaining < MIN_BOOKING_DURATION_MINUTES) {
         break
       }
       times.push(new Date(cursor))
@@ -118,7 +118,7 @@ export function Timeline({
 
     if (
       times.length === 0 &&
-      differenceInMinutes(slot.endTime, slot.startTime) >= FLEX_INTERVAL_MINUTES
+      differenceInMinutes(slot.endTime, slot.startTime) >= MIN_BOOKING_DURATION_MINUTES
     ) {
       times.push(new Date(slot.startTime))
     }
@@ -258,20 +258,13 @@ export function Timeline({
   const handleTimeSlotClick = (slot: AvailableSlot, selectedTime: Date) => {
     const effectiveDuration = Math.max(
       differenceInMinutes(slot.endTime, selectedTime),
-      FLEX_INTERVAL_MINUTES
+      MIN_BOOKING_DURATION_MINUTES
     )
     setSelectedSlot({
       ...slot,
       startTime: selectedTime,
       duration: effectiveDuration,
     })
-  }
-
-  const canOffsetByFive = (slot: AvailableSlot, baseTime: Date, allTimes: Date[]) => {
-    const adjusted = addMinutes(baseTime, FLEX_INTERVAL_MINUTES)
-    if (adjusted >= slot.endTime) return false
-    if (differenceInMinutes(slot.endTime, adjusted) < FLEX_INTERVAL_MINUTES) return false
-    return !allTimes.some((time) => Math.abs(time.getTime() - adjusted.getTime()) < 60 * 1000)
   }
 
   // 現在時刻の位置を計算
@@ -455,7 +448,7 @@ export function Timeline({
                 ))}
 
                 {safeMap(getAvailableSlots(member), (slot, index) => {
-                  if (slot.duration < FLEX_INTERVAL_MINUTES) return null
+                  if (slot.duration < MIN_BOOKING_DURATION_MINUTES) return null
                   const selectableTimes = buildSelectableStartTimes(slot)
                   const disabled = !selectedCustomer
 
@@ -479,40 +472,22 @@ export function Timeline({
                         <div className="flex flex-wrap items-center justify-center gap-2">
                           {selectableTimes.map((startTime) => {
                             const label = formatInTimeZone(startTime, JST_TIMEZONE, 'HH:mm')
-                            const adjustedTime = addMinutes(startTime, FLEX_INTERVAL_MINUTES)
-                            const showAdjusted = canOffsetByFive(slot, startTime, selectableTimes)
 
                             return (
-                              <div key={`${startTime.toISOString()}`} className="flex items-center gap-1">
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="secondary"
-                                  className={cn(
-                                    'rounded-full px-3 text-xs',
-                                    disabled && 'cursor-not-allowed opacity-60'
-                                  )}
-                                  onClick={() => handleTimeSlotClick(slot, startTime)}
-                                  disabled={disabled}
-                                >
-                                  {label}
-                                </Button>
-                                {showAdjusted && (
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    className={cn(
-                                      'rounded-full px-3 text-xs',
-                                      disabled && 'cursor-not-allowed opacity-60'
-                                    )}
-                                    onClick={() => handleTimeSlotClick(slot, adjustedTime)}
-                                    disabled={disabled}
-                                  >
-                                    {formatInTimeZone(adjustedTime, JST_TIMEZONE, 'HH:mm')}
-                                  </Button>
+                              <Button
+                                key={startTime.toISOString()}
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                className={cn(
+                                  'rounded-full px-3 text-xs',
+                                  disabled && 'cursor-not-allowed opacity-60'
                                 )}
-                              </div>
+                                onClick={() => handleTimeSlotClick(slot, startTime)}
+                                disabled={disabled}
+                              >
+                                {label}
+                              </Button>
                             )
                           })}
                         </div>
