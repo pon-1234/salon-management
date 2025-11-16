@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 
 type BannerImageField = 'imageUrl' | 'mobileImageUrl'
+type BannerScheduleField = 'startDate' | 'endDate'
 
 interface BannerFormState {
   id?: string
@@ -36,6 +37,8 @@ interface BannerFormState {
   link: string
   isActive: boolean
   displayOrder: number
+  startDate: string
+  endDate: string
 }
 
 const MAX_BANNERS = 10
@@ -49,6 +52,8 @@ function createEmptyBanner(order: number): BannerFormState {
     link: '',
     isActive: true,
     displayOrder: order,
+    startDate: '',
+    endDate: '',
   }
 }
 
@@ -62,6 +67,8 @@ function mapBanner(payload: any, index: number): BannerFormState {
     link: payload?.link ?? '',
     isActive: payload?.isActive ?? true,
     displayOrder: payload?.displayOrder ?? index,
+    startDate: normalizeDateValue(payload?.startDate),
+    endDate: normalizeDateValue(payload?.endDate),
   }
 }
 
@@ -186,6 +193,11 @@ export default function EventBannersPage() {
     }
   }
 
+  const handleDateChange = (index: number, field: BannerScheduleField, value: string) => {
+    const isoValue = fromDatetimeLocalInput(value)
+    updateBanner(index, { [field]: isoValue } as Partial<BannerFormState>)
+  }
+
   const handleSave = async () => {
     if (banners.length === 0) {
       toast({
@@ -218,6 +230,8 @@ export default function EventBannersPage() {
           link: (banner.link ?? '').trim(),
           displayOrder: index,
           isActive: banner.isActive,
+          startDate: banner.startDate ? banner.startDate : null,
+          endDate: banner.endDate ? banner.endDate : null,
         })),
       }
 
@@ -410,6 +424,34 @@ export default function EventBannersPage() {
                     />
                   </div>
 
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>掲載開始（任意）</Label>
+                      <Input
+                        type="datetime-local"
+                        value={toDatetimeLocalInput(banner.startDate)}
+                        onChange={(e) => handleDateChange(index, 'startDate', e.target.value)}
+                        placeholder="2025-01-01T10:00"
+                      />
+                      <p className="text-xs text-gray-500">
+                        指定した日時以降に表示されます（未設定で常時掲載）
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>掲載終了（任意）</Label>
+                      <Input
+                        type="datetime-local"
+                        value={toDatetimeLocalInput(banner.endDate)}
+                        min={toDatetimeLocalInput(banner.startDate) || undefined}
+                        onChange={(e) => handleDateChange(index, 'endDate', e.target.value)}
+                        placeholder="2025-01-10T23:59"
+                      />
+                      <p className="text-xs text-gray-500">
+                        指定した日時まで表示されます（空欄で終了なし）
+                      </p>
+                    </div>
+                  </div>
+
                   <div className="flex items-center justify-between rounded-md bg-gray-50 p-3">
                     <div>
                       <Label className="text-sm font-medium">表示・非表示</Label>
@@ -445,6 +487,37 @@ export default function EventBannersPage() {
       </main>
     </div>
   )
+}
+
+function normalizeDateValue(value: unknown): string {
+  if (value === undefined || value === null || value === '') {
+    return ''
+  }
+  const date = value instanceof Date ? value : new Date(value as string)
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+  return date.toISOString()
+}
+
+function toDatetimeLocalInput(value: string): string {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+  const offset = date.getTimezoneOffset()
+  const localDate = new Date(date.getTime() - offset * 60 * 1000)
+  return localDate.toISOString().slice(0, 16)
+}
+
+function fromDatetimeLocalInput(value: string): string {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+  return date.toISOString()
 }
 
 interface ImageFieldProps {

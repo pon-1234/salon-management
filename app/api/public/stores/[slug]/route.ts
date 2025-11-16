@@ -248,7 +248,18 @@ export async function GET(
     }))
 
     const customBanners = await db.storeEventBanner.findMany({
-      where: { storeId: storeRecord.id, isActive: true },
+      where: {
+        storeId: storeRecord.id,
+        isActive: true,
+        AND: [
+          {
+            OR: [{ startDate: null }, { startDate: { lte: now } }],
+          },
+          {
+            OR: [{ endDate: null }, { endDate: { gte: now } }],
+          },
+        ],
+      },
       orderBy: { displayOrder: 'asc' },
       take: 10,
     })

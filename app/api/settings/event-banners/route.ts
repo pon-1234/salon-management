@@ -11,16 +11,38 @@ import { db } from '@/lib/db'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
 import { getDefaultBanners } from '@/lib/store/public-fallbacks'
 
-const bannerSchema = z.object({
-  id: z.string().optional(),
-  title: z.string().min(1, 'タイトルは必須です'),
-  description: z.string().optional().nullable(),
-  imageUrl: z.string().min(1, 'PCバナー画像は必須です'),
-  mobileImageUrl: z.string().optional().nullable(),
-  link: z.string().optional().nullable(),
-  displayOrder: z.number().int().nonnegative().optional(),
-  isActive: z.boolean().optional(),
-})
+const optionalDateSchema = z.preprocess(
+  (value) => {
+    if (value === undefined || value === null || value === '') {
+      return null
+    }
+    return value
+  },
+  z.coerce.date().nullable()
+)
+
+const bannerSchema = z
+  .object({
+    id: z.string().optional(),
+    title: z.string().min(1, 'タイトルは必須です'),
+    description: z.string().optional().nullable(),
+    imageUrl: z.string().min(1, 'PCバナー画像は必須です'),
+    mobileImageUrl: z.string().optional().nullable(),
+    link: z.string().optional().nullable(),
+    startDate: optionalDateSchema,
+    endDate: optionalDateSchema,
+    displayOrder: z.number().int().nonnegative().optional(),
+    isActive: z.boolean().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.startDate && value.endDate && value.startDate > value.endDate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: '掲載終了日時は開始日時より後に設定してください',
+        path: ['endDate'],
+      })
+    }
+  })
 
 const updateSchema = z.object({
   banners: z.array(bannerSchema).max(10, 'バナーは最大10件まで登録できます'),
@@ -77,6 +99,8 @@ export async function GET(request: NextRequest) {
         link: banner.link,
         displayOrder: index,
         isActive: true,
+        startDate: null,
+        endDate: null,
       }))
 
       if (defaults.length > 0) {
@@ -115,6 +139,8 @@ export async function PUT(request: NextRequest) {
       imageUrl: banner.imageUrl.trim(),
       mobileImageUrl: banner.mobileImageUrl?.trim() || null,
       link: normalizeLink(banner.link ?? null, storeSlug),
+      startDate: banner.startDate ?? null,
+      endDate: banner.endDate ?? null,
       displayOrder: Number.isFinite(banner.displayOrder) ? banner.displayOrder! : index,
       isActive: banner.isActive ?? true,
     }))
@@ -141,6 +167,8 @@ export async function PUT(request: NextRequest) {
               imageUrl: banner.imageUrl,
               mobileImageUrl: banner.mobileImageUrl,
               link: banner.link,
+              startDate: banner.startDate,
+              endDate: banner.endDate,
               displayOrder,
               isActive: banner.isActive,
             },
@@ -154,6 +182,8 @@ export async function PUT(request: NextRequest) {
               imageUrl: banner.imageUrl,
               mobileImageUrl: banner.mobileImageUrl,
               link: banner.link,
+              startDate: banner.startDate,
+              endDate: banner.endDate,
               displayOrder,
               isActive: banner.isActive,
             },
