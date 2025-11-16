@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useId, useRef, type ChangeEvent, type Rea
 import Link from 'next/link'
 import { Header } from '@/components/header'
 import { toast } from '@/hooks/use-toast'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
@@ -76,6 +76,7 @@ export default function EventBannersPage() {
   const [banners, setBanners] = useState<BannerFormState[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [savingIndex, setSavingIndex] = useState<number | null>(null)
   const [uploadingField, setUploadingField] = useState<string | null>(null)
 
   const canAddMore = useMemo(() => banners.length < MAX_BANNERS, [banners.length])
@@ -198,7 +199,7 @@ export default function EventBannersPage() {
     updateBanner(index, { [field]: isoValue } as Partial<BannerFormState>)
   }
 
-  const handleSave = async () => {
+  const handleSave = async (triggerIndex: number | null = null) => {
     if (banners.length === 0) {
       toast({
         title: 'バナーがありません',
@@ -219,6 +220,7 @@ export default function EventBannersPage() {
     }
 
     setSaving(true)
+    setSavingIndex(triggerIndex)
     try {
       const payload = {
         banners: banners.map((banner, index) => ({
@@ -258,6 +260,7 @@ export default function EventBannersPage() {
       toast({ title: 'エラー', description: message, variant: 'destructive' })
     } finally {
       setSaving(false)
+      setSavingIndex(null)
     }
   }
 
@@ -295,19 +298,6 @@ export default function EventBannersPage() {
               <h1 className="text-3xl font-bold text-gray-900">トップバナー管理</h1>
             </div>
             <div className="flex-1" />
-            <Button onClick={handleSave} disabled={saving} className="min-w-[120px]">
-              {saving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  保存中...
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  保存する
-                </>
-              )}
-            </Button>
           </div>
 
           <Card>
@@ -463,6 +453,26 @@ export default function EventBannersPage() {
                     />
                   </div>
                 </CardContent>
+                <CardFooter className="flex flex-wrap items-center justify-between gap-3 border-t">
+                  <p className="text-sm text-gray-500">このバナーの編集内容を保存します</p>
+                  <Button
+                    type="button"
+                    onClick={() => handleSave(index)}
+                    disabled={saving && savingIndex !== index}
+                  >
+                    {saving && savingIndex === index ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        保存中...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        保存する
+                      </>
+                    )}
+                  </Button>
+                </CardFooter>
               </Card>
             ))}
 
@@ -472,16 +482,33 @@ export default function EventBannersPage() {
               </div>
             )}
 
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleAddBanner}
-              disabled={!canAddMore}
-              className="w-full"
-            >
-              <PlusCircle className="mr-2 h-4 w-4" />
-              バナーを追加
-            </Button>
+            <div className="space-y-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAddBanner}
+                disabled={!canAddMore}
+                className="w-full"
+              >
+                <PlusCircle className="mr-2 h-4 w-4" />
+                バナーを追加
+              </Button>
+              <div className="flex justify-end">
+                <Button type="button" onClick={() => handleSave(null)} disabled={saving}>
+                  {saving && savingIndex === null ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      保存中...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      すべて保存する
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </main>
