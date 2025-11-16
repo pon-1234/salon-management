@@ -64,6 +64,12 @@ npm install
 npm run dev
 ```
 
+If you pull changes that modify `prisma/schema.prisma`, regenerate the Prisma Client before starting the dev server:
+
+```bash
+npx prisma generate
+```
+
 ## Environment Setup
 
 1. Copy the environment variables:
