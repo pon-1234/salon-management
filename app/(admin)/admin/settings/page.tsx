@@ -71,9 +71,9 @@ export default function SettingsPage() {
       category: '顧客対応',
     },
     {
-      id: 'events',
-      title: 'イベント(PC)',
-      description: 'PCサイト向けのイベント情報を管理',
+      id: 'event-banners',
+      title: 'トップページバナー',
+      description: 'PCサイト向けバナー画像とリンクを管理',
       icon: <Calendar className="h-5 w-5" />,
       status: 'available',
       category: 'コンテンツ管理',
@@ -257,6 +257,9 @@ export default function SettingsPage() {
                       break
                     case 'designation-fees':
                       window.location.href = '/admin/settings/designation-fees'
+                      break
+                    case 'event-banners':
+                      window.location.href = '/admin/settings/event-banners'
                       break
                     case 'reviews':
                       window.location.href = '/admin/reviews'

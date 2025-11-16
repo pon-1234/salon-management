@@ -50,6 +50,7 @@ model Store {
   stationInfos StationInfo[]
   designationFees DesignationFee[]
   storeSettings StoreSettings?
+  eventBanners StoreEventBanner[]
 }
 
 model Cast {
@@ -402,6 +403,23 @@ model StoreSettings {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   store         Store    @relation(fields: [storeId], references: [id])
+
+  @@index([storeId])
+}
+
+model StoreEventBanner {
+  id             String   @id @default(cuid())
+  storeId        String
+  title          String
+  description    String?
+  imageUrl       String
+  mobileImageUrl String?
+  link           String?
+  displayOrder   Int      @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  store          Store    @relation(fields: [storeId], references: [id])
 
   @@index([storeId])
 }

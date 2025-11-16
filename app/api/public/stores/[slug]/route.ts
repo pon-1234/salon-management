@@ -247,14 +247,30 @@ export async function GET(
       area: null,
     }))
 
-    const bannerSources = ranking.length > 0 ? ranking : newcomers
-    const banners = bannerSources.slice(0, 3).map((cast) => ({
-      id: `banner-${cast.id}`,
-      title: `${cast.name} 最新情報`,
-      imageUrl: cast.image ?? '/placeholder-user.jpg',
-      mobileImageUrl: cast.image ?? '/placeholder-user.jpg',
-      link: `/${store.slug}/cast/${cast.id}`,
-    }))
+    const customBanners = await db.storeEventBanner.findMany({
+      where: { storeId: storeRecord.id, isActive: true },
+      orderBy: { displayOrder: 'asc' },
+      take: 10,
+    })
+
+    const banners = (customBanners.length > 0
+      ? customBanners.map((banner) => ({
+          id: banner.id,
+          title: banner.title,
+          imageUrl: banner.imageUrl,
+          mobileImageUrl: banner.mobileImageUrl ?? banner.imageUrl,
+          link: banner.link ?? `/${store.slug}/pricing`,
+        }))
+      : (() => {
+          const bannerSources = ranking.length > 0 ? ranking : newcomers
+          return bannerSources.slice(0, 3).map((cast) => ({
+            id: `banner-${cast.id}`,
+            title: `${cast.name} 最新情報`,
+            imageUrl: cast.image ?? '/placeholder-user.jpg',
+            mobileImageUrl: cast.image ?? '/placeholder-user.jpg',
+            link: `/${store.slug}/cast/${cast.id}`,
+          }))
+        })())
 
     return NextResponse.json({
       store,
