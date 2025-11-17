@@ -23,6 +23,7 @@ import {
   Package,
   BookOpen,
   Receipt,
+  Coins,
 } from 'lucide-react'
 
 interface SettingItem {
@@ -149,6 +150,14 @@ export default function SettingsPage() {
       icon: <Mail className="h-5 w-5" />,
       status: 'available',
       category: 'マーケティング',
+    },
+    {
+      id: 'points',
+      title: 'ポイント設定',
+      description: 'ポイント付与率や有効期限を管理',
+      icon: <Coins className="h-5 w-5" />,
+      status: 'available',
+      category: '顧客対応',
     },
     {
       id: 'option-info',

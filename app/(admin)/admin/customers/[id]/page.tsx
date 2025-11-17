@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -60,8 +60,6 @@ import {
 import { Reservation } from '@/lib/types/reservation'
 import { Cast } from '@/lib/cast/types'
 import { normalizeCastList } from '@/lib/cast/mapper'
-import { getCustomerUsageHistory, getCustomerPointHistory } from '@/lib/customer/data'
-import { getReservationsByCustomerId } from '@/lib/reservation/data'
 import { getAllCasts } from '@/lib/cast/data'
 import { NgCastDialog } from '@/components/customer/ng-cast-dialog'
 import { ReservationDialog } from '@/components/reservation/reservation-dialog'
@@ -72,6 +70,7 @@ import { isVipMember } from '@/lib/utils'
 import { calculateAge, deserializeCustomer } from '@/lib/customer/utils'
 import { toast } from '@/hooks/use-toast'
 import { mapReservationToReservationData } from '@/lib/reservation/transformers'
+import { PointAdjustmentDialog } from '@/components/admin/point-adjustment-dialog'
 
 const formSchema = z.object({
   name: z.string().min(1, '名前は必須です'),
@@ -110,6 +109,44 @@ export default function CustomerProfile() {
   const [ngCastDialogOpen, setNgCastDialogOpen] = useState(false)
   const [editingNgCast, setEditingNgCast] = useState<NgCastEntry | null>(null)
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
+  const fetchPointHistory = useCallback(async () => {
+    if (!id) return
+    try {
+      const response = await fetch(
+        `/api/customer/points?customerId=${encodeURIComponent(id)}&limit=100`,
+        {
+          credentials: 'include',
+          cache: 'no-store',
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error('ポイント履歴の取得に失敗しました')
+      }
+
+      const payload = await response.json()
+      const entries: CustomerPointHistory[] = Array.isArray(payload.data)
+        ? payload.data.map((entry: any) => ({
+            id: entry.id,
+            date: entry.createdAt ? new Date(entry.createdAt) : new Date(),
+            type: entry.type,
+            amount: entry.amount,
+            description: entry.description,
+            relatedService: entry.relatedService ?? undefined,
+            balance: entry.balance,
+          }))
+        : []
+
+      setPointHistory(entries)
+    } catch (error) {
+      toast({
+        title: 'エラー',
+        description:
+          error instanceof Error ? error.message : 'ポイント履歴の取得に失敗しました',
+        variant: 'destructive',
+      })
+    }
+  }, [id])
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -166,7 +203,6 @@ export default function CustomerProfile() {
 
       // TODO: Implement and call APIs for these sections
       setUsageHistory([])
-      setPointHistory([])
       setReservations([])
 
       try {
@@ -186,6 +222,27 @@ export default function CustomerProfile() {
 
     fetchCustomerData()
   }, [id, form, router])
+
+  useEffect(() => {
+    fetchPointHistory()
+  }, [fetchPointHistory])
+
+  const handlePointAdjustment = useCallback(
+    (delta: number) => {
+      setCustomer((prev) =>
+        prev
+          ? {
+              ...prev,
+              points: prev.points + delta,
+            }
+          : prev
+      )
+      const currentPoints = form.getValues('points') ?? 0
+      form.setValue('points', currentPoints + delta)
+      fetchPointHistory()
+    },
+    [fetchPointHistory, form]
+  )
 
   const handleBooking = () => {
     router.push(`/admin/reservation?customerId=${id}`)
@@ -679,9 +736,24 @@ export default function CustomerProfile() {
 
               {/* ポイント情報 */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold">ポイント情報</CardTitle>
-                  <CardDescription>現在のポイント残高とポイント追加</CardDescription>
+                <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <CardTitle className="text-lg font-semibold">ポイント情報</CardTitle>
+                    <CardDescription>現在のポイント残高とポイント追加</CardDescription>
+                  </div>
+                  {customer && (
+                    <PointAdjustmentDialog
+                      customerId={customer.id}
+                      customerName={customer.name}
+                      onAdjusted={handlePointAdjustment}
+                      trigger={
+                        <Button variant="outline" size="sm" className="gap-2">
+                          <Plus className="h-4 w-4" />
+                          ポイント調整
+                        </Button>
+                      }
+                    />
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField

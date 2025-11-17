@@ -88,6 +88,8 @@ export async function getCustomerPointHistory(customerId: string): Promise<Custo
           amount: 130,
           description: '60分コース利用',
           relatedService: '60分コース',
+          reservationId: 'res-1',
+          expiresAt: new Date(2024, 11, 15),
           balance: 4900,
         },
         {
@@ -96,6 +98,8 @@ export async function getCustomerPointHistory(customerId: string): Promise<Custo
           type: 'used',
           amount: -200,
           description: 'ポイント利用',
+          reservationId: null,
+          expiresAt: null,
           balance: 4770,
         },
         {
@@ -105,6 +109,8 @@ export async function getCustomerPointHistory(customerId: string): Promise<Custo
           amount: 180,
           description: '90分コース利用',
           relatedService: '90分コース',
+          reservationId: 'res-2',
+          expiresAt: new Date(2024, 11, 1),
           balance: 4970,
         },
         {
@@ -113,6 +119,8 @@ export async function getCustomerPointHistory(customerId: string): Promise<Custo
           type: 'adjusted',
           amount: 100,
           description: 'サービス調整',
+          reservationId: null,
+          expiresAt: null,
           balance: 4790,
         },
         {
@@ -121,6 +129,8 @@ export async function getCustomerPointHistory(customerId: string): Promise<Custo
           type: 'used',
           amount: -500,
           description: 'ポイント利用（割引適用）',
+          reservationId: null,
+          expiresAt: null,
           balance: 4690,
         },
         {
@@ -130,6 +140,8 @@ export async function getCustomerPointHistory(customerId: string): Promise<Custo
           amount: 220,
           description: '120分コース利用',
           relatedService: '120分コース',
+          reservationId: 'res-3',
+          expiresAt: new Date(2024, 10, 15),
           balance: 5190,
         },
         {
@@ -138,6 +150,8 @@ export async function getCustomerPointHistory(customerId: string): Promise<Custo
           type: 'expired',
           amount: -50,
           description: 'ポイント期限切れ',
+          reservationId: null,
+          expiresAt: new Date(2023, 9, 30),
           balance: 4970,
         },
       ]

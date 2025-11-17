@@ -53,6 +53,7 @@ export interface Reservation extends BaseEntity {
       price?: number | null
     } | null
   }>
+  pointsUsed?: number
 }
 
 export interface ReservationData {
@@ -110,6 +111,7 @@ export interface ReservationData {
   locationMemo?: string
   castCheckedInAt?: Date | null
   castCheckedOutAt?: Date | null
+  pointsUsed?: number
 }
 
 export interface ReservationUpdatePayload {

@@ -152,7 +152,7 @@ export const authOptions: NextAuthOptions = {
 
         const normalizedEmail = credentials.email.trim().toLowerCase()
 
-        let customer: typeof db.customer.$inferFindUnique | null = null
+        let customer: Awaited<ReturnType<typeof db.customer.findUnique>> | null = null
         try {
           customer = await db.customer.findUnique({
             where: { email: normalizedEmail },

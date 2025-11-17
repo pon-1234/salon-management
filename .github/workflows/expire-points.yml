@@ -1,0 +1,27 @@
+name: Expire Points Daily
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  expire-points:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call point expiration API
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          TARGET_URL: ${{ secrets.POINT_EXPIRY_ENDPOINT }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "CRON_SECRET is not configured"
+            exit 1
+          fi
+          if [ -z "$TARGET_URL" ]; then
+            echo "POINT_EXPIRY_ENDPOINT secret is not configured"
+            exit 1
+          fi
+          curl -X POST "$TARGET_URL" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json"

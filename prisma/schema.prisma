@@ -25,6 +25,7 @@ model Customer {
   emailVerificationToken String?
   emailVerificationExpiry DateTime?
   ngCasts      NgCastEntry[]
+  pointHistory CustomerPointHistory[]
   reservations Reservation[]
   reviews      Review[]
   messages     Message[]
@@ -128,6 +129,7 @@ model Reservation {
   notes             String?
   castCheckedInAt   DateTime?
   castCheckedOutAt  DateTime?
+  pointsUsed        Int          @default(0)
   createdAt  DateTime            @default(now())
   updatedAt  DateTime            @updatedAt
   cast       Cast                @relation(fields: [castId], references: [id])
@@ -141,6 +143,7 @@ model Reservation {
   store      Store               @relation(fields: [storeId], references: [id])
   lineLogs   ReservationLineLog[]
   attendanceRequests ReservationAttendanceRequest[]
+  pointHistory CustomerPointHistory[]
 
   @@index([storeId])
 }
@@ -400,11 +403,38 @@ model StoreSettings {
   parkingInfo   String?
   welfareExpenseRate Decimal @default(10)
   marketingChannels   String[] @default(["店リピート", "電話", "紹介", "SNS", "WEB", "Heaven"])
+  pointEarnRate        Decimal @default(1.0)
+  pointExpirationMonths Int    @default(12)
+  pointMinUsage        Int     @default(100)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   store         Store    @relation(fields: [storeId], references: [id])
 
   @@index([storeId])
+}
+
+model CustomerPointHistory {
+  id              String     @id @default(cuid())
+  customerId      String
+  type            String
+  amount          Int
+  description     String
+  relatedService  String?
+  reservationId   String?
+  balance         Int
+  expiresAt       DateTime?
+  isExpired       Boolean    @default(false)
+  sourceHistoryId String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  customer        Customer   @relation(fields: [customerId], references: [id])
+  reservation     Reservation? @relation(fields: [reservationId], references: [id])
+
+  @@index([customerId])
+  @@index([reservationId])
+  @@index([type, expiresAt, isExpired], map: "idx_point_history_expiration")
+  @@unique([sourceHistoryId], map: "unique_source_history")
 }
 
 model StoreEventBanner {

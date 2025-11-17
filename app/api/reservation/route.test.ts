@@ -16,8 +16,20 @@ vi.mock('next-auth', () => ({
 
 vi.mock('@/lib/db', () => ({
   db: {
+    store: {
+      findUnique: vi.fn().mockResolvedValue({ id: 'store-123' }),
+    },
+    storeSettings: {
+      findUnique: vi.fn().mockResolvedValue({
+        pointEarnRate: 1,
+        pointExpirationMonths: 12,
+        pointMinUsage: 100,
+        welfareExpenseRate: 10,
+      }),
+    },
     reservation: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       findMany: vi.fn(),
       update: vi.fn(),
     },
@@ -44,6 +56,17 @@ vi.mock('@/lib/logger', () => ({
   },
 }))
 
+vi.mock('@/lib/point/utils', () => ({
+  addPointTransaction: vi.fn().mockResolvedValue(undefined),
+  calculateEarnedPoints: vi.fn().mockReturnValue(0),
+  calculateExpiryDate: vi.fn().mockReturnValue(new Date()),
+  resolvePointConfig: vi.fn().mockReturnValue({
+    earnRate: 0.01,
+    expirationMonths: 12,
+    minPointsToUse: 100,
+  }),
+}))
+
 describe('Reservation API - Modifiable Status', () => {
   const mockReservation = {
     id: 'res-123',
@@ -60,8 +83,56 @@ describe('Reservation API - Modifiable Status', () => {
     options: [],
   }
 
+  const buildTransactionContext = (updatedReservation: any, overrides: Record<string, any> = {}) => {
+    const base = {
+      reservation: {
+        update: vi.fn().mockResolvedValue(updatedReservation),
+      },
+      reservationOption: {
+        deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
+      optionPrice: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      designationFee: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      cast: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      coursePrice: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      areaInfo: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      stationInfo: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      reservationHistory: {
+        createMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
+      customerPointHistory: {
+        update: vi.fn(),
+        create: vi.fn(),
+        createMany: vi.fn(),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    }
+    return { ...base, ...overrides }
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(db.store.findUnique).mockResolvedValue({ id: 'store-123' } as any)
+    vi.mocked(db.storeSettings.findUnique).mockResolvedValue({
+      pointEarnRate: 1,
+      pointExpirationMonths: 12,
+      pointMinUsage: 100,
+      welfareExpenseRate: 10,
+    } as any)
+    vi.mocked(db.reservation.findUnique).mockResolvedValue(mockReservation as any)
+    vi.mocked(db.reservation.findFirst).mockResolvedValue(mockReservation as any)
   })
 
   afterEach(() => {
@@ -81,6 +152,7 @@ describe('Reservation API - Modifiable Status', () => {
       } as any)
 
       vi.mocked(db.reservation.findUnique).mockResolvedValue(modifiableReservation as any)
+      vi.mocked(db.reservation.findFirst).mockResolvedValue(modifiableReservation as any)
 
       const request = new NextRequest('http://localhost/api/reservation?id=res-123')
       const response = await GET(request)
@@ -98,7 +170,7 @@ describe('Reservation API - Modifiable Status', () => {
         user: { role: 'admin', permissions: ['reservation:read'] },
       } as any)
 
-      vi.mocked(db.reservation.findUnique).mockResolvedValue(mockReservation as any)
+      vi.mocked(db.reservation.findFirst).mockResolvedValue(mockReservation as any)
 
       const modifiableUntil = new Date(Date.now() + 30 * 60 * 1000) // 30 minutes from now
 
@@ -108,14 +180,7 @@ describe('Reservation API - Modifiable Status', () => {
           status: 'modifiable',
           modifiableUntil,
         }
-        return callback({
-          reservation: {
-            update: vi.fn().mockResolvedValue(updatedReservation),
-          },
-          reservationOption: {
-            deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
-          },
-        } as any)
+        return callback(buildTransactionContext(updatedReservation) as any)
       })
 
       const request = new NextRequest('http://localhost/api/reservation', {
@@ -146,6 +211,7 @@ describe('Reservation API - Modifiable Status', () => {
       } as any)
 
       vi.mocked(db.reservation.findUnique).mockResolvedValue(modifiableReservation as any)
+      vi.mocked(db.reservation.findFirst).mockResolvedValue(modifiableReservation as any)
 
       const request = new NextRequest('http://localhost/api/reservation', {
         method: 'PUT',
@@ -172,21 +238,20 @@ describe('Reservation API - Modifiable Status', () => {
         user: { role: 'admin', permissions: ['reservation:read'] },
       } as any)
 
-      vi.mocked(db.reservation.findUnique).mockResolvedValue(modifiableReservation as any)
+      vi.mocked(db.reservation.findFirst).mockResolvedValue(modifiableReservation as any)
 
       vi.mocked(db.$transaction).mockImplementation(async (callback) => {
         const updatedReservation = {
           ...modifiableReservation,
           courseId: 'course-456',
         }
-        return callback({
-          reservation: {
-            update: vi.fn().mockResolvedValue(updatedReservation),
-          },
-          reservationOption: {
-            deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
-          },
-        } as any)
+        return callback(
+          buildTransactionContext(updatedReservation, {
+            coursePrice: {
+              findFirst: vi.fn().mockResolvedValue({ id: 'course-456' }),
+            },
+          }) as any
+        )
       })
 
       const request = new NextRequest('http://localhost/api/reservation', {
@@ -216,6 +281,7 @@ describe('Reservation API - Modifiable Status', () => {
       } as any)
 
       vi.mocked(db.reservation.findUnique).mockResolvedValue(expiredModifiableReservation as any)
+      vi.mocked(db.reservation.findFirst).mockResolvedValue(expiredModifiableReservation as any)
 
       vi.mocked(db.$transaction).mockImplementation(async (callback) => {
         const updatedReservation = {
@@ -223,14 +289,7 @@ describe('Reservation API - Modifiable Status', () => {
           status: 'confirmed',
           modifiableUntil: null,
         }
-        return callback({
-          reservation: {
-            update: vi.fn().mockResolvedValue(updatedReservation),
-          },
-          reservationOption: {
-            deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
-          },
-        } as any)
+        return callback(buildTransactionContext(updatedReservation) as any)
       })
 
       const request = new NextRequest('http://localhost/api/reservation', {

@@ -5,7 +5,7 @@
  */
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useSession } from 'next-auth/react'
 import { Store } from '@/lib/store/types'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -21,14 +21,81 @@ interface MyPageContentProps {
   store: Store
 }
 
+interface CustomerProfile {
+  id: string
+  name: string
+  email: string
+  phone: string
+  birthDate: Date | null
+  memberType: 'regular' | 'vip'
+  points: number
+  createdAt: Date | null
+  smsEnabled: boolean
+}
+
 export function MyPageContent({ store }: MyPageContentProps) {
   const [activeTab, setActiveTab] = useState('profile')
   const [isPending, startTransition] = useTransition()
   const { data: session, status } = useSession()
   const { logout } = useAuth()
+  const [profile, setProfile] = useState<CustomerProfile | null>(null)
+  const [profileLoading, setProfileLoading] = useState(true)
+  const [profileError, setProfileError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!session?.user?.id) {
+      setProfile(null)
+      return
+    }
+
+    let active = true
+    const fetchProfile = async () => {
+      setProfileLoading(true)
+      setProfileError(null)
+      try {
+        const response = await fetch(`/api/customer?id=${session.user.id}`, {
+          credentials: 'include',
+          cache: 'no-store',
+        })
+
+        if (!response.ok) {
+          throw new Error('顧客情報の取得に失敗しました')
+        }
+
+        const data = await response.json()
+        if (!active) return
+
+        setProfile({
+          id: data.id,
+          name: data.name ?? session.user.name ?? 'ゲスト',
+          email: data.email ?? session.user.email ?? '',
+          phone: data.phone ?? '',
+          birthDate: data.birthDate ? new Date(data.birthDate) : null,
+          memberType: data.memberType ?? 'regular',
+          points: data.points ?? 0,
+          createdAt: data.createdAt ? new Date(data.createdAt) : null,
+          smsEnabled: Boolean(data.smsEnabled),
+        })
+      } catch (error) {
+        if (!active) return
+        setProfileError(
+          error instanceof Error ? error.message : '顧客情報の取得に失敗しました'
+        )
+      } finally {
+        if (active) {
+          setProfileLoading(false)
+        }
+      }
+    }
+
+    fetchProfile()
+    return () => {
+      active = false
+    }
+  }, [session?.user?.id, session?.user?.email, session?.user?.name])
 
   // Show loading state while session is loading
-  if (status === 'loading') {
+  if (status === 'loading' || profileLoading) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-8">
         <div className="rounded-lg bg-white p-6 shadow">
@@ -52,16 +119,29 @@ export function MyPageContent({ store }: MyPageContentProps) {
     )
   }
 
-  // Use session data, with fallbacks for missing data
-  const user = {
-    nickname: session.user.name || 'ゲスト',
-    email: session.user.email || '',
-    phone: '090-1234-5678', // This would come from user profile API
-    birthMonth: 5, // This would come from user profile API
-    memberType: 'regular' as const, // This would come from user profile API
-    points: 2500, // This would come from user profile API
-    registeredAt: new Date('2024-01-15'), // This would come from user profile API
-    smsEnabled: true, // This would come from user profile API
+  if (profileError) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-8">
+        <div className="rounded-lg bg-white p-6 shadow">
+          <p className="text-sm text-red-600">{profileError}</p>
+        </div>
+      </div>
+    )
+  }
+
+  const user = profile && {
+    nickname: profile.name || session.user.name || 'ゲスト',
+    email: profile.email || session.user.email || '',
+    phone: profile.phone || '',
+    birthMonth: profile.birthDate ? profile.birthDate.getMonth() + 1 : 1,
+    memberType: profile.memberType,
+    points: profile.points,
+    registeredAt: profile.createdAt ?? new Date(),
+    smsEnabled: profile.smsEnabled,
+  }
+
+  if (!user) {
+    return null
   }
 
   const handleLogout = () => {
@@ -140,7 +220,7 @@ export function MyPageContent({ store }: MyPageContentProps) {
         </TabsContent>
 
         <TabsContent value="points">
-          <PointHistory user={user} />
+          <PointHistory customerId={session.user.id} initialBalance={user.points} />
         </TabsContent>
       </Tabs>
     </div>

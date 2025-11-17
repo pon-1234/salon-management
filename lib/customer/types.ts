@@ -39,10 +39,12 @@ export interface CustomerUsageRecord {
 
 export interface CustomerPointHistory {
   id: string
-  date: Date
   type: 'earned' | 'used' | 'expired' | 'adjusted'
   amount: number
   description: string
   relatedService?: string
+  reservationId?: string | null
+  expiresAt?: Date | null
   balance: number
+  date: Date
 }

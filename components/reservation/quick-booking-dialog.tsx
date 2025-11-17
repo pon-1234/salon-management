@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import {
@@ -65,6 +66,8 @@ type PriceBreakdown = {
   additionalFee: number
   discount: number
   total: number
+  subtotal: number
+  pointsApplied: number
   storeRevenue: number
   staffRevenue: number
   welfareExpense: number
@@ -172,6 +175,8 @@ interface BookingDetails {
   customerType: string
   phoneNumber: string
   points: number
+  usePoints: boolean
+  pointsToUse: number
   areaId: string
   stationId: string
   stationName: string
@@ -356,6 +361,8 @@ export function QuickBookingDialog({
     customerType: selectedCustomer ? (isVipMember(selectedCustomer.memberType) ? 'VIP会員' : '通常会員') : '',
     phoneNumber: selectedCustomer?.phone ?? '',
     points: selectedCustomer?.points ?? 0,
+    usePoints: false,
+    pointsToUse: 0,
     areaId: '',
     stationId: '',
     stationName: '',
@@ -522,6 +529,8 @@ export function QuickBookingDialog({
         : '',
       phoneNumber: selectedCustomer?.phone ?? '',
       points: selectedCustomer?.points ?? 0,
+      usePoints: false,
+      pointsToUse: 0,
     }))
   }, [selectedCustomer])
 
@@ -653,6 +662,12 @@ export function QuickBookingDialog({
       welfareRate,
     })
 
+    const availablePoints = selectedCustomer?.points ?? bookingDetails.points ?? 0
+    const requestedPoints = bookingDetails.usePoints
+      ? Math.max(0, Math.floor(bookingDetails.pointsToUse || 0))
+      : 0
+    const pointsApplied = Math.min(availablePoints, Math.min(requestedPoints, revenue.total))
+
     return {
       basePrice,
       designationFee: designationFeeAmount,
@@ -660,7 +675,9 @@ export function QuickBookingDialog({
       transportationFee,
       additionalFee,
       discount: discountAmount,
-      total: revenue.total,
+      subtotal: revenue.total,
+      pointsApplied,
+      total: Math.max(revenue.total - pointsApplied, 0),
       storeRevenue: revenue.storeRevenue,
       staffRevenue: revenue.staffRevenue,
       welfareExpense: revenue.welfareExpense,
@@ -670,7 +687,11 @@ export function QuickBookingDialog({
     bookingDetails.additionalFee,
     bookingDetails.transportationFee,
     bookingDetails.discountAmount,
+    bookingDetails.points,
+    bookingDetails.pointsToUse,
+    bookingDetails.usePoints,
     designationType,
+    selectedCustomer?.points,
     selectedCourse,
     selectedOptionDetails,
     currentStaff,
@@ -911,6 +932,7 @@ export function QuickBookingDialog({
           transportationFee: priceBreakdown.transportationFee,
           additionalFee: priceBreakdown.additionalFee,
           discountAmount: priceBreakdown.discount,
+          pointsUsed: priceBreakdown.pointsApplied,
           paymentMethod: bookingDetails.paymentMethod,
           marketingChannel: bookingDetails.marketingChannel,
           areaId: bookingDetails.areaId || null,
@@ -1050,6 +1072,8 @@ export function QuickBookingDialog({
         : '',
       phoneNumber: selectedCustomer?.phone ?? '',
       points: selectedCustomer?.points ?? 0,
+      usePoints: false,
+      pointsToUse: 0,
       staff: currentStaff?.name ?? '',
       date: selectedTime ? formatDateInJst(selectedTime) : prev.date || formatDateInJst(new Date()),
       time: selectedTime ? formatTimeInJst(selectedTime) : businessHours.startLabel,
@@ -1479,6 +1503,48 @@ export function QuickBookingDialog({
                     </div>
                   </div>
 
+                  <div className="rounded-lg border p-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-sm font-medium">ポイントを利用</Label>
+                        <p className="text-xs text-gray-500">
+                          利用可能ポイント: {bookingDetails.points.toLocaleString()}pt
+                        </p>
+                      </div>
+                      <Switch
+                        disabled={!selectedCustomer}
+                        checked={bookingDetails.usePoints}
+                        onCheckedChange={(checked) =>
+                          setBookingDetails((prev) => ({
+                            ...prev,
+                            usePoints: Boolean(checked),
+                            pointsToUse: checked ? prev.pointsToUse : 0,
+                          }))
+                        }
+                      />
+                    </div>
+                    {bookingDetails.usePoints && (
+                      <div className="mt-3">
+                        <Label htmlFor="pointsToUse">利用ポイント数</Label>
+                        <Input
+                          id="pointsToUse"
+                          type="number"
+                          min={0}
+                          value={bookingDetails.pointsToUse}
+                          onChange={(event) =>
+                            setBookingDetails((prev) => ({
+                              ...prev,
+                              pointsToUse: Number(event.target.value),
+                            }))
+                          }
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                          入力したポイントが自動で差し引かれます
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
                   <div>
                     <Label>メモ</Label>
                     <Textarea
@@ -1610,6 +1676,16 @@ export function QuickBookingDialog({
                           厚生費（{priceBreakdown.welfareRate.toFixed(1).replace(/\.0$/, '')}%）
                         </span>
                         <span>{formatYen(priceBreakdown.welfareExpense)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>小計</span>
+                      <span>{formatYen(priceBreakdown.subtotal)}</span>
+                    </div>
+                    {priceBreakdown.pointsApplied > 0 && (
+                      <div className="flex justify-between text-emerald-600">
+                        <span>ポイント利用</span>
+                        <span>-{formatYen(priceBreakdown.pointsApplied)}</span>
                       </div>
                     )}
                     <hr className="my-2" />

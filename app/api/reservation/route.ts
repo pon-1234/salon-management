@@ -16,6 +16,12 @@ import { format } from 'date-fns'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
 import { PAYMENT_METHODS, type PaymentMethod } from '@/lib/constants'
 import { calculateReservationRevenue } from '@/lib/reservation/revenue'
+import {
+  addPointTransaction,
+  calculateEarnedPoints,
+  calculateExpiryDate,
+  resolvePointConfig,
+} from '@/lib/point/utils'
 
 // Types
 interface AvailabilityCheck {
@@ -427,6 +433,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const pointConfig = resolvePointConfig(storeSettings)
+    const requestedPointsValue =
+      typeof reservationData.pointsUsed === 'number'
+        ? Math.max(0, Math.floor(reservationData.pointsUsed))
+        : 0
+
+    if (requestedPointsValue > 0) {
+      if ((customerRecord.points ?? 0) < requestedPointsValue) {
+        return NextResponse.json({ error: 'ポイント残高が不足しています' }, { status: 400 })
+      }
+      if (requestedPointsValue < pointConfig.minPointsToUse) {
+        return NextResponse.json(
+          { error: `ポイントは${pointConfig.minPointsToUse}pt以上から利用できます` },
+          { status: 400 }
+        )
+      }
+    }
+
     const resolvedAreaId = reservationData.areaId && areaRecord ? reservationData.areaId : null
     const resolvedStationId =
       reservationData.stationId && stationRecord ? reservationData.stationId : null
@@ -548,7 +572,13 @@ export async function POST(request: NextRequest) {
           })
         }
 
-        const revenue = calculateReservationRevenue({
+        const pointsToUse = requestedPointsValue
+        const manualDiscountAmount =
+          typeof reservationData.discountAmount === 'number'
+            ? reservationData.discountAmount
+            : 0
+
+        const revenueInputBase = {
           basePrice: Number(courseRecord.price ?? 0),
           options: optionsToCreate.map((option) => ({
             price: option.optionPrice,
@@ -565,9 +595,23 @@ export async function POST(request: NextRequest) {
               : null,
           transportationFee: reservationData.transportationFee ?? 0,
           additionalFee: reservationData.additionalFee ?? 0,
-          discountAmount: reservationData.discountAmount ?? 0,
+          discountAmount: manualDiscountAmount,
           welfareRate: normalizedWelfareRate,
-        })
+        }
+
+        const baseRevenue = calculateReservationRevenue(revenueInputBase)
+
+        if (pointsToUse > baseRevenue.total) {
+          throw new Error('ポイント利用数が合計金額を超えています')
+        }
+
+        const revenue =
+          pointsToUse > 0
+            ? calculateReservationRevenue({
+                ...revenueInputBase,
+                discountAmount: manualDiscountAmount + pointsToUse,
+              })
+            : baseRevenue
 
         const providedStoreRevenue =
           typeof reservationData.storeRevenue === 'number' &&
@@ -608,7 +652,8 @@ export async function POST(request: NextRequest) {
             designationFee: reservationData.designationFee ?? 0,
             transportationFee: reservationData.transportationFee ?? 0,
             additionalFee: reservationData.additionalFee ?? 0,
-            discountAmount: reservationData.discountAmount ?? 0,
+            discountAmount: manualDiscountAmount,
+            pointsUsed: pointsToUse,
             paymentMethod: paymentMethodToPersist,
             marketingChannel: reservationData.marketingChannel ?? null,
             areaId: resolvedAreaId,
@@ -635,6 +680,36 @@ export async function POST(request: NextRequest) {
             station: true,
           },
         })
+
+        if (pointsToUse > 0) {
+          await addPointTransaction(
+            {
+              customerId: targetCustomerId,
+              type: 'used',
+              amount: -pointsToUse,
+              description: '予約でポイントを利用',
+              reservationId: createdReservation.id,
+            },
+            tx
+          )
+        }
+
+        if (createdReservation.status === 'completed') {
+          const earnedPoints = calculateEarnedPoints(createdReservation.price, pointConfig)
+          if (earnedPoints > 0) {
+            await addPointTransaction(
+              {
+                customerId: createdReservation.customerId,
+                type: 'earned',
+                amount: earnedPoints,
+                description: '予約完了でポイント獲得',
+                reservationId: createdReservation.id,
+                expiresAt: calculateExpiryDate(pointConfig),
+              },
+              tx
+            )
+          }
+        }
 
         return createdReservation
       })
@@ -792,6 +867,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const storeSettings = await db.storeSettings.findUnique({ where: { storeId } })
+    const pointConfig = resolvePointConfig(storeSettings)
 
     const actorId = session?.user?.id ?? 'system'
     const actorName = session?.user?.name ?? 'システム'
@@ -962,6 +1038,8 @@ export async function PUT(request: NextRequest) {
           ? updates.discountAmount
           : previousReservation.discountAmount ?? 0
 
+      const existingPointsUsed = previousReservation.pointsUsed ?? 0
+
       const currentOptionShares =
         normalizedOptionIds === null
           ? (previousReservation.options ?? []).map((option: any) => ({
@@ -1023,7 +1101,7 @@ export async function PUT(request: NextRequest) {
           0
       )
 
-      const revenue = calculateReservationRevenue({
+      const revenueInputBase = {
         basePrice: baseCoursePrice,
         options: currentOptionShares,
         designation:
@@ -1038,7 +1116,15 @@ export async function PUT(request: NextRequest) {
         additionalFee,
         discountAmount,
         welfareRate: normalizedWelfareRate,
-      })
+      }
+
+      const revenue =
+        existingPointsUsed > 0
+          ? calculateReservationRevenue({
+              ...revenueInputBase,
+              discountAmount: discountAmount + existingPointsUsed,
+            })
+          : calculateReservationRevenue(revenueInputBase)
 
       const providedStoreRevenue =
         typeof updates.storeRevenue === 'number' && Number.isFinite(updates.storeRevenue)
@@ -1333,6 +1419,26 @@ export async function PUT(request: NextRequest) {
             actorAgent,
           })),
         })
+      }
+
+      if (previousReservation.status !== 'completed' && updated.status === 'completed') {
+        const earnedPoints = calculateEarnedPoints(
+          typeof updated.price === 'number' ? updated.price : revenue.total,
+          pointConfig
+        )
+        if (earnedPoints > 0) {
+          await addPointTransaction(
+            {
+              customerId: updated.customerId,
+              type: 'earned',
+              amount: earnedPoints,
+              description: '予約完了でポイント獲得',
+              reservationId: updated.id,
+              expiresAt: calculateExpiryDate(pointConfig),
+            },
+            tx
+          )
+        }
       }
 
       return updated
