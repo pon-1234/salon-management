@@ -11,15 +11,6 @@ import logger from '@/lib/logger'
 function verifyCronAuth(request: NextRequest) {
   const header = request.headers.get('authorization')
   const secret = process.env.CRON_SECRET
-
-  // デバッグログ（本番では削除すること）
-  logger.info({
-    hasSecret: !!secret,
-    secretPrefix: secret?.substring(0, 10),
-    hasHeader: !!header,
-    headerPrefix: header?.substring(0, 20),
-  }, 'CRON auth debug')
-
   if (!secret || !header) return false
 
   const token = header.replace(/^Bearer\s+/i, '').trim()
