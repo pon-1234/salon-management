@@ -135,6 +135,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Allow CRON job API routes (these handle their own authentication via CRON_SECRET)
+  const cronRoutes = ['/api/customer/points/expire', '/api/customer/points/notify-expiring']
+  if (isApiRoute && cronRoutes.some((route) => pathname === route)) {
+    return NextResponse.next()
+  }
+
   // Handle protected API routes
   if (isApiRoute) {
     if (!token) {
