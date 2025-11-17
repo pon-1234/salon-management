@@ -273,6 +273,9 @@ export default function SettingsPage() {
                     case 'reviews':
                       window.location.href = '/admin/reviews'
                       break
+                    case 'points':
+                      window.location.href = '/admin/settings/points'
+                      break
                     default:
                       console.log(`${item.title}の設定ページは準備中です`)
                       alert(`${item.title}の設定ページは準備中です`)
