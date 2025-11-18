@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useSession, signOut } from 'next-auth/react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Phone, Menu, User, LogIn } from 'lucide-react'
+import { Phone, Menu, User, LogIn, LogOut } from 'lucide-react'
 import { useStore } from '@/components/store-provider'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 
@@ -21,6 +22,17 @@ const navigationItems = [
 export function StoreNavigation() {
   const pathname = usePathname()
   const store = useStore()
+  const { data: session, status } = useSession()
+
+  const isAuthenticated = status === 'authenticated'
+  const isCustomer = isAuthenticated && session?.user?.role === 'customer'
+  const customerName = session?.user?.name ?? session?.user?.email ?? '会員'
+
+  const handleLogout = async () => {
+    await signOut({
+      callbackUrl: `/${store.slug}`,
+    })
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b bg-white">
@@ -51,18 +63,41 @@ export function StoreNavigation() {
 
           {/* Right Actions */}
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" className="hidden sm:flex" asChild>
-              <Link href={`/${store.slug}/register`}>
-                <User className="mr-2 h-4 w-4" />
-                会員登録
-              </Link>
-            </Button>
-            <Button variant="ghost" size="sm" className="hidden sm:flex" asChild>
-              <Link href={`/${store.slug}/login`}>
-                <LogIn className="mr-2 h-4 w-4" />
-                ログイン
-              </Link>
-            </Button>
+            {isCustomer ? (
+              <>
+                <div className="hidden flex-col text-right sm:flex">
+                  <span className="text-xs text-muted-foreground">ログイン中</span>
+                  <span className="text-sm font-semibold text-primary">{customerName}</span>
+                </div>
+                <Button variant="ghost" size="sm" className="hidden sm:flex" asChild>
+                  <Link href={`/${store.slug}/mypage`}>
+                    <User className="mr-2 h-4 w-4" />
+                    マイページ
+                  </Link>
+                </Button>
+                <Button variant="ghost" size="sm" className="hidden sm:flex" onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  ログアウト
+                </Button>
+              </>
+            ) : status === 'loading' ? (
+              <span className="hidden text-sm text-muted-foreground sm:inline">認証確認中...</span>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" className="hidden sm:flex" asChild>
+                  <Link href={`/${store.slug}/register`}>
+                    <User className="mr-2 h-4 w-4" />
+                    会員登録
+                  </Link>
+                </Button>
+                <Button variant="ghost" size="sm" className="hidden sm:flex" asChild>
+                  <Link href={`/${store.slug}/login`}>
+                    <LogIn className="mr-2 h-4 w-4" />
+                    ログイン
+                  </Link>
+                </Button>
+              </>
+            )}
 
             <div className="flex flex-col items-end">
               <a
@@ -105,12 +140,32 @@ export function StoreNavigation() {
                     </Link>
                   ))}
                   <hr className="my-4" />
-                  <Link href={`/${store.slug}/register`} className="py-2 text-sm font-medium">
-                    会員登録
-                  </Link>
-                  <Link href={`/${store.slug}/login`} className="py-2 text-sm font-medium">
-                    ログイン
-                  </Link>
+                  {isCustomer ? (
+                    <>
+                      <Link href={`/${store.slug}/mypage`} className="py-2 text-sm font-medium">
+                        マイページ
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="flex items-center gap-2 py-2 text-left text-sm font-medium text-red-600"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        ログアウト
+                      </button>
+                    </>
+                  ) : status === 'loading' ? (
+                    <span className="py-2 text-sm text-muted-foreground">認証確認中...</span>
+                  ) : (
+                    <>
+                      <Link href={`/${store.slug}/register`} className="py-2 text-sm font-medium">
+                        会員登録
+                      </Link>
+                      <Link href={`/${store.slug}/login`} className="py-2 text-sm font-medium">
+                        ログイン
+                      </Link>
+                    </>
+                  )}
                 </nav>
               </SheetContent>
             </Sheet>
