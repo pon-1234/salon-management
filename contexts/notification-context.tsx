@@ -1,12 +1,9 @@
 'use client'
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
-import { getAllMockReservations } from '@/lib/reservation/mock-data'
-import { storesData } from '@/lib/store/data'
-import { castMembers } from '@/lib/cast/data'
-import { customers } from '@/lib/customer/data'
 import type { Reservation } from '@/lib/types/reservation'
 import type { CastChatEntry } from '@/lib/types/chat'
+import { useStore } from '@/contexts/store-context'
 
 export interface ReservationNotificationDetails {
   reservationId: string
@@ -83,11 +80,28 @@ function formatReservationTime(start: Date, end: Date) {
   return `${format(start)}-${format(end)}`
 }
 
-const storeMap = new Map(storesData.map((store) => [store.id, store.displayName ?? store.name]))
-const castMap = new Map(castMembers.map((cast) => [cast.id, cast.name]))
-const customerMap = new Map(customers.map((customer) => [customer.id, customer.name ?? customer.id]))
+type ReservationApiPayload = {
+  id: string
+  startTime: string
+  endTime: string
+  createdAt?: string
+  status: Reservation['status']
+  storeId?: string | null
+  customer?: {
+    id: string
+    name?: string | null
+    alias?: string | null
+  } | null
+  cast?: {
+    id: string
+    name?: string | null
+  } | null
+}
 
-function deriveReservationsNotifications(reservations: Reservation[]): ReservationNotification[] {
+function deriveReservationsNotifications(
+  reservations: ReservationApiPayload[],
+  storeName: string
+): ReservationNotification[] {
   const now = Date.now()
   const twentyFourHours = 24 * 60 * 60 * 1000
 
@@ -106,10 +120,11 @@ function deriveReservationsNotifications(reservations: Reservation[]): Reservati
       const createdAt = reservation.createdAt instanceof Date ? reservation.createdAt : new Date()
 
       const storeId = reservation.storeId ?? 'ikebukuro'
-      const storeName = storeMap.get(storeId) ?? '池袋店'
-      const staffName = castMap.get(reservation.staffId ?? '')
+      const staffName = reservation.cast?.name ?? undefined
       const customerName =
-        customerMap.get(reservation.customerId ?? '') ?? `顧客${reservation.customerId ?? ''}`
+        reservation.customer?.alias ??
+        reservation.customer?.name ??
+        `顧客${reservation.customer?.id ?? reservation.id}`
 
       const reservationDateLabel = `${startTime.getMonth() + 1}/${startTime.getDate()}`
       const message = `${customerName}様から新しい予約が入りました。内容を確認してください。`
@@ -199,6 +214,7 @@ function mergeNotifications(prev: AdminNotification[], next: AdminNotification[]
 }
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
+  const { currentStore } = useStore()
   const [notifications, setNotifications] = useState<AdminNotification[]>([])
 
   useEffect(() => {
@@ -206,9 +222,32 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     const hydrateFromReservations = async () => {
       try {
-        const reservations = await getAllMockReservations()
-        if (!isMounted) return
-        const generated = deriveReservationsNotifications(reservations)
+        if (!currentStore?.id) {
+          return
+        }
+        const params = new URLSearchParams({
+          status: 'pending',
+          limit: '20',
+          sortBy: 'createdAt',
+          sortOrder: 'desc',
+        })
+        params.set('storeId', currentStore.id)
+
+        const response = await fetch(`/api/reservation?${params.toString()}`, {
+          cache: 'no-store',
+          credentials: 'include',
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch reservations: ${response.status}`)
+        }
+
+        const payload = await response.json()
+        if (!isMounted || !Array.isArray(payload)) {
+          return
+        }
+
+        const generated = deriveReservationsNotifications(payload, currentStore.displayName)
         setNotifications((prev) => mergeNotifications(prev, generated))
       } catch (error) {
         console.warn('[NotificationProvider] failed to load reservation notifications', error)
@@ -217,13 +256,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     hydrateFromReservations()
 
-    const interval = setInterval(hydrateFromReservations, 5 * 60 * 1000)
+    const interval = setInterval(hydrateFromReservations, 30 * 1000)
 
     return () => {
       isMounted = false
       clearInterval(interval)
     }
-  }, [])
+  }, [currentStore?.id, currentStore?.displayName])
 
   useEffect(() => {
     let isMounted = true
