@@ -1,9 +1,11 @@
 'use client'
 
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import type { Reservation } from '@/lib/types/reservation'
 import type { CastChatEntry } from '@/lib/types/chat'
 import { useStore } from '@/contexts/store-context'
+
+const READ_STORAGE_KEY = 'salon-admin-notification-read-ids'
 
 export interface ReservationNotificationDetails {
   reservationId: string
@@ -182,7 +184,11 @@ function deriveChatNotifications(entries: CastChatEntry[]): ChatNotification[] {
     })
 }
 
-function mergeNotifications(prev: AdminNotification[], next: AdminNotification[]) {
+function mergeNotifications(
+  prev: AdminNotification[],
+  next: AdminNotification[],
+  readIds?: Set<string>
+) {
   const now = Date.now()
   const twentyFourHours = 24 * 60 * 60 * 1000
 
@@ -204,7 +210,17 @@ function mergeNotifications(prev: AdminNotification[], next: AdminNotification[]
         readAt: existing.readAt,
       } as AdminNotification)
     } else {
-      map.set(notification.id, notification)
+      const isRead = readIds?.has(notification.id) ?? false
+      map.set(
+        notification.id,
+        isRead
+          ? ({
+              ...notification,
+              read: true,
+              readAt: notification.readAt ?? new Date().toISOString(),
+            } as AdminNotification)
+          : notification
+      )
     }
   })
 
@@ -216,6 +232,58 @@ function mergeNotifications(prev: AdminNotification[], next: AdminNotification[]
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { currentStore } = useStore()
   const [notifications, setNotifications] = useState<AdminNotification[]>([])
+  const [readIds, setReadIds] = useState<Set<string>>(new Set())
+  const readIdsRef = useRef(readIds)
+
+  useEffect(() => {
+    readIdsRef.current = readIds
+  }, [readIds])
+
+  useEffect(() => {
+    if (readIds.size === 0) {
+      return
+    }
+    setNotifications((prev) =>
+      prev.map((notification) =>
+        readIds.has(notification.id)
+          ? {
+              ...notification,
+              read: true,
+              readAt: notification.readAt ?? new Date().toISOString(),
+            }
+          : notification
+      )
+    )
+  }, [readIds])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+    try {
+      const stored = window.localStorage.getItem(READ_STORAGE_KEY)
+      if (!stored) {
+        return
+      }
+      const parsed = JSON.parse(stored)
+      if (Array.isArray(parsed)) {
+        setReadIds(new Set(parsed.filter((value): value is string => typeof value === 'string')))
+      }
+    } catch (error) {
+      console.warn('[NotificationProvider] failed to parse notification read state', error)
+    }
+  }, [])
+
+  const persistReadIds = useCallback((ids: Set<string>) => {
+    if (typeof window === 'undefined') {
+      return
+    }
+    try {
+      window.localStorage.setItem(READ_STORAGE_KEY, JSON.stringify(Array.from(ids)))
+    } catch (error) {
+      console.warn('[NotificationProvider] failed to persist notification read state', error)
+    }
+  }, [])
 
   useEffect(() => {
     let isMounted = true
@@ -248,7 +316,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         }
 
         const generated = deriveReservationsNotifications(payload, currentStore.displayName)
-        setNotifications((prev) => mergeNotifications(prev, generated))
+        setNotifications((prev) => mergeNotifications(prev, generated, readIdsRef.current))
       } catch (error) {
         console.warn('[NotificationProvider] failed to load reservation notifications', error)
       }
@@ -283,7 +351,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         const chatNotifications = deriveChatNotifications(data as CastChatEntry[])
         setNotifications((prev) => {
           const others = prev.filter((notification) => notification.type !== 'chat')
-          return mergeNotifications(others, chatNotifications)
+          return mergeNotifications(others, chatNotifications, readIdsRef.current)
         })
       } catch (error) {
         console.warn('[NotificationProvider] failed to load chat notifications', error)
@@ -321,26 +389,52 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [])
 
   const addNotification = useCallback((notification: AdminNotification) => {
-    setNotifications((prev) => mergeNotifications(prev, [notification]))
+    setNotifications((prev) => mergeNotifications(prev, [notification], readIdsRef.current))
   }, [])
 
-  const markAsRead = useCallback((id: string) => {
-    setNotifications((prev) =>
-      prev.map((notification) =>
-        notification.id === id
-          ? { ...notification, read: true, readAt: new Date().toISOString() }
-          : notification
-      )
-    )
-  }, [])
+  const markAsRead = useCallback(
+    (id: string) => {
+      setReadIds((prev) => {
+        if (prev.has(id)) {
+          return prev
+        }
+        const next = new Set(prev)
+        next.add(id)
+        persistReadIds(next)
+        return next
+      })
 
-  const markAsUnread = useCallback((id: string) => {
-    setNotifications((prev) =>
-      prev.map((notification) =>
-        notification.id === id ? { ...notification, read: false, readAt: null } : notification
+      setNotifications((prev) =>
+        prev.map((notification) =>
+          notification.id === id
+            ? { ...notification, read: true, readAt: new Date().toISOString() }
+            : notification
+        )
       )
-    )
-  }, [])
+    },
+    [persistReadIds]
+  )
+
+  const markAsUnread = useCallback(
+    (id: string) => {
+      setReadIds((prev) => {
+        if (!prev.has(id)) {
+          return prev
+        }
+        const next = new Set(prev)
+        next.delete(id)
+        persistReadIds(next)
+        return next
+      })
+
+      setNotifications((prev) =>
+        prev.map((notification) =>
+          notification.id === id ? { ...notification, read: false, readAt: null } : notification
+        )
+      )
+    },
+    [persistReadIds]
+  )
 
   const removeNotification = useCallback((id: string) => {
     setNotifications((prev) => prev.filter((notification) => notification.id !== id))
