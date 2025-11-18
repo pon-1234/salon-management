@@ -33,6 +33,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { useStore } from '@/components/store-provider'
 import { PAYMENT_METHODS } from '@/lib/constants'
 import { toast } from '@/hooks/use-toast'
@@ -176,6 +178,8 @@ export function StoreBookingContent({
   const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [lastReservation, setLastReservation] = useState<{ id: string; start: string } | null>(null)
+  const [activeStep, setActiveStep] = useState(1)
+  const [castSearch, setCastSearch] = useState('')
 
   const optionMap = useMemo(() => new Map(options.map((option) => [option.id, option])), [options])
   const selectedCast = useMemo(() => casts.find((cast) => cast.id === selectedCastId) ?? null, [casts, selectedCastId])
@@ -201,6 +205,40 @@ export function StoreBookingContent({
 
   const reservationTotal = (selectedCourse?.price ?? 0) + optionTotal
   const isAuthenticated = status === 'authenticated'
+  const filteredCasts = useMemo(() => {
+    const query = castSearch.trim().toLowerCase()
+    if (!query) {
+      return casts
+    }
+    return casts.filter((cast) => {
+      const name = cast.name?.toLowerCase() ?? ''
+      const type = cast.type?.toLowerCase() ?? ''
+      return name.includes(query) || type.includes(query)
+    })
+  }, [castSearch, casts])
+  const selectedSlotLabel = selectedSlot
+    ? formatInTimeZone(new Date(selectedSlot.start), JST_TIMEZONE, 'M/d HH:mm', { locale: ja })
+    : '未選択'
+  const isStepEnabled = (stepId: number) => {
+    if (stepId === 1) return true
+    if (stepId === 2) return Boolean(selectedCast)
+    if (stepId === 3) return Boolean(selectedSlot)
+    if (stepId === 4) return Boolean(selectedCourse)
+    return false
+  }
+  const isStepComplete = (stepId: number) => {
+    if (stepId === 1) return Boolean(selectedCast)
+    if (stepId === 2) return Boolean(selectedSlot)
+    if (stepId === 3) return Boolean(selectedCourse)
+    if (stepId === 4) return Boolean(selectedCourse && selectedSlot)
+    return false
+  }
+  const stepNavigationItems = [
+    { id: 1, label: 'キャスト', caption: selectedCast?.name ?? '未選択' },
+    { id: 2, label: '日付・時間', caption: selectedSlotLabel },
+    { id: 3, label: 'メニュー', caption: selectedCourse ? selectedCourse.name : '未選択' },
+    { id: 4, label: '確認', caption: '内容を確認' },
+  ]
 
   useEffect(() => {
     if (!selectedCastId && casts[0]) {
@@ -278,6 +316,15 @@ export function StoreBookingContent({
       controller.abort()
     }
   }, [casts, selectedCastId, selectedCourse, selectedDate, store.id, availabilityRefreshKey])
+
+  const handleStepChange = (stepId: number) => {
+    if (stepId === activeStep) {
+      return
+    }
+    if (stepId < activeStep || isStepEnabled(stepId)) {
+      setActiveStep(stepId)
+    }
+  }
 
   const optionGroups = useMemo(() => {
     const map = new Map<string, OptionSummary[]>()
@@ -465,92 +512,138 @@ export function StoreBookingContent({
             </AlertDescription>
           </Alert>
 
+          <div className="rounded-2xl border border-purple-100 bg-white/80 p-4 shadow-sm">
+            <div className="grid gap-3 md:grid-cols-4">
+              {stepNavigationItems.map((step) => {
+                const isActive = activeStep === step.id
+                const enabled = isStepEnabled(step.id) || step.id <= activeStep
+                const completed = isStepComplete(step.id) && step.id !== activeStep
+                return (
+                  <button
+                    key={step.id}
+                    type="button"
+                    onClick={() => handleStepChange(step.id)}
+                    disabled={!enabled}
+                    className={cn(
+                      'rounded-xl border p-3 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500',
+                      isActive
+                        ? 'border-purple-600 bg-purple-50 text-purple-700'
+                        : enabled
+                          ? 'border-border bg-white hover:border-purple-400'
+                          : 'cursor-not-allowed border-dashed border-muted-foreground/30 bg-muted text-muted-foreground'
+                    )}
+                  >
+                    <div className="flex items-center justify-between font-semibold">
+                      <span>STEP {step.id}</span>
+                      {completed && <CheckCircle className="h-4 w-4 text-emerald-600" />}
+                    </div>
+                    <p className="mt-1 text-base font-semibold">{step.label}</p>
+                    <p className="text-xs text-muted-foreground">{step.caption}</p>
+                  </button>
+                )
+              })}
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              各項目を順番に進めるとスムーズです。タップで前のステップにも戻れます。
+            </p>
+          </div>
+
           <div className="mt-10 grid gap-8 lg:grid-cols-[2fr,1fr]">
             <div className="space-y-8">
-              <Card>
-                <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <CardTitle className="text-2xl">STEP 1. キャストをえらぶ</CardTitle>
-                    <CardDescription>写真を押すだけで選択できます。迷ったら「電話で予約する」からご相談ください。</CardDescription>
-                  </div>
-                  <Badge variant="secondary" className="bg-purple-100 text-purple-700">
-                    ネット予約対応 {casts.filter((cast) => cast.netReservation).length}名
-                  </Badge>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {casts.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-purple-200 bg-purple-50/50 p-6 text-center text-sm text-muted-foreground">
-                      現在オンライン予約可能なキャスト情報を準備中です。詳しくはお電話でお問い合わせください。
+              {activeStep === 1 && (
+                <Card>
+                  <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <CardTitle className="text-2xl">STEP 1. キャストをえらぶ</CardTitle>
+                      <CardDescription>名前を押すだけで選択できます。迷ったら「電話で予約する」からご相談ください。</CardDescription>
                     </div>
-                  ) : (
-                    <div className="grid gap-4 md:grid-cols-2">
-                      {casts.map((cast) => {
-                        const isSelected = cast.id === selectedCastId
-                        return (
-                          <button
-                            key={cast.id}
-                            type="button"
-                            onClick={() => setSelectedCastId(cast.id)}
-                            className={cn(
-                              'flex w-full items-center gap-4 rounded-xl border p-4 text-left transition hover:border-purple-400 hover:shadow-sm',
-                              isSelected ? 'border-purple-600 bg-purple-50/60 shadow' : 'border-border bg-white'
-                            )}
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={cast.image ?? '/placeholder-user.jpg'}
-                              alt={cast.name}
-                              className="h-16 w-16 rounded-lg object-cover"
-                            />
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between gap-2">
-                                <div className="text-lg font-semibold">{cast.name}</div>
-                                {isSelected && (
-                                  <Badge className="bg-purple-600 text-xs text-white">選択中</Badge>
-                                )}
-                              </div>
-                              <p className="text-sm text-muted-foreground">{cast.sizeLabel || 'サイズ非公開'}</p>
-                              <div className="mt-2 flex flex-wrap gap-1">
-                                {cast.type && (
-                                  <Badge variant="outline" className="text-xs">
-                                    {cast.type}
-                                  </Badge>
-                                )}
-                                {cast.panelDesignationRank > 0 && (
-                                  <Badge variant="outline" className="text-xs">
-                                    Rank {cast.panelDesignationRank}
-                                  </Badge>
-                                )}
-                                {cast.netReservation && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    ネット予約可
-                                  </Badge>
-                                )}
+                    <Badge variant="secondary" className="bg-purple-100 text-purple-700">
+                      ネット予約対応 {casts.filter((cast) => cast.netReservation).length}名
+                    </Badge>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid gap-6 lg:grid-cols-[260px,1fr]">
+                      <div className="space-y-3">
+                        <Input
+                          value={castSearch}
+                          onChange={(event) => setCastSearch(event.target.value)}
+                          placeholder="名前やタイプでさがす"
+                        />
+                        <ScrollArea className="h-[360px] rounded-lg border bg-white">
+                          {filteredCasts.length === 0 ? (
+                            <p className="p-4 text-sm text-muted-foreground">該当するキャストが見つかりません。</p>
+                          ) : (
+                            <div className="divide-y">
+                              {filteredCasts.map((cast) => {
+                                const isSelected = cast.id === selectedCastId
+                                return (
+                                  <button
+                                    key={cast.id}
+                                    type="button"
+                                    onClick={() => setSelectedCastId(cast.id)}
+                                    className={cn(
+                                      'flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition',
+                                      isSelected ? 'bg-purple-50 font-semibold text-purple-700' : 'hover:bg-muted'
+                                    )}
+                                  >
+                                    <div>
+                                      <p className="text-base">{cast.name}</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {cast.type ?? 'タイプ未設定'} / {cast.sizeLabel || 'サイズ情報なし'}
+                                      </p>
+                                    </div>
+                                    {isSelected && <CheckCircle className="h-4 w-4 text-purple-600" />}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </ScrollArea>
+                      </div>
+                      <div className="rounded-xl border bg-white p-4 shadow-sm">
+                        {selectedCast ? (
+                          <div className="space-y-4">
+                            <div className="flex flex-col gap-4 lg:flex-row">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={selectedCast.image ?? '/placeholder-user.jpg'}
+                                alt={selectedCast.name}
+                                className="h-32 w-32 rounded-lg object-cover"
+                              />
+                              <div className="space-y-2">
+                                <p className="text-xl font-semibold text-foreground">{selectedCast.name}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {selectedCast.age ? `${selectedCast.age}歳` : '年齢非公開'} /{' '}
+                                  {selectedCast.type ?? 'タイプ非公開'}
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                  {selectedCast.availableServices.slice(0, 3).map((service) => (
+                                    <Badge key={service} variant="outline" className="text-xs">
+                                      {service}
+                                    </Badge>
+                                  ))}
+                                </div>
                               </div>
                             </div>
-                          </button>
-                        )
-                      })}
+                            <p className="text-sm text-muted-foreground">
+                              {selectedCast.introMessage ?? 'このキャストで問題なければ、下の「日時を選ぶ」を押してください。'}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">キャストを選ぶと詳細が表示されます。</p>
+                        )}
+                      </div>
                     </div>
-                  )}
-                  {selectedCast && (
-                    <div className="rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">
-                      <p className="font-medium text-foreground">{selectedCast.name}からのメッセージ</p>
-                      <p className="mt-2">{selectedCast.introMessage ?? 'よろしくお願いします。'}</p>
-                      {selectedCast.availableServices.length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {selectedCast.availableServices.slice(0, 4).map((service) => (
-                            <Badge key={service} variant="outline" className="text-xs">
-                              {service}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
+                    <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
+                      <Button size="lg" onClick={() => setActiveStep(2)} disabled={!selectedCast}>
+                        STEP 2 日時を選ぶ
+                      </Button>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
 
+              {activeStep === 2 && (
               <Card>
                 <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                   <div>
@@ -634,8 +727,19 @@ export function StoreBookingContent({
                     </div>
                   </div>
                 </CardContent>
+              <CardFooter className="flex flex-col gap-3 sm:flex-row sm:justify-between">
+                <Button variant="outline" onClick={() => setActiveStep(1)}>
+                  STEP 1 に戻る
+                </Button>
+                <Button onClick={() => setActiveStep(3)} disabled={!selectedSlot}>
+                  STEP 3 メニューを選ぶ
+                </Button>
+              </CardFooter>
               </Card>
+              )}
 
+              {activeStep === 3 && (
+                <>
               <Card>
                 <CardHeader>
                   <CardTitle className="text-2xl">STEP 3. コースを選ぶ</CardTitle>
@@ -747,40 +851,61 @@ export function StoreBookingContent({
                   )}
                 </CardContent>
               </Card>
+              <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-between">
+                <Button variant="outline" onClick={() => setActiveStep(2)}>
+                  STEP 2 に戻る
+                </Button>
+                <Button onClick={() => setActiveStep(4)} disabled={!selectedCourse}>
+                  STEP 4 お支払いへ進む
+                </Button>
+              </div>
+                </>
+              )}
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-2xl">STEP 4. お支払い方法と備考</CardTitle>
-                  <CardDescription>お支払いは当日店舗で承ります。スタッフに伝えたいことがあれば備考欄へご記入ください。</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>お支払い方法</Label>
-                    <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="支払い方法を選択" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.values(PAYMENT_METHODS).map((method) => (
-                          <SelectItem key={method} value={method}>
-                            {method}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+              {activeStep === 4 && (
+                <>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-2xl">STEP 4. お支払い方法と備考</CardTitle>
+                      <CardDescription>
+                        お支払いは当日店舗で承ります。スタッフに伝えたいことがあれば備考欄へご記入ください。
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>お支払い方法</Label>
+                        <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="支払い方法を選択" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.values(PAYMENT_METHODS).map((method) => (
+                              <SelectItem key={method} value={method}>
+                                {method}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>備考・ご要望</Label>
+                        <Textarea
+                          rows={4}
+                          placeholder="到着予定時刻や指名に関するご要望などがあればご記入ください。"
+                          value={notes}
+                          onChange={(event) => setNotes(event.target.value)}
+                          className="resize-none"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <div className="flex justify-start">
+                    <Button variant="outline" onClick={() => setActiveStep(3)}>
+                      STEP 3 に戻る
+                    </Button>
                   </div>
-                  <div className="space-y-2">
-                    <Label>備考・ご要望</Label>
-                    <Textarea
-                      rows={4}
-                      placeholder="到着予定時刻や指名に関するご要望などがあればご記入ください。"
-                      value={notes}
-                      onChange={(event) => setNotes(event.target.value)}
-                      className="resize-none"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+                </>
+              )}
             </div>
 
             <aside className="space-y-6">
