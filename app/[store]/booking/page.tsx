@@ -1,23 +1,81 @@
+import { notFound } from 'next/navigation'
+import { StoreNavigation } from '@/components/store-navigation'
 import { StoreFooter } from '@/components/store-footer'
 import { fetchStoreBySlug } from '@/lib/store/public-api'
-import { notFound } from 'next/navigation'
+import { getPublicCastProfiles } from '@/lib/store/public-casts'
+import { getPublicStorePricing } from '@/lib/store/public-pricing'
+import { StoreBookingContent } from '@/components/store-booking/store-booking-content'
 
-export default async function StoreBookingPage({ params }: { params: Promise<{ store: string }> }) {
-  const { store: storeSlug } = await params
+type SerializableCourse = {
+  id: string
+  name: string
+  duration: number
+  price: number
+  description: string | null
+}
+
+type SerializableOption = {
+  id: string
+  name: string
+  price: number
+  description: string | null
+  note: string | null
+  category: string
+  isPopular: boolean
+}
+
+export default async function StoreBookingPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ store: string }>
+  searchParams: Promise<{ cast?: string | string[] }>
+}) {
+  const [{ store: storeSlug }, resolvedSearchParams] = await Promise.all([params, searchParams])
   const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {
     notFound()
   }
 
-  return (
-    <main>
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <h1 className="mb-8 text-3xl font-bold">予約ページ</h1>
-        <p>店舗別の予約ページです</p>
-      </div>
+  const [casts, pricing] = await Promise.all([
+    getPublicCastProfiles(store.id),
+    getPublicStorePricing(store.id),
+  ])
 
+  const courses: SerializableCourse[] = pricing.courses.map((course) => ({
+    id: course.id,
+    name: course.name,
+    duration: course.duration,
+    price: course.price,
+    description: course.description ?? null,
+  }))
+
+  const options: SerializableOption[] = pricing.options.map((option) => ({
+    id: option.id,
+    name: option.name,
+    price: option.price,
+    description: option.description ?? null,
+    note: option.note ?? null,
+    category: option.category ?? 'special',
+    isPopular: Boolean(option.isPopular),
+  }))
+
+  const initialCastIdParam = resolvedSearchParams?.cast
+  const initialCastId = Array.isArray(initialCastIdParam)
+    ? initialCastIdParam[0]
+    : initialCastIdParam ?? null
+
+  return (
+    <>
+      <StoreNavigation />
+      <StoreBookingContent
+        casts={casts}
+        courses={courses}
+        options={options}
+        initialCastId={initialCastId}
+      />
       <StoreFooter store={store} />
-    </main>
+    </>
   )
 }
