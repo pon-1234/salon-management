@@ -28,8 +28,6 @@ export interface ReservationNotification {
   read: boolean
   readAt?: string | null
   createdAt: string
-  assignedTo?: string | null
-  resolvedAt?: string | null
 }
 
 export interface ChatNotificationDetails {
@@ -58,8 +56,6 @@ interface NotificationContextType {
   addNotification: (notification: AdminNotification) => void
   markAsRead: (id: string) => void
   markAsUnread: (id: string) => void
-  assignNotification: (id: string, assignee: string) => void
-  resolveNotification: (id: string, resolved: boolean) => void
   removeNotification: (id: string) => void
   unreadCount: number
 }
@@ -96,6 +92,7 @@ type ReservationApiPayload = {
     id: string
     name?: string | null
   } | null
+  marketingChannel?: string | null
 }
 
 function deriveReservationsNotifications(
@@ -107,6 +104,11 @@ function deriveReservationsNotifications(
 
   return reservations
     .filter((reservation) => {
+      const marketingChannel = reservation.marketingChannel?.toLowerCase()
+      if (marketingChannel !== 'web') {
+        return false
+      }
+
       if (reservation.status !== 'pending') {
         return false
       }
@@ -200,8 +202,6 @@ function mergeNotifications(prev: AdminNotification[], next: AdminNotification[]
         ...notification,
         read: existing.read,
         readAt: existing.readAt,
-        assignedTo: 'assignedTo' in existing ? existing.assignedTo : undefined,
-        resolvedAt: 'resolvedAt' in existing ? existing.resolvedAt : undefined,
       } as AdminNotification)
     } else {
       map.set(notification.id, notification)
@@ -346,28 +346,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     setNotifications((prev) => prev.filter((notification) => notification.id !== id))
   }, [])
 
-  const assignNotification = useCallback((id: string, assignee: string) => {
-    setNotifications((prev) =>
-      prev.map((notification) => {
-        if (notification.id !== id || notification.type !== 'reservation') {
-          return notification
-        }
-        return { ...notification, assignedTo: assignee || null }
-      })
-    )
-  }, [])
-
-  const resolveNotification = useCallback((id: string, resolved: boolean) => {
-    setNotifications((prev) =>
-      prev.map((notification) => {
-        if (notification.id !== id || notification.type !== 'reservation') {
-          return notification
-        }
-        return { ...notification, resolvedAt: resolved ? new Date().toISOString() : null }
-      })
-    )
-  }, [])
-
   const unreadCount = notifications.filter((notification) => !notification.read).length
 
   return (
@@ -377,8 +355,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         addNotification,
         markAsRead,
         markAsUnread,
-        assignNotification,
-        resolveNotification,
         removeNotification,
         unreadCount,
       }}
@@ -409,8 +385,6 @@ export function useNotification() {
     addNotification: context.addNotification,
     markAsRead: context.markAsRead,
     markAsUnread: context.markAsUnread,
-    assignNotification: context.assignNotification,
-    resolveNotification: context.resolveNotification,
     removeNotification: context.removeNotification,
   }
 }

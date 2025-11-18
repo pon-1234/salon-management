@@ -227,16 +227,6 @@ export function NotificationList({
                       <Badge variant={statusVariant} className="capitalize">
                         {statusLabel}
                       </Badge>
-                      {notification.assignedTo && (
-                        <Badge variant="outline" className="text-xs">
-                          担当 {notification.assignedTo}
-                        </Badge>
-                      )}
-                      {notification.resolvedAt && (
-                        <Badge variant="outline" className="text-[10px] text-emerald-700">
-                          確認済み
-                        </Badge>
-                      )}
                     </div>
                     <p className="text-sm font-semibold text-foreground">{notification.message}</p>
                     <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground sm:grid-cols-3">
@@ -302,7 +292,7 @@ export function NotificationList({
                         onSelect(notification)
                       }}
                     >
-                      詳細を見る →
+                      予約詳細を確認
                     </Button>
                   </div>
                 </div>

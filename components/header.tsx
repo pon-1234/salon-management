@@ -52,14 +52,7 @@ export function Header() {
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState('')
   const [notificationOpen, setNotificationOpen] = useState(false)
-  const {
-    notifications,
-    markAsRead,
-    markAsUnread,
-    assignNotification,
-    resolveNotification,
-    unreadCount,
-  } = useNotifications()
+  const { notifications, markAsRead, markAsUnread, unreadCount } = useNotifications()
   const router = useRouter()
   const [selectedNotification, setSelectedNotification] = useState<ReservationNotification | null>(
     null
@@ -320,8 +313,6 @@ export function Header() {
           open={!!selectedNotification}
           notification={selectedNotification}
           onOpenChange={(open) => !open && setSelectedNotification(null)}
-          onAssign={assignNotification}
-          onResolve={resolveNotification}
           onMarkAsRead={markAsRead}
           onNavigate={handleNavigateFromNotification}
         />
