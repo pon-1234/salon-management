@@ -21,6 +21,8 @@ import {
   Zap,
   CreditCard,
   ArrowRight,
+  PhoneCall,
+  HandHelping,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -40,6 +42,21 @@ import type { PublicCastProfile } from '@/lib/store/public-casts'
 const JST_TIMEZONE = 'Asia/Tokyo'
 const STEP_MINUTES = 30
 const MAX_BOOKING_DAYS = 14
+
+const BOOKING_STEPS = [
+  {
+    title: 'キャストを選ぶ',
+    description: 'お顔写真を押してお好みのキャストを1人お選びください。',
+  },
+  {
+    title: '日付と時間を決める',
+    description: 'カレンダーで日付を選ぶと、空いている時間が大きなボタンで表示されます。',
+  },
+  {
+    title: '予約内容を確認する',
+    description: '料金と支払い方法を確認し「この内容で予約する」を押します。',
+  },
+]
 
 type CourseSummary = {
   id: string
@@ -350,8 +367,8 @@ export function StoreBookingContent({
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <section className="bg-gradient-to-r from-purple-700 via-pink-600 to-rose-500 py-16 text-white">
-        <div className="mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
+      <section className="bg-gradient-to-r from-purple-700 via-pink-600 to-rose-500 py-14 text-white">
+        <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
           <div className="flex flex-wrap justify-center gap-3">
             <Badge className="bg-white/20 text-white">
               <Sparkles className="mr-1 h-4 w-4" />
@@ -366,12 +383,10 @@ export function StoreBookingContent({
               API連携でリアルタイム反映
             </Badge>
           </div>
-          <h1 className="mt-6 text-4xl font-bold sm:text-5xl">
-            {store.displayName} オンライン予約
-          </h1>
-          <p className="mt-4 text-lg text-purple-100">
-            ご希望のキャストとコースを選ぶだけで、API連携された空き状況からすぐに予約が確定します。
-            会員登録済みのお客様のみご利用いただけます。
+          <h1 className="mt-6 text-4xl font-bold sm:text-5xl">{store.displayName} オンライン予約</h1>
+          <p className="mt-4 text-lg leading-relaxed text-purple-100">
+            画面の案内にそって「キャスト」「日時」「確認」の順に進むだけでご予約いただけます。
+            ご不明点があればいつでもお電話ください。
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-sm text-purple-100">
             <span className="flex items-center gap-2">
@@ -388,8 +403,47 @@ export function StoreBookingContent({
         </div>
       </section>
 
-      <section className="-mt-8 pb-16 pt-4">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <section className="-mt-10 pb-16 pt-6">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 space-y-8">
+          <div className="grid gap-4 rounded-2xl border border-purple-100 bg-white/80 p-5 shadow-sm md:grid-cols-3">
+            {BOOKING_STEPS.map((step, index) => (
+              <div key={step.title} className="flex gap-3 rounded-xl border border-purple-50 bg-purple-50/60 p-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-600 text-lg font-bold text-white">
+                  {index + 1}
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-purple-800">{step.title}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{step.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-col gap-4 rounded-2xl border border-dashed border-purple-200 bg-white/90 p-5 shadow-sm md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-100 text-purple-700">
+                <HandHelping className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-base font-semibold text-foreground">お電話でもご予約・ご相談いただけます</p>
+                <p className="text-sm text-muted-foreground">
+                  スマホ操作に不安がある方は「電話予約」ボタンからスタッフが直接ご案内いたします。
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button asChild size="lg" className="bg-emerald-600 hover:bg-emerald-700">
+                <a href={`tel:${store.phone}`} className="flex items-center gap-2">
+                  <PhoneCall className="h-5 w-5" />
+                  電話で予約する {store.phone}
+                </a>
+              </Button>
+              <Button variant="outline" size="lg" asChild>
+                <Link href={`/${store.slug}/booking?guide=1`}>操作ガイドを見る</Link>
+              </Button>
+            </div>
+          </div>
+
           <Alert className="border-purple-200 bg-white shadow-sm">
             <ShieldCheck className="h-5 w-5 text-purple-600" />
             <AlertTitle>オンライン予約は会員限定サービスです</AlertTitle>
@@ -416,8 +470,8 @@ export function StoreBookingContent({
               <Card>
                 <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <CardTitle className="text-2xl">キャスト選択</CardTitle>
-                    <CardDescription>ご希望のキャストを選択してください</CardDescription>
+                    <CardTitle className="text-2xl">STEP 1. キャストをえらぶ</CardTitle>
+                    <CardDescription>写真を押すだけで選択できます。迷ったら「電話で予約する」からご相談ください。</CardDescription>
                   </div>
                   <Badge variant="secondary" className="bg-purple-100 text-purple-700">
                     ネット予約対応 {casts.filter((cast) => cast.netReservation).length}名
@@ -500,8 +554,8 @@ export function StoreBookingContent({
               <Card>
                 <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <CardTitle className="text-2xl">ご希望日時</CardTitle>
-                    <CardDescription>カレンダーから日付を選び、空き時間をタップしてください</CardDescription>
+                    <CardTitle className="text-2xl">STEP 2. 日付と時間を決める</CardTitle>
+                    <CardDescription>カレンダーで日付を押すと、その日で選べる時間が大きなボタンで表示されます。</CardDescription>
                   </div>
                   <Button
                     variant="outline"
@@ -514,6 +568,11 @@ export function StoreBookingContent({
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  <div className="rounded-lg border border-dashed border-purple-200 bg-purple-50/50 p-3 text-sm text-muted-foreground">
+                    <p className="font-semibold text-purple-800">時間の選び方</p>
+                    <p>【1】カレンダーで日付を選ぶ → 【2】右側に出てきた時間の中からご希望を押してください。</p>
+                  </div>
+
                   <div className="grid gap-6 lg:grid-cols-2">
                     <div className="rounded-lg border bg-white p-2">
                       <Calendar
@@ -579,8 +638,8 @@ export function StoreBookingContent({
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-2xl">コース選択</CardTitle>
-                  <CardDescription>料金はすべて税込表示です</CardDescription>
+                  <CardTitle className="text-2xl">STEP 3. コースを選ぶ</CardTitle>
+                  <CardDescription>よく分からない場合は「スタンダードコース」を選んでいただければスタッフが丁寧にご案内します。</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {courses.length === 0 ? (
@@ -634,8 +693,8 @@ export function StoreBookingContent({
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-2xl">オプション</CardTitle>
-                  <CardDescription>人気のオプションを複数選択できます</CardDescription>
+                  <CardTitle className="text-2xl">お好みで追加オプション</CardTitle>
+                  <CardDescription>チェックしなくてもそのまま進めます。ご希望がある場合だけチェックしてください。</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {optionGroups.length === 0 ? (
@@ -691,8 +750,8 @@ export function StoreBookingContent({
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-2xl">お支払い方法と備考</CardTitle>
-                  <CardDescription>現地での決済となります。ご要望があれば備考欄へ記入してください。</CardDescription>
+                  <CardTitle className="text-2xl">STEP 4. お支払い方法と備考</CardTitle>
+                  <CardDescription>お支払いは当日店舗で承ります。スタッフに伝えたいことがあれば備考欄へご記入ください。</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
@@ -727,8 +786,8 @@ export function StoreBookingContent({
             <aside className="space-y-6">
               <Card className="border-2 border-purple-100 bg-white">
                 <CardHeader>
-                  <CardTitle className="text-2xl">予約内容の確認</CardTitle>
-                  <CardDescription>予約は確定後すぐにマイページへ反映されます</CardDescription>
+                  <CardTitle className="text-2xl">最後に内容を確認してください</CardTitle>
+                  <CardDescription>すべてご確認いただけましたら下の大きなボタンを押して予約完了です。</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
                   <div className="flex justify-between">
