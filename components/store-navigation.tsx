@@ -65,10 +65,6 @@ export function StoreNavigation() {
           <div className="flex items-center gap-4">
             {isCustomer ? (
               <>
-                <div className="hidden flex-col text-right sm:flex">
-                  <span className="text-xs text-muted-foreground">ログイン中</span>
-                  <span className="text-sm font-semibold text-primary">{customerName}</span>
-                </div>
                 <Button variant="ghost" size="sm" className="hidden sm:flex" asChild>
                   <Link href={`/${store.slug}/mypage`}>
                     <User className="mr-2 h-4 w-4" />
