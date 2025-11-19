@@ -74,6 +74,12 @@ function buildCoursePayload(data: any, mode: 'create' | 'update') {
     payload.castShare = castShare
   }
 
+  if (data.enableWebBooking !== undefined) {
+    payload.enableWebBooking = Boolean(data.enableWebBooking)
+  } else if (mode === 'create') {
+    payload.enableWebBooking = true
+  }
+
   return payload
 }
 
@@ -344,6 +350,7 @@ export async function PUT(request: NextRequest) {
         price: existingCourse.price,
         storeShare: existingCourse.storeShare,
         castShare: existingCourse.castShare,
+        enableWebBooking: existingCourse.enableWebBooking,
         storeId: existingCourse.storeId,
       }
 

@@ -17,6 +17,7 @@ function ensureCourseSerializable(course: any): CoursePrice {
     storeShare: course.storeShare ?? null,
     castShare: course.castShare ?? null,
     isActive: course.isActive,
+    enableWebBooking: course.enableWebBooking ?? true,
     archivedAt: course.archivedAt ?? null,
     createdAt: course.createdAt ? new Date(course.createdAt) : new Date(),
     updatedAt: course.updatedAt ? new Date(course.updatedAt) : new Date(),

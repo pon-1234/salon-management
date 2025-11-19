@@ -149,18 +149,19 @@ model Reservation {
 }
 
 model CoursePrice {
-  id           String        @id @default(cuid())
-  name         String
-  duration     Int
-  price        Int
-  storeShare   Int?
-  castShare    Int?
-  description  String
-  isActive     Boolean       @default(true)
-  archivedAt   DateTime?
-  storeId      String
-  reservations Reservation[]
-  store        Store         @relation(fields: [storeId], references: [id])
+  id              String        @id @default(cuid())
+  name            String
+  duration        Int
+  price           Int
+  storeShare      Int?
+  castShare       Int?
+  description     String
+  isActive        Boolean       @default(true)
+  enableWebBooking Boolean       @default(true)
+  archivedAt      DateTime?
+  storeId         String
+  reservations    Reservation[]
+  store           Store         @relation(fields: [storeId], references: [id])
 
   @@index([storeId])
 }

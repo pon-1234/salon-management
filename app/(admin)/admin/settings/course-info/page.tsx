@@ -5,10 +5,12 @@ import Link from 'next/link'
 import { Header } from '@/components/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Switch } from '@/components/ui/switch'
 import {
   Table,
   TableBody,
@@ -41,6 +43,7 @@ type CourseFormState = {
   storeShare: number
   castShare: number
   isActive: boolean
+  enableWebBooking: boolean
 }
 
 function toCurrency(amount: number | null | undefined) {
@@ -75,6 +78,7 @@ function normalizeCourse(course: CoursePrice) {
 
   return {
     ...course,
+    enableWebBooking: course.enableWebBooking !== false,
     description: course.description ?? '',
     storeShare,
     castShare,
@@ -95,6 +99,7 @@ export default function CourseInfoPage() {
     storeShare: 0,
     castShare: 0,
     isActive: true,
+    enableWebBooking: true,
   })
 
   const pricingUseCases = getPricingUseCases()
@@ -149,6 +154,7 @@ export default function CourseInfoPage() {
       storeShare: 0,
       castShare: 0,
       isActive: true,
+      enableWebBooking: true,
     })
     setDialogOpen(true)
   }
@@ -164,6 +170,7 @@ export default function CourseInfoPage() {
       storeShare: normalized.storeShare ?? 0,
       castShare: normalized.castShare ?? 0,
       isActive: normalized.isActive,
+      enableWebBooking: normalized.enableWebBooking,
     })
     setDialogOpen(true)
   }
@@ -205,6 +212,7 @@ export default function CourseInfoPage() {
       storeShare: Math.max(0, formData.storeShare || 0),
       castShare: Math.max(0, formData.castShare || 0),
       isActive: formData.isActive,
+      enableWebBooking: formData.enableWebBooking,
     }
 
     try {
@@ -345,15 +353,18 @@ export default function CourseInfoPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="whitespace-nowrap">コース名</TableHead>
-                    <TableHead className="w-32 whitespace-nowrap">時間</TableHead>
-                    <TableHead className="w-40 whitespace-nowrap">料金</TableHead>
-                    <TableHead className="w-48 whitespace-nowrap">取り分</TableHead>
-                    <TableHead className="whitespace-nowrap">説明</TableHead>
-                    <TableHead className="w-32 whitespace-nowrap">操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+                  <TableHead className="whitespace-nowrap">コース名</TableHead>
+                  <TableHead className="w-32 whitespace-nowrap">時間</TableHead>
+                  <TableHead className="w-40 whitespace-nowrap">料金</TableHead>
+                  <TableHead className="w-48 whitespace-nowrap">取り分</TableHead>
+                  <TableHead className="w-32 whitespace-nowrap text-center">
+                    WEB予約
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap">説明</TableHead>
+                  <TableHead className="w-32 whitespace-nowrap">操作</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                   {sortedCourses.map((course) => (
                     <TableRow key={course.id}>
                       <TableCell className="font-medium whitespace-nowrap">{course.name}</TableCell>
@@ -361,6 +372,14 @@ export default function CourseInfoPage() {
                       <TableCell className="whitespace-nowrap">{toCurrency(course.price)}</TableCell>
                       <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                         店舗 {toCurrency(course.storeShare)} / キャスト {toCurrency(course.castShare)}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge
+                          variant={course.enableWebBooking ? 'default' : 'secondary'}
+                          className={course.enableWebBooking ? 'bg-emerald-600' : 'bg-gray-200 text-gray-700'}
+                        >
+                          {course.enableWebBooking ? '公開中' : '非表示'}
+                        </Badge>
                       </TableCell>
                       <TableCell className="max-w-md truncate text-sm text-gray-600">
                         {course.description || '—'}
@@ -476,6 +495,21 @@ export default function CourseInfoPage() {
                 value={formData.description}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, description: e.target.value }))
+                }
+              />
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border bg-muted/40 px-4 py-3">
+              <div>
+                <Label className="text-sm font-medium">WEB予約で表示</Label>
+                <p className="text-xs text-muted-foreground">
+                  オフにすると管理画面からのみ選択でき、オンライン予約一覧には表示されません。
+                </p>
+              </div>
+              <Switch
+                checked={formData.enableWebBooking}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({ ...prev, enableWebBooking: checked }))
                 }
               />
             </div>

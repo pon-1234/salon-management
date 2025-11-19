@@ -12,6 +12,7 @@ type SerializableCourse = {
   duration: number
   price: number
   description: string | null
+  enableWebBooking: boolean
 }
 
 type SerializableOption = {
@@ -43,13 +44,16 @@ export default async function StoreBookingPage({
     getPublicStorePricing(store.id),
   ])
 
-  const courses: SerializableCourse[] = pricing.courses.map((course) => ({
-    id: course.id,
-    name: course.name,
-    duration: course.duration,
-    price: course.price,
-    description: course.description ?? null,
-  }))
+  const courses: SerializableCourse[] = pricing.courses
+    .filter((course) => course.enableWebBooking !== false)
+    .map((course) => ({
+      id: course.id,
+      name: course.name,
+      duration: course.duration,
+      price: course.price,
+      description: course.description ?? null,
+      enableWebBooking: course.enableWebBooking !== false,
+    }))
 
   const options: SerializableOption[] = pricing.options.map((option) => ({
     id: option.id,

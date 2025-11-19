@@ -163,6 +163,7 @@ async function main() {
           castShare: course.price - course.storeShare,
           description: `管理用名称: ${course.adminName} / 表示順: ${course.sort} / WEB表示: ${course.web ? '有効' : '無効'} / 王様コース: ${course.king ? 'はい' : 'いいえ'}`,
           isActive: course.show,
+          enableWebBooking: course.web,
           archivedAt: null,
         },
         create: {
@@ -174,6 +175,7 @@ async function main() {
           castShare: course.price - course.storeShare,
           description: `管理用名称: ${course.adminName} / 表示順: ${course.sort} / WEB表示: ${course.web ? '有効' : '無効'} / 王様コース: ${course.king ? 'はい' : 'いいえ'}`,
           isActive: course.show,
+          enableWebBooking: course.web,
           archivedAt: null,
         },
       })

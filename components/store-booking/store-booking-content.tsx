@@ -66,6 +66,7 @@ type CourseSummary = {
   duration: number
   price: number
   description: string | null
+  enableWebBooking: boolean
 }
 
 type OptionSummary = {
@@ -106,6 +107,10 @@ const formatDuration = (minutes: number) => {
 }
 
 const formatCurrency = (value: number) => `¥${value.toLocaleString()}`
+
+const getInitialCourseId = (courseList: CourseSummary[]) => {
+  return courseList.find((course) => course.enableWebBooking !== false)?.id ?? ''
+}
 
 const buildTimeSlotChoices = (ranges: TimeSlotRange[], durationMinutes: number): TimeSlotChoice[] => {
   if (!durationMinutes) {
@@ -166,7 +171,7 @@ export function StoreBookingContent({
     }
     return casts[0]?.id ?? ''
   })
-  const [selectedCourseId, setSelectedCourseId] = useState<string>(courses[0]?.id ?? '')
+  const [selectedCourseId, setSelectedCourseId] = useState<string>(() => getInitialCourseId(courses))
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()))
   const [selectedSlotStart, setSelectedSlotStart] = useState<string>('')
   const [timeSlots, setTimeSlots] = useState<TimeSlotChoice[]>([])
@@ -181,11 +186,15 @@ export function StoreBookingContent({
   const [activeStep, setActiveStep] = useState(1)
   const [castSearch, setCastSearch] = useState('')
 
+  const bookableCourses = useMemo(
+    () => courses.filter((course) => course.enableWebBooking !== false),
+    [courses]
+  )
   const optionMap = useMemo(() => new Map(options.map((option) => [option.id, option])), [options])
   const selectedCast = useMemo(() => casts.find((cast) => cast.id === selectedCastId) ?? null, [casts, selectedCastId])
   const selectedCourse = useMemo(
-    () => courses.find((course) => course.id === selectedCourseId) ?? null,
-    [courses, selectedCourseId]
+    () => bookableCourses.find((course) => course.id === selectedCourseId) ?? null,
+    [bookableCourses, selectedCourseId]
   )
   const selectedSlot = useMemo(
     () => timeSlots.find((slot) => slot.start === selectedSlotStart) ?? null,
@@ -247,10 +256,18 @@ export function StoreBookingContent({
   }, [casts, selectedCastId])
 
   useEffect(() => {
-    if (courses.length > 0 && !selectedCourseId) {
-      setSelectedCourseId(courses[0].id)
+    if (bookableCourses.length === 0) {
+      if (selectedCourseId) {
+        setSelectedCourseId('')
+      }
+      return
     }
-  }, [courses, selectedCourseId])
+
+    const hasSelectedCourse = bookableCourses.some((course) => course.id === selectedCourseId)
+    if (!hasSelectedCourse) {
+      setSelectedCourseId(bookableCourses[0].id)
+    }
+  }, [bookableCourses, selectedCourseId])
 
   useEffect(() => {
     if (initialCastId && casts.some((cast) => cast.id === initialCastId)) {
@@ -746,13 +763,13 @@ export function StoreBookingContent({
                   <CardDescription>よく分からない場合は「スタンダードコース」を選んでいただければスタッフが丁寧にご案内します。</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {courses.length === 0 ? (
+                  {bookableCourses.length === 0 ? (
                     <div className="rounded-lg border border-dashed border-purple-200 bg-purple-50/50 p-4 text-center text-sm text-muted-foreground">
                       料金プランを準備しています。詳細はお電話にてお問い合わせください。
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {courses.map((course) => {
+                      {bookableCourses.map((course) => {
                         const isSelected = course.id === selectedCourseId
                         return (
                           <button

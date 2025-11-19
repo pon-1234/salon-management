@@ -9,6 +9,7 @@ export interface CoursePrice extends BaseEntity {
   storeShare?: number | null
   castShare?: number | null
   isActive: boolean
+  enableWebBooking: boolean
   archivedAt?: Date | null
 }
 
