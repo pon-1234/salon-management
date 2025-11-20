@@ -45,6 +45,11 @@ const lineEventMessageSchema = z.object({
   text: z.string().optional(),
 })
 
+const lineEventPostbackSchema = z.object({
+  data: z.string(),
+  params: z.record(z.string()).optional(),
+})
+
 export const lineWebhookEventSchema = z.object({
   type: z.string(),
   replyToken: z.string().optional(),
@@ -52,6 +57,7 @@ export const lineWebhookEventSchema = z.object({
   mode: z.string().optional(),
   source: lineEventSourceSchema.optional(),
   message: lineEventMessageSchema.optional(),
+  postback: lineEventPostbackSchema.optional(),
 })
 
 export const lineWebhookRequestSchema = z.object({

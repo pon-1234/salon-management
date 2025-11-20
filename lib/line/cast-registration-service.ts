@@ -53,6 +53,16 @@ export function extractCastIdFromCommand(text: string | null | undefined): strin
   return match ? match[1] : null
 }
 
+export function extractCastIdFromPostback(data: string | null | undefined): string | null {
+  if (!data) return null
+  try {
+    const params = new URLSearchParams(data)
+    return params.get('castId')
+  } catch {
+    return null
+  }
+}
+
 export class LineCastRegistrationService {
   constructor(
     private readonly deps: {
@@ -93,6 +103,19 @@ export class LineCastRegistrationService {
 
     if (event.type === 'message' && event.message?.type === 'text') {
       const castId = extractCastIdFromCommand(event.message.text)
+      if (!castId) {
+        return {
+          status: 'ignored',
+          reason: 'unrecognized_command',
+          eventType: event.type,
+          lineUserId,
+        }
+      }
+      return this.linkCast(lineUserId, castId)
+    }
+
+    if (event.type === 'postback' && event.postback?.data) {
+      const castId = extractCastIdFromPostback(event.postback.data)
       if (!castId) {
         return {
           status: 'ignored',

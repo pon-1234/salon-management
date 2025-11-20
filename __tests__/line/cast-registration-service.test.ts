@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach } from 'vitest'
 import {
   LineCastRegistrationService,
   extractCastIdFromCommand,
+  extractCastIdFromPostback,
 } from '@/lib/line/cast-registration-service'
 import type { CastRegistrationResult } from '@/lib/line/cast-registration-service'
 
@@ -105,6 +106,19 @@ describe('extractCastIdFromCommand', () => {
   })
 })
 
+describe('extractCastIdFromPostback', () => {
+  it('parses castId from postback data', () => {
+    expect(extractCastIdFromPostback('action=register&castId=cast-123')).toBe('cast-123')
+    expect(extractCastIdFromPostback('castId=cast-456&action=register')).toBe('cast-456')
+  })
+
+  it('returns null when castId is missing', () => {
+    expect(extractCastIdFromPostback('action=other')).toBeNull()
+    expect(extractCastIdFromPostback('')).toBeNull()
+    expect(extractCastIdFromPostback(null)).toBeNull()
+  })
+})
+
 describe('LineCastRegistrationService', () => {
   let repository: MockCastRepository
   let messagingClient: MockLineMessagingClient
@@ -178,6 +192,45 @@ describe('LineCastRegistrationService', () => {
     const outcome = await service.handleEvent({
       type: 'message',
       message: { type: 'text', text: 'hello' },
+      source: { type: 'user', userId: 'U-new' },
+    })
+
+    expect(outcome.status).toBe('ignored')
+    expect(outcome.reason).toBe('unrecognized_command')
+    expect(messagingClient.messages).toHaveLength(0)
+  })
+
+  it('links cast when postback event contains valid cast ID', async () => {
+    const result = (await service.handleEvent({
+      type: 'postback',
+      postback: { data: 'action=register&castId=cast-1' },
+      source: { type: 'user', userId: 'U-new' },
+    })) as CastRegistrationResult
+
+    expect(result.status).toBe('linked')
+    expect(result.castId).toBe('cast-1')
+    expect(messagingClient.messages).toHaveLength(1)
+    expect(messagingClient.messages[0]).toEqual({
+      to: 'U-new',
+      text: expect.stringContaining('LINE連携が完了しました。'),
+    })
+  })
+
+  it('returns not_found when postback cast ID does not exist', async () => {
+    const outcome = await service.handleEvent({
+      type: 'postback',
+      postback: { data: 'action=register&castId=missing-cast' },
+      source: { type: 'user', userId: 'U-new' },
+    })
+
+    expect(outcome.status).toBe('not_found')
+    expect(messagingClient.messages[0].text).toContain('見つかりません')
+  })
+
+  it('ignores postback event without castId', async () => {
+    const outcome = await service.handleEvent({
+      type: 'postback',
+      postback: { data: 'action=other' },
       source: { type: 'user', userId: 'U-new' },
     })
 
