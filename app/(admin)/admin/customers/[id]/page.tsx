@@ -100,6 +100,12 @@ type InsightMetric = {
   helper?: string
 }
 
+const NG_ASSIGNMENT_LABELS: Record<'customer' | 'cast' | 'staff', string> = {
+  cast: 'キャストNG',
+  customer: '顧客NG',
+  staff: '店舗NG',
+}
+
 export default function CustomerProfile() {
   const router = useRouter()
   const params = useParams<{ id: string }>()
@@ -368,44 +374,112 @@ export default function CustomerProfile() {
     setNgCastDialogOpen(true)
   }
 
-  const handleSaveNgCast = (ngCast: NgCastEntry) => {
-    if (!customer) return
+  const mapApiNgCastEntry = (entry: any): NgCastEntry => ({
+    castId: entry.castId,
+    notes: entry.notes ?? undefined,
+    addedDate: entry.assignedAt ? new Date(entry.assignedAt) : new Date(),
+    assignedBy: entry.assignedBy ?? 'customer',
+  })
 
-    let updatedNgCasts = [...(customer.ngCasts || [])]
-    let updatedNgCastIds = [...(customer.ngCastIds || [])]
+  const handleSaveNgCast = async (ngCast: NgCastEntry) => {
+    if (!customer) return false
+    try {
+      const response = await fetch('/api/customer/ng', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          customerId: customer.id,
+          castId: ngCast.castId,
+          notes: ngCast.notes ?? null,
+          assignedBy: ngCast.assignedBy ?? 'cast',
+        }),
+      })
 
-    if (editingNgCast) {
-      // Editing existing NG cast
-      const index = updatedNgCasts.findIndex((ng) => ng.castId === editingNgCast.castId)
-      if (index >= 0) {
-        updatedNgCasts[index] = ngCast
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null)
+        toast({
+          title: 'NG設定の保存に失敗しました',
+          description: payload?.error ?? '通信環境をご確認のうえ再度お試しください。',
+          variant: 'destructive',
+        })
+        return false
       }
-    } else {
-      // Adding new NG cast
-      updatedNgCasts.push(ngCast)
-      if (!updatedNgCastIds.includes(ngCast.castId)) {
-        updatedNgCastIds.push(ngCast.castId)
-      }
+
+      const payload = await response.json()
+      const savedEntry = mapApiNgCastEntry(payload?.data ?? {})
+
+      setCustomer((prev) => {
+        if (!prev) return prev
+        const filtered = (prev.ngCasts || []).filter((entry) => entry.castId !== savedEntry.castId)
+        const merged = [...filtered, savedEntry]
+        return {
+          ...prev,
+          ngCasts: merged,
+          ngCastIds: merged.map((entry) => entry.castId),
+        }
+      })
+
+      toast({
+        title: 'NG設定を保存しました',
+        description: '以降この組み合わせでの予約は自動的にブロックされます。',
+      })
+      return true
+    } catch (error) {
+      console.error('Failed to save NG cast:', error)
+      toast({
+        title: 'NG設定の保存に失敗しました',
+        description: '通信環境をご確認のうえ再度お試しください。',
+        variant: 'destructive',
+      })
+      return false
     }
-
-    setCustomer({
-      ...customer,
-      ngCasts: updatedNgCasts,
-      ngCastIds: updatedNgCastIds,
-    })
   }
 
-  const handleRemoveNgCast = (castId: string) => {
+  const handleRemoveNgCast = async (castId: string) => {
     if (!customer) return
 
-    const updatedNgCasts = customer.ngCasts?.filter((ng) => ng.castId !== castId) || []
-    const updatedNgCastIds = customer.ngCastIds?.filter((id) => id !== castId) || []
+    try {
+      const response = await fetch(
+        `/api/customer/ng?customerId=${encodeURIComponent(customer.id)}&castId=${encodeURIComponent(castId)}`,
+        {
+          method: 'DELETE',
+          credentials: 'include',
+        }
+      )
 
-    setCustomer({
-      ...customer,
-      ngCasts: updatedNgCasts,
-      ngCastIds: updatedNgCastIds,
-    })
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null)
+        toast({
+          title: 'NG設定の解除に失敗しました',
+          description: payload?.error ?? '通信環境をご確認のうえ再度お試しください。',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      setCustomer((prev) => {
+        if (!prev) return prev
+        const updatedNgCasts = prev.ngCasts?.filter((ng) => ng.castId !== castId) || []
+        const updatedNgCastIds = prev.ngCastIds?.filter((id) => id !== castId) || []
+        return {
+          ...prev,
+          ngCasts: updatedNgCasts,
+          ngCastIds: updatedNgCastIds,
+        }
+      })
+
+      toast({
+        title: 'NG設定を解除しました',
+      })
+    } catch (error) {
+      console.error('Failed to remove NG cast:', error)
+      toast({
+        title: 'NG設定の解除に失敗しました',
+        description: '通信環境をご確認のうえ再度お試しください。',
+        variant: 'destructive',
+      })
+    }
   }
 
   // 予約データをダイアログ用に変換
@@ -1092,9 +1166,15 @@ export default function CustomerProfile() {
                               className="aspect-[7/10] w-10 shrink-0 rounded object-cover"
                             />
                             <div className="min-w-0 flex-1">
-                              <div className="mb-1 flex items-center gap-2">
+                              <div className="mb-1 flex flex-wrap items-center gap-2">
                                 <h4 className="font-medium">{cast.name}</h4>
                                 <span className="text-sm text-gray-600">({cast.type})</span>
+                                <Badge
+                                  variant={ngCast.assignedBy === 'cast' ? 'destructive' : 'outline'}
+                                  className="text-xs"
+                                >
+                                  {NG_ASSIGNMENT_LABELS[ngCast.assignedBy ?? 'customer']}
+                                </Badge>
                               </div>
                               {ngCast.notes && (
                                 <div className="mb-2 flex items-start gap-1">

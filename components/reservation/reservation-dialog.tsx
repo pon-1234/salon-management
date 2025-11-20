@@ -185,6 +185,12 @@ const STATUS_META = STATUS_OPTIONS.reduce<Record<string, { label: string; descri
   {}
 )
 
+const NG_REASON_LABELS: Record<'customer' | 'cast' | 'staff', string> = {
+  customer: '顧客NG',
+  cast: 'キャストNG',
+  staff: '店舗NG',
+}
+
 function toNumber(value: unknown, fallback = 0): number {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value
@@ -382,6 +388,10 @@ export function ReservationDialog({
   const [lineSendSuccess, setLineSendSuccess] = useState<string | null>(null)
   const [lineConfirmOpen, setLineConfirmOpen] = useState(false)
   const lastDefaultLineMessageRef = useRef<string>('')
+  const [customerNgEntries, setCustomerNgEntries] = useState<
+    Array<{ castId: string; assignedBy?: 'customer' | 'cast' | 'staff'; notes?: string }>
+  >([])
+  const [customerNgLoading, setCustomerNgLoading] = useState(false)
 
   useEffect(() => {
     let ignore = false
@@ -758,6 +768,55 @@ export function ReservationDialog({
     return () => window.clearInterval(intervalId)
   }, [reservation?.modifiableUntil])
 
+  useEffect(() => {
+    if (!open || !reservation?.customerId) {
+      setCustomerNgEntries([])
+      return
+    }
+
+    let ignore = false
+    const controller = new AbortController()
+
+    const loadCustomerNg = async () => {
+      setCustomerNgLoading(true)
+      try {
+        const response = await fetch(`/api/customer?id=${encodeURIComponent(reservation.customerId)}`, {
+          cache: 'no-store',
+          credentials: 'include',
+          signal: controller.signal,
+        })
+        if (!response.ok) {
+          throw new Error(`Failed to fetch customer: ${response.status}`)
+        }
+        const payload = await response.json()
+        if (!ignore) {
+          const entries = Array.isArray(payload?.ngCasts)
+            ? payload.ngCasts.map((entry: any) => ({
+                castId: entry.castId,
+                assignedBy: entry.assignedBy ?? 'customer',
+                notes: entry.notes ?? undefined,
+              }))
+            : []
+          setCustomerNgEntries(entries)
+        }
+      } catch (error) {
+        if (!ignore) {
+          setCustomerNgEntries([])
+        }
+      } finally {
+        if (!ignore) {
+          setCustomerNgLoading(false)
+        }
+      }
+    }
+
+    loadCustomerNg()
+    return () => {
+      ignore = true
+      controller.abort()
+    }
+  }, [open, reservation?.customerId])
+
   const activeCastId = formState.castId || reservation?.staffId || ''
 
   const selectedCast = useMemo(
@@ -785,6 +844,17 @@ export function ReservationDialog({
     }
     return start.toISOString()
   }, [formState.date, formState.startTime])
+
+  const customerNgMap = useMemo(() => {
+    const map = new Map<string, { assignedBy?: 'customer' | 'cast' | 'staff'; notes?: string }>()
+    customerNgEntries.forEach((entry) => {
+      map.set(entry.castId, { assignedBy: entry.assignedBy, notes: entry.notes })
+    })
+    return map
+  }, [customerNgEntries])
+
+  const activeNgEntry =
+    activeCastId && customerNgMap.size > 0 ? customerNgMap.get(activeCastId) : undefined
 
   const paymentMethodOptions = useMemo(() => PAYMENT_METHOD_OPTIONS, [])
 
@@ -1917,14 +1987,41 @@ useEffect(() => {
                           {isLoadingCasts ? (
                             <div className="px-3 py-2 text-xs text-muted-foreground">読み込み中...</div>
                           ) : (
-                            castOptions.map((cast) => (
-                              <SelectItem key={cast.id} value={cast.id}>
-                                {cast.name}
-                              </SelectItem>
-                            ))
+                            castOptions.map((cast) => {
+                              const ngEntry = customerNgMap.get(cast.id)
+                              const disabled = Boolean(ngEntry && cast.id !== activeCastId)
+                              const assignment = (ngEntry?.assignedBy ?? 'customer') as
+                                | 'customer'
+                                | 'cast'
+                                | 'staff'
+
+                              return (
+                                <SelectItem key={cast.id} value={cast.id} disabled={disabled}>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span>{cast.name}</span>
+                                    {ngEntry && (
+                                      <Badge
+                                        variant={assignment === 'cast' ? 'destructive' : 'secondary'}
+                                        className="text-[10px]"
+                                      >
+                                        {NG_REASON_LABELS[assignment]}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </SelectItem>
+                              )
+                            })
                           )}
                         </SelectContent>
                       </Select>
+                      {activeNgEntry && (
+                        <Alert variant="destructive" className="mt-2 text-xs">
+                          <AlertDescription>
+                            この顧客は{NG_REASON_LABELS[(activeNgEntry.assignedBy ?? 'customer') as 'customer' | 'cast' | 'staff']}
+                            として現在のキャストをNG指定しています。別のキャストでのご案内をご検討ください。
+                          </AlertDescription>
+                        </Alert>
+                      )}
                       <Button
                         type="button"
                         variant="ghost"

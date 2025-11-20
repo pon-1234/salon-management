@@ -95,10 +95,18 @@ model Cast {
   @@index([storeId])
 }
 
+enum NgAssignmentSource {
+  customer
+  cast
+  staff
+}
+
 model NgCastEntry {
   customerId String
   castId     String
   assignedAt DateTime @default(now())
+  notes      String?
+  assignedBy NgAssignmentSource @default(customer)
   cast       Cast     @relation(fields: [castId], references: [id])
   customer   Customer @relation(fields: [customerId], references: [id])
 

@@ -72,7 +72,8 @@ export function deserializeCustomer(raw: any): Customer {
     ? raw.ngCasts.map((entry: any) => ({
         castId: entry.castId,
         notes: entry.notes ?? undefined,
-        addedDate: toDate(entry.addedDate, createdAt),
+        addedDate: toDate(entry.assignedAt ?? entry.addedDate, createdAt),
+        assignedBy: entry.assignedBy ?? 'customer',
       }))
     : []
 

@@ -26,6 +26,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -37,6 +38,7 @@ import { NgCastEntry } from '@/lib/customer/types'
 const ngCastSchema = z.object({
   castId: z.string().min(1, 'キャストを選択してください'),
   notes: z.string().max(500, '備考は500文字以内で入力してください').optional(),
+  assignedBy: z.enum(['customer', 'cast', 'staff']).default('cast'),
 })
 
 type NgCastFormData = z.infer<typeof ngCastSchema>
@@ -47,7 +49,7 @@ interface NgCastDialogProps {
   availableCasts: Cast[]
   existingNgCasts: NgCastEntry[]
   editingNgCast?: NgCastEntry | null
-  onSave: (ngCast: NgCastEntry) => void
+  onSave: (ngCast: NgCastEntry) => Promise<boolean | void> | boolean | void
 }
 
 export function NgCastDialog({
@@ -59,12 +61,14 @@ export function NgCastDialog({
   onSave,
 }: NgCastDialogProps) {
   const isEditing = !!editingNgCast
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const form = useForm<NgCastFormData>({
     resolver: zodResolver(ngCastSchema),
     defaultValues: {
       castId: editingNgCast?.castId || '',
       notes: editingNgCast?.notes || '',
+      assignedBy: editingNgCast?.assignedBy || 'cast',
     },
   })
 
@@ -74,20 +78,29 @@ export function NgCastDialog({
       form.reset({
         castId: editingNgCast?.castId || '',
         notes: editingNgCast?.notes || '',
+        assignedBy: editingNgCast?.assignedBy || 'cast',
       })
     }
   }, [open, editingNgCast, form])
 
-  const handleSave = (data: NgCastFormData) => {
+  const handleSave = async (data: NgCastFormData) => {
     const ngCastEntry: NgCastEntry = {
       castId: data.castId,
       notes: data.notes,
       addedDate: editingNgCast?.addedDate || new Date(),
+      assignedBy: data.assignedBy,
     }
 
-    onSave(ngCastEntry)
-    form.reset()
-    onOpenChange(false)
+    setIsSubmitting(true)
+    try {
+      const result = await onSave(ngCastEntry)
+      if (result !== false) {
+        form.reset()
+        onOpenChange(false)
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleCancel = () => {
@@ -173,11 +186,35 @@ export function NgCastDialog({
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="assignedBy"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>申告者区分</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="NGの申告者" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="cast">キャストからのNG</SelectItem>
+                      <SelectItem value="customer">顧客からのNG</SelectItem>
+                      <SelectItem value="staff">店舗判断でのNG</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>キャスト・顧客どちらの申告かを記録します。</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleCancel}>
                 キャンセル
               </Button>
-              <Button type="submit" className="bg-red-600 hover:bg-red-700">
+              <Button type="submit" className="bg-red-600 hover:bg-red-700" disabled={isSubmitting}>
                 {isEditing ? '更新' : '追加'}
               </Button>
             </DialogFooter>

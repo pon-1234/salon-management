@@ -283,6 +283,26 @@ async function checkCastAvailability(
 
 const notificationService = new NotificationService()
 
+const NG_REASON_MESSAGES: Record<'customer' | 'cast' | 'staff', string> = {
+  customer: '顧客のNG設定のためこの組み合わせでは予約できません。',
+  cast: 'キャストのNG設定のためこの組み合わせでは予約できません。',
+  staff: '店舗判断のNG設定のためこの組み合わせでは予約できません。',
+}
+
+async function findNgEntry(customerId: string, castId: string) {
+  return db.ngCastEntry.findUnique({
+    where: {
+      customerId_castId: {
+        customerId,
+        castId,
+      },
+    },
+    select: {
+      assignedBy: true,
+    },
+  })
+}
+
 function parseReservationDate(raw: string): Date {
   if (typeof raw !== 'string') {
     throw new Error('Invalid date format')
@@ -498,7 +518,14 @@ export async function POST(request: NextRequest) {
       storeSettings,
     ] = await Promise.all([
       db.cast.findFirst({ where: { id: reservationData.castId, storeId } }),
-      db.customer.findUnique({ where: { id: targetCustomerId } }),
+      db.customer.findUnique({
+        where: { id: targetCustomerId },
+        include: {
+          ngCasts: {
+            select: { castId: true, assignedBy: true },
+          },
+        },
+      }),
       db.coursePrice.findFirst({ where: { id: reservationData.courseId, storeId } }),
       reservationData.areaId ? db.areaInfo.findFirst({ where: { id: reservationData.areaId, storeId } }) : Promise.resolve(null),
       reservationData.stationId
@@ -521,6 +548,17 @@ export async function POST(request: NextRequest) {
     if (!courseRecord) {
       return NextResponse.json(
         { error: '指定されたコースが存在しません。コースを管理画面で登録してください。' },
+        { status: 400 }
+      )
+    }
+
+    const ngRelation = customerRecord.ngCasts?.find(
+      (entry) => entry.castId === reservationData.castId
+    )
+    if (ngRelation) {
+      const source = (ngRelation.assignedBy ?? 'customer') as 'customer' | 'cast' | 'staff'
+      return NextResponse.json(
+        { error: NG_REASON_MESSAGES[source], reason: source },
         { status: 400 }
       )
     }
@@ -931,6 +969,16 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    const nextCastId = updates.castId || existingReservation.castId
+    const ngEntry = await findNgEntry(existingReservation.customerId, nextCastId)
+    if (ngEntry) {
+      const source = (ngEntry.assignedBy ?? 'customer') as 'customer' | 'cast' | 'staff'
+      return NextResponse.json(
+        { error: NG_REASON_MESSAGES[source], reason: source },
+        { status: 400 }
+      )
+    }
+
     if (updates.startTime || updates.endTime) {
       // 日付文字列を直接Dateオブジェクトに変換（タイムゾーン処理を簡略化）
       const startTime = updates.startTime
@@ -946,7 +994,7 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json({ error: 'End time must be after start time' }, { status: 400 })
       }
 
-      const castId = updates.castId || existingReservation.castId
+      const castId = nextCastId
       const availability = await checkCastAvailability(storeId, castId, startTime, endTime, db)
       const filteredConflicts = availability.conflicts.filter((c) => c.id !== id)
 

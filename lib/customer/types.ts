@@ -4,6 +4,7 @@ export interface NgCastEntry {
   castId: string
   notes?: string
   addedDate: Date
+  assignedBy?: 'customer' | 'cast' | 'staff'
 }
 
 export interface Customer extends BaseEntity {
