@@ -1,3 +1,5 @@
+import path from 'node:path'
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
@@ -18,6 +20,14 @@ const nextConfig = {
         permanent: true,
       },
     ]
+  },
+  webpack(config) {
+    config.resolve.alias = config.resolve.alias ?? {}
+    config.resolve.alias['date-fns/locale/en-US'] = path.resolve(
+      process.cwd(),
+      'lib/date-fns-locale-en-US'
+    )
+    return config
   },
 }
 
