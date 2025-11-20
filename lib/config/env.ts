@@ -28,6 +28,7 @@ function createEnv() {
     LINE_MESSAGING_CHANNEL_ACCESS_TOKEN: z.string().optional(),
     LINE_MESSAGING_ENABLED: z.string().optional(),
     LINE_MESSAGING_DEFAULT_USER_ID: z.string().optional(),
+    LINE_CHANNEL_SECRET: z.string().optional(),
   })
 
   const rawEnv = rawEnvSchema.parse({
@@ -54,6 +55,7 @@ function createEnv() {
     LINE_MESSAGING_CHANNEL_ACCESS_TOKEN: process.env.LINE_MESSAGING_CHANNEL_ACCESS_TOKEN,
     LINE_MESSAGING_ENABLED: process.env.LINE_MESSAGING_ENABLED,
     LINE_MESSAGING_DEFAULT_USER_ID: process.env.LINE_MESSAGING_DEFAULT_USER_ID,
+    LINE_CHANNEL_SECRET: process.env.LINE_CHANNEL_SECRET,
   })
 
   const databaseUrl =
@@ -108,6 +110,7 @@ function createEnv() {
   const isLineMessagingEnabled =
     isLineMessagingExplicitlyEnabled ?? lineChannelAccessToken.trim().length > 0
   const lineDefaultUserId = rawEnv.LINE_MESSAGING_DEFAULT_USER_ID ?? ''
+  const lineChannelSecret = rawEnv.LINE_CHANNEL_SECRET ?? ''
 
   const siteUrl =
     rawEnv.NEXT_PUBLIC_SITE_URL ??
@@ -150,6 +153,7 @@ function createEnv() {
         enabled: isLineMessagingEnabled,
         channelAccessToken: lineChannelAccessToken,
         defaultUserId: lineDefaultUserId,
+        channelSecret: lineChannelSecret,
       },
     },
   }
