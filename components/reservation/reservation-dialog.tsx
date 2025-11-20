@@ -5,6 +5,8 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogHeader,
+  DialogFooter,
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -50,7 +52,7 @@ import {
   Calculator,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { differenceInMinutes, addMinutes, format } from 'date-fns'
+import { differenceInMinutes, addMinutes, format, parseISO } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { ModificationHistoryTable } from '@/components/reservation/modification-history-table'
 import { getModificationHistory, getModificationAlerts } from '@/lib/modification-history/data'
@@ -89,6 +91,9 @@ import { useLocations } from '@/hooks/use-locations'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useStore } from '@/contexts/store-context'
 import { calculateReservationRevenue } from '@/lib/reservation/revenue'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { zonedTimeToUtc } from 'date-fns-tz'
+import { CastTimelineModal } from '@/components/reservation/cast-timeline-modal'
 
 type EditFormState = {
   date: string
@@ -306,6 +311,7 @@ export function ReservationDialog({
   casts,
 }: ReservationDialogProps) {
   const { currentStore } = useStore()
+  const [isCastTimelineOpen, setIsCastTimelineOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'history'>('overview')
   const [isEditMode, setIsEditMode] = useState(false)
   const [status, setStatus] = useState<ReservationStatus | 'completed'>(
@@ -758,6 +764,27 @@ export function ReservationDialog({
     () => castOptions.find((cast) => cast.id === activeCastId),
     [castOptions, activeCastId]
   )
+
+  const timelineInitialDate = useMemo(() => {
+    if (formState.date) {
+      const parsed = new Date(`${formState.date}T00:00:00`)
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed
+      }
+    }
+    return reservation?.startTime ?? new Date()
+  }, [formState.date, reservation?.startTime])
+
+  const selectedSlotIso = useMemo(() => {
+    if (!formState.date || !formState.startTime) {
+      return null
+    }
+    const start = new Date(`${formState.date}T${formState.startTime}:00`)
+    if (Number.isNaN(start.getTime())) {
+      return null
+    }
+    return start.toISOString()
+  }, [formState.date, formState.startTime])
 
   const paymentMethodOptions = useMemo(() => PAYMENT_METHOD_OPTIONS, [])
 
@@ -1240,6 +1267,22 @@ useEffect(() => {
     })
   }
 
+  const handleTimelineSelection = (castId: string, slotIso: string) => {
+    const slotDate = new Date(slotIso)
+    if (Number.isNaN(slotDate.getTime())) {
+      return
+    }
+
+    setFormState((prev) => ({
+      ...prev,
+      castId,
+      date: format(slotDate, 'yyyy-MM-dd'),
+      startTime: format(slotDate, 'HH:mm'),
+    }))
+    setValidationError(null)
+    setIsCastTimelineOpen(false)
+  }
+
   const handleCancelEdit = () => {
     resetForm()
     setValidationError(null)
@@ -1337,7 +1380,8 @@ useEffect(() => {
   }
 
   return (
-    <Dialog open={open} onOpenChange={(next) => {
+    <>
+      <Dialog open={open} onOpenChange={(next) => {
       if (!next) {
         setIsEditMode(false)
         resetForm()
@@ -1881,6 +1925,15 @@ useEffect(() => {
                           )}
                         </SelectContent>
                       </Select>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="px-0 text-left text-xs text-purple-600"
+                        onClick={() => setIsCastTimelineOpen(true)}
+                      >
+                        タイムラインで空き状況を見る
+                      </Button>
                       {selectedCast?.workStart && selectedCast?.workEnd && (
                         <p className="text-xs text-muted-foreground">
                           勤務時間: {format(selectedCast.workStart, 'HH:mm')} -{' '}
@@ -2482,7 +2535,16 @@ useEffect(() => {
           </div>
         </div>
       </DialogContent>
-    </Dialog>
+      </Dialog>
+      <CastTimelineModal
+        open={isCastTimelineOpen}
+        initialDate={timelineInitialDate}
+        selectedCastId={activeCastId || null}
+        selectedSlotIso={selectedSlotIso}
+        onClose={() => setIsCastTimelineOpen(false)}
+        onSelectSlot={handleTimelineSelection}
+      />
+    </>
   )
 }
  

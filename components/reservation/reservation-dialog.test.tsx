@@ -15,6 +15,55 @@ vi.mock('@/lib/modification-history/data', () => ({
   recordModification: vi.fn(),
 }))
 
+vi.mock('@/contexts/store-context', () => {
+  const mockStore = {
+    id: 'ikebukuro',
+    slug: 'ikebukuro',
+    name: '池袋店',
+    displayName: 'サロン池袋店',
+    address: '東京都豊島区西池袋',
+    phone: '03-1234-5678',
+    email: 'ikebukuro@example.com',
+    openingHours: {
+      weekday: { open: '10:00', close: '22:00' },
+      weekend: { open: '10:00', close: '22:00' },
+    },
+    location: { lat: 0, lng: 0 },
+    features: [],
+    images: { main: '', gallery: [] },
+    isActive: true,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+    theme: undefined,
+    seoTitle: '',
+    seoDescription: '',
+    welfareExpenseRate: 10,
+    marketingChannels: ['WEB'],
+  }
+
+  return {
+    useStore: () => ({
+      currentStore: mockStore,
+      availableStores: [mockStore],
+      isSuperAdmin: true,
+      isLoading: false,
+      switchStore: () => {},
+    }),
+  }
+})
+
+vi.mock('next-auth/react', () => ({
+  useSession: () => ({
+    data: {
+      user: {
+        id: 'admin',
+        permissions: ['analytics:read'],
+      },
+    },
+    status: 'authenticated',
+  }),
+}))
+
 describe('ReservationDialog Edit Mode', () => {
   const mockReservation: ReservationData = {
     id: '1',
@@ -33,6 +82,7 @@ describe('ReservationDialog Edit Mode', () => {
     locationType: 'ホテル',
     specificLocation: '501号室',
     staff: '山田花子',
+    staffId: 'cast-1',
     marketingChannel: 'Web',
     date: '2024-01-20',
     time: '14:00',
@@ -118,7 +168,7 @@ describe('ReservationDialog Edit Mode', () => {
     expect(memoTextarea).not.toBeDisabled()
   })
 
-  it('should show status change buttons in edit mode', () => {
+  it('should show status change buttons in edit mode', async () => {
     render(
       <ReservationDialog
         open={true}
@@ -130,14 +180,17 @@ describe('ReservationDialog Edit Mode', () => {
     // Enter edit mode
     fireEvent.click(screen.getByRole('button', { name: /編集/i }))
 
-    // Check for status change buttons
-    expect(screen.getByRole('button', { name: /仮予約/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /確定/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /完了/i })).toBeInTheDocument()
-    // There are multiple cancel buttons, check for status cancel button
-    const cancelButtons = screen.getAllByRole('button', { name: /キャンセル/i })
-    const statusCancelButton = cancelButtons.find((btn) => btn.classList.contains('text-red-600'))
-    expect(statusCancelButton).toBeInTheDocument()
+    const statusTrigger = screen.getByRole('button', { name: /ステータス変更/i })
+    fireEvent.pointerDown(statusTrigger, { button: 0 })
+    fireEvent.keyDown(statusTrigger, { key: 'Enter' })
+
+    // Check for status change menu items
+    await waitFor(() => {
+      expect(screen.getByRole('menuitem', { name: /仮予約/ })).toBeInTheDocument()
+    })
+    expect(screen.getByRole('menuitem', { name: /確定/ })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: /キャンセル/ })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: /対応済み/ })).toBeInTheDocument()
   })
 
   it('should show confirmation dialog when changing status', async () => {
@@ -153,27 +206,22 @@ describe('ReservationDialog Edit Mode', () => {
     // Enter edit mode
     fireEvent.click(screen.getByRole('button', { name: /編集/i }))
 
-    // Click status change button (get the status cancel button specifically)
-    const cancelButtons = screen.getAllByRole('button', { name: /キャンセル/i })
-    const statusCancelButton = cancelButtons.find((btn) => btn.classList.contains('text-red-600'))
-    fireEvent.click(statusCancelButton!)
-
-    // Check for confirmation dialog
+    const statusTrigger = screen.getByRole('button', { name: /ステータス変更/i })
+    fireEvent.pointerDown(statusTrigger, { button: 0 })
+    fireEvent.keyDown(statusTrigger, { key: 'Enter' })
     await waitFor(() => {
-      expect(screen.getByText(/ステータスを「キャンセル」に変更しますか？/i)).toBeInTheDocument()
+      expect(screen.getByRole('menuitem', { name: /キャンセル/ })).toBeInTheDocument()
     })
 
-    // Confirm the change
-    fireEvent.click(screen.getByRole('button', { name: /変更する/i }))
+    // Click status change menu item
+    const cancelItem = screen.getByRole('menuitem', { name: /キャンセル/ })
+    fireEvent.click(cancelItem)
 
-    // Save button should trigger onSave callback
-    fireEvent.click(screen.getByRole('button', { name: /保存/i }))
-
+    // onSave should be called with updated status
     await waitFor(() => {
       expect(mockOnSave).toHaveBeenCalledWith(
-        expect.objectContaining({
-          bookingStatus: 'cancelled',
-        })
+        mockReservation.id,
+        expect.objectContaining({ status: 'cancelled' })
       )
     })
   })

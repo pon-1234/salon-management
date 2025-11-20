@@ -47,6 +47,20 @@ function startOfDayInTimeZone(date: Date, timeZone: string): Date {
   return zonedTimeToUtc(start, timeZone)
 }
 
+function parseDateInput(value: Date | string | null | undefined): Date {
+  if (!value) {
+    return new Date()
+  }
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? new Date() : value
+  }
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) {
+    return new Date()
+  }
+  return parsed
+}
+
 function normalizeCastImage(images: any, image: any) {
   const raw = Array.isArray(images)
     ? images
@@ -96,14 +110,21 @@ function normalizeSchedule(
   }
 }
 
-export async function getPublicStoreSchedule(
+interface StoreScheduleOptions {
+  startDate?: Date | string | null
+  days?: number
+}
+
+async function fetchStoreScheduleDays(
   storeId: string,
-  options?: { days?: number }
+  { startDate, days = 7 }: StoreScheduleOptions
 ): Promise<PublicScheduleDay[]> {
   try {
-    const days = options?.days ?? 7
-    const start = startOfDayInTimeZone(new Date(), DEFAULT_TIME_ZONE)
-    const end = startOfDayInTimeZone(addDays(new Date(), days), DEFAULT_TIME_ZONE)
+    const referenceDate = startDate ? parseDateInput(startDate) : new Date()
+    const normalizedDays = Math.max(1, Math.floor(days))
+    const start = startOfDayInTimeZone(referenceDate, DEFAULT_TIME_ZONE)
+    const rangeEndSource = addDays(referenceDate, normalizedDays)
+    const end = startOfDayInTimeZone(rangeEndSource, DEFAULT_TIME_ZONE)
 
     const schedules = await db.castSchedule.findMany({
       where: {
@@ -178,9 +199,9 @@ export async function getPublicStoreSchedule(
 
     const daysResult: PublicScheduleDay[] = Array.from(grouped.values())
 
-    // Ensure we return at least day slots for upcoming days even if empty
-    if (daysResult.length < days) {
-      for (let i = 0; i < days; i++) {
+    if (daysResult.length < normalizedDays) {
+      const totalDays = normalizedDays
+      for (let i = 0; i < totalDays; i++) {
         const current = addDays(start, i)
         const dateKey = formatDateFns(utcToZonedTime(current, DEFAULT_TIME_ZONE), 'yyyy-MM-dd')
         if (!grouped.has(dateKey)) {
@@ -194,9 +215,23 @@ export async function getPublicStoreSchedule(
 
     return daysResult
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .slice(0, days)
+      .slice(0, normalizedDays)
   } catch (error) {
-    console.error('Failed to fetch public store schedule:', error)
+    console.error('Failed to fetch store schedule:', error)
     return []
   }
+}
+
+export async function getStoreScheduleDays(
+  storeId: string,
+  options?: StoreScheduleOptions
+): Promise<PublicScheduleDay[]> {
+  return fetchStoreScheduleDays(storeId, options ?? {})
+}
+
+export async function getPublicStoreSchedule(
+  storeId: string,
+  options?: { days?: number }
+): Promise<PublicScheduleDay[]> {
+  return fetchStoreScheduleDays(storeId, { days: options?.days })
 }
