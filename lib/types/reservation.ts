@@ -39,6 +39,7 @@ export interface Reservation extends BaseEntity {
   locationMemo?: string
   castCheckedInAt?: Date
   castCheckedOutAt?: Date
+  cancellationSource?: 'customer' | 'store' | null
   options?: Array<{
     id?: string
     reservationId?: string

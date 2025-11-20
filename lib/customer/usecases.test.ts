@@ -13,6 +13,7 @@ const mockCustomerRepository: CustomerRepository = {
   getCustomerByPhone: vi.fn(),
   searchByPhone: vi.fn(),
   findByEmail: vi.fn(),
+  getInsights: vi.fn(),
 }
 
 describe('CustomerUseCases', () => {
@@ -114,6 +115,33 @@ describe('CustomerUseCases', () => {
 
       expect(mockCustomerRepository.searchByPhone).toHaveBeenCalledWith(phone)
       expect(result).toEqual(customers)
+    })
+  })
+
+  describe('getInsights', () => {
+    it("should call repository's getInsights and return insights", async () => {
+      const customerId = 'cust1'
+      const insights = {
+        lastVisitDate: null,
+        lastCastName: null,
+        totalVisits: 0,
+        totalRevenue: 0,
+        averageSpend: 0,
+        averageIntervalDays: null,
+        customerCancelCount: 0,
+        storeCancelCount: 0,
+        chatCountToday: 0,
+        chatCountYesterday: 0,
+        chatCountTotal: 0,
+        preferredBustCup: null,
+        cancellationLimit: 3,
+      }
+      ;(mockCustomerRepository.getInsights as Mock).mockResolvedValue(insights)
+
+      const result = await customerUseCases.getInsights(customerId)
+
+      expect(mockCustomerRepository.getInsights).toHaveBeenCalledWith(customerId)
+      expect(result).toEqual(insights)
     })
   })
 })

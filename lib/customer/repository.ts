@@ -1,4 +1,4 @@
-import { Customer } from './types'
+import { Customer, CustomerInsights } from './types'
 import { Repository } from '../shared/types'
 
 export interface CustomerRepository extends Repository<Customer> {
@@ -6,4 +6,5 @@ export interface CustomerRepository extends Repository<Customer> {
   getCustomerByPhone(phone: string): Promise<Customer | null>
   searchByPhone(phone: string): Promise<Customer[]>
   findByEmail(email: string): Promise<Customer | null>
+  getInsights(customerId: string): Promise<CustomerInsights>
 }

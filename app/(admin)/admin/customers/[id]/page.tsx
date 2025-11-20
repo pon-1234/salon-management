@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -55,6 +55,7 @@ import {
   Customer,
   CustomerUsageRecord,
   CustomerPointHistory,
+  CustomerInsights,
   NgCastEntry,
 } from '@/lib/customer/types'
 import { Reservation } from '@/lib/types/reservation'
@@ -93,6 +94,12 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>
 
+type InsightMetric = {
+  label: string
+  value: string
+  helper?: string
+}
+
 export default function CustomerProfile() {
   const router = useRouter()
   const params = useParams<{ id: string }>()
@@ -109,6 +116,9 @@ export default function CustomerProfile() {
   const [ngCastDialogOpen, setNgCastDialogOpen] = useState(false)
   const [editingNgCast, setEditingNgCast] = useState<NgCastEntry | null>(null)
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
+  const [insights, setInsights] = useState<CustomerInsights | null>(null)
+  const [insightsLoading, setInsightsLoading] = useState(false)
+  const formatYen = (amount: number) => `¥${amount.toLocaleString('ja-JP')}`
   const fetchPointHistory = useCallback(async () => {
     if (!id) return
     try {
@@ -226,6 +236,42 @@ export default function CustomerProfile() {
   useEffect(() => {
     fetchPointHistory()
   }, [fetchPointHistory])
+
+  useEffect(() => {
+    if (!id) return
+    let ignore = false
+
+    const customerRepository = new CustomerRepositoryImpl()
+    const customerUseCases = new CustomerUseCases(customerRepository)
+
+    const loadInsights = async () => {
+      setInsightsLoading(true)
+      try {
+        const data = await customerUseCases.getInsights(id)
+        if (!ignore) {
+          setInsights(data)
+        }
+      } catch (error) {
+        if (!ignore) {
+          console.error('Failed to load insights:', error)
+          toast({
+            title: '指標の取得に失敗しました',
+            description: '通信環境をご確認のうえ再度お試しください。',
+            variant: 'destructive',
+          })
+        }
+      } finally {
+        if (!ignore) {
+          setInsightsLoading(false)
+        }
+      }
+    }
+
+    loadInsights()
+    return () => {
+      ignore = true
+    }
+  }, [id])
 
   const handlePointAdjustment = useCallback(
     (delta: number) => {
@@ -372,6 +418,75 @@ export default function CustomerProfile() {
     })
   }
 
+  const insightMetrics: InsightMetric[] = useMemo(() => {
+    if (!insights) return []
+    const lastVisitLabel = insights.lastVisitDate
+      ? format(new Date(insights.lastVisitDate), 'yyyy/MM/dd')
+      : '記録なし'
+    const averageIntervalLabel =
+      typeof insights.averageIntervalDays === 'number'
+        ? `約${insights.averageIntervalDays}日`
+        : 'データ不足'
+
+    return [
+      {
+        label: '前回ご利用日',
+        value: lastVisitLabel,
+        helper: insights.lastCastName ? `担当: ${insights.lastCastName}` : undefined,
+      },
+      {
+        label: 'キャンセル回数(お客様)',
+        value: `${insights.customerCancelCount}/${insights.cancellationLimit}回`,
+        helper: '上限3回で警告',
+      },
+      {
+        label: '累計利用回数',
+        value: `${insights.totalVisits}回`,
+        helper: insights.totalVisits > 0 ? '完了済み予約ベース' : undefined,
+      },
+      {
+        label: '本日のチャット数',
+        value: `${insights.chatCountToday}回`,
+      },
+      {
+        label: '前回ご利用のキャスト',
+        value: insights.lastCastName ?? '未利用',
+        helper: insights.lastCastName ? '直近の指名情報' : undefined,
+      },
+      {
+        label: 'キャンセル回数(お店)',
+        value: `${insights.storeCancelCount}/${insights.cancellationLimit}回`,
+      },
+      {
+        label: '客単価',
+        value: formatYen(insights.averageSpend),
+        helper: insights.totalRevenue ? `累計 ${formatYen(insights.totalRevenue)}` : undefined,
+      },
+      {
+        label: '昨日のチャット数',
+        value: `${insights.chatCountYesterday}回`,
+      },
+      {
+        label: '平均利用間隔',
+        value: averageIntervalLabel,
+        helper: insights.totalVisits > 1 ? '過去の来店から算出' : undefined,
+      },
+      {
+        label: '好みのカップサイズ',
+        value: insights.preferredBustCup ?? '分析中',
+        helper: insights.preferredBustCup ? '過去の指名傾向' : undefined,
+      },
+      {
+        label: '累計価格',
+        value: formatYen(insights.totalRevenue),
+      },
+      {
+        label: 'チャット累計数',
+        value: `${insights.chatCountTotal}回`,
+      },
+    ]
+  }, [formatYen, insights])
+
   if (!customer) {
     return <div className="flex h-64 items-center justify-center">Loading...</div>
   }
@@ -428,6 +543,47 @@ export default function CustomerProfile() {
           )}
         </div>
       </div>
+
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center justify-between text-lg">
+            お客様の傾向
+            {insights && (
+              <span className="text-xs font-normal text-muted-foreground">
+                {insights.totalVisits > 0
+                  ? `累計 ${insights.totalVisits}件の利用履歴から算出`
+                  : '利用履歴なし'}
+              </span>
+            )}
+          </CardTitle>
+          <CardDescription>予約およびチャット履歴から自動で集計された警戒度と嗜好データ</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {insightsLoading ? (
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              {Array.from({ length: 12 }).map((_, index) => (
+                <div key={index} className="h-20 animate-pulse rounded-lg bg-muted/60" />
+              ))}
+            </div>
+          ) : insightMetrics.length > 0 ? (
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              {insightMetrics.map((metric) => (
+                <div key={metric.label} className="rounded-lg border bg-card p-3 shadow-sm">
+                  <p className="text-xs font-medium text-muted-foreground">{metric.label}</p>
+                  <p className="mt-1 text-xl font-semibold text-gray-900">{metric.value}</p>
+                  {metric.helper && (
+                    <p className="text-xs text-muted-foreground">{metric.helper}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">
+              指標を算出するためのデータが不足しています。
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* 予約情報カード */}
       <Card

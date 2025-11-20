@@ -1,4 +1,4 @@
-import { Customer } from './types'
+import { Customer, CustomerInsights } from './types'
 import { CustomerRepository } from './repository'
 
 export class CustomerUseCases {
@@ -30,5 +30,9 @@ export class CustomerUseCases {
 
   async delete(id: string): Promise<boolean> {
     return this.repository.delete(id)
+  }
+
+  async getInsights(customerId: string): Promise<CustomerInsights> {
+    return this.repository.getInsights(customerId)
   }
 }

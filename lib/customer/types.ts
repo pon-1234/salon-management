@@ -49,3 +49,19 @@ export interface CustomerPointHistory {
   balance: number
   date: Date
 }
+
+export interface CustomerInsights {
+  lastVisitDate: string | null
+  lastCastName: string | null
+  totalVisits: number
+  totalRevenue: number
+  averageSpend: number
+  averageIntervalDays: number | null
+  customerCancelCount: number
+  storeCancelCount: number
+  chatCountToday: number
+  chatCountYesterday: number
+  chatCountTotal: number
+  preferredBustCup: string | null
+  cancellationLimit: number
+}

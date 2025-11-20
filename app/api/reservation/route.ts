@@ -1610,9 +1610,11 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Cannot cancel past reservations' }, { status: 400 })
     }
 
+    const cancellationSource = isAdmin ? 'store' : 'customer'
+
     const cancelledReservation = await db.reservation.update({
       where: { id },
-      data: { status: 'cancelled', storeId },
+      data: { status: 'cancelled', storeId, cancellationSource },
       include: {
         customer: true,
         cast: true,

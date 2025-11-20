@@ -105,6 +105,11 @@ model NgCastEntry {
   @@id([customerId, castId])
 }
 
+enum CancellationSource {
+  customer
+  store
+}
+
 model Reservation {
   id         String              @id @default(cuid())
   customerId String
@@ -132,6 +137,7 @@ model Reservation {
   castCheckedInAt   DateTime?
   castCheckedOutAt  DateTime?
   pointsUsed        Int          @default(0)
+  cancellationSource CancellationSource?
   createdAt  DateTime            @default(now())
   updatedAt  DateTime            @updatedAt
   cast       Cast                @relation(fields: [castId], references: [id])

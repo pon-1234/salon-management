@@ -1,4 +1,4 @@
-import { Customer } from './types'
+import { Customer, CustomerInsights } from './types'
 import { CustomerRepository } from './repository'
 import { resolveApiUrl } from '@/lib/http/base-url'
 import { deserializeCustomer, normalizePhoneQuery } from './utils'
@@ -70,6 +70,18 @@ export class CustomerRepositoryImpl implements CustomerRepository {
     }
     const payload = await parseJson<any>(response)
     return payload ? deserializeCustomer(payload) : null
+  }
+
+  async getInsights(customerId: string): Promise<CustomerInsights> {
+    const url = `${API_BASE_URL}/insights?customerId=${encodeURIComponent(customerId)}`
+    const response = await fetch(resolveApiUrl(url), {
+      credentials: 'include',
+      cache: 'no-store',
+    })
+    if (!response.ok) {
+      throw new Error('Failed to fetch customer insights')
+    }
+    return parseJson<CustomerInsights>(response)
   }
 
   async create(data: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>): Promise<Customer> {
