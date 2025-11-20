@@ -33,6 +33,9 @@ vi.mock('@/lib/db', () => ({
       findMany: vi.fn(),
       update: vi.fn(),
     },
+    message: {
+      create: vi.fn(),
+    },
     $transaction: vi.fn(),
   },
 }))
@@ -133,6 +136,7 @@ describe('Reservation API - Modifiable Status', () => {
     } as any)
     vi.mocked(db.reservation.findUnique).mockResolvedValue(mockReservation as any)
     vi.mocked(db.reservation.findFirst).mockResolvedValue(mockReservation as any)
+    vi.mocked(db.message.create).mockResolvedValue({ id: 'msg-1' } as any)
   })
 
   afterEach(() => {
@@ -198,6 +202,45 @@ describe('Reservation API - Modifiable Status', () => {
       expect(response.status).toBe(200)
       expect(data.status).toBe('modifiable')
       expect(data.modifiableUntil).toBeDefined()
+    })
+
+    it('sends a chat message when status transitions to confirmed', async () => {
+      const pendingReservation = {
+        ...mockReservation,
+        status: 'pending',
+        price: 32000,
+      }
+
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: { role: 'admin', permissions: ['reservation:read'] },
+      } as any)
+
+      vi.mocked(db.reservation.findUnique).mockResolvedValue(pendingReservation as any)
+      vi.mocked(db.reservation.findFirst).mockResolvedValue(pendingReservation as any)
+
+      vi.mocked(db.$transaction).mockImplementation(async (callback) => {
+        const updatedReservation = {
+          ...pendingReservation,
+          status: 'confirmed',
+        }
+        return callback(buildTransactionContext(updatedReservation) as any)
+      })
+
+      const request = new NextRequest('http://localhost/api/reservation', {
+        method: 'PUT',
+        body: JSON.stringify({
+          id: pendingReservation.id,
+          status: 'confirmed',
+        }),
+      })
+
+      const response = await PUT(request)
+      expect(response.status).toBe(200)
+      expect(db.message.create).toHaveBeenCalledTimes(1)
+      const payload = vi.mocked(db.message.create).mock.calls[0]?.[0]
+      expect(payload?.data?.customerId).toBe(pendingReservation.customerId)
+      expect(payload?.data?.content).toContain('お支払総額')
+      expect(payload?.data?.content).toContain('32,000')
     })
 
     it('should reject modification of modifiable reservation by non-admin users', async () => {
