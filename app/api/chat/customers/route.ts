@@ -8,6 +8,7 @@ import { db as prisma } from '@/lib/db'
 import { requireAdmin } from '@/lib/auth/utils'
 import { handleApiError } from '@/lib/api/errors'
 import { SuccessResponses } from '@/lib/api/responses'
+import { buildChatPreview } from '@/lib/chat/attachments'
 
 // Customer type for chat
 interface ChatCustomer {
@@ -85,7 +86,9 @@ export async function GET(request: NextRequest) {
       const chatCustomer: ChatCustomer = {
         id: customer.id,
         name: customer.name,
-        lastMessage: lastMessage?.content || '',
+        lastMessage: lastMessage
+          ? buildChatPreview(lastMessage.content, lastMessage.attachments)
+          : '',
         lastMessageTime: lastMessage ? formatTimestamp(lastMessage.timestamp) : '',
         avatar: `/avatars/customer${customer.id}.jpg`,
         hasUnread: unreadCount > 0,
@@ -129,7 +132,9 @@ export async function GET(request: NextRequest) {
       return {
         id: customer.id,
         name: customer.name,
-        lastMessage: lastMessage?.content || '',
+        lastMessage: lastMessage
+          ? buildChatPreview(lastMessage.content, lastMessage.attachments)
+          : '',
         lastMessageTime: lastMessage ? formatTimestamp(lastMessage.timestamp) : '',
         avatar: `/avatars/customer${customer.id}.jpg`,
         hasUnread: unreadCount > 0,

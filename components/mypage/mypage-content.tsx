@@ -13,7 +13,8 @@ import { ProfileSection } from './profile-section'
 import { ReservationHistory } from './reservation-history'
 import { FavoriteCasts } from './favorite-casts'
 import { PointHistory } from './point-history'
-import { User, Calendar, Heart, Coins, LogOut } from 'lucide-react'
+import { CustomerChatPanel } from './customer-chat-panel'
+import { User, Calendar, Heart, Coins, LogOut, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/use-auth'
 
@@ -188,7 +189,7 @@ export function MyPageContent({ store }: MyPageContentProps) {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-6 grid w-full grid-cols-4">
+        <TabsList className="mb-6 grid w-full grid-cols-5">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             <span className="hidden sm:inline">プロフィール</span>
@@ -204,6 +205,10 @@ export function MyPageContent({ store }: MyPageContentProps) {
           <TabsTrigger value="points" className="flex items-center gap-2">
             <Coins className="h-4 w-4" />
             <span className="hidden sm:inline">ポイント</span>
+          </TabsTrigger>
+          <TabsTrigger value="chat" className="flex items-center gap-2">
+            <MessageCircle className="h-4 w-4" />
+            <span className="hidden sm:inline">店舗チャット</span>
           </TabsTrigger>
         </TabsList>
 
@@ -221,6 +226,9 @@ export function MyPageContent({ store }: MyPageContentProps) {
 
         <TabsContent value="points">
           <PointHistory customerId={session.user.id} initialBalance={user.points} />
+        </TabsContent>
+        <TabsContent value="chat">
+          <CustomerChatPanel storeName={store.displayName} />
         </TabsContent>
       </Tabs>
     </div>

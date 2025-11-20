@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
-import { requireCast } from '@/lib/auth/utils'
+import { requireCustomer } from '@/lib/auth/utils'
 import { normalizeChatAttachments } from '@/lib/chat/attachments'
 
 const attachmentSchema = z.object({
@@ -32,7 +32,7 @@ const markReadSchema = z.object({
 })
 
 export async function GET(request: NextRequest) {
-  const { error, session } = await requireCast()
+  const { error, session } = await requireCustomer()
   if (error || !session) {
     return error ?? NextResponse.json({ error: '認証が必要です' }, { status: 401 })
   }
@@ -40,17 +40,15 @@ export async function GET(request: NextRequest) {
   try {
     const messages = await db.message.findMany({
       where: {
-        castId: session.user.id,
+        customerId: session.user.id,
       },
-      orderBy: {
-        timestamp: 'asc',
-      },
+      orderBy: { timestamp: 'asc' },
       take: 250,
     })
 
     await db.message.updateMany({
       where: {
-        castId: session.user.id,
+        customerId: session.user.id,
         sender: 'staff',
         readStatus: '未読',
       },
@@ -66,13 +64,13 @@ export async function GET(request: NextRequest) {
       }))
     )
   } catch (err) {
-    console.error('Failed to load cast chat messages', err)
+    console.error('Failed to load customer chat messages', err)
     return NextResponse.json({ error: 'メッセージの取得に失敗しました。' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
-  const { error, session } = await requireCast()
+  const { error, session } = await requireCustomer()
   if (error || !session) {
     return error ?? NextResponse.json({ error: '認証が必要です' }, { status: 401 })
   }
@@ -84,8 +82,8 @@ export async function POST(request: NextRequest) {
 
     const message = await db.message.create({
       data: {
-        castId: session.user.id,
-        sender: 'cast',
+        customerId: session.user.id,
+        sender: 'customer',
         content: trimmedContent,
         timestamp: new Date(),
         readStatus: '未読',
@@ -93,25 +91,22 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(
-      {
-        ...message,
-        attachments: normalizeChatAttachments(message.attachments as Prisma.JsonValue | null),
-      },
-      { status: 201 }
-    )
+    return NextResponse.json({
+      ...message,
+      attachments: normalizeChatAttachments(message.attachments as Prisma.JsonValue | null),
+    })
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.issues[0]?.message ?? '入力が不正です。' }, { status: 400 })
     }
 
-    console.error('Failed to send cast chat message', err)
+    console.error('Failed to send customer chat message', err)
     return NextResponse.json({ error: 'メッセージの送信に失敗しました。' }, { status: 500 })
   }
 }
 
 export async function PUT(request: NextRequest) {
-  const { error, session } = await requireCast()
+  const { error, session } = await requireCustomer()
   if (error || !session) {
     return error ?? NextResponse.json({ error: '認証が必要です' }, { status: 401 })
   }
@@ -123,10 +118,8 @@ export async function PUT(request: NextRequest) {
     if (messageIds && messageIds.length > 0) {
       await db.message.updateMany({
         where: {
-          id: {
-            in: messageIds,
-          },
-          castId: session.user.id,
+          id: { in: messageIds },
+          customerId: session.user.id,
           sender: 'staff',
         },
         data: {
@@ -136,7 +129,7 @@ export async function PUT(request: NextRequest) {
     } else {
       await db.message.updateMany({
         where: {
-          castId: session.user.id,
+          customerId: session.user.id,
           sender: 'staff',
           readStatus: '未読',
         },
@@ -152,7 +145,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: '入力が不正です。' }, { status: 400 })
     }
 
-    console.error('Failed to mark cast messages as read', err)
+    console.error('Failed to mark customer chat as read', err)
     return NextResponse.json({ error: '既読処理に失敗しました。' }, { status: 500 })
   }
 }

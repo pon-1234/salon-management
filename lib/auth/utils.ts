@@ -55,3 +55,24 @@ export async function requireCast(): Promise<RequireCastResult> {
     session,
   }
 }
+
+interface RequireCustomerResult {
+  error: NextResponse | null
+  session: Session | null
+}
+
+export async function requireCustomer(): Promise<RequireCustomerResult> {
+  const session = await getServerSession(authOptions)
+
+  if (!session || session.user.role !== 'customer') {
+    return {
+      error: NextResponse.json({ error: '認証が必要です' }, { status: 401 }),
+      session: null,
+    }
+  }
+
+  return {
+    error: null,
+    session,
+  }
+}

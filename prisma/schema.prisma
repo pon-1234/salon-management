@@ -337,6 +337,7 @@ model Message {
   readStatus        String    @default("未読") // '未読' or '既読'
   isReservationInfo Boolean   @default(false)
   reservationInfo   Json?
+  attachments       Json?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   customer          Customer? @relation(fields: [customerId], references: [id])

@@ -7,6 +7,8 @@ import { format } from 'date-fns'
 import logger from '@/lib/logger'
 import { env } from '@/lib/config/env'
 import { LineMessagingClient, lineMessagingClient } from '@/lib/line/client'
+import type { ChatAttachment } from '@/lib/types/chat'
+import { buildChatPreview } from '@/lib/chat/attachments'
 
 type CastRecipient = {
   id: string
@@ -34,6 +36,7 @@ type ChatMessageForNotification = {
   sender: 'customer' | 'staff' | 'cast'
   content: string
   timestamp: Date | string
+  attachments?: ChatAttachment[]
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -178,7 +181,8 @@ export class CastNotificationService {
 
     const senderLabel = SENDER_LABELS[params.message.sender] ?? params.message.sender
     const timestamp = formatDateTime(params.message.timestamp)
-    const preview = truncate(params.message.content, 500)
+    const previewSource = buildChatPreview(params.message.content, params.message.attachments)
+    const preview = truncate(previewSource.length > 0 ? previewSource : '画像が送信されました', 500)
     const siteUrl = env.siteUrl?.trim()
 
     const lines = [

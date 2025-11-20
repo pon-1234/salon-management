@@ -5,9 +5,12 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Send, Check, CheckCheck } from 'lucide-react'
+import { Send, Check, CheckCheck, ImagePlus } from 'lucide-react'
 import { Message } from '@/lib/types/chat'
 import { toast } from '@/hooks/use-toast'
+import { useChatAttachments } from '@/hooks/use-chat-attachments'
+import { ChatAttachmentPreviewList } from '@/components/chat/chat-attachment-previews'
+import { ChatAttachmentGallery } from '@/components/chat/chat-attachment-gallery'
 
 interface ChatWindowProps {
   participantType: 'customer' | 'cast'
@@ -21,6 +24,15 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
   const [participant, setParticipant] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const {
+    drafts: attachmentDrafts,
+    addFiles,
+    removeAttachment,
+    reset,
+    readyAttachments,
+    hasUploading,
+  } = useChatAttachments(5)
 
   const markMessagesAsRead = useCallback(
     async (messageList: Message[]) => {
@@ -86,7 +98,11 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
 
       const data = await response.json()
       const initialMessages = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []
-      const updatedMessages = await markMessagesAsRead(initialMessages)
+      const normalizedMessages = initialMessages.map((message) => ({
+        ...message,
+        attachments: Array.isArray(message.attachments) ? message.attachments : [],
+      }))
+      const updatedMessages = await markMessagesAsRead(normalizedMessages)
       setMessages(updatedMessages)
     } catch (error) {
       console.error('Error fetching messages:', error)
@@ -137,7 +153,17 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
   }, [messages])
 
   const handleSendMessage = async () => {
-    if (!participantId || !newMessage.trim()) return
+    const trimmed = newMessage.trim()
+    if (!participantId || (trimmed.length === 0 && readyAttachments.length === 0)) return
+
+    if (hasUploading) {
+      toast({
+        title: 'アップロード中です',
+        description: '画像のアップロード完了を待ってから送信してください。',
+        variant: 'default',
+      })
+      return
+    }
 
     try {
       const response = await fetch('/api/chat', {
@@ -149,7 +175,8 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
           customerId: participantType === 'customer' ? participantId : undefined,
           castId: participantType === 'cast' ? participantId : undefined,
           sender: 'staff',
-          content: newMessage.trim(),
+          content: trimmed,
+          attachments: readyAttachments,
         }),
       })
 
@@ -158,8 +185,15 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
       const payload = await response.json()
       const createdMessage = (payload?.data ?? payload) as Message
 
-      setMessages((prev) => [...prev, createdMessage])
+      setMessages((prev) => [
+        ...prev,
+        {
+          ...createdMessage,
+          attachments: Array.isArray(createdMessage.attachments) ? createdMessage.attachments : [],
+        },
+      ])
       setNewMessage('')
+      reset()
     } catch (error) {
       console.error('Error sending message:', error)
       toast({
@@ -197,6 +231,7 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
   }
 
   const participantInitial = participant?.name?.[0] || 'G'
+  const canSend = (newMessage.trim().length > 0 || readyAttachments.length > 0) && !hasUploading
 
   return (
     <div className="flex flex-1 flex-col bg-gradient-to-b from-white to-gray-50/30">
@@ -214,6 +249,8 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
                 participantType === 'customer'
                   ? { avatar: participant?.avatar, fallback: participantInitial }
                   : { avatar: participant?.avatar, fallback: participantInitial }
+              const attachments = Array.isArray(message.attachments) ? message.attachments : []
+              const textContent = message.content?.trim() ?? ''
 
               return (
                 <div
@@ -258,7 +295,12 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
                                 : 'border border-gray-200 bg-white'
                         }`}
                       >
-                        {message.content}
+                        {textContent ? (
+                          textContent
+                        ) : attachments.length > 0 ? (
+                          <span className="text-xs italic opacity-75">画像を送信しました</span>
+                        ) : null}
+                        <ChatAttachmentGallery attachments={attachments} align={isStaff ? 'right' : 'left'} />
                         <div className="mt-2 flex items-center justify-end gap-1 text-xs">
                           <span className={`text-gray-400 ${isStaff ? 'text-emerald-50/80' : ''}`}>
                             {new Date(message.timestamp).toLocaleTimeString([], {
@@ -291,22 +333,55 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
       </ScrollArea>
 
       <div className="border-t bg-white/80 p-4 backdrop-blur-sm">
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-3">
           <Textarea
-            placeholder={`${participantType === 'customer' ? '顧客' : 'キャスト'}へメッセージを入力...`}
+            placeholder={`${participantType === 'customer' ? '顧客' : 'キャスト'}へメッセージを入力... (⌘/Ctrl + Enter で送信)`}
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onFocus={() => setIsTyping(true)}
             onBlur={() => setIsTyping(false)}
             className="min-h-[60px] flex-1 resize-none"
           />
-          <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
-            <Send className="h-4 w-4" />
-          </Button>
+          <ChatAttachmentPreviewList attachments={attachmentDrafts} onRemove={removeAttachment} />
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept="image/png,image/jpeg,image/webp"
+                multiple
+                onChange={(event) => {
+                  const { files } = event.target
+                  if (files?.length) {
+                    void addFiles(files)
+                    event.target.value = ''
+                  }
+                }}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-xs text-emerald-700"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={attachmentDrafts.length >= 5}
+              >
+                <ImagePlus className="mr-2 h-4 w-4" />
+                画像を添付
+              </Button>
+              <span>
+                {attachmentDrafts.length}/5 件
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              {isTyping && <div className="text-xs text-gray-400">入力中...</div>}
+              <Button onClick={handleSendMessage} disabled={!canSend}>
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
-        {isTyping && (
-          <div className="mt-2 text-xs text-gray-400">入力中...</div>
-        )}
       </div>
     </div>
   )

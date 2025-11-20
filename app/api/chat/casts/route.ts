@@ -7,6 +7,7 @@ import { db as prisma } from '@/lib/db'
 import { requireAdmin } from '@/lib/auth/utils'
 import { handleApiError } from '@/lib/api/errors'
 import { SuccessResponses } from '@/lib/api/responses'
+import { buildChatPreview } from '@/lib/chat/attachments'
 
 interface ChatCast {
   id: string
@@ -62,7 +63,9 @@ export async function GET(request: NextRequest) {
       const chatCast: ChatCast = {
         id: cast.id,
         name: cast.name,
-        lastMessage: lastMessage?.content || '',
+        lastMessage: lastMessage
+          ? buildChatPreview(lastMessage.content, lastMessage.attachments)
+          : '',
         lastMessageTime: lastMessage ? formatTimestamp(lastMessage.timestamp) : '',
         avatar: cast.image || `/avatars/cast-${cast.id}.jpg`,
         hasUnread: unreadCount > 0,
@@ -106,7 +109,9 @@ export async function GET(request: NextRequest) {
       return {
         id: cast.id,
         name: cast.name,
-        lastMessage: lastMessage?.content || '',
+        lastMessage: lastMessage
+          ? buildChatPreview(lastMessage.content, lastMessage.attachments)
+          : '',
         lastMessageTime: lastMessage ? formatTimestamp(lastMessage.timestamp) : '',
         avatar: cast.image || `/avatars/cast-${cast.id}.jpg`,
         hasUnread: unreadCount > 0,

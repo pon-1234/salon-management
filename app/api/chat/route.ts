@@ -11,24 +11,45 @@ import { handleApiError, ErrorResponses } from '@/lib/api/errors'
 import { SuccessResponses } from '@/lib/api/responses'
 import { Message, Prisma } from '@prisma/client'
 import { castNotificationService } from '@/lib/notification/cast-service'
+import { normalizeChatAttachments } from '@/lib/chat/attachments'
+import type { ChatAttachment } from '@/lib/types/chat'
+
+const attachmentSchema = z.object({
+  type: z.literal('image'),
+  url: z.string().url(),
+  name: z.string().optional(),
+  size: z.number().int().min(0).optional(),
+  contentType: z.string().optional(),
+})
 
 // Message validation schema
-const messageSchema = z.object({
-  customerId: z.string().min(1).optional(),
-  castId: z.string().min(1).optional(),
-  sender: z.enum(['customer', 'staff', 'cast']),
-  content: z.string().min(1),
-  isReservationInfo: z.boolean().optional(),
-  reservationInfo: z
-    .object({
-      date: z.string(),
-      time: z.string(),
-      confirmedDate: z.string(),
-    })
-    .optional(),
-}).refine((data) => data.customerId || data.castId, {
-  message: 'customerId または castId のいずれかを指定してください',
-})
+const messageSchema = z
+  .object({
+    customerId: z.string().min(1).optional(),
+    castId: z.string().min(1).optional(),
+    sender: z.enum(['customer', 'staff', 'cast']),
+    content: z.string().optional(),
+    attachments: z.array(attachmentSchema).max(5).optional(),
+    isReservationInfo: z.boolean().optional(),
+    reservationInfo: z
+      .object({
+        date: z.string(),
+        time: z.string(),
+        confirmedDate: z.string(),
+      })
+      .optional(),
+  })
+  .refine((data) => data.customerId || data.castId, {
+    message: 'customerId または castId のいずれかを指定してください',
+  })
+  .refine(
+    (data) => {
+      const contentLength = (data.content ?? '').trim().length
+      const attachmentCount = data.attachments?.length ?? 0
+      return contentLength > 0 || attachmentCount > 0
+    },
+    { message: 'メッセージまたは画像を入力してください' }
+  )
 
 // GET /api/chat - Get messages for a customer
 export async function GET(request: NextRequest) {
@@ -41,12 +62,16 @@ export async function GET(request: NextRequest) {
 
   try {
     if (customerId) {
-      // Get messages for specific customer
       const messages = await prisma.message.findMany({
         where: { customerId },
         orderBy: { timestamp: 'asc' },
       })
-      return SuccessResponses.ok(messages)
+      return SuccessResponses.ok(
+        messages.map((message) => ({
+          ...message,
+          attachments: normalizeChatAttachments(message.attachments as Prisma.JsonValue | null),
+        }))
+      )
     }
 
     if (castId) {
@@ -54,7 +79,12 @@ export async function GET(request: NextRequest) {
         where: { castId },
         orderBy: { timestamp: 'asc' },
       })
-      return SuccessResponses.ok(messages)
+      return SuccessResponses.ok(
+        messages.map((message) => ({
+          ...message,
+          attachments: normalizeChatAttachments(message.attachments as Prisma.JsonValue | null),
+        }))
+      )
     }
 
     // Get all messages grouped by customer
@@ -65,8 +95,12 @@ export async function GET(request: NextRequest) {
     const messagesByCustomer = messages.reduce(
       (acc, msg) => {
         if (msg.customerId) {
+          const normalized = {
+            ...msg,
+            attachments: normalizeChatAttachments(msg.attachments as Prisma.JsonValue | null),
+          }
           acc[msg.customerId] = acc[msg.customerId] || []
-          acc[msg.customerId].push(msg)
+          acc[msg.customerId].push(normalized)
         }
         return acc
       },
@@ -88,11 +122,21 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
 
     // Validate request body
-    const validatedData = messageSchema.parse(body)
+    const {
+      customerId,
+      castId,
+      sender,
+      content,
+      attachments,
+      isReservationInfo,
+      reservationInfo,
+    } = messageSchema.parse(body)
 
-    const castForNotification = validatedData.castId
+    const trimmedContent = (content ?? '').trim()
+
+    const castForNotification = castId
       ? await prisma.cast.findUnique({
-          where: { id: validatedData.castId },
+          where: { id: castId },
           select: {
             id: true,
             name: true,
@@ -104,23 +148,24 @@ export async function POST(request: NextRequest) {
     // Create new message in database
     const newMessage = await prisma.message.create({
       data: {
-        customerId: validatedData.customerId,
-        castId: validatedData.castId,
-        sender: validatedData.sender,
-        content: validatedData.content,
+        customerId,
+        castId,
+        sender,
+        content: trimmedContent,
         timestamp: new Date(),
         readStatus:
-          validatedData.sender === 'staff'
+          sender === 'staff'
             ? '未読'
-            : validatedData.sender === 'customer'
+            : sender === 'customer'
               ? '既読'
               : '既読',
-        isReservationInfo: validatedData.isReservationInfo || false,
-        reservationInfo: validatedData.reservationInfo || Prisma.JsonNull,
+        isReservationInfo: isReservationInfo || false,
+        reservationInfo: reservationInfo || Prisma.JsonNull,
+        attachments: attachments && attachments.length > 0 ? attachments : Prisma.JsonNull,
       },
     })
 
-    if (castForNotification && validatedData.sender !== 'cast') {
+    if (castForNotification && sender !== 'cast') {
       try {
         await castNotificationService.sendChatMessageNotification({
           cast: {
@@ -133,6 +178,7 @@ export async function POST(request: NextRequest) {
             sender: newMessage.sender as 'customer' | 'staff' | 'cast',
             content: newMessage.content,
             timestamp: newMessage.timestamp,
+            attachments: attachments as ChatAttachment[] | undefined,
           },
         })
       } catch {
@@ -140,7 +186,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return SuccessResponses.created(newMessage, 'メッセージが送信されました')
+    return SuccessResponses.created(
+      {
+        ...newMessage,
+        attachments: normalizeChatAttachments(newMessage.attachments as Prisma.JsonValue | null),
+      },
+      'メッセージが送信されました'
+    )
   } catch (error) {
     return handleApiError(error)
   }

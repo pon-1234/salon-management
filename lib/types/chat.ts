@@ -4,6 +4,18 @@ export interface ReservationInfo {
   confirmedDate: string
 }
 
+export type ChatAttachmentType = 'image'
+
+export interface ChatAttachment {
+  type: ChatAttachmentType
+  url: string
+  name?: string
+  size?: number
+  contentType?: string
+  width?: number
+  height?: number
+}
+
 export interface Message {
   id: string
   sender: 'customer' | 'staff' | 'cast'
@@ -14,6 +26,7 @@ export interface Message {
   readStatus?: '既読' | '未読'
   isReservationInfo?: boolean
   reservationInfo?: ReservationInfo
+  attachments?: ChatAttachment[]
 }
 
 export interface Customer {
