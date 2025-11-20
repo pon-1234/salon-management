@@ -136,7 +136,7 @@ export interface CastSettlementSummary {
   pendingCount: number
 }
 
-export interface CastSettlementRecord {
+export interface CastSettlementRecordDetail {
   id: string
   startTime: string
   status: string
@@ -145,9 +145,24 @@ export interface CastSettlementRecord {
   staffRevenue: number
   storeRevenue: number
   welfareExpense: number
+  options: Array<{
+    id: string
+    name: string
+    price: number
+    storeShare?: number
+    castShare?: number
+  }>
+}
+
+export interface CastSettlementDaySummary {
+  date: string
+  totalRevenue: number
+  reservationCount: number
+  pointCount: number
+  records: CastSettlementRecordDetail[]
 }
 
 export interface CastSettlementsData {
   summary: CastSettlementSummary
-  recent: CastSettlementRecord[]
+  days: CastSettlementDaySummary[]
 }

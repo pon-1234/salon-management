@@ -25,7 +25,8 @@ import type {
   CastScheduleEntry,
   CastScheduleUpdateInput,
   CastScheduleWindow,
-  CastSettlementRecord,
+  CastSettlementDaySummary,
+  CastSettlementRecordDetail,
   CastSettlementsData,
   CastScheduleLockReason,
 } from './types'
@@ -524,6 +525,15 @@ export async function getCastSettlements(castId: string, storeId: string): Promi
         },
       },
       castCheckedOutAt: true,
+      options: {
+        select: {
+          optionId: true,
+          optionName: true,
+          optionPrice: true,
+          storeShare: true,
+          castShare: true,
+        },
+      },
     },
     orderBy: {
       startTime: 'desc',
@@ -553,16 +563,51 @@ export async function getCastSettlements(castId: string, storeId: string): Promi
     }
   )
 
-  const recent: CastSettlementRecord[] = reservations.slice(0, 25).map((reservation) => ({
-    id: reservation.id,
-    startTime: reservation.startTime.toISOString(),
-    status: reservation.status,
-    courseName: reservation.course?.name ?? null,
-    price: reservation.price ?? 0,
-    staffRevenue: reservation.staffRevenue ?? 0,
-    storeRevenue: reservation.storeRevenue ?? 0,
-    welfareExpense: reservation.welfareExpense ?? 0,
-  }))
+  const dailyMap = new Map<string, CastSettlementDaySummary>()
+
+  reservations.forEach((reservation) => {
+    const dateKey = format(utcToZonedTime(reservation.startTime, DEFAULT_TIME_ZONE), 'yyyy-MM-dd')
+    let day = dailyMap.get(dateKey)
+    if (!day) {
+      day = {
+        date: dateKey,
+        totalRevenue: 0,
+        reservationCount: 0,
+        pointCount: 0,
+        records: [],
+      }
+      dailyMap.set(dateKey, day)
+    }
+
+    const record: CastSettlementRecordDetail = {
+      id: reservation.id,
+      startTime: reservation.startTime.toISOString(),
+      status: reservation.status,
+      courseName: reservation.course?.name ?? null,
+      price: reservation.price ?? 0,
+      staffRevenue: reservation.staffRevenue ?? 0,
+      storeRevenue: reservation.storeRevenue ?? 0,
+      welfareExpense: reservation.welfareExpense ?? 0,
+      options:
+        reservation.options?.map((option) => ({
+          id: option.optionId,
+          name: option.optionName,
+          price: option.optionPrice,
+          storeShare: option.storeShare ?? undefined,
+          castShare: option.castShare ?? undefined,
+        })) ?? [],
+    }
+
+    day.records.push(record)
+    day.totalRevenue += reservation.price ?? 0
+    day.reservationCount += 1
+    day.pointCount += 1
+  })
+
+  const days = Array.from(dailyMap.values()).sort((a, b) => b.date.localeCompare(a.date))
+  days.forEach((day) => {
+    day.records.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+  })
 
   return {
     summary: {
@@ -574,7 +619,7 @@ export async function getCastSettlements(castId: string, storeId: string): Promi
       completedCount: summary.completedCount,
       pendingCount: summary.pendingCount,
     },
-    recent,
+    days,
   }
 }
 

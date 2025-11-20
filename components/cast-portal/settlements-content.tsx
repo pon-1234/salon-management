@@ -1,19 +1,21 @@
 'use client'
 
-import { useCallback, useState, useTransition } from 'react'
+import { useCallback, useMemo, useState, useTransition } from 'react'
 import { format } from 'date-fns'
-import { Loader2, PiggyBank, Receipt, Shield } from 'lucide-react'
+import { ja } from 'date-fns/locale'
+import { ChevronDown, Loader2, PiggyBank, Receipt, Shield } from 'lucide-react'
 import type { CastSettlementsData } from '@/lib/cast-portal/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/use-toast'
 import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 
 export function CastSettlementsContent({ initialData }: { initialData: CastSettlementsData }) {
   const [data, setData] = useState(initialData)
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
+  const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({})
 
   const handleRefresh = useCallback(() => {
     startTransition(async () => {
@@ -35,6 +37,13 @@ export function CastSettlementsContent({ initialData }: { initialData: CastSettl
       }
     })
   }, [toast])
+
+  const toggleDay = useCallback((date: string) => {
+    setExpandedDates((prev) => ({
+      ...prev,
+      [date]: !prev[date],
+    }))
+  }, [])
 
   return (
     <div className="space-y-6">
@@ -72,59 +81,133 @@ export function CastSettlementsContent({ initialData }: { initialData: CastSettl
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">最新の精算履歴</CardTitle>
+          <CardTitle className="text-lg">日別の清算履歴</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            日付ごとの売上合計と件数を確認し、行を開いて詳細な予約内訳を参照できます。（ポイントは件数ベースでカウント）
+          </p>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
-          {data.recent.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">今月の精算データはまだありません。</p>
+        <CardContent>
+          {data.days.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">今月の清算データはまだありません。</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="whitespace-nowrap">日時</TableHead>
-                  <TableHead className="whitespace-nowrap">コース</TableHead>
-                  <TableHead className="whitespace-nowrap">売上</TableHead>
-                  <TableHead className="whitespace-nowrap">取り分</TableHead>
-                  <TableHead className="whitespace-nowrap">厚生費</TableHead>
-                  <TableHead className="whitespace-nowrap">ステータス</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.recent.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell className="whitespace-nowrap text-sm">
-                      {format(new Date(row.startTime), 'MM/dd HH:mm')}
-                    </TableCell>
-                    <TableCell className="max-w-[220px] truncate text-sm">
-                      {row.courseName ?? 'コース未設定'}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap text-sm font-medium">
-                      ¥{row.price.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap text-sm">
-                      ¥{row.staffRevenue.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap text-sm">
-                      ¥{row.welfareExpense.toLocaleString()}
-                    </TableCell>
-                    <TableCell>
-                      {row.status === 'completed' ? (
-                        <Badge variant="outline" className="border-emerald-200 text-emerald-600">
-                          精算済み
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="border-amber-200 text-amber-600">
-                          未精算
-                        </Badge>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="divide-y rounded-md border">
+              <div className="grid grid-cols-[1.5fr_repeat(3,_1fr)_auto] gap-3 bg-muted/40 px-4 py-2 text-xs font-medium text-muted-foreground">
+                <span>日付</span>
+                <span className="text-right">売上合計</span>
+                <span className="text-right">本数</span>
+                <span className="text-right">ポイント</span>
+                <span className="text-right">詳細</span>
+              </div>
+              {data.days.map((day) => (
+                <DayRow
+                  key={day.date}
+                  day={day}
+                  isExpanded={Boolean(expandedDates[day.date])}
+                  onToggle={() => toggleDay(day.date)}
+                />
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>
+    </div>
+  )
+}
+
+function DayRow({
+  day,
+  isExpanded,
+  onToggle,
+}: {
+  day: CastSettlementsData['days'][number]
+  isExpanded: boolean
+  onToggle: () => void
+}) {
+  const dayLabel = useMemo(
+    () => format(new Date(`${day.date}T00:00:00`), 'M月d日(E)', { locale: ja }),
+    [day.date]
+  )
+
+  return (
+    <div className="divide-y">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="grid w-full grid-cols-[1.5fr_repeat(3,_1fr)_auto] items-center gap-3 px-4 py-3 text-sm hover:bg-muted/30"
+      >
+        <span className="text-left font-medium text-foreground">{dayLabel}</span>
+        <span className="text-right font-semibold text-foreground">¥{day.totalRevenue.toLocaleString()}</span>
+        <span className="text-right text-muted-foreground">{day.reservationCount} 件</span>
+        <span className="text-right text-muted-foreground">{day.pointCount} pt</span>
+        <span className="flex justify-end">
+          <ChevronDown
+            className={cn('h-4 w-4 text-muted-foreground transition-transform', isExpanded && 'rotate-180')}
+          />
+        </span>
+      </button>
+      {isExpanded ? (
+        <div className="space-y-3 bg-muted/20 px-4 py-4">
+          {day.records.map((record) => (
+            <SettlementRecordCard key={record.id} record={record} />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function SettlementRecordCard({ record }: { record: CastSettlementsData['days'][number]['records'][number] }) {
+  const startLabel = format(new Date(record.startTime), 'M/d HH:mm')
+  const hasOptions = record.options.length > 0
+  const statusBadge =
+    record.status === 'completed' ? (
+      <Badge variant="outline" className="border-emerald-200 text-emerald-600">
+        精算済み
+      </Badge>
+    ) : (
+      <Badge variant="outline" className="border-amber-200 text-amber-600">
+        未精算
+      </Badge>
+    )
+
+  return (
+    <div className="space-y-2 rounded-lg border border-border bg-background/80 p-3 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+        <div className="font-medium text-foreground">{startLabel}</div>
+        {statusBadge}
+      </div>
+      <div className="text-base font-semibold text-foreground">{record.courseName ?? 'コース未設定'}</div>
+      <div className="grid gap-3 text-sm text-muted-foreground md:grid-cols-3">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground/80">売上</p>
+          <p className="text-base font-semibold text-foreground">¥{record.price.toLocaleString()}</p>
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground/80">キャスト取り分</p>
+          <p className="text-base font-semibold text-foreground">¥{record.staffRevenue.toLocaleString()}</p>
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground/80">店舗取り分</p>
+          <p className="text-base font-semibold text-foreground">¥{record.storeRevenue.toLocaleString()}</p>
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground/80">厚生費</p>
+          <p className="text-base font-semibold text-foreground">¥{record.welfareExpense.toLocaleString()}</p>
+        </div>
+      </div>
+      {hasOptions ? (
+        <div className="rounded-md bg-muted/40 p-3">
+          <p className="text-xs font-medium text-muted-foreground">オプション</p>
+          <ul className="mt-2 space-y-1 text-sm text-foreground">
+            {record.options.map((option) => (
+              <li key={`${record.id}-${option.id}`} className="flex items-center justify-between">
+                <span>{option.name}</span>
+                <span className="font-medium">¥{option.price.toLocaleString()}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   )
 }
