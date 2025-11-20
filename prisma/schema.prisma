@@ -17,6 +17,8 @@ model Customer {
   birthDate    DateTime
   memberType   String        @default("regular")
   points       Int           @default(0)
+  smsEnabled   Boolean       @default(false)
+  emailNotificationEnabled Boolean @default(true)
   createdAt    DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
   resetToken           String?

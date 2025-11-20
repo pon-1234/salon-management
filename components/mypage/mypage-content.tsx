@@ -32,6 +32,7 @@ interface CustomerProfile {
   points: number
   createdAt: Date | null
   smsEnabled: boolean
+  emailNotificationEnabled: boolean
 }
 
 export function MyPageContent({ store }: MyPageContentProps) {
@@ -76,6 +77,8 @@ export function MyPageContent({ store }: MyPageContentProps) {
           points: data.points ?? 0,
           createdAt: data.createdAt ? new Date(data.createdAt) : null,
           smsEnabled: Boolean(data.smsEnabled),
+          emailNotificationEnabled:
+            data.emailNotificationEnabled === undefined ? true : Boolean(data.emailNotificationEnabled),
         })
       } catch (error) {
         if (!active) return
@@ -139,6 +142,26 @@ export function MyPageContent({ store }: MyPageContentProps) {
     points: profile.points,
     registeredAt: profile.createdAt ?? new Date(),
     smsEnabled: profile.smsEnabled,
+    emailNotificationEnabled: profile.emailNotificationEnabled,
+  }
+
+  const handleProfileUpdated = (updated: any) => {
+    setProfile((prev) =>
+      prev
+        ? {
+            ...prev,
+            name: updated.name ?? prev.name,
+            email: updated.email ?? prev.email,
+            phone: updated.phone ?? prev.phone,
+            smsEnabled:
+              typeof updated.smsEnabled === 'boolean' ? updated.smsEnabled : prev.smsEnabled,
+            emailNotificationEnabled:
+              typeof updated.emailNotificationEnabled === 'boolean'
+                ? updated.emailNotificationEnabled
+                : prev.emailNotificationEnabled,
+          }
+        : prev
+    )
   }
 
   if (!user) {
@@ -213,7 +236,11 @@ export function MyPageContent({ store }: MyPageContentProps) {
         </TabsList>
 
         <TabsContent value="profile">
-          <ProfileSection user={user} store={store} />
+          <ProfileSection
+            customerId={profile.id}
+            user={user}
+            onProfileUpdated={handleProfileUpdated}
+          />
         </TabsContent>
 
         <TabsContent value="reservations">

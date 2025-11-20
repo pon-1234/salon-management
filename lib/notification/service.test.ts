@@ -61,9 +61,9 @@ describe('NotificationService', () => {
         name: 'Test Customer',
         email: 'test@example.com',
         phone: '+1234567890',
+        emailNotificationEnabled: true,
+        smsEnabled: true,
         preferences: {
-          emailNotifications: true,
-          smsNotifications: true,
           pushNotifications: true,
         },
       },
@@ -83,7 +83,7 @@ describe('NotificationService', () => {
 
       expect(vi.mocked(emailClient.send)).toHaveBeenCalledWith({
         to: 'test@example.com',
-        subject: 'Reservation Confirmed',
+        subject: expect.stringContaining('ご予約が確定しました'),
         body: expect.stringContaining('Test Customer'),
         data: {
           customerName: 'Test Customer',
@@ -101,7 +101,7 @@ describe('NotificationService', () => {
 
       expect(vi.mocked(smsClient.send)).toHaveBeenCalledWith({
         to: '+1234567890',
-        message: expect.stringContaining('has been confirmed'),
+        message: expect.stringContaining('予約'),
       })
     })
 
@@ -110,7 +110,7 @@ describe('NotificationService', () => {
 
       expect(vi.mocked(pushClient.send)).toHaveBeenCalledWith({
         userId: 'customer1',
-        title: 'Reservation Confirmed',
+        title: expect.stringContaining('予約が確定しました'),
         body: expect.stringContaining('Test Cast'),
         data: {
           reservationId: 'reservation1',
@@ -124,9 +124,8 @@ describe('NotificationService', () => {
         ...mockReservation,
         customer: {
           ...mockReservation.customer,
+          emailNotificationEnabled: false,
           preferences: {
-            emailNotifications: false,
-            smsNotifications: true,
             pushNotifications: false,
           },
         },
@@ -149,9 +148,9 @@ describe('NotificationService', () => {
         name: 'Test Customer',
         email: 'test@example.com',
         phone: '+1234567890',
+        emailNotificationEnabled: true,
+        smsEnabled: true,
         preferences: {
-          emailNotifications: true,
-          smsNotifications: true,
           pushNotifications: true,
         },
       },
@@ -172,7 +171,7 @@ describe('NotificationService', () => {
 
       expect(vi.mocked(emailClient.send)).toHaveBeenCalledWith({
         to: 'test@example.com',
-        subject: 'Reservation Modified',
+        subject: expect.stringContaining('内容が更新されました'),
         body: expect.stringContaining('Test Customer'),
         data: expect.objectContaining({
           oldStartTime: oldReservation.startTime,
@@ -193,9 +192,9 @@ describe('NotificationService', () => {
         name: 'Test Customer',
         email: 'test@example.com',
         phone: '+1234567890',
+        emailNotificationEnabled: true,
+        smsEnabled: true,
         preferences: {
-          emailNotifications: true,
-          smsNotifications: true,
           pushNotifications: true,
         },
       },
@@ -213,7 +212,7 @@ describe('NotificationService', () => {
 
       expect(vi.mocked(emailClient.send)).toHaveBeenCalledWith({
         to: 'test@example.com',
-        subject: 'Reservation Cancelled',
+        subject: expect.stringContaining('キャンセル'),
         body: expect.stringContaining('Test Customer'),
         data: expect.objectContaining({
           customerName: 'Test Customer',
@@ -224,13 +223,13 @@ describe('NotificationService', () => {
 
       expect(vi.mocked(smsClient.send)).toHaveBeenCalledWith({
         to: '+1234567890',
-        message: expect.stringContaining('cancelled'),
+        message: expect.stringContaining('キャンセル'),
       })
 
       expect(vi.mocked(pushClient.send)).toHaveBeenCalledWith({
         userId: 'customer1',
-        title: 'Reservation Cancelled',
-        body: expect.any(String),
+        title: expect.stringContaining('キャンセル'),
+        body: expect.stringContaining('Test Cast'),
         data: {
           reservationId: 'reservation1',
           type: 'reservation_cancellation',

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { Store } from '@/lib/store/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,8 +12,10 @@ import { User, Mail, Phone, Calendar, Gift, Edit2, Check, X } from 'lucide-react
 import { isVipMember } from '@/lib/utils'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
+import { useToast } from '@/components/ui/use-toast'
 
 interface ProfileSectionProps {
+  customerId: string
   user: {
     nickname: string
     email: string
@@ -24,23 +25,67 @@ interface ProfileSectionProps {
     points: number
     registeredAt: Date
     smsEnabled: boolean
+    emailNotificationEnabled: boolean
   }
-  store: Store
+  onProfileUpdated?: (updated: any) => void
 }
 
-export function ProfileSection({ user, store }: ProfileSectionProps) {
+export function ProfileSection({ user, customerId, onProfileUpdated }: ProfileSectionProps) {
+  const { toast } = useToast()
   const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [formData, setFormData] = useState({
     nickname: user.nickname,
     email: user.email,
     phone: user.phone,
     smsEnabled: user.smsEnabled,
+    emailNotifications: user.emailNotificationEnabled,
   })
 
-  const handleSave = () => {
-    // In a real app, this would make an API call
-    alert('プロフィールを更新しました')
-    setIsEditing(false)
+  const handleSave = async () => {
+    if (!formData.email.trim()) {
+      toast({
+        title: 'メールアドレスを入力してください',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      const response = await fetch('/api/customer', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: customerId,
+          name: formData.nickname,
+          email: formData.email.trim(),
+          phone: formData.phone,
+          smsEnabled: formData.smsEnabled,
+          emailNotificationEnabled: formData.emailNotifications,
+        }),
+      })
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}))
+        throw new Error(payload.error ?? 'プロフィールの更新に失敗しました')
+      }
+
+      const updated = await response.json()
+      onProfileUpdated?.(updated)
+      toast({ title: 'プロフィールを更新しました' })
+      setIsEditing(false)
+    } catch (error) {
+      toast({
+        title: '保存に失敗しました',
+        description: error instanceof Error ? error.message : undefined,
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleCancel = () => {
@@ -49,6 +94,7 @@ export function ProfileSection({ user, store }: ProfileSectionProps) {
       email: user.email,
       phone: user.phone,
       smsEnabled: user.smsEnabled,
+      emailNotifications: user.emailNotificationEnabled,
     })
     setIsEditing(false)
   }
@@ -70,9 +116,18 @@ export function ProfileSection({ user, store }: ProfileSectionProps) {
                 <X className="mr-2 h-4 w-4" />
                 キャンセル
               </Button>
-              <Button size="sm" onClick={handleSave}>
-                <Check className="mr-2 h-4 w-4" />
-                保存
+              <Button size="sm" onClick={handleSave} disabled={isSaving}>
+                {isSaving ? (
+                  <span className="flex items-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent" />
+                    保存中...
+                  </span>
+                ) : (
+                  <>
+                    <Check className="mr-2 h-4 w-4" />
+                    保存
+                  </>
+                )}
               </Button>
             </div>
           )}
@@ -152,6 +207,26 @@ export function ProfileSection({ user, store }: ProfileSectionProps) {
               onCheckedChange={(checked) => {
                 if (isEditing) {
                   setFormData({ ...formData, smsEnabled: checked })
+                }
+              }}
+              disabled={!isEditing}
+            />
+          </div>
+
+          {/* Email Notifications */}
+          <div className="flex items-center justify-between border-t pt-4">
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="emailNotifications">予約メール通知</Label>
+              <p className="text-xs text-gray-500">
+                予約確定・変更・キャンセルの内容をメールでお知らせします（オンライン予約にはメール登録が必須です）
+              </p>
+            </div>
+            <Switch
+              id="emailNotifications"
+              checked={isEditing ? formData.emailNotifications : user.emailNotificationEnabled}
+              onCheckedChange={(checked) => {
+                if (isEditing) {
+                  setFormData({ ...formData, emailNotifications: checked })
                 }
               }}
               disabled={!isEditing}

@@ -217,6 +217,9 @@ export async function POST(request: NextRequest) {
         birthDate: new Date(data.birthDate),
         memberType: data.memberType || 'regular',
         points: data.points || 0,
+        smsEnabled: Boolean(data.smsEnabled),
+        emailNotificationEnabled:
+          data.emailNotificationEnabled === undefined ? true : Boolean(data.emailNotificationEnabled),
       },
       include: {
         ngCasts: {
@@ -271,12 +274,22 @@ export async function PUT(request: NextRequest) {
       updates.password = await bcrypt.hash(password, SALT_ROUNDS)
     }
 
+    const normalizedUpdates: Record<string, unknown> = {
+      ...updates,
+      birthDate: updates.birthDate ? new Date(updates.birthDate) : undefined,
+    }
+
+    if (typeof updates.smsEnabled !== 'boolean') {
+      delete normalizedUpdates.smsEnabled
+    }
+
+    if (typeof updates.emailNotificationEnabled !== 'boolean') {
+      delete normalizedUpdates.emailNotificationEnabled
+    }
+
     const updatedCustomer = await db.customer.update({
       where: { id },
-      data: {
-        ...updates,
-        birthDate: updates.birthDate ? new Date(updates.birthDate) : undefined,
-      },
+      data: normalizedUpdates,
       include: {
         ngCasts: {
           include: {

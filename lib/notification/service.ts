@@ -52,28 +52,18 @@ export class NotificationService {
     const notifications: Promise<NotificationResult>[] = []
 
     // Send email if enabled
-    if (reservation.customer.preferences?.emailNotifications) {
-      const emailBody = `
-        Dear ${reservation.customer.name},
-
-        Your reservation has been confirmed.
-        
-        Cast: ${reservation.cast.name}
-        Course: ${reservation.course.name}
-        Date: ${this.formatDateTime(reservation.startTime)}
-        
-        Thank you for your booking.
-      `
+    if (this.shouldSendEmail(reservation.customer) && reservation.customer.email) {
+      const { subject, body } = this.buildReservationEmailContent(reservation, 'confirmation')
 
       notifications.push(
         this.sendEmail({
           to: reservation.customer.email,
-          subject: 'Reservation Confirmed',
-          body: emailBody,
+          subject,
+          body,
           data: {
             customerName: reservation.customer.name,
-            castName: reservation.cast.name,
-            courseName: reservation.course.name,
+            castName: reservation.cast?.name,
+            courseName: reservation.course?.name,
             startTime: reservation.startTime,
             endTime: reservation.endTime,
             reservationId: reservation.id,
@@ -85,12 +75,13 @@ export class NotificationService {
       )
     }
 
-    // Send SMS if enabled
-    if (reservation.customer.preferences?.smsNotifications && reservation.customer.phone) {
+    if (this.shouldSendSms(reservation.customer)) {
+      const storeLabel = this.getStoreLabel(reservation)
+      const smsMessage = `${storeLabel}より: ${this.formatDateTime(reservation.startTime)}のご予約が確定しました。担当 ${reservation.cast?.name ?? ''}`
       notifications.push(
         this.sendSMS({
           to: reservation.customer.phone,
-          message: `Your reservation with ${reservation.cast.name} has been confirmed for ${this.formatDateTime(reservation.startTime)}.`,
+          message: smsMessage.trim(),
         }).catch((error) => {
           logger.error({ err: error }, 'sendReservationConfirmation: Failed to send SMS')
           return { success: false, error: 'Failed to send SMS' }
@@ -98,13 +89,12 @@ export class NotificationService {
       )
     }
 
-    // Send push notification if enabled
-    if (reservation.customer.preferences?.pushNotifications) {
+    if (this.shouldSendPush(reservation.customer)) {
       notifications.push(
         this.sendPush({
           userId: reservation.customer.id,
-          title: 'Reservation Confirmed',
-          body: `Your reservation with ${reservation.cast.name} has been confirmed.`,
+          title: '予約が確定しました',
+          body: `${reservation.cast?.name ?? 'キャスト'}との予約が確定しました`,
           data: {
             reservationId: reservation.id,
             type: 'reservation_confirmation',
@@ -125,26 +115,20 @@ export class NotificationService {
   async sendReservationModification(reservation: any, oldReservation: any): Promise<void> {
     const notifications: Promise<NotificationResult>[] = []
 
-    // Send email if enabled
-    if (reservation.customer.preferences?.emailNotifications) {
-      const emailBody = `
-        Dear ${reservation.customer.name},
-
-        Your reservation (ID: ${reservation.id}) has been modified.
-        
-        Old Time: ${this.formatDateTime(oldReservation.startTime)}
-        New Time: ${this.formatDateTime(reservation.startTime)}
-        
-        Please check the updated details.
-      `
+    if (this.shouldSendEmail(reservation.customer) && reservation.customer.email) {
+      const { subject, body } = this.buildReservationEmailContent(
+        reservation,
+        'modification',
+        oldReservation
+      )
       notifications.push(
         this.sendEmail({
           to: reservation.customer.email,
-          subject: 'Reservation Modified',
-          body: emailBody,
+          subject,
+          body,
           data: {
             customerName: reservation.customer.name,
-            castName: reservation.cast.name,
+            castName: reservation.cast?.name,
             oldStartTime: oldReservation.startTime,
             oldEndTime: oldReservation.endTime,
             newStartTime: reservation.startTime,
@@ -158,12 +142,13 @@ export class NotificationService {
       )
     }
 
-    // Send SMS if enabled
-    if (reservation.customer.preferences?.smsNotifications && reservation.customer.phone) {
+    if (this.shouldSendSms(reservation.customer)) {
+      const storeLabel = this.getStoreLabel(reservation)
+      const smsMessage = `${storeLabel}より: ご予約日時が変更されました。新しい時間 ${this.formatDateTime(reservation.startTime)}`
       notifications.push(
         this.sendSMS({
           to: reservation.customer.phone,
-          message: `Your reservation has been modified. New time: ${this.formatDateTime(reservation.startTime)}.`,
+          message: smsMessage,
         }).catch((error) => {
           logger.error({ err: error }, 'sendReservationModification: Failed to send SMS')
           return { success: false, error: 'Failed to send SMS' }
@@ -171,13 +156,12 @@ export class NotificationService {
       )
     }
 
-    // Send push notification if enabled
-    if (reservation.customer.preferences?.pushNotifications) {
+    if (this.shouldSendPush(reservation.customer)) {
       notifications.push(
         this.sendPush({
           userId: reservation.customer.id,
-          title: 'Reservation Modified',
-          body: `Your reservation time has been changed to ${this.formatDateTime(reservation.startTime)}.`,
+          title: '予約内容が変更されました',
+          body: `${reservation.cast?.name ?? 'キャスト'}との予約内容が更新されました`,
           data: {
             reservationId: reservation.id,
             type: 'reservation_modification',
@@ -198,24 +182,17 @@ export class NotificationService {
   async sendReservationCancellation(reservation: any): Promise<void> {
     const notifications: Promise<NotificationResult>[] = []
 
-    // Send email if enabled
-    if (reservation.customer.preferences?.emailNotifications) {
-      const emailBody = `
-        Dear ${reservation.customer.name},
-
-        Your reservation (ID: ${reservation.id}) with ${reservation.cast.name} on ${this.formatDateTime(reservation.startTime)} has been successfully cancelled.
-        
-        We hope to see you again soon.
-      `
+    if (this.shouldSendEmail(reservation.customer) && reservation.customer.email) {
+      const { subject, body } = this.buildReservationEmailContent(reservation, 'cancellation')
       notifications.push(
         this.sendEmail({
           to: reservation.customer.email,
-          subject: 'Reservation Cancelled',
-          body: emailBody,
+          subject,
+          body,
           data: {
             customerName: reservation.customer.name,
-            castName: reservation.cast.name,
-            courseName: reservation.course.name,
+            castName: reservation.cast?.name,
+            courseName: reservation.course?.name,
             startTime: reservation.startTime,
             reservationId: reservation.id,
           },
@@ -226,12 +203,13 @@ export class NotificationService {
       )
     }
 
-    // Send SMS if enabled
-    if (reservation.customer.preferences?.smsNotifications && reservation.customer.phone) {
+    if (this.shouldSendSms(reservation.customer)) {
+      const storeLabel = this.getStoreLabel(reservation)
+      const smsMessage = `${storeLabel}より: ${this.formatDateTime(reservation.startTime)}の予約がキャンセルされました。`
       notifications.push(
         this.sendSMS({
           to: reservation.customer.phone,
-          message: `Your reservation with ${reservation.cast.name} on ${this.formatDateTime(reservation.startTime)} has been cancelled.`,
+          message: smsMessage,
         }).catch((error) => {
           logger.error({ err: error }, 'sendReservationCancellation: Failed to send SMS')
           return { success: false, error: 'Failed to send SMS' }
@@ -239,13 +217,12 @@ export class NotificationService {
       )
     }
 
-    // Send push notification if enabled
-    if (reservation.customer.preferences?.pushNotifications) {
+    if (this.shouldSendPush(reservation.customer)) {
       notifications.push(
         this.sendPush({
           userId: reservation.customer.id,
-          title: 'Reservation Cancelled',
-          body: `Your reservation has been cancelled.`,
+          title: '予約がキャンセルされました',
+          body: `${reservation.cast?.name ?? 'キャスト'}との予約がキャンセルされました`,
           data: {
             reservationId: reservation.id,
             type: 'reservation_cancellation',
@@ -391,12 +368,136 @@ export class NotificationService {
     }
   }
 
+  private shouldSendEmail(customer: any): boolean {
+    if (!customer) {
+      return false
+    }
+    if (customer.emailNotificationEnabled === false) {
+      return false
+    }
+    if (customer.preferences?.emailNotifications === false) {
+      return false
+    }
+    return true
+  }
+
+  private shouldSendSms(customer: any): boolean {
+    if (!customer?.phone) {
+      return false
+    }
+    if (typeof customer.smsEnabled === 'boolean') {
+      return customer.smsEnabled
+    }
+    return Boolean(customer?.preferences?.smsNotifications)
+  }
+
+  private shouldSendPush(customer: any): boolean {
+    if (!customer) {
+      return false
+    }
+    if (customer.preferences && 'pushNotifications' in customer.preferences) {
+      return Boolean(customer.preferences.pushNotifications)
+    }
+    return false
+  }
+
+  private getStoreLabel(reservation: any): string {
+    return reservation.store?.displayName ?? reservation.store?.name ?? 'サロン'
+  }
+
+  private buildReservationEmailContent(
+    reservation: any,
+    type: 'confirmation' | 'modification' | 'cancellation',
+    oldReservation?: any
+  ): { subject: string; body: string } {
+    const storeLabel = this.getStoreLabel(reservation)
+    const customerName = reservation.customer?.name ?? 'お客様'
+
+    let subject: string
+    let lead: string
+
+    switch (type) {
+      case 'modification':
+        subject = 'ご予約内容が更新されました'
+        lead = '下記のご予約内容が変更されました。新しい日時をご確認ください。'
+        break
+      case 'cancellation':
+        subject = 'ご予約がキャンセルされました'
+        lead = '下記のご予約はキャンセル済みです。直前のキャンセルの場合は店舗までご連絡ください。'
+        break
+      default:
+        subject = 'ご予約が確定しました'
+        lead = '下記の内容でご予約を承りました。ご来店をお待ちしております。'
+        break
+    }
+
+    const list = this.buildReservationDetailList(reservation, oldReservation, type)
+    const footer = `
+      <p style="margin-top:16px; font-size:12px; color:#4b5563;">
+        ご不明な点がございましたら、このメールにご返信いただくか、お電話でお問い合わせください。<br />
+        自動送信メールのため、行き違いの場合はご容赦ください。
+      </p>
+    `
+
+    const body = `
+      <p>${customerName} 様</p>
+      <p>${lead}</p>
+      ${list}
+      ${footer}
+    `
+
+    return {
+      subject: `【${storeLabel}】${subject}`,
+      body,
+    }
+  }
+
+  private buildReservationDetailList(
+    reservation: any,
+    oldReservation?: any,
+    type?: string
+  ): string {
+    const lines: string[] = []
+    const startLabel = this.formatDateTime(reservation.startTime)
+    const endLabel = reservation.endTime ? this.formatDateTime(reservation.endTime) : null
+    lines.push(`日時: ${startLabel}${endLabel ? ` 〜 ${endLabel}` : ''}`)
+
+    if (type === 'modification' && oldReservation) {
+      const oldStart = this.formatDateTime(oldReservation.startTime)
+      const oldEnd = oldReservation.endTime ? this.formatDateTime(oldReservation.endTime) : null
+      lines.push(`変更前: ${oldStart}${oldEnd ? ` 〜 ${oldEnd}` : ''}`)
+    }
+
+    if (reservation.cast?.name) {
+      lines.push(`担当キャスト: ${reservation.cast.name}`)
+    }
+
+    if (reservation.course?.name) {
+      lines.push(`コース: ${reservation.course.name}`)
+    }
+
+    if (reservation.locationMemo) {
+      lines.push(`待ち合わせ: ${reservation.locationMemo}`)
+    }
+
+    return `<ul>${lines.map((line) => `<li>${line}</li>`).join('')}</ul>`
+  }
+
   private formatDateTime(date: Date): string {
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
+    if (!date) {
+      return ''
+    }
+    const value = date instanceof Date ? date : new Date(date)
+    if (Number.isNaN(value.getTime())) {
+      return ''
+    }
+    return new Intl.DateTimeFormat('ja-JP', {
+      year: 'numeric',
+      month: 'long',
       day: 'numeric',
-      hour: 'numeric',
+      weekday: 'short',
+      hour: '2-digit',
       minute: '2-digit',
-    }).format(date)
+    }).format(value)
   }
 }

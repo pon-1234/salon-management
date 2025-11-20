@@ -16,6 +16,7 @@ export interface Customer extends BaseEntity {
   age: number
   memberType: 'regular' | 'vip'
   smsEnabled: boolean
+  emailNotificationEnabled: boolean
   points: number
   registrationDate: Date
   lastLoginDate?: Date
