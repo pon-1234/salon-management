@@ -27,6 +27,7 @@ export function normalizeChatAttachments(
       contentType: typeof item.contentType === 'string' ? item.contentType : undefined,
       width: typeof item.width === 'number' ? item.width : undefined,
       height: typeof item.height === 'number' ? item.height : undefined,
+      path: typeof item.path === 'string' ? item.path : undefined,
     }))
     .filter((item) => item.url.trim().length > 0)
 }

@@ -14,6 +14,7 @@ export interface ChatAttachment {
   contentType?: string
   width?: number
   height?: number
+  path?: string
 }
 
 export interface Message {
