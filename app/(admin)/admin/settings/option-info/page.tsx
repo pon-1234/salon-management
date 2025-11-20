@@ -503,7 +503,7 @@ export default function OptionInfoPage() {
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="storeShare">店取り分（円）</Label>
+                    <Label htmlFor="storeShare">店舗売上（円）</Label>
                     <Input
                       id="storeShare"
                       type="number"
@@ -522,7 +522,7 @@ export default function OptionInfoPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="castShare">キャスト取り分（円）</Label>
+                    <Label htmlFor="castShare">キャスト売上（円）</Label>
                     <Input
                       id="castShare"
                       type="number"

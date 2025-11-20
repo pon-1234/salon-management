@@ -309,8 +309,8 @@ function ReservationDetailView({ reservation }: { reservation: CastReservationDe
     if (reservation.discountAmount) {
       rows.push({ label: '割引', value: `-¥${reservation.discountAmount.toLocaleString()}` })
     }
-    rows.push({ label: '店舗取り分', value: `¥${(reservation.storeRevenue ?? 0).toLocaleString()}` })
-    rows.push({ label: 'キャスト取り分', value: `¥${(reservation.staffRevenue ?? 0).toLocaleString()}` })
+    rows.push({ label: '店舗売上', value: `¥${(reservation.storeRevenue ?? 0).toLocaleString()}` })
+    rows.push({ label: 'キャスト売上', value: `¥${(reservation.staffRevenue ?? 0).toLocaleString()}` })
     return rows
   }, [reservation])
 

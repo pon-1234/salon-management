@@ -136,7 +136,7 @@ export function SettlementStatusTab({ castId, castName }: SettlementStatusTabPro
             <div className="flex items-center space-x-2">
               <TrendingUp className="h-4 w-4 text-blue-600" />
               <div>
-                <p className="text-sm font-medium text-gray-600">取り分総額</p>
+                <p className="text-sm font-medium text-gray-600">キャスト売上総額</p>
                 <p className="text-xl font-bold">
                   ¥{settlementSummary.totalCastShare.toLocaleString()}
                 </p>
@@ -260,7 +260,7 @@ export function SettlementStatusTab({ castId, castName }: SettlementStatusTabPro
                 <TableHead>日時</TableHead>
                 <TableHead>顧客名</TableHead>
                 <TableHead>サービス</TableHead>
-                <TableHead>取り分</TableHead>
+                <TableHead>キャスト売上</TableHead>
                 <TableHead>経過日数</TableHead>
                 <TableHead>状態</TableHead>
               </TableRow>

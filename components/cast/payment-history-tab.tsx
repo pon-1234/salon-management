@@ -338,7 +338,7 @@ function PaymentRecordForm({ onSubmit, salesRecords, initialData }: PaymentRecor
         />
         {selectedSalesTotal > 0 && (
           <p className="mt-1 text-sm text-gray-600">
-            選択された売上の取り分合計: ¥{selectedSalesTotal.toLocaleString()}
+            選択された売上のキャスト売上合計: ¥{selectedSalesTotal.toLocaleString()}
           </p>
         )}
       </div>
@@ -359,7 +359,7 @@ function PaymentRecordForm({ onSubmit, salesRecords, initialData }: PaymentRecor
                     {format(record.date, 'M/d', { locale: ja })} {record.customerName} -{' '}
                     {record.serviceName}
                   </div>
-                  <div className="text-gray-500">取り分: ¥{record.castShare.toLocaleString()}</div>
+                  <div className="text-gray-500">キャスト売上: ¥{record.castShare.toLocaleString()}</div>
                 </div>
               </label>
             ))}
@@ -439,7 +439,7 @@ function PaymentDetailView({ payment, salesRecords }: PaymentDetailViewProps) {
                   </div>
                   <div className="text-right">
                     <div className="font-medium">¥{record.castShare.toLocaleString()}</div>
-                    <div className="text-sm text-gray-500">取り分</div>
+                    <div className="text-sm text-gray-500">キャスト売上</div>
                   </div>
                 </div>
               </div>

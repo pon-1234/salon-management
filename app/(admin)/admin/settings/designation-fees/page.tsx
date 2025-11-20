@@ -242,7 +242,7 @@ export default function DesignationFeesPage() {
                 指名料設定
               </h1>
               <p className="text-sm text-muted-foreground">
-                フリー指名や本指名などの料金と女性取り分を設定できます。
+                フリー指名や本指名などの料金とキャスト・店舗それぞれの売上配分を設定できます。
               </p>
             </div>
           </div>
@@ -259,7 +259,7 @@ export default function DesignationFeesPage() {
         <Card>
           <CardHeader>
             <CardTitle>指名料一覧</CardTitle>
-            <CardDescription>指名料ごとの料金と取り分バランスを一覧表示します。</CardDescription>
+            <CardDescription>指名料ごとの料金と売上配分バランスを一覧表示します。</CardDescription>
           </CardHeader>
           <CardContent>
             {loading && (
@@ -271,7 +271,7 @@ export default function DesignationFeesPage() {
                   <TableHead className="w-[120px] whitespace-nowrap">表示順</TableHead>
                   <TableHead className="whitespace-nowrap">名称</TableHead>
                   <TableHead className="w-[120px] whitespace-nowrap">料金</TableHead>
-                  <TableHead className="w-[160px] whitespace-nowrap">取り分</TableHead>
+                  <TableHead className="w-[160px] whitespace-nowrap">売上配分</TableHead>
                   <TableHead>備考</TableHead>
                   <TableHead className="w-[120px] whitespace-nowrap">ステータス</TableHead>
                   <TableHead className="w-[120px] whitespace-nowrap">操作</TableHead>
@@ -357,7 +357,7 @@ export default function DesignationFeesPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="designation-store">店舗取り分</Label>
+                <Label htmlFor="designation-store">店舗売上</Label>
                 <Input
                   id="designation-store"
                   type="number"
@@ -367,7 +367,7 @@ export default function DesignationFeesPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="designation-cast">キャスト取り分</Label>
+                <Label htmlFor="designation-cast">キャスト売上</Label>
                 <Input
                   id="designation-cast"
                   type="number"

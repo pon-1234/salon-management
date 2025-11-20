@@ -1387,20 +1387,20 @@ export async function PUT(request: NextRequest) {
       if (valuesDiffer(previousReservation.storeRevenue, updated.storeRevenue)) {
         historyEntries.push({
           fieldName: 'storeRevenue',
-          fieldDisplayName: '店舗取り分',
+          fieldDisplayName: '店舗売上',
           oldValue: formatCurrency(previousReservation.storeRevenue ?? null),
           newValue: formatCurrency(updated.storeRevenue ?? null),
-          reason: '店舗取り分を更新',
+          reason: '店舗売上を更新',
         })
       }
 
       if (valuesDiffer(previousReservation.staffRevenue, updated.staffRevenue)) {
         historyEntries.push({
           fieldName: 'staffRevenue',
-          fieldDisplayName: 'キャスト取り分',
+          fieldDisplayName: 'キャスト売上',
           oldValue: formatCurrency(previousReservation.staffRevenue ?? null),
           newValue: formatCurrency(updated.staffRevenue ?? null),
-          reason: 'キャスト取り分を更新',
+          reason: 'キャスト売上を更新',
         })
       }
 

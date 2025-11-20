@@ -114,7 +114,7 @@ export function SalesManagementTab({ castId, castName }: SalesManagementTabProps
             <div className="flex items-center space-x-2">
               <User className="h-4 w-4 text-blue-600" />
               <div>
-                <p className="text-sm font-medium text-gray-600">取り分合計</p>
+                <p className="text-sm font-medium text-gray-600">キャスト売上合計</p>
                 <p className="text-2xl font-bold">
                   ¥
                   {salesRecords.reduce((sum, record) => sum + record.castShare, 0).toLocaleString()}
@@ -169,7 +169,7 @@ export function SalesManagementTab({ castId, castName }: SalesManagementTabProps
                 <TableHead>サービス</TableHead>
                 <TableHead>場所</TableHead>
                 <TableHead>金額</TableHead>
-                <TableHead>取り分</TableHead>
+                <TableHead>キャスト売上</TableHead>
                 <TableHead>状態</TableHead>
                 <TableHead>操作</TableHead>
               </TableRow>

@@ -356,7 +356,7 @@ export default function CourseInfoPage() {
                   <TableHead className="whitespace-nowrap">コース名</TableHead>
                   <TableHead className="w-32 whitespace-nowrap">時間</TableHead>
                   <TableHead className="w-40 whitespace-nowrap">料金</TableHead>
-                  <TableHead className="w-48 whitespace-nowrap">取り分</TableHead>
+                  <TableHead className="w-48 whitespace-nowrap">売上配分</TableHead>
                   <TableHead className="w-32 whitespace-nowrap text-center">
                     WEB予約
                   </TableHead>
@@ -461,7 +461,7 @@ export default function CourseInfoPage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="course-store">店舗取り分（円）</Label>
+                <Label htmlFor="course-store">店舗売上（円）</Label>
                 <Input
                   id="course-store"
                   type="number"
@@ -471,7 +471,7 @@ export default function CourseInfoPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="course-cast">キャスト取り分（円）</Label>
+                <Label htmlFor="course-cast">キャスト売上（円）</Label>
                 <Input
                   id="course-cast"
                   type="number"

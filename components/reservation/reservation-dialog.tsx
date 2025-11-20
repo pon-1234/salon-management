@@ -1836,11 +1836,11 @@ useEffect(() => {
                       ) : null}
                       <Separator className="my-2" />
                       <div className="flex items-center justify-between text-muted-foreground">
-                        <span>店舗取り分</span>
+                        <span>店舗売上</span>
                         <span>{formatCurrency(reservation.storeRevenue)}</span>
                       </div>
                       <div className="flex items-center justify-between text-muted-foreground">
-                        <span>キャスト取り分</span>
+                        <span>キャスト売上</span>
                         <span>{formatCurrency(reservation.staffRevenue)}</span>
                       </div>
                     </div>

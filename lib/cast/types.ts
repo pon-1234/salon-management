@@ -101,8 +101,8 @@ export interface SalesRecord {
   designationFee: number // 指名料
   optionFees: number // オプション料金
   totalAmount: number // 合計金額
-  castShare: number // キャスト取り分
-  shopShare: number // 店舗取り分
+  castShare: number // キャスト売上
+  shopShare: number // 店舗売上
   paymentStatus: '未精算' | '精算済み'
   location: string // 施術場所
   notes?: string // 備考
@@ -126,7 +126,7 @@ export interface SettlementSummary {
     to: Date
   }
   totalSales: number // 総売上
-  totalCastShare: number // キャスト取り分総額
+  totalCastShare: number // キャスト売上総額
   totalPaid: number // 支払済み総額
   pendingAmount: number // 未精算額
   recordCount: number // 売上件数

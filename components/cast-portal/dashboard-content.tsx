@@ -184,7 +184,7 @@ export function CastDashboardContent({ initialData }: Props) {
         />
         <SummaryCard
           icon={TrendingUp}
-          label="今月の取り分"
+          label="今月のキャスト売上"
           value={`¥${data.stats.monthRevenue.toLocaleString()}`}
           helper={`本日 ¥${data.stats.todayRevenue.toLocaleString()} / 厚生費 ¥${data.stats.welfareThisMonth.toLocaleString()}`}
         />

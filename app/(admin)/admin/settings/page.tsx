@@ -178,7 +178,7 @@ export default function SettingsPage() {
     {
       id: 'designation-fees',
       title: '指名料設定',
-      description: 'フリー指名・本指名などの指名料と取り分を管理',
+      description: 'フリー指名・本指名などの指名料と売上配分を管理',
       icon: <Receipt className="h-5 w-5" />,
       status: 'available',
       category: 'サービス管理',

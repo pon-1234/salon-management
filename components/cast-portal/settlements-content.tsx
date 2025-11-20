@@ -61,7 +61,7 @@ export function CastSettlementsContent({ initialData }: { initialData: CastSettl
       <div className="grid gap-4 md:grid-cols-3">
         <SummaryTile
           icon={PiggyBank}
-          title="今月の取り分"
+          title="今月のキャスト売上"
           value={`¥${data.summary.staffRevenue.toLocaleString()}`}
           helper={`総売上 ¥${data.summary.totalRevenue.toLocaleString()}`}
         />
@@ -183,11 +183,11 @@ function SettlementRecordCard({ record }: { record: CastSettlementsData['days'][
           <p className="text-base font-semibold text-foreground">¥{record.price.toLocaleString()}</p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-muted-foreground/80">キャスト取り分</p>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground/80">キャスト売上</p>
           <p className="text-base font-semibold text-foreground">¥{record.staffRevenue.toLocaleString()}</p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-muted-foreground/80">店舗取り分</p>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground/80">店舗売上</p>
           <p className="text-base font-semibold text-foreground">¥{record.storeRevenue.toLocaleString()}</p>
         </div>
         <div>

@@ -1695,10 +1695,10 @@ export function QuickBookingDialog({
                     </div>
                     <div className="mt-2 grid grid-cols-2 gap-4 text-xs text-gray-500">
                       <div className="rounded-md bg-gray-100 p-2">
-                        店舗取り分: {formatYen(priceBreakdown.storeRevenue)}
+                        店舗売上: {formatYen(priceBreakdown.storeRevenue)}
                       </div>
                       <div className="rounded-md bg-gray-100 p-2">
-                        キャスト取り分: {formatYen(priceBreakdown.staffRevenue)}
+                        キャスト売上: {formatYen(priceBreakdown.staffRevenue)}
                       </div>
                     </div>
                   </div>

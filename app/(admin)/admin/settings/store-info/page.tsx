@@ -243,7 +243,7 @@ export default function StoreInfoPage() {
                     onChange={(e) => handleInputChange('welfareExpenseRate', e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    コース料金に対して自動計上される厚生費（店舗取り分）の割合です。未入力の場合は10%が適用されます。
+                    コース料金に対して自動計上される厚生費（店舗売上側で控除される分）の割合です。未入力の場合は10%が適用されます。
                   </p>
                 </div>
               </CardContent>
