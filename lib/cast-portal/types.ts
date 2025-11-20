@@ -98,12 +98,17 @@ export interface CastReservationDetail extends CastPortalReservation {
   staffRevenue?: number | null
 }
 
+export type CastScheduleLockReason = 'near_term' | 'has_reservations'
+
 export interface CastScheduleEntry {
   id: string | null
   date: string // yyyy-MM-dd
   isAvailable: boolean
   startTime: string
   endTime: string
+  canEdit: boolean
+  hasReservations: boolean
+  lockReasons: CastScheduleLockReason[]
 }
 
 export interface CastScheduleWindow {

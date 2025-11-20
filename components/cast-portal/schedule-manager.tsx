@@ -3,13 +3,18 @@
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import { differenceInCalendarDays, format } from 'date-fns'
 import { ja } from 'date-fns/locale'
-import { Loader2 } from 'lucide-react'
+import { AlertTriangle, Loader2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/use-toast'
-import type { CastScheduleEntry, CastScheduleWindow } from '@/lib/cast-portal/types'
+import { Badge } from '@/components/ui/badge'
+import type {
+  CastScheduleEntry,
+  CastScheduleLockReason,
+  CastScheduleWindow,
+} from '@/lib/cast-portal/types'
 import { cn } from '@/lib/utils'
 
 const STATUS_OPTIONS = [
@@ -18,6 +23,23 @@ const STATUS_OPTIONS = [
 ]
 
 const REQUEST_ENDPOINT = '/api/cast-portal/schedule'
+const SCHEDULE_WINDOW_DAYS = 14
+
+const LOCK_REASON_MESSAGES: Record<CastScheduleLockReason, string> = {
+  near_term: '直近1週間（7日以内）の予定変更は店舗へ連絡してください。',
+  has_reservations: '予約が入っているため、この日の予定は変更できません。',
+}
+
+function hasScheduleChanged(entry: CastScheduleEntry, baseline?: CastScheduleEntry) {
+  if (!baseline) {
+    return true
+  }
+  return (
+    entry.isAvailable !== baseline.isAvailable ||
+    entry.startTime !== baseline.startTime ||
+    entry.endTime !== baseline.endTime
+  )
+}
 
 export function CastScheduleManager() {
   const { toast } = useToast()
@@ -31,17 +53,19 @@ export function CastScheduleManager() {
     (mode: 'working' | 'off') => {
       setEntries((prev) =>
         prev.map((entry) =>
-          mode === 'working'
-            ? {
-                ...entry,
-                isAvailable: true,
-                startTime: entry.startTime || '10:00',
-                endTime: entry.endTime || '18:00',
-              }
-            : {
-                ...entry,
-                isAvailable: false,
-              }
+          !entry.canEdit
+            ? entry
+            : mode === 'working'
+              ? {
+                  ...entry,
+                  isAvailable: true,
+                  startTime: entry.startTime || '10:00',
+                  endTime: entry.endTime || '18:00',
+                }
+              : {
+                  ...entry,
+                  isAvailable: false,
+                }
         )
       )
     },
@@ -52,21 +76,13 @@ export function CastScheduleManager() {
     if (entries.length !== initialEntries.length) {
       return true
     }
-    return entries.some((entry, index) => {
-      const baseline = initialEntries[index]
-      return (
-        entry.date !== baseline?.date ||
-        entry.isAvailable !== baseline?.isAvailable ||
-        entry.startTime !== baseline?.startTime ||
-        entry.endTime !== baseline?.endTime
-      )
-    })
+    return entries.some((entry, index) => entry.canEdit && hasScheduleChanged(entry, initialEntries[index]))
   }, [entries, initialEntries])
 
   const loadSchedule = useCallback(async () => {
     setIsLoading(true)
     try {
-      const response = await fetch(`${REQUEST_ENDPOINT}?days=7`, {
+      const response = await fetch(`${REQUEST_ENDPOINT}?days=${SCHEDULE_WINDOW_DAYS}`, {
         cache: 'no-store',
       })
 
@@ -95,7 +111,12 @@ export function CastScheduleManager() {
 
   const updateEntry = useCallback((date: string, updates: Partial<CastScheduleEntry>) => {
     setEntries((prev) =>
-      prev.map((entry) => (entry.date === date ? { ...entry, ...updates } : entry))
+      prev.map((entry) => {
+        if (entry.date !== date || !entry.canEdit) {
+          return entry
+        }
+        return { ...entry, ...updates }
+      })
     )
   }, [])
 
@@ -122,7 +143,7 @@ export function CastScheduleManager() {
   const handleSave = useCallback(() => {
     startTransition(async () => {
       const validationError = entries.find((entry) => {
-        if (!entry.isAvailable) {
+        if (!entry.canEdit || !entry.isAvailable) {
           return false
         }
         return !entry.startTime || !entry.endTime || entry.startTime >= entry.endTime
@@ -138,17 +159,48 @@ export function CastScheduleManager() {
       }
 
       try {
-        const payload = {
-          startDate: meta?.startDate,
-          days: meta && meta.startDate && meta.endDate
-            ? differenceInCalendarDays(new Date(`${meta.endDate}T00:00:00`), new Date(`${meta.startDate}T00:00:00`)) + 1
-            : undefined,
-          updates: entries.map((entry) => ({
+        const updates = entries.reduce<
+          Array<{
+            date: string
+            status: 'working' | 'off'
+            startTime?: string
+            endTime?: string
+          }>
+        >((acc, entry, index) => {
+          if (!entry.canEdit) {
+            return acc
+          }
+          const baseline = initialEntries[index]
+          if (!hasScheduleChanged(entry, baseline)) {
+            return acc
+          }
+          acc.push({
             date: entry.date,
             status: entry.isAvailable ? 'working' : 'off',
             startTime: entry.isAvailable ? entry.startTime : undefined,
             endTime: entry.isAvailable ? entry.endTime : undefined,
-          })),
+          })
+          return acc
+        }, [])
+
+        if (!updates.length) {
+          toast({
+            title: '変更が見つかりません',
+            description: '更新が必要な日を選択してください。',
+          })
+          return
+        }
+
+        const payload = {
+          startDate: meta?.startDate,
+          days:
+            meta && meta.startDate && meta.endDate
+              ? differenceInCalendarDays(
+                  new Date(`${meta.endDate}T00:00:00`),
+                  new Date(`${meta.startDate}T00:00:00`)
+                ) + 1
+              : undefined,
+          updates,
         }
 
         const response = await fetch(REQUEST_ENDPOINT, {
@@ -178,7 +230,7 @@ export function CastScheduleManager() {
         })
       }
     })
-  }, [entries, meta, toast])
+  }, [entries, initialEntries, meta, toast])
 
   return (
     <Card>
@@ -186,7 +238,10 @@ export function CastScheduleManager() {
         <div>
           <CardTitle className="text-lg">出勤予定の管理</CardTitle>
           <p className="text-sm text-muted-foreground">
-            今週のシフトを編集して、管理側と最新の情報を共有しましょう。
+            向こう2週間のシフトを調整し、管理側と最新の情報を共有しましょう。
+          </p>
+          <p className="text-xs text-muted-foreground">
+            直近1週間と予約が入っている日の変更はできません。急変時は店舗スタッフへ連絡してください。
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -207,6 +262,10 @@ export function CastScheduleManager() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          1週間以内（7日以内）や予約が入っている日の変更はキャストページからは行えません。変更が必要な場合は
+          店舗スタッフまでご相談ください。
+        </div>
         {isLoading ? (
           <div className="flex items-center justify-center rounded-lg border border-dashed border-border py-12 text-sm text-muted-foreground">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 読み込み中です...
@@ -247,16 +306,34 @@ function ScheduleRow({
     () => format(new Date(`${entry.date}T00:00:00`), 'M月d日(E)', { locale: ja }),
     [entry.date]
   )
+  const lockMessages = useMemo(
+    () => entry.lockReasons.map((reason) => LOCK_REASON_MESSAGES[reason]).filter(Boolean),
+    [entry.lockReasons]
+  )
+  const isReadOnly = !entry.canEdit
 
   return (
-    <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
+    <div
+      className={cn(
+        'space-y-3 rounded-lg border border-border bg-muted/20 p-3',
+        isReadOnly && 'border-dashed bg-muted/30'
+      )}
+    >
       <div className="flex items-center justify-between gap-2 text-sm font-medium text-muted-foreground">
-        <span>{dayLabel}</span>
+        <div className="flex items-center gap-2">
+          <span>{dayLabel}</span>
+          {entry.hasReservations ? (
+            <Badge variant="outline" className="border-amber-300 text-[11px] text-amber-700">
+              予約あり
+            </Badge>
+          ) : null}
+        </div>
         <Select
           value={entry.isAvailable ? 'working' : 'off'}
           onValueChange={(value) => onStatusChange(entry.date, value as 'working' | 'off')}
+          disabled={isReadOnly}
         >
-          <SelectTrigger className="h-8 w-28 text-xs">
+          <SelectTrigger className="h-8 w-28 text-xs" disabled={isReadOnly}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -268,22 +345,32 @@ function ScheduleRow({
           </SelectContent>
         </Select>
       </div>
+      {lockMessages.length > 0 ? (
+        <div className="flex flex-col gap-1 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          {lockMessages.map((message) => (
+            <p key={`${entry.date}-${message}`} className="flex items-center gap-1">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              {message}
+            </p>
+          ))}
+        </div>
+      ) : null}
       <div className="grid gap-2 sm:grid-cols-2">
         <Input
           type="time"
           step={900}
           value={entry.startTime}
           onChange={(event) => onTimeChange(entry.date, 'startTime', event.target.value)}
-          disabled={!entry.isAvailable}
-          className={cn('h-11 text-base', !entry.isAvailable && 'opacity-60')}
+          disabled={!entry.isAvailable || isReadOnly}
+          className={cn('h-11 text-base', (!entry.isAvailable || isReadOnly) && 'opacity-60')}
         />
         <Input
           type="time"
           step={900}
           value={entry.endTime}
           onChange={(event) => onTimeChange(entry.date, 'endTime', event.target.value)}
-          disabled={!entry.isAvailable}
-          className={cn('h-11 text-base', !entry.isAvailable && 'opacity-60')}
+          disabled={!entry.isAvailable || isReadOnly}
+          className={cn('h-11 text-base', (!entry.isAvailable || isReadOnly) && 'opacity-60')}
         />
       </div>
     </div>

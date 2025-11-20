@@ -27,6 +27,7 @@ import type {
   CastScheduleWindow,
   CastSettlementRecord,
   CastSettlementsData,
+  CastScheduleLockReason,
 } from './types'
 
 type ReservationWithRelations = Awaited<ReturnType<typeof fetchReservationsForCast>>[number]
@@ -35,6 +36,7 @@ const DEFAULT_SCHEDULE_START_TIME = '10:00'
 const DEFAULT_SCHEDULE_END_TIME = '18:00'
 const MAX_SCHEDULE_WINDOW_DAYS = 31
 const DEFAULT_TIME_ZONE = 'Asia/Tokyo'
+const SCHEDULE_EDIT_LOCK_DAYS = 7
 
 export class CastScheduleValidationError extends Error {
   constructor(message: string) {
@@ -618,8 +620,13 @@ function combineDateAndTime(dateKey: string, time: string): Date {
 
 function toScheduleEntry(
   record: { id: string; date: Date; startTime: Date; endTime: Date; isAvailable: boolean } | undefined,
-  dateKey: string
+  dateKey: string,
+  options?: { hasReservations?: boolean; lockReasons?: CastScheduleLockReason[] }
 ): CastScheduleEntry {
+  const hasReservations = Boolean(options?.hasReservations)
+  const lockReasons = options?.lockReasons ?? []
+  const canEdit = lockReasons.length === 0
+
   if (!record) {
     return {
       id: null,
@@ -627,6 +634,9 @@ function toScheduleEntry(
       isAvailable: false,
       startTime: DEFAULT_SCHEDULE_START_TIME,
       endTime: DEFAULT_SCHEDULE_END_TIME,
+      canEdit,
+      hasReservations,
+      lockReasons,
     }
   }
 
@@ -639,6 +649,9 @@ function toScheduleEntry(
     isAvailable: record.isAvailable,
     startTime: format(startLocal, 'HH:mm'),
     endTime: format(endLocal, 'HH:mm'),
+    canEdit,
+    hasReservations,
+    lockReasons,
   }
 }
 
@@ -656,6 +669,8 @@ export async function getCastScheduleWindow(
       ? addDays(normalizedStart, MAX_SCHEDULE_WINDOW_DAYS - 1)
       : normalizedEnd
 
+  const reservationWindowEnd = endOfDayInTimeZone(safeEnd, DEFAULT_TIME_ZONE)
+
   const rawSchedules = await db.castSchedule.findMany({
     where: {
       castId,
@@ -670,20 +685,53 @@ export async function getCastScheduleWindow(
     orderBy: [{ date: 'asc' }],
   })
 
+  const reservations = await db.reservation.findMany({
+    where: {
+      castId,
+      storeId,
+      status: {
+        not: 'cancelled',
+      },
+      startTime: {
+        gte: normalizedStart,
+        lte: reservationWindowEnd,
+      },
+    },
+    select: {
+      startTime: true,
+    },
+  })
+
   const scheduleMap = new Map<string, (typeof rawSchedules)[number]>()
   rawSchedules.forEach((record) => {
     const key = format(utcToZonedTime(record.date, DEFAULT_TIME_ZONE), 'yyyy-MM-dd')
     scheduleMap.set(key, record)
   })
 
+  const reservationDateKeys = new Set<string>()
+  reservations.forEach((reservation) => {
+    const key = format(utcToZonedTime(reservation.startTime, DEFAULT_TIME_ZONE), 'yyyy-MM-dd')
+    reservationDateKeys.add(key)
+  })
+
   const daysDiff = Math.max(0, differenceInCalendarDays(safeEnd, normalizedStart))
   const items: CastScheduleEntry[] = []
+  const today = startOfDayInTimeZone(new Date(), DEFAULT_TIME_ZONE)
+  const editRestrictedUntil = addDays(today, SCHEDULE_EDIT_LOCK_DAYS)
 
   for (let index = 0; index <= daysDiff; index += 1) {
     const currentDate = addDays(normalizedStart, index)
     const localKey = format(utcToZonedTime(currentDate, DEFAULT_TIME_ZONE), 'yyyy-MM-dd')
     const record = scheduleMap.get(localKey)
-    items.push(toScheduleEntry(record, localKey))
+    const hasReservations = reservationDateKeys.has(localKey)
+    const lockReasons: CastScheduleLockReason[] = []
+    if (currentDate < editRestrictedUntil) {
+      lockReasons.push('near_term')
+    }
+    if (hasReservations) {
+      lockReasons.push('has_reservations')
+    }
+    items.push(toScheduleEntry(record, localKey, { hasReservations, lockReasons }))
   }
 
   return {
@@ -706,6 +754,7 @@ export async function updateCastScheduleWindow(
   }
 
   const today = startOfDayInTimeZone(new Date(), DEFAULT_TIME_ZONE)
+  const editRestrictedUntil = addDays(today, SCHEDULE_EDIT_LOCK_DAYS)
 
   await db.$transaction(async (tx) => {
     for (const update of updates) {
@@ -713,6 +762,28 @@ export async function updateCastScheduleWindow(
 
       if (scheduleDate < today) {
         throw new CastScheduleValidationError('過去の日付は編集できません。')
+      }
+
+      if (scheduleDate < editRestrictedUntil) {
+        throw new CastScheduleValidationError('直近1週間の予定はキャストページから変更できません。店舗スタッフへ連絡してください。')
+      }
+
+      const reservationCount = await tx.reservation.count({
+        where: {
+          castId,
+          storeId,
+          status: {
+            not: 'cancelled',
+          },
+          startTime: {
+            gte: scheduleDate,
+            lte: endOfDayInTimeZone(scheduleDate, DEFAULT_TIME_ZONE),
+          },
+        },
+      })
+
+      if (reservationCount > 0) {
+        throw new CastScheduleValidationError('予約が入っている日の出勤予定は変更できません。')
       }
 
       if (update.status === 'off') {
