@@ -14,10 +14,19 @@ const publicRoutes = ['/', '/_next', '/favicon.ico']
 // Auth routes that should be accessible without authentication
 const authRoutes = ['/login', '/register', '/admin/login', '/auth', '/api/auth', '/cast/login']
 const storeCastLoginPattern = /^\/[^/]+\/cast\/login$/
+const publicApiRoutes = ['/api/line/webhook']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isApiRoute = pathname.startsWith('/api')
+  const isPublicApiRoute =
+    isApiRoute &&
+    (pathname.startsWith('/api/public') ||
+      publicApiRoutes.some((route) => pathname.startsWith(route)))
+
+  if (isPublicApiRoute) {
+    return NextResponse.next()
+  }
 
   // Check if route is public
   const isStoreCastAuthRoute = storeCastLoginPattern.test(pathname)
@@ -127,11 +136,6 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url, { status: 307 })
     }
 
-    return NextResponse.next()
-  }
-
-  // Allow public API routes (e.g., /api/public/*) without auth
-  if (isApiRoute && pathname.startsWith('/api/public')) {
     return NextResponse.next()
   }
 
