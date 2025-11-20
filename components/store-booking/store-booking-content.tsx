@@ -464,11 +464,6 @@ export function StoreBookingContent({
 
   const disableBooking =
     !isAuthenticated || !selectedCast || !selectedCourse || !selectedSlot || submitting
-  const heroStepOffset = hasPrefilledSlot ? 2 : 0
-  const heroSteps = BOOKING_STEPS.slice(heroStepOffset).map((step, index) => ({
-    ...step,
-    displayNumber: heroStepOffset + index + 1,
-  }))
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -511,102 +506,6 @@ export function StoreBookingContent({
 
       <section className="-mt-10 pb-16 pt-6">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 space-y-8">
-          <div className="grid gap-4 rounded-2xl border border-purple-100 bg-white/80 p-5 shadow-sm md:grid-cols-3">
-            {heroSteps.map((step) => (
-              <div key={step.title} className="flex gap-3 rounded-xl border border-purple-50 bg-purple-50/60 p-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-600 text-lg font-bold text-white">
-                  {step.displayNumber}
-                </div>
-                <div>
-                  <p className="text-base font-semibold text-purple-800">{step.title}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{step.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex flex-col gap-4 rounded-2xl border border-dashed border-purple-200 bg-white/90 p-5 shadow-sm md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-100 text-purple-700">
-                <HandHelping className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-base font-semibold text-foreground">お電話でもご予約・ご相談いただけます</p>
-                <p className="text-sm text-muted-foreground">
-                  スマホ操作に不安がある方は「電話予約」ボタンからスタッフが直接ご案内いたします。
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Button asChild size="lg" className="bg-emerald-600 hover:bg-emerald-700">
-                <a href={`tel:${store.phone}`} className="flex items-center gap-2">
-                  <PhoneCall className="h-5 w-5" />
-                  電話で予約する {store.phone}
-                </a>
-              </Button>
-              <Button variant="outline" size="lg" asChild>
-                <Link href={`/${store.slug}/booking?guide=1`}>操作ガイドを見る</Link>
-              </Button>
-            </div>
-          </div>
-
-          <Alert className="border-purple-200 bg-white shadow-sm">
-            <ShieldCheck className="h-5 w-5 text-purple-600" />
-            <AlertTitle>オンライン予約は会員限定サービスです</AlertTitle>
-            <AlertDescription className="flex flex-col gap-2 text-sm text-muted-foreground">
-              <span>
-                ログインした会員情報で予約が作成され、管理画面と連動して即座に反映されます。まだ会員登録をされていない場合は、このページから
-                <Link href={`/${store.slug}/register`} className="text-purple-600 underline underline-offset-2">
-                  無料会員登録
-                </Link>
-                をお願いいたします。
-              </span>
-              <span>
-                すでにアカウントをお持ちの方は{' '}
-                <Link href={`/${store.slug}/login?callbackUrl=/${store.slug}/booking`} className="font-medium text-purple-600 underline underline-offset-2">
-                  ログインはこちら
-                </Link>
-                からお願いします。
-              </span>
-            </AlertDescription>
-          </Alert>
-
-          <div className="rounded-2xl border border-purple-100 bg-white/80 p-4 shadow-sm">
-            <div className="grid gap-3 md:grid-cols-4">
-              {visibleStepNavigationItems.map((step) => {
-                const isActive = activeStep === step.id
-                const enabled = isStepEnabled(step.id) || step.id <= activeStep
-                const completed = isStepComplete(step.id) && step.id !== activeStep
-                return (
-                  <button
-                    key={step.id}
-                    type="button"
-                    onClick={() => handleStepChange(step.id)}
-                    disabled={!enabled}
-                    className={cn(
-                      'rounded-xl border p-3 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500',
-                      isActive
-                        ? 'border-purple-600 bg-purple-50 text-purple-700'
-                        : enabled
-                          ? 'border-border bg-white hover:border-purple-400'
-                          : 'cursor-not-allowed border-dashed border-muted-foreground/30 bg-muted text-muted-foreground'
-                    )}
-                  >
-                    <div className="flex items-center justify-between font-semibold">
-                      <span>STEP {step.id}</span>
-                      {completed && <CheckCircle className="h-4 w-4 text-emerald-600" />}
-                    </div>
-                    <p className="mt-1 text-base font-semibold">{step.label}</p>
-                    <p className="text-xs text-muted-foreground">{step.caption}</p>
-                  </button>
-                )
-              })}
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              各項目を順番に進めるとスムーズです。タップで前のステップにも戻れます。
-            </p>
-          </div>
-
           {hasPrefilledSlot && (
             <Alert className="border-emerald-200 bg-emerald-50/80 text-sm text-emerald-900">
               <AlertTitle>出勤一覧から選択内容を引き継ぎました</AlertTitle>
