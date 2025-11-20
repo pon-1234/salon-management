@@ -7,23 +7,7 @@ import { addDays, format, startOfDay } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { formatInTimeZone } from 'date-fns-tz'
 import { useSession } from 'next-auth/react'
-import {
-  Sparkles,
-  ShieldCheck,
-  CalendarDays,
-  Clock,
-  Loader2,
-  CheckCircle,
-  AlertTriangle,
-  Phone,
-  Star,
-  Heart,
-  Zap,
-  CreditCard,
-  ArrowRight,
-  PhoneCall,
-  HandHelping,
-} from 'lucide-react'
+import { Sparkles, ShieldCheck, CalendarDays, Clock, Loader2, CheckCircle, AlertTriangle, Phone, Star, Heart, Zap, CreditCard, ArrowRight } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -52,21 +36,6 @@ function resolveInitialSlotDate(slot?: string | null): Date | null {
   const parsed = new Date(slot)
   return Number.isNaN(parsed.getTime()) ? null : parsed
 }
-
-const BOOKING_STEPS = [
-  {
-    title: 'キャストを選ぶ',
-    description: 'お顔写真を押してお好みのキャストを1人お選びください。',
-  },
-  {
-    title: '日付と時間を決める',
-    description: 'カレンダーで日付を選ぶと、空いている時間が大きなボタンで表示されます。',
-  },
-  {
-    title: '予約内容を確認する',
-    description: '料金と支払い方法を確認し「この内容で予約する」を押します。',
-  },
-]
 
 type CourseSummary = {
   id: string
@@ -505,7 +474,88 @@ export function StoreBookingContent({
       </section>
 
       <section className="-mt-10 pb-16 pt-6">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 space-y-8">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 space-y-6">
+          <div className="grid gap-4 lg:grid-cols-[2fr,1fr]">
+            <Card className="bg-white/90">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-semibold text-muted-foreground">
+                  現在の進行状況
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex flex-col gap-3 md:flex-row">
+                  {visibleStepNavigationItems.map((step) => {
+                    const isActive = activeStep === step.id
+                    const enabled = isStepEnabled(step.id) || step.id <= activeStep
+                    const completed = isStepComplete(step.id) && step.id !== activeStep
+                    return (
+                      <button
+                        key={step.id}
+                        type="button"
+                        onClick={() => handleStepChange(step.id)}
+                        disabled={!enabled}
+                        className={cn(
+                          'flex-1 rounded-xl border p-3 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500',
+                          isActive
+                            ? 'border-purple-600 bg-purple-50 text-purple-700'
+                            : enabled
+                              ? 'border-border bg-white hover:border-purple-400'
+                              : 'cursor-not-allowed border-dashed border-muted-foreground/30 bg-muted-foreground'
+                        )}
+                      >
+                        <div className="flex items-center justify-between font-semibold">
+                          <span>STEP {step.id}</span>
+                          {completed && <CheckCircle className="h-4 w-4 text-emerald-600" />}
+                        </div>
+                        <p className="mt-1 text-base font-semibold">{step.label}</p>
+                        <p className="text-xs text-muted-foreground">{step.caption}</p>
+                      </button>
+                    )
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {hasPrefilledSlot
+                    ? '出勤一覧で選んだ内容を反映しています。必要に応じてSTEPをタップして編集してください。'
+                    : '各項目を順番に進めてください。'}
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="bg-white/90">
+              <CardHeader>
+                <CardTitle className="text-base font-semibold text-muted-foreground">現在の選択</CardTitle>
+                <CardDescription>
+                  {hasPrefilledSlot
+                    ? 'このままメニューを選び、内容を確認するだけです。'
+                    : 'まずはキャストと日時をお選びください。'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-muted-foreground">
+                <div className="space-y-1">
+                  <p className="font-semibold text-foreground">キャスト</p>
+                  <p className="rounded-lg border border-dashed border-purple-200 bg-white px-3 py-2 text-sm text-purple-800">
+                    {selectedCast?.name ?? '未選択'}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="font-semibold text-foreground">日時</p>
+                  <p className="rounded-lg border border-dashed border-purple-200 bg-white px-3 py-2 text-sm text-purple-800">
+                    {selectedSlot
+                      ? formatInTimeZone(new Date(selectedSlot.start), JST_TIMEZONE, 'M月d日(E) HH:mm', { locale: ja })
+                      : '未選択'}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" onClick={() => setActiveStep(1)}>
+                    キャストを{selectedCast ? '変更' : '選択'}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setActiveStep(2)}>
+                    日時を{selectedSlot ? '変更' : '選択'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           {hasPrefilledSlot && (
             <Alert className="border-emerald-200 bg-emerald-50/80 text-sm text-emerald-900">
               <AlertTitle>出勤一覧から選択内容を引き継ぎました</AlertTitle>
