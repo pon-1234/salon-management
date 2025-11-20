@@ -5,7 +5,6 @@ import { Loader2, RefreshCcw, Send, ImagePlus } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useToast } from '@/components/ui/use-toast'
 import { cn } from '@/lib/utils'
@@ -44,7 +43,7 @@ export function SimpleChatPanel({
   const [draft, setDraft] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isPending, startTransition] = useTransition()
-  const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { drafts: attachmentDrafts, addFiles, removeAttachment, reset, readyAttachments, hasUploading } =
@@ -81,8 +80,8 @@ export function SimpleChatPanel({
   }, [loadMessages])
 
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
     }
   }, [messages])
 
@@ -175,7 +174,7 @@ export function SimpleChatPanel({
       </CardHeader>
       <CardContent className="flex h-[65vh] flex-col gap-4 md:h-[480px]">
         <div className="flex-1 overflow-hidden rounded-md border">
-          <ScrollArea className="max-h-full" ref={scrollAreaRef}>
+          <div className="h-full overflow-y-auto" ref={scrollContainerRef}>
             {isLoading ? (
               <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 読み込み中です...
@@ -192,7 +191,7 @@ export function SimpleChatPanel({
                 <p>{emptyState.description}</p>
               </div>
             )}
-          </ScrollArea>
+          </div>
         </div>
 
         <div className="space-y-2">
