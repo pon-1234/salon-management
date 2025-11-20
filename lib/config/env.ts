@@ -26,6 +26,7 @@ function createEnv() {
     NEXT_PUBLIC_USE_MOCK_FALLBACK: z.string().optional(),
     INITIAL_ADMIN_PASSWORD: z.string().optional(),
     LINE_MESSAGING_CHANNEL_ACCESS_TOKEN: z.string().optional(),
+    LINE_MESSAGING_CHANNEL_SECRET: z.string().optional(),
     LINE_MESSAGING_ENABLED: z.string().optional(),
     LINE_MESSAGING_DEFAULT_USER_ID: z.string().optional(),
     LINE_CHANNEL_SECRET: z.string().optional(),
@@ -53,6 +54,7 @@ function createEnv() {
     NEXT_PUBLIC_USE_MOCK_FALLBACK: process.env.NEXT_PUBLIC_USE_MOCK_FALLBACK,
     INITIAL_ADMIN_PASSWORD: process.env.INITIAL_ADMIN_PASSWORD,
     LINE_MESSAGING_CHANNEL_ACCESS_TOKEN: process.env.LINE_MESSAGING_CHANNEL_ACCESS_TOKEN,
+    LINE_MESSAGING_CHANNEL_SECRET: process.env.LINE_MESSAGING_CHANNEL_SECRET,
     LINE_MESSAGING_ENABLED: process.env.LINE_MESSAGING_ENABLED,
     LINE_MESSAGING_DEFAULT_USER_ID: process.env.LINE_MESSAGING_DEFAULT_USER_ID,
     LINE_CHANNEL_SECRET: process.env.LINE_CHANNEL_SECRET,
@@ -100,6 +102,7 @@ function createEnv() {
 
   const initialAdminPassword = rawEnv.INITIAL_ADMIN_PASSWORD ?? ''
   const lineChannelAccessToken = rawEnv.LINE_MESSAGING_CHANNEL_ACCESS_TOKEN ?? ''
+  const legacyLineChannelSecret = (rawEnv.LINE_MESSAGING_CHANNEL_SECRET ?? '').trim()
   const lineMessagingEnabledRaw = rawEnv.LINE_MESSAGING_ENABLED?.toLowerCase()
   const isLineMessagingExplicitlyEnabled =
     lineMessagingEnabledRaw === 'true'
@@ -110,7 +113,9 @@ function createEnv() {
   const isLineMessagingEnabled =
     isLineMessagingExplicitlyEnabled ?? lineChannelAccessToken.trim().length > 0
   const lineDefaultUserId = rawEnv.LINE_MESSAGING_DEFAULT_USER_ID ?? ''
-  const lineChannelSecret = rawEnv.LINE_CHANNEL_SECRET ?? ''
+  const configuredLineChannelSecret = (rawEnv.LINE_CHANNEL_SECRET ?? '').trim()
+  const lineWebhookChannelSecret =
+    configuredLineChannelSecret.length > 0 ? configuredLineChannelSecret : legacyLineChannelSecret
 
   const siteUrl =
     rawEnv.NEXT_PUBLIC_SITE_URL ??
@@ -153,7 +158,7 @@ function createEnv() {
         enabled: isLineMessagingEnabled,
         channelAccessToken: lineChannelAccessToken,
         defaultUserId: lineDefaultUserId,
-        channelSecret: lineChannelSecret,
+        channelSecret: lineWebhookChannelSecret,
       },
     },
   }
