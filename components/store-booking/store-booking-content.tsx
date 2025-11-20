@@ -176,6 +176,7 @@ export function StoreBookingContent({
   const { data: session, status } = useSession()
   const initialSlotDate = resolveInitialSlotDate(initialSlotStart)
   const initialSlotIso = initialSlotDate?.toISOString() ?? null
+  const hasPrefilledSlot = Boolean(initialSlotIso)
 
   const [selectedCastId, setSelectedCastId] = useState<string>(() => {
     if (initialCastId && casts.some((cast) => cast.id === initialCastId)) {
@@ -197,9 +198,15 @@ export function StoreBookingContent({
   const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [lastReservation, setLastReservation] = useState<{ id: string; start: string } | null>(null)
-  const [activeStep, setActiveStep] = useState(1)
+  const [activeStep, setActiveStep] = useState(() => (hasPrefilledSlot ? 3 : 1))
   const [castSearch, setCastSearch] = useState('')
   const pendingInitialSlotRef = useRef<string | null>(initialSlotIso)
+
+  useEffect(() => {
+    if (hasPrefilledSlot) {
+      setActiveStep(3)
+    }
+  }, [hasPrefilledSlot])
 
   const bookableCourses = useMemo(
     () => courses.filter((course) => course.enableWebBooking !== false),
@@ -263,6 +270,9 @@ export function StoreBookingContent({
     { id: 3, label: 'メニュー', caption: selectedCourse ? selectedCourse.name : '未選択' },
     { id: 4, label: '確認', caption: '内容を確認' },
   ]
+  const visibleStepNavigationItems = hasPrefilledSlot
+    ? stepNavigationItems.filter((step) => step.id >= 3)
+    : stepNavigationItems
 
   useEffect(() => {
     if (!selectedCastId && casts[0]) {
@@ -454,6 +464,11 @@ export function StoreBookingContent({
 
   const disableBooking =
     !isAuthenticated || !selectedCast || !selectedCourse || !selectedSlot || submitting
+  const heroStepOffset = hasPrefilledSlot ? 2 : 0
+  const heroSteps = BOOKING_STEPS.slice(heroStepOffset).map((step, index) => ({
+    ...step,
+    displayNumber: heroStepOffset + index + 1,
+  }))
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -475,8 +490,9 @@ export function StoreBookingContent({
           </div>
           <h1 className="mt-6 text-4xl font-bold sm:text-5xl">{store.displayName} オンライン予約</h1>
           <p className="mt-4 text-lg leading-relaxed text-purple-100">
-            画面の案内にそって「キャスト」「日時」「確認」の順に進むだけでご予約いただけます。
-            ご不明点があればいつでもお電話ください。
+            {hasPrefilledSlot
+              ? '出勤一覧で選んだキャストと時間帯を引き継ぎました。あとはメニューを選び、内容を確認するだけでご予約いただけます。'
+              : '画面の案内にそって「キャスト」「日時」「確認」の順に進むだけでご予約いただけます。ご不明点があればいつでもお電話ください。'}
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-sm text-purple-100">
             <span className="flex items-center gap-2">
@@ -496,10 +512,10 @@ export function StoreBookingContent({
       <section className="-mt-10 pb-16 pt-6">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 space-y-8">
           <div className="grid gap-4 rounded-2xl border border-purple-100 bg-white/80 p-5 shadow-sm md:grid-cols-3">
-            {BOOKING_STEPS.map((step, index) => (
+            {heroSteps.map((step) => (
               <div key={step.title} className="flex gap-3 rounded-xl border border-purple-50 bg-purple-50/60 p-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-600 text-lg font-bold text-white">
-                  {index + 1}
+                  {step.displayNumber}
                 </div>
                 <div>
                   <p className="text-base font-semibold text-purple-800">{step.title}</p>
@@ -557,7 +573,7 @@ export function StoreBookingContent({
 
           <div className="rounded-2xl border border-purple-100 bg-white/80 p-4 shadow-sm">
             <div className="grid gap-3 md:grid-cols-4">
-              {stepNavigationItems.map((step) => {
+              {visibleStepNavigationItems.map((step) => {
                 const isActive = activeStep === step.id
                 const enabled = isStepEnabled(step.id) || step.id <= activeStep
                 const completed = isStepComplete(step.id) && step.id !== activeStep
@@ -590,6 +606,33 @@ export function StoreBookingContent({
               各項目を順番に進めるとスムーズです。タップで前のステップにも戻れます。
             </p>
           </div>
+
+          {hasPrefilledSlot && (
+            <Alert className="border-emerald-200 bg-emerald-50/80 text-sm text-emerald-900">
+              <AlertTitle>出勤一覧から選択内容を引き継ぎました</AlertTitle>
+              <AlertDescription className="flex flex-col gap-3">
+                <div className="flex flex-wrap gap-2">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-semibold text-emerald-800">
+                    キャスト: {selectedCast?.name ?? '読み込み中'}
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-semibold text-emerald-800">
+                    日時:{' '}
+                    {selectedSlot
+                      ? formatInTimeZone(new Date(selectedSlot.start), JST_TIMEZONE, 'M/d HH:mm', { locale: ja })
+                      : '読み込み中'}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setActiveStep(1)}>
+                    キャストを変更する
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setActiveStep(2)}>
+                    日時を変更する
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
 
           <div className="mt-10 grid gap-8 lg:grid-cols-[2fr,1fr]">
             <div className="space-y-8">
