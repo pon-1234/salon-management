@@ -1095,6 +1095,12 @@ export async function PUT(request: NextRequest) {
       if (updates.castId) updateData.castId = updates.castId
       if (updates.courseId) updateData.courseId = updates.courseId
       if (updates.status) updateData.status = updates.status
+      if ('cancellationSource' in updates) {
+        updateData.cancellationSource =
+          updates.status === 'cancelled' ? updates.cancellationSource ?? null : null
+      } else if (updates.status && updates.status !== 'cancelled') {
+        updateData.cancellationSource = null
+      }
       if (typeof updates.price === 'number') updateData.price = updates.price
       if ('designationType' in updates) updateData.designationType = updates.designationType ?? null
       if (typeof updates.designationFee === 'number') updateData.designationFee = updates.designationFee

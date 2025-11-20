@@ -121,6 +121,7 @@ export interface ReservationUpdatePayload {
   castId: string
   courseId?: string
   status?: ReservationStatus
+  cancellationSource?: 'customer' | 'store' | null
   notes?: string
   storeMemo?: string
   price?: number

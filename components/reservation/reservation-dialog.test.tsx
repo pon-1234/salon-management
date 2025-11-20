@@ -217,11 +217,17 @@ describe('ReservationDialog Edit Mode', () => {
     const cancelItem = screen.getByRole('menuitem', { name: /キャンセル/ })
     fireEvent.click(cancelItem)
 
+    await waitFor(() => {
+      expect(screen.getByText(/キャンセル理由を選択/)).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /確定してキャンセル/ }))
+
     // onSave should be called with updated status
     await waitFor(() => {
       expect(mockOnSave).toHaveBeenCalledWith(
         mockReservation.id,
-        expect.objectContaining({ status: 'cancelled' })
+        expect.objectContaining({ status: 'cancelled', cancellationSource: 'customer' })
       )
     })
   })

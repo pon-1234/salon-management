@@ -94,6 +94,7 @@ import { calculateReservationRevenue } from '@/lib/reservation/revenue'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { zonedTimeToUtc } from 'date-fns-tz'
 import { CastTimelineModal } from '@/components/reservation/cast-timeline-modal'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 
 type EditFormState = {
   date: string
@@ -392,6 +393,15 @@ export function ReservationDialog({
     Array<{ castId: string; assignedBy?: 'customer' | 'cast' | 'staff'; notes?: string }>
   >([])
   const [customerNgLoading, setCustomerNgLoading] = useState(false)
+  const [cancelReasonDialogOpen, setCancelReasonDialogOpen] = useState(false)
+  const [pendingStatusChange, setPendingStatusChange] = useState<ReservationStatus | 'completed' | null>(null)
+  const [cancelReason, setCancelReason] = useState<'customer' | 'store'>('customer')
+  const handleCancelReasonDialogToggle = (open: boolean) => {
+    setCancelReasonDialogOpen(open)
+    if (!open) {
+      setPendingStatusChange(null)
+    }
+  }
 
   useEffect(() => {
     let ignore = false
@@ -655,8 +665,11 @@ export function ReservationDialog({
     }
   }, [reservation?.id, historyReloadToken])
 
-  const handleStatusChange = useCallback(
-    async (nextStatus: ReservationStatus | 'completed') => {
+  const performStatusUpdate = useCallback(
+    async (
+      nextStatus: ReservationStatus | 'completed',
+      options?: { cancellationSource?: 'customer' | 'store' }
+    ) => {
       if (!reservation) {
         return
       }
@@ -683,6 +696,7 @@ export function ReservationDialog({
           startTime: reservation.startTime,
           endTime: reservation.endTime,
           status: nextStatus as ReservationStatus,
+          cancellationSource: options?.cancellationSource ?? undefined,
         })
         setStatus(nextStatus)
         setHistoryReloadToken((prev) => prev + 1)
@@ -691,7 +705,8 @@ export function ReservationDialog({
           description: STATUS_META[nextStatus]?.label ?? nextStatus,
         })
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'ステータスの更新に失敗しました。'
+        const message =
+          error instanceof Error ? error.message : 'ステータスの更新に失敗しました。'
         toast({
           title: '更新に失敗しました',
           description: message,
@@ -703,6 +718,28 @@ export function ReservationDialog({
     },
     [formState.castId, onSave, reservation, status]
   )
+
+  const handleStatusChange = useCallback(
+    (nextStatus: ReservationStatus | 'completed') => {
+      if (nextStatus === 'cancelled') {
+        setPendingStatusChange(nextStatus)
+        setCancelReason('customer')
+        setCancelReasonDialogOpen(true)
+        return
+      }
+      void performStatusUpdate(nextStatus)
+    },
+    [performStatusUpdate]
+  )
+
+  const handleConfirmCancellation = useCallback(async () => {
+    if (!pendingStatusChange) {
+      return
+    }
+    await performStatusUpdate(pendingStatusChange, { cancellationSource: cancelReason })
+    setCancelReasonDialogOpen(false)
+    setPendingStatusChange(null)
+  }, [cancelReason, pendingStatusChange, performStatusUpdate])
 
   useEffect(() => {
     if (casts && casts.length > 0) {
@@ -2633,6 +2670,46 @@ useEffect(() => {
         </div>
       </DialogContent>
       </Dialog>
+      <AlertDialog open={cancelReasonDialogOpen} onOpenChange={handleCancelReasonDialogToggle}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>キャンセル理由を選択</AlertDialogTitle>
+            <AlertDialogDescription>
+              電話・Webどちらの都合でキャンセルになったかを選択してください。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <RadioGroup
+            value={cancelReason}
+            onValueChange={(value) => setCancelReason((value as 'customer' | 'store') ?? 'customer')}
+            className="space-y-2"
+          >
+            <div className="flex items-center gap-3 rounded-md border p-3">
+              <RadioGroupItem value="customer" id="cancel-reason-customer" />
+              <Label htmlFor="cancel-reason-customer" className="space-y-1">
+                <div className="font-medium">顧客都合</div>
+                <p className="text-xs text-muted-foreground">お客様からのキャンセル連絡</p>
+              </Label>
+            </div>
+            <div className="flex items-center gap-3 rounded-md border p-3">
+              <RadioGroupItem value="store" id="cancel-reason-store" />
+              <Label htmlFor="cancel-reason-store" className="space-y-1">
+                <div className="font-medium">店舗都合</div>
+                <p className="text-xs text-muted-foreground">キャスト体調不良・遅延など店舗起因</p>
+              </Label>
+            </div>
+          </RadioGroup>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={statusUpdating}>戻る</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmCancellation}
+              disabled={statusUpdating || !pendingStatusChange}
+            >
+              {statusUpdating ? '処理中…' : '確定してキャンセル'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <CastTimelineModal
         open={isCastTimelineOpen}
         initialDate={timelineInitialDate}
