@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { addDays, format, startOfDay } from 'date-fns'
@@ -44,6 +44,14 @@ import type { PublicCastProfile } from '@/lib/store/public-casts'
 const JST_TIMEZONE = 'Asia/Tokyo'
 const STEP_MINUTES = 30
 const MAX_BOOKING_DAYS = 14
+
+function resolveInitialSlotDate(slot?: string | null): Date | null {
+  if (!slot) {
+    return null
+  }
+  const parsed = new Date(slot)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
 
 const BOOKING_STEPS = [
   {
@@ -153,6 +161,7 @@ export interface StoreBookingContentProps {
   courses: CourseSummary[]
   options: OptionSummary[]
   initialCastId?: string | null
+  initialSlotStart?: string | null
 }
 
 export function StoreBookingContent({
@@ -160,10 +169,13 @@ export function StoreBookingContent({
   courses,
   options,
   initialCastId,
+  initialSlotStart,
 }: StoreBookingContentProps) {
   const store = useStore()
   const router = useRouter()
   const { data: session, status } = useSession()
+  const initialSlotDate = resolveInitialSlotDate(initialSlotStart)
+  const initialSlotIso = initialSlotDate?.toISOString() ?? null
 
   const [selectedCastId, setSelectedCastId] = useState<string>(() => {
     if (initialCastId && casts.some((cast) => cast.id === initialCastId)) {
@@ -172,8 +184,10 @@ export function StoreBookingContent({
     return casts[0]?.id ?? ''
   })
   const [selectedCourseId, setSelectedCourseId] = useState<string>(() => getInitialCourseId(courses))
-  const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()))
-  const [selectedSlotStart, setSelectedSlotStart] = useState<string>('')
+  const [selectedDate, setSelectedDate] = useState<Date>(() =>
+    initialSlotDate ? startOfDay(initialSlotDate) : startOfDay(new Date())
+  )
+  const [selectedSlotStart, setSelectedSlotStart] = useState<string>(() => initialSlotIso ?? '')
   const [timeSlots, setTimeSlots] = useState<TimeSlotChoice[]>([])
   const [timeSlotsLoading, setTimeSlotsLoading] = useState(false)
   const [availabilityError, setAvailabilityError] = useState<string | null>(null)
@@ -185,6 +199,7 @@ export function StoreBookingContent({
   const [lastReservation, setLastReservation] = useState<{ id: string; start: string } | null>(null)
   const [activeStep, setActiveStep] = useState(1)
   const [castSearch, setCastSearch] = useState('')
+  const pendingInitialSlotRef = useRef<string | null>(initialSlotIso)
 
   const bookableCourses = useMemo(
     () => courses.filter((course) => course.enableWebBooking !== false),
@@ -283,6 +298,7 @@ export function StoreBookingContent({
       return
     }
 
+    const previousSelection = selectedSlotStart
     let cancelled = false
     const controller = new AbortController()
     const fetchAvailability = async () => {
@@ -310,6 +326,16 @@ export function StoreBookingContent({
         }
         const slots = buildTimeSlotChoices(Array.isArray(payload.availableSlots) ? payload.availableSlots : [], selectedCourse.duration)
         setTimeSlots(slots)
+        const slotStarts = new Set(slots.map((slot) => slot.start))
+        let nextSelection = ''
+        const pendingInitialSlot = pendingInitialSlotRef.current
+        if (pendingInitialSlot && slotStarts.has(pendingInitialSlot)) {
+          nextSelection = pendingInitialSlot
+          pendingInitialSlotRef.current = null
+        } else if (previousSelection && slotStarts.has(previousSelection)) {
+          nextSelection = previousSelection
+        }
+        setSelectedSlotStart(nextSelection)
         setAvailabilityError(slots.length === 0 ? '選択した条件では空きがありません。別の時間帯をご検討ください。' : null)
       } catch (error) {
         if (cancelled || controller.signal.aborted) {

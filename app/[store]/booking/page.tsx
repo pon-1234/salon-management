@@ -30,7 +30,7 @@ export default async function StoreBookingPage({
   searchParams,
 }: {
   params: Promise<{ store: string }>
-  searchParams: Promise<{ cast?: string | string[] }>
+  searchParams: Promise<{ cast?: string | string[]; slot?: string | string[] }>
 }) {
   const [{ store: storeSlug }, resolvedSearchParams] = await Promise.all([params, searchParams])
   const store = await fetchStoreBySlug(storeSlug)
@@ -70,6 +70,9 @@ export default async function StoreBookingPage({
     ? initialCastIdParam[0]
     : initialCastIdParam ?? null
 
+  const slotParam = resolvedSearchParams?.slot
+  const initialSlotStart = Array.isArray(slotParam) ? slotParam[0] : slotParam ?? null
+
   return (
     <>
       <StoreNavigation />
@@ -78,6 +81,7 @@ export default async function StoreBookingPage({
         courses={courses}
         options={options}
         initialCastId={initialCastId}
+        initialSlotStart={initialSlotStart}
       />
       <StoreFooter store={store} />
     </>

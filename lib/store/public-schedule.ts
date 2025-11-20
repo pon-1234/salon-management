@@ -3,6 +3,13 @@ import { format as formatDateFns, formatISO } from 'date-fns'
 import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz'
 import { db } from '@/lib/db'
 
+export interface PublicReservationBlock {
+  id: string
+  startTime: string
+  endTime: string
+  status: string
+}
+
 export interface PublicCastSchedule {
   id: string
   castId: string
@@ -10,6 +17,7 @@ export interface PublicCastSchedule {
   startTime: string
   endTime: string
   isAvailable: boolean
+  reservations: PublicReservationBlock[]
   cast: {
     id: string
     name: string
@@ -52,11 +60,16 @@ function normalizeCastImage(images: any, image: any) {
   return { primary, all: cleaned.length > 0 ? cleaned : [primary] }
 }
 
-function normalizeSchedule(entry: any): PublicCastSchedule {
+function normalizeSchedule(
+  entry: any,
+  reservationsByKey: Map<string, PublicReservationBlock[]>
+): PublicCastSchedule {
   const { primary, all } = normalizeCastImage(entry.cast?.images, entry.cast?.image)
   const dateLocal = utcToZonedTime(entry.date, DEFAULT_TIME_ZONE)
   const startLocal = utcToZonedTime(entry.startTime, DEFAULT_TIME_ZONE)
   const endLocal = utcToZonedTime(entry.endTime, DEFAULT_TIME_ZONE)
+  const dateKey = formatDateFns(dateLocal, 'yyyy-MM-dd')
+  const mapKey = `${entry.castId}_${dateKey}`
 
   return {
     id: entry.id,
@@ -65,6 +78,7 @@ function normalizeSchedule(entry: any): PublicCastSchedule {
     startTime: formatISO(startLocal),
     endTime: formatISO(endLocal),
     isAvailable: entry.isAvailable ?? true,
+    reservations: reservationsByKey.get(mapKey) ?? [],
     cast: {
       id: entry.cast?.id ?? entry.castId,
       name: entry.cast?.name ?? '匿名キャスト',
@@ -109,7 +123,49 @@ export async function getPublicStoreSchedule(
       ],
     })
 
-    const normalized = schedules.map(normalizeSchedule)
+    const reservations = await db.reservation.findMany({
+      where: {
+        storeId,
+        status: {
+          notIn: ['cancelled'],
+        },
+        startTime: {
+          gte: start,
+          lt: end,
+        },
+      },
+      select: {
+        id: true,
+        castId: true,
+        startTime: true,
+        endTime: true,
+        status: true,
+      },
+      orderBy: [{ startTime: 'asc' }],
+    })
+
+    const reservationMap = new Map<string, PublicReservationBlock[]>()
+    reservations.forEach((reservation) => {
+      if (!reservation.castId) {
+        return
+      }
+      const dateLocal = utcToZonedTime(reservation.startTime, DEFAULT_TIME_ZONE)
+      const dateKey = formatDateFns(dateLocal, 'yyyy-MM-dd')
+      const key = `${reservation.castId}_${dateKey}`
+      const block: PublicReservationBlock = {
+        id: reservation.id,
+        startTime: reservation.startTime.toISOString(),
+        endTime: reservation.endTime.toISOString(),
+        status: reservation.status,
+      }
+      if (!reservationMap.has(key)) {
+        reservationMap.set(key, [block])
+      } else {
+        reservationMap.get(key)!.push(block)
+      }
+    })
+
+    const normalized = schedules.map((entry) => normalizeSchedule(entry, reservationMap))
     const grouped = new Map<string, PublicScheduleDay>()
 
     normalized.forEach((entry) => {

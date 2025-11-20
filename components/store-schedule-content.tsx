@@ -1,15 +1,72 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { format, parseISO, isSameDay } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { Calendar, Clock, User, MapPin } from 'lucide-react'
 import { Store } from '@/lib/store/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import type { PublicScheduleDay } from '@/lib/store/public-schedule'
+import type { PublicScheduleDay, PublicCastSchedule } from '@/lib/store/public-schedule'
+
+const SLOT_MINUTES = 30
+const BOOKED_STATUSES = new Set(['pending', 'confirmed', 'completed', 'modifiable'])
+
+type TimelineSlot = {
+  id: string
+  start: Date
+  startIso: string
+  label: string
+  status: 'open' | 'booked'
+  isPast: boolean
+}
+
+function buildTimelineSlots(entry: PublicCastSchedule): TimelineSlot[] {
+  if (!entry.startTime || !entry.endTime) {
+    return []
+  }
+  const start = new Date(entry.startTime)
+  const end = new Date(entry.endTime)
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end) {
+    return []
+  }
+
+  const reservations = Array.isArray(entry.reservations) ? entry.reservations : []
+  const now = new Date()
+  const slots: TimelineSlot[] = []
+
+  for (let ts = start.getTime(); ts < end.getTime(); ts += SLOT_MINUTES * 60 * 1000) {
+    const slotStart = new Date(ts)
+    const slotEnd = new Date(Math.min(ts + SLOT_MINUTES * 60 * 1000, end.getTime()))
+    const hasReservation = reservations.some((reservation) => {
+      if (!BOOKED_STATUSES.has(reservation.status)) {
+        return false
+      }
+      const resStart = new Date(reservation.startTime)
+      const resEnd = new Date(reservation.endTime)
+      if (Number.isNaN(resStart.getTime()) || Number.isNaN(resEnd.getTime())) {
+        return false
+      }
+      return resStart < slotEnd && resEnd > slotStart
+    })
+
+    slots.push({
+      id: `${entry.id}-${slotStart.toISOString()}`,
+      start: slotStart,
+      startIso: slotStart.toISOString(),
+      label: format(slotStart, 'HH:mm'),
+      status: hasReservation ? 'booked' : 'open',
+      isPast: slotStart.getTime() <= now.getTime(),
+    })
+  }
+
+  return slots
+}
 
 interface StoreScheduleContentProps {
   store: Store
@@ -27,6 +84,8 @@ function formatTimeRange(start: string, end: string) {
 }
 
 export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleContentProps) {
+  const { data: session, status: sessionStatus } = useSession()
+  const router = useRouter()
   const sortedDays = useMemo(
     () =>
       [...scheduleDays].sort(
@@ -48,6 +107,22 @@ export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleConte
       }
     )
   }, [selectedDate, sortedDays])
+
+  const handleSlotClick = useCallback(
+    (castId: string, slotIso: string) => {
+      const encodedSlot = encodeURIComponent(slotIso)
+      const bookingPath = `/${store.slug}/booking?cast=${castId}&slot=${encodedSlot}`
+      if (!session?.user) {
+        const loginPath = `/${store.slug}/login?redirect=${encodeURIComponent(bookingPath)}`
+        router.push(loginPath)
+        return
+      }
+      router.push(bookingPath)
+    },
+    [router, session?.user, store.slug]
+  )
+
+  const isAuthLoading = sessionStatus === 'loading'
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -81,6 +156,24 @@ export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleConte
                 </Button>
               )
             })}
+          </div>
+        </div>
+        <div className="border-t bg-white">
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-6 px-4 py-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-emerald-400 bg-emerald-50 text-emerald-600 text-base font-semibold">
+                ○
+              </span>
+              予約可能
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-base font-semibold text-red-500">×</span>
+              予約済み
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-base text-muted-foreground">-</span>
+              終了済み
+            </div>
           </div>
         </div>
       </section>
@@ -165,6 +258,59 @@ export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleConte
                           予約する
                         </Link>
                       </Button>
+                    </div>
+                  </CardContent>
+                  <CardContent className="space-y-4 border-t pt-4">
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground">本日の空き状況</p>
+                      {(() => {
+                        const slots = buildTimelineSlots(entry)
+                        if (slots.length === 0) {
+                          return (
+                            <p className="mt-2 text-xs text-muted-foreground">
+                              時間枠の情報がありません。詳細はお問い合わせください。
+                            </p>
+                          )
+                        }
+                        return (
+                          <div className="mt-3 overflow-x-auto">
+                            <table className="w-full min-w-[520px] text-center text-xs">
+                              <thead>
+                                <tr>
+                                  {slots.map((slot) => (
+                                    <th key={`${slot.id}-label`} className="px-2 pb-2 text-[11px] font-medium text-muted-foreground">
+                                      {slot.label}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr>
+                                  {slots.map((slot) => (
+                                    <td key={slot.id} className="border px-2 py-3">
+                                      {slot.status === 'booked' ? (
+                                        <span className="text-sm font-semibold text-red-500">×</span>
+                                      ) : slot.isPast ? (
+                                        <span className="text-sm text-muted-foreground">-</span>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-emerald-400 text-base font-semibold text-emerald-600 transition-colors hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                          onClick={() => handleSlotClick(entry.castId, slot.startIso)}
+                                          disabled={isAuthLoading}
+                                          aria-label={`${entry.cast.name} ${slot.label}の予約を進める`}
+                                        >
+                                          ○
+                                        </button>
+                                      )}
+                                    </td>
+                                  ))}
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        )
+                      })()}
                     </div>
                   </CardContent>
                 </Card>
