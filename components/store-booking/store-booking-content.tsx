@@ -216,29 +216,36 @@ export function StoreBookingContent({
       return name.includes(query) || type.includes(query)
     })
   }, [castSearch, casts])
-  const selectedSlotLabel = selectedSlot
-    ? formatInTimeZone(new Date(selectedSlot.start), JST_TIMEZONE, 'M/d HH:mm', { locale: ja })
-    : '未選択'
-  const isStepEnabled = (stepId: number) => {
-    if (stepId === 1) return true
-    if (stepId === 2) return Boolean(selectedCast)
-    if (stepId === 3) return Boolean(selectedSlot)
-    if (stepId === 4) return Boolean(selectedCourse)
-    return false
-  }
-  const isStepComplete = (stepId: number) => {
-    if (stepId === 1) return Boolean(selectedCast)
-    if (stepId === 2) return Boolean(selectedSlot)
-    if (stepId === 3) return Boolean(selectedCourse)
-    if (stepId === 4) return Boolean(selectedCourse && selectedSlot)
-    return false
-  }
-  const stepNavigationItems = [
-    { id: 1, label: 'キャスト', caption: selectedCast?.name ?? '未選択' },
-    { id: 2, label: '日付・時間', caption: selectedSlotLabel },
-    { id: 3, label: 'メニュー', caption: selectedCourse ? selectedCourse.name : '未選択' },
-    { id: 4, label: '確認', caption: '内容を確認' },
-  ]
+const selectedSlotLabel = selectedSlot
+  ? formatInTimeZone(new Date(selectedSlot.start), JST_TIMEZONE, 'M/d HH:mm', { locale: ja })
+  : '未選択'
+const isStepEnabled = (stepId: number) => {
+  if (stepId === 1) return true
+  if (stepId === 2) return Boolean(selectedCast)
+  if (stepId === 3) return Boolean(selectedSlot)
+  if (stepId === 4) return Boolean(selectedCourse)
+  if (stepId === 5) return Boolean(selectedCourse)
+  return false
+}
+const isStepComplete = (stepId: number) => {
+  if (stepId === 1) return Boolean(selectedCast)
+  if (stepId === 2) return Boolean(selectedSlot)
+  if (stepId === 3) return Boolean(selectedCourse)
+  if (stepId === 4) return Boolean(selectedCourse)
+  if (stepId === 5) return Boolean(selectedCourse && selectedSlot)
+  return false
+}
+const stepNavigationItems = [
+  { id: 1, label: 'キャスト', caption: selectedCast?.name ?? '未選択' },
+  { id: 2, label: '日付・時間', caption: selectedSlotLabel },
+  { id: 3, label: 'コース', caption: selectedCourse ? selectedCourse.name : '未選択' },
+  {
+    id: 4,
+    label: 'オプション',
+    caption: selectedOptionIds.size > 0 ? `${selectedOptionIds.size}件選択` : '任意',
+  },
+  { id: 5, label: '確認', caption: '内容を確認' },
+]
   const visibleStepNavigationItems = hasPrefilledSlot
     ? stepNavigationItems.filter((step) => step.id >= 3)
     : stepNavigationItems
@@ -767,14 +774,13 @@ export function StoreBookingContent({
                   STEP 1 に戻る
                 </Button>
                 <Button onClick={() => setActiveStep(3)} disabled={!selectedSlot}>
-                  STEP 3 メニューを選ぶ
+                  STEP 3 コースを選ぶ
                 </Button>
               </CardFooter>
               </Card>
               )}
 
               {activeStep === 3 && (
-                <>
               <Card>
                 <CardHeader>
                   <CardTitle className="text-2xl">STEP 3. コースを選ぶ</CardTitle>
@@ -828,80 +834,89 @@ export function StoreBookingContent({
                     </div>
                   )}
                 </CardContent>
+                <CardFooter className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-between">
+                  <Button variant="outline" onClick={() => setActiveStep(2)}>
+                    STEP 2 に戻る
+                  </Button>
+                  <Button onClick={() => setActiveStep(4)} disabled={!selectedCourse}>
+                    STEP 4 オプションを選ぶ
+                  </Button>
+                </CardFooter>
               </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-2xl">お好みで追加オプション</CardTitle>
-                  <CardDescription>チェックしなくてもそのまま進めます。ご希望がある場合だけチェックしてください。</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {optionGroups.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      現在ご利用いただけるオプションはありません。
-                    </p>
-                  ) : (
-                    optionGroups.map((group) => (
-                      <div key={group.key} className="space-y-3 rounded-lg border p-4">
-                        <p className="text-sm font-semibold text-muted-foreground">{group.label}</p>
-                        <div className="space-y-2">
-                          {group.items.map((option) => {
-                            const checked = selectedOptionIds.has(option.id)
-                            return (
-                              <label
-                                key={option.id}
-                                className={cn(
-                                  'flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition hover:border-purple-400',
-                                  checked ? 'border-purple-500 bg-purple-50/60' : 'border-border bg-white'
-                                )}
-                              >
-                                <Checkbox
-                                  checked={checked}
-                                  onCheckedChange={(value) => toggleOption(option.id, value === true)}
-                                />
-                                <div className="flex-1">
-                                  <div className="flex items-center justify-between gap-2">
-                                    <div className="font-medium">{option.name}</div>
-                                    <div className="text-sm font-semibold text-purple-700">
-                                      {formatCurrency(option.price)}
-                                    </div>
-                                  </div>
-                                  {(option.description || option.note) && (
-                                    <p className="text-xs text-muted-foreground">
-                                      {option.description ?? option.note}
-                                    </p>
-                                  )}
-                                  {option.isPopular && (
-                                    <Badge variant="secondary" className="mt-2 text-xs text-purple-700">
-                                      人気
-                                    </Badge>
-                                  )}
-                                </div>
-                              </label>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </CardContent>
-              </Card>
-              <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-between">
-                <Button variant="outline" onClick={() => setActiveStep(2)}>
-                  STEP 2 に戻る
-                </Button>
-                <Button onClick={() => setActiveStep(4)} disabled={!selectedCourse}>
-                  STEP 4 お支払いへ進む
-                </Button>
-              </div>
-                </>
               )}
 
               {activeStep === 4 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-2xl">STEP 4. オプションを選ぶ</CardTitle>
+                    <CardDescription>チェックしなくてもそのまま進めます。ご希望がある場合だけチェックしてください。</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {optionGroups.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        現在ご利用いただけるオプションはありません。
+                      </p>
+                    ) : (
+                      optionGroups.map((group) => (
+                        <div key={group.key} className="space-y-3 rounded-lg border p-4">
+                          <p className="text-sm font-semibold text-muted-foreground">{group.label}</p>
+                          <div className="space-y-2">
+                            {group.items.map((option) => {
+                              const checked = selectedOptionIds.has(option.id)
+                              return (
+                                <label
+                                  key={option.id}
+                                  className={cn(
+                                    'flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition hover:border-purple-400',
+                                    checked ? 'border-purple-500 bg-purple-50/60' : 'border-border bg-white'
+                                  )}
+                                >
+                                  <Checkbox
+                                    checked={checked}
+                                    onCheckedChange={(value) => toggleOption(option.id, value === true)}
+                                  />
+                                  <div className="flex-1">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div className="font-medium">{option.name}</div>
+                                      <div className="text-sm font-semibold text-purple-700">
+                                        {formatCurrency(option.price)}
+                                      </div>
+                                    </div>
+                                    {(option.description || option.note) && (
+                                      <p className="text-xs text-muted-foreground">
+                                        {option.description ?? option.note}
+                                      </p>
+                                    )}
+                                    {option.isPopular && (
+                                      <Badge variant="secondary" className="mt-2 text-xs text-purple-700">
+                                        人気
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </label>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </CardContent>
+                  <CardFooter className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-between">
+                    <Button variant="outline" onClick={() => setActiveStep(3)}>
+                      STEP 3 に戻る
+                    </Button>
+                    <Button onClick={() => setActiveStep(5)}>
+                      STEP 5 確認へ進む
+                    </Button>
+                  </CardFooter>
+                </Card>
+              )}
+
+              {activeStep === 5 && (
                 <>
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-2xl">STEP 4. お支払い方法と備考</CardTitle>
+                      <CardTitle className="text-2xl">STEP 5. お支払い方法と備考</CardTitle>
                       <CardDescription>
                         お支払いは当日店舗で承ります。スタッフに伝えたいことがあれば備考欄へご記入ください。
                       </CardDescription>
@@ -935,8 +950,8 @@ export function StoreBookingContent({
                     </CardContent>
                   </Card>
                   <div className="flex justify-start">
-                    <Button variant="outline" onClick={() => setActiveStep(3)}>
-                      STEP 3 に戻る
+                    <Button variant="outline" onClick={() => setActiveStep(4)}>
+                      STEP 4 に戻る
                     </Button>
                   </div>
                 </>
