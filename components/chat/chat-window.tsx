@@ -98,7 +98,7 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
 
       const data = await response.json()
       const initialMessages = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []
-      const normalizedMessages = initialMessages.map((message) => ({
+      const normalizedMessages: Message[] = (initialMessages as Message[]).map((message) => ({
         ...message,
         attachments: Array.isArray(message.attachments) ? message.attachments : [],
       }))

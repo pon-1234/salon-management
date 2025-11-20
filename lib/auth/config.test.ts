@@ -283,6 +283,8 @@ describe('Auth Config', () => {
         memberType: 'regular',
 
         points: 0,
+        smsEnabled: true,
+        emailNotificationEnabled: true,
 
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -323,6 +325,8 @@ describe('Auth Config', () => {
         memberType: 'regular',
 
         points: 0,
+        smsEnabled: true,
+        emailNotificationEnabled: true,
 
         createdAt: new Date(),
         updatedAt: new Date(),

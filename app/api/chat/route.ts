@@ -14,6 +14,15 @@ import { castNotificationService } from '@/lib/notification/cast-service'
 import { normalizeChatAttachments } from '@/lib/chat/attachments'
 import type { ChatAttachment } from '@/lib/types/chat'
 
+type ApiChatMessage = Omit<Message, 'attachments'> & { attachments: ChatAttachment[] }
+
+function normalizeMessage(message: Message): ApiChatMessage {
+  return {
+    ...message,
+    attachments: normalizeChatAttachments(message.attachments as Prisma.JsonValue | null),
+  }
+}
+
 const attachmentSchema = z.object({
   type: z.literal('image'),
   url: z.string().url(),
@@ -66,12 +75,8 @@ export async function GET(request: NextRequest) {
         where: { customerId },
         orderBy: { timestamp: 'asc' },
       })
-      return SuccessResponses.ok(
-        messages.map((message) => ({
-          ...message,
-          attachments: normalizeChatAttachments(message.attachments as Prisma.JsonValue | null),
-        }))
-      )
+      const normalized: ApiChatMessage[] = messages.map((message) => normalizeMessage(message))
+      return SuccessResponses.ok(normalized)
     }
 
     if (castId) {
@@ -95,16 +100,13 @@ export async function GET(request: NextRequest) {
     const messagesByCustomer = messages.reduce(
       (acc, msg) => {
         if (msg.customerId) {
-          const normalized = {
-            ...msg,
-            attachments: normalizeChatAttachments(msg.attachments as Prisma.JsonValue | null),
-          }
+          const normalized = normalizeMessage(msg)
           acc[msg.customerId] = acc[msg.customerId] || []
           acc[msg.customerId].push(normalized)
         }
         return acc
       },
-      {} as Record<string, Message[]>
+      {} as Record<string, ApiChatMessage[]>
     )
 
     return SuccessResponses.ok(messagesByCustomer)

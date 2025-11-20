@@ -85,9 +85,9 @@ function anonymizeCustomerName(name?: string | null) {
 
 export async function GET(
   _request: Request,
-  context: { params: Promise<{ slug: string }> }
+  context: { params: { slug: string } }
 ) {
-  const { slug } = await context.params
+  const { slug } = context.params
   const normalizedSlug = slug?.toLowerCase()
 
   if (!normalizedSlug) {

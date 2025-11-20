@@ -23,6 +23,8 @@ const createMockCustomer = (overrides = {}) => ({
   birthDate: new Date('1990-01-01'),
   memberType: 'regular',
   points: 0,
+  smsEnabled: true,
+  emailNotificationEnabled: true,
   createdAt: new Date(),
   updatedAt: new Date(),
   resetToken: null,

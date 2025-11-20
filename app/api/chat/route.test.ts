@@ -78,6 +78,7 @@ describe('Chat API', () => {
           readStatus: '既読',
           isReservationInfo: false,
           reservationInfo: null,
+          attachments: null,
           createdAt: new Date('2024-01-01T10:00:00.000Z'),
           updatedAt: new Date('2024-01-01T10:00:00.000Z'),
         },
@@ -114,6 +115,7 @@ describe('Chat API', () => {
         readStatus: '未読',
         isReservationInfo: false,
         reservationInfo: null,
+        attachments: null,
         createdAt: new Date('2024-01-01T13:00:00.000Z'),
         updatedAt: new Date('2024-01-01T13:00:00.000Z'),
       }
@@ -172,6 +174,7 @@ describe('Chat API', () => {
           readStatus: '既読',
           isReservationInfo: false,
           reservationInfo: null,
+          attachments: null,
           createdAt: new Date('2024-01-01T10:00:00.000Z'),
           updatedAt: new Date('2024-01-01T10:00:00.000Z'),
         },
@@ -185,6 +188,7 @@ describe('Chat API', () => {
           readStatus: '未読',
           isReservationInfo: false,
           reservationInfo: null,
+          attachments: null,
           createdAt: new Date('2024-01-01T11:00:00.000Z'),
           updatedAt: new Date('2024-01-01T11:00:00.000Z'),
         },
@@ -237,6 +241,7 @@ describe('Chat API', () => {
         readStatus: '未読',
         isReservationInfo: false,
         reservationInfo: null,
+        attachments: null,
         createdAt: new Date('2024-01-01T12:00:00.000Z'),
         updatedAt: new Date('2024-01-01T12:00:00.000Z'),
       }
@@ -299,6 +304,7 @@ describe('Chat API', () => {
         ...newMessage,
         timestamp: new Date('2024-01-01T12:00:00.000Z'),
         readStatus: '未読',
+        attachments: null,
         createdAt: new Date('2024-01-01T12:00:00.000Z'),
         updatedAt: new Date('2024-01-01T12:00:00.000Z'),
       }
@@ -359,6 +365,7 @@ describe('Chat API', () => {
         readStatus: '既読',
         isReservationInfo: false,
         reservationInfo: null,
+        attachments: null,
         createdAt: new Date('2024-01-01T10:00:00.000Z'),
         updatedAt: new Date('2024-01-01T12:00:00.000Z'),
       }

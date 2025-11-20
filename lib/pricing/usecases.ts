@@ -163,6 +163,7 @@ export class PricingUseCases {
           storeShare: entry.storeShare,
           castShare: entry.castShare,
           isActive: oldCourse.isActive ?? true,
+          enableWebBooking: oldCourse.enableWebBooking ?? true,
         })
       }
     }

@@ -4,8 +4,8 @@ import { LoginForm } from '@/components/auth/login-form'
 import { StoreNavigation } from '@/components/store-navigation'
 import { StoreFooter } from '@/components/store-footer'
 
-export default async function LoginPage({ params }: { params: Promise<{ store: string }> }) {
-  const { store: storeSlug } = await params
+export default async function LoginPage({ params }: { params: { store: string } }) {
+  const { store: storeSlug } = params
   const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {

@@ -12,8 +12,8 @@ import { MyPageContent } from '@/components/mypage/mypage-content'
 import { StoreNavigation } from '@/components/store-navigation'
 import { StoreFooter } from '@/components/store-footer'
 
-export default async function MyPage({ params }: { params: Promise<{ store: string }> }) {
-  const { store: storeSlug } = await params
+export default async function MyPage({ params }: { params: { store: string } }) {
+  const { store: storeSlug } = params
   const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {

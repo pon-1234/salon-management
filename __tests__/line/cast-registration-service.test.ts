@@ -4,7 +4,6 @@ import {
   extractCastIdFromCommand,
   extractCastIdFromPostback,
 } from '@/lib/line/cast-registration-service'
-import type { CastRegistrationResult } from '@/lib/line/cast-registration-service'
 
 type CastRecord = {
   id: string
@@ -141,13 +140,16 @@ describe('LineCastRegistrationService', () => {
   })
 
   it('links cast when command is valid', async () => {
-    const result = (await service.handleEvent({
+    const result = await service.handleEvent({
       type: 'message',
       message: { type: 'text', text: 'reg cast-1' },
       source: { type: 'user', userId: 'U-new' },
-    })) as CastRegistrationResult
+    })
 
     expect(result.status).toBe('linked')
+    if (result.status !== 'linked') {
+      return
+    }
     expect(result.castId).toBe('cast-1')
     expect(messagingClient.messages).toHaveLength(1)
     expect(messagingClient.messages[0]).toEqual({
@@ -196,18 +198,23 @@ describe('LineCastRegistrationService', () => {
     })
 
     expect(outcome.status).toBe('ignored')
-    expect(outcome.reason).toBe('unrecognized_command')
+    if (outcome.status === 'ignored') {
+      expect(outcome.reason).toBe('unrecognized_command')
+    }
     expect(messagingClient.messages).toHaveLength(0)
   })
 
   it('links cast when postback event contains valid cast ID', async () => {
-    const result = (await service.handleEvent({
+    const result = await service.handleEvent({
       type: 'postback',
       postback: { data: 'action=register&castId=cast-1' },
       source: { type: 'user', userId: 'U-new' },
-    })) as CastRegistrationResult
+    })
 
     expect(result.status).toBe('linked')
+    if (result.status !== 'linked') {
+      return
+    }
     expect(result.castId).toBe('cast-1')
     expect(messagingClient.messages).toHaveLength(1)
     expect(messagingClient.messages[0]).toEqual({
@@ -235,7 +242,9 @@ describe('LineCastRegistrationService', () => {
     })
 
     expect(outcome.status).toBe('ignored')
-    expect(outcome.reason).toBe('unrecognized_command')
+    if (outcome.status === 'ignored') {
+      expect(outcome.reason).toBe('unrecognized_command')
+    }
     expect(messagingClient.messages).toHaveLength(0)
   })
 })

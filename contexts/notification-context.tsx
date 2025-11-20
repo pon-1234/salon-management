@@ -104,6 +104,12 @@ function deriveReservationsNotifications(
   const now = Date.now()
   const twentyFourHours = 24 * 60 * 60 * 1000
 
+  const toValidDate = (value: string | Date | undefined | null, fallback: Date = new Date()) => {
+    if (!value) return fallback
+    const parsed = value instanceof Date ? value : new Date(value)
+    return Number.isNaN(parsed.getTime()) ? fallback : parsed
+  }
+
   return reservations
     .filter((reservation) => {
       const marketingChannel = reservation.marketingChannel?.toLowerCase()
@@ -115,13 +121,13 @@ function deriveReservationsNotifications(
         return false
       }
 
-      const createdAt = reservation.createdAt instanceof Date ? reservation.createdAt : new Date()
+      const createdAt = toValidDate(reservation.createdAt)
       return now - createdAt.getTime() <= twentyFourHours
     })
     .map((reservation) => {
-      const startTime = reservation.startTime instanceof Date ? reservation.startTime : new Date(reservation.startTime)
-      const endTime = reservation.endTime instanceof Date ? reservation.endTime : new Date(reservation.endTime)
-      const createdAt = reservation.createdAt instanceof Date ? reservation.createdAt : new Date()
+      const startTime = toValidDate(reservation.startTime)
+      const endTime = toValidDate(reservation.endTime, startTime)
+      const createdAt = toValidDate(reservation.createdAt)
 
       const storeId = reservation.storeId ?? 'ikebukuro'
       const staffName = reservation.cast?.name ?? undefined

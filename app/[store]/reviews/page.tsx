@@ -3,8 +3,8 @@ import { fetchStoreBySlug } from '@/lib/store/public-api'
 import { ReviewsContent } from '@/components/reviews/reviews-content'
 import { getStoreReviews, getReviewStatsForStore } from '@/lib/reviews/service'
 
-export default async function ReviewsPage({ params }: { params: Promise<{ store: string }> }) {
-  const { store: storeSlug } = await params
+export default async function ReviewsPage({ params }: { params: { store: string } }) {
+  const { store: storeSlug } = params
   const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {

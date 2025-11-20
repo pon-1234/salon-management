@@ -10,9 +10,7 @@ vi.mock('next/navigation', () => ({
 describe('Cast Navigation', () => {
   describe('Legacy cast detail page redirect', () => {
     it('should redirect from /admin/cast/[id] to /admin/cast/manage/[id]', async () => {
-      const params = Promise.resolve({ id: 'test-cast-id' })
-
-      await CastDetailRedirect({ params })
+      await CastDetailRedirect({ params: { id: 'test-cast-id' } })
 
       expect(redirect).toHaveBeenCalledWith('/admin/cast/manage/test-cast-id')
     })
@@ -22,9 +20,7 @@ describe('Cast Navigation', () => {
 
       for (const testCase of testCases) {
         vi.clearAllMocks()
-        const params = Promise.resolve(testCase)
-
-        await CastDetailRedirect({ params })
+        await CastDetailRedirect({ params: testCase })
 
         expect(redirect).toHaveBeenCalledWith(`/admin/cast/manage/${testCase.id}`)
       }

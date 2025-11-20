@@ -8,9 +8,9 @@ import { getPublicCastDetail } from '@/lib/store/public-casts'
 export default async function CastDetailPage({
   params,
 }: {
-  params: Promise<{ store: string; id: string }>
+  params: { store: string; id: string }
 }) {
-  const { store: storeSlug, id } = await params
+  const { store: storeSlug, id } = params
   const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {

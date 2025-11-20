@@ -4,8 +4,8 @@ import { RegisterForm } from '@/components/auth/register-form'
 import { StoreNavigation } from '@/components/store-navigation'
 import { StoreFooter } from '@/components/store-footer'
 
-export default async function RegisterPage({ params }: { params: Promise<{ store: string }> }) {
-  const { store: storeSlug } = await params
+export default async function RegisterPage({ params }: { params: { store: string } }) {
+  const { store: storeSlug } = params
   const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {

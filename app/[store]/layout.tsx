@@ -7,9 +7,9 @@ export default async function StoreLayout({
   params,
 }: {
   children: React.ReactNode
-  params: Promise<{ store: string }>
+  params: { store: string }
 }) {
-  const { store: storeSlug } = await params
+  const { store: storeSlug } = params
   const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {

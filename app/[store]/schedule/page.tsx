@@ -5,8 +5,8 @@ import { StoreFooter } from '@/components/store-footer'
 import { StoreScheduleContent } from '@/components/store-schedule-content'
 import { getPublicStoreSchedule } from '@/lib/store/public-schedule'
 
-export default async function SchedulePage({ params }: { params: Promise<{ store: string }> }) {
-  const { store: storeSlug } = await params
+export default async function SchedulePage({ params }: { params: { store: string } }) {
+  const { store: storeSlug } = params
   const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {

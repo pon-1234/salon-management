@@ -25,8 +25,8 @@ function pickHighlight(duration: number, index: number) {
   return highlight?.label ?? null
 }
 
-export default async function PricingPage({ params }: { params: Promise<{ store: string }> }) {
-  const { store: storeSlug } = await params
+export default async function PricingPage({ params }: { params: { store: string } }) {
+  const { store: storeSlug } = params
   const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {

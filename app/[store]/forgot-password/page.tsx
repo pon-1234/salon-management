@@ -7,9 +7,9 @@ import { StoreFooter } from '@/components/store-footer'
 export default async function ForgotPasswordPage({
   params,
 }: {
-  params: Promise<{ store: string }>
+  params: { store: string }
 }) {
-  const { store: storeSlug } = await params
+  const { store: storeSlug } = params
   const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {

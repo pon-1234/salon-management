@@ -34,8 +34,8 @@ function buildMeasurementLabel(cast: {
   return parts.join(' ')
 }
 
-export default async function RankingPage({ params }: { params: Promise<{ store: string }> }) {
-  const { store: storeSlug } = await params
+export default async function RankingPage({ params }: { params: { store: string } }) {
+  const { store: storeSlug } = params
   const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {

@@ -31,10 +31,10 @@ import { WorkPerformanceTab } from '@/components/cast/work-performance-tab'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useStore } from '@/contexts/store-context'
 
-export default function CastManagePage({ params }: { params: Promise<{ id: string }> }) {
+export default function CastManagePage({ params }: { params: { id: string } }) {
   const { currentStore } = useStore()
   const [cast, setCast] = useState<Cast | null>(null)
-  const [id, setId] = useState<string>('')
+  const [id, setId] = useState<string>(params.id ?? '')
   const [loading, setLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const router = useRouter()
@@ -45,10 +45,8 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
   const isNewCast = id === 'new'
 
   useEffect(() => {
-    params.then(({ id: paramId }) => {
-      setId(paramId)
-    })
-  }, [params])
+    setId(params.id ?? '')
+  }, [params.id])
 
   useEffect(() => {
     if (!id) return

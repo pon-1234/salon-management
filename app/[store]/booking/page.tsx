@@ -29,10 +29,11 @@ export default async function StoreBookingPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ store: string }>
-  searchParams: Promise<{ cast?: string | string[]; slot?: string | string[] }>
+  params: { store: string }
+  searchParams?: { cast?: string | string[]; slot?: string | string[] }
 }) {
-  const [{ store: storeSlug }, resolvedSearchParams] = await Promise.all([params, searchParams])
+  const { store: storeSlug } = params
+  const resolvedSearchParams = searchParams ?? {}
   const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {
