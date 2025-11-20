@@ -65,6 +65,10 @@
 
 - `/admin/cast/[id]` → `/admin/cast/manage/[id]` - 旧URLからのリダイレクト
 
+## API / Webhook
+
+- `POST /api/line/webhook` - LINE公式アカウントのWebhook受信。`reg <キャストID>` コマンドでキャストのLINEユーザーIDを自動登録し、Followイベントでは案内メッセージを返す。
+
 ## 今後の検討事項
 
 1. `/cast/[id]`の実装または削除の判断

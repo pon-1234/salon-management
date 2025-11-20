@@ -361,6 +361,29 @@ Claudeがタスクを完了したと見なすためには、以下の条件を�
 4.  **Linter/Formatterのパフォーマンス:** プロジェクト規模が拡大した場合、`lint-staged`のようなツールを導入し、それをHooksから呼び出すことで、差分ファイルのみを対象とし、パフォーマンスを維持する。
 5.  **カバレッジ例外管理:** テストが困難なコードについては、`/** @no-test-required reason: ... */` アノテーションを付与する。これをカバレッジ計測から除外するスクリプトをCIに組み込むことで、原則100%カバレッジを維持しつつ、例外を許容する。
 
+### 9.6. LINEユーザーID登録フロー（Webhook）
+
+LINE公式アカウントの管理画面だけでは U〜 形式のユーザーIDを安定して取得できないため、Messaging APIのWebhookによる自動登録方式に移行した。
+
+1. **環境変数**
+   - `LINE_MESSAGING_CHANNEL_ACCESS_TOKEN`: Messaging APIチャネルのアクセストークン
+   - `LINE_MESSAGING_CHANNEL_SECRET`: Webhookシグネチャ検証用のチャネルシークレット（新規追加）
+   - `LINE_MESSAGING_ENABLED`: `"true"` を明示設定すると送信機能を確実に有効化
+   - `LINE_MESSAGING_DEFAULT_USER_ID`: フォールバック宛先（任意）
+
+2. **LINE Developers側の設定**
+   - Webhook URL: `https://{アプリドメイン}/api/line/webhook`
+   - Webhook利用を「ON」にし、チャネルアクセストークンを発行
+
+3. **キャストへの案内**
+   - 公式アカウントを友だち追加後、`reg <キャストID>` を送信してもらう（例: `reg cmgufq9rz000dhh6ynwqtybix`）
+   - キャストIDは管理画面URL `/admin/cast/manage/[id]` の `[id]` と一致
+
+4. **アプリの挙動**
+   - `POST /api/line/webhook` は `reg <ID>` コマンドを受け取ると、該当キャストの `lineUserId` を自動更新し、結果をLINEで返信
+   - Followイベントではコマンドの送信方法を案内
+   - 既に別キャストへ紐付いているLINEアカウントは登録をブロックし、管理者への連絡を促す
+
 ---
 
 ## 10. 今後の課題・改善点
