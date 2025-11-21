@@ -570,7 +570,22 @@ export default function CustomerProfile() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">顧客情報</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {customer.name} <span className="text-base font-medium text-muted-foreground">様</span>
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            会員ID: {customer.id}{' '}
+            {customer.phone ? (
+              <span className="ml-2">
+                TEL: <span className="font-semibold">{customer.phone}</span>
+              </span>
+            ) : null}
+            {customer.email ? (
+              <span className="ml-2">
+                MAIL: <span className="font-semibold">{customer.email}</span>
+              </span>
+            ) : null}
+          </p>
           <div className="mt-3 flex items-center gap-3">
             <Badge variant="secondary" className="bg-blue-100 text-blue-700">
               <Crown className="mr-1 h-4 w-4" />
