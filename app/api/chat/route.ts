@@ -4,7 +4,6 @@
  * @known_issues None
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 import { db as prisma } from '@/lib/db'
 import { requireAdmin } from '@/lib/auth/utils'
 import { handleApiError, ErrorResponses } from '@/lib/api/errors'
@@ -13,6 +12,7 @@ import { Message, Prisma } from '@prisma/client'
 import { castNotificationService } from '@/lib/notification/cast-service'
 import { normalizeChatAttachments } from '@/lib/chat/attachments'
 import type { ChatAttachment } from '@/lib/types/chat'
+import { chatMessageSchema } from '@/lib/chat/schema'
 
 type ApiChatMessage = Omit<Message, 'attachments'> & { attachments: ChatAttachment[] }
 
@@ -22,43 +22,6 @@ function normalizeMessage(message: Message): ApiChatMessage {
     attachments: normalizeChatAttachments(message.attachments as Prisma.JsonValue | null),
   }
 }
-
-const attachmentSchema = z.object({
-  type: z.literal('image'),
-  url: z.string().url(),
-  name: z.string().optional(),
-  size: z.number().int().min(0).optional(),
-  contentType: z.string().optional(),
-})
-
-// Message validation schema
-const messageSchema = z
-  .object({
-    customerId: z.string().min(1).optional(),
-    castId: z.string().min(1).optional(),
-    sender: z.enum(['customer', 'staff', 'cast']),
-    content: z.string().optional(),
-    attachments: z.array(attachmentSchema).max(5).optional(),
-    isReservationInfo: z.boolean().optional(),
-    reservationInfo: z
-      .object({
-        date: z.string(),
-        time: z.string(),
-        confirmedDate: z.string(),
-      })
-      .optional(),
-  })
-  .refine((data) => data.customerId || data.castId, {
-    message: 'customerId または castId のいずれかを指定してください',
-  })
-  .refine(
-    (data) => {
-      const contentLength = (data.content ?? '').trim().length
-      const attachmentCount = data.attachments?.length ?? 0
-      return contentLength > 0 || attachmentCount > 0
-    },
-    { message: 'メッセージまたは画像を入力してください' }
-  )
 
 // GET /api/chat - Get messages for a customer
 export async function GET(request: NextRequest) {
@@ -132,7 +95,7 @@ export async function POST(request: NextRequest) {
       attachments,
       isReservationInfo,
       reservationInfo,
-    } = messageSchema.parse(body)
+    } = chatMessageSchema.parse(body)
 
     const trimmedContent = (content ?? '').trim()
 

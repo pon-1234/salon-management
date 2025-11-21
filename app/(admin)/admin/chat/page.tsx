@@ -9,11 +9,13 @@ import { CastHeader } from '@/components/chat/cast-header'
 import { Customer, CastChatEntry } from '@/lib/types/chat'
 import { Button } from '@/components/ui/button'
 import { useSearchParams } from 'next/navigation'
+import { ChatBroadcastDialog } from '@/components/chat/chat-broadcast-dialog'
 
 export default function ChatPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [selectedCast, setSelectedCast] = useState<CastChatEntry | null>(null)
   const [activePane, setActivePane] = useState<'customer' | 'cast'>('customer')
+  const [broadcastOpen, setBroadcastOpen] = useState(false)
   const searchParams = useSearchParams()
   const initialCastId = searchParams.get('castId')
 
@@ -68,8 +70,9 @@ export default function ChatPage() {
   }, [initialCastId])
 
   return (
+    <>
     <div className="flex h-full flex-col">
-      <div className="flex gap-2 border-b bg-white px-4 py-2">
+      <div className="flex flex-wrap gap-2 border-b bg-white px-4 py-2">
         <Button
           variant={activePane === 'customer' ? 'default' : 'ghost'}
           size="sm"
@@ -83,6 +86,10 @@ export default function ChatPage() {
           onClick={() => setActivePane('cast')}
         >
           キャストチャット
+        </Button>
+        <div className="flex-1" />
+        <Button variant="outline" size="sm" onClick={() => setBroadcastOpen(true)}>
+          一括送信
         </Button>
       </div>
 
@@ -139,5 +146,7 @@ export default function ChatPage() {
         </div>
       </div>
     </div>
+    <ChatBroadcastDialog open={broadcastOpen} onOpenChange={setBroadcastOpen} />
+    </>
   )
 }
