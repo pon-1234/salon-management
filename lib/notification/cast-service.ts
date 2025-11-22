@@ -139,7 +139,15 @@ export class CastNotificationService {
     }
 
     const siteUrl = env.siteUrl?.trim()
-    if (siteUrl) {
+    const castReservationUrl =
+      siteUrl && reservation.id
+        ? `${siteUrl.replace(/\/$/, '')}/cast/reservations?highlight=${reservation.id}`
+        : null
+
+    if (castReservationUrl) {
+      lines.push('')
+      lines.push(`予約詳細はこちら: ${castReservationUrl}`)
+    } else if (siteUrl) {
       lines.push('')
       lines.push(`管理画面で詳細を確認: ${siteUrl}`)
     } else {
