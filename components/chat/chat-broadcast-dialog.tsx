@@ -74,6 +74,7 @@ export function ChatBroadcastDialog({ open, onOpenChange }: ChatBroadcastDialogP
       const response = await fetch('/api/chat/broadcast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           target,
           content: message,
