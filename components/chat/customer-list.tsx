@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Search, Send, Crown } from 'lucide-react'
+import { Search, Crown } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Customer } from '@/lib/types/chat'
 import { toast } from '@/hooks/use-toast'
@@ -104,17 +103,6 @@ export function CustomerList({ selectedCustomerId, onSelectCustomer }: CustomerL
           />
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
         </div>
-      </div>
-
-      {/* Bulk Send Button */}
-      <div className="border-b bg-white/60 px-4 py-3">
-        <Button
-          variant="ghost"
-          className="w-full justify-start text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
-        >
-          <Send className="mr-2 h-4 w-4" />
-          一括送信
-        </Button>
       </div>
 
       {/* Customer List */}

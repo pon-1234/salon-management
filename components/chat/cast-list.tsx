@@ -2,11 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Search, Send } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import type { CastChatEntry } from '@/lib/types/chat'
 
@@ -89,16 +88,6 @@ export function CastList({ selectedCastId, onSelectCast }: CastListProps) {
           />
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
         </div>
-      </div>
-
-      <div className="border-b bg-white/60 px-4 py-3">
-        <Button
-          variant="ghost"
-          className="w-full justify-start text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
-        >
-          <Send className="mr-2 h-4 w-4" />
-          一括送信
-        </Button>
       </div>
 
       <ScrollArea className="flex-1">
