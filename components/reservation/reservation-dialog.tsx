@@ -1102,15 +1102,40 @@ export function ReservationDialog({
     if (reservation.designation) {
       lines.push(`指名: ${reservation.designation}`)
     }
+    if (reservation.areaName) {
+      lines.push(`エリア: ${reservation.areaName}`)
+    }
+    if (reservation.stationName) {
+      lines.push(`目安駅: ${reservation.stationName}`)
+    }
+    if (reservation.location) {
+      lines.push(`場所: ${reservation.location}`)
+    }
     if (reservation.locationMemo) {
       lines.push(`現地メモ: ${reservation.locationMemo}`)
+    }
+    if (reservation.options) {
+      const enabledOptions = Object.entries(reservation.options)
+        .filter(([, enabled]) => enabled)
+        .map(([name]) => name)
+      if (enabledOptions.length > 0) {
+        lines.push(`オプション: ${enabledOptions.join(' / ')}`)
+      }
     }
     if (reservation.notes) {
       lines.push(`店舗メモ: ${reservation.notes}`)
     }
 
+    const portalLink =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}/cast/reservations?highlight=${reservation.id}`
+        : null
+
     lines.push('')
     lines.push('ご対応よろしくお願いいたします。')
+    if (portalLink) {
+      lines.push(`詳細はこちら: ${portalLink}`)
+    }
 
     return lines.join('\n')
   }, [reservation, selectedCast])
