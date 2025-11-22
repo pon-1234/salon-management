@@ -851,12 +851,6 @@ export async function POST(request: NextRequest) {
         logger.error({ err: notificationError }, 'Failed to send notification')
       }
 
-      try {
-        await castNotificationService.sendReservationCreated(newReservation)
-      } catch {
-        // エラーログは CastNotificationService 内で出力済み
-      }
-
       return NextResponse.json(newReservation, { status: 201 })
     } catch (error: any) {
       if (error.message === 'Time slot is not available') {

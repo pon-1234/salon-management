@@ -84,26 +84,17 @@ vi.mock('@/lib/notification/service', () => {
   }
 })
 
-vi.mock('@/lib/notification/cast-service', () => ({
-  castNotificationService: {
-    sendReservationCreated: vi.fn(),
-  },
-}))
-
 let POST: typeof import('./route')['POST']
 let db: typeof import('@/lib/db')['db']
-let castNotificationService: typeof import('@/lib/notification/cast-service')['castNotificationService']
 
 beforeAll(async () => {
   ;({ db } = await import('@/lib/db'))
-  ;({ castNotificationService } = await import('@/lib/notification/cast-service'))
   ;({ POST } = await import('./route'))
 })
 
 describe('Reservation API - Notification Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(castNotificationService.sendReservationCreated).mockResolvedValue(undefined)
     vi.mocked(db.store.findUnique).mockResolvedValue({ id: 'store-1' } as any)
   })
 
@@ -228,7 +219,6 @@ describe('Reservation API - Notification Integration', () => {
 
     // Verify notification was sent
     expect(mockSendReservationConfirmation).toHaveBeenCalledWith(mockReservation)
-    expect(castNotificationService.sendReservationCreated).toHaveBeenCalledWith(mockReservation)
   })
 
   it('should not fail reservation creation if notification fails', async () => {
@@ -275,9 +265,6 @@ describe('Reservation API - Notification Integration', () => {
     const notificationModule = (await import('@/lib/notification/service')) as any
     const mockSendReservationConfirmation = notificationModule.mockSendReservationConfirmation
     mockSendReservationConfirmation.mockRejectedValueOnce(new Error('Notification failed'))
-    vi.mocked(castNotificationService.sendReservationCreated).mockRejectedValueOnce(
-      new Error('LINE notification failed')
-    )
 
     const reservationData = {
       customerId: 'customer1',
@@ -306,6 +293,5 @@ describe('Reservation API - Notification Integration', () => {
     expect(response.status).toBe(201)
     expect(data.id).toBe('reservation1')
     expect(mockSendReservationConfirmation).toHaveBeenCalled()
-    expect(castNotificationService.sendReservationCreated).toHaveBeenCalledWith(mockReservation)
   })
 })
