@@ -7,7 +7,13 @@ html {
 }
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), 'Noto Sans JP', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  letter-spacing: 0.01em;
+}
+
+.font-display {
+  font-family: var(--font-display), 'Times New Roman', serif;
+  letter-spacing: 0.04em;
 }
 
 @layer utilities {

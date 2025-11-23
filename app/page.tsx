@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Calendar, Clock, MapPin, Phone, Star, Users } from 'lucide-react'
 import { AgeVerification } from '@/components/age-verification'
+
+const navigation = [
+  { label: 'GOLD ESTHE GROUP 総合TOP', href: '/' },
+  { label: '金の玉クラブ 池袋店', href: '/ikebukuro' },
+  { label: '【女性求人】金の玉クラブ 池袋店', href: '/ikebukuro/recruitment' },
+]
 
 export default function HomePage() {
   const [isVerified, setIsVerified] = useState(false)
@@ -37,147 +40,73 @@ export default function HomePage() {
   }
 
   return (
-    <div className="space-y-12">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-r from-purple-600 to-pink-600 text-white">
-        <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="mb-6 text-4xl font-bold md:text-6xl">最高のサロン体験を</h1>
-            <p className="mb-8 text-xl text-purple-100 md:text-2xl">
-              プロフェッショナルなキャストと上質な空間でお待ちしています
+    <div className="min-h-screen bg-gradient-to-b from-[#0f0b08] via-[#0c0a08] to-[#080604] text-[#f6ead3]">
+      <div className="mx-auto flex min-h-screen max-w-4xl flex-col px-6 py-10 sm:px-8 lg:px-10">
+        <header className="flex items-center justify-between border-b border-white/10 pb-6">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 shadow-inner shadow-amber-500/10 ring-1 ring-amber-200/60">
+              <span className="font-display text-lg uppercase tracking-[0.28em] text-amber-200">
+                G
+              </span>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs uppercase tracking-[0.4em] text-amber-200">Gold Esthe Group</p>
+              <p className="text-sm text-white/60">GOLD ESTHE GROUP ロゴ</p>
+            </div>
+          </div>
+          <span className="rounded-full border border-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.25em] text-amber-100">
+            Adult Only
+          </span>
+        </header>
+
+        <main className="flex flex-1 flex-col gap-10 py-10">
+          <section className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg shadow-amber-500/5 backdrop-blur">
+            <p className="text-xs uppercase tracking-[0.3em] text-amber-200">Notice</p>
+            <p className="mt-3 text-lg leading-relaxed text-white/80">
+              当サイトは、１８歳未満および高校生の
+              <br className="hidden sm:block" />
+              ご利用をお断り致します。
             </p>
-            <div className="flex justify-center gap-4">
-              <Button size="lg" variant="secondary" asChild>
-                <Link href="/ikebukuro">池袋店を見る</Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild>
-                <Link href="/shinjuku">新宿店を見る</Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild>
-                <Link href="/shibuya">渋谷店を見る</Link>
-              </Button>
+          </section>
+
+          <section className="space-y-6">
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-[0.3em] text-amber-200">Kintama Club</p>
+              <h1 className="font-display text-4xl tracking-tight text-amber-100 sm:text-5xl">
+                金の玉クラブ
+              </h1>
+              <p className="text-lg text-white/70">池袋本店</p>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Features Section */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <h2 className="mb-12 text-center text-3xl font-bold">サービスの特徴</h2>
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <Calendar className="mb-4 h-12 w-12 text-purple-600" />
-              <CardTitle>簡単予約</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription>
-                24時間いつでもオンラインで予約可能。お好きな時間とキャストを選択できます。
-              </CardDescription>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <Users className="mb-4 h-12 w-12 text-purple-600" />
-              <CardTitle>プロのキャスト</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription>
-                経験豊富なプロフェッショナルが、あなたのニーズに合わせた最高のサービスを提供します。
-              </CardDescription>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <Star className="mb-4 h-12 w-12 text-purple-600" />
-              <CardTitle>高評価</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription>
-                多くのお客様から高い評価をいただいています。安心してご利用ください。
-              </CardDescription>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
+            <div className="space-y-4 text-base leading-relaxed text-white/80">
+              <p>
+                金の玉クラブは厳選した美女による、エッチで密着度の高い性感睾丸マッサージの専門店です。
+              </p>
+              <p>
+                エッチなマッサージが大好きな美女が足のつま先から頭のてっぺんまで、気持ちが良すぎておかしくなるほどの密着プレイであなたを楽しませます。あなたはただ寝ているだけで、極上の快楽を感じることができます。そして、ジラしにジラされてパンパンになった睾丸から精子が飛び出す瞬間は、言葉では言い表せないほどの快感で、まさに極上射精。
+              </p>
+              <p>いやらしい美女の密着マッサージで癒やしのひと時をお楽しみください。</p>
+            </div>
+          </section>
 
-      {/* Popular Casts Section */}
-      <section className="bg-gray-100 py-12">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <h2 className="mb-12 text-center text-3xl font-bold">人気のキャスト</h2>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Card key={i} className="overflow-hidden transition-shadow hover:shadow-lg">
-                <div className="aspect-square bg-gradient-to-br from-purple-400 to-pink-400" />
-                <CardHeader>
-                  <CardTitle>キャスト {i}</CardTitle>
-                  <CardDescription>
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span>4.8</span>
-                      <span className="text-gray-500">(120)</span>
-                    </div>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button variant="outline" className="w-full" asChild>
-                    <Link href={`/ikebukuro/cast/${i}`}>詳細を見る</Link>
-                  </Button>
-                </CardContent>
-              </Card>
+          <nav className="grid gap-3 sm:grid-cols-3">
+            {navigation.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="group flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm tracking-wide text-amber-100 transition hover:border-amber-200/60 hover:bg-white/10"
+              >
+                <span className="leading-tight">{item.label}</span>
+                <span className="text-base text-white/50 transition group-hover:text-amber-200">→</span>
+              </Link>
             ))}
-          </div>
-          <div className="mt-8 text-center">
-            <Button variant="outline" asChild>
-              <Link href="/ikebukuro/cast">すべてのキャストを見る</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
+          </nav>
+        </main>
 
-      {/* Access Section */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <h2 className="mb-12 text-center text-3xl font-bold">アクセス</h2>
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-          <div className="space-y-6">
-            <div className="flex items-start gap-4">
-              <MapPin className="mt-1 h-6 w-6 text-purple-600" />
-              <div>
-                <h3 className="mb-1 font-semibold">住所</h3>
-                <p className="text-gray-600">
-                  〒150-0001
-                  <br />
-                  東京都渋谷区神宮前1-2-3
-                  <br />
-                  サロンビル 5F
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-4">
-              <Clock className="mt-1 h-6 w-6 text-purple-600" />
-              <div>
-                <h3 className="mb-1 font-semibold">営業時間</h3>
-                <p className="text-gray-600">
-                  月〜金: 10:00 - 22:00
-                  <br />
-                  土日祝: 9:00 - 21:00
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-4">
-              <Phone className="mt-1 h-6 w-6 text-purple-600" />
-              <div>
-                <h3 className="mb-1 font-semibold">電話番号</h3>
-                <p className="text-gray-600">03-1234-5678</p>
-              </div>
-            </div>
-          </div>
-          <div className="h-96 rounded-lg bg-gray-200">
-            {/* Map placeholder */}
-            <div className="flex h-full items-center justify-center text-gray-500">地図</div>
-          </div>
-        </div>
-      </section>
+        <footer className="mt-auto border-t border-white/10 pt-6 text-center text-xs text-white/50">
+          Copyright (C)GOLD ESTHE GROUP All Contents Reserved
+        </footer>
+      </div>
     </div>
   )
 }
