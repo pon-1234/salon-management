@@ -435,7 +435,11 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
                 <CardContent>
                   <div className="py-12 text-center">
                     <p className="mb-4 text-gray-500">まだ口コミがありません</p>
-                    <Button variant="outline">口コミを投稿する</Button>
+                    <Button variant="outline" asChild>
+                      <Link href={`/${store.slug}/reviews?castId=${cast.id}`}>
+                        口コミを見る・投稿する
+                      </Link>
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

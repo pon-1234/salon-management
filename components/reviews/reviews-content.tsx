@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { Store } from '@/lib/store/types'
 import type { Review, ReviewStats as ReviewStatsType } from '@/lib/reviews/types'
 import { calculateReviewStats } from '@/lib/reviews/utils'
@@ -18,9 +19,10 @@ interface ReviewsContentProps {
   store: Store
   initialReviews: Review[]
   initialStats: ReviewStatsType
+  castFilter?: { id: string; name: string }
 }
 
-export function ReviewsContent({ store, initialReviews, initialStats }: ReviewsContentProps) {
+export function ReviewsContent({ store, initialReviews, initialStats, castFilter }: ReviewsContentProps) {
   const [reviews, setReviews] = useState<Review[]>(initialReviews)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedRating, setSelectedRating] = useState<number | null>(null)
@@ -97,6 +99,22 @@ export function ReviewsContent({ store, initialReviews, initialStats }: ReviewsC
             <p className="text-xl opacity-90">お客様の生の声をお届けします</p>
           </div>
         </section>
+
+        {castFilter && (
+          <div className="mx-auto max-w-7xl px-4 py-6">
+            <div className="flex flex-col gap-3 rounded-lg border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-900 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-base font-semibold">
+                  キャスト指定: {castFilter.name || '指定キャスト'}
+                </p>
+                <p className="text-xs text-purple-800/80">このキャストの口コミのみ表示しています。</p>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/${store.slug}/reviews`}>フィルタを解除</Link>
+              </Button>
+            </div>
+          </div>
+        )}
 
         <div className="mx-auto max-w-7xl px-4 py-8">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
