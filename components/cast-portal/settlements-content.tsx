@@ -83,7 +83,7 @@ export function CastSettlementsContent({ initialData }: { initialData: CastSettl
         <CardHeader>
           <CardTitle className="text-lg">日別の清算履歴</CardTitle>
           <p className="text-sm text-muted-foreground">
-            日付ごとの売上合計と件数を確認し、行を開いて詳細な予約内訳を参照できます。（ポイントは件数ベースでカウント）
+            日付ごとの売上合計と件数を確認し、行を開いて詳細な予約内訳を参照できます。
           </p>
         </CardHeader>
         <CardContent>
@@ -91,11 +91,10 @@ export function CastSettlementsContent({ initialData }: { initialData: CastSettl
             <p className="py-8 text-center text-sm text-muted-foreground">今月の清算データはまだありません。</p>
           ) : (
             <div className="divide-y rounded-md border">
-              <div className="grid grid-cols-[1.5fr_repeat(3,_1fr)_auto] gap-3 bg-muted/40 px-4 py-2 text-xs font-medium text-muted-foreground">
+              <div className="grid grid-cols-[1.5fr_repeat(2,_1fr)_auto] gap-3 bg-muted/40 px-4 py-2 text-xs font-medium text-muted-foreground">
                 <span>日付</span>
                 <span className="text-right">売上合計</span>
                 <span className="text-right">本数</span>
-                <span className="text-right">ポイント</span>
                 <span className="text-right">詳細</span>
               </div>
               {data.days.map((day) => (
@@ -133,12 +132,11 @@ function DayRow({
       <button
         type="button"
         onClick={onToggle}
-        className="grid w-full grid-cols-[1.5fr_repeat(3,_1fr)_auto] items-center gap-3 px-4 py-3 text-sm hover:bg-muted/30"
+        className="grid w-full grid-cols-[1.5fr_repeat(2,_1fr)_auto] items-center gap-3 px-4 py-3 text-sm hover:bg-muted/30"
       >
         <span className="text-left font-medium text-foreground">{dayLabel}</span>
         <span className="text-right font-semibold text-foreground">¥{day.totalRevenue.toLocaleString()}</span>
         <span className="text-right text-muted-foreground">{day.reservationCount} 件</span>
-        <span className="text-right text-muted-foreground">{day.pointCount} pt</span>
         <span className="flex justify-end">
           <ChevronDown
             className={cn('h-4 w-4 text-muted-foreground transition-transform', isExpanded && 'rotate-180')}

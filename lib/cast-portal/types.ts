@@ -158,7 +158,6 @@ export interface CastSettlementDaySummary {
   date: string
   totalRevenue: number
   reservationCount: number
-  pointCount: number
   records: CastSettlementRecordDetail[]
 }
 

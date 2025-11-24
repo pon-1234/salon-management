@@ -573,7 +573,6 @@ export async function getCastSettlements(castId: string, storeId: string): Promi
         date: dateKey,
         totalRevenue: 0,
         reservationCount: 0,
-        pointCount: 0,
         records: [],
       }
       dailyMap.set(dateKey, day)
@@ -601,7 +600,6 @@ export async function getCastSettlements(castId: string, storeId: string): Promi
     day.records.push(record)
     day.totalRevenue += reservation.price ?? 0
     day.reservationCount += 1
-    day.pointCount += 1
   })
 
   const days = Array.from(dailyMap.values()).sort((a, b) => b.date.localeCompare(a.date))
