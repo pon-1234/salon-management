@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import Link from 'next/link'
 import {
   Dialog,
   DialogContent,
@@ -255,16 +254,6 @@ export function CustomerSelectionDialog({
               className="pl-10"
             />
           </div>
-          {isLookupMode && (
-            <Button variant="outline" className="w-full justify-start" asChild>
-              <Link
-                href={`/admin/customer-search${searchTerm.trim() ? `?query=${encodeURIComponent(searchTerm.trim())}` : ''}`}
-              >
-                <Search className="mr-2 h-4 w-4" />
-                詳細検索へ
-              </Link>
-            </Button>
-          )}
 
           {showLoadingState && (
             <div className="flex items-center gap-2 text-sm text-gray-500">
