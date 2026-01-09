@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,7 @@ interface CustomerSelectionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSelectCustomer?: (customer: Customer) => void
+  mode?: 'reservation' | 'lookup'
 }
 
 type SearchStatus = 'idle' | 'loading' | 'ready' | 'error'
@@ -45,6 +47,7 @@ export function CustomerSelectionDialog({
   open,
   onOpenChange,
   onSelectCustomer,
+  mode = 'reservation',
 }: CustomerSelectionDialogProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [allCustomers, setAllCustomers] = useState<Customer[]>([])
@@ -187,7 +190,11 @@ export function CustomerSelectionDialog({
         onSelectCustomer(selectedCustomer)
         onOpenChange(false)
       } else {
-        router.push(`/admin/reservation?customerId=${selectedCustomer.id}`)
+        if (mode === 'lookup') {
+          router.push(`/admin/customers/${selectedCustomer.id}`)
+        } else {
+          router.push(`/admin/reservation?customerId=${selectedCustomer.id}`)
+        }
         onOpenChange(false)
       }
     }
@@ -204,6 +211,7 @@ export function CustomerSelectionDialog({
   }
 
   const showLoadingState = status === 'loading' || (open && !hasLoadedRef.current)
+  const isLookupMode = mode === 'lookup'
 
   const getMemberBadge = (type: string) => {
     if (isVipMember(type)) {
@@ -226,9 +234,13 @@ export function CustomerSelectionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[80vh] max-w-3xl">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">顧客を選択</DialogTitle>
+          <DialogTitle className="text-2xl font-bold">
+            {isLookupMode ? '顧客を検索' : '顧客を選択'}
+          </DialogTitle>
           <DialogDescription>
-            予約を作成する顧客を選択してください。新規顧客の場合は「新規顧客登録」をクリックしてください。
+            {isLookupMode
+              ? '顧客を検索して詳細を確認できます。新規顧客の場合は「新規顧客登録」をクリックしてください。'
+              : '予約を作成する顧客を選択してください。新規顧客の場合は「新規顧客登録」をクリックしてください。'}
           </DialogDescription>
         </DialogHeader>
 
@@ -243,6 +255,16 @@ export function CustomerSelectionDialog({
               className="pl-10"
             />
           </div>
+          {isLookupMode && (
+            <Button variant="outline" className="w-full justify-start" asChild>
+              <Link
+                href={`/admin/customer-search${searchTerm.trim() ? `?query=${encodeURIComponent(searchTerm.trim())}` : ''}`}
+              >
+                <Search className="mr-2 h-4 w-4" />
+                詳細検索へ
+              </Link>
+            </Button>
+          )}
 
           {showLoadingState && (
             <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -257,10 +279,12 @@ export function CustomerSelectionDialog({
             新規顧客を登録
           </Button>
 
-          <Button onClick={handleOpenTimeline} variant="secondary" className="w-full justify-start">
-            <Clock className="mr-2 h-4 w-4" />
-            タイムラインを確認する
-          </Button>
+          {!isLookupMode && (
+            <Button onClick={handleOpenTimeline} variant="secondary" className="w-full justify-start">
+              <Clock className="mr-2 h-4 w-4" />
+              タイムラインを確認する
+            </Button>
+          )}
 
           <ScrollArea className="h-[400px] pr-4">
             <div className="space-y-2">
@@ -328,7 +352,7 @@ export function CustomerSelectionDialog({
               disabled={!selectedCustomer || showLoadingState}
               className="bg-purple-600 hover:bg-purple-700 disabled:opacity-70"
             >
-              この顧客で予約を作成
+              {isLookupMode ? '顧客詳細を開く' : 'この顧客で予約を作成'}
               <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           </div>

@@ -25,7 +25,6 @@ import {
   CommandInput,
 } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Input } from '@/components/ui/input'
 import { NotificationList } from '@/components/notification-list'
 import { NotificationDetailDialog } from '@/components/notification-detail-dialog'
 import Link from 'next/link'
@@ -48,7 +47,6 @@ export function Header() {
   const { currentStore } = useStore()
   const canViewAnalytics = hasPermission(session?.user?.permissions ?? [], 'analytics:read')
   const [castList, setCastList] = useState<Cast[]>([])
-  const [searchQuery, setSearchQuery] = useState('')
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState('')
   const [notificationOpen, setNotificationOpen] = useState(false)
@@ -58,6 +56,7 @@ export function Header() {
     null
   )
   const [showCustomerSelection, setShowCustomerSelection] = useState(false)
+  const [showCustomerLookup, setShowCustomerLookup] = useState(false)
 
   useEffect(() => {
     const loadCasts = async () => {
@@ -78,13 +77,6 @@ export function Header() {
 
     loadCasts()
   }, [currentStore.id])
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (searchQuery.trim()) {
-      router.push(`/admin/customer-search?query=${encodeURIComponent(searchQuery)}`)
-    }
-  }
 
   const handleNotificationSelect = useCallback(
     (notification: AdminNotification) => {
@@ -145,6 +137,16 @@ export function Header() {
           <span className="text-xs text-gray-600">予約作成</span>
         </Button>
 
+        <Button
+          type="button"
+          variant="ghost"
+          className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
+          onClick={() => setShowCustomerLookup(true)}
+        >
+          <Search className="h-5 w-5" />
+          <span className="text-xs text-gray-600">顧客検索</span>
+        </Button>
+
         <Link href="/admin/reservation-list">
           <Button
             variant="ghost"
@@ -184,26 +186,6 @@ export function Header() {
             <span className="text-xs text-gray-600">出勤表</span>
           </Button>
         </Link>
-
-        {/* 顧客電話番号検索フォーム */}
-        <form onSubmit={handleSearch} className="relative max-w-md">
-          <Input
-            type="search"
-            placeholder="顧客電話番号検索"
-            className="bg-gray-50 py-2 pl-4 pr-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <Button
-            type="submit"
-            variant="ghost"
-            size="icon"
-            className="absolute right-0 top-0 h-full"
-          >
-            <Search className="h-4 w-4" />
-            <span className="sr-only">検索</span>
-          </Button>
-        </form>
 
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
@@ -319,6 +301,11 @@ export function Header() {
         <CustomerSelectionDialog
           open={showCustomerSelection}
           onOpenChange={setShowCustomerSelection}
+        />
+        <CustomerSelectionDialog
+          open={showCustomerLookup}
+          onOpenChange={setShowCustomerLookup}
+          mode="lookup"
         />
       </div>
     </>
