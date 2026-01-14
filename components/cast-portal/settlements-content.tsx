@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState, useTransition } from 'react'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
-import { ChevronDown, Loader2, PiggyBank, Receipt, Shield } from 'lucide-react'
+import { ChevronDown, Loader2, PiggyBank, Receipt } from 'lucide-react'
 import type { CastSettlementsData } from '@/lib/cast-portal/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -65,18 +65,12 @@ export function CastSettlementsContent({ initialData }: { initialData: CastSettl
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <SummaryTile
           icon={PiggyBank}
           title="今月のキャスト売上"
           value={`¥${data.summary.staffRevenue.toLocaleString()}`}
           helper={`総売上 ¥${data.summary.totalRevenue.toLocaleString()}`}
-        />
-        <SummaryTile
-          icon={Shield}
-          title="厚生費累計"
-          value={`¥${data.summary.welfareExpense.toLocaleString()}`}
-          helper="雑費（厚生費）を含む控除合計"
         />
         <SummaryTile
           icon={Receipt}
