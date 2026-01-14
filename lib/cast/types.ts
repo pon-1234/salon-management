@@ -26,6 +26,10 @@ export interface Cast extends BaseEntity {
   workEnd?: Date
   appointments: Appointment[]
   availableOptions: string[] // 可能オプションのIDリスト
+  availableOptionSettings?: Array<{
+    optionId: string
+    visibility: 'public' | 'internal'
+  }>
 
   // 公開プロフィール情報
   publicProfile?: PublicProfile

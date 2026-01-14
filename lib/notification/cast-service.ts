@@ -172,6 +172,32 @@ export class CastNotificationService {
     }
   }
 
+  async sendEntryInfoNotification(params: { cast: CastRecipient; message: string }): Promise<void> {
+    if (!this.ensureConfigured()) return
+
+    const recipient = this.resolveRecipient(params.cast)
+    if (!recipient) {
+      logger.info(
+        { castId: params.cast.id },
+        'Skipping entry info notification because no LINE recipient is configured'
+      )
+      return
+    }
+
+    try {
+      await this.lineClient.pushText(recipient, params.message)
+    } catch (error) {
+      logger.error(
+        {
+          err: error,
+          castId: params.cast.id,
+        },
+        'Failed to send LINE entry info notification to cast'
+      )
+      throw error
+    }
+  }
+
   async sendChatMessageNotification(params: {
     cast: CastRecipient
     message: ChatMessageForNotification

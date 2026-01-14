@@ -62,10 +62,20 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
   const [isRequestOpen, setIsRequestOpen] = useState(false)
 
   // Get available options details
-  const availableOptions: Option[] = cast.availableOptions
+  const optionIdsForDisplay =
+    cast.availableOptionSettings && cast.availableOptionSettings.length > 0
+      ? cast.availableOptionSettings
+          .filter((setting) => setting.visibility === 'public')
+          .map((setting) => setting.optionId)
+      : cast.availableOptions
+  const availableOptions: Option[] = optionIdsForDisplay
     .map((optionId) => getOptionById(optionId))
     .filter((option): option is Option => Boolean(option))
-    .filter((option) => option.visibility !== 'internal')
+    .filter((option) =>
+      cast.availableOptionSettings && cast.availableOptionSettings.length > 0
+        ? true
+        : option.visibility !== 'internal'
+    )
 
   const nextImage = () => {
     setSelectedImageIndex((prev) => (prev === cast.images.length - 1 ? 0 : prev + 1))

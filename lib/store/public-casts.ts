@@ -278,6 +278,7 @@ export async function getPublicCastDetail(
   const record = await db.cast.findFirst({
     where: { id: castId, storeId },
     include: {
+      castOptionSettings: true,
       reservations: {
         include: {
           customer: true,

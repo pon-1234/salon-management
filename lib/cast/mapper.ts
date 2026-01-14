@@ -39,6 +39,31 @@ const normalizeAvailableOptions = (value: unknown): string[] => {
   return Array.from(new Set(mapped))
 }
 
+const normalizeAvailableOptionSettings = (value: unknown) => {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  const normalized = value
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const optionId = resolveOptionId(String((item as any).optionId ?? ''))
+      if (!optionId) return null
+      const visibility = (item as any).visibility === 'internal' ? 'internal' : 'public'
+      return { optionId, visibility }
+    })
+    .filter((entry): entry is { optionId: string; visibility: 'public' | 'internal' } => Boolean(entry))
+
+  const seen = new Set<string>()
+  return normalized.filter((entry) => {
+    if (seen.has(entry.optionId)) {
+      return false
+    }
+    seen.add(entry.optionId)
+    return true
+  })
+}
+
 const isAppointment = (value: Appointment | null): value is Appointment => Boolean(value)
 
 const normalizeAppointment = (raw: any): Appointment | null => {
@@ -46,6 +71,14 @@ const normalizeAppointment = (raw: any): Appointment | null => {
   const start = toDate(raw.startTime)
   const end = toDate(raw.endTime)
   if (!start || !end) return null
+
+  const availableOptionSettings = normalizeAvailableOptionSettings(
+    (raw as any).castOptionSettings ?? (raw as any).availableOptionSettings
+  )
+  const availableOptions =
+    availableOptionSettings.length > 0
+      ? availableOptionSettings.map((entry) => entry.optionId)
+      : normalizeAvailableOptions(raw.availableOptions)
 
   return {
     id: String(raw.id ?? ''),
@@ -122,7 +155,8 @@ export const normalizeCast = (raw: any): Cast => {
     workStart: toDate(raw.workStart),
     workEnd: toDate(raw.workEnd),
     appointments,
-    availableOptions: normalizeAvailableOptions(raw.availableOptions),
+    availableOptions,
+    availableOptionSettings,
     publicProfile: raw.publicProfile,
     createdAt: toDate(raw.createdAt) ?? new Date(),
     updatedAt: toDate(raw.updatedAt) ?? new Date(),

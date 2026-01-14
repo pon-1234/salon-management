@@ -113,6 +113,28 @@ export function CastReservationsContent({ initialData }: { initialData: CastRese
     [toast]
   )
 
+  const confirmEntryInfo = useCallback(
+    async (reservationId: string) => {
+      const response = await fetch(`/api/cast-portal/reservations/${reservationId}/entry-confirm`, {
+        method: 'POST',
+      })
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}))
+        throw new Error(payload.error ?? '確認に失敗しました。')
+      }
+      const payload = await response.json().catch(() => ({}))
+      setSelectedReservation((prev) =>
+        prev
+          ? {
+              ...prev,
+              entryConfirmedAt: payload.entryConfirmedAt ?? prev.entryConfirmedAt,
+            }
+          : prev
+      )
+    },
+    []
+  )
+
   useEffect(() => {
     const highlight = searchParams.get('highlight')
     if (!highlight) return
@@ -184,7 +206,7 @@ export function CastReservationsContent({ initialData }: { initialData: CastRese
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 読み込み中です...
               </div>
             ) : selectedReservation ? (
-              <ReservationDetailView reservation={selectedReservation} />
+              <ReservationDetailView reservation={selectedReservation} onConfirmEntryInfo={confirmEntryInfo} />
             ) : null}
           </DialogContent>
         </Dialog>
@@ -285,9 +307,16 @@ function renderDesignation(type?: string | null) {
   }
 }
 
-function ReservationDetailView({ reservation }: { reservation: CastReservationDetail }) {
+function ReservationDetailView({
+  reservation,
+  onConfirmEntryInfo,
+}: {
+  reservation: CastReservationDetail
+  onConfirmEntryInfo: (reservationId: string) => Promise<void>
+}) {
   const startTime = new Date(reservation.startTime)
   const endTime = new Date(reservation.endTime)
+  const [entryConfirming, setEntryConfirming] = useState(false)
 
   const pricingItems = useMemo<Array<{ label: string; value: string }>>(() => {
     const rows: Array<{ label: string; value: string }> = []
@@ -345,6 +374,51 @@ function ReservationDetailView({ reservation }: { reservation: CastReservationDe
           {reservation.hotelName && <InfoItem label="ホテル名" value={reservation.hotelName} />}
           {reservation.roomNumber && <InfoItem label="部屋番号" value={reservation.roomNumber} />}
           <InfoItem label="メモ" value={reservation.notes ?? '入力されていません'} />
+        </section>
+
+        <section className="space-y-3 rounded-lg border border-border/60 p-4">
+          <h3 className="text-sm font-semibold text-foreground">入室情報</h3>
+          <div className="grid gap-3 text-sm sm:grid-cols-2">
+            <InfoItem label="ホテル名" value={reservation.hotelName ?? '未設定'} />
+            <InfoItem label="部屋番号" value={reservation.roomNumber ?? '未設定'} />
+            <InfoItem label="連絡メモ" value={reservation.entryMemo ?? 'なし'} />
+            <InfoItem
+              label="受付時刻"
+              value={
+                reservation.entryReceivedAt
+                  ? format(new Date(reservation.entryReceivedAt), 'yyyy/MM/dd HH:mm')
+                  : '未登録'
+              }
+            />
+            <InfoItem label="担当スタッフ" value={reservation.entryReceivedBy ?? '未登録'} />
+            <InfoItem
+              label="送信状況"
+              value={
+                reservation.entryNotifiedAt
+                  ? reservation.entryConfirmedAt
+                    ? '確認済み'
+                    : '未確認'
+                  : '未送信'
+              }
+            />
+          </div>
+          {reservation.entryNotifiedAt && !reservation.entryConfirmedAt ? (
+            <Button
+              size="sm"
+              onClick={async () => {
+                setEntryConfirming(true)
+                try {
+                  await onConfirmEntryInfo(reservation.id)
+                } finally {
+                  setEntryConfirming(false)
+                }
+              }}
+              disabled={entryConfirming}
+            >
+              {entryConfirming ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              確認済みにする
+            </Button>
+          ) : null}
         </section>
 
         <section className="space-y-3 rounded-lg border border-border/60 p-4">

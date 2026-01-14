@@ -614,6 +614,14 @@ export async function getCastReservationDetail(
     locationMemo: reservation.locationMemo ?? null,
     hotelName: reservation.hotelName ?? null,
     roomNumber: reservation.roomNumber ?? null,
+    entryMemo: reservation.entryMemo ?? null,
+    entryReceivedAt: reservation.entryReceivedAt ? reservation.entryReceivedAt.toISOString() : null,
+    entryReceivedBy: reservation.entryReceivedBy ?? null,
+    entryNotifiedAt: reservation.entryNotifiedAt ? reservation.entryNotifiedAt.toISOString() : null,
+    entryConfirmedAt: reservation.entryConfirmedAt ? reservation.entryConfirmedAt.toISOString() : null,
+    entryReminderSentAt: reservation.entryReminderSentAt
+      ? reservation.entryReminderSentAt.toISOString()
+      : null,
     coursePrice: reservation.course?.price ?? null,
     storeRevenue: reservation.storeRevenue ?? null,
     staffRevenue: reservation.staffRevenue ?? null,

@@ -48,6 +48,14 @@ const castSchema = z.object({
   regularDesignationRank: z.coerce.number().int().min(0).optional().default(0),
   workStatus: z.string().optional().default('出勤'),
   availableOptions: z.array(z.string()).optional().default([]),
+  availableOptionSettings: z
+    .array(
+      z.object({
+        optionId: z.string().min(1),
+        visibility: z.enum(['public', 'internal']).optional().default('public'),
+      })
+    )
+    .optional(),
   lineUserId: z.union([z.string().trim().min(1), z.null()]).optional(),
   welfareExpenseRate: z
     .union([z.coerce.number().min(0).max(100), z.null()])
@@ -118,9 +126,45 @@ function normalizeAvailableOptions(raw: unknown): string[] {
   return Array.from(new Set(normalized))
 }
 
+function normalizeAvailableOptionSettings(raw: unknown): Array<{ optionId: string; visibility: 'public' | 'internal' }> {
+  if (!raw) {
+    return []
+  }
+
+  if (!Array.isArray(raw)) {
+    return []
+  }
+
+  const normalized = raw
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object') {
+        return null
+      }
+      const optionId = resolveOptionId(String((entry as any).optionId ?? ''))
+      if (!optionId) {
+        return null
+      }
+      const visibility = (entry as any).visibility === 'internal' ? 'internal' : 'public'
+      return { optionId, visibility }
+    })
+    .filter((entry): entry is { optionId: string; visibility: 'public' | 'internal' } => Boolean(entry))
+
+  const seen = new Set<string>()
+  return normalized.filter((entry) => {
+    if (seen.has(entry.optionId)) {
+      return false
+    }
+    seen.add(entry.optionId)
+    return true
+  })
+}
+
 function transformCast(cast: any) {
   const { passwordHash, ...safeCast } = cast ?? {}
   const base = safeCast ?? {}
+  const availableOptionSettings = normalizeAvailableOptionSettings(
+    base.castOptionSettings ?? base.availableOptionSettings
+  )
 
   return {
     ...base,
@@ -132,7 +176,11 @@ function transformCast(cast: any) {
       : typeof base.images === 'string'
         ? JSON.parse(base.images)
         : [],
-    availableOptions: normalizeAvailableOptions(base.availableOptions),
+    availableOptions:
+      availableOptionSettings.length > 0
+        ? availableOptionSettings.map((entry) => entry.optionId)
+        : normalizeAvailableOptions(base.availableOptions),
+    availableOptionSettings,
     appointments: base.appointments ?? [],
   }
 }
@@ -143,6 +191,7 @@ async function fetchCastWithRelations(id: string, storeId: string) {
       where: { id, storeId },
       include: {
         schedules: true,
+        castOptionSettings: true,
         reservations: {
           include: {
             customer: true,
@@ -176,6 +225,7 @@ async function fetchCastListWithRelations(storeId: string) {
       where: { storeId },
       include: {
         schedules: true,
+        castOptionSettings: true,
         reservations: {
           include: {
             customer: true,
@@ -218,6 +268,9 @@ export async function GET(request: NextRequest) {
         images: typeof cast.images === 'string' ? JSON.parse(cast.images) : cast.images,
         publicProfile: cast.publicProfile || null,
         availableOptions: normalizeAvailableOptions(cast.availableOptions),
+        availableOptionSettings: normalizeAvailableOptionSettings(
+          (cast as any).castOptionSettings ?? (cast as any).availableOptionSettings
+        ),
         appointments: [],
       }
 
@@ -262,6 +315,7 @@ export async function POST(request: NextRequest) {
     const {
       nameKana, // currently unused
       availableOptions,
+      availableOptionSettings,
       welfareExpenseRate,
       images: imageList,
       loginEmail,
@@ -269,7 +323,15 @@ export async function POST(request: NextRequest) {
       ...dbData
     } = validatedData
 
-    const normalizedOptions = normalizeAvailableOptions(availableOptions)
+    const normalizedSettings = normalizeAvailableOptionSettings(availableOptionSettings)
+    const normalizedOptions =
+      normalizedSettings.length > 0
+        ? normalizedSettings.map((entry) => entry.optionId)
+        : normalizeAvailableOptions(availableOptions)
+    const optionSettingsToCreate =
+      normalizedSettings.length > 0
+        ? normalizedSettings
+        : normalizedOptions.map((optionId) => ({ optionId, visibility: 'public' as const }))
     const images = Array.isArray(imageList) ? imageList : []
     const normalizedWelfare =
       welfareExpenseRate === null || welfareExpenseRate === undefined ? null : Number(welfareExpenseRate)
@@ -293,6 +355,10 @@ export async function POST(request: NextRequest) {
         availableOptions: normalizedOptions,
         welfareExpenseRate:
           normalizedWelfare === null ? null : new Prisma.Decimal(normalizedWelfare),
+        castOptionSettings: optionSettingsToCreate.length > 0 ? { create: optionSettingsToCreate } : undefined,
+      },
+      include: {
+        castOptionSettings: true,
       },
     })
 
@@ -341,6 +407,7 @@ export async function PUT(request: NextRequest) {
     const {
       nameKana, // unused field
       availableOptions,
+      availableOptionSettings,
       welfareExpenseRate,
       images: imageList,
       loginEmail,
@@ -360,8 +427,18 @@ export async function PUT(request: NextRequest) {
       updatePayload.images = Array.isArray(imageList) ? imageList : []
     }
 
-    if (availableOptions !== undefined) {
-      updatePayload.availableOptions = normalizeAvailableOptions(availableOptions)
+    const normalizedOptionSettings =
+      availableOptionSettings !== undefined
+        ? normalizeAvailableOptionSettings(availableOptionSettings)
+        : availableOptions !== undefined
+          ? normalizeAvailableOptions(availableOptions).map((optionId) => ({
+              optionId,
+              visibility: 'public' as const,
+            }))
+          : null
+
+    if (normalizedOptionSettings !== null) {
+      updatePayload.availableOptions = normalizedOptionSettings.map((entry) => entry.optionId)
     }
 
     if (welfareExpenseRate !== undefined) {
@@ -384,11 +461,35 @@ export async function PUT(request: NextRequest) {
     const cast = await db.cast.update({
       where: { id },
       data: updatePayload,
+      include: {
+        castOptionSettings: true,
+      },
     })
+
+    if (normalizedOptionSettings !== null) {
+      await db.castOptionSetting.deleteMany({ where: { castId: cast.id } })
+      if (normalizedOptionSettings.length > 0) {
+        await db.castOptionSetting.createMany({
+          data: normalizedOptionSettings.map((entry) => ({
+            castId: cast.id,
+            optionId: entry.optionId,
+            visibility: entry.visibility,
+          })),
+        })
+      }
+    }
 
     logger.info({ castId: cast.id }, 'Cast updated successfully')
 
-    return NextResponse.json(transformCast(cast))
+    const refreshedCast =
+      normalizedOptionSettings !== null
+        ? await db.cast.findFirst({
+            where: { id: cast.id },
+            include: { castOptionSettings: true },
+          })
+        : cast
+
+    return NextResponse.json(transformCast(refreshedCast ?? cast))
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

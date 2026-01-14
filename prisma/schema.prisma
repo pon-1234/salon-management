@@ -82,6 +82,7 @@ model Cast {
   regularDesignationRank Int
   workStatus             String
   availableOptions       String[]      @default([])
+  castOptionSettings     CastOptionSetting[]
   lineUserId             String?
   welfareExpenseRate     Decimal?
   loginEmail             String?       @unique
@@ -148,6 +149,12 @@ model Reservation {
   stationId         String?
   hotelName         String?
   roomNumber        String?
+  entryMemo         String?
+  entryReceivedAt   DateTime?
+  entryReceivedBy   String?
+  entryNotifiedAt   DateTime?
+  entryConfirmedAt  DateTime?
+  entryReminderSentAt DateTime?
   locationMemo      String?
   notes             String?
   castCheckedInAt   DateTime?
@@ -209,8 +216,24 @@ model OptionPrice {
   storeId      String
   reservations ReservationOption[]
   store        Store               @relation(fields: [storeId], references: [id])
+  castOptionSettings CastOptionSetting[]
 
   @@index([storeId])
+}
+
+model CastOptionSetting {
+  id         String      @id @default(cuid())
+  castId     String
+  optionId   String
+  visibility String     @default("public")
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  cast       Cast        @relation(fields: [castId], references: [id])
+  option     OptionPrice @relation(fields: [optionId], references: [id])
+
+  @@unique([castId, optionId])
+  @@index([castId])
+  @@index([optionId])
 }
 
 model AreaInfo {

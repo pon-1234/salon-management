@@ -392,6 +392,22 @@ export function ReservationDialog({
   const [lineSendError, setLineSendError] = useState<string | null>(null)
   const [lineSendSuccess, setLineSendSuccess] = useState<string | null>(null)
   const [lineConfirmOpen, setLineConfirmOpen] = useState(false)
+  const [entryForm, setEntryForm] = useState({
+    hotelName: '',
+    roomNumber: '',
+    entryMemo: '',
+  })
+  const [entryMeta, setEntryMeta] = useState({
+    entryReceivedAt: null as Date | null,
+    entryReceivedBy: null as string | null,
+    entryNotifiedAt: null as Date | null,
+    entryConfirmedAt: null as Date | null,
+    entryReminderSentAt: null as Date | null,
+  })
+  const [entrySending, setEntrySending] = useState(false)
+  const [entrySendError, setEntrySendError] = useState<string | null>(null)
+  const [entrySendSuccess, setEntrySendSuccess] = useState<string | null>(null)
+  const [entryReminderSending, setEntryReminderSending] = useState(false)
   const lastDefaultLineMessageRef = useRef<string>('')
   const [customerNgEntries, setCustomerNgEntries] = useState<
     Array<{ castId: string; assignedBy?: 'customer' | 'cast' | 'staff'; notes?: string }>
@@ -1354,6 +1370,18 @@ useEffect(() => {
       roomNumber: reservation.roomNumber ?? '',
       locationMemo: reservation.locationMemo ?? '',
     })
+    setEntryForm({
+      hotelName: reservation.hotelName ?? '',
+      roomNumber: reservation.roomNumber ?? '',
+      entryMemo: reservation.entryMemo ?? '',
+    })
+    setEntryMeta({
+      entryReceivedAt: reservation.entryReceivedAt ?? null,
+      entryReceivedBy: reservation.entryReceivedBy ?? null,
+      entryNotifiedAt: reservation.entryNotifiedAt ?? null,
+      entryConfirmedAt: reservation.entryConfirmedAt ?? null,
+      entryReminderSentAt: reservation.entryReminderSentAt ?? null,
+    })
     setValidationError(null)
   }
 }, [reservation, reservationDesignation, normalizedInitialOptionIds, marketingChannelOptions])
@@ -1381,6 +1409,10 @@ useEffect(() => {
   }
 
   const designationSelectValue = rawDesignationId && rawDesignationId.length > 0 ? rawDesignationId : 'none'
+  const entryOverdue =
+    Boolean(entryMeta.entryNotifiedAt) &&
+    !entryMeta.entryConfirmedAt &&
+    Date.now() - entryMeta.entryNotifiedAt.getTime() > 10 * 60 * 1000
 
   const handleEnterEditMode = () => {
     if (!reservation) return
@@ -1434,6 +1466,104 @@ useEffect(() => {
     setValidationError(null)
     setIsEditMode(false)
   }
+
+  const parseEntryMeta = (payload: any) => ({
+    entryReceivedAt: payload?.entryReceivedAt ? new Date(payload.entryReceivedAt) : null,
+    entryReceivedBy: payload?.entryReceivedBy ?? null,
+    entryNotifiedAt: payload?.entryNotifiedAt ? new Date(payload.entryNotifiedAt) : null,
+    entryConfirmedAt: payload?.entryConfirmedAt ? new Date(payload.entryConfirmedAt) : null,
+    entryReminderSentAt: payload?.entryReminderSentAt ? new Date(payload.entryReminderSentAt) : null,
+  })
+
+  const handleSaveEntryInfo = async () => {
+    if (!reservation) return
+    setEntrySendError(null)
+    setEntrySendSuccess(null)
+    setEntrySending(true)
+
+    try {
+      const storeQuery = currentStore?.id ? `?storeId=${currentStore.id}` : ''
+      const response = await fetch(`/api/reservation/${reservation.id}/entry-info${storeQuery}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hotelName: entryForm.hotelName,
+          roomNumber: entryForm.roomNumber,
+          entryMemo: entryForm.entryMemo,
+          action: 'save',
+        }),
+      })
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}))
+        throw new Error(payload.error ?? `入室情報の送信に失敗しました（${response.status}）`)
+      }
+
+      const payload = await response.json().catch(() => ({}))
+      setEntryMeta(parseEntryMeta(payload))
+      setEntrySendSuccess('入室情報を送信しました。')
+    } catch (error) {
+      setEntrySendError(error instanceof Error ? error.message : '入室情報の送信に失敗しました。')
+    } finally {
+      setEntrySending(false)
+    }
+  }
+
+  const handleSendEntryReminder = useCallback(async () => {
+    if (!reservation) return
+    if (entryReminderSending) return
+    setEntrySendError(null)
+    setEntrySendSuccess(null)
+    setEntryReminderSending(true)
+
+    try {
+      const storeQuery = currentStore?.id ? `?storeId=${currentStore.id}` : ''
+      const response = await fetch(`/api/reservation/${reservation.id}/entry-info${storeQuery}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'remind' }),
+      })
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}))
+        throw new Error(payload.error ?? `再通知に失敗しました（${response.status}）`)
+      }
+
+      const payload = await response.json().catch(() => ({}))
+      setEntryMeta(parseEntryMeta(payload))
+      setEntrySendSuccess('再通知を送信しました。')
+    } catch (error) {
+      setEntrySendError(error instanceof Error ? error.message : '再通知の送信に失敗しました。')
+    } finally {
+      setEntryReminderSending(false)
+    }
+  }, [currentStore?.id, entryReminderSending, reservation])
+
+  useEffect(() => {
+    if (!open) return
+    if (!entryMeta.entryNotifiedAt) return
+    if (entryMeta.entryConfirmedAt) return
+    if (entryMeta.entryReminderSentAt) return
+
+    const reminderAt = entryMeta.entryNotifiedAt.getTime() + 10 * 60 * 1000
+    const delay = reminderAt - Date.now()
+    if (delay <= 0) {
+      void handleSendEntryReminder()
+      return
+    }
+
+    const timer = setTimeout(() => {
+      void handleSendEntryReminder()
+    }, delay)
+
+    return () => clearTimeout(timer)
+  }, [
+    entryMeta.entryConfirmedAt,
+    entryMeta.entryNotifiedAt,
+    entryMeta.entryReminderSentAt,
+    handleSendEntryReminder,
+    open,
+  ])
 
   const handleSaveChanges = async () => {
     if (!reservation || !onSave) {
@@ -2480,6 +2610,124 @@ useEffect(() => {
                     <div className="font-medium">なし</div>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <CardTitle className="text-sm font-medium">入室情報</CardTitle>
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  {entryMeta.entryNotifiedAt && (
+                    <Badge variant="secondary" className="text-xs">
+                      送信済み
+                    </Badge>
+                  )}
+                  {entryMeta.entryConfirmedAt && (
+                    <Badge className="bg-emerald-600 text-white">確認済み</Badge>
+                  )}
+                  {entryOverdue && !entryMeta.entryConfirmedAt && (
+                    <Badge variant="destructive">未確認</Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="entry-hotel-name">ホテル名</Label>
+                    <Input
+                      id="entry-hotel-name"
+                      value={entryForm.hotelName}
+                      onChange={(event) =>
+                        setEntryForm((prev) => ({ ...prev, hotelName: event.target.value }))
+                      }
+                      placeholder="例: 渋谷グランドホテル"
+                      disabled={entrySending}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="entry-room-number">部屋番号</Label>
+                    <Input
+                      id="entry-room-number"
+                      value={entryForm.roomNumber}
+                      onChange={(event) =>
+                        setEntryForm((prev) => ({ ...prev, roomNumber: event.target.value }))
+                      }
+                      placeholder="例: 1203"
+                      disabled={entrySending}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label htmlFor="entry-memo">連絡メモ</Label>
+                    <Textarea
+                      id="entry-memo"
+                      value={entryForm.entryMemo}
+                      onChange={(event) =>
+                        setEntryForm((prev) => ({ ...prev, entryMemo: event.target.value }))
+                      }
+                      rows={3}
+                      placeholder="例: フロントで鍵受け取り済み"
+                      disabled={entrySending}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-3 text-xs text-muted-foreground sm:grid-cols-2">
+                  <div>
+                    <div>受付時刻</div>
+                    <div className="font-medium text-foreground">
+                      {entryMeta.entryReceivedAt
+                        ? format(entryMeta.entryReceivedAt, 'yyyy/MM/dd HH:mm')
+                        : '未登録'}
+                    </div>
+                  </div>
+                  <div>
+                    <div>担当スタッフ</div>
+                    <div className="font-medium text-foreground">
+                      {entryMeta.entryReceivedBy || '未登録'}
+                    </div>
+                  </div>
+                  <div>
+                    <div>送信時刻</div>
+                    <div className="font-medium text-foreground">
+                      {entryMeta.entryNotifiedAt
+                        ? format(entryMeta.entryNotifiedAt, 'yyyy/MM/dd HH:mm')
+                        : '未送信'}
+                    </div>
+                  </div>
+                  <div>
+                    <div>確認時刻</div>
+                    <div className="font-medium text-foreground">
+                      {entryMeta.entryConfirmedAt
+                        ? format(entryMeta.entryConfirmedAt, 'yyyy/MM/dd HH:mm')
+                        : '未確認'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button size="sm" onClick={handleSaveEntryInfo} disabled={entrySending}>
+                    {entrySending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    保存して通知
+                  </Button>
+                  {entryMeta.entryNotifiedAt && !entryMeta.entryConfirmedAt ? (
+                    <Button
+                      size="sm"
+                      variant={entryOverdue ? 'destructive' : 'outline'}
+                      onClick={handleSendEntryReminder}
+                      disabled={entryReminderSending}
+                    >
+                      {entryReminderSending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : null}
+                      再通知
+                    </Button>
+                  ) : null}
+                </div>
+
+                {entrySendError && <p className="text-sm text-red-600">{entrySendError}</p>}
+                {entrySendSuccess && (
+                  <p className="text-sm text-emerald-600">{entrySendSuccess}</p>
+                )}
               </CardContent>
             </Card>
 

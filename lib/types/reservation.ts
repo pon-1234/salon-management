@@ -38,6 +38,12 @@ export interface Reservation extends BaseEntity {
   stationTravelTime?: number
   hotelName?: string
   roomNumber?: string
+  entryMemo?: string
+  entryReceivedAt?: Date
+  entryReceivedBy?: string
+  entryNotifiedAt?: Date
+  entryConfirmedAt?: Date
+  entryReminderSentAt?: Date
   locationMemo?: string
   castCheckedInAt?: Date
   castCheckedOutAt?: Date
@@ -113,6 +119,12 @@ export interface ReservationData {
   stationTravelTime?: number
   hotelName?: string
   roomNumber?: string
+  entryMemo?: string
+  entryReceivedAt?: Date | null
+  entryReceivedBy?: string
+  entryNotifiedAt?: Date | null
+  entryConfirmedAt?: Date | null
+  entryReminderSentAt?: Date | null
   locationMemo?: string
   castCheckedInAt?: Date | null
   castCheckedOutAt?: Date | null

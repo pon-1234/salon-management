@@ -116,6 +116,12 @@ export interface CastReservationDetail extends CastPortalReservation {
   locationMemo?: string | null
   hotelName?: string | null
   roomNumber?: string | null
+  entryMemo?: string | null
+  entryReceivedAt?: string | null
+  entryReceivedBy?: string | null
+  entryNotifiedAt?: string | null
+  entryConfirmedAt?: string | null
+  entryReminderSentAt?: string | null
   coursePrice?: number | null
   storeRevenue?: number | null
   staffRevenue?: number | null

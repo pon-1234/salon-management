@@ -58,6 +58,19 @@ const buildInitialFormState = (cast?: Cast | null) => ({
   regularDesignationRank: cast?.regularDesignationRank ?? '',
   workStatus: cast?.workStatus || '出勤',
   availableOptions: cast?.availableOptions ? [...cast.availableOptions] : [],
+  availableOptionVisibility: (() => {
+    const visibilityMap: Record<string, 'public' | 'internal'> = {}
+    if (cast?.availableOptionSettings && cast.availableOptionSettings.length > 0) {
+      cast.availableOptionSettings.forEach((entry) => {
+        visibilityMap[entry.optionId] = entry.visibility
+      })
+    } else if (cast?.availableOptions) {
+      cast.availableOptions.forEach((optionId) => {
+        visibilityMap[optionId] = 'public'
+      })
+    }
+    return visibilityMap
+  })(),
   lineUserId: cast?.lineUserId || '',
   welfareExpenseRate:
     cast?.welfareExpenseRate !== undefined && cast?.welfareExpenseRate !== null
@@ -93,6 +106,8 @@ const OptionPill = ({
   note,
   selected,
   onToggle,
+  visibility,
+  onVisibilityChange,
 }: {
   label: string
   caption?: string
@@ -100,10 +115,10 @@ const OptionPill = ({
   note?: string | null
   selected: boolean
   onToggle: () => void
+  visibility?: 'public' | 'internal'
+  onVisibilityChange?: (value: 'public' | 'internal') => void
 }) => (
-  <button
-    type="button"
-    onClick={onToggle}
+  <div
     className={cn(
       'w-full rounded-lg border px-4 py-3 text-left text-sm transition',
       selected
@@ -111,19 +126,38 @@ const OptionPill = ({
         : 'border-border hover:border-emerald-400 hover:bg-emerald-50'
     )}
   >
-    <span className="block font-medium">{label}</span>
-    {note ? (
-      <span className="mt-1 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
-        {note}
-      </span>
+    <button type="button" onClick={onToggle} className="w-full text-left">
+      <span className="block font-medium">{label}</span>
+      {note ? (
+        <span className="mt-1 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
+          {note}
+        </span>
+      ) : null}
+      {description ? (
+        <span className="mt-1 block text-xs text-muted-foreground">{description}</span>
+      ) : null}
+      {caption ? (
+        <span className="mt-1 block text-xs text-muted-foreground">{caption}</span>
+      ) : null}
+    </button>
+    {selected && onVisibilityChange ? (
+      <div className="mt-2 flex items-center gap-2 text-xs">
+        <span className="text-muted-foreground">公開設定</span>
+        <Select
+          value={visibility ?? 'public'}
+          onValueChange={(value) => onVisibilityChange(value as 'public' | 'internal')}
+        >
+          <SelectTrigger className="h-8 w-[140px] text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="public">公開</SelectItem>
+            <SelectItem value="internal">準非公開</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
     ) : null}
-    {description ? (
-      <span className="mt-1 block text-xs text-muted-foreground">{description}</span>
-    ) : null}
-    {caption ? (
-      <span className="mt-1 block text-xs text-muted-foreground">{caption}</span>
-    ) : null}
-  </button>
+  </div>
 )
 
 const DEFAULT_STORE_RATIO = 0.6
@@ -207,9 +241,16 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
         return prev
       }
 
+      const normalizedVisibility: Record<string, 'public' | 'internal'> = {}
+      Object.entries(prev.availableOptionVisibility ?? {}).forEach(([key, value]) => {
+        const resolved = resolveOptionId(key)
+        normalizedVisibility[resolved] = value === 'internal' ? 'internal' : 'public'
+      })
+
       return {
         ...prev,
         availableOptions: Array.from(new Set(normalized)),
+        availableOptionVisibility: normalizedVisibility,
       }
     })
   }, [optionCatalog])
@@ -263,6 +304,13 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
       }
     }
 
+    const normalizedOptionSettings = formData.availableOptions
+      .map((optionId) => ({
+        optionId: resolveOptionId(optionId),
+        visibility: formData.availableOptionVisibility?.[optionId] ?? 'public',
+      }))
+      .filter((entry) => entry.optionId.length > 0)
+
     const payload: Partial<Cast> = {
       name: formData.name.trim(),
       nameKana: formData.nameKana.trim(),
@@ -273,6 +321,7 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
       images: sanitizedImages,
       workStatus: formData.workStatus,
       availableOptions: formData.availableOptions,
+      availableOptionSettings: normalizedOptionSettings,
     }
 
     const lineUserId = formData.lineUserId?.trim()
@@ -348,11 +397,21 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
 
       if (checked) {
         filtered.push(optionId)
+        return {
+          ...prev,
+          availableOptions: Array.from(new Set(filtered)),
+          availableOptionVisibility: {
+            ...prev.availableOptionVisibility,
+            [optionId]: prev.availableOptionVisibility?.[optionId] ?? 'public',
+          },
+        }
       }
-
+      const nextVisibility = { ...(prev.availableOptionVisibility ?? {}) }
+      delete nextVisibility[optionId]
       return {
         ...prev,
         availableOptions: Array.from(new Set(filtered)),
+        availableOptionVisibility: nextVisibility,
       }
     })
   }
@@ -836,7 +895,7 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
 
       <FormSection
         title="提供可能オプション"
-        description="実施可能なオプションを選択すると、予約画面の提案にも反映されます。"
+        description="実施可能なオプションを選択し、公開/準非公開を設定できます。"
       >
         {optionsLoading && optionCatalog.length === 0 ? (
           <p className="text-sm text-muted-foreground">オプション情報を読み込み中です…</p>
@@ -847,6 +906,7 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
                 const resolved = resolveOptionId(value)
                 return value === option.id || resolved === option.id
               })
+              const visibility = formData.availableOptionVisibility?.[option.id] ?? 'public'
               const { storeShare, castShare } = calculateRevenueSplit(
                 option.price,
                 option.storeShare,
@@ -866,6 +926,16 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
                   caption={caption}
                   selected={selected}
                   onToggle={() => handleOptionChange(option.id, !selected)}
+                  visibility={visibility}
+                  onVisibilityChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      availableOptionVisibility: {
+                        ...(prev.availableOptionVisibility ?? {}),
+                        [option.id]: value,
+                      },
+                    }))
+                  }
                 />
               )
             })}
