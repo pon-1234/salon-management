@@ -146,6 +146,8 @@ model Reservation {
   staffRevenue      Int?
   areaId            String?
   stationId         String?
+  hotelName         String?
+  roomNumber        String?
   locationMemo      String?
   notes             String?
   castCheckedInAt   DateTime?

@@ -342,6 +342,8 @@ function ReservationDetailView({ reservation }: { reservation: CastReservationDe
           <h3 className="text-sm font-semibold text-foreground">備考・移動情報</h3>
           <InfoItem label="集合場所" value={reservation.areaName ?? '未設定'} />
           <InfoItem label="詳細" value={reservation.locationMemo ?? reservation.areaMemo ?? '特記事項なし'} />
+          {reservation.hotelName && <InfoItem label="ホテル名" value={reservation.hotelName} />}
+          {reservation.roomNumber && <InfoItem label="部屋番号" value={reservation.roomNumber} />}
           <InfoItem label="メモ" value={reservation.notes ?? '入力されていません'} />
         </section>
 

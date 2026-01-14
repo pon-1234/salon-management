@@ -114,6 +114,8 @@ type EditFormState = {
   areaId: string | null
   stationId: string | null
   optionIds: string[]
+  hotelName: string
+  roomNumber: string
   locationMemo: string
 }
 
@@ -343,6 +345,8 @@ export function ReservationDialog({
     areaId: null,
     stationId: null,
     optionIds: [],
+    hotelName: '',
+    roomNumber: '',
     locationMemo: '',
   })
   const [castOptions, setCastOptions] = useState<Cast[]>(casts ?? [])
@@ -1111,6 +1115,12 @@ export function ReservationDialog({
     if (reservation.location) {
       lines.push(`場所: ${reservation.location}`)
     }
+    if (reservation.hotelName) {
+      lines.push(`ホテル: ${reservation.hotelName}`)
+    }
+    if (reservation.roomNumber) {
+      lines.push(`部屋番号: ${reservation.roomNumber}`)
+    }
     if (reservation.locationMemo) {
       lines.push(`現地メモ: ${reservation.locationMemo}`)
     }
@@ -1340,6 +1350,8 @@ useEffect(() => {
       areaId: reservation.areaId ?? null,
       stationId: reservation.stationId ?? null,
       optionIds: normalizedInitialOptionIds,
+      hotelName: reservation.hotelName ?? '',
+      roomNumber: reservation.roomNumber ?? '',
       locationMemo: reservation.locationMemo ?? '',
     })
     setValidationError(null)
@@ -1395,6 +1407,8 @@ useEffect(() => {
       areaId: reservation.areaId ?? null,
       stationId: reservation.stationId ?? null,
       optionIds: normalizedInitialOptionIds,
+      hotelName: reservation.hotelName ?? '',
+      roomNumber: reservation.roomNumber ?? '',
       locationMemo: reservation.locationMemo ?? '',
     })
   }
@@ -1482,16 +1496,18 @@ useEffect(() => {
         additionalFee: formState.additionalFee,
         discountAmount: formState.discountAmount,
         paymentMethod: formState.paymentMethod,
-      marketingChannel: formState.marketingChannel,
-      areaId: formState.areaId ?? null,
-      stationId: formState.stationId ?? null,
-      locationMemo: formState.locationMemo,
-      price: priceBreakdown.total,
-      welfareExpense: priceBreakdown.welfareExpense,
-      storeRevenue: priceBreakdown.storeRevenue,
-      staffRevenue: priceBreakdown.staffRevenue,
-      options: formState.optionIds,
-    }
+        marketingChannel: formState.marketingChannel,
+        areaId: formState.areaId ?? null,
+        stationId: formState.stationId ?? null,
+        hotelName: formState.hotelName || null,
+        roomNumber: formState.roomNumber || null,
+        locationMemo: formState.locationMemo,
+        price: priceBreakdown.total,
+        welfareExpense: priceBreakdown.welfareExpense,
+        storeRevenue: priceBreakdown.storeRevenue,
+        staffRevenue: priceBreakdown.staffRevenue,
+        options: formState.optionIds,
+      }
 
       if (courseIdToSave) {
         updatePayload.courseId = courseIdToSave
@@ -1790,6 +1806,28 @@ useEffect(() => {
                           rows={3}
                         />
                       </div>
+                      <div>
+                        <Label htmlFor="reservation-hotel-name">ホテル名</Label>
+                        <Input
+                          id="reservation-hotel-name"
+                          value={formState.hotelName}
+                          onChange={(event) =>
+                            setFormState((prev) => ({ ...prev, hotelName: event.target.value }))
+                          }
+                          placeholder="例: 渋谷グランドホテル"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="reservation-room-number">部屋番号</Label>
+                        <Input
+                          id="reservation-room-number"
+                          value={formState.roomNumber}
+                          onChange={(event) =>
+                            setFormState((prev) => ({ ...prev, roomNumber: event.target.value }))
+                          }
+                          placeholder="例: 1203"
+                        />
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -1813,6 +1851,12 @@ useEffect(() => {
                       {reservation.locationMemo && (
                         <div className="rounded-md bg-muted px-3 py-2 text-xs whitespace-pre-wrap">
                           {reservation.locationMemo}
+                        </div>
+                      )}
+                      {(reservation.hotelName || reservation.roomNumber) && (
+                        <div className="rounded-md bg-muted px-3 py-2 text-xs">
+                          {reservation.hotelName && <div>ホテル: {reservation.hotelName}</div>}
+                          {reservation.roomNumber && <div>部屋番号: {reservation.roomNumber}</div>}
                         </div>
                       )}
                     </div>

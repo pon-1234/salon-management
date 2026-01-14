@@ -612,6 +612,8 @@ export async function getCastReservationDetail(
     notes: reservation.notes ?? null,
     areaMemo: memoSource ?? null,
     locationMemo: reservation.locationMemo ?? null,
+    hotelName: reservation.hotelName ?? null,
+    roomNumber: reservation.roomNumber ?? null,
     coursePrice: reservation.course?.price ?? null,
     storeRevenue: reservation.storeRevenue ?? null,
     staffRevenue: reservation.staffRevenue ?? null,

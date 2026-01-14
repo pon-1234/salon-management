@@ -36,6 +36,8 @@ export interface Reservation extends BaseEntity {
   stationId?: string | null
   stationName?: string
   stationTravelTime?: number
+  hotelName?: string
+  roomNumber?: string
   locationMemo?: string
   castCheckedInAt?: Date
   castCheckedOutAt?: Date
@@ -109,6 +111,8 @@ export interface ReservationData {
   stationId?: string | null
   stationName?: string
   stationTravelTime?: number
+  hotelName?: string
+  roomNumber?: string
   locationMemo?: string
   castCheckedInAt?: Date | null
   castCheckedOutAt?: Date | null
@@ -137,6 +141,8 @@ export interface ReservationUpdatePayload {
   marketingChannel?: string
   areaId?: string | null
   stationId?: string | null
+  hotelName?: string | null
+  roomNumber?: string | null
   locationMemo?: string
   options?: string[]
   castCheckedInAt?: Date | null

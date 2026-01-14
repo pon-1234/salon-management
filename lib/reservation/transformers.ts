@@ -133,6 +133,8 @@ export function mapReservationToReservationData(
     stationId: reservation.stationId ?? null,
     stationName: reservation.stationName ?? undefined,
     stationTravelTime: reservation.stationTravelTime ?? undefined,
+    hotelName: reservation.hotelName ?? undefined,
+    roomNumber: reservation.roomNumber ?? undefined,
     locationMemo: reservation.locationMemo ?? undefined,
     castCheckedInAt: reservation.castCheckedInAt ?? null,
     castCheckedOutAt: reservation.castCheckedOutAt ?? null,

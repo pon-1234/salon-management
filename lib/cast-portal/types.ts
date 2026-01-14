@@ -114,6 +114,8 @@ export interface CastReservationDetail extends CastPortalReservation {
   notes?: string | null
   areaMemo?: string | null
   locationMemo?: string | null
+  hotelName?: string | null
+  roomNumber?: string | null
   coursePrice?: number | null
   storeRevenue?: number | null
   staffRevenue?: number | null

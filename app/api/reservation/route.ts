@@ -795,6 +795,8 @@ export async function POST(request: NextRequest) {
             marketingChannel: reservationData.marketingChannel ?? null,
             areaId: resolvedAreaId,
             stationId: resolvedStationId,
+            hotelName: reservationData.hotelName ?? null,
+            roomNumber: reservationData.roomNumber ?? null,
             locationMemo: reservationData.locationMemo ?? null,
             notes: reservationData.notes ?? null,
             welfareExpense: revenue.welfareExpense,
@@ -1111,6 +1113,8 @@ export async function PUT(request: NextRequest) {
       if (updates.marketingChannel) updateData.marketingChannel = updates.marketingChannel
       if ('areaId' in updates) updateData.areaId = updates.areaId ?? null
       if ('stationId' in updates) updateData.stationId = updates.stationId ?? null
+      if ('hotelName' in updates) updateData.hotelName = updates.hotelName ?? null
+      if ('roomNumber' in updates) updateData.roomNumber = updates.roomNumber ?? null
       if ('locationMemo' in updates) updateData.locationMemo = updates.locationMemo ?? null
       if ('notes' in updates) updateData.notes = updates.notes ?? null
       if ('storeRevenue' in updates && typeof updates.storeRevenue === 'number') {
@@ -1498,6 +1502,26 @@ export async function PUT(request: NextRequest) {
           oldValue: oldStation,
           newValue: newStation,
           reason: '最寄り駅を更新',
+        })
+      }
+
+      if (valuesDiffer((previousReservation as any).hotelName, (updated as any).hotelName)) {
+        historyEntries.push({
+          fieldName: 'hotelName',
+          fieldDisplayName: 'ホテル名',
+          oldValue: formatText((previousReservation as any).hotelName),
+          newValue: formatText((updated as any).hotelName),
+          reason: 'ホテル名を更新',
+        })
+      }
+
+      if (valuesDiffer((previousReservation as any).roomNumber, (updated as any).roomNumber)) {
+        historyEntries.push({
+          fieldName: 'roomNumber',
+          fieldDisplayName: '部屋番号',
+          oldValue: formatText((previousReservation as any).roomNumber),
+          newValue: formatText((updated as any).roomNumber),
+          reason: '部屋番号を更新',
         })
       }
 

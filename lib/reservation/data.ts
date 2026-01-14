@@ -82,6 +82,8 @@ function normalizeReservation(entry: any): Reservation {
     stationId: entry.stationId ?? entry.station?.id ?? null,
     stationName: entry.station?.name ?? undefined,
     stationTravelTime: entry.station?.travelTime ?? undefined,
+    hotelName: entry.hotelName ?? undefined,
+    roomNumber: entry.roomNumber ?? undefined,
     locationMemo: entry.locationMemo ?? undefined,
     castCheckedInAt: entry.castCheckedInAt ? new Date(entry.castCheckedInAt) : undefined,
     castCheckedOutAt: entry.castCheckedOutAt ? new Date(entry.castCheckedOutAt) : undefined,
