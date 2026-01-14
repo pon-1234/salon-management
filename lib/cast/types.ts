@@ -13,6 +13,7 @@ export interface Cast extends BaseEntity {
   images: string[] // プロフィール画像（最大10枚）
   description: string
   netReservation: boolean
+  requestAttendanceEnabled?: boolean
   specialDesignationFee: number | null
   regularDesignationFee: number | null
   panelDesignationRank: number

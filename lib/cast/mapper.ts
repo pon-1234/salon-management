@@ -7,6 +7,8 @@ const toDate = (value: unknown): Date | undefined => {
   return Number.isNaN(date.getTime()) ? undefined : date
 }
 
+const FALLBACK_IMAGE = '/images/non-photo.svg'
+
 const normalizeImages = (value: unknown): string[] => {
   if (Array.isArray(value)) {
     return value.filter((item): item is string => typeof item === 'string' && item.length > 0)
@@ -89,10 +91,17 @@ export const normalizeCast = (raw: any): Cast => {
     waist: typeof raw.waist === 'number' ? raw.waist : Number(raw.waist ?? 0),
     hip: typeof raw.hip === 'number' ? raw.hip : Number(raw.hip ?? 0),
     type: raw.type ?? '',
-    image: raw.image ?? normalizeImages(raw.images)[0] ?? '',
-    images: normalizeImages(raw.images ?? raw.image),
+    image:
+      typeof raw.image === 'string' && raw.image.trim().length > 0
+        ? raw.image
+        : normalizeImages(raw.images)[0] ?? FALLBACK_IMAGE,
+    images: (() => {
+      const normalized = normalizeImages(raw.images ?? raw.image)
+      return normalized.length > 0 ? normalized : [FALLBACK_IMAGE]
+    })(),
     description: raw.description ?? '',
     netReservation: Boolean(raw.netReservation),
+    requestAttendanceEnabled: Boolean(raw.requestAttendanceEnabled),
     specialDesignationFee:
       raw.specialDesignationFee === null || raw.specialDesignationFee === undefined
         ? null

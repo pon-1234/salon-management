@@ -83,6 +83,9 @@ export function ReservationHistory({ store }: ReservationHistoryProps) {
       {upcomingReservations.length > 0 && (
         <div>
           <h3 className="mb-4 text-lg font-semibold">予約中</h3>
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
+            予約内容の変更・キャンセルはマイページからはできません。店舗までお電話でご連絡ください。
+          </div>
           <div className="space-y-4">
             {upcomingReservations.map((reservation) => (
               <Card key={reservation.id}>
@@ -130,13 +133,8 @@ export function ReservationHistory({ store }: ReservationHistoryProps) {
                     </div>
                   )}
 
-                  <div className="flex gap-2">
-                    <Button variant="outline" className="flex-1">
-                      予約変更
-                    </Button>
-                    <Button variant="outline" className="flex-1 text-red-600 hover:text-red-700">
-                      キャンセル
-                    </Button>
+                  <div className="text-sm text-muted-foreground">
+                    変更・キャンセルは店舗までご連絡ください。
                   </div>
                 </CardContent>
               </Card>

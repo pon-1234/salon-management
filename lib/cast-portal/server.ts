@@ -403,6 +403,7 @@ export async function getCastDashboardData(castId: string, storeId: string): Pro
       workStatus: cast.workStatus,
       storeId: cast.storeId,
       storeName: cast.store?.name ?? null,
+      requestAttendanceEnabled: Boolean(cast.requestAttendanceEnabled),
     },
     nextReservation: upcomingReservations[0] ?? null,
     todayReservations,

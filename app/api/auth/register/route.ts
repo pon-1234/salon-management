@@ -40,12 +40,18 @@ export async function POST(request: Request) {
 
     const existingEmail = await db.customer.findUnique({ where: { email: data.email } })
     if (existingEmail) {
-      return NextResponse.json({ error: 'このメールアドレスは既に登録されています' }, { status: 409 })
+      return NextResponse.json(
+        { error: 'このメールアドレスは既に登録されています', code: 'EMAIL_EXISTS' },
+        { status: 409 }
+      )
     }
 
     const existingPhone = await db.customer.findFirst({ where: { phone: normalizedPhone } })
     if (existingPhone) {
-      return NextResponse.json({ error: 'この電話番号は既に登録されています' }, { status: 409 })
+      return NextResponse.json(
+        { error: 'この電話番号は既に登録されています', code: 'PHONE_EXISTS' },
+        { status: 409 }
+      )
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10)

@@ -271,12 +271,23 @@ export async function PUT(request: NextRequest) {
     }
 
     if (password) {
+      if (!isAdmin) {
+        return NextResponse.json({ error: 'この操作は許可されていません' }, { status: 403 })
+      }
       updates.password = await bcrypt.hash(password, SALT_ROUNDS)
     }
 
     const normalizedUpdates: Record<string, unknown> = {
       ...updates,
       birthDate: updates.birthDate ? new Date(updates.birthDate) : undefined,
+    }
+
+    if (!isAdmin) {
+      delete normalizedUpdates.name
+      delete normalizedUpdates.nameKana
+      delete normalizedUpdates.email
+      delete normalizedUpdates.phone
+      delete normalizedUpdates.birthDate
     }
 
     if (typeof updates.smsEnabled !== 'boolean') {

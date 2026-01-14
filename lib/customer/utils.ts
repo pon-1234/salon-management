@@ -81,6 +81,8 @@ export function deserializeCustomer(raw: any): Customer {
   const smsEnabled = Boolean(raw?.smsEnabled)
   const emailNotificationEnabled =
     raw?.emailNotificationEnabled === undefined ? true : Boolean(raw.emailNotificationEnabled)
+  const phoneVerified = Boolean(raw?.phoneVerified)
+  const phoneVerifiedAt = toOptionalDate(raw?.phoneVerifiedAt)
 
   const normalized: Customer = {
     id: raw?.id ?? '',
@@ -94,6 +96,8 @@ export function deserializeCustomer(raw: any): Customer {
     memberType: raw?.memberType === 'vip' ? 'vip' : 'regular',
     smsEnabled,
     emailNotificationEnabled,
+    phoneVerified,
+    phoneVerifiedAt,
     points,
     registrationDate: registrationDate ?? createdAt,
     lastLoginDate,

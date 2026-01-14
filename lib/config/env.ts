@@ -30,6 +30,9 @@ function createEnv() {
     LINE_MESSAGING_ENABLED: z.string().optional(),
     LINE_MESSAGING_DEFAULT_USER_ID: z.string().optional(),
     LINE_CHANNEL_SECRET: z.string().optional(),
+    VONAGE_API_KEY: z.string().optional(),
+    VONAGE_API_SECRET: z.string().optional(),
+    VONAGE_SMS_FROM: z.string().optional(),
   })
 
   const rawEnv = rawEnvSchema.parse({
@@ -58,6 +61,9 @@ function createEnv() {
     LINE_MESSAGING_ENABLED: process.env.LINE_MESSAGING_ENABLED,
     LINE_MESSAGING_DEFAULT_USER_ID: process.env.LINE_MESSAGING_DEFAULT_USER_ID,
     LINE_CHANNEL_SECRET: process.env.LINE_CHANNEL_SECRET,
+    VONAGE_API_KEY: process.env.VONAGE_API_KEY,
+    VONAGE_API_SECRET: process.env.VONAGE_API_SECRET,
+    VONAGE_SMS_FROM: process.env.VONAGE_SMS_FROM,
   })
 
   const databaseUrl =
@@ -116,6 +122,9 @@ function createEnv() {
   const configuredLineChannelSecret = (rawEnv.LINE_CHANNEL_SECRET ?? '').trim()
   const lineWebhookChannelSecret =
     configuredLineChannelSecret.length > 0 ? configuredLineChannelSecret : legacyLineChannelSecret
+  const vonageApiKey = rawEnv.VONAGE_API_KEY ?? ''
+  const vonageApiSecret = rawEnv.VONAGE_API_SECRET ?? ''
+  const vonageSmsFrom = rawEnv.VONAGE_SMS_FROM ?? ''
 
   const siteUrl =
     rawEnv.NEXT_PUBLIC_SITE_URL ??
@@ -160,6 +169,11 @@ function createEnv() {
         defaultUserId: lineDefaultUserId,
         channelSecret: lineWebhookChannelSecret,
       },
+    },
+    vonage: {
+      apiKey: vonageApiKey,
+      apiSecret: vonageApiSecret,
+      smsFrom: vonageSmsFrom,
     },
   }
 }

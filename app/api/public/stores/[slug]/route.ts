@@ -43,7 +43,7 @@ function mapCastToSummary(cast: any) {
         : []
 
   const images = rawImages.filter((url: unknown): url is string => typeof url === 'string' && url.length > 0)
-  const primaryImage = images[0] ?? '/placeholder-user.jpg'
+  const primaryImage = images[0] ?? '/images/non-photo.svg'
 
   return {
     id: cast?.id ?? '',
@@ -277,8 +277,8 @@ export async function GET(
           return bannerSources.slice(0, 3).map((cast) => ({
             id: `banner-${cast.id}`,
             title: `${cast.name} 最新情報`,
-            imageUrl: cast.image ?? '/placeholder-user.jpg',
-            mobileImageUrl: cast.image ?? '/placeholder-user.jpg',
+            imageUrl: cast.image ?? '/images/non-photo.svg',
+            mobileImageUrl: cast.image ?? '/images/non-photo.svg',
             link: `/${store.slug}/cast/${cast.id}`,
           }))
         })())

@@ -44,6 +44,7 @@ const formSchema = z.object({
   store: z.string().min(1, '登録店舗を選択してください'),
   name: z.string().min(1, '名前は必須です'),
   phone: phoneSchema,
+  email: z.string().email('正しいメールアドレスを入力してください').optional().or(z.literal('')),
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -58,6 +59,7 @@ export function NewCustomerContent() {
       store: '',
       name: '',
       phone: '',
+      email: '',
     },
   })
 
@@ -68,11 +70,31 @@ export function NewCustomerContent() {
     }
   }, [searchParams, form])
 
-  const onSubmit = (data: FormData) => {
+  const onSubmit = async (data: FormData) => {
     const normalizedPhone = normalizePhoneNumber(data.phone)
-    console.log('Form submitted:', { ...data, phone: normalizedPhone })
-    // 登録後は顧客詳細ページにリダイレクト（詳細情報は後で編集可能）
-    router.push('/admin/customers/1')
+    try {
+      const response = await fetch('/api/admin/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.name,
+          phone: normalizedPhone,
+          email: data.email?.trim() || undefined,
+        }),
+      })
+
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(payload.error ?? '顧客の登録に失敗しました')
+      }
+
+      router.push(`/admin/customers/${payload.customer.id}`)
+    } catch (error) {
+      console.error('Failed to create customer:', error)
+      form.setError('root', {
+        message: error instanceof Error ? error.message : '顧客の登録に失敗しました',
+      })
+    }
   }
 
   return (
@@ -136,6 +158,22 @@ export function NewCustomerContent() {
 
               <FormField
                 control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">
+                      メールアドレス <span className="text-gray-400">(任意)</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="example@email.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
@@ -171,6 +209,12 @@ export function NewCustomerContent() {
               </div>
             </CardContent>
           </Card>
+
+          {form.formState.errors.root && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {form.formState.errors.root.message}
+            </div>
+          )}
 
           <div className="flex justify-end space-x-4 pt-6">
             <Button type="button" variant="outline" onClick={() => router.back()}>

@@ -137,7 +137,7 @@ export function MyPageContent({ store }: MyPageContentProps) {
     nickname: profile.name || session.user.name || 'ゲスト',
     email: profile.email || session.user.email || '',
     phone: profile.phone || '',
-    birthMonth: profile.birthDate ? profile.birthDate.getMonth() + 1 : 1,
+    birthDate: profile.birthDate,
     memberType: profile.memberType,
     points: profile.points,
     registeredAt: profile.createdAt ?? new Date(),

@@ -1,14 +1,11 @@
 'use client'
 
-import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { User, Mail, Phone, Calendar, Gift, Edit2, Check, X } from 'lucide-react'
+import { User, Mail, Phone, Calendar, Gift } from 'lucide-react'
 import { isVipMember } from '@/lib/utils'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
@@ -20,7 +17,7 @@ interface ProfileSectionProps {
     nickname: string
     email: string
     phone: string
-    birthMonth: number
+    birthDate: Date | null
     memberType: 'regular' | 'vip'
     points: number
     registeredAt: Date
@@ -32,25 +29,11 @@ interface ProfileSectionProps {
 
 export function ProfileSection({ user, customerId, onProfileUpdated }: ProfileSectionProps) {
   const { toast } = useToast()
-  const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [formData, setFormData] = useState({
-    nickname: user.nickname,
-    email: user.email,
-    phone: user.phone,
-    smsEnabled: user.smsEnabled,
-    emailNotifications: user.emailNotificationEnabled,
-  })
+  const [smsEnabled, setSmsEnabled] = useState(user.smsEnabled)
+  const [emailNotifications, setEmailNotifications] = useState(user.emailNotificationEnabled)
 
   const handleSave = async () => {
-    if (!formData.email.trim()) {
-      toast({
-        title: 'メールアドレスを入力してください',
-        variant: 'destructive',
-      })
-      return
-    }
-
     setIsSaving(true)
     try {
       const response = await fetch('/api/customer', {
@@ -60,11 +43,8 @@ export function ProfileSection({ user, customerId, onProfileUpdated }: ProfileSe
         },
         body: JSON.stringify({
           id: customerId,
-          name: formData.nickname,
-          email: formData.email.trim(),
-          phone: formData.phone,
-          smsEnabled: formData.smsEnabled,
-          emailNotificationEnabled: formData.emailNotifications,
+          smsEnabled,
+          emailNotificationEnabled: emailNotifications,
         }),
       })
 
@@ -75,8 +55,7 @@ export function ProfileSection({ user, customerId, onProfileUpdated }: ProfileSe
 
       const updated = await response.json()
       onProfileUpdated?.(updated)
-      toast({ title: 'プロフィールを更新しました' })
-      setIsEditing(false)
+      toast({ title: '通知設定を更新しました' })
     } catch (error) {
       toast({
         title: '保存に失敗しました',
@@ -88,49 +67,12 @@ export function ProfileSection({ user, customerId, onProfileUpdated }: ProfileSe
     }
   }
 
-  const handleCancel = () => {
-    setFormData({
-      nickname: user.nickname,
-      email: user.email,
-      phone: user.phone,
-      smsEnabled: user.smsEnabled,
-      emailNotifications: user.emailNotificationEnabled,
-    })
-    setIsEditing(false)
-  }
-
   return (
     <div className="space-y-6">
       {/* Profile Information */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader>
           <CardTitle>基本情報</CardTitle>
-          {!isEditing ? (
-            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-              <Edit2 className="mr-2 h-4 w-4" />
-              編集
-            </Button>
-          ) : (
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleCancel}>
-                <X className="mr-2 h-4 w-4" />
-                キャンセル
-              </Button>
-              <Button size="sm" onClick={handleSave} disabled={isSaving}>
-                {isSaving ? (
-                  <span className="flex items-center gap-2">
-                    <span className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent" />
-                    保存中...
-                  </span>
-                ) : (
-                  <>
-                    <Check className="mr-2 h-4 w-4" />
-                    保存
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Nickname */}
@@ -138,15 +80,7 @@ export function ProfileSection({ user, customerId, onProfileUpdated }: ProfileSe
             <User className="h-5 w-5 text-gray-400" />
             <div className="flex-1">
               <Label htmlFor="nickname">ニックネーム</Label>
-              {isEditing ? (
-                <Input
-                  id="nickname"
-                  value={formData.nickname}
-                  onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
-                />
-              ) : (
-                <p className="text-lg">{user.nickname}</p>
-              )}
+              <p className="text-lg">{user.nickname}</p>
             </div>
           </div>
 
@@ -155,16 +89,7 @@ export function ProfileSection({ user, customerId, onProfileUpdated }: ProfileSe
             <Mail className="h-5 w-5 text-gray-400" />
             <div className="flex-1">
               <Label htmlFor="email">メールアドレス</Label>
-              {isEditing ? (
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
-              ) : (
-                <p className="text-lg">{user.email}</p>
-              )}
+              <p className="text-lg">{user.email}</p>
             </div>
           </div>
 
@@ -173,16 +98,7 @@ export function ProfileSection({ user, customerId, onProfileUpdated }: ProfileSe
             <Phone className="h-5 w-5 text-gray-400" />
             <div className="flex-1">
               <Label htmlFor="phone">電話番号</Label>
-              {isEditing ? (
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                />
-              ) : (
-                <p className="text-lg">{user.phone}</p>
-              )}
+              <p className="text-lg">{user.phone}</p>
             </div>
           </div>
 
@@ -191,8 +107,16 @@ export function ProfileSection({ user, customerId, onProfileUpdated }: ProfileSe
             <Calendar className="h-5 w-5 text-gray-400" />
             <div className="flex-1">
               <Label>誕生月</Label>
-              <p className="text-lg">{user.birthMonth}月</p>
+              <p className="text-lg">
+                {user.birthDate
+                  ? format(user.birthDate, 'yyyy年MM月dd日', { locale: ja })
+                  : '未登録'}
+              </p>
             </div>
+          </div>
+
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
+            基本情報（ニックネーム・メールアドレス・電話番号・生年月日）の変更は店舗へご連絡ください。
           </div>
 
           {/* SMS Notifications */}
@@ -203,13 +127,9 @@ export function ProfileSection({ user, customerId, onProfileUpdated }: ProfileSe
             </div>
             <Switch
               id="sms"
-              checked={isEditing ? formData.smsEnabled : user.smsEnabled}
-              onCheckedChange={(checked) => {
-                if (isEditing) {
-                  setFormData({ ...formData, smsEnabled: checked })
-                }
-              }}
-              disabled={!isEditing}
+              checked={smsEnabled}
+              onCheckedChange={(checked) => setSmsEnabled(checked)}
+              disabled={isSaving}
             />
           </div>
 
@@ -223,14 +143,23 @@ export function ProfileSection({ user, customerId, onProfileUpdated }: ProfileSe
             </div>
             <Switch
               id="emailNotifications"
-              checked={isEditing ? formData.emailNotifications : user.emailNotificationEnabled}
-              onCheckedChange={(checked) => {
-                if (isEditing) {
-                  setFormData({ ...formData, emailNotifications: checked })
-                }
-              }}
-              disabled={!isEditing}
+              checked={emailNotifications}
+              onCheckedChange={(checked) => setEmailNotifications(checked)}
+              disabled={isSaving}
             />
+          </div>
+
+          <div className="flex justify-end">
+            <Button size="sm" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? (
+                <span className="flex items-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border border-white border-t-transparent" />
+                  保存中...
+                </span>
+              ) : (
+                '通知設定を保存'
+              )}
+            </Button>
           </div>
         </CardContent>
       </Card>

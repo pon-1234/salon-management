@@ -78,6 +78,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [birthDate, setBirthDate] = useState<Date>()
+  const [phoneClaim, setPhoneClaim] = useState<string | null>(null)
 
   const {
     register,
@@ -105,6 +106,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
     setLoading(true)
     setError(null)
     setSuccess(null)
+    setPhoneClaim(null)
 
     try {
       const response = await fetch('/api/auth/register', {
@@ -126,6 +128,10 @@ export function RegisterForm({ store }: RegisterFormProps) {
       const result = await response.json()
 
       if (!response.ok) {
+        if (result?.code === 'PHONE_EXISTS') {
+          setPhoneClaim(normalizePhoneNumber(data.phone))
+          throw new Error('この電話番号は登録済みです。SMS認証で引き継ぎできます。')
+        }
         throw new Error(result.error || '登録に失敗しました')
       }
 
@@ -169,6 +175,22 @@ export function RegisterForm({ store }: RegisterFormProps) {
           <Alert variant="destructive" className="mb-6">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {phoneClaim && (
+          <Alert className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              既存アカウントの引き継ぎは
+              <Link
+                href={`/${store.slug}/verify-phone?mode=claim&phone=${encodeURIComponent(phoneClaim)}`}
+                className="ml-1 text-blue-600 hover:underline"
+              >
+                SMS認証ページ
+              </Link>
+              から行ってください。
+            </AlertDescription>
           </Alert>
         )}
 

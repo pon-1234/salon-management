@@ -32,7 +32,7 @@ function normalizeImages(record: CastRecord) {
         ? [record.image]
         : []
   const cleaned = raw.filter((url) => typeof url === 'string' && url.length > 0)
-  const primary = cleaned[0] ?? '/placeholder-user.jpg'
+  const primary = cleaned[0] ?? '/images/non-photo.svg'
   return { primary, all: cleaned.length > 0 ? cleaned : [primary] }
 }
 

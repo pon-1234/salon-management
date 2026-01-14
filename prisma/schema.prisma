@@ -26,6 +26,11 @@ model Customer {
   emailVerified        Boolean       @default(false)
   emailVerificationToken String?
   emailVerificationExpiry DateTime?
+  phoneVerified        Boolean       @default(false)
+  phoneVerifiedAt      DateTime?
+  phoneVerificationCode String?
+  phoneVerificationExpiry DateTime?
+  phoneVerificationAttempts Int @default(0)
   ngCasts      NgCastEntry[]
   pointHistory CustomerPointHistory[]
   reservations Reservation[]
@@ -70,6 +75,7 @@ model Cast {
   description            String
   publicProfile          Json?
   netReservation         Boolean
+  requestAttendanceEnabled Boolean     @default(false)
   specialDesignationFee  Int?
   regularDesignationFee  Int?
   panelDesignationRank   Int

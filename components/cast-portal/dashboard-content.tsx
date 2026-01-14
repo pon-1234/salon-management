@@ -1,9 +1,9 @@
 'use client'
 
-import { useCallback, useMemo, useState, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
-import { CalendarDays, CheckCircle2, Clock, Loader2, RefreshCcw, TrendingUp } from 'lucide-react'
+import { CalendarDays, CheckCircle2, Clock, Loader2, RefreshCcw, TrendingUp, UserCheck } from 'lucide-react'
 import type { CastDashboardData, CastPortalReservation } from '@/lib/cast-portal/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -21,7 +21,15 @@ export function CastDashboardContent({ initialData }: Props) {
   const [data, setData] = useState<CastDashboardData>(initialData)
   const [isPending, startTransition] = useTransition()
   const [isStatusPending, startStatusTransition] = useTransition()
+  const [isRequestPending, startRequestTransition] = useTransition()
   const { toast } = useToast()
+  const [requestAttendanceEnabled, setRequestAttendanceEnabled] = useState(
+    Boolean(initialData.cast.requestAttendanceEnabled)
+  )
+
+  useEffect(() => {
+    setRequestAttendanceEnabled(Boolean(data.cast.requestAttendanceEnabled))
+  }, [data.cast.requestAttendanceEnabled])
 
   const currentReservation = useMemo(() => {
     if (!data.attendance.currentReservationId) {
@@ -197,6 +205,38 @@ export function CastDashboardContent({ initialData }: Props) {
           onChange={handleWorkStatusChange}
         />
       ) : null}
+
+      <CastRequestAttendanceControl
+        enabled={requestAttendanceEnabled}
+        isPending={isRequestPending}
+        onChange={(next) => {
+          startRequestTransition(async () => {
+            try {
+              const response = await fetch('/api/cast-portal/request-attendance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled: next }),
+              })
+
+              if (!response.ok) {
+                const payload = await response.json().catch(() => ({}))
+                throw new Error(payload.error ?? '更新に失敗しました。')
+              }
+
+              setRequestAttendanceEnabled(next)
+              toast({
+                title: next ? 'リクエスト出勤を受付中にしました' : 'リクエスト出勤を停止しました',
+              })
+            } catch (error) {
+              toast({
+                title: '更新に失敗しました',
+                description: error instanceof Error ? error.message : undefined,
+                variant: 'destructive',
+              })
+            }
+          })
+        }}
+      />
 
       <AttendanceCard
         reservation={currentReservation}
@@ -435,6 +475,53 @@ function CastWorkStatusControl({
               </Button>
             )
           })}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function CastRequestAttendanceControl({
+  enabled,
+  isPending,
+  onChange,
+}: {
+  enabled: boolean
+  isPending: boolean
+  onChange: (enabled: boolean) => void
+}) {
+  return (
+    <Card>
+      <CardHeader className="space-y-1">
+        <CardTitle className="flex items-center gap-2 text-sm">
+          <UserCheck className="h-4 w-4" />
+          リクエスト出勤の受付
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          受付をオンにするとプロフィールページにリクエスト出勤ボタンが表示されます。
+        </p>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            variant={enabled ? 'default' : 'outline'}
+            size="sm"
+            className={cn('h-10 px-4', enabled && 'bg-emerald-600 hover:bg-emerald-700')}
+            onClick={() => onChange(true)}
+            disabled={isPending}
+          >
+            受付する
+          </Button>
+          <Button
+            variant={!enabled ? 'default' : 'outline'}
+            size="sm"
+            className={cn('h-10 px-4', !enabled && 'bg-gray-800 hover:bg-gray-900')}
+            onClick={() => onChange(false)}
+            disabled={isPending}
+          >
+            受付しない
+          </Button>
+          <span className="text-xs text-muted-foreground">現在: {enabled ? '受付中' : '停止中'}</span>
         </div>
       </CardContent>
     </Card>

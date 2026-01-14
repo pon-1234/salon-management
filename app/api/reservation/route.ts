@@ -541,6 +541,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (!isAdmin && !customerRecord.phoneVerified) {
+      return NextResponse.json(
+        { error: '予約前に電話番号の認証が必要です。', code: 'PHONE_NOT_VERIFIED' },
+        { status: 403 }
+      )
+    }
+
     if (!castRecord) {
       return NextResponse.json({ error: '指定されたキャストが存在しません。' }, { status: 400 })
     }

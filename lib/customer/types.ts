@@ -18,6 +18,8 @@ export interface Customer extends BaseEntity {
   memberType: 'regular' | 'vip'
   smsEnabled: boolean
   emailNotificationEnabled: boolean
+  phoneVerified?: boolean
+  phoneVerifiedAt?: Date
   points: number
   registrationDate: Date
   lastLoginDate?: Date

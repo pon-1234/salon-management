@@ -65,6 +65,7 @@ export interface CastDashboardData {
     workStatus: string
     storeId: string
     storeName: string | null
+    requestAttendanceEnabled?: boolean
   }
   nextReservation: CastPortalReservation | null
   todayReservations: CastPortalReservation[]
