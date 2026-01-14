@@ -9,6 +9,8 @@ const NAV_ITEMS: CastPortalNavigationProps['items'] = [
   { href: '/cast/dashboard', label: 'ホーム', icon: 'home' },
   { href: '/cast/reservations', label: '予約', icon: 'calendar' },
   { href: '/cast/settlements', label: '精算', icon: 'wallet' },
+  { href: '/cast/performance', label: '成績', icon: 'chart' },
+  { href: '/cast/diary', label: '写メ日記', icon: 'camera' },
   { href: '/cast/line-link', label: 'LINE連携', icon: 'link' },
   { href: '/cast/chat', label: 'チャット', icon: 'chat' },
 ]

@@ -8,7 +8,14 @@ import type { CastSettlementsData } from '@/lib/cast-portal/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/use-toast'
-import { Badge } from '@/components/ui/badge'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { cn } from '@/lib/utils'
 
 export function CastSettlementsContent({ initialData }: { initialData: CastSettlementsData }) {
@@ -81,9 +88,9 @@ export function CastSettlementsContent({ initialData }: { initialData: CastSettl
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">日別の清算履歴</CardTitle>
+          <CardTitle className="text-lg">日別の精算内訳</CardTitle>
           <p className="text-sm text-muted-foreground">
-            日付ごとの売上合計と件数を確認し、行を開いて詳細な予約内訳を参照できます。
+            日付ごとにコース本数・オプション・手取り金額を表で確認できます。
           </p>
         </CardHeader>
         <CardContent>
@@ -126,6 +133,43 @@ function DayRow({
     () => format(new Date(`${day.date}T00:00:00`), 'M月d日(E)', { locale: ja }),
     [day.date]
   )
+  const summary = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        courseName: string
+        count: number
+        optionTotal: number
+        netTotal: number
+      }
+    >()
+    day.records.forEach((record) => {
+      const courseName = record.courseName ?? 'コース未設定'
+      const optionTotal = record.options.reduce((sum, option) => sum + option.price, 0)
+      const netTotal = Math.max(record.staffRevenue - record.welfareExpense, 0)
+      const current = map.get(courseName) ?? {
+        courseName,
+        count: 0,
+        optionTotal: 0,
+        netTotal: 0,
+      }
+      current.count += 1
+      current.optionTotal += optionTotal
+      current.netTotal += netTotal
+      map.set(courseName, current)
+    })
+    const rows = Array.from(map.values()).sort((a, b) => b.netTotal - a.netTotal)
+    const totals = rows.reduce(
+      (acc, row) => {
+        acc.count += row.count
+        acc.optionTotal += row.optionTotal
+        acc.netTotal += row.netTotal
+        return acc
+      },
+      { count: 0, optionTotal: 0, netTotal: 0 }
+    )
+    return { rows, totals }
+  }, [day.records])
 
   return (
     <div className="divide-y">
@@ -145,65 +189,43 @@ function DayRow({
       </button>
       {isExpanded ? (
         <div className="space-y-3 bg-muted/20 px-4 py-4">
-          {day.records.map((record) => (
-            <SettlementRecordCard key={record.id} record={record} />
-          ))}
-        </div>
-      ) : null}
-    </div>
-  )
-}
-
-function SettlementRecordCard({ record }: { record: CastSettlementsData['days'][number]['records'][number] }) {
-  const startLabel = format(new Date(record.startTime), 'M/d HH:mm')
-  const hasOptions = record.options.length > 0
-  const statusBadge =
-    record.status === 'completed' ? (
-      <Badge variant="outline" className="border-emerald-200 text-emerald-600">
-        精算済み
-      </Badge>
-    ) : (
-      <Badge variant="outline" className="border-amber-200 text-amber-600">
-        未精算
-      </Badge>
-    )
-
-  return (
-    <div className="space-y-2 rounded-lg border border-border bg-background/80 p-3 shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-        <div className="font-medium text-foreground">{startLabel}</div>
-        {statusBadge}
-      </div>
-      <div className="text-base font-semibold text-foreground">{record.courseName ?? 'コース未設定'}</div>
-      <div className="grid gap-3 text-sm text-muted-foreground md:grid-cols-3">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-muted-foreground/80">売上</p>
-          <p className="text-base font-semibold text-foreground">¥{record.price.toLocaleString()}</p>
-        </div>
-        <div>
-          <p className="text-xs uppercase tracking-wide text-muted-foreground/80">キャスト売上</p>
-          <p className="text-base font-semibold text-foreground">¥{record.staffRevenue.toLocaleString()}</p>
-        </div>
-        <div>
-          <p className="text-xs uppercase tracking-wide text-muted-foreground/80">店舗売上</p>
-          <p className="text-base font-semibold text-foreground">¥{record.storeRevenue.toLocaleString()}</p>
-        </div>
-        <div>
-          <p className="text-xs uppercase tracking-wide text-muted-foreground/80">厚生費</p>
-          <p className="text-base font-semibold text-foreground">¥{record.welfareExpense.toLocaleString()}</p>
-        </div>
-      </div>
-      {hasOptions ? (
-        <div className="rounded-md bg-muted/40 p-3">
-          <p className="text-xs font-medium text-muted-foreground">オプション</p>
-          <ul className="mt-2 space-y-1 text-sm text-foreground">
-            {record.options.map((option) => (
-              <li key={`${record.id}-${option.id}`} className="flex items-center justify-between">
-                <span>{option.name}</span>
-                <span className="font-medium">¥{option.price.toLocaleString()}</span>
-              </li>
-            ))}
-          </ul>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>コース</TableHead>
+                <TableHead className="text-right">本数</TableHead>
+                <TableHead className="text-right">オプション</TableHead>
+                <TableHead className="text-right">手取り金額</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {summary.rows.map((row) => (
+                <TableRow key={row.courseName}>
+                  <TableCell className="font-medium text-foreground">{row.courseName}</TableCell>
+                  <TableCell className="text-right">{row.count} 本</TableCell>
+                  <TableCell className="text-right">
+                    ¥{row.optionTotal.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    ¥{row.netTotal.toLocaleString()}
+                  </TableCell>
+                </TableRow>
+              ))}
+              <TableRow className="bg-muted/40">
+                <TableCell className="font-semibold text-foreground">合計</TableCell>
+                <TableCell className="text-right font-semibold">{summary.totals.count} 本</TableCell>
+                <TableCell className="text-right font-semibold">
+                  ¥{summary.totals.optionTotal.toLocaleString()}
+                </TableCell>
+                <TableCell className="text-right font-semibold">
+                  ¥{summary.totals.netTotal.toLocaleString()}
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+          <p className="text-xs text-muted-foreground">
+            手取り金額 = キャスト売上 - 厚生費
+          </p>
         </div>
       ) : null}
     </div>

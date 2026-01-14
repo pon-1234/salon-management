@@ -12,12 +12,14 @@ import {
   startOfDay,
   startOfMonth,
 } from 'date-fns'
+import { ja } from 'date-fns/locale'
 import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz'
 import type {
   CastAttendanceRequestSummary,
   CastAttendanceState,
   CastDashboardData,
   CastDashboardStats,
+  CastPerformanceSnapshot,
   CastPortalReservation,
   CastReservationListResponse,
   CastReservationScope,
@@ -268,6 +270,30 @@ export function serializeAttendanceRequests(
   }))
 }
 
+function buildCountMap<T extends { castId: string; _count: { _all: number } }>(
+  rows: T[]
+): Map<string, number> {
+  const map = new Map<string, number>()
+  rows.forEach((row) => {
+    map.set(row.castId, row._count._all)
+  })
+  return map
+}
+
+function computeRank(
+  castIds: string[],
+  counts: Map<string, number>,
+  targetCastId: string
+): { rank: number | null; count: number } {
+  const entries = castIds.map((id) => ({ id, count: counts.get(id) ?? 0 }))
+  entries.sort((a, b) => b.count - a.count)
+  const index = entries.findIndex((entry) => entry.id === targetCastId)
+  return {
+    rank: index >= 0 ? index + 1 : null,
+    count: counts.get(targetCastId) ?? 0,
+  }
+}
+
 export async function getCastDashboardData(castId: string, storeId: string): Promise<CastDashboardData> {
   const now = new Date()
   const todayStart = startOfDayInTimeZone(now, DEFAULT_TIME_ZONE)
@@ -384,6 +410,100 @@ export async function getCastDashboardData(castId: string, storeId: string): Pro
     attendance,
     attendanceRequests,
     isScheduledToday: Boolean(todaySchedule),
+  }
+}
+
+export async function getCastPerformanceSnapshot(
+  castId: string,
+  storeId: string
+): Promise<CastPerformanceSnapshot> {
+  const now = new Date()
+  const monthStart = startOfMonthInTimeZone(now, DEFAULT_TIME_ZONE)
+  const monthEnd = endOfMonthInTimeZone(now, DEFAULT_TIME_ZONE)
+  const [cast, casts, totalRows, regularRows] = await Promise.all([
+    db.cast.findFirst({
+      where: { id: castId, storeId },
+      include: {
+        store: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    }),
+    db.cast.findMany({
+      where: { storeId },
+      select: { id: true },
+    }),
+    db.reservation.groupBy({
+      by: ['castId'],
+      where: {
+        storeId,
+        status: {
+          not: 'cancelled',
+        },
+        startTime: {
+          gte: monthStart,
+          lte: monthEnd,
+        },
+      },
+      _count: {
+        _all: true,
+      },
+    }),
+    db.reservation.groupBy({
+      by: ['castId'],
+      where: {
+        storeId,
+        status: {
+          not: 'cancelled',
+        },
+        designationType: 'regular',
+        startTime: {
+          gte: monthStart,
+          lte: monthEnd,
+        },
+      },
+      _count: {
+        _all: true,
+      },
+    }),
+  ])
+
+  if (!cast) {
+    throw new Error('Cast not found or access denied')
+  }
+
+  const castIds = casts.map((entry) => entry.id)
+  const totalCounts = buildCountMap(totalRows)
+  const regularCounts = buildCountMap(regularRows)
+  const totalMetric = computeRank(castIds, totalCounts, castId)
+  const regularMetric = computeRank(castIds, regularCounts, castId)
+
+  return {
+    cast: {
+      id: cast.id,
+      name: cast.name,
+      storeId: cast.storeId,
+      storeName: cast.store?.name ?? null,
+    },
+    periodLabel: format(utcToZonedTime(now, DEFAULT_TIME_ZONE), 'yyyy年M月', { locale: ja }),
+    totalCastCount: castIds.length,
+    totalDesignation: {
+      label: '総指名ランキング（フリー含む）',
+      rank: totalMetric.rank,
+      count: totalMetric.count,
+    },
+    regularDesignation: {
+      label: '本指名ランキング',
+      rank: regularMetric.rank,
+      count: regularMetric.count,
+    },
+    access: {
+      label: 'アクセス数ランキング',
+      rank: null,
+      count: null,
+    },
   }
 }
 

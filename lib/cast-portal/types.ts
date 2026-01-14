@@ -74,6 +74,26 @@ export interface CastDashboardData {
   isScheduledToday: boolean
 }
 
+export interface CastRankingMetric {
+  label: string
+  rank: number | null
+  count: number | null
+}
+
+export interface CastPerformanceSnapshot {
+  cast: {
+    id: string
+    name: string
+    storeId: string
+    storeName: string | null
+  }
+  periodLabel: string
+  totalCastCount: number
+  totalDesignation: CastRankingMetric
+  regularDesignation: CastRankingMetric
+  access: CastRankingMetric
+}
+
 export interface CastReservationListResponse {
   items: CastPortalReservation[]
   meta: {

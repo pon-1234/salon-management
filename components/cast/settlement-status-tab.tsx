@@ -1,8 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
+import { format } from 'date-fns'
+import { ja } from 'date-fns/locale'
+import { ChevronDown, Loader2, PiggyBank, Receipt, Shield } from 'lucide-react'
+import type { CastSettlementsData } from '@/lib/cast-portal/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -12,307 +15,155 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { Progress } from '@/components/ui/progress'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import {
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  DollarSign,
-  TrendingUp,
-  Calendar,
-  Calculator,
-  Receipt,
-  CreditCard,
-} from 'lucide-react'
-import { SalesRecord, PaymentRecord, SettlementSummary } from '@/lib/cast/types'
-import {
-  getSalesRecordsByCast,
-  getPaymentRecordsByCast,
-  getSettlementSummaryByCast,
-} from '@/lib/cast/sales-data'
-import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
-import { ja } from 'date-fns/locale'
+import { cn } from '@/lib/utils'
 
 interface SettlementStatusTabProps {
   castId: string
   castName: string
 }
 
-export function SettlementStatusTab({ castId, castName }: SettlementStatusTabProps) {
-  const [salesRecords] = useState<SalesRecord[]>(getSalesRecordsByCast(castId))
-  const [paymentRecords] = useState<PaymentRecord[]>(getPaymentRecordsByCast(castId))
-  const [settlementSummary] = useState<SettlementSummary>(getSettlementSummaryByCast(castId))
-  const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'custom'>('week')
+export function SettlementStatusTab({ castId }: SettlementStatusTabProps) {
+  const [data, setData] = useState<CastSettlementsData | null>(null)
+  const [isPending, startTransition] = useTransition()
+  const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({})
+  const [error, setError] = useState<string | null>(null)
 
-  // 期間別の集計
-  const getStatsByPeriod = (period: 'week' | 'month') => {
-    const now = new Date()
-    const start = period === 'week' ? startOfWeek(now, { weekStartsOn: 1 }) : startOfMonth(now)
-    const end = period === 'week' ? endOfWeek(now, { weekStartsOn: 1 }) : endOfMonth(now)
-
-    const periodSales = salesRecords.filter((record) => record.date >= start && record.date <= end)
-
-    const periodPayments = paymentRecords.filter(
-      (record) => record.date >= start && record.date <= end
+  const fetchData = useCallback(async () => {
+    const response = await fetch(
+      `/api/admin/cast/settlements?castId=${encodeURIComponent(castId)}`,
+      { cache: 'no-store' }
     )
 
-    const totalSales = periodSales.reduce((sum, record) => sum + record.totalAmount, 0)
-    const totalCastShare = periodSales.reduce((sum, record) => sum + record.castShare, 0)
-    const totalPaid = periodPayments.reduce((sum, record) => sum + record.amount, 0)
-    const unpaidSales = periodSales.filter((record) => record.paymentStatus === '未精算')
-    const unpaidAmount = unpaidSales.reduce((sum, record) => sum + record.castShare, 0)
-
-    return {
-      period: { start, end },
-      totalSales,
-      totalCastShare,
-      totalPaid,
-      unpaidAmount,
-      unpaidCount: unpaidSales.length,
-      paymentRate: totalCastShare > 0 ? (totalPaid / totalCastShare) * 100 : 0,
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}))
+      throw new Error(payload.error ?? '精算情報の取得に失敗しました。')
     }
+
+    return (await response.json()) as CastSettlementsData
+  }, [castId])
+
+  useEffect(() => {
+    let ignore = false
+
+    const load = async () => {
+      setError(null)
+      startTransition(async () => {
+        try {
+          const payload = await fetchData()
+          if (!ignore) {
+            setData(payload)
+          }
+        } catch (err) {
+          if (!ignore) {
+            setError(err instanceof Error ? err.message : '精算情報の取得に失敗しました。')
+          }
+        }
+      })
+    }
+
+    load()
+
+    return () => {
+      ignore = true
+    }
+  }, [fetchData])
+
+  const toggleDay = useCallback((date: string) => {
+    setExpandedDates((prev) => ({
+      ...prev,
+      [date]: !prev[date],
+    }))
+  }, [])
+
+  if (!data) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+          {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          {error ?? '精算情報を読み込み中...'}
+        </CardContent>
+      </Card>
+    )
   }
-
-  const weekStats = getStatsByPeriod('week')
-  const monthStats = getStatsByPeriod('month')
-
-  const unpaidSales = salesRecords.filter((record) => record.paymentStatus === '未精算')
-  const recentUnpaidSales = unpaidSales.filter(
-    (record) => record.date <= subDays(new Date(), 3) // 3日以上前の未精算
-  )
-
-  const settlementRate =
-    settlementSummary.totalCastShare > 0
-      ? (settlementSummary.totalPaid / settlementSummary.totalCastShare) * 100
-      : 0
 
   return (
     <div className="space-y-6">
-      {/* アラート */}
-      {recentUnpaidSales.length > 0 && (
-        <Card className="border-orange-200 bg-orange-50">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <AlertTriangle className="h-5 w-5 text-orange-600" />
-              <div>
-                <p className="font-medium text-orange-800">
-                  {recentUnpaidSales.length}件の古い未精算売上があります
-                </p>
-                <p className="text-sm text-orange-600">
-                  3日以上前の売上で未精算のものがあります。確認してください。
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 精算状況サマリー */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <DollarSign className="h-4 w-4 text-green-600" />
-              <div>
-                <p className="text-sm font-medium text-gray-600">総売上</p>
-                <p className="text-xl font-bold">
-                  ¥{settlementSummary.totalSales.toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <TrendingUp className="h-4 w-4 text-blue-600" />
-              <div>
-                <p className="text-sm font-medium text-gray-600">キャスト売上総額</p>
-                <p className="text-xl font-bold">
-                  ¥{settlementSummary.totalCastShare.toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <div>
-                <p className="text-sm font-medium text-gray-600">支払済み</p>
-                <p className="text-xl font-bold">¥{settlementSummary.totalPaid.toLocaleString()}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Clock className="h-4 w-4 text-orange-600" />
-              <div>
-                <p className="text-sm font-medium text-gray-600">未精算額</p>
-                <p className="text-xl font-bold text-orange-600">
-                  ¥{settlementSummary.pendingAmount.toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">精算状況</h2>
+          <p className="text-sm text-muted-foreground">
+            当月の精算状況と日別の内訳を確認できます。
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            startTransition(async () => {
+              try {
+                const payload = await fetchData()
+                setData(payload)
+              } catch (err) {
+                setError(err instanceof Error ? err.message : '精算情報の取得に失敗しました。')
+              }
+            })
+          }
+          disabled={isPending}
+        >
+          {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          更新
+        </Button>
       </div>
 
-      {/* 精算率 */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <SummaryTile
+          icon={PiggyBank}
+          title="今月のキャスト売上"
+          value={`¥${data.summary.staffRevenue.toLocaleString()}`}
+          helper={`総売上 ¥${data.summary.totalRevenue.toLocaleString()}`}
+        />
+        <SummaryTile
+          icon={Shield}
+          title="厚生費累計"
+          value={`¥${data.summary.welfareExpense.toLocaleString()}`}
+          helper="雑費（厚生費）を含む控除合計"
+        />
+        <SummaryTile
+          icon={Receipt}
+          title="精算状況"
+          value={`${data.summary.completedCount} 件 完了`}
+          helper={`未精算 ${data.summary.pendingCount} 件`}
+        />
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calculator className="h-5 w-5" />
-            精算進捗
-          </CardTitle>
+          <CardTitle className="text-lg">日別の精算内訳</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            日付ごとにコース本数・オプション・手取り金額を表で確認できます。
+          </p>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div>
-              <div className="mb-2 flex justify-between text-sm">
-                <span>精算率</span>
-                <span>{settlementRate.toFixed(1)}%</span>
+          {data.days.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              今月の精算データはまだありません。
+            </p>
+          ) : (
+            <div className="divide-y rounded-md border">
+              <div className="grid grid-cols-[1.5fr_repeat(2,_1fr)_auto] gap-3 bg-muted/40 px-4 py-2 text-xs font-medium text-muted-foreground">
+                <span>日付</span>
+                <span className="text-right">売上合計</span>
+                <span className="text-right">本数</span>
+                <span className="text-right">詳細</span>
               </div>
-              <Progress value={settlementRate} className="h-2" />
-            </div>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-600">支払済み:</span>
-                <span className="ml-2 font-medium">
-                  ¥{settlementSummary.totalPaid.toLocaleString()}
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-600">未精算:</span>
-                <span className="ml-2 font-medium text-orange-600">
-                  ¥{settlementSummary.pendingAmount.toLocaleString()}
-                </span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 期間別集計 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            期間別精算状況
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="week" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="week">今週</TabsTrigger>
-              <TabsTrigger value="month">今月</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="week" className="space-y-4">
-              <PeriodStatsCard
-                title="今週の精算状況"
-                period={
-                  format(weekStats.period.start, 'M/d', { locale: ja }) +
-                  ' - ' +
-                  format(weekStats.period.end, 'M/d', { locale: ja })
-                }
-                stats={weekStats}
-              />
-            </TabsContent>
-
-            <TabsContent value="month" className="space-y-4">
-              <PeriodStatsCard
-                title="今月の精算状況"
-                period={format(monthStats.period.start, 'yyyy年M月', { locale: ja })}
-                stats={monthStats}
-              />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-
-      {/* 未精算売上一覧 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Receipt className="h-5 w-5" />
-            未精算売上一覧 ({unpaidSales.length}件)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>日時</TableHead>
-                <TableHead>顧客名</TableHead>
-                <TableHead>サービス</TableHead>
-                <TableHead>キャスト売上</TableHead>
-                <TableHead>経過日数</TableHead>
-                <TableHead>状態</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {unpaidSales.map((record) => {
-                const daysPassed = Math.floor(
-                  (new Date().getTime() - record.date.getTime()) / (1000 * 60 * 60 * 24)
-                )
-                return (
-                  <TableRow key={record.id}>
-                    <TableCell>
-                      <div className="text-sm">
-                        <div>{format(record.date, 'M/d(E)', { locale: ja })}</div>
-                        <div className="text-gray-500">{format(record.date, 'HH:mm')}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium">{record.customerName}</TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <div>{record.serviceName}</div>
-                        <div className="text-gray-500">{record.location}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      ¥{record.castShare.toLocaleString()}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          daysPassed > 3 ? 'destructive' : daysPassed > 1 ? 'secondary' : 'outline'
-                        }
-                        className="text-xs"
-                      >
-                        {daysPassed}日前
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="destructive" className="text-xs">
-                        未精算
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-
-          {unpaidSales.length === 0 && (
-            <div className="py-8 text-center text-gray-500">
-              <CheckCircle className="mx-auto mb-2 h-12 w-12 text-green-500" />
-              すべて精算済みです
+              {data.days.map((day) => (
+                <DayRow
+                  key={day.date}
+                  day={day}
+                  isExpanded={Boolean(expandedDates[day.date])}
+                  onToggle={() => toggleDay(day.date)}
+                />
+              ))}
             </div>
           )}
         </CardContent>
@@ -321,59 +172,146 @@ export function SettlementStatusTab({ castId, castName }: SettlementStatusTabPro
   )
 }
 
-interface PeriodStatsCardProps {
-  title: string
-  period: string
-  stats: {
-    totalSales: number
-    totalCastShare: number
-    totalPaid: number
-    unpaidAmount: number
-    unpaidCount: number
-    paymentRate: number
-  }
+function DayRow({
+  day,
+  isExpanded,
+  onToggle,
+}: {
+  day: CastSettlementsData['days'][number]
+  isExpanded: boolean
+  onToggle: () => void
+}) {
+  const dayLabel = useMemo(
+    () => format(new Date(`${day.date}T00:00:00`), 'M月d日(E)', { locale: ja }),
+    [day.date]
+  )
+  const summary = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        courseName: string
+        count: number
+        optionTotal: number
+        netTotal: number
+      }
+    >()
+    day.records.forEach((record) => {
+      const courseName = record.courseName ?? 'コース未設定'
+      const optionTotal = record.options.reduce((sum, option) => sum + option.price, 0)
+      const netTotal = Math.max(record.staffRevenue - record.welfareExpense, 0)
+      const current = map.get(courseName) ?? {
+        courseName,
+        count: 0,
+        optionTotal: 0,
+        netTotal: 0,
+      }
+      current.count += 1
+      current.optionTotal += optionTotal
+      current.netTotal += netTotal
+      map.set(courseName, current)
+    })
+    const rows = Array.from(map.values()).sort((a, b) => b.netTotal - a.netTotal)
+    const totals = rows.reduce(
+      (acc, row) => {
+        acc.count += row.count
+        acc.optionTotal += row.optionTotal
+        acc.netTotal += row.netTotal
+        return acc
+      },
+      { count: 0, optionTotal: 0, netTotal: 0 }
+    )
+    return { rows, totals }
+  }, [day.records])
+
+  return (
+    <div className="divide-y">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="grid w-full grid-cols-[1.5fr_repeat(2,_1fr)_auto] items-center gap-3 px-4 py-3 text-sm hover:bg-muted/30"
+      >
+        <span className="text-left font-medium text-foreground">{dayLabel}</span>
+        <span className="text-right font-semibold text-foreground">
+          ¥{day.totalRevenue.toLocaleString()}
+        </span>
+        <span className="text-right text-muted-foreground">{day.reservationCount} 件</span>
+        <span className="flex justify-end">
+          <ChevronDown
+            className={cn(
+              'h-4 w-4 text-muted-foreground transition-transform',
+              isExpanded && 'rotate-180'
+            )}
+          />
+        </span>
+      </button>
+      {isExpanded ? (
+        <div className="space-y-3 bg-muted/20 px-4 py-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>コース</TableHead>
+                <TableHead className="text-right">本数</TableHead>
+                <TableHead className="text-right">オプション</TableHead>
+                <TableHead className="text-right">手取り金額</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {summary.rows.map((row) => (
+                <TableRow key={row.courseName}>
+                  <TableCell className="font-medium text-foreground">
+                    {row.courseName}
+                  </TableCell>
+                  <TableCell className="text-right">{row.count} 本</TableCell>
+                  <TableCell className="text-right">
+                    ¥{row.optionTotal.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    ¥{row.netTotal.toLocaleString()}
+                  </TableCell>
+                </TableRow>
+              ))}
+              <TableRow className="bg-muted/40">
+                <TableCell className="font-semibold text-foreground">合計</TableCell>
+                <TableCell className="text-right font-semibold">
+                  {summary.totals.count} 本
+                </TableCell>
+                <TableCell className="text-right font-semibold">
+                  ¥{summary.totals.optionTotal.toLocaleString()}
+                </TableCell>
+                <TableCell className="text-right font-semibold">
+                  ¥{summary.totals.netTotal.toLocaleString()}
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+          <p className="text-xs text-muted-foreground">手取り金額 = キャスト売上 - 厚生費</p>
+        </div>
+      ) : null}
+    </div>
+  )
 }
 
-function PeriodStatsCard({ title, period, stats }: PeriodStatsCardProps) {
+function SummaryTile({
+  icon: Icon,
+  title,
+  value,
+  helper,
+}: {
+  icon: typeof PiggyBank
+  title: string
+  value: string
+  helper?: string
+}) {
   return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="font-medium">{title}</h3>
-        <p className="text-sm text-gray-600">{period}</p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <div className="rounded-lg bg-blue-50 p-3 text-center">
-          <DollarSign className="mx-auto mb-1 h-5 w-5 text-blue-600" />
-          <div className="text-lg font-bold">¥{stats.totalSales.toLocaleString()}</div>
-          <div className="text-xs text-gray-600">総売上</div>
-        </div>
-
-        <div className="rounded-lg bg-green-50 p-3 text-center">
-          <CreditCard className="mx-auto mb-1 h-5 w-5 text-green-600" />
-          <div className="text-lg font-bold">¥{stats.totalPaid.toLocaleString()}</div>
-          <div className="text-xs text-gray-600">支払済み</div>
-        </div>
-
-        <div className="rounded-lg bg-orange-50 p-3 text-center">
-          <Clock className="mx-auto mb-1 h-5 w-5 text-orange-600" />
-          <div className="text-lg font-bold">¥{stats.unpaidAmount.toLocaleString()}</div>
-          <div className="text-xs text-gray-600">未精算</div>
-        </div>
-
-        <div className="rounded-lg bg-purple-50 p-3 text-center">
-          <TrendingUp className="mx-auto mb-1 h-5 w-5 text-purple-600" />
-          <div className="text-lg font-bold">{stats.paymentRate.toFixed(1)}%</div>
-          <div className="text-xs text-gray-600">精算率</div>
-        </div>
-      </div>
-
-      {stats.unpaidCount > 0 && (
-        <div className="rounded-lg bg-orange-50 p-3 text-sm text-orange-600">
-          <AlertTriangle className="mr-1 inline h-4 w-4" />
-          {stats.unpaidCount}件の売上が未精算です
-        </div>
-      )}
-    </div>
+    <Card className="border border-primary/10 bg-white">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+        <Icon className="h-4 w-4 text-primary" />
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-semibold text-foreground">{value}</div>
+        {helper ? <p className="text-xs text-muted-foreground">{helper}</p> : null}
+      </CardContent>
+    </Card>
   )
 }
