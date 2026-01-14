@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { format, addDays, startOfWeek } from 'date-fns'
+import { addDays, startOfWeek } from 'date-fns'
+import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz'
 import { ja } from 'date-fns/locale'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -58,6 +59,7 @@ export function ScheduleEditDialog({
   onSave,
 }: ScheduleEditDialogProps) {
   const { currentStore } = useStore()
+  const timeZone = 'Asia/Tokyo'
   const [businessHours, setBusinessHours] = useState<BusinessHoursRange>(DEFAULT_BUSINESS_HOURS)
   const [schedule, setSchedule] = useState<WeeklyScheduleEdit>(() => {
     const converted: WeeklyScheduleEdit = {}
@@ -156,15 +158,17 @@ export function ScheduleEditDialog({
     for (const [dateKey, daySchedule] of Object.entries(schedule)) {
       if (daySchedule.status === '出勤予定') {
         if (!daySchedule.startTime || !daySchedule.endTime) {
+          const dateInJst = zonedTimeToUtc(`${dateKey}T00:00:00`, timeZone)
           alert(
-            `${format(new Date(dateKey), 'M月d日(E)', { locale: ja })} の時間を入力してください`
+            `${formatInTimeZone(dateInJst, timeZone, 'M月d日(E)', { locale: ja })} の時間を入力してください`
           )
           return
         }
 
         if (daySchedule.startTime >= daySchedule.endTime) {
+          const dateInJst = zonedTimeToUtc(`${dateKey}T00:00:00`, timeZone)
           alert(
-            `${format(new Date(dateKey), 'M月d日(E)', { locale: ja })} の終了時間は開始時間より後にしてください`
+            `${formatInTimeZone(dateInJst, timeZone, 'M月d日(E)', { locale: ja })} の終了時間は開始時間より後にしてください`
           )
           return
         }
@@ -209,8 +213,8 @@ export function ScheduleEditDialog({
             {castName} - 週間スケジュール編集
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
-            {format(weekStart, 'yyyy年M月d日', { locale: ja })} 〜{' '}
-            {format(addDays(weekStart, 6), 'M月d日', { locale: ja })}
+            {formatInTimeZone(weekStart, timeZone, 'yyyy年M月d日', { locale: ja })} 〜{' '}
+            {formatInTimeZone(addDays(weekStart, 6), timeZone, 'M月d日', { locale: ja })}
           </p>
         </DialogHeader>
 
@@ -226,7 +230,7 @@ export function ScheduleEditDialog({
                   <CardTitle className="flex items-center justify-between text-lg">
                     <div className="flex items-center gap-3">
                       <Calendar className="h-5 w-5" />
-                      {format(date, 'M月d日(E)', { locale: ja })}
+                      {formatInTimeZone(date, timeZone, 'M月d日(E)', { locale: ja })}
                       <Badge className={getStatusColor(daySchedule.status)}>
                         {daySchedule.status}
                       </Badge>

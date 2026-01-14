@@ -16,18 +16,22 @@ import type {
 } from './types'
 import type { WeeklySchedule, ScheduleFilters, CastScheduleEntry } from './old-types'
 import { generateMockWeeklySchedule } from './old-data'
-import { addDays, startOfWeek, endOfWeek, format } from 'date-fns'
+import { addDays, startOfWeek, endOfWeek } from 'date-fns'
+import { formatInTimeZone, utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz'
 import { isTimeOverlapping } from './utils'
 import { UnauthorizedScheduleOperationError } from './errors'
 import { schedulePermissions } from './permissions'
+
+const DEFAULT_TIME_ZONE = 'Asia/Tokyo'
 
 // Utility function for parsing time from ISO string
 function parseTimeFromISO(isoString: string): string {
   try {
     const date = new Date(isoString)
-    const hours = date.getUTCHours().toString().padStart(2, '0')
-    const minutes = date.getUTCMinutes().toString().padStart(2, '0')
-    return `${hours}:${minutes}`
+    if (Number.isNaN(date.getTime())) {
+      return '00:00'
+    }
+    return formatInTimeZone(date, DEFAULT_TIME_ZONE, 'HH:mm')
   } catch {
     return '00:00'
   }
@@ -42,8 +46,11 @@ export class CastScheduleUseCases {
   // Old API compatibility method
   async getWeeklySchedule(filters: ScheduleFilters): Promise<WeeklySchedule> {
     // Ensure we always start from Monday
-    const weekStart = startOfWeek(filters.date, { weekStartsOn: 1 })
-    const weekEnd = endOfWeek(filters.date, { weekStartsOn: 1 })
+    const baseDate = utcToZonedTime(filters.date, DEFAULT_TIME_ZONE)
+    const weekStartLocal = startOfWeek(baseDate, { weekStartsOn: 1 })
+    const weekEndLocal = endOfWeek(baseDate, { weekStartsOn: 1 })
+    const weekStartUtc = zonedTimeToUtc(weekStartLocal, DEFAULT_TIME_ZONE)
+    const weekEndUtc = zonedTimeToUtc(weekEndLocal, DEFAULT_TIME_ZONE)
 
     try {
       const requestOptions: RequestInit = {
@@ -61,7 +68,7 @@ export class CastScheduleUseCases {
 
       // Fetch schedule data for the week
       const scheduleResponse = await fetch(
-        `/api/cast-schedule?startDate=${weekStart.toISOString()}&endDate=${weekEnd.toISOString()}`,
+        `/api/cast-schedule?startDate=${weekStartUtc.toISOString()}&endDate=${weekEndUtc.toISOString()}`,
         requestOptions
       )
       if (!scheduleResponse.ok) {
@@ -73,21 +80,21 @@ export class CastScheduleUseCases {
         : schedulePayload
 
       // Transform data to match the expected format
-      const entries = this.transformToWeeklyScheduleEntries(casts, schedules, weekStart)
+      const entries = this.transformToWeeklyScheduleEntries(casts, schedules, weekStartLocal)
 
       // Calculate statistics
       const stats = this.calculateWeeklyStats(entries)
 
       return {
-        startDate: weekStart,
-        endDate: weekEnd,
+        startDate: weekStartLocal,
+        endDate: weekEndLocal,
         entries,
         stats,
       }
     } catch (error) {
       console.error('Error fetching weekly schedule:', error)
       // Fallback to mock data in case of error
-      return generateMockWeeklySchedule(weekStart)
+      return generateMockWeeklySchedule(weekStartLocal)
     }
   }
 
@@ -313,12 +320,12 @@ export class CastScheduleUseCases {
       // Initialize all days of the week
       for (let i = 0; i < 7; i++) {
         const date = addDays(weekStart, i)
-        const dateStr = format(date, 'yyyy-MM-dd')
+        const dateStr = formatInTimeZone(date, DEFAULT_TIME_ZONE, 'yyyy-MM-dd')
 
         // Find schedule for this specific date
         const daySchedule = castSchedules.find((s: any) => {
           const scheduleDate = new Date(s.date)
-          return format(scheduleDate, 'yyyy-MM-dd') === dateStr
+          return formatInTimeZone(scheduleDate, DEFAULT_TIME_ZONE, 'yyyy-MM-dd') === dateStr
         })
 
         if (daySchedule) {

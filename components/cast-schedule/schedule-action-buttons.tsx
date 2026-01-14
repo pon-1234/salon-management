@@ -26,7 +26,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { format, addWeeks, subWeeks } from 'date-fns'
+import { addWeeks, subWeeks } from 'date-fns'
+import { formatInTimeZone } from 'date-fns-tz'
 import { ja } from 'date-fns/locale'
 import { useState } from 'react'
 
@@ -48,6 +49,7 @@ export function ScheduleActionButtons({
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [selectedCharacterFilter, setSelectedCharacterFilter] = useState<string>('全')
+  const timeZone = 'Asia/Tokyo'
 
   const characters = ['全', 'あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ', 'その他']
 
@@ -76,7 +78,7 @@ export function ScheduleActionButtons({
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <div className="min-w-[140px] px-3 py-1 text-center text-sm font-medium text-gray-700">
-                {format(date, 'yyyy年M月d日開始週', { locale: ja })}
+                {formatInTimeZone(date, timeZone, 'yyyy年M月d日開始週', { locale: ja })}
               </div>
               <Button variant="ghost" size="sm" onClick={handleNextWeek} className="h-8 w-8 p-0">
                 <ChevronRight className="h-4 w-4" />

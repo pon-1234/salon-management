@@ -1,21 +1,24 @@
-import { format, addDays } from 'date-fns'
+import { addDays } from 'date-fns'
+import { formatInTimeZone } from 'date-fns-tz'
 import { ja } from 'date-fns/locale'
 import { InvalidTimeFormatError } from './errors'
+
+const DEFAULT_TIME_ZONE = 'Asia/Tokyo'
 
 export function getWeekDates(startDate: Date): Date[] {
   return Array.from({ length: 7 }, (_, i) => addDays(startDate, i))
 }
 
 export function formatScheduleDate(date: Date): string {
-  return format(date, 'yyyy-MM-dd')
+  return formatInTimeZone(date, DEFAULT_TIME_ZONE, 'yyyy-MM-dd')
 }
 
 export function formatDisplayDate(date: Date): string {
-  return format(date, 'MM/dd', { locale: ja })
+  return formatInTimeZone(date, DEFAULT_TIME_ZONE, 'MM/dd', { locale: ja })
 }
 
 export function formatDayOfWeek(date: Date): string {
-  return format(date, '(E)', { locale: ja })
+  return formatInTimeZone(date, DEFAULT_TIME_ZONE, '(E)', { locale: ja })
 }
 
 export function validateTimeFormat(time: string): boolean {

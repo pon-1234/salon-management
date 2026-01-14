@@ -10,6 +10,7 @@ import {
   formatDisplayDate,
   formatDayOfWeek,
 } from '@/lib/cast-schedule/utils'
+import { formatInTimeZone } from 'date-fns-tz'
 import { Phone, MessageSquare, Clock, Calendar, Edit3 } from 'lucide-react'
 import { ScheduleEditDialog, WeeklyScheduleEdit } from './schedule-edit-dialog'
 
@@ -23,6 +24,7 @@ export function ScheduleGrid({ startDate, entries, onSaveSchedule }: ScheduleGri
   const dates = getWeekDates(startDate)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [selectedCast, setSelectedCast] = useState<CastScheduleEntry | null>(null)
+  const timeZone = 'Asia/Tokyo'
 
   const handleCellClick = (entry: CastScheduleEntry) => {
     setSelectedCast(entry)
@@ -42,8 +44,9 @@ export function ScheduleGrid({ startDate, entries, onSaveSchedule }: ScheduleGri
     date: Date,
     entry: CastScheduleEntry
   ) => {
-    const isToday = new Date().toDateString() === date.toDateString()
-    const isWeekend = date.getDay() === 0 || date.getDay() === 6
+    const isToday = formatScheduleDate(new Date()) === formatScheduleDate(date)
+    const weekday = Number(formatInTimeZone(date, timeZone, 'i'))
+    const isWeekend = weekday === 6 || weekday === 7
 
     if (!status) {
       return (
@@ -140,8 +143,9 @@ export function ScheduleGrid({ startDate, entries, onSaveSchedule }: ScheduleGri
                 <span className="text-sm font-medium text-gray-600">キャスト</span>
               </div>
               {dates.map((date) => {
-                const isToday = new Date().toDateString() === date.toDateString()
-                const isWeekend = date.getDay() === 0 || date.getDay() === 6
+                const isToday = formatScheduleDate(new Date()) === formatScheduleDate(date)
+                const weekday = Number(formatInTimeZone(date, timeZone, 'i'))
+                const isWeekend = weekday === 6 || weekday === 7
 
                 return (
                   <div
