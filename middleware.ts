@@ -15,14 +15,20 @@ const publicRoutes = ['/', '/_next', '/favicon.ico']
 const authRoutes = ['/login', '/register', '/admin/login', '/auth', '/api/auth', '/cast/login']
 const storeCastLoginPattern = /^\/[^/]+\/cast\/login$/
 const publicApiRoutes = ['/api/line/webhook']
+const publicReadApiPrefixes = ['/api/course', '/api/option']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isApiRoute = pathname.startsWith('/api')
+  const isPublicReadApiRoute =
+    isApiRoute &&
+    request.method === 'GET' &&
+    publicReadApiPrefixes.some((route) => pathname.startsWith(route))
   const isPublicApiRoute =
     isApiRoute &&
     (pathname.startsWith('/api/public') ||
-      publicApiRoutes.some((route) => pathname.startsWith(route)))
+      publicApiRoutes.some((route) => pathname.startsWith(route)) ||
+      isPublicReadApiRoute)
 
   if (isPublicApiRoute) {
     return NextResponse.next()
