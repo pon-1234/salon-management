@@ -76,6 +76,7 @@ export default function OptionInfoPage() {
     category: 'special' as 'relaxation' | 'body-care' | 'extension' | 'special',
     displayOrder: 0,
     isActive: true,
+    visibility: 'public' as 'public' | 'internal',
     note: '',
     storeShare: 0,
     castShare: 0,
@@ -131,6 +132,7 @@ export default function OptionInfoPage() {
       category: 'special',
       displayOrder: options.length + 1,
       isActive: true,
+      visibility: 'public',
       note: '',
       storeShare: 0,
       castShare: 0,
@@ -153,6 +155,7 @@ export default function OptionInfoPage() {
       category: option.category,
       displayOrder: option.displayOrder,
       isActive: option.isActive,
+      visibility: option.visibility ?? 'public',
       note: option.note || '',
       storeShare,
       castShare,
@@ -349,8 +352,9 @@ export default function OptionInfoPage() {
                   <TableRow>
                     <TableHead>表示順</TableHead>
                     <TableHead>オプション名</TableHead>
-                    <TableHead>カテゴリー</TableHead>
-                    <TableHead>料金</TableHead>
+                  <TableHead>カテゴリー</TableHead>
+                  <TableHead>表示</TableHead>
+                  <TableHead>料金</TableHead>
                     <TableHead>時間</TableHead>
                     <TableHead>ステータス</TableHead>
                     <TableHead>操作</TableHead>
@@ -375,6 +379,13 @@ export default function OptionInfoPage() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">{getCategoryLabel(option.category)}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={option.visibility === 'public' ? 'default' : 'secondary'}
+                          >
+                            {option.visibility === 'public' ? '公開' : '準非公開'}
+                          </Badge>
                         </TableCell>
                         {(() => {
                           const { storeShare, castShare } = normalizeRevenueSplit(
@@ -580,6 +591,23 @@ export default function OptionInfoPage() {
                       }
                     />
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="visibility">表示設定</Label>
+                  <Select
+                    value={formData.visibility}
+                    onValueChange={(value: 'public' | 'internal') =>
+                      setFormData((prev) => ({ ...prev, visibility: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="public">公開（ユーザーに表示）</SelectItem>
+                      <SelectItem value="internal">準非公開（店舗・キャストのみ）</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="note">備考</Label>

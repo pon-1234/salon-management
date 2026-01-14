@@ -197,6 +197,7 @@ model OptionPrice {
   category     String              @default("special")
   displayOrder Int                  @default(0)
   isActive     Boolean              @default(true)
+  visibility   String              @default("public")
   note         String?
   storeShare   Int?
   castShare    Int?

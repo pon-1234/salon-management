@@ -34,6 +34,7 @@ function ensureOptionSerializable(option: any): OptionPrice {
     category: option.category ?? 'special',
     displayOrder: option.displayOrder ?? 0,
     isActive: option.isActive,
+    visibility: option.visibility ?? 'public',
     isPopular: option.isPopular ?? false,
     storeShare: option.storeShare ?? null,
     castShare: option.castShare ?? null,
@@ -57,7 +58,7 @@ export async function getPublicStorePricing(storeId: string): Promise<StorePrici
         orderBy: [{ duration: 'asc' }, { price: 'asc' }],
       }),
       db.optionPrice.findMany({
-        where: { storeId, isActive: true },
+        where: { storeId, isActive: true, visibility: 'public' },
         orderBy: [{ category: 'asc' }, { displayOrder: 'asc' }],
       }),
     ])

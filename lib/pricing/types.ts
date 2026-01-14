@@ -22,6 +22,7 @@ export interface OptionPrice extends BaseEntity {
   category: 'relaxation' | 'body-care' | 'extension' | 'special'
   displayOrder: number
   isActive: boolean
+  visibility: 'public' | 'internal'
   isPopular?: boolean
   storeShare?: number
   castShare?: number

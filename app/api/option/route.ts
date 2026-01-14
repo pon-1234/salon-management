@@ -69,6 +69,16 @@ function buildOptionPayload(data: any, mode: 'create' | 'update' = 'create') {
     payload.isActive = true
   }
 
+  if (data.visibility !== undefined) {
+    const visibility = data.visibility?.toString()
+    if (!['public', 'internal'].includes(visibility)) {
+      throw new Error('VISIBILITY_INVALID')
+    }
+    payload.visibility = visibility
+  } else if (mode === 'create') {
+    payload.visibility = 'public'
+  }
+
   if (data.note !== undefined) {
     payload.note = data.note ? data.note.toString() : null
   }
@@ -145,6 +155,10 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(option)
       }
 
+      if (option.visibility !== 'public') {
+        return NextResponse.json({ error: 'Option not found' }, { status: 404 })
+      }
+
       const { reservations, ...optionData } = option as typeof option & {
         reservations?: unknown
       }
@@ -155,6 +169,7 @@ export async function GET(request: NextRequest) {
     const options = await db.optionPrice.findMany({
       where: {
         storeId,
+        ...(isAdmin ? {} : { visibility: 'public', isActive: true }),
       },
       include: {
         reservations: {
@@ -223,6 +238,15 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
       }
+      if (error instanceof Error && error.message === 'VISIBILITY_INVALID') {
+        return NextResponse.json(
+          {
+            error: 'Validation error',
+            details: [{ path: ['visibility'], message: 'Visibility is invalid' }],
+          },
+          { status: 400 }
+        )
+      }
       throw error
     }
 
@@ -275,6 +299,15 @@ export async function PUT(request: NextRequest) {
           {
             error: 'Validation error',
             details: [{ path: ['name'], message: 'Name is required' }],
+          },
+          { status: 400 }
+        )
+      }
+      if (error instanceof Error && error.message === 'VISIBILITY_INVALID') {
+        return NextResponse.json(
+          {
+            error: 'Validation error',
+            details: [{ path: ['visibility'], message: 'Visibility is invalid' }],
           },
           { status: 400 }
         )

@@ -65,6 +65,7 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
   const availableOptions: Option[] = cast.availableOptions
     .map((optionId) => getOptionById(optionId))
     .filter((option): option is Option => Boolean(option))
+    .filter((option) => option.visibility !== 'internal')
 
   const nextImage = () => {
     setSelectedImageIndex((prev) => (prev === cast.images.length - 1 ? 0 : prev + 1))

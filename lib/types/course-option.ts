@@ -15,6 +15,7 @@ export interface Option {
   storeShare?: number | null
   castShare?: number | null
   isActive?: boolean
+  visibility?: 'public' | 'internal'
   isPopular?: boolean
   note?: string
 }
