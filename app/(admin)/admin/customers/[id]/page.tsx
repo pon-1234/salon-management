@@ -60,7 +60,7 @@ import {
 } from '@/lib/customer/types'
 import { Reservation } from '@/lib/types/reservation'
 import { Cast } from '@/lib/cast/types'
-import { normalizeCastList } from '@/lib/cast/mapper'
+import { FALLBACK_IMAGE, normalizeCastList } from '@/lib/cast/mapper'
 import { getAllCasts } from '@/lib/cast/data'
 import { NgCastDialog } from '@/components/customer/ng-cast-dialog'
 import { ReservationDialog } from '@/components/reservation/reservation-dialog'
@@ -719,7 +719,7 @@ export default function CustomerProfile() {
                       <div className="shrink-0">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src="/placeholder.svg"
+                          src={FALLBACK_IMAGE}
                           alt="Staff"
                           className="h-12 w-12 rounded-full object-cover"
                         />
@@ -1176,7 +1176,7 @@ export default function CustomerProfile() {
                           <div className="flex flex-1 items-start gap-3">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
-                              src={cast.image || '/placeholder.svg'}
+                              src={cast.image?.trim() ? cast.image : FALLBACK_IMAGE}
                               alt={cast.name}
                               className="aspect-[7/10] w-10 shrink-0 rounded object-cover"
                             />
@@ -1259,7 +1259,7 @@ export default function CustomerProfile() {
                     <div className="shrink-0">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src="/placeholder.svg"
+                        src={FALLBACK_IMAGE}
                         alt="Staff"
                         className="h-16 w-16 rounded-full object-cover"
                       />

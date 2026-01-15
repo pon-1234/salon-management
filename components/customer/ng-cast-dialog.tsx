@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/form'
 import { Cast } from '@/lib/cast/types'
 import { NgCastEntry } from '@/lib/customer/types'
+import { FALLBACK_IMAGE } from '@/lib/cast/mapper'
 
 const ngCastSchema = z.object({
   castId: z.string().min(1, 'キャストを選択してください'),
@@ -149,7 +150,7 @@ export function NgCastDialog({
                           <div className="flex items-center gap-3">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
-                              src={cast.image || '/placeholder.svg'}
+                              src={cast.image?.trim() ? cast.image : FALLBACK_IMAGE}
                               alt={cast.name}
                               className="aspect-[7/10] w-8 rounded object-cover"
                             />

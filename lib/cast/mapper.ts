@@ -7,7 +7,7 @@ const toDate = (value: unknown): Date | undefined => {
   return Number.isNaN(date.getTime()) ? undefined : date
 }
 
-const FALLBACK_IMAGE = '/images/non-photo.svg'
+export const FALLBACK_IMAGE = '/images/non-photo.svg'
 
 const normalizeImages = (value: unknown): string[] => {
   if (Array.isArray(value)) {

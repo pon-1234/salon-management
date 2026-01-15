@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Cast, CastSchedule } from '@/lib/cast/types'
+import { FALLBACK_IMAGE } from '@/lib/cast/mapper'
 import { options } from '@/lib/course-option/data'
 import { Button } from '@/components/ui/button'
 import { generateCastSchedule } from '@/lib/cast/data'
@@ -30,6 +31,7 @@ export function StaffDialog({ open, onOpenChange, staff, selectedDate }: CastDia
   }, [staff, selectedDate])
 
   if (!staff) return null
+  const staffImage = staff.image?.trim() ? staff.image : FALLBACK_IMAGE
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -44,7 +46,7 @@ export function StaffDialog({ open, onOpenChange, staff, selectedDate }: CastDia
               <div className="relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={staff.image}
+                  src={staffImage}
                   alt={`${staff.name}の写真`}
                   className="aspect-[7/10] w-full rounded-lg object-cover"
                 />

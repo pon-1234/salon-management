@@ -2,6 +2,7 @@
 
 import { Badge } from '@/components/ui/badge'
 import { Cast } from '@/lib/cast/types'
+import { FALLBACK_IMAGE } from '@/lib/cast/mapper'
 import { calculateAge } from '@/lib/customer/utils'
 import { Separator } from '@/components/ui/separator'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -16,7 +17,11 @@ interface CastProfileProps {
 export function CastProfile({ cast }: CastProfileProps) {
   const age = cast.age
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const images = cast.images && cast.images.length > 0 ? cast.images : [cast.image]
+  const sanitizedImages = Array.isArray(cast.images)
+    ? cast.images.filter((image) => typeof image === 'string' && image.trim().length > 0)
+    : []
+  const fallbackImage = cast.image?.trim() ? cast.image : FALLBACK_IMAGE
+  const images = sanitizedImages.length > 0 ? sanitizedImages : [fallbackImage]
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length)
