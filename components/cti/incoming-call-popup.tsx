@@ -50,7 +50,7 @@ export function IncomingCallPopup({
                 <div className="flex items-start gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src="/placeholder-user.jpg"
+                    src="/images/non-photo.svg"
                     alt={customer.name}
                     className="h-16 w-16 rounded-full object-cover"
                   />

@@ -106,7 +106,7 @@ export default async function RecruitmentPage({ params }: { params: { store: str
                         <div className="relative md:w-1/3 lg:w-1/4">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={cast.image ?? '/placeholder-user.jpg'}
+                            src={cast.image ?? '/images/non-photo.svg'}
                             alt={cast.name}
                             className="h-full w-full object-cover"
                           />
@@ -208,7 +208,7 @@ export default async function RecruitmentPage({ params }: { params: { store: str
                         <div className="mx-auto mb-3 aspect-square w-20 overflow-hidden rounded-full bg-gradient-to-br from-blue-300 to-purple-400">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={cast.image ?? '/placeholder-user.jpg'}
+                            src={cast.image ?? '/images/non-photo.svg'}
                             alt={cast.name}
                             className="h-full w-full object-cover"
                           />

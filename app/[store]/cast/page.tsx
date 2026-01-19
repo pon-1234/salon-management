@@ -83,7 +83,7 @@ export default async function CastListPage({ params }: { params: { store: string
                           <div className="mb-3 aspect-[3/4] overflow-hidden rounded-lg bg-gradient-to-br from-pink-300 to-purple-400">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
-                              src={cast.image ?? '/placeholder-user.jpg'}
+                              src={cast.image ?? '/images/non-photo.svg'}
                               alt={cast.name}
                               className="h-full w-full object-cover"
                             />

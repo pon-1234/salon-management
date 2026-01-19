@@ -14,7 +14,7 @@ export function generateMockWeeklySchedule(startDate: Date): WeeklySchedule {
       name: 'あい',
       nameKana: 'あい',
       age: 27,
-      image: '/placeholder-user.jpg',
+      image: '/images/non-photo.svg',
       hasPhone: true,
       hasBusinessContact: true,
       schedule: {
@@ -37,7 +37,7 @@ export function generateMockWeeklySchedule(startDate: Date): WeeklySchedule {
       name: 'あやみ',
       nameKana: 'あやみ',
       age: 27,
-      image: '/placeholder-user.jpg',
+      image: '/images/non-photo.svg',
       hasPhone: true,
       hasBusinessContact: true,
       schedule: {
@@ -60,7 +60,7 @@ export function generateMockWeeklySchedule(startDate: Date): WeeklySchedule {
       name: 'いずみ',
       nameKana: 'いずみ',
       age: 32,
-      image: '/placeholder-user.jpg',
+      image: '/images/non-photo.svg',
       hasPhone: true,
       hasBusinessContact: true,
       schedule: {
@@ -78,7 +78,7 @@ export function generateMockWeeklySchedule(startDate: Date): WeeklySchedule {
       name: 'えみか',
       nameKana: 'えみか',
       age: 24,
-      image: '/placeholder-user.jpg',
+      image: '/images/non-photo.svg',
       hasPhone: false,
       hasBusinessContact: true,
       schedule: {
@@ -101,7 +101,7 @@ export function generateMockWeeklySchedule(startDate: Date): WeeklySchedule {
       name: 'かおり',
       nameKana: 'かおり',
       age: 29,
-      image: '/placeholder-user.jpg',
+      image: '/images/non-photo.svg',
       hasPhone: true,
       hasBusinessContact: true,
       schedule: {

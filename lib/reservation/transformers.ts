@@ -124,7 +124,7 @@ export function mapReservationToReservationData(
     staffBonusFee: (reservation as any).staffBonusFee ?? 0,
     startTime: start,
     endTime: end,
-    staffImage: cast?.image || '/placeholder-user.jpg',
+    staffImage: cast?.image || '/images/non-photo.svg',
     modifiableUntil: reservation.modifiableUntil,
     notes: reservation.notes,
     storeMemo: (reservation as any).storeMemo,

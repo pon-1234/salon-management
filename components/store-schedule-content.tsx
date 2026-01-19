@@ -215,7 +215,7 @@ export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleConte
                       <div className="h-20 w-20 overflow-hidden rounded-lg bg-gradient-to-br from-purple-300 to-pink-400">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={entry.cast.image ?? '/placeholder-user.jpg'}
+                          src={entry.cast.image ?? '/images/non-photo.svg'}
                           alt={entry.cast.name}
                           className="h-full w-full object-cover"
                         />

@@ -648,7 +648,7 @@ const stepNavigationItems = [
                             <div className="flex flex-col gap-4 lg:flex-row">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
-                                src={selectedCast.image ?? '/placeholder-user.jpg'}
+                                src={selectedCast.image ?? '/images/non-photo.svg'}
                                 alt={selectedCast.name}
                                 className="h-32 w-32 rounded-lg object-cover"
                               />

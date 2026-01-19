@@ -121,7 +121,7 @@ export default async function RankingPage({ params }: { params: { store: string 
                             </Badge>
                             <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-pink-300 to-purple-400">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={cast.image ?? '/placeholder-user.jpg'} alt={cast.name} className="h-full w-full object-cover" />
+                              <img src={cast.image ?? '/images/non-photo.svg'} alt={cast.name} className="h-full w-full object-cover" />
                             </div>
                             <div className="flex-1">
                               <h3 className="text-lg font-bold">{cast.name}</h3>
@@ -171,7 +171,7 @@ export default async function RankingPage({ params }: { params: { store: string 
                             </Badge>
                             <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-pink-300 to-purple-400">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={cast.image ?? '/placeholder-user.jpg'} alt={cast.name} className="h-full w-full object-cover" />
+                              <img src={cast.image ?? '/images/non-photo.svg'} alt={cast.name} className="h-full w-full object-cover" />
                             </div>
                             <div className="flex-1">
                               <h3 className="text-lg font-bold">{cast.name}</h3>
@@ -222,7 +222,7 @@ export default async function RankingPage({ params }: { params: { store: string 
                             </Badge>
                             <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-blue-300 to-purple-400">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={cast.image ?? '/placeholder-user.jpg'} alt={cast.name} className="h-full w-full object-cover" />
+                              <img src={cast.image ?? '/images/non-photo.svg'} alt={cast.name} className="h-full w-full object-cover" />
                             </div>
                             <div className="flex-1">
                               <h3 className="text-lg font-bold">{cast.name}</h3>
@@ -270,7 +270,7 @@ export default async function RankingPage({ params }: { params: { store: string 
                             </Badge>
                             <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-green-300 to-teal-400">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={cast.image ?? '/placeholder-user.jpg'} alt={cast.name} className="h-full w-full object-cover" />
+                              <img src={cast.image ?? '/images/non-photo.svg'} alt={cast.name} className="h-full w-full object-cover" />
                             </div>
                             <div className="flex-1">
                               <h3 className="text-lg font-bold">{cast.name}</h3>

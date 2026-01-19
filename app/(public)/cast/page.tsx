@@ -30,7 +30,7 @@ export default function CastListPage() {
       specialties: ['カット', 'カラー', 'パーマ'],
       experience: 5,
       message: 'お客様一人ひとりに合わせた施術を心がけています。',
-      imageUrl: '/placeholder-user.jpg',
+      imageUrl: '/images/non-photo.svg',
       available: true,
     },
     {
@@ -42,7 +42,7 @@ export default function CastListPage() {
       specialties: ['カット', 'トリートメント'],
       experience: 3,
       message: '髪の悩みをお聞かせください。一緒に解決しましょう！',
-      imageUrl: '/placeholder-user.jpg',
+      imageUrl: '/images/non-photo.svg',
       available: true,
     },
     {
@@ -54,7 +54,7 @@ export default function CastListPage() {
       specialties: ['メンズカット', 'ヘッドスパ'],
       experience: 7,
       message: 'メンズスタイルはお任せください。',
-      imageUrl: '/placeholder-user.jpg',
+      imageUrl: '/images/non-photo.svg',
       available: false,
     },
     {
@@ -66,7 +66,7 @@ export default function CastListPage() {
       specialties: ['カラー', 'ハイライト', 'バレイヤージュ'],
       experience: 8,
       message: 'トレンドカラーで新しい自分を見つけましょう。',
-      imageUrl: '/placeholder-user.jpg',
+      imageUrl: '/images/non-photo.svg',
       available: true,
     },
   ]
