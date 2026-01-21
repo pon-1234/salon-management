@@ -697,22 +697,16 @@ export async function getCastSettlements(castId: string, storeId: string): Promi
         status: true,
         settlementStatus: true,
         price: true,
-        staffRevenue: true,
-        storeRevenue: true,
-        welfareExpense: true,
         course: {
           select: {
             name: true,
           },
         },
-        castCheckedOutAt: true,
         options: {
           select: {
             optionId: true,
             optionName: true,
             optionPrice: true,
-            storeShare: true,
-            castShare: true,
           },
         },
       },
