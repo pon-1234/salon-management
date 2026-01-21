@@ -630,6 +630,26 @@ export async function getCastReservationDetail(
 }
 
 export async function getCastSettlements(castId: string, storeId: string): Promise<CastSettlementsData> {
+  try {
+    return await loadCastSettlements(castId, storeId)
+  } catch (err) {
+    logger.error({ err, castId, storeId }, 'Failed to load cast settlements; returning empty dataset')
+    return {
+      summary: {
+        month: format(startOfMonth(new Date()), 'yyyy-MM'),
+        totalRevenue: 0,
+        staffRevenue: 0,
+        storeRevenue: 0,
+        welfareExpense: 0,
+        completedCount: 0,
+        pendingCount: 0,
+      },
+      days: [],
+    }
+  }
+}
+
+async function loadCastSettlements(castId: string, storeId: string): Promise<CastSettlementsData> {
   const now = new Date()
   const monthStart = startOfMonth(now)
   const monthEnd = endOfMonth(now)
