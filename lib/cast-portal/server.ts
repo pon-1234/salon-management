@@ -31,6 +31,7 @@ import type {
   CastSettlementRecordDetail,
   CastSettlementsData,
   CastScheduleLockReason,
+  SettlementStatus,
 } from './types'
 
 type ReservationWithRelations = Awaited<ReturnType<typeof fetchReservationsForCast>>[number]
@@ -646,10 +647,16 @@ export async function getCastSettlements(castId: string, storeId: string): Promi
       id: true,
       startTime: true,
       status: true,
+      settlementStatus: true,
       price: true,
       staffRevenue: true,
       storeRevenue: true,
       welfareExpense: true,
+      designationType: true,
+      designationFee: true,
+      transportationFee: true,
+      additionalFee: true,
+      discountAmount: true,
       course: {
         select: {
           name: true,
@@ -677,7 +684,7 @@ export async function getCastSettlements(castId: string, storeId: string): Promi
       acc.staffRevenue += reservation.staffRevenue ?? 0
       acc.storeRevenue += reservation.storeRevenue ?? 0
       acc.welfareExpense += reservation.welfareExpense ?? 0
-      if (reservation.castCheckedOutAt && reservation.status === 'completed') {
+      if (reservation.settlementStatus === 'settled') {
         acc.completedCount += 1
       } else {
         acc.pendingCount += 1
@@ -713,11 +720,17 @@ export async function getCastSettlements(castId: string, storeId: string): Promi
       id: reservation.id,
       startTime: reservation.startTime.toISOString(),
       status: reservation.status,
+      settlementStatus: (reservation.settlementStatus as SettlementStatus) ?? 'pending',
       courseName: reservation.course?.name ?? null,
       price: reservation.price ?? 0,
       staffRevenue: reservation.staffRevenue ?? 0,
       storeRevenue: reservation.storeRevenue ?? 0,
       welfareExpense: reservation.welfareExpense ?? 0,
+      designationType: reservation.designationType ?? null,
+      designationFee: reservation.designationFee ?? 0,
+      transportationFee: reservation.transportationFee ?? 0,
+      additionalFee: reservation.additionalFee ?? 0,
+      discountAmount: reservation.discountAmount ?? 0,
       options:
         reservation.options?.map((option) => ({
           id: option.optionId,

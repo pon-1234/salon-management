@@ -169,17 +169,43 @@ export interface CastSettlementRecordDetail {
   id: string
   startTime: string
   status: string
+  settlementStatus?: 'pending' | 'settled' | 'partial'
   courseName: string | null
   price: number
   staffRevenue: number
   storeRevenue: number
   welfareExpense: number
+  designationType?: Reservation['designationType'] | null
+  designationFee: number
+  transportationFee: number
+  additionalFee: number
+  discountAmount: number
   options: Array<{
     id: string
     name: string
     price: number
     storeShare?: number
     castShare?: number
+  }>
+}
+
+export type SettlementStatus = 'pending' | 'partial' | 'settled'
+
+export interface SettlementPaymentDto {
+  id: string
+  castId: string
+  storeId: string
+  amount: number
+  method: string
+  handledBy: string
+  paidAt: string
+  notes?: string | null
+  reservations: Array<{
+    id: string
+    startTime: string
+    courseName: string | null
+    staffRevenue: number
+    settlementStatus: SettlementStatus
   }>
 }
 

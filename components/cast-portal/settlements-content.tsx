@@ -8,6 +8,7 @@ import type { CastSettlementsData } from '@/lib/cast-portal/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/use-toast'
+import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableBody,
@@ -17,6 +18,12 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
+
+const settlementStatusStyles = {
+  pending: 'border-amber-200 bg-amber-50 text-amber-700',
+  partial: 'border-blue-200 bg-blue-50 text-blue-700',
+  settled: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+} as const
 
 export function CastSettlementsContent({ initialData }: { initialData: CastSettlementsData }) {
   const [data, setData] = useState(initialData)
@@ -52,6 +59,28 @@ export function CastSettlementsContent({ initialData }: { initialData: CastSettl
     }))
   }, [])
 
+  const settlementStats = useMemo(() => {
+    const records = data.days.flatMap((day) => day.records)
+    const netSum = (targets: typeof records) =>
+      targets.reduce(
+        (sum, record) => sum + Math.max(record.staffRevenue - record.welfareExpense, 0),
+        0
+      )
+
+    const inProgress = records.filter((record) => record.settlementStatus !== 'settled')
+    const settled = records.filter((record) => record.settlementStatus === 'settled')
+
+    return {
+      takeHome: Math.max(data.summary.staffRevenue - data.summary.welfareExpense, 0),
+      staffRevenue: data.summary.staffRevenue,
+      welfareExpense: data.summary.welfareExpense,
+      inProgressAmount: netSum(inProgress),
+      settledAmount: netSum(settled),
+      inProgressCount: inProgress.length,
+      settledCount: settled.length,
+    }
+  }, [data])
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -65,20 +94,30 @@ export function CastSettlementsContent({ initialData }: { initialData: CastSettl
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <SummaryTile
-          icon={PiggyBank}
-          title="今月のキャスト売上"
-          value={`¥${data.summary.staffRevenue.toLocaleString()}`}
-          helper={`総売上 ¥${data.summary.totalRevenue.toLocaleString()}`}
-        />
-        <SummaryTile
-          icon={Receipt}
-          title="精算状況"
-          value={`${data.summary.completedCount} 件 完了`}
-          helper={`未精算 ${data.summary.pendingCount} 件`}
-        />
-      </div>
+      {settlementStats ? (
+        <div className="grid gap-4 md:grid-cols-3">
+          <SummaryTile
+            icon={PiggyBank}
+            title="今月の手取り見込み"
+            value={`¥${settlementStats.takeHome.toLocaleString()}`}
+            helper={`キャスト売上 ¥${settlementStats.staffRevenue.toLocaleString()} ／ 厚生費 ¥${settlementStats.welfareExpense.toLocaleString()}`}
+          />
+          <SummaryTile
+            icon={Receipt}
+            title="未精算・一部"
+            value={`¥${settlementStats.inProgressAmount.toLocaleString()}`}
+            helper={`件数 ${settlementStats.inProgressCount} 件`}
+            tone="warning"
+          />
+          <SummaryTile
+            icon={Receipt}
+            title="精算済み"
+            value={`¥${settlementStats.settledAmount.toLocaleString()}`}
+            helper={`件数 ${settlementStats.settledCount} 件`}
+            tone="success"
+          />
+        </div>
+      ) : null}
 
       <Card>
         <CardHeader>
@@ -89,7 +128,7 @@ export function CastSettlementsContent({ initialData }: { initialData: CastSettl
         </CardHeader>
         <CardContent>
           {data.days.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">今月の清算データはまだありません。</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">今月の精算データはまだありません。</p>
           ) : (
             <div className="divide-y rounded-md border">
               <div className="grid grid-cols-[1.5fr_repeat(2,_1fr)_auto] gap-3 bg-muted/40 px-4 py-2 text-xs font-medium text-muted-foreground">
@@ -127,6 +166,22 @@ function DayRow({
     () => format(new Date(`${day.date}T00:00:00`), 'M月d日(E)', { locale: ja }),
     [day.date]
   )
+  const dayStatus = useMemo(() => {
+    const inProgress = day.records.filter((record) => record.settlementStatus !== 'settled')
+    const settled = day.records.filter((record) => record.settlementStatus === 'settled')
+    const netSum = (targets: typeof day.records) =>
+      targets.reduce(
+        (sum, record) => sum + Math.max(record.staffRevenue - record.welfareExpense, 0),
+        0
+      )
+
+    return {
+      inProgressCount: inProgress.length,
+      settledCount: settled.length,
+      inProgressAmount: netSum(inProgress),
+      settledAmount: netSum(settled),
+    }
+  }, [day.records])
   const summary = useMemo(() => {
     const map = new Map<
       string,
@@ -164,6 +219,31 @@ function DayRow({
     )
     return { rows, totals }
   }, [day.records])
+  const breakdown = useMemo(() => {
+    return day.records.reduce(
+      (acc, record) => {
+        const optionTotal = record.options.reduce((sum, option) => sum + option.price, 0)
+        const designation = record.designationFee ?? 0
+        const adjustment = (record.additionalFee ?? 0) - (record.discountAmount ?? 0)
+        const coursePortion = Math.max(record.price - optionTotal - designation - adjustment, 0)
+        acc.courseTotal += coursePortion
+        acc.optionTotal += optionTotal
+        acc.designationTotal += designation
+        acc.adjustmentTotal += adjustment
+        acc.staffSubtotal += record.staffRevenue ?? 0
+        acc.welfareTotal += record.welfareExpense ?? 0
+        return acc
+      },
+      {
+        courseTotal: 0,
+        optionTotal: 0,
+        designationTotal: 0,
+        adjustmentTotal: 0,
+        staffSubtotal: 0,
+        welfareTotal: 0,
+      }
+    )
+  }, [day.records])
 
   return (
     <div className="divide-y">
@@ -175,7 +255,13 @@ function DayRow({
         <span className="text-left font-medium text-foreground">{dayLabel}</span>
         <span className="text-right font-semibold text-foreground">¥{day.totalRevenue.toLocaleString()}</span>
         <span className="text-right text-muted-foreground">{day.reservationCount} 件</span>
-        <span className="flex justify-end">
+        <span className="flex items-center justify-end gap-2">
+          <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
+            未/一部 {dayStatus.inProgressCount}件
+          </Badge>
+          <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700">
+            済 {dayStatus.settledCount}件
+          </Badge>
           <ChevronDown
             className={cn('h-4 w-4 text-muted-foreground transition-transform', isExpanded && 'rotate-180')}
           />
@@ -183,6 +269,43 @@ function DayRow({
       </button>
       {isExpanded ? (
         <div className="space-y-3 bg-muted/20 px-4 py-4">
+          <div className="rounded-md border bg-white px-3 py-3">
+            <div className="text-xs font-semibold text-muted-foreground">内訳</div>
+            <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="rounded border border-dashed px-3 py-2">
+                <p className="text-xs text-muted-foreground">コース</p>
+                <p className="text-lg font-semibold">¥{breakdown.courseTotal.toLocaleString()}</p>
+              </div>
+              <div className="rounded border border-dashed px-3 py-2">
+                <p className="text-xs text-muted-foreground">オプション</p>
+                <p className="text-lg font-semibold">¥{breakdown.optionTotal.toLocaleString()}</p>
+              </div>
+              <div className="rounded border border-dashed px-3 py-2">
+                <p className="text-xs text-muted-foreground">指名料</p>
+                <p className="text-lg font-semibold">¥{breakdown.designationTotal.toLocaleString()}</p>
+              </div>
+              <div className="rounded border border-dashed px-3 py-2">
+                <p className="text-xs text-muted-foreground">調整分</p>
+                <p className="text-lg font-semibold">
+                  {breakdown.adjustmentTotal >= 0 ? '+' : '-'}¥{Math.abs(breakdown.adjustmentTotal).toLocaleString()}
+                </p>
+              </div>
+              <div className="rounded border border-dashed px-3 py-2">
+                <p className="text-xs text-muted-foreground">女性小計 (キャスト売上)</p>
+                <p className="text-lg font-semibold">¥{breakdown.staffSubtotal.toLocaleString()}</p>
+              </div>
+              <div className="rounded border border-dashed px-3 py-2">
+                <p className="text-xs text-muted-foreground">雑費 / 厚生費</p>
+                <p className="text-lg font-semibold">-¥{breakdown.welfareTotal.toLocaleString()}</p>
+              </div>
+              <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 sm:col-span-2 lg:col-span-3">
+                <p className="text-xs text-emerald-700">手取り</p>
+                <p className="text-2xl font-bold text-emerald-700">
+                  ¥{Math.max(breakdown.staffSubtotal - breakdown.welfareTotal, 0).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
           <Table>
             <TableHeader>
               <TableRow>
@@ -217,9 +340,47 @@ function DayRow({
               </TableRow>
             </TableBody>
           </Table>
-          <p className="text-xs text-muted-foreground">
-            手取り金額 = キャスト売上 - 厚生費
-          </p>
+          <div className="space-y-2 rounded-md border border-dashed border-muted-foreground/40 bg-white/70 px-3 py-2">
+            <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
+              <span>予約ごとの精算状況</span>
+              <span className="text-[11px]">手取り = キャスト売上 - 厚生費</span>
+            </div>
+            <div className="divide-y">
+              {day.records.map((record) => {
+                const net = Math.max(record.staffRevenue - record.welfareExpense, 0)
+                const style = settlementStatusStyles[record.settlementStatus ?? 'pending']
+                const label =
+                  record.settlementStatus === 'settled'
+                    ? '精算済み'
+                    : record.settlementStatus === 'partial'
+                      ? '一部精算'
+                      : '未精算'
+
+                return (
+                  <div key={record.id} className="flex flex-wrap items-center gap-3 py-2 text-sm">
+                    <div className="font-mono text-[12px] text-muted-foreground">
+                      {format(new Date(record.startTime), 'HH:mm')}
+                    </div>
+                    <div className="min-w-[160px] flex-1">
+                      <div className="font-medium text-foreground">
+                        {record.courseName ?? 'コース未設定'}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        オプション {record.options.length}件・キャスト売上 ¥{record.staffRevenue.toLocaleString()}
+                      </div>
+                    </div>
+                    <Badge variant="outline" className={style}>
+                      {label}
+                    </Badge>
+                    <div className="ml-auto text-right">
+                      <div className="font-semibold text-foreground">¥{net.toLocaleString()}</div>
+                      <div className="text-[11px] text-muted-foreground">手取り</div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
         </div>
       ) : null}
     </div>
@@ -231,17 +392,30 @@ function SummaryTile({
   title,
   value,
   helper,
+  tone = 'default',
 }: {
   icon: typeof PiggyBank
   title: string
   value: string
   helper?: string
+  tone?: 'default' | 'success' | 'warning'
 }) {
+  const toneStyle = {
+    default: 'border-primary/10 bg-white',
+    success: 'border-emerald-200 bg-emerald-50/60',
+    warning: 'border-amber-200 bg-amber-50/60',
+  }[tone]
+  const iconStyle = {
+    default: 'text-primary',
+    success: 'text-emerald-600',
+    warning: 'text-amber-600',
+  }[tone]
+
   return (
-    <Card className="border border-primary/10 bg-white">
+    <Card className={`border ${toneStyle}`}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-primary" />
+        <Icon className={`h-4 w-4 ${iconStyle}`} />
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-semibold text-foreground">{value}</div>
