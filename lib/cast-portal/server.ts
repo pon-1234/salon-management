@@ -634,49 +634,93 @@ export async function getCastSettlements(castId: string, storeId: string): Promi
   const monthStart = startOfMonth(now)
   const monthEnd = endOfMonth(now)
 
-  const reservations = await db.reservation.findMany({
-    where: {
-      castId,
-      storeId,
-      startTime: {
-        gte: monthStart,
-        lte: monthEnd,
-      },
-    },
-    select: {
-      id: true,
-      startTime: true,
-      status: true,
-      settlementStatus: true,
-      price: true,
-      staffRevenue: true,
-      storeRevenue: true,
-      welfareExpense: true,
-      designationType: true,
-      designationFee: true,
-      transportationFee: true,
-      additionalFee: true,
-      discountAmount: true,
-      course: {
-        select: {
-          name: true,
+  // 2026-01: 一部環境で新カラムが未適用の場合があるためフォールバックを用意
+  let reservations: Awaited<ReturnType<typeof db.reservation.findMany>>
+  try {
+    reservations = await db.reservation.findMany({
+      where: {
+        castId,
+        storeId,
+        startTime: {
+          gte: monthStart,
+          lte: monthEnd,
         },
       },
-      castCheckedOutAt: true,
-      options: {
-        select: {
-          optionId: true,
-          optionName: true,
-          optionPrice: true,
-          storeShare: true,
-          castShare: true,
+      select: {
+        id: true,
+        startTime: true,
+        status: true,
+        settlementStatus: true,
+        price: true,
+        staffRevenue: true,
+        storeRevenue: true,
+        welfareExpense: true,
+        designationType: true,
+        designationFee: true,
+        transportationFee: true,
+        additionalFee: true,
+        discountAmount: true,
+        course: {
+          select: {
+            name: true,
+          },
+        },
+        castCheckedOutAt: true,
+        options: {
+          select: {
+            optionId: true,
+            optionName: true,
+            optionPrice: true,
+            storeShare: true,
+            castShare: true,
+          },
         },
       },
-    },
-    orderBy: {
-      startTime: 'desc',
-    },
-  })
+      orderBy: {
+        startTime: 'desc',
+      },
+    })
+  } catch (err) {
+    logger.error({ err, castId, storeId }, 'Failed to load settlement records with extended fields; retrying fallback')
+    reservations = await db.reservation.findMany({
+      where: {
+        castId,
+        storeId,
+        startTime: {
+          gte: monthStart,
+          lte: monthEnd,
+        },
+      },
+      select: {
+        id: true,
+        startTime: true,
+        status: true,
+        settlementStatus: true,
+        price: true,
+        staffRevenue: true,
+        storeRevenue: true,
+        welfareExpense: true,
+        course: {
+          select: {
+            name: true,
+          },
+        },
+        castCheckedOutAt: true,
+        options: {
+          select: {
+            optionId: true,
+            optionName: true,
+            optionPrice: true,
+            storeShare: true,
+            castShare: true,
+          },
+        },
+      },
+      orderBy: {
+        startTime: 'desc',
+      },
+    })
+  }
 
   const summary = reservations.reduce(
     (acc, reservation) => {
