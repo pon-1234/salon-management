@@ -761,7 +761,7 @@ export async function getCastSettlements(castId: string, storeId: string): Promi
       settlementStatus: (reservation.settlementStatus as SettlementStatus) ?? 'pending',
       courseName: reservation.course?.name ?? null,
       price: reservation.price ?? 0,
-      staffRevenue: reservation.staffRevenue ?? 0,
+      staffRevenue: reservation.staffRevenue ?? reservation.price ?? 0,
       storeRevenue: reservation.storeRevenue ?? 0,
       welfareExpense: reservation.welfareExpense ?? 0,
       designationType: reservation.designationType ?? null,
