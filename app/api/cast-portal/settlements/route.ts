@@ -15,6 +15,21 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json(data)
   } catch (err) {
     logger.error({ err, castId: session.user.id }, 'Failed to load cast settlements')
-    return NextResponse.json({ error: '精算情報の取得に失敗しました。' }, { status: 500 })
+    return NextResponse.json(
+      {
+        summary: {
+          month: new Date().toISOString().slice(0, 7),
+          totalRevenue: 0,
+          staffRevenue: 0,
+          storeRevenue: 0,
+          welfareExpense: 0,
+          completedCount: 0,
+          pendingCount: 0,
+        },
+        days: [],
+        error: '精算情報の取得に失敗しました。',
+      },
+      { status: 200 }
+    )
   }
 }
