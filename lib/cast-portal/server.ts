@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { ensureStoreId } from '@/lib/store/server'
 import {
   addDays,
   addMinutes,
@@ -1091,9 +1092,11 @@ export async function resolveCastStoreId(castId: string, fallback?: string): Pro
     select: { storeId: true },
   })
 
-  if (!cast) {
-    throw new Error('Cast not found')
+  if (cast?.storeId) {
+    return cast.storeId
   }
 
-  return cast.storeId
+  // In case cast record is missing (e.g., seed data not present in staging/prod),
+  // fall back to default store to avoid crashing user portal.
+  return await ensureStoreId(null)
 }
