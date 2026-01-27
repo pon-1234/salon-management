@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import logger from '@/lib/logger'
 import { ensureStoreId } from '@/lib/store/server'
 import {
   addDays,
@@ -655,18 +656,24 @@ async function loadCastSettlements(castId: string, storeId: string): Promise<Cas
   const monthStart = startOfMonth(now)
   const monthEnd = endOfMonth(now)
 
-  // 2026-01: 一部環境で新カラムが未適用の場合があるためフォールバックを用意
-  let reservations: Awaited<ReturnType<typeof db.reservation.findMany>>
-  try {
-    reservations = await db.reservation.findMany({
-      where: {
-        castId,
-        storeId,
-        startTime: {
-          gte: monthStart,
-          lte: monthEnd,
-        },
+  // 2026-01: 一部環境で新カラム/リレーションが未適用の場合があるため段階的にフォールバック
+  const baseQuery = {
+    where: {
+      castId,
+      storeId,
+      startTime: {
+        gte: monthStart,
+        lte: monthEnd,
       },
+    },
+    orderBy: {
+      startTime: 'desc' as const,
+    },
+  }
+
+  const querySteps = [
+    {
+      label: 'extended',
       select: {
         id: true,
         startTime: true,
@@ -697,26 +704,13 @@ async function loadCastSettlements(castId: string, storeId: string): Promise<Cas
           },
         },
       },
-      orderBy: {
-        startTime: 'desc',
-      },
-    })
-  } catch (err) {
-    logger.error({ err, castId, storeId }, 'Failed to load settlement records with extended fields; retrying fallback')
-    reservations = await db.reservation.findMany({
-      where: {
-        castId,
-        storeId,
-        startTime: {
-          gte: monthStart,
-          lte: monthEnd,
-        },
-      },
+    },
+    {
+      label: 'legacy',
       select: {
         id: true,
         startTime: true,
         status: true,
-        settlementStatus: true,
         price: true,
         course: {
           select: {
@@ -731,10 +725,32 @@ async function loadCastSettlements(castId: string, storeId: string): Promise<Cas
           },
         },
       },
-      orderBy: {
-        startTime: 'desc',
+    },
+    {
+      label: 'minimal',
+      select: {
+        id: true,
+        startTime: true,
+        status: true,
+        price: true,
       },
-    })
+    },
+  ] as const
+
+  let reservations: Awaited<ReturnType<typeof db.reservation.findMany>> = []
+  for (const step of querySteps) {
+    try {
+      reservations = await db.reservation.findMany({
+        ...baseQuery,
+        select: step.select,
+      })
+      break
+    } catch (err) {
+      logger.error(
+        { err, castId, storeId, step: step.label },
+        'Failed to load settlement records; retrying fallback'
+      )
+    }
   }
 
   const summary = reservations.reduce(
