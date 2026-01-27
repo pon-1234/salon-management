@@ -114,6 +114,14 @@ export const normalizeCast = (raw: any): Cast => {
   const appointments =
     appointmentsFromApi.length > 0 ? appointmentsFromApi : reservationAppointments
 
+  const availableOptionSettings = normalizeAvailableOptionSettings(
+    (raw as any).castOptionSettings ?? (raw as any).availableOptionSettings
+  )
+  const availableOptions =
+    availableOptionSettings.length > 0
+      ? availableOptionSettings.map((entry) => entry.optionId)
+      : normalizeAvailableOptions(raw.availableOptions)
+
   return {
     id: String(raw.id ?? ''),
     name: raw.name ?? '',
