@@ -25,6 +25,17 @@ const designationTypeLabel: Record<string, string> = {
   none: 'フリー',
 }
 
+const toDateOrNull = (value: unknown): Date | null => {
+  if (!value) return null
+  const date = value instanceof Date ? value : new Date(value as any)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+const toDateOrUndefined = (value: unknown): Date | undefined => {
+  const date = toDateOrNull(value)
+  return date ?? undefined
+}
+
 export function mapReservationToReservationData(
   reservation: Reservation,
   options: TransformOptions = {}
@@ -125,7 +136,7 @@ export function mapReservationToReservationData(
     startTime: start,
     endTime: end,
     staffImage: cast?.image || '/images/non-photo.svg',
-    modifiableUntil: reservation.modifiableUntil,
+    modifiableUntil: toDateOrUndefined(reservation.modifiableUntil),
     notes: reservation.notes,
     storeMemo: (reservation as any).storeMemo,
     areaId: reservation.areaId ?? null,
@@ -136,13 +147,13 @@ export function mapReservationToReservationData(
     hotelName: reservation.hotelName ?? undefined,
     roomNumber: reservation.roomNumber ?? undefined,
     entryMemo: reservation.entryMemo ?? undefined,
-    entryReceivedAt: reservation.entryReceivedAt ?? null,
+    entryReceivedAt: toDateOrNull(reservation.entryReceivedAt),
     entryReceivedBy: reservation.entryReceivedBy ?? undefined,
-    entryNotifiedAt: reservation.entryNotifiedAt ?? null,
-    entryConfirmedAt: reservation.entryConfirmedAt ?? null,
-    entryReminderSentAt: reservation.entryReminderSentAt ?? null,
+    entryNotifiedAt: toDateOrNull(reservation.entryNotifiedAt),
+    entryConfirmedAt: toDateOrNull(reservation.entryConfirmedAt),
+    entryReminderSentAt: toDateOrNull(reservation.entryReminderSentAt),
     locationMemo: reservation.locationMemo ?? undefined,
-    castCheckedInAt: reservation.castCheckedInAt ?? null,
-    castCheckedOutAt: reservation.castCheckedOutAt ?? null,
+    castCheckedInAt: toDateOrNull(reservation.castCheckedInAt),
+    castCheckedOutAt: toDateOrNull(reservation.castCheckedOutAt),
   }
 }
