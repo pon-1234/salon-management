@@ -66,6 +66,18 @@ const normalizeAvailableOptionSettings = (value: unknown) => {
 
 const isAppointment = (value: Appointment | null): value is Appointment => Boolean(value)
 
+const toAppointmentStatus = (status: unknown): Appointment['status'] => {
+  if (typeof status !== 'string') return 'provisional'
+  const normalized = status.toLowerCase()
+  if (normalized === 'confirmed' || normalized === 'completed' || normalized === 'modifiable') {
+    return 'confirmed'
+  }
+  if (normalized === 'pending' || normalized === 'tentative' || normalized === 'provisional') {
+    return 'provisional'
+  }
+  return 'provisional'
+}
+
 const normalizeAppointment = (raw: any): Appointment | null => {
   if (!raw) return null
   const start = toDate(raw.startTime)
@@ -92,7 +104,7 @@ const normalizeAppointment = (raw: any): Appointment | null => {
     customerPhone: raw.customer?.phone ?? raw.customerPhone ?? '',
     customerEmail: raw.customer?.email ?? raw.customerEmail ?? '',
     reservationTime: raw.reservationTime ?? '',
-    status: raw.status === 'confirmed' ? 'confirmed' : 'provisional',
+    status: toAppointmentStatus(raw.status),
     location: raw.location,
     price: typeof raw.price === 'number' ? raw.price : Number(raw.price ?? 0),
   }

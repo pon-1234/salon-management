@@ -76,6 +76,12 @@ export function ReservationPageContent() {
   const customerId = searchParams.get('customerId')
 
   const selectedDateKey = useMemo(() => formatDateKey(selectedDate), [selectedDate])
+  const toAppointmentStatus = useCallback((status?: Reservation['status'] | string) => {
+    const normalized = typeof status === 'string' ? status : ''
+    return normalized === 'pending' || normalized === 'tentative' || normalized === 'provisional'
+      ? 'provisional'
+      : 'confirmed'
+  }, [])
 
   useEffect(() => {
     let ignore = false
@@ -295,7 +301,7 @@ export function ReservationPageContent() {
             customerPhone: reservation.phoneNumber || '未登録',
             customerEmail: reservation.email || '',
             reservationTime: reservation.time,
-            status: reservation.status === 'confirmed' ? 'confirmed' : 'provisional',
+            status: toAppointmentStatus(reservation.status),
             location: reservation.location,
             price: reservation.totalPayment,
           }))
@@ -330,6 +336,7 @@ export function ReservationPageContent() {
     customers,
     businessHours,
     currentStore.id,
+    toAppointmentStatus,
   ])
 
   useEffect(() => {
