@@ -4,7 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { addDays, format, isSameDay, parseISO } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { Calendar, Clock, Loader2, RefreshCcw, User } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
@@ -222,9 +228,15 @@ export function CastTimelineModal({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="max-h-[90vh] w-full max-w-5xl overflow-hidden">
+      <DialogContent
+        className="max-h-[90vh] w-full max-w-5xl overflow-hidden"
+        aria-describedby="cast-timeline-description"
+      >
         <DialogHeader>
           <DialogTitle>タイムラインで空き状況を確認</DialogTitle>
+          <DialogDescription id="cast-timeline-description" className="sr-only">
+            選択した日のキャスト別空き時間を確認し、予約枠を選択できます。
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
