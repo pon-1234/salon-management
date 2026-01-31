@@ -1386,18 +1386,82 @@ useEffect(() => {
   }
 }, [reservation, reservationDesignation, normalizedInitialOptionIds, marketingChannelOptions])
 
-useEffect(() => {
-  if (!isEditMode) return
-  setFormState((prev) => {
-    if (!Number.isFinite(priceBreakdown.total) || prev.price === priceBreakdown.total) {
-      return prev
-    }
-    return {
-      ...prev,
-      price: priceBreakdown.total,
-    }
+  useEffect(() => {
+    if (!isEditMode) return
+    setFormState((prev) => {
+      if (!Number.isFinite(priceBreakdown.total) || prev.price === priceBreakdown.total) {
+        return prev
+      }
+      return {
+        ...prev,
+        price: priceBreakdown.total,
+      }
+    })
+  }, [isEditMode, priceBreakdown.total])
+
+  const parseEntryMeta = (payload: any) => ({
+    entryReceivedAt: payload?.entryReceivedAt ? new Date(payload.entryReceivedAt) : null,
+    entryReceivedBy: payload?.entryReceivedBy ?? null,
+    entryNotifiedAt: payload?.entryNotifiedAt ? new Date(payload.entryNotifiedAt) : null,
+    entryConfirmedAt: payload?.entryConfirmedAt ? new Date(payload.entryConfirmedAt) : null,
+    entryReminderSentAt: payload?.entryReminderSentAt ? new Date(payload.entryReminderSentAt) : null,
   })
-}, [isEditMode, priceBreakdown.total])
+
+  const handleSendEntryReminder = useCallback(async () => {
+    if (!reservation) return
+    if (entryReminderSending) return
+    setEntrySendError(null)
+    setEntrySendSuccess(null)
+    setEntryReminderSending(true)
+
+    try {
+      const storeQuery = currentStore?.id ? `?storeId=${currentStore.id}` : ''
+      const response = await fetch(`/api/reservation/${reservation.id}/entry-info${storeQuery}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'remind' }),
+      })
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}))
+        throw new Error(payload.error ?? `再通知に失敗しました（${response.status}）`)
+      }
+
+      const payload = await response.json().catch(() => ({}))
+      setEntryMeta(parseEntryMeta(payload))
+      setEntrySendSuccess('再通知を送信しました。')
+    } catch (error) {
+      setEntrySendError(error instanceof Error ? error.message : '再通知の送信に失敗しました。')
+    } finally {
+      setEntryReminderSending(false)
+    }
+  }, [currentStore?.id, entryReminderSending, parseEntryMeta, reservation])
+
+  useEffect(() => {
+    if (!open) return
+    if (!entryMeta.entryNotifiedAt) return
+    if (entryMeta.entryConfirmedAt) return
+    if (entryMeta.entryReminderSentAt) return
+
+    const reminderAt = entryMeta.entryNotifiedAt.getTime() + 10 * 60 * 1000
+    const delay = reminderAt - Date.now()
+    if (delay <= 0) {
+      void handleSendEntryReminder()
+      return
+    }
+
+    const timer = setTimeout(() => {
+      void handleSendEntryReminder()
+    }, delay)
+
+    return () => clearTimeout(timer)
+  }, [
+    entryMeta.entryConfirmedAt,
+    entryMeta.entryNotifiedAt,
+    entryMeta.entryReminderSentAt,
+    handleSendEntryReminder,
+    open,
+  ])
 
   const statusMeta = STATUS_META[status] ?? {
     label: statusTextMap[status] ?? status,
@@ -1467,14 +1531,6 @@ useEffect(() => {
     setIsEditMode(false)
   }
 
-  const parseEntryMeta = (payload: any) => ({
-    entryReceivedAt: payload?.entryReceivedAt ? new Date(payload.entryReceivedAt) : null,
-    entryReceivedBy: payload?.entryReceivedBy ?? null,
-    entryNotifiedAt: payload?.entryNotifiedAt ? new Date(payload.entryNotifiedAt) : null,
-    entryConfirmedAt: payload?.entryConfirmedAt ? new Date(payload.entryConfirmedAt) : null,
-    entryReminderSentAt: payload?.entryReminderSentAt ? new Date(payload.entryReminderSentAt) : null,
-  })
-
   const handleSaveEntryInfo = async () => {
     if (!reservation) return
     setEntrySendError(null)
@@ -1508,62 +1564,6 @@ useEffect(() => {
       setEntrySending(false)
     }
   }
-
-  const handleSendEntryReminder = useCallback(async () => {
-    if (!reservation) return
-    if (entryReminderSending) return
-    setEntrySendError(null)
-    setEntrySendSuccess(null)
-    setEntryReminderSending(true)
-
-    try {
-      const storeQuery = currentStore?.id ? `?storeId=${currentStore.id}` : ''
-      const response = await fetch(`/api/reservation/${reservation.id}/entry-info${storeQuery}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'remind' }),
-      })
-
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}))
-        throw new Error(payload.error ?? `再通知に失敗しました（${response.status}）`)
-      }
-
-      const payload = await response.json().catch(() => ({}))
-      setEntryMeta(parseEntryMeta(payload))
-      setEntrySendSuccess('再通知を送信しました。')
-    } catch (error) {
-      setEntrySendError(error instanceof Error ? error.message : '再通知の送信に失敗しました。')
-    } finally {
-      setEntryReminderSending(false)
-    }
-  }, [currentStore?.id, entryReminderSending, reservation])
-
-  useEffect(() => {
-    if (!open) return
-    if (!entryMeta.entryNotifiedAt) return
-    if (entryMeta.entryConfirmedAt) return
-    if (entryMeta.entryReminderSentAt) return
-
-    const reminderAt = entryMeta.entryNotifiedAt.getTime() + 10 * 60 * 1000
-    const delay = reminderAt - Date.now()
-    if (delay <= 0) {
-      void handleSendEntryReminder()
-      return
-    }
-
-    const timer = setTimeout(() => {
-      void handleSendEntryReminder()
-    }, delay)
-
-    return () => clearTimeout(timer)
-  }, [
-    entryMeta.entryConfirmedAt,
-    entryMeta.entryNotifiedAt,
-    entryMeta.entryReminderSentAt,
-    handleSendEntryReminder,
-    open,
-  ])
 
   const handleSaveChanges = async () => {
     if (!reservation || !onSave) {
