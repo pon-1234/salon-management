@@ -753,6 +753,48 @@ async function loadCastSettlements(castId: string, storeId: string): Promise<Cas
     }
   }
 
+  const reservationIds = reservations.map((reservation) => reservation.id).filter(Boolean)
+  const reservationOptionsMap = new Map<
+    string,
+    Array<{
+      optionId: string
+      optionName: string
+      optionPrice: number
+      storeShare: number | null
+      castShare: number | null
+    }>
+  >()
+
+  if (reservationIds.length > 0) {
+    try {
+      const optionRows = await db.reservationOption.findMany({
+        where: { reservationId: { in: reservationIds } },
+        select: {
+          reservationId: true,
+          optionId: true,
+          optionName: true,
+          optionPrice: true,
+          storeShare: true,
+          castShare: true,
+        },
+      })
+
+      optionRows.forEach((row) => {
+        const current = reservationOptionsMap.get(row.reservationId) ?? []
+        current.push({
+          optionId: row.optionId,
+          optionName: row.optionName,
+          optionPrice: row.optionPrice,
+          storeShare: row.storeShare ?? null,
+          castShare: row.castShare ?? null,
+        })
+        reservationOptionsMap.set(row.reservationId, current)
+      })
+    } catch (err) {
+      logger.error({ err, castId, storeId }, 'Failed to load reservation options for settlements')
+    }
+  }
+
   const summary = reservations.reduce(
     (acc, reservation) => {
       acc.totalRevenue += reservation.price ?? 0
@@ -791,6 +833,11 @@ async function loadCastSettlements(castId: string, storeId: string): Promise<Cas
       dailyMap.set(dateKey, day)
     }
 
+    const rawOptions =
+      Array.isArray((reservation as any).options) && (reservation as any).options.length > 0
+        ? (reservation as any).options
+        : reservationOptionsMap.get(reservation.id) ?? []
+
     const record: CastSettlementRecordDetail = {
       id: reservation.id,
       startTime: reservation.startTime.toISOString(),
@@ -806,14 +853,13 @@ async function loadCastSettlements(castId: string, storeId: string): Promise<Cas
       transportationFee: reservation.transportationFee ?? 0,
       additionalFee: reservation.additionalFee ?? 0,
       discountAmount: reservation.discountAmount ?? 0,
-      options:
-        reservation.options?.map((option) => ({
-          id: option.optionId,
-          name: option.optionName,
-          price: option.optionPrice,
-          storeShare: option.storeShare ?? undefined,
-          castShare: option.castShare ?? undefined,
-        })) ?? [],
+      options: rawOptions.map((option: any) => ({
+        id: option.optionId ?? option.option?.id,
+        name: option.optionName ?? option.option?.name,
+        price: option.optionPrice ?? option.option?.price ?? 0,
+        storeShare: option.storeShare ?? option.option?.storeShare ?? undefined,
+        castShare: option.castShare ?? option.option?.castShare ?? undefined,
+      })),
     }
 
     day.records.push(record)
