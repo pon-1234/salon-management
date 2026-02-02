@@ -59,6 +59,7 @@ model Store {
   designationFees DesignationFee[]
   storeSettings StoreSettings?
   eventBanners StoreEventBanner[]
+  settlementPayments SettlementPayment[]
 }
 
 model Cast {
@@ -97,6 +98,7 @@ model Cast {
   messages               Message[]
   lineLogs               ReservationLineLog[]
   attendanceRequests     ReservationAttendanceRequest[]
+  settlementPayments     SettlementPayment[]
   store                  Store          @relation(fields: [storeId], references: [id])
 
   @@index([storeId])
@@ -133,6 +135,7 @@ model Reservation {
   startTime  DateTime
   endTime    DateTime
   status     String
+  settlementStatus String        @default("pending")
   price      Int                 @default(0)
   storeId    String
   designationType   String?
@@ -175,8 +178,37 @@ model Reservation {
   lineLogs   ReservationLineLog[]
   attendanceRequests ReservationAttendanceRequest[]
   pointHistory CustomerPointHistory[]
+  settlementPayments SettlementPaymentReservation[]
 
   @@index([storeId])
+}
+
+model SettlementPayment {
+  id        String   @id @default(cuid())
+  castId    String
+  storeId   String
+  amount    Int
+  method    String   @default("現金精算")
+  handledBy String
+  paidAt    DateTime @default(now())
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  cast      Cast     @relation(fields: [castId], references: [id])
+  store     Store    @relation(fields: [storeId], references: [id])
+  reservations SettlementPaymentReservation[]
+
+  @@index([storeId])
+  @@index([castId])
+}
+
+model SettlementPaymentReservation {
+  paymentId     String
+  reservationId String
+  payment       SettlementPayment @relation(fields: [paymentId], references: [id])
+  reservation   Reservation       @relation(fields: [reservationId], references: [id])
+
+  @@id([paymentId, reservationId])
 }
 
 model CoursePrice {
