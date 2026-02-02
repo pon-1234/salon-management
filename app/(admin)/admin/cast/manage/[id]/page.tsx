@@ -285,7 +285,7 @@ export default function CastManagePage({ params }: { params: { id: string } }) {
                 </TabsContent>
 
                 <TabsContent value="payment" className="space-y-6">
-                  <PaymentHistoryTab castId={cast.id} castName={cast.name} />
+                  <PaymentHistoryTab castId={cast.id} storeId={currentStore.id} />
                 </TabsContent>
 
                 <TabsContent value="settlement" className="space-y-6">

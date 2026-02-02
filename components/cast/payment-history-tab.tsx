@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -30,40 +30,94 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Calendar, CreditCard, User, Plus, Eye, Receipt } from 'lucide-react'
-import { PaymentRecord, SalesRecord } from '@/lib/cast/types'
-import { getPaymentRecordsByCast, getSalesRecordsByCast } from '@/lib/cast/sales-data'
+import { CastSettlementRecordDetail, CastSettlementsData, SettlementPaymentDto } from '@/lib/cast-portal/types'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 
 interface PaymentHistoryTabProps {
   castId: string
-  castName: string
+  storeId: string
 }
 
-export function PaymentHistoryTab({ castId, castName }: PaymentHistoryTabProps) {
-  const [paymentRecords, setPaymentRecords] = useState<PaymentRecord[]>(
-    getPaymentRecordsByCast(castId)
-  )
-  const [salesRecords] = useState<SalesRecord[]>(getSalesRecordsByCast(castId))
+export function PaymentHistoryTab({ castId, storeId }: PaymentHistoryTabProps) {
+  const [paymentRecords, setPaymentRecords] = useState<SettlementPaymentDto[]>([])
+  const [pendingReservations, setPendingReservations] = useState<CastSettlementRecordDetail[]>([])
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(null)
+  const [selectedPayment, setSelectedPayment] = useState<SettlementPaymentDto | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleAddPayment = (newRecord: Partial<PaymentRecord>) => {
-    const record: PaymentRecord = {
-      id: `payment_${Date.now()}`,
-      castId,
-      date: new Date(newRecord.date!),
-      paymentType: newRecord.paymentType!,
-      amount: newRecord.amount!,
-      salesRecordIds: newRecord.salesRecordIds || [],
-      handledBy: newRecord.handledBy!,
-      notes: newRecord.notes,
+  const fetchPayments = async () => {
+    try {
+      setError(null)
+      const params = new URLSearchParams({ castId, storeId })
+      const res = await fetch(`/api/admin/cast/settlements/payments?${params.toString()}`)
+      if (!res.ok) {
+        throw new Error('入金記録の取得に失敗しました')
+      }
+      const data = (await res.json()) as SettlementPaymentDto[]
+      setPaymentRecords(data)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '通信エラー')
+    } finally {
+      setLoading(false)
     }
-    setPaymentRecords([record, ...paymentRecords])
-    setIsAddDialogOpen(false)
+  }
+
+  const fetchPendingReservations = async () => {
+    try {
+      const res = await fetch(`/api/admin/cast/settlements?castId=${encodeURIComponent(castId)}`, {
+        cache: 'no-store',
+      })
+      if (!res.ok) throw new Error('精算情報の取得に失敗しました')
+      const data = (await res.json()) as CastSettlementsData
+      const pending = data.days.flatMap((d) =>
+        d.records.filter((r) => r.settlementStatus !== 'settled')
+      )
+      setPendingReservations(pending)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '精算情報の取得に失敗しました')
+    }
+  }
+
+  useEffect(() => {
+    fetchPayments()
+    fetchPendingReservations()
+  }, [])
+
+  const handleAddPayment = async (payload: Partial<SettlementPaymentDto>) => {
+    try {
+      const res = await fetch('/api/admin/cast/settlements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          castId,
+          storeId,
+          amount: payload.amount,
+          method: payload.method,
+          handledBy: payload.handledBy,
+          paidAt: payload.paidAt,
+          notes: payload.notes,
+          reservationIds: payload.reservations?.map((r) => r.id) ?? [],
+        }),
+      })
+      if (!res.ok) throw new Error('入金記録の保存に失敗しました')
+      await fetchPayments()
+      await fetchPendingReservations()
+      setIsAddDialogOpen(false)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '保存に失敗しました')
+    }
   }
 
   const totalPaid = paymentRecords.reduce((sum, record) => sum + record.amount, 0)
+
+  const lastPaidAt = useMemo(() => {
+    if (paymentRecords.length === 0) return null
+    return new Date(
+      Math.max(...paymentRecords.map((r) => new Date(r.paidAt).getTime()))
+    )
+  }, [paymentRecords])
 
   const getPaymentTypeColor = (type: string) => {
     switch (type) {
@@ -76,6 +130,14 @@ export function PaymentHistoryTab({ castId, castName }: PaymentHistoryTabProps) 
       default:
         return 'bg-gray-100 text-gray-700'
     }
+  }
+
+  if (loading) {
+    return <div className="p-4 text-sm text-muted-foreground">入金記録を読み込み中...</div>
+  }
+
+  if (error) {
+    return <div className="p-4 text-sm text-destructive">{error}</div>
   }
 
   return (
@@ -113,11 +175,7 @@ export function PaymentHistoryTab({ castId, castName }: PaymentHistoryTabProps) 
               <div>
                 <p className="text-sm font-medium text-gray-600">最終支払日</p>
                 <p className="text-lg font-bold">
-                  {paymentRecords.length > 0
-                    ? format(Math.max(...paymentRecords.map((r) => r.date.getTime())), 'M/d(E)', {
-                        locale: ja,
-                      })
-                    : '未支払'}
+                  {lastPaidAt ? format(lastPaidAt, 'M/d(E)', { locale: ja }) : '未支払'}
                 </p>
               </div>
             </div>
@@ -141,10 +199,7 @@ export function PaymentHistoryTab({ castId, castName }: PaymentHistoryTabProps) 
                 <DialogHeader>
                   <DialogTitle>新規入金記録</DialogTitle>
                 </DialogHeader>
-                <PaymentRecordForm
-                  onSubmit={handleAddPayment}
-                  salesRecords={salesRecords.filter((r) => r.paymentStatus === '未精算')}
-                />
+                <PaymentRecordForm onSubmit={handleAddPayment} reservations={pendingReservations} />
               </DialogContent>
             </Dialog>
           </div>
@@ -157,7 +212,7 @@ export function PaymentHistoryTab({ castId, castName }: PaymentHistoryTabProps) 
                 <TableHead>支払方法</TableHead>
                 <TableHead>金額</TableHead>
                 <TableHead>処理者</TableHead>
-                <TableHead>対象売上</TableHead>
+                <TableHead>対象予約</TableHead>
                 <TableHead>備考</TableHead>
                 <TableHead>操作</TableHead>
               </TableRow>
@@ -167,13 +222,13 @@ export function PaymentHistoryTab({ castId, castName }: PaymentHistoryTabProps) 
                 <TableRow key={record.id}>
                   <TableCell>
                     <div className="text-sm">
-                      <div>{format(record.date, 'yyyy/M/d(E)', { locale: ja })}</div>
-                      <div className="text-gray-500">{format(record.date, 'HH:mm')}</div>
+                      <div>{format(new Date(record.paidAt), 'yyyy/M/d(E)', { locale: ja })}</div>
+                      <div className="text-gray-500">{format(new Date(record.paidAt), 'HH:mm')}</div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getPaymentTypeColor(record.paymentType)}>
-                      {record.paymentType}
+                    <Badge className={getPaymentTypeColor(record.method)}>
+                      {record.method}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-lg font-medium">
@@ -187,7 +242,7 @@ export function PaymentHistoryTab({ castId, castName }: PaymentHistoryTabProps) 
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="text-xs">
-                      {record.salesRecordIds.length}件の売上
+                      {record.reservations.length}件の予約
                     </Badge>
                   </TableCell>
                   <TableCell className="max-w-32 truncate text-sm text-gray-600">
@@ -218,7 +273,7 @@ export function PaymentHistoryTab({ castId, castName }: PaymentHistoryTabProps) 
             <DialogHeader>
               <DialogTitle>入金記録詳細</DialogTitle>
             </DialogHeader>
-            <PaymentDetailView payment={selectedPayment} salesRecords={salesRecords} />
+            <PaymentDetailView payment={selectedPayment} />
           </DialogContent>
         </Dialog>
       )}
@@ -227,21 +282,21 @@ export function PaymentHistoryTab({ castId, castName }: PaymentHistoryTabProps) 
 }
 
 interface PaymentRecordFormProps {
-  onSubmit: (data: Partial<PaymentRecord>) => void
-  salesRecords: SalesRecord[]
-  initialData?: Partial<PaymentRecord>
+  onSubmit: (data: Partial<SettlementPaymentDto>) => void
+  reservations: CastSettlementRecordDetail[]
+  initialData?: Partial<SettlementPaymentDto>
 }
 
-function PaymentRecordForm({ onSubmit, salesRecords, initialData }: PaymentRecordFormProps) {
+function PaymentRecordForm({ onSubmit, reservations, initialData }: PaymentRecordFormProps) {
   const [formData, setFormData] = useState({
-    date: initialData?.date
-      ? format(initialData.date, 'yyyy-MM-dd')
+    date: initialData?.paidAt
+      ? format(new Date(initialData.paidAt), 'yyyy-MM-dd')
       : format(new Date(), 'yyyy-MM-dd'),
-    time: initialData?.date ? format(initialData.date, 'HH:mm') : '10:00',
-    paymentType: initialData?.paymentType || '現金精算',
+    time: initialData?.paidAt ? format(new Date(initialData.paidAt), 'HH:mm') : '10:00',
+    paymentType: (initialData as any)?.method || '現金精算',
     amount: initialData?.amount || 0,
+    reservationIds: (initialData as any)?.reservations?.map((r: any) => r.id) || [],
     handledBy: initialData?.handledBy || '',
-    salesRecordIds: initialData?.salesRecordIds || [],
     notes: initialData?.notes || '',
   })
 
@@ -249,25 +304,28 @@ function PaymentRecordForm({ onSubmit, salesRecords, initialData }: PaymentRecor
     e.preventDefault()
     const dateTime = new Date(`${formData.date}T${formData.time}`)
     onSubmit({
-      ...formData,
-      date: dateTime,
       amount: Number(formData.amount),
+      method: formData.paymentType,
+      handledBy: formData.handledBy,
+      paidAt: dateTime.toISOString(),
+      reservations: formData.reservationIds.map((id) => ({ id } as any)),
+      notes: formData.notes,
     })
   }
 
-  const selectedSalesTotal = salesRecords
-    .filter((record) => formData.salesRecordIds.includes(record.id))
-    .reduce((sum, record) => sum + record.castShare, 0)
+  const selectedSalesTotal = reservations
+    .filter((record) => formData.reservationIds.includes(record.id))
+    .reduce((sum, record) => sum + record.staffRevenue, 0)
 
-  const handleSalesRecordToggle = (recordId: string) => {
+  const handleReservationToggle = (recordId: string) => {
     setFormData({
       ...formData,
-      salesRecordIds: formData.salesRecordIds.includes(recordId)
-        ? formData.salesRecordIds.filter((id) => id !== recordId)
-        : [...formData.salesRecordIds, recordId],
-      amount: formData.salesRecordIds.includes(recordId)
-        ? formData.amount - (salesRecords.find((r) => r.id === recordId)?.castShare || 0)
-        : formData.amount + (salesRecords.find((r) => r.id === recordId)?.castShare || 0),
+      reservationIds: formData.reservationIds.includes(recordId)
+        ? formData.reservationIds.filter((id) => id !== recordId)
+        : [...formData.reservationIds, recordId],
+      amount: formData.reservationIds.includes(recordId)
+        ? formData.amount - (reservations.find((r) => r.id === recordId)?.staffRevenue || 0)
+        : formData.amount + (reservations.find((r) => r.id === recordId)?.staffRevenue || 0),
     })
   }
 
@@ -301,9 +359,7 @@ function PaymentRecordForm({ onSubmit, salesRecords, initialData }: PaymentRecor
           <Label htmlFor="paymentType">支払方法</Label>
           <Select
             value={formData.paymentType}
-            onValueChange={(value) =>
-              setFormData({ ...formData, paymentType: value as '現金精算' | '振込' | 'その他' })
-            }
+            onValueChange={(value) => setFormData({ ...formData, paymentType: value })}
           >
             <SelectTrigger>
               <SelectValue />
@@ -343,23 +399,26 @@ function PaymentRecordForm({ onSubmit, salesRecords, initialData }: PaymentRecor
         )}
       </div>
 
-      {salesRecords.length > 0 && (
+      {reservations.length > 0 && (
         <div>
-          <Label>対象売上記録</Label>
+          <Label>対象予約</Label>
           <div className="mt-2 max-h-40 overflow-y-auto rounded-md border p-2">
-            {salesRecords.map((record) => (
+            {reservations.map((record) => (
               <label key={record.id} className="flex items-center space-x-2 p-2 hover:bg-gray-50">
                 <input
                   type="checkbox"
-                  checked={formData.salesRecordIds.includes(record.id)}
-                  onChange={() => handleSalesRecordToggle(record.id)}
+                  checked={formData.reservationIds.includes(record.id)}
+                  onChange={() => handleReservationToggle(record.id)}
                 />
                 <div className="flex-1 text-sm">
                   <div className="font-medium">
-                    {format(record.date, 'M/d', { locale: ja })} {record.customerName} -{' '}
-                    {record.serviceName}
+                    {format(new Date(record.startTime), 'M/d(E) HH:mm', { locale: ja })}{' '}
+                    {record.courseName ?? 'コース未設定'}
                   </div>
-                  <div className="text-gray-500">キャスト売上: ¥{record.castShare.toLocaleString()}</div>
+                  <div className="text-gray-500">
+                    キャスト売上: ¥{record.staffRevenue.toLocaleString()} / 状態:{' '}
+                    {record.settlementStatus === 'settled' ? '精算済み' : '未精算'}
+                  </div>
                 </div>
               </label>
             ))}
@@ -385,12 +444,11 @@ function PaymentRecordForm({ onSubmit, salesRecords, initialData }: PaymentRecor
 }
 
 interface PaymentDetailViewProps {
-  payment: PaymentRecord
-  salesRecords: SalesRecord[]
+  payment: SettlementPaymentDto
 }
 
-function PaymentDetailView({ payment, salesRecords }: PaymentDetailViewProps) {
-  const targetSales = salesRecords.filter((record) => payment.salesRecordIds.includes(record.id))
+function PaymentDetailView({ payment }: PaymentDetailViewProps) {
+  const targets = payment.reservations || []
 
   return (
     <div className="space-y-4">
@@ -398,12 +456,12 @@ function PaymentDetailView({ payment, salesRecords }: PaymentDetailViewProps) {
         <div>
           <Label>支払日時</Label>
           <p className="font-medium">
-            {format(payment.date, 'yyyy年M月d日(E) HH:mm', { locale: ja })}
+            {format(new Date(payment.paidAt), 'yyyy年M月d日(E) HH:mm', { locale: ja })}
           </p>
         </div>
         <div>
           <Label>支払方法</Label>
-          <Badge className="mt-1">{payment.paymentType}</Badge>
+          <Badge className="mt-1">{payment.method}</Badge>
         </div>
         <div>
           <Label>支払金額</Label>
@@ -422,23 +480,23 @@ function PaymentDetailView({ payment, salesRecords }: PaymentDetailViewProps) {
         </div>
       )}
 
-      {targetSales.length > 0 && (
+      {targets.length > 0 && (
         <div>
-          <Label>対象売上記録 ({targetSales.length}件)</Label>
+          <Label>対象予約 ({targets.length}件)</Label>
           <div className="mt-2 space-y-2">
-            {targetSales.map((record) => (
+            {targets.map((record) => (
               <div key={record.id} className="rounded-lg border bg-gray-50 p-3">
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="font-medium">
-                      {record.customerName} - {record.serviceName}
+                      {record.courseName ?? 'コース未設定'}
                     </div>
                     <div className="text-sm text-gray-600">
-                      {format(record.date, 'M/d(E) HH:mm', { locale: ja })} @ {record.location}
+                      {format(new Date(record.startTime), 'M/d(E) HH:mm', { locale: ja })}
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="font-medium">¥{record.castShare.toLocaleString()}</div>
+                    <div className="font-medium">¥{record.staffRevenue.toLocaleString()}</div>
                     <div className="text-sm text-gray-500">キャスト売上</div>
                   </div>
                 </div>
