@@ -171,6 +171,7 @@ export interface CastSettlementRecordDetail {
   status: string
   settlementStatus?: 'pending' | 'settled' | 'partial'
   courseName: string | null
+  courseDuration: number | null
   price: number
   staffRevenue: number
   storeRevenue: number

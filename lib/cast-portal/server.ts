@@ -691,6 +691,7 @@ async function loadCastSettlements(castId: string, storeId: string): Promise<Cas
         course: {
           select: {
             name: true,
+            duration: true,
           },
         },
         castCheckedOutAt: true,
@@ -715,6 +716,7 @@ async function loadCastSettlements(castId: string, storeId: string): Promise<Cas
         course: {
           select: {
             name: true,
+            duration: true,
           },
         },
         options: {
@@ -844,6 +846,7 @@ async function loadCastSettlements(castId: string, storeId: string): Promise<Cas
       status: reservation.status,
       settlementStatus: (reservation.settlementStatus as SettlementStatus) ?? 'pending',
       courseName: reservation.course?.name ?? null,
+      courseDuration: reservation.course?.duration ?? null,
       price: reservation.price ?? 0,
       staffRevenue: reservation.staffRevenue ?? reservation.price ?? 0,
       storeRevenue: reservation.storeRevenue ?? 0,

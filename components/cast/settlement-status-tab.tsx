@@ -241,6 +241,7 @@ function DayRow({
       string,
       {
         courseName: string
+        courseLabel: string
         count: number
         optionTotal: number
         netTotal: number
@@ -248,10 +249,12 @@ function DayRow({
     >()
     day.records.forEach((record) => {
       const courseName = record.courseName ?? 'コース未設定'
+      const courseLabel = record.courseDuration ? `${record.courseDuration}分` : courseName
       const optionTotal = record.options.reduce((sum, option) => sum + option.price, 0)
       const netTotal = Math.max(record.staffRevenue - record.welfareExpense, 0)
-      const current = map.get(courseName) ?? {
+      const current = map.get(courseLabel) ?? {
         courseName,
+        courseLabel,
         count: 0,
         optionTotal: 0,
         netTotal: 0,
@@ -259,7 +262,7 @@ function DayRow({
       current.count += 1
       current.optionTotal += optionTotal
       current.netTotal += netTotal
-      map.set(courseName, current)
+      map.set(courseLabel, current)
     })
     const rows = Array.from(map.values()).sort((a, b) => b.netTotal - a.netTotal)
     const totals = rows.reduce(
@@ -270,6 +273,77 @@ function DayRow({
         return acc
       },
       { count: 0, optionTotal: 0, netTotal: 0 }
+    )
+    return { rows, totals }
+  }, [day.records])
+  const optionSummary = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        name: string
+        count: number
+        total: number
+        takeHome: number
+      }
+    >()
+    day.records.forEach((record) => {
+      record.options.forEach((option) => {
+        const name = option.name ?? 'オプション'
+        const price = Math.max(option.price ?? 0, 0)
+        const takeHome = Math.max(option.castShare ?? price, 0)
+        const current = map.get(name) ?? { name, count: 0, total: 0, takeHome: 0 }
+        current.count += 1
+        current.total += price
+        current.takeHome += takeHome
+        map.set(name, current)
+      })
+    })
+    const rows = Array.from(map.values()).sort((a, b) => b.total - a.total)
+    const totals = rows.reduce(
+      (acc, row) => {
+        acc.count += row.count
+        acc.total += row.total
+        acc.takeHome += row.takeHome
+        return acc
+      },
+      { count: 0, total: 0, takeHome: 0 }
+    )
+    return { rows, totals }
+  }, [day.records])
+  const designationSummary = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        label: string
+        count: number
+        total: number
+        takeHome: number
+      }
+    >()
+    const labelFor = (type?: string | null) => {
+      if (type === 'special') return '特別指名'
+      if (type === 'regular') return '本指名'
+      return '指名'
+    }
+    day.records.forEach((record) => {
+      const fee = Math.max(record.designationFee ?? 0, 0)
+      if (fee <= 0 && !record.designationType) return
+      const label = labelFor(record.designationType)
+      const current = map.get(label) ?? { label, count: 0, total: 0, takeHome: 0 }
+      current.count += 1
+      current.total += fee
+      current.takeHome += fee
+      map.set(label, current)
+    })
+    const rows = Array.from(map.values()).sort((a, b) => b.total - a.total)
+    const totals = rows.reduce(
+      (acc, row) => {
+        acc.count += row.count
+        acc.total += row.total
+        acc.takeHome += row.takeHome
+        return acc
+      },
+      { count: 0, total: 0, takeHome: 0 }
     )
     return { rows, totals }
   }, [day.records])
@@ -376,9 +450,9 @@ function DayRow({
             </TableHeader>
             <TableBody>
               {summary.rows.map((row) => (
-                <TableRow key={row.courseName}>
+                <TableRow key={row.courseLabel}>
                   <TableCell className="font-medium text-foreground">
-                    {row.courseName}
+                    {row.courseLabel}
                   </TableCell>
                   <TableCell className="text-right">{row.count} 本</TableCell>
                   <TableCell className="text-right">
@@ -403,6 +477,84 @@ function DayRow({
               </TableRow>
             </TableBody>
           </Table>
+          {(optionSummary.rows.length > 0 || designationSummary.rows.length > 0) && (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {optionSummary.rows.length > 0 && (
+                <div className="rounded-md border bg-white">
+                  <div className="border-b px-3 py-2 text-xs font-semibold text-muted-foreground">
+                    オプション内訳
+                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>オプション</TableHead>
+                        <TableHead className="text-right">本数</TableHead>
+                        <TableHead className="text-right">合計</TableHead>
+                        <TableHead className="text-right">手取り</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {optionSummary.rows.map((row) => (
+                        <TableRow key={row.name}>
+                          <TableCell className="font-medium text-foreground">{row.name}</TableCell>
+                          <TableCell className="text-right">{row.count} 本</TableCell>
+                          <TableCell className="text-right">¥{row.total.toLocaleString()}</TableCell>
+                          <TableCell className="text-right">¥{row.takeHome.toLocaleString()}</TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow className="bg-muted/40">
+                        <TableCell className="font-semibold text-foreground">合計</TableCell>
+                        <TableCell className="text-right font-semibold">{optionSummary.totals.count} 本</TableCell>
+                        <TableCell className="text-right font-semibold">
+                          ¥{optionSummary.totals.total.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">
+                          ¥{optionSummary.totals.takeHome.toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+              {designationSummary.rows.length > 0 && (
+                <div className="rounded-md border bg-white">
+                  <div className="border-b px-3 py-2 text-xs font-semibold text-muted-foreground">
+                    指名内訳
+                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>種別</TableHead>
+                        <TableHead className="text-right">本数</TableHead>
+                        <TableHead className="text-right">合計</TableHead>
+                        <TableHead className="text-right">手取り</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {designationSummary.rows.map((row) => (
+                        <TableRow key={row.label}>
+                          <TableCell className="font-medium text-foreground">{row.label}</TableCell>
+                          <TableCell className="text-right">{row.count} 本</TableCell>
+                          <TableCell className="text-right">¥{row.total.toLocaleString()}</TableCell>
+                          <TableCell className="text-right">¥{row.takeHome.toLocaleString()}</TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow className="bg-muted/40">
+                        <TableCell className="font-semibold text-foreground">合計</TableCell>
+                        <TableCell className="text-right font-semibold">{designationSummary.totals.count} 本</TableCell>
+                        <TableCell className="text-right font-semibold">
+                          ¥{designationSummary.totals.total.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">
+                          ¥{designationSummary.totals.takeHome.toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+          )}
           <div className="space-y-2 rounded-md border border-dashed border-muted-foreground/40 bg-white/70 px-3 py-2">
             <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
               <span>予約ごとの精算状況</span>
