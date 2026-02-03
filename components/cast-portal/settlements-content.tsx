@@ -9,14 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/use-toast'
 import { Badge } from '@/components/ui/badge'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { cn } from '@/lib/utils'
 
 const settlementStatusStyles = {
@@ -182,43 +174,39 @@ function DayRow({
       settledAmount: netSum(settled),
     }
   }, [day.records])
-  const summary = useMemo(() => {
+  const courseSummary = useMemo(() => {
     const map = new Map<
       string,
       {
-        courseName: string
         courseLabel: string
         count: number
-        optionTotal: number
-        netTotal: number
+        total: number
       }
     >()
     day.records.forEach((record) => {
       const courseName = record.courseName ?? 'コース未設定'
-      const courseLabel = record.courseDuration ? `${record.courseDuration}分` : courseName
+      const courseLabel = record.courseDuration ? `${record.courseDuration}分コース` : courseName
       const optionTotal = record.options.reduce((sum, option) => sum + option.price, 0)
-      const netTotal = Math.max(record.staffRevenue - record.welfareExpense, 0)
+      const designation = record.designationFee ?? 0
+      const adjustment = (record.additionalFee ?? 0) - (record.discountAmount ?? 0)
+      const coursePortion = Math.max(record.price - optionTotal - designation - adjustment, 0)
       const current = map.get(courseLabel) ?? {
-        courseName,
         courseLabel,
         count: 0,
-        optionTotal: 0,
-        netTotal: 0,
+        total: 0,
       }
       current.count += 1
-      current.optionTotal += optionTotal
-      current.netTotal += netTotal
+      current.total += coursePortion
       map.set(courseLabel, current)
     })
-    const rows = Array.from(map.values()).sort((a, b) => b.netTotal - a.netTotal)
+    const rows = Array.from(map.values()).sort((a, b) => b.total - a.total)
     const totals = rows.reduce(
       (acc, row) => {
         acc.count += row.count
-        acc.optionTotal += row.optionTotal
-        acc.netTotal += row.netTotal
+        acc.total += row.total
         return acc
       },
-      { count: 0, optionTotal: 0, netTotal: 0 }
+      { count: 0, total: 0 }
     )
     return { rows, totals }
   }, [day.records])
@@ -380,118 +368,80 @@ function DayRow({
               </div>
             </div>
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>コース</TableHead>
-                <TableHead className="text-right">本数</TableHead>
-                <TableHead className="text-right">オプション</TableHead>
-                <TableHead className="text-right">手取り金額</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {summary.rows.map((row) => (
-                <TableRow key={row.courseLabel}>
-                  <TableCell className="font-medium text-foreground">{row.courseLabel}</TableCell>
-                  <TableCell className="text-right">{row.count} 本</TableCell>
-                  <TableCell className="text-right">
-                    ¥{row.optionTotal.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    ¥{row.netTotal.toLocaleString()}
-                  </TableCell>
-                </TableRow>
-              ))}
-              <TableRow className="bg-muted/40">
-                <TableCell className="font-semibold text-foreground">合計</TableCell>
-                <TableCell className="text-right font-semibold">{summary.totals.count} 本</TableCell>
-                <TableCell className="text-right font-semibold">
-                  ¥{summary.totals.optionTotal.toLocaleString()}
-                </TableCell>
-                <TableCell className="text-right font-semibold">
-                  ¥{summary.totals.netTotal.toLocaleString()}
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-          {(optionSummary.rows.length > 0 || designationSummary.rows.length > 0) && (
-            <div className="grid gap-4 lg:grid-cols-2">
-              {optionSummary.rows.length > 0 && (
-                <div className="rounded-md border bg-white">
-                  <div className="border-b px-3 py-2 text-xs font-semibold text-muted-foreground">
-                    オプション内訳
-                  </div>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>オプション</TableHead>
-                        <TableHead className="text-right">本数</TableHead>
-                        <TableHead className="text-right">合計</TableHead>
-                        <TableHead className="text-right">手取り</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {optionSummary.rows.map((row) => (
-                        <TableRow key={row.name}>
-                          <TableCell className="font-medium text-foreground">{row.name}</TableCell>
-                          <TableCell className="text-right">{row.count} 本</TableCell>
-                          <TableCell className="text-right">¥{row.total.toLocaleString()}</TableCell>
-                          <TableCell className="text-right">¥{row.takeHome.toLocaleString()}</TableCell>
-                        </TableRow>
-                      ))}
-                      <TableRow className="bg-muted/40">
-                        <TableCell className="font-semibold text-foreground">合計</TableCell>
-                        <TableCell className="text-right font-semibold">{optionSummary.totals.count} 本</TableCell>
-                        <TableCell className="text-right font-semibold">
-                          ¥{optionSummary.totals.total.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold">
-                          ¥{optionSummary.totals.takeHome.toLocaleString()}
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
+          <div className="rounded-md border bg-white px-3 py-3">
+            <div className="text-xs font-semibold text-muted-foreground">内訳</div>
+            <div className="mt-2 space-y-4 text-sm">
+              <div>
+                <div className="text-xs font-semibold text-muted-foreground">コース</div>
+                <div className="mt-2 space-y-1">
+                  {courseSummary.rows.map((row) => (
+                    <div key={row.courseLabel} className="flex items-center justify-between">
+                      <span className="font-medium text-foreground">{row.courseLabel} ×{row.count}</span>
+                      <span>¥{row.total.toLocaleString()}</span>
+                    </div>
+                  ))}
                 </div>
-              )}
-              {designationSummary.rows.length > 0 && (
-                <div className="rounded-md border bg-white">
-                  <div className="border-b px-3 py-2 text-xs font-semibold text-muted-foreground">
-                    指名内訳
-                  </div>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>種別</TableHead>
-                        <TableHead className="text-right">本数</TableHead>
-                        <TableHead className="text-right">合計</TableHead>
-                        <TableHead className="text-right">手取り</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {designationSummary.rows.map((row) => (
-                        <TableRow key={row.label}>
-                          <TableCell className="font-medium text-foreground">{row.label}</TableCell>
-                          <TableCell className="text-right">{row.count} 本</TableCell>
-                          <TableCell className="text-right">¥{row.total.toLocaleString()}</TableCell>
-                          <TableCell className="text-right">¥{row.takeHome.toLocaleString()}</TableCell>
-                        </TableRow>
-                      ))}
-                      <TableRow className="bg-muted/40">
-                        <TableCell className="font-semibold text-foreground">合計</TableCell>
-                        <TableCell className="text-right font-semibold">{designationSummary.totals.count} 本</TableCell>
-                        <TableCell className="text-right font-semibold">
-                          ¥{designationSummary.totals.total.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold">
-                          ¥{designationSummary.totals.takeHome.toLocaleString()}
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
+                <div className="mt-2 text-xs text-muted-foreground">
+                  合計 {courseSummary.totals.count} 本 / ¥{courseSummary.totals.total.toLocaleString()}
                 </div>
-              )}
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-muted-foreground">オプション</div>
+                {optionSummary.rows.length > 0 ? (
+                  <div className="mt-2 space-y-1">
+                    {optionSummary.rows.map((row) => (
+                      <div key={row.name} className="flex items-center justify-between">
+                        <span className="font-medium text-foreground">{row.name} ×{row.count}</span>
+                        <span>¥{row.total.toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-2 text-xs text-muted-foreground">なし</div>
+                )}
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-muted-foreground">指名</div>
+                {designationSummary.rows.length > 0 ? (
+                  <div className="mt-2 space-y-1">
+                    {designationSummary.rows.map((row) => (
+                      <div key={row.label} className="flex items-center justify-between">
+                        <span className="font-medium text-foreground">{row.label} ×{row.count}</span>
+                        <span>¥{row.total.toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-2 text-xs text-muted-foreground">なし</div>
+                )}
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">調整</span>
+                <span>
+                  {breakdown.adjustmentTotal === 0
+                    ? '¥0'
+                    : `${breakdown.adjustmentTotal > 0 ? '+' : '-'}¥${Math.abs(breakdown.adjustmentTotal).toLocaleString()}`}
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                ※姫予約など手取りを変動した場合
+              </p>
+              <div className="border-t pt-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">女性小計</span>
+                  <span>¥{breakdown.staffSubtotal.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span>雑費 / 厚生費</span>
+                  <span>-¥{breakdown.welfareTotal.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between font-semibold text-emerald-700">
+                  <span>手取り</span>
+                  <span>¥{Math.max(breakdown.staffSubtotal - breakdown.welfareTotal, 0).toLocaleString()}</span>
+                </div>
+              </div>
             </div>
-          )}
+          </div>
           <div className="space-y-2 rounded-md border border-dashed border-muted-foreground/40 bg-white/70 px-3 py-2">
             <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
               <span>予約ごとの精算状況</span>
