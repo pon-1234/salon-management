@@ -1,12 +1,24 @@
 'use client'
 
+import type { ComponentType } from 'react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Star, Heart, TrendingUp, MessageSquare, Phone } from 'lucide-react'
+import {
+  CalendarDays,
+  Coins,
+  Crown,
+  Heart,
+  MessageSquare,
+  NotebookPen,
+  Phone,
+  Sparkles,
+  Star,
+  TrendingUp,
+  UserRound,
+} from 'lucide-react'
 import { Store } from '@/lib/store/types'
 import { StoreNavigation } from './store-navigation'
 import { StoreFooter } from './store-footer'
@@ -80,215 +92,189 @@ export function StoreHomeContent({ store, data }: StoreHomeContentProps) {
   const newcomers = data?.highlights?.newcomers ?? []
   const todaysSchedules = data?.highlights?.todaysSchedules ?? []
   const reviews = data?.reviews ?? []
+  const heroImage = store.images?.main || store.images?.gallery?.[0] || '/images/banners/campaign-1.jpg'
 
   return (
-    <>
+    <div className="luxury-body bg-[#0b0b0b] text-white">
       <StoreNavigation />
 
-      <main>
-        {/* Hero Section with Video Background */}
-        <section className="relative flex h-screen min-h-[600px] items-center justify-center overflow-hidden">
-          <div className="absolute inset-0 z-0">
-            <video autoPlay muted loop playsInline className="absolute h-full w-full object-cover">
-              <source src="/videos/hero-background.mp4" type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-            <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-purple-900/50 to-pink-900/60" />
+      <main className="relative">
+        {/* Hero Section */}
+        <section className="relative min-h-[70vh] overflow-hidden">
+          <div className="absolute inset-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={heroImage} alt={store.displayName} className="h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-black/90" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,206,126,0.25),_transparent_55%)]" />
           </div>
 
-          <div className="relative z-10 mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-            <div className="space-y-6">
-              <div className="mb-8">
-                <div className="inline-block">
-                  <div className="animate-pulse bg-gradient-to-r from-yellow-400 to-pink-400 bg-clip-text text-transparent">
-                    <p className="mb-2 text-2xl font-medium md:text-3xl">PREMIUM SALON</p>
-                  </div>
-                </div>
-              </div>
+          <div className="relative z-10 mx-auto max-w-6xl px-4 py-20 sm:py-28">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#f3d08a]/60 bg-black/50 px-4 py-2 text-xs uppercase tracking-[0.4em] text-[#f3d08a]">
+              <Crown className="h-4 w-4" />
+              Tokyo Premium
+            </div>
 
-              <h1 className="text-5xl font-bold leading-tight text-white md:text-7xl">
-                <span className="mb-2 block">【{store.name.replace('店', '')}】</span>
-                <span className="block bg-gradient-to-r from-pink-300 to-yellow-300 bg-clip-text text-transparent">
-                  回春・性感マッサージ
-                </span>
-              </h1>
-
-              <p className="mx-auto max-w-2xl text-xl text-white/90 md:text-2xl">
-                風俗・デリヘル・出張エステでの
-                <br className="md:hidden" />
-                極上の施術なら
-              </p>
-
-              <p className="text-4xl font-bold text-yellow-300 drop-shadow-lg md:text-5xl">
+            <div className="mt-6 space-y-6">
+              <h1 className="luxury-display luxury-text-shadow text-4xl font-semibold text-[#f7e2b5] sm:text-5xl md:text-6xl">
                 {store.displayName}
+              </h1>
+              <p className="max-w-2xl text-lg text-[#f5e6c4] sm:text-xl">
+                都内屈指のラグジュアリー空間で、五感を刺激する濃密トリートメントを。
+                完全予約制のプライベートサロンで極上の時間をご提供します。
               </p>
 
-              <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <div className="flex flex-col gap-4 sm:flex-row">
                 <Button
                   size="lg"
-                  className="transform bg-gradient-to-r from-yellow-500 to-yellow-600 px-8 py-6 text-lg font-bold text-black shadow-xl transition-all duration-200 hover:scale-105 hover:from-yellow-600 hover:to-yellow-700"
+                  className="bg-gradient-to-r from-[#f6dfab] to-[#c79548] px-8 py-6 text-base font-semibold text-[#2b1b0d] shadow-[0_12px_30px_rgba(0,0,0,0.55)] transition hover:from-[#ffe8bf] hover:to-[#e2b463]"
                 >
                   <Phone className="mr-2 h-5 w-5" />
-                  今スグ予約
+                  今すぐ予約
                 </Button>
                 <Button
                   size="lg"
                   variant="outline"
-                  className="border-2 border-white px-8 py-6 text-lg font-bold text-white hover:bg-white hover:text-black"
+                  className="border-[#f3d08a]/70 px-8 py-6 text-base font-semibold text-[#f5e6c4] hover:bg-[#2b2114]"
                   asChild
                 >
-                  <Link href={`/${store.slug}/cast`}>キャスト一覧を見る</Link>
+                  <Link href={`/${store.slug}/cast`}>セラピストを見る</Link>
                 </Button>
               </div>
 
-              <div className="mx-auto mt-12 grid max-w-3xl grid-cols-3 gap-4 md:gap-8">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-yellow-300 md:text-4xl">
-                    {FALLBACK_STATS.totalCasts}
-                  </div>
-                  <div className="text-sm text-white/80 md:text-base">在籍キャスト</div>
+              {store.features?.length ? (
+                <div className="flex flex-wrap gap-3 pt-4">
+                  {store.features.map((feature) => (
+                    <span
+                      key={feature}
+                      className="rounded-full border border-[#f3d08a]/40 bg-black/40 px-4 py-1 text-xs text-[#f5e6c4]"
+                    >
+                      {feature}
+                    </span>
+                  ))}
                 </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-yellow-300 md:text-4xl">
-                    {FALLBACK_STATS.averageRating}
-                  </div>
-                  <div className="text-sm text-white/80 md:text-base">平均評価</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-yellow-300 md:text-4xl">
-                    {FALLBACK_STATS.openHoursLabel}
-                  </div>
-                  <div className="text-sm text-white/80 md:text-base">営業時間</div>
-                </div>
+              ) : null}
+
+              <div className="grid grid-cols-1 gap-4 pt-8 sm:grid-cols-3">
+                <StatCard label="在籍セラピスト" value={FALLBACK_STATS.totalCasts} />
+                <StatCard label="平均評価" value={FALLBACK_STATS.averageRating} />
+                <StatCard label="営業時間" value={FALLBACK_STATS.openHoursLabel} />
               </div>
             </div>
           </div>
-
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 transform animate-bounce">
-            <div className="flex h-10 w-6 justify-center rounded-full border-2 border-white">
-              <div className="mt-2 h-3 w-1 animate-pulse rounded-full bg-white" />
-            </div>
-          </div>
         </section>
 
-        <CampaignBannerSlider
-          banners={banners}
-          autoPlayInterval={5000}
-          showDots={true}
-          dismissible={false}
-        />
+        <div className="luxury-section py-10">
+          <div className="mx-auto max-w-6xl px-4">
+            <SectionHeading title="PICK UP" subtitle="最新キャンペーン" />
+          </div>
+          <CampaignBannerSlider
+            banners={banners}
+            autoPlayInterval={5000}
+            showDots={true}
+            dismissible={false}
+          />
+        </div>
 
-        <section className="bg-gray-50 py-12">
+        <section className="luxury-section py-16">
           <div className="mx-auto max-w-4xl space-y-6 px-4 text-center">
-            <h2 className="text-3xl font-bold text-gray-800">
-              「とにかく全部を気持ちよくしてほしい」
-            </h2>
-            <p className="text-xl font-semibold text-purple-600">モテる男は睾丸マッサージ</p>
-            <div className="prose prose-lg mx-auto text-gray-600">
-              <p>
-                全身で感じるリラクゼーション
-                <br />
-                寝ているだけの優越感、非日常の刺激は
-                <br />
-                快感快楽だけでなく幸福感を高めます。
-              </p>
-              <p>
-                様々なハラスメント社会の昨今...
-                <br />
-                気を遣わずに何もしない時間は少ないのではないでしょうか。
-              </p>
-              <p className="font-semibold text-purple-700">
-                何もしないで気持ちよくなれる幸せが
-                <br />
-                集中力を高め
-                <br />
-                男性としての喜びを最大限に感じれます。
-              </p>
-            </div>
+            <SectionHeading title="CONCEPT" subtitle="至福の密着トリートメント" />
+            <p className="text-lg text-[#f5e6c4]">
+              寝ているだけで極上の癒やしを。洗練されたセラピストの手技が、
+              日常から解き放つ非日常のひとときを演出します。
+            </p>
+            <p className="text-sm text-[#d7c39c]">
+              完全個室、上質なアロマ、厳選されたプログラムで、
+              あなたのためだけの特別な時間をお届けします。
+            </p>
           </div>
         </section>
 
-        <section className="py-12">
-          <div className="mx-auto max-w-7xl px-4">
-            <h2 className="mb-8 flex items-center justify-center gap-2 text-center text-3xl font-bold">
-              <TrendingUp className="h-8 w-8 text-yellow-500" />
-              ランキング
-            </h2>
+        <section className="luxury-section py-16">
+          <div className="mx-auto max-w-6xl px-4">
+            <SectionHeading title="RANKING" subtitle="人気ランキング" icon={TrendingUp} />
             {ranking.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-muted-foreground/40 bg-white p-10 text-center text-muted-foreground">
+              <div className="mt-8 rounded-lg border border-dashed border-[#3b2e1f] bg-black/40 p-10 text-center text-[#cbb88f]">
                 表示できるランキング情報がありません。
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
+              <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-4">
                 {ranking.slice(0, 4).map((cast) => (
                   <RankingCard key={cast.id} cast={cast} />
                 ))}
               </div>
             )}
-            <div className="mt-8 text-center">
-              <Button asChild variant="outline">
+            <div className="mt-10 text-center">
+              <Button
+                asChild
+                variant="outline"
+                className="border-[#f3d08a]/60 text-[#f5e6c4] hover:bg-[#2b2114]"
+              >
                 <Link href={`/${store.slug}/ranking`}>もっと見る</Link>
               </Button>
             </div>
           </div>
         </section>
 
-        <section className="bg-pink-50 py-12">
-          <div className="mx-auto max-w-7xl px-4">
-            <h2 className="mb-8 text-center text-3xl font-bold">新人紹介</h2>
+        <section className="luxury-section py-16">
+          <div className="mx-auto max-w-6xl px-4">
+            <SectionHeading title="NEW FACE" subtitle="新人紹介" icon={Sparkles} />
             {newcomers.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-pink-300 bg-white p-10 text-center text-pink-600">
+              <div className="mt-8 rounded-lg border border-dashed border-[#3b2e1f] bg-black/40 p-10 text-center text-[#cbb88f]">
                 新人キャストの情報は現在準備中です。
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
                 {newcomers.slice(0, 4).map((cast) => (
                   <CastSummaryCard key={cast.id} cast={cast} />
                 ))}
               </div>
             )}
-            <div className="mt-8 text-center">
-              <Button asChild>
+            <div className="mt-10 text-center">
+              <Button
+                asChild
+                className="bg-gradient-to-r from-[#f6dfab] to-[#c79548] text-[#2b1b0d] hover:from-[#ffe8bf] hover:to-[#e2b463]"
+              >
                 <Link href={`/${store.slug}/cast`}>もっと見る</Link>
               </Button>
             </div>
           </div>
         </section>
 
-        <section className="py-12">
-          <div className="mx-auto max-w-7xl px-4">
-            <h2 className="mb-8 text-center text-3xl font-bold">本日出勤一覧</h2>
+        <section className="luxury-section py-16">
+          <div className="mx-auto max-w-6xl px-4">
+            <SectionHeading title="SCHEDULE" subtitle="本日の出勤" icon={CalendarDays} />
             {todaysSchedules.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-muted-foreground/40 bg-white p-10 text-center text-muted-foreground">
+              <div className="mt-8 rounded-lg border border-dashed border-[#3b2e1f] bg-black/40 p-10 text-center text-[#cbb88f]">
                 本日出勤予定のキャスト情報はありません。最新の出勤情報はスケジュールページでご確認ください。
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
                 {todaysSchedules.slice(0, 4).map((schedule) => (
                   <ScheduleCard key={schedule.castId} schedule={schedule} />
                 ))}
               </div>
             )}
-            <div className="mt-8 text-center">
-              <Button asChild variant="outline">
+            <div className="mt-10 text-center">
+              <Button
+                asChild
+                variant="outline"
+                className="border-[#f3d08a]/60 text-[#f5e6c4] hover:bg-[#2b2114]"
+              >
                 <Link href={`/${store.slug}/schedule`}>もっと見る</Link>
               </Button>
             </div>
           </div>
         </section>
 
-        <section className="bg-gray-50 py-12">
-          <div className="mx-auto max-w-7xl px-4">
-            <h2 className="mb-8 flex items-center justify-center gap-2 text-center text-3xl font-bold">
-              <MessageSquare className="h-8 w-8 text-blue-500" />
-              お客様の声
-            </h2>
+        <section className="luxury-section py-16">
+          <div className="mx-auto max-w-5xl px-4">
+            <SectionHeading title="VOICE" subtitle="お客様の声" icon={MessageSquare} />
             {reviews.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-muted-foreground/40 bg-white p-10 text-center text-muted-foreground">
+              <div className="mt-8 rounded-lg border border-dashed border-[#3b2e1f] bg-black/40 p-10 text-center text-[#cbb88f]">
                 まだ口コミが投稿されていません。初めてのご利用後にぜひご感想をお寄せください。
               </div>
             ) : (
-              <div className="mx-auto max-w-4xl space-y-6">
+              <div className="mt-8 space-y-6">
                 {reviews.slice(0, 6).map((review) => (
                   <ReviewCard key={review.id} review={review} />
                 ))}
@@ -297,108 +283,194 @@ export function StoreHomeContent({ store, data }: StoreHomeContentProps) {
           </div>
         </section>
 
-        <StoreFooter store={store} />
       </main>
-    </>
+
+      <StoreFooter store={store} />
+      <FloatingQuickNav store={store} />
+    </div>
+  )
+}
+
+function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="luxury-panel flex flex-col items-center justify-center gap-2 rounded-md px-6 py-4 text-center">
+      <div className="luxury-display text-2xl text-[#f6d48a]">{value}</div>
+      <div className="text-xs text-[#d7c39c]">{label}</div>
+    </div>
+  )
+}
+
+function SectionHeading({
+  title,
+  subtitle,
+  icon: Icon,
+}: {
+  title: string
+  subtitle: string
+  icon?: ComponentType<{ className?: string }>
+}) {
+  return (
+    <div className="text-center">
+      <div className="flex items-center justify-center gap-2 text-[#f3d08a]">
+        {Icon ? <Icon className="h-5 w-5" /> : null}
+        <p className="luxury-display text-sm tracking-[0.4em]">{title}</p>
+      </div>
+      <h2 className="mt-3 text-2xl font-semibold text-[#f5e6c4]">{subtitle}</h2>
+      <div className="mx-auto mt-4 h-px w-32 bg-gradient-to-r from-transparent via-[#caa45a] to-transparent" />
+    </div>
   )
 }
 
 function RankingCard({ cast }: { cast: PublicCastSummary }) {
+  const badgeClass =
+    cast.panelDesignationRank === 1
+      ? 'bg-[#f6d48a] text-[#2b1b0d]'
+      : cast.panelDesignationRank === 2
+        ? 'bg-[#bfc3c8] text-[#1a1a1a]'
+        : cast.panelDesignationRank === 3
+          ? 'bg-[#c97a3f] text-[#1a1a1a]'
+          : 'bg-[#2a2a2a] text-[#f5e6c4]'
+
   return (
-    <Card className="transition-shadow hover:shadow-lg">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <Badge
-            className={cn(
-              'px-3 py-1 text-lg',
-              cast.panelDesignationRank === 1
-                ? 'bg-yellow-500'
-                : cast.panelDesignationRank === 2
-                  ? 'bg-gray-400'
-                  : cast.panelDesignationRank === 3
-                    ? 'bg-orange-600'
-                    : 'bg-gray-600'
-            )}
-          >
-            {cast.panelDesignationRank > 0 ? `${cast.panelDesignationRank}位` : 'ランク外'}
-          </Badge>
-          <Heart className="h-5 w-5 text-pink-500" />
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="mb-3 aspect-[3/4] overflow-hidden rounded-lg bg-gradient-to-br from-pink-300 to-purple-400">
-          {cast.images[0] && (
+    <div className="luxury-panel overflow-hidden rounded-md">
+      <div className="flex items-center justify-between border-b border-[#3b2e1f] bg-[#161616] px-4 py-3">
+        <span className={cn('rounded-full px-3 py-1 text-xs font-semibold', badgeClass)}>
+          {cast.panelDesignationRank > 0 ? `${cast.panelDesignationRank}位` : 'ランク外'}
+        </span>
+        <Heart className="h-4 w-4 text-[#f28b96]" />
+      </div>
+      <div className="p-4">
+        <div className="relative mb-4 aspect-[3/4] overflow-hidden border border-[#4a3b28] bg-[#0f0f0f]">
+          {cast.images[0] ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={cast.images[0]} alt={cast.name} className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-xs text-[#cbb88f]">
+              NO IMAGE
+            </div>
           )}
+          {cast.panelDesignationRank === 1 ? (
+            <div className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-black/70 px-2 py-1 text-[10px] text-[#f6d48a]">
+              <Crown className="h-3 w-3" />
+              No.1
+            </div>
+          ) : null}
         </div>
-        <h3 className="text-lg font-bold">{cast.name}</h3>
-        {cast.age && <p className="text-sm text-muted-foreground">{cast.age}歳</p>}
-        <p className="mt-1 text-xs text-muted-foreground">{formatSizeLabel(cast)}</p>
-      </CardContent>
-    </Card>
+        <h3 className="text-lg font-semibold text-[#f5e6c4]">{cast.name}</h3>
+        {cast.age && <p className="text-sm text-[#d7c39c]">{cast.age}歳</p>}
+        <p className="mt-1 text-xs text-[#cbb88f]">{formatSizeLabel(cast)}</p>
+      </div>
+    </div>
   )
 }
 
 function CastSummaryCard({ cast }: { cast: PublicCastSummary }) {
   return (
-    <Card className="transition-shadow hover:shadow-lg">
-      <CardContent className="p-4">
-        <div className="mb-3 aspect-[3/4] overflow-hidden rounded-lg bg-gradient-to-br from-purple-300 to-pink-400">
-          {cast.images[0] && (
+    <div className="luxury-panel overflow-hidden rounded-md">
+      <div className="p-4">
+        <div className="relative mb-3 aspect-[3/4] overflow-hidden border border-[#4a3b28] bg-[#0f0f0f]">
+          {cast.images[0] ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={cast.images[0]} alt={cast.name} className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-xs text-[#cbb88f]">
+              NO IMAGE
+            </div>
           )}
+          <span className="absolute left-3 top-3 rounded bg-[#2fc8b7] px-2 py-1 text-[10px] font-semibold text-[#0b1a17]">
+            NEW
+          </span>
         </div>
-        <h3 className="font-bold">{cast.name}</h3>
-        {cast.age && <p className="text-sm text-muted-foreground">{cast.age}歳</p>}
-        <p className="text-xs text-muted-foreground">{formatSizeLabel(cast)}</p>
-      </CardContent>
-    </Card>
+        <h3 className="font-semibold text-[#f5e6c4]">{cast.name}</h3>
+        {cast.age && <p className="text-sm text-[#d7c39c]">{cast.age}歳</p>}
+        <p className="text-xs text-[#cbb88f]">{formatSizeLabel(cast)}</p>
+      </div>
+    </div>
   )
 }
 
 function ScheduleCard({ schedule }: { schedule: PublicScheduleSummary }) {
   const { cast } = schedule
   return (
-    <Card className="transition-shadow hover:shadow-lg">
-      <CardContent className="p-4">
-        <div className="mb-3 aspect-[3/4] overflow-hidden rounded-lg bg-gradient-to-br from-blue-300 to-purple-400">
-          {cast.images[0] && (
+    <div className="luxury-panel overflow-hidden rounded-md">
+      <div className="p-4">
+        <div className="relative mb-3 aspect-[3/4] overflow-hidden border border-[#4a3b28] bg-[#0f0f0f]">
+          {cast.images[0] ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={cast.images[0]} alt={cast.name} className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-xs text-[#cbb88f]">
+              NO IMAGE
+            </div>
           )}
+          <span className="absolute right-3 top-3 rounded bg-[#1d1d1d]/80 px-2 py-1 text-[10px] text-[#f5e6c4]">
+            出勤
+          </span>
         </div>
-        <h3 className="font-bold">{cast.name}</h3>
-        {cast.age && <p className="text-sm text-muted-foreground">{cast.age}歳</p>}
-        <p className="text-xs text-muted-foreground">{formatSizeLabel(cast)}</p>
-        <Badge className="mt-2" variant="outline">
+        <h3 className="font-semibold text-[#f5e6c4]">{cast.name}</h3>
+        {cast.age && <p className="text-sm text-[#d7c39c]">{cast.age}歳</p>}
+        <p className="text-xs text-[#cbb88f]">{formatSizeLabel(cast)}</p>
+        <Badge className="mt-3 w-full justify-center border border-[#f3d08a]/60 bg-transparent text-[#f3d08a]">
           {formatScheduleRange(schedule)}
         </Badge>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
 
 function ReviewCard({ review }: { review: PublicReviewSummary }) {
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="mb-4 flex items-start justify-between">
-          <div>
-            <h4 className="font-bold">{review.castName}</h4>
-            <p className="text-sm text-muted-foreground">{review.customerAlias}</p>
-            <p className="text-xs text-muted-foreground">{formatReviewDate(review)}</p>
-          </div>
-          <div className="flex gap-1">
-            {Array.from({ length: review.rating }).map((_, index) => (
-              <Star key={index} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-            ))}
-          </div>
+    <div className="luxury-panel rounded-md p-6">
+      <div className="mb-4 flex items-start justify-between">
+        <div>
+          <h4 className="font-semibold text-[#f5e6c4]">{review.castName}</h4>
+          <p className="text-sm text-[#d7c39c]">{review.customerAlias}</p>
+          <p className="text-xs text-[#cbb88f]">{formatReviewDate(review)}</p>
         </div>
-        <p className="text-gray-700">{review.comment}</p>
-      </CardContent>
-    </Card>
+        <div className="flex gap-1">
+          {Array.from({ length: review.rating }).map((_, index) => (
+            <Star key={index} className="h-4 w-4 fill-[#f3d08a] text-[#f3d08a]" />
+          ))}
+        </div>
+      </div>
+      <p className="text-sm text-[#f0e3c8]">{review.comment}</p>
+    </div>
+  )
+}
+
+function FloatingQuickNav({ store }: { store: Store }) {
+  const quickLinks = [
+    { label: 'セラピスト', href: `/${store.slug}/cast`, icon: UserRound },
+    { label: 'スケジュール', href: `/${store.slug}/schedule`, icon: CalendarDays },
+    { label: 'システム', href: `/${store.slug}/pricing`, icon: Coins },
+    { label: 'ネット予約', href: `/${store.slug}/booking`, icon: NotebookPen },
+    { label: '電話', href: `tel:${store.phone}`, icon: Phone },
+  ]
+
+  return (
+    <div className="fixed right-4 top-1/2 z-40 hidden -translate-y-1/2 flex-col gap-3 lg:flex">
+      {quickLinks.map((link) => {
+        const content = (
+          <>
+            <link.icon className="h-5 w-5" />
+            <span className="text-[10px] tracking-[0.2em]">{link.label}</span>
+          </>
+        )
+
+        const className =
+          'group flex w-20 flex-col items-center gap-2 rounded-md border border-[#3b2e1f] bg-[#1a1a1a]/90 px-2 py-3 text-[#f5e6c4] shadow-[0_8px_22px_rgba(0,0,0,0.55)] transition hover:border-[#f3d08a] hover:text-[#f6d48a]'
+
+        return link.href.startsWith('tel:') ? (
+          <a key={link.label} href={link.href} className={className} aria-label={link.label}>
+            {content}
+          </a>
+        ) : (
+          <Link key={link.label} href={link.href} className={className} aria-label={link.label}>
+            {content}
+          </Link>
+        )
+      })}
+    </div>
   )
 }
 

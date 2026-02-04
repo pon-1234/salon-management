@@ -26,8 +26,6 @@ export function StoreNavigation() {
 
   const isAuthenticated = status === 'authenticated'
   const isCustomer = isAuthenticated && session?.user?.role === 'customer'
-  const customerName = session?.user?.name ?? session?.user?.email ?? '会員'
-
   const handleLogout = async () => {
     await signOut({
       callbackUrl: `/${store.slug}`,
@@ -35,137 +33,164 @@ export function StoreNavigation() {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b bg-white">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
+    <header className="sticky top-0 z-50 border-b border-[#caa45a]/40 bg-gradient-to-r from-[#2a1a0e] via-[#141414] to-[#2a1a0e] text-white shadow-[0_12px_30px_rgba(0,0,0,0.55)]">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-4 py-3 sm:px-6 lg:px-8">
+        <div className="flex flex-1 items-center justify-between gap-6 lg:justify-start">
           {/* Logo */}
-          <Link href={`/${store.slug}`} className="flex items-center gap-2">
-            <h1 className="text-xl font-bold">{store.displayName}</h1>
+          <Link href={`/${store.slug}`} className="flex flex-col">
+            <span className="luxury-display text-lg text-[#f3d08a] md:text-xl">
+              THE SALON
+            </span>
+            <span className="text-xs text-[#d6b46a]">{store.displayName}</span>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden items-center gap-6 lg:flex">
+          <nav className="hidden items-center gap-5 lg:flex">
             {navigationItems.map((item) => (
               <Link
                 key={item.href}
                 href={`/${store.slug}${item.href}`}
                 className={cn(
-                  'text-sm font-medium transition-colors hover:text-primary',
+                  'text-xs font-semibold tracking-[0.2em] text-[#f3e4bf] transition-colors hover:text-[#f6d48a]',
                   pathname === `/${store.slug}${item.href}`
-                    ? 'text-primary'
-                    : 'text-muted-foreground'
+                    ? 'text-[#f6d48a]'
+                    : 'text-[#cbb88f]'
                 )}
               >
                 {item.name}
               </Link>
             ))}
           </nav>
+        </div>
 
-          {/* Right Actions */}
-          <div className="flex items-center gap-4">
-            {isCustomer ? (
-              <>
-                <Button variant="ghost" size="sm" className="hidden sm:flex" asChild>
-                  <Link href={`/${store.slug}/mypage`}>
-                    <User className="mr-2 h-4 w-4" />
-                    マイページ
-                  </Link>
-                </Button>
-                <Button variant="ghost" size="sm" className="hidden sm:flex" onClick={handleLogout}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  ログアウト
-                </Button>
-              </>
-            ) : status === 'loading' ? (
-              <span className="hidden text-sm text-muted-foreground sm:inline">認証確認中...</span>
-            ) : (
-              <>
-                <Button variant="ghost" size="sm" className="hidden sm:flex" asChild>
-                  <Link href={`/${store.slug}/register`}>
-                    <User className="mr-2 h-4 w-4" />
-                    会員登録
-                  </Link>
-                </Button>
-                <Button variant="ghost" size="sm" className="hidden sm:flex" asChild>
-                  <Link href={`/${store.slug}/login`}>
-                    <LogIn className="mr-2 h-4 w-4" />
-                    ログイン
-                  </Link>
-                </Button>
-              </>
-            )}
-
-            <div className="flex flex-col items-end">
-              <a
-                href={`tel:${store.phone}`}
-                className="flex items-center gap-1 font-bold text-primary"
+        {/* Right Actions */}
+        <div className="flex items-center gap-3">
+          {isCustomer ? (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="hidden border border-transparent text-xs text-[#f3e4bf] hover:border-[#caa45a]/60 hover:text-[#f6d48a] sm:flex"
+                asChild
               >
-                <Phone className="h-4 w-4" />
-                {store.phone}
-              </a>
-              <span className="text-xs text-muted-foreground">
-                {store.openingHours.weekday.open}～翌
-                {store.openingHours.weekday.close.split(':')[0]}:00
-              </span>
-            </div>
+                <Link href={`/${store.slug}/mypage`}>
+                  <User className="mr-2 h-4 w-4" />
+                  マイページ
+                </Link>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="hidden border border-transparent text-xs text-[#f3e4bf] hover:border-[#caa45a]/60 hover:text-[#f6d48a] sm:flex"
+                onClick={handleLogout}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                ログアウト
+              </Button>
+            </>
+          ) : status === 'loading' ? (
+            <span className="hidden text-xs text-[#cbb88f] sm:inline">認証確認中...</span>
+          ) : (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="hidden border border-transparent text-xs text-[#f3e4bf] hover:border-[#caa45a]/60 hover:text-[#f6d48a] sm:flex"
+                asChild
+              >
+                <Link href={`/${store.slug}/register`}>
+                  <User className="mr-2 h-4 w-4" />
+                  会員登録
+                </Link>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="hidden border border-transparent text-xs text-[#f3e4bf] hover:border-[#caa45a]/60 hover:text-[#f6d48a] sm:flex"
+                asChild
+              >
+                <Link href={`/${store.slug}/login`}>
+                  <LogIn className="mr-2 h-4 w-4" />
+                  ログイン
+                </Link>
+              </Button>
+            </>
+          )}
 
-            {/* Mobile Menu */}
-            <Sheet>
-              <SheetTrigger asChild className="lg:hidden">
-                <Button variant="ghost" size="icon">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent>
-                <SheetHeader>
-                  <SheetTitle>{store.name}</SheetTitle>
-                </SheetHeader>
-                <nav className="mt-6 flex flex-col gap-4">
-                  {navigationItems.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={`/${store.slug}${item.href}`}
-                      className={cn(
-                        'py-2 text-sm font-medium transition-colors hover:text-primary',
-                        pathname === `/${store.slug}${item.href}`
-                          ? 'text-primary'
-                          : 'text-muted-foreground'
-                      )}
-                    >
-                      {item.name}
-                    </Link>
-                  ))}
-                  <hr className="my-4" />
-                  {isCustomer ? (
-                    <>
-                      <Link href={`/${store.slug}/mypage`} className="py-2 text-sm font-medium">
-                        マイページ
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={handleLogout}
-                        className="flex items-center gap-2 py-2 text-left text-sm font-medium text-red-600"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        ログアウト
-                      </button>
-                    </>
-                  ) : status === 'loading' ? (
-                    <span className="py-2 text-sm text-muted-foreground">認証確認中...</span>
-                  ) : (
-                    <>
-                      <Link href={`/${store.slug}/register`} className="py-2 text-sm font-medium">
-                        会員登録
-                      </Link>
-                      <Link href={`/${store.slug}/login`} className="py-2 text-sm font-medium">
-                        ログイン
-                      </Link>
-                    </>
-                  )}
-                </nav>
-              </SheetContent>
-            </Sheet>
+          <div className="hidden flex-col items-end text-xs text-[#cbb88f] sm:flex">
+            <a
+              href={`tel:${store.phone}`}
+              className="flex items-center gap-2 text-base font-semibold text-[#f3d08a] transition-colors hover:text-[#f8e2b5]"
+            >
+              <Phone className="h-4 w-4" />
+              {store.phone}
+            </a>
+            <span>
+              営業時間 {store.openingHours.weekday.open}～翌
+              {store.openingHours.weekday.close.split(':')[0]}:00
+            </span>
           </div>
+
+          {/* Mobile Menu */}
+          <Sheet>
+            <SheetTrigger asChild className="lg:hidden">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="border border-[#caa45a]/50 text-[#f3d08a] hover:bg-[#2b2114]"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="border-l border-[#3b2e1f] bg-[#121212] text-white">
+              <SheetHeader>
+                <SheetTitle className="luxury-display text-[#f3d08a]">{store.name}</SheetTitle>
+              </SheetHeader>
+              <nav className="mt-6 flex flex-col gap-4 text-sm">
+                {navigationItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={`/${store.slug}${item.href}`}
+                    className={cn(
+                      'py-2 text-sm font-medium text-[#e6d2a4] transition-colors hover:text-[#f6d48a]',
+                      pathname === `/${store.slug}${item.href}`
+                        ? 'text-[#f6d48a]'
+                        : 'text-[#cbb88f]'
+                    )}
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+                <hr className="my-4 border-[#3b2e1f]" />
+                {isCustomer ? (
+                  <>
+                    <Link href={`/${store.slug}/mypage`} className="py-2 text-sm font-medium">
+                      マイページ
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="flex items-center gap-2 py-2 text-left text-sm font-medium text-[#e05a4f]"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      ログアウト
+                    </button>
+                  </>
+                ) : status === 'loading' ? (
+                  <span className="py-2 text-sm text-[#cbb88f]">認証確認中...</span>
+                ) : (
+                  <>
+                    <Link href={`/${store.slug}/register`} className="py-2 text-sm font-medium">
+                      会員登録
+                    </Link>
+                    <Link href={`/${store.slug}/login`} className="py-2 text-sm font-medium">
+                      ログイン
+                    </Link>
+                  </>
+                )}
+              </nav>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </header>

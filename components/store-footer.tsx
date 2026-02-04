@@ -27,27 +27,32 @@ export function StoreFooter({ store }: StoreFooterProps) {
   ]
 
   return (
-    <footer className="bg-gray-900 text-white">
-      <div className="mx-auto max-w-7xl px-4 py-12">
+    <footer className="border-t border-[#3b2e1f] bg-[#0c0c0c] text-[#f5e6c4]">
+      <div className="mx-auto max-w-6xl px-4 py-12">
         {/* Main Footer Content */}
         <div className="space-y-6 text-center">
           {/* Store Title */}
-          <h3 className="text-xl font-bold md:text-2xl">
-            {store.name.replace('店', '')}の風俗・回春エステなら人妻密着の睾丸マッサージ |
-            金の玉クラブ
-          </h3>
+          <div className="space-y-2">
+            <p className="luxury-display text-sm tracking-[0.4em] text-[#d7b46a]">
+              OFFICIAL SITE
+            </p>
+            <h3 className="text-xl font-semibold md:text-2xl">
+              {store.name.replace('店', '')}の回春エステなら贅沢密着トリートメント
+            </h3>
+          </div>
 
           {/* Phone Number */}
           <div className="flex items-center justify-center gap-2 text-2xl font-bold md:text-3xl">
-            <Phone className="h-6 w-6 md:h-8 md:w-8" />
-            <a href={`tel:${store.phone}`} className="transition-colors hover:text-yellow-400">
+            <Phone className="h-6 w-6 text-[#f3d08a] md:h-8 md:w-8" />
+            <a href={`tel:${store.phone}`} className="transition-colors hover:text-[#f6d48a]">
               ({store.phone})
             </a>
           </div>
 
           {/* Opening Hours */}
-          <p className="text-lg">
-            {store.openingHours.weekday.open}～翌{store.openingHours.weekday.close.split(':')[0]}:00
+          <p className="text-sm text-[#d7c39c] md:text-base">
+            営業時間 {store.openingHours.weekday.open}～翌
+            {store.openingHours.weekday.close.split(':')[0]}:00
           </p>
 
           {/* Social Media Links */}
@@ -56,7 +61,7 @@ export function StoreFooter({ store }: StoreFooterProps) {
               <a
                 key={social.name}
                 href={social.href}
-                className="transition-colors hover:text-yellow-400"
+                className="text-[#cbb88f] transition-colors hover:text-[#f6d48a]"
                 aria-label={social.name}
               >
                 <social.icon className="h-8 w-8" />
@@ -65,13 +70,13 @@ export function StoreFooter({ store }: StoreFooterProps) {
           </div>
 
           {/* Footer Links */}
-          <div className="border-t border-gray-700 pt-6">
+          <div className="border-t border-[#2f2416] pt-6 text-sm text-[#cbb88f]">
             <div className="mb-4 flex flex-wrap justify-center gap-x-6 gap-y-2">
               {footerLinks.map((link) => (
                 <Link
                   key={link.name}
                   href={link.href}
-                  className="transition-colors hover:text-yellow-400"
+                  className="transition-colors hover:text-[#f6d48a]"
                 >
                   {link.name}
                 </Link>
@@ -83,7 +88,7 @@ export function StoreFooter({ store }: StoreFooterProps) {
                 <a
                   key={link.name}
                   href={link.href}
-                  className="transition-colors hover:text-yellow-400"
+                  className="transition-colors hover:text-[#f6d48a]"
                   target="_blank"
                   rel="noopener noreferrer"
                 >

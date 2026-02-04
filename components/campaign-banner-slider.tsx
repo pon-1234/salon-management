@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 
 export interface BannerItem {
   id: string
@@ -59,11 +58,11 @@ export function CampaignBannerSlider({
   const currentBanner = banners[currentIndex]
 
   return (
-    <section className="relative w-full bg-gray-50 py-4">
-      <div className="relative mx-auto max-w-7xl px-4">
+    <section className="relative w-full border-y border-[#2f2416] bg-[#141414] py-6">
+      <div className="relative mx-auto max-w-6xl px-4">
         {/* Banner Container */}
         <div
-          className="relative overflow-hidden"
+          className="relative overflow-hidden border border-[#3b2e1f] bg-[#0f0f0f]"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
@@ -71,15 +70,15 @@ export function CampaignBannerSlider({
           {dismissible && (
             <button
               onClick={() => setIsVisible(false)}
-              className="absolute right-4 top-4 z-20 rounded-full bg-black/50 p-2 backdrop-blur-sm transition-colors hover:bg-black/70"
+              className="absolute right-4 top-4 z-20 rounded-full border border-[#caa45a]/60 bg-black/50 p-2 text-[#f3d08a] backdrop-blur-sm transition-colors hover:bg-black/70"
               aria-label="Close banner"
             >
-              <X className="h-4 w-4 text-white" />
+              <X className="h-4 w-4" />
             </button>
           )}
 
           {/* Banner Image */}
-          <div className="relative mx-auto aspect-[7/3] max-w-[700px]">
+          <div className="relative mx-auto aspect-[16/5] max-w-5xl">
             {currentBanner.link ? (
               <Link
                 href={currentBanner.link}
@@ -95,7 +94,7 @@ export function CampaignBannerSlider({
                   <img
                     src={currentBanner.imageUrl}
                     alt={currentBanner.title}
-                    className="h-full w-full cursor-pointer rounded-lg object-cover shadow-lg"
+                    className="h-full w-full cursor-pointer object-cover"
                   />
                 </picture>
               </Link>
@@ -109,7 +108,7 @@ export function CampaignBannerSlider({
                 <img
                   src={currentBanner.imageUrl}
                   alt={currentBanner.title}
-                  className="h-full w-full rounded-lg object-cover shadow-lg"
+                  className="h-full w-full object-cover"
                 />
               </picture>
             )}
@@ -120,17 +119,17 @@ export function CampaignBannerSlider({
             <>
               <button
                 onClick={goToPrevious}
-                className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 backdrop-blur-sm transition-colors hover:bg-black/70"
+                className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full border border-[#caa45a]/60 bg-black/60 p-2 text-[#f3d08a] backdrop-blur-sm transition-colors hover:bg-black/80"
                 aria-label="Previous banner"
               >
-                <ChevronLeft className="h-5 w-5 text-white" />
+                <ChevronLeft className="h-5 w-5" />
               </button>
               <button
                 onClick={goToNext}
-                className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 backdrop-blur-sm transition-colors hover:bg-black/70"
+                className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full border border-[#caa45a]/60 bg-black/60 p-2 text-[#f3d08a] backdrop-blur-sm transition-colors hover:bg-black/80"
                 aria-label="Next banner"
               >
-                <ChevronRight className="h-5 w-5 text-white" />
+                <ChevronRight className="h-5 w-5" />
               </button>
             </>
           )}
@@ -144,7 +143,9 @@ export function CampaignBannerSlider({
                 key={index}
                 onClick={() => goToSlide(index)}
                 className={`h-2 w-2 rounded-full transition-all ${
-                  index === currentIndex ? 'w-8 bg-white' : 'bg-white/50 hover:bg-white/70'
+                  index === currentIndex
+                    ? 'w-8 bg-[#f3d08a]'
+                    : 'bg-[#f3d08a]/40 hover:bg-[#f3d08a]/70'
                 }`}
                 aria-label={`Go to slide ${index + 1}`}
               />

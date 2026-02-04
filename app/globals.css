@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Noto+Serif+JP:wght@400;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,6 +11,24 @@ body {
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  .luxury-body {
+    font-family: 'Noto Serif JP', serif;
+  }
+  .luxury-display {
+    font-family: 'Cinzel', 'Noto Serif JP', serif;
+    letter-spacing: 0.08em;
+  }
+  .luxury-text-shadow {
+    text-shadow: 0 6px 20px rgba(247, 208, 136, 0.35);
+  }
+  .luxury-panel {
+    background: linear-gradient(160deg, #2a2a2a 0%, #1a1a1a 55%, #121212 100%);
+    border: 1px solid rgba(179, 140, 76, 0.35);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
+  .luxury-section {
+    background: linear-gradient(180deg, rgba(24, 24, 24, 0.98) 0%, rgba(12, 12, 12, 0.98) 100%);
   }
 }
 
