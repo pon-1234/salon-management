@@ -92,10 +92,10 @@ export function VerifyPhoneForm({ storeSlug }: VerifyPhoneFormProps) {
   }
 
   return (
-    <Card className="w-full">
+    <Card className="luxury-panel w-full">
       <CardHeader>
-        <CardTitle className="flex items-center justify-center gap-2 text-2xl">
-          <ShieldCheck className="h-5 w-5" />
+        <CardTitle className="flex items-center justify-center gap-2 text-2xl text-[#f5e6c4]">
+          <ShieldCheck className="h-5 w-5 text-[#f3d08a]" />
           電話番号認証
         </CardTitle>
         <CardDescription className="text-center">
@@ -121,7 +121,7 @@ export function VerifyPhoneForm({ storeSlug }: VerifyPhoneFormProps) {
         <div className="space-y-2">
           <Label htmlFor="phone">電話番号</Label>
           <div className="relative">
-            <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#cbb88f]" />
             <Input
               id="phone"
               value={phone}
@@ -135,7 +135,13 @@ export function VerifyPhoneForm({ storeSlug }: VerifyPhoneFormProps) {
           <p className="text-xs text-muted-foreground">SMSを受け取る番号を入力してください。</p>
         </div>
 
-        <Button type="button" variant="outline" className="w-full" onClick={handleSend} disabled={loading || !normalizedPhone}>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full border-[#3b2e1f] text-[#f5e6c4] hover:bg-[#2b2114]"
+          onClick={handleSend}
+          disabled={loading || !normalizedPhone}
+        >
           {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           認証コードを送信
         </Button>
@@ -203,7 +209,7 @@ export function VerifyPhoneForm({ storeSlug }: VerifyPhoneFormProps) {
         )}
 
         <div className="text-center text-sm text-muted-foreground">
-          <Link href={`/${storeSlug}/login`} className="text-blue-600 hover:underline">
+          <Link href={`/${storeSlug}/login`} className="text-[#f3d08a] hover:underline">
             ログイン画面に戻る
           </Link>
         </div>

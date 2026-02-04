@@ -442,37 +442,40 @@ const stepNavigationItems = [
     !isAuthenticated || !selectedCast || !selectedCourse || !selectedSlot || submitting
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <section className="bg-gradient-to-r from-purple-700 via-pink-600 to-rose-500 py-14 text-white">
-        <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[#0b0b0b] text-foreground">
+      <section className="relative overflow-hidden border-b border-[#2f2416] bg-[#0f0f0f] py-14">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,206,126,0.18),_transparent_60%)]" />
+        <div className="relative mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
           <div className="flex flex-wrap justify-center gap-3">
-            <Badge className="bg-white/20 text-white">
+            <Badge className="border border-[#f3d08a]/50 bg-black/40 text-[#f5e6c4]">
               <Sparkles className="mr-1 h-4 w-4" />
               ネット予約
             </Badge>
-            <Badge className="bg-white/20 text-white">
+            <Badge className="border border-[#f3d08a]/50 bg-black/40 text-[#f5e6c4]">
               <ShieldCheck className="mr-1 h-4 w-4" />
               会員限定
             </Badge>
-            <Badge className="bg-white/20 text-white">
+            <Badge className="border border-[#f3d08a]/50 bg-black/40 text-[#f5e6c4]">
               <Zap className="mr-1 h-4 w-4" />
               API連携でリアルタイム反映
             </Badge>
           </div>
-          <h1 className="mt-6 text-4xl font-bold sm:text-5xl">{store.displayName} オンライン予約</h1>
-          <p className="mt-4 text-lg leading-relaxed text-purple-100">
+          <h1 className="mt-6 text-4xl font-bold text-[#f7e2b5] sm:text-5xl">
+            {store.displayName} オンライン予約
+          </h1>
+          <p className="mt-4 text-lg leading-relaxed text-[#d7c39c]">
             {hasPrefilledSlot
               ? '出勤一覧で選んだキャストと時間帯を引き継ぎました。あとはメニューを選び、内容を確認するだけでご予約いただけます。'
               : '画面の案内にそって「キャスト」「日時」「確認」の順に進むだけでご予約いただけます。ご不明点があればいつでもお電話ください。'}
           </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-sm text-purple-100">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-sm text-[#cbb88f]">
             <span className="flex items-center gap-2">
               <CalendarDays className="h-4 w-4" />
               受付時間 {store.openingHours.weekday.open} - {store.openingHours.weekday.close}
             </span>
             <span className="flex items-center gap-2">
               <Phone className="h-4 w-4" />
-              <a href={`tel:${store.phone}`} className="font-semibold text-white underline-offset-2 hover:underline">
+              <a href={`tel:${store.phone}`} className="font-semibold text-[#f3d08a] underline-offset-2 hover:underline">
                 {store.phone}
               </a>
             </span>
@@ -483,7 +486,7 @@ const stepNavigationItems = [
       <section className="-mt-10 pb-16 pt-6">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 space-y-6">
           <div className="grid gap-4 lg:grid-cols-[2fr,1fr]">
-            <Card className="bg-white/90">
+            <Card className="luxury-panel">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-semibold text-muted-foreground">
                   現在の進行状況
@@ -502,11 +505,11 @@ const stepNavigationItems = [
                         onClick={() => handleStepChange(step.id)}
                         disabled={!enabled}
                         className={cn(
-                          'flex-1 rounded-xl border p-3 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500',
+                          'flex-1 rounded-xl border p-3 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f3d08a]',
                           isActive
-                            ? 'border-purple-600 bg-purple-50 text-purple-700'
+                            ? 'border-[#f3d08a] bg-[#121212] text-[#f3d08a]'
                             : enabled
-                              ? 'border-border bg-white hover:border-purple-400'
+                              ? 'border-border bg-white hover:border-[#f3d08a]'
                               : 'cursor-not-allowed border-dashed border-muted-foreground/30 bg-muted-foreground'
                         )}
                       >
@@ -527,7 +530,7 @@ const stepNavigationItems = [
                 </p>
               </CardContent>
             </Card>
-            <Card className="bg-white/90">
+            <Card className="luxury-panel">
               <CardHeader>
                 <CardTitle className="text-base font-semibold text-muted-foreground">現在の選択</CardTitle>
                 <CardDescription>
@@ -539,13 +542,13 @@ const stepNavigationItems = [
               <CardContent className="space-y-3 text-sm text-muted-foreground">
                 <div className="space-y-1">
                   <p className="font-semibold text-foreground">キャスト</p>
-                  <p className="rounded-lg border border-dashed border-purple-200 bg-white px-3 py-2 text-sm text-purple-800">
+                  <p className="rounded-lg border border-dashed border-[#3b2e1f] bg-white px-3 py-2 text-sm text-[#f3d08a]">
                     {selectedCast?.name ?? '未選択'}
                   </p>
                 </div>
                 <div className="space-y-1">
                   <p className="font-semibold text-foreground">日時</p>
-                  <p className="rounded-lg border border-dashed border-purple-200 bg-white px-3 py-2 text-sm text-purple-800">
+                  <p className="rounded-lg border border-dashed border-[#3b2e1f] bg-white px-3 py-2 text-sm text-[#f3d08a]">
                     {selectedSlot
                       ? formatInTimeZone(new Date(selectedSlot.start), JST_TIMEZONE, 'M月d日(E) HH:mm', { locale: ja })
                       : '未選択'}
@@ -599,7 +602,7 @@ const stepNavigationItems = [
                       <CardTitle className="text-2xl">STEP 1. キャストをえらぶ</CardTitle>
                       <CardDescription>名前を押すだけで選択できます。迷ったら「電話で予約する」からご相談ください。</CardDescription>
                     </div>
-                    <Badge variant="secondary" className="bg-purple-100 text-purple-700">
+                    <Badge variant="secondary" className="bg-[#1a1a1a] text-[#f3d08a]">
                       ネット予約対応 {casts.filter((cast) => cast.netReservation).length}名
                     </Badge>
                   </CardHeader>
@@ -625,7 +628,7 @@ const stepNavigationItems = [
                                     onClick={() => setSelectedCastId(cast.id)}
                                     className={cn(
                                       'flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition',
-                                      isSelected ? 'bg-purple-50 font-semibold text-purple-700' : 'hover:bg-muted'
+                                      isSelected ? 'bg-[#121212] font-semibold text-[#f3d08a]' : 'hover:bg-muted'
                                     )}
                                   >
                                     <div>
@@ -634,7 +637,7 @@ const stepNavigationItems = [
                                         {cast.type ?? 'タイプ未設定'} / {cast.sizeLabel || 'サイズ情報なし'}
                                       </p>
                                     </div>
-                                    {isSelected && <CheckCircle className="h-4 w-4 text-purple-600" />}
+                                    {isSelected && <CheckCircle className="h-4 w-4 text-[#f3d08a]" />}
                                   </button>
                                 )
                               })}
@@ -703,8 +706,8 @@ const stepNavigationItems = [
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="rounded-lg border border-dashed border-purple-200 bg-purple-50/50 p-3 text-sm text-muted-foreground">
-                    <p className="font-semibold text-purple-800">時間の選び方</p>
+                  <div className="rounded-lg border border-dashed border-[#3b2e1f] bg-[#121212] p-3 text-sm text-muted-foreground">
+                    <p className="font-semibold text-[#f3d08a]">時間の選び方</p>
                     <p>【1】カレンダーで日付を選ぶ → 【2】右側に出てきた時間の中からご希望を押してください。</p>
                   </div>
 
@@ -736,7 +739,7 @@ const stepNavigationItems = [
                       )}
                       <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
                         {timeSlotsLoading ? (
-                          <div className="col-span-2 flex items-center gap-2 rounded-lg border border-dashed border-purple-200 bg-purple-50/60 p-4 text-sm text-purple-700 md:col-span-3">
+                          <div className="col-span-2 flex items-center gap-2 rounded-lg border border-dashed border-[#3b2e1f] bg-[#121212] p-4 text-sm text-[#f3d08a] md:col-span-3">
                             <Loader2 className="h-4 w-4 animate-spin" />
                             空き状況を読み込み中...
                           </div>
@@ -753,9 +756,9 @@ const stepNavigationItems = [
                                 type="button"
                                 onClick={() => setSelectedSlotStart(slot.start)}
                                 className={cn(
-                                  'rounded-lg border p-2 text-left text-sm transition hover:border-purple-400 hover:text-purple-700',
+                                  'rounded-lg border p-2 text-left text-sm transition hover:border-[#f3d08a] hover:text-[#f3d08a]',
                                   isSelected
-                                    ? 'border-purple-600 bg-purple-50 text-purple-700'
+                                    ? 'border-[#f3d08a] bg-[#121212] text-[#f3d08a]'
                                     : 'border-border bg-white text-foreground'
                                 )}
                               >
@@ -788,7 +791,7 @@ const stepNavigationItems = [
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {bookableCourses.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-purple-200 bg-purple-50/50 p-4 text-center text-sm text-muted-foreground">
+                    <div className="rounded-lg border border-dashed border-[#3b2e1f] bg-[#121212] p-4 text-center text-sm text-muted-foreground">
                       料金プランを準備しています。詳細はお電話にてお問い合わせください。
                     </div>
                   ) : (
@@ -801,9 +804,9 @@ const stepNavigationItems = [
                             type="button"
                             onClick={() => setSelectedCourseId(course.id)}
                             className={cn(
-                              'w-full rounded-xl border p-4 text-left transition hover:border-purple-400',
+                              'w-full rounded-xl border p-4 text-left transition hover:border-[#f3d08a]',
                               isSelected
-                                ? 'border-purple-600 bg-purple-50 shadow'
+                                ? 'border-[#f3d08a] bg-[#121212] shadow'
                                 : 'border-border bg-white'
                             )}
                           >
@@ -815,11 +818,11 @@ const stepNavigationItems = [
                                 </p>
                               </div>
                               <div className="text-right">
-                                <p className="text-xl font-bold text-purple-700">
+                                <p className="text-xl font-bold text-[#f3d08a]">
                                   {formatCurrency(course.price)}
                                 </p>
                                 {isSelected && (
-                                  <span className="text-xs font-medium text-purple-600">
+                                  <span className="text-xs font-medium text-[#f3d08a]">
                                     選択中
                                   </span>
                                 )}
@@ -867,8 +870,8 @@ const stepNavigationItems = [
                                 <label
                                   key={option.id}
                                   className={cn(
-                                    'flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition hover:border-purple-400',
-                                    checked ? 'border-purple-500 bg-purple-50/60' : 'border-border bg-white'
+                                    'flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition hover:border-[#f3d08a]',
+                                    checked ? 'border-[#f3d08a] bg-[#121212]' : 'border-border bg-white'
                                   )}
                                 >
                                   <Checkbox
@@ -878,7 +881,7 @@ const stepNavigationItems = [
                                   <div className="flex-1">
                                     <div className="flex items-center justify-between gap-2">
                                       <div className="font-medium">{option.name}</div>
-                                      <div className="text-sm font-semibold text-purple-700">
+                                      <div className="text-sm font-semibold text-[#f3d08a]">
                                         {formatCurrency(option.price)}
                                       </div>
                                     </div>
@@ -888,7 +891,7 @@ const stepNavigationItems = [
                                       </p>
                                     )}
                                     {option.isPopular && (
-                                      <Badge variant="secondary" className="mt-2 text-xs text-purple-700">
+                                      <Badge variant="secondary" className="mt-2 text-xs text-[#f3d08a]">
                                         人気
                                       </Badge>
                                     )}
@@ -959,7 +962,7 @@ const stepNavigationItems = [
             </div>
 
             <aside className="space-y-6">
-              <Card className="border-2 border-purple-100 bg-white">
+              <Card className="luxury-panel border-2 border-[#3b2e1f] bg-white">
                 <CardHeader>
                   <CardTitle className="text-2xl">最後に内容を確認してください</CardTitle>
                   <CardDescription>すべてご確認いただけましたら下の大きなボタンを押して予約完了です。</CardDescription>
@@ -1015,15 +1018,15 @@ const stepNavigationItems = [
                   <div className="border-t pt-3">
                     <div className="flex items-center justify-between text-lg font-semibold">
                       <span>お支払い見込み</span>
-                      <span className="text-2xl text-purple-700">{formatCurrency(reservationTotal)}</span>
+                      <span className="text-2xl text-[#f3d08a]">{formatCurrency(reservationTotal)}</span>
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
                       料金は当日の延長やご希望内容により変動する場合があります。
                     </p>
                   </div>
                   {lastReservation && (
-                    <Alert className="border-emerald-200 bg-emerald-50">
-                      <CheckCircle className="h-4 w-4 text-emerald-600" />
+                    <Alert className="border-[#2fc8b7] bg-[#10211e] text-[#d7c39c]">
+                      <CheckCircle className="h-4 w-4 text-[#2fc8b7]" />
                       <AlertTitle>予約を受け付けました</AlertTitle>
                       <AlertDescription className="text-xs">
                         予約ID: {lastReservation.id} /{' '}
@@ -1045,7 +1048,7 @@ const stepNavigationItems = [
                       会員登録済みのお客様のみオンライン予約をご利用いただけます。{' '}
                       <Link
                         href={`/${store.slug}/login?callbackUrl=/${store.slug}/booking`}
-                        className="text-purple-600 underline underline-offset-2"
+                        className="text-[#f3d08a] underline underline-offset-2"
                       >
                         ログインする
                       </Link>
@@ -1060,33 +1063,36 @@ const stepNavigationItems = [
                 </CardFooter>
               </Card>
 
-              <Card>
+              <Card className="luxury-panel">
                 <CardHeader>
-                  <CardTitle className="text-xl">安心サポート</CardTitle>
+                  <CardTitle className="text-xl text-[#f5e6c4]">安心サポート</CardTitle>
                   <CardDescription>お電話でもご予約・ご相談を承ります</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4 text-sm">
-                  <div className="rounded-lg border bg-purple-50/50 p-4 text-purple-700">
+                  <div className="rounded-lg border bg-[#121212] p-4 text-[#f3d08a]">
                     <p className="text-xs">今すぐ相談する</p>
-                    <a href={`tel:${store.phone}`} className="mt-1 flex items-center text-lg font-semibold text-purple-900">
+                    <a
+                      href={`tel:${store.phone}`}
+                      className="mt-1 flex items-center text-lg font-semibold text-[#f3d08a]"
+                    >
                       <Phone className="mr-2 h-4 w-4" />
                       {store.phone}
                     </a>
-                    <p className="text-xs text-purple-600">
+                    <p className="text-xs text-[#f3d08a]">
                       受付時間 {store.openingHours.weekday.open} - {store.openingHours.weekday.close}
                     </p>
                   </div>
                   <ul className="space-y-2 text-muted-foreground">
                     <li className="flex items-start gap-2">
-                      <Star className="mt-0.5 h-4 w-4 text-purple-500" />
+                      <Star className="mt-0.5 h-4 w-4 text-[#f3d08a]" />
                       事前決済は不要。ご来店時のお支払いとなります。
                     </li>
                     <li className="flex items-start gap-2">
-                      <Heart className="mt-0.5 h-4 w-4 text-pink-500" />
+                      <Heart className="mt-0.5 h-4 w-4 text-[#f28b96]" />
                       指名料・交通費などの追加料金は当日にご案内します。
                     </li>
                     <li className="flex items-start gap-2">
-                      <CreditCard className="mt-0.5 h-4 w-4 text-emerald-500" />
+                      <CreditCard className="mt-0.5 h-4 w-4 text-[#2fc8b7]" />
                       現金・クレジットカードに対応しています。
                     </li>
                   </ul>

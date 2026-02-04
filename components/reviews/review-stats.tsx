@@ -12,9 +12,9 @@ export function ReviewStats({ stats }: ReviewStatsProps) {
   const maxCount = Math.max(...Object.values(stats.ratingDistribution))
 
   return (
-    <Card className="mb-6">
+    <Card className="luxury-panel mb-6">
       <CardHeader>
-        <CardTitle>評価サマリー</CardTitle>
+        <CardTitle className="text-[#f5e6c4]">評価サマリー</CardTitle>
       </CardHeader>
       <CardContent>
         {/* Average Rating */}
@@ -26,13 +26,13 @@ export function ReviewStats({ stats }: ReviewStatsProps) {
                 key={i}
                 className={`h-6 w-6 ${
                   i < Math.round(stats.averageRating)
-                    ? 'fill-yellow-400 text-yellow-400'
-                    : 'text-gray-300'
+                    ? 'fill-[#f3d08a] text-[#f3d08a]'
+                    : 'text-[#5a4a2f]'
                 }`}
               />
             ))}
           </div>
-          <p className="text-sm text-gray-600">{stats.totalReviews}件の評価</p>
+          <p className="text-sm text-muted-foreground">{stats.totalReviews}件の評価</p>
         </div>
 
         {/* Rating Distribution */}
@@ -47,13 +47,13 @@ export function ReviewStats({ stats }: ReviewStatsProps) {
                   <span className="text-sm">{rating}</span>
                   <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                 </div>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-200">
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#2f2416]">
                   <div
-                    className="h-full bg-yellow-400 transition-all duration-300"
+                    className="h-full bg-[#f3d08a] transition-all duration-300"
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
-                <span className="w-12 text-right text-sm text-gray-600">{count}</span>
+                <span className="w-12 text-right text-sm text-muted-foreground">{count}</span>
               </div>
             )
           })}
@@ -62,12 +62,12 @@ export function ReviewStats({ stats }: ReviewStatsProps) {
         {/* Popular Tags */}
         {stats.popularTags.length > 0 && (
           <div className="mt-6">
-            <h4 className="mb-3 text-sm font-semibold">人気のタグ</h4>
+            <h4 className="mb-3 text-sm font-semibold text-[#f5e6c4]">人気のタグ</h4>
             <div className="flex flex-wrap gap-2">
               {stats.popularTags.slice(0, 5).map(({ tag, count }) => (
                 <span
                   key={tag}
-                  className="rounded-full bg-purple-100 px-2 py-1 text-xs text-purple-700"
+                  className="rounded-full border border-[#3b2e1f] bg-[#1a1a1a] px-2 py-1 text-xs text-[#cbb88f]"
                 >
                   {tag} ({count})
                 </span>

@@ -48,31 +48,35 @@ export default async function RecruitmentPage({ params }: { params: { store: str
     <>
       <StoreNavigation />
 
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen bg-[#0b0b0b] text-foreground">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-pink-600 py-12 text-white">
-          <div className="mx-auto max-w-7xl px-4">
-            <h1 className="mb-4 flex items-center justify-center gap-3 text-center text-4xl font-bold">
-              <Sparkles className="h-10 w-10 text-yellow-300" />
+        <div className="relative overflow-hidden border-b border-[#2f2416] bg-[#0f0f0f] py-14">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,206,126,0.18),_transparent_60%)]" />
+          <div className="relative mx-auto max-w-6xl px-4 text-center">
+            <p className="luxury-display text-xs tracking-[0.45em] text-[#d7b46a]">NEW FACE</p>
+            <h1 className="mt-4 flex items-center justify-center gap-3 text-3xl font-semibold text-[#f7e2b5] md:text-4xl">
+              <Sparkles className="h-8 w-8 text-[#f3d08a]" />
               入店情報
             </h1>
-            <p className="text-center text-xl">新しく入店したキャストをご紹介</p>
+            <p className="mt-3 text-sm text-[#d7c39c] md:text-base">
+              新しく入店したキャストをご紹介
+            </p>
           </div>
         </div>
 
         {/* Welcome Campaign Banner */}
-        <section className="py-8">
+        <section className="luxury-section py-8">
           <div className="mx-auto max-w-4xl px-4">
-            <Card className="border-pink-200 bg-gradient-to-r from-pink-50 to-purple-50">
+            <Card className="luxury-panel">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="mb-2 text-2xl font-bold text-purple-800">
+                    <h2 className="mb-2 text-2xl font-bold text-[#f5e6c4]">
                       新人入店キャンペーン開催中！
                     </h2>
-                    <p className="text-purple-600">新人キャストをご指名で特別特典をプレゼント</p>
+                    <p className="text-[#d7c39c]">新人キャストをご指名で特別特典をプレゼント</p>
                   </div>
-                  <Gift className="h-16 w-16 text-pink-500" />
+                  <Gift className="h-16 w-16 text-[#f3d08a]" />
                 </div>
               </CardContent>
             </Card>
@@ -80,12 +84,12 @@ export default async function RecruitmentPage({ params }: { params: { store: str
         </section>
 
         {/* New Cast List */}
-        <section className="py-8">
-          <div className="mx-auto max-w-7xl px-4">
+        <section className="luxury-section py-8">
+          <div className="mx-auto max-w-6xl px-4">
             {newcomers.length === 0 ? (
-              <Card>
+              <Card className="luxury-panel">
                 <CardContent className="flex flex-col items-center gap-3 p-8 text-muted-foreground">
-                  <Sparkles className="h-10 w-10 text-purple-400" />
+                  <Sparkles className="h-10 w-10 text-[#cbb88f]" />
                   <p className="text-lg font-semibold">現在、表示できる新人キャストはありません。</p>
                   <p className="text-sm">最新の入店情報は順次更新されますので、少々お待ちください。</p>
                 </CardContent>
@@ -101,7 +105,10 @@ export default async function RecruitmentPage({ params }: { params: { store: str
                   const introMessage = cast.introMessage ?? 'よろしくお願いします！'
 
                   return (
-                    <Card key={cast.id} className="overflow-hidden transition-shadow hover:shadow-xl">
+                    <Card
+                      key={cast.id}
+                      className="luxury-panel overflow-hidden transition-shadow hover:shadow-[0_20px_40px_rgba(0,0,0,0.45)]"
+                    >
                       <div className="md:flex">
                         <div className="relative md:w-1/3 lg:w-1/4">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -110,10 +117,10 @@ export default async function RecruitmentPage({ params }: { params: { store: str
                             alt={cast.name}
                             className="h-full w-full object-cover"
                           />
-                          <Badge className="absolute left-4 top-4 bg-pink-500 px-3 py-1 text-lg text-white">
+                          <Badge className="absolute left-4 top-4 bg-[#2fc8b7] px-3 py-1 text-lg text-[#0b1a17]">
                             NEW
                           </Badge>
-                          <Badge className="absolute right-4 top-4 bg-purple-600 text-white">
+                          <Badge className="absolute right-4 top-4 bg-[#f6d48a] text-[#2b1b0d]">
                             入店{daysSinceJoin}日目
                           </Badge>
                         </div>
@@ -121,34 +128,34 @@ export default async function RecruitmentPage({ params }: { params: { store: str
                         <div className="p-6 md:w-2/3 lg:w-3/4">
                           <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                             <div>
-                              <h3 className="mb-2 text-2xl font-bold">{cast.name}</h3>
+                              <h3 className="mb-2 text-2xl font-bold text-[#f5e6c4]">{cast.name}</h3>
                               <p className="text-muted-foreground">
                                 {cast.age ? `${cast.age}歳` : '年齢非公開'} {measurement}
                               </p>
                               <p className="mt-1 text-sm text-muted-foreground">
-                                <Calendar className="mr-1 inline h-4 w-4" />
+                                <Calendar className="mr-1 inline h-4 w-4 text-[#cbb88f]" />
                                 入店日: {format(joinDate, 'yyyy年MM月dd日', { locale: ja })}
                               </p>
                             </div>
                             {index === 0 && (
-                              <Badge className="bg-yellow-500 text-black">
+                              <Badge className="bg-[#f6d48a] text-[#2b1b0d]">
                                 <Crown className="mr-1 h-4 w-4" />注目
                               </Badge>
                             )}
                           </div>
 
-                          <Card className="mb-4 border-pink-200 bg-pink-50">
+                          <Card className="mb-4 border-[#3b2e1f] bg-[#121212]">
                             <CardContent className="p-4">
-                              <p className="text-sm italic">&ldquo;{introMessage}&rdquo;</p>
+                              <p className="text-sm italic text-[#d7c39c]">&ldquo;{introMessage}&rdquo;</p>
                             </CardContent>
                           </Card>
 
                           {services.length > 0 && (
                             <div className="mb-4">
-                              <p className="mb-2 text-sm font-semibold">得意なプレイ:</p>
+                              <p className="mb-2 text-sm font-semibold text-[#f5e6c4]">得意なプレイ:</p>
                               <div className="flex flex-wrap gap-2">
                                 {services.map((service) => (
-                                  <Badge key={service} variant="secondary">
+                                  <Badge key={service} className="border border-[#3b2e1f] bg-[#1a1a1a] text-[#cbb88f]">
                                     {service}
                                   </Badge>
                                 ))}
@@ -156,10 +163,10 @@ export default async function RecruitmentPage({ params }: { params: { store: str
                             </div>
                           )}
 
-                          <div className="mb-4 flex items-center gap-2 rounded-lg bg-yellow-50 p-3">
-                            <Gift className="h-5 w-5 text-yellow-600" />
-                            <span className="font-semibold text-yellow-800">入店特典:</span>
-                            <span className="text-yellow-700">
+                          <div className="mb-4 flex items-center gap-2 rounded-lg border border-[#3b2e1f] bg-[#121212] p-3">
+                            <Gift className="h-5 w-5 text-[#f3d08a]" />
+                            <span className="font-semibold text-[#f3d08a]">入店特典:</span>
+                            <span className="text-[#d7c39c]">
                               {index === 0 ? '指名料無料キャンペーン' : 'オプション1つ無料'}
                             </span>
                           </div>
@@ -170,7 +177,11 @@ export default async function RecruitmentPage({ params }: { params: { store: str
                                 <Heart className="mr-2 h-4 w-4" />詳細を見る
                               </Link>
                             </Button>
-                            <Button asChild variant="outline" className="flex-1">
+                            <Button
+                              asChild
+                              variant="outline"
+                              className="flex-1 border-[#3b2e1f] text-[#f5e6c4] hover:bg-[#2b2114]"
+                            >
                               <Link href={`/${store.slug}/booking?cast=${cast.id}`}>予約する</Link>
                             </Button>
                           </div>
@@ -185,14 +196,14 @@ export default async function RecruitmentPage({ params }: { params: { store: str
         </section>
 
         {/* Recent Graduates */}
-        <section className="bg-white py-12">
-          <div className="mx-auto max-w-7xl px-4">
-            <h2 className="mb-8 text-center text-2xl font-bold">新人卒業キャスト</h2>
+        <section className="luxury-section py-12">
+          <div className="mx-auto max-w-6xl px-4">
+            <h2 className="mb-4 text-center text-2xl font-bold text-[#f5e6c4]">新人卒業キャスト</h2>
             <p className="mb-8 text-center text-muted-foreground">
               入店から一定期間が経過し、新人を卒業したキャストたち
             </p>
             {graduates.length === 0 ? (
-              <Card>
+              <Card className="luxury-panel">
                 <CardContent className="p-6 text-center text-muted-foreground">
                   現在表示できる卒業キャストはありません。
                 </CardContent>
@@ -203,9 +214,9 @@ export default async function RecruitmentPage({ params }: { params: { store: str
                   const cast = entry.cast
                   const measurement = buildMeasurementLabel(cast)
                   return (
-                    <Card key={cast.id} className="text-center">
+                    <Card key={cast.id} className="luxury-panel text-center">
                       <CardContent className="space-y-2 p-4">
-                        <div className="mx-auto mb-3 aspect-square w-20 overflow-hidden rounded-full bg-gradient-to-br from-blue-300 to-purple-400">
+                        <div className="mx-auto mb-3 aspect-square w-20 overflow-hidden rounded-full border border-[#4a3b28] bg-[#0f0f0f]">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={cast.image ?? '/images/non-photo.svg'}
@@ -213,10 +224,11 @@ export default async function RecruitmentPage({ params }: { params: { store: str
                             className="h-full w-full object-cover"
                           />
                         </div>
-                        <h4 className="font-bold">{cast.name}</h4>
+                        <h4 className="font-bold text-[#f5e6c4]">{cast.name}</h4>
                         <p className="text-xs text-muted-foreground">{measurement}</p>
-                        <Badge variant="outline" className="mt-2">
-                          <TrendingUp className="mr-1 h-3 w-3" />人気上昇中
+                        <Badge variant="outline" className="mt-2 border-[#3b2e1f] text-[#cbb88f]">
+                          <TrendingUp className="mr-1 h-3 w-3 text-[#2fc8b7]" />
+                          人気上昇中
                         </Badge>
                       </CardContent>
                     </Card>
@@ -228,10 +240,12 @@ export default async function RecruitmentPage({ params }: { params: { store: str
         </section>
 
         {/* Call to Action */}
-        <section className="bg-gradient-to-r from-purple-100 to-pink-100 py-12">
+        <section className="border-t border-[#2f2416] bg-[#0f0f0f] py-12">
           <div className="mx-auto max-w-4xl px-4 text-center">
-            <h2 className="mb-4 text-3xl font-bold">新人キャストと素敵な時間を</h2>
-            <p className="mb-8 text-lg text-gray-700">
+            <h2 className="mb-4 text-2xl font-semibold text-[#f5e6c4] md:text-3xl">
+              新人キャストと素敵な時間を
+            </h2>
+            <p className="mb-8 text-sm text-[#d7c39c] md:text-lg">
               フレッシュな魅力と一生懸命なサービスで
               <br />
               お客様を心から癒します

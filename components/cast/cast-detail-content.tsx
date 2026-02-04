@@ -89,20 +89,20 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
     <div className="mx-auto max-w-7xl px-4 py-8">
       {/* Breadcrumb */}
       <nav className="mb-6">
-        <ol className="flex items-center space-x-2 text-sm">
+        <ol className="flex items-center space-x-2 text-sm text-[#cbb88f]">
           <li>
-            <Link href={`/${store.slug}`} className="text-gray-500 hover:text-gray-700">
+            <Link href={`/${store.slug}`} className="text-[#cbb88f] hover:text-[#f5e6c4]">
               ホーム
             </Link>
           </li>
-          <li className="text-gray-500">/</li>
+          <li className="text-[#cbb88f]">/</li>
           <li>
-            <Link href={`/${store.slug}/cast`} className="text-gray-500 hover:text-gray-700">
+            <Link href={`/${store.slug}/cast`} className="text-[#cbb88f] hover:text-[#f5e6c4]">
               キャスト一覧
             </Link>
           </li>
-          <li className="text-gray-500">/</li>
-          <li className="text-gray-900">{cast.name}</li>
+          <li className="text-[#cbb88f]">/</li>
+          <li className="text-[#f5e6c4]">{cast.name}</li>
         </ol>
       </nav>
 
@@ -110,7 +110,7 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
         {/* Left Column - Images and Basic Info */}
         <div className="space-y-6 lg:col-span-1">
           {/* Main Image */}
-          <Card className="overflow-hidden">
+          <Card className="luxury-panel overflow-hidden">
             <div className="relative aspect-[3/4]">
               <div className="absolute inset-0 bg-gradient-to-br from-pink-300 to-purple-400" />
               {cast.images.length > 0 && (
@@ -143,9 +143,11 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
 
               {/* Badges */}
               <div className="absolute left-2 top-2 space-y-2">
-                {cast.workStatus === '出勤' && <Badge className="bg-green-500">出勤中</Badge>}
+                {cast.workStatus === '出勤' && (
+                  <Badge className="bg-[#2fc8b7] text-[#0b1a17]">出勤中</Badge>
+                )}
                 {cast.panelDesignationRank <= 3 && cast.panelDesignationRank > 0 && (
-                  <Badge className="bg-yellow-500">
+                  <Badge className="bg-[#f6d48a] text-[#2b1b0d]">
                     <Award className="mr-1 h-3 w-3" />
                     ランキング{cast.panelDesignationRank}位
                   </Badge>
@@ -155,10 +157,12 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
               {/* Favorite Button */}
               <button
                 onClick={() => setIsFavorite(!isFavorite)}
-                className="absolute right-2 top-2 rounded-full bg-white/90 p-2 backdrop-blur hover:bg-white"
+                className="absolute right-2 top-2 rounded-full border border-[#3b2e1f] bg-[#1a1a1a]/90 p-2 backdrop-blur hover:bg-[#2b2114]"
               >
                 <Heart
-                  className={`h-5 w-5 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-600'}`}
+                  className={`h-5 w-5 ${
+                    isFavorite ? 'fill-[#f28b96] text-[#f28b96]' : 'text-[#cbb88f]'
+                  }`}
                 />
               </button>
             </div>
@@ -171,7 +175,7 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
                     key={index}
                     onClick={() => setSelectedImageIndex(index)}
                     className={`relative aspect-square overflow-hidden rounded ${
-                      selectedImageIndex === index ? 'ring-2 ring-purple-500' : ''
+                      selectedImageIndex === index ? 'ring-2 ring-[#f3d08a]' : ''
                     }`}
                   >
                     <Image
@@ -187,9 +191,9 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
           </Card>
 
           {/* Basic Info */}
-          <Card>
+          <Card className="luxury-panel">
             <CardHeader>
-              <CardTitle className="text-2xl">{cast.name}</CardTitle>
+              <CardTitle className="text-2xl text-[#f5e6c4]">{cast.name}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
@@ -226,7 +230,7 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
           </Card>
 
           {/* Schedule */}
-          <Card>
+          <Card className="luxury-panel">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
@@ -236,7 +240,9 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
             <CardContent>
               {cast.workStatus === '出勤' ? (
                 <div className="space-y-2">
-                  <Badge className="w-full justify-center bg-green-500 py-2">本日出勤中</Badge>
+                  <Badge className="w-full justify-center bg-[#2fc8b7] py-2 text-[#0b1a17]">
+                    本日出勤中
+                  </Badge>
                   {cast.workStart && cast.workEnd && (
                     <p className="text-center text-sm text-gray-600">
                       {format(cast.workStart, 'HH:mm')} ～ {format(cast.workEnd, 'HH:mm')}
@@ -289,7 +295,7 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
 
             <TabsContent value="profile" className="mt-6 space-y-6">
               {/* Description */}
-              <Card>
+              <Card className="luxury-panel">
                 <CardHeader>
                   <CardTitle>自己紹介</CardTitle>
                 </CardHeader>
@@ -302,7 +308,7 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
               {cast.publicProfile && (
                 <>
                   {/* Personality & Services */}
-                  <Card>
+                  <Card className="luxury-panel">
                     <CardHeader>
                       <CardTitle>キャラクター</CardTitle>
                     </CardHeader>
@@ -327,7 +333,10 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
                         <h4 className="mb-2 font-medium">得意なプレイ</h4>
                         <div className="flex flex-wrap gap-2">
                           {cast.publicProfile.availableServices.map((service) => (
-                            <Badge key={service} className="bg-purple-100 text-purple-800">
+                            <Badge
+                              key={service}
+                              className="border border-[#3b2e1f] bg-[#1a1a1a] text-[#cbb88f]"
+                            >
                               {service}
                             </Badge>
                           ))}
@@ -337,7 +346,7 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
                   </Card>
 
                   {/* Personal Info */}
-                  <Card>
+                  <Card className="luxury-panel">
                     <CardHeader>
                       <CardTitle>詳細プロフィール</CardTitle>
                     </CardHeader>
@@ -381,14 +390,14 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
                   </Card>
 
                   {/* Messages */}
-                  <Card>
+                  <Card className="luxury-panel">
                     <CardHeader>
                       <CardTitle>メッセージ</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {cast.publicProfile.shopMessage && (
                         <div>
-                          <h4 className="mb-2 font-medium text-purple-600">お店から</h4>
+                          <h4 className="mb-2 font-medium text-[#f3d08a]">お店から</h4>
                           <p className="whitespace-pre-wrap">{cast.publicProfile.shopMessage}</p>
                         </div>
                       )}
@@ -404,7 +413,7 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
                   </Card>
 
                   {/* Additional Info */}
-                  <Card>
+                  <Card className="luxury-panel">
                     <CardHeader>
                       <CardTitle>その他情報</CardTitle>
                     </CardHeader>
@@ -436,7 +445,7 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
             </TabsContent>
 
             <TabsContent value="options" className="mt-6">
-              <Card>
+              <Card className="luxury-panel">
                 <CardHeader>
                   <CardTitle>利用可能オプション</CardTitle>
                 </CardHeader>
@@ -448,12 +457,12 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
                           <div>
                             <h4 className="font-medium">{option!.name}</h4>
                             {option!.description && (
-                              <p className="mt-1 text-sm text-gray-600">{option!.description}</p>
+                            <p className="mt-1 text-sm text-muted-foreground">{option!.description}</p>
                             )}
                           </div>
                           <span
                             className={`font-bold ${
-                              option!.price === 0 ? 'text-green-600' : 'text-purple-600'
+                              option!.price === 0 ? 'text-[#2fc8b7]' : 'text-[#f3d08a]'
                             }`}
                           >
                             {option!.price === 0 ? '無料' : `¥${option!.price.toLocaleString()}`}
@@ -474,7 +483,7 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
             </TabsContent>
 
             <TabsContent value="reviews" className="mt-6">
-              <Card>
+              <Card className="luxury-panel">
                 <CardHeader>
                   <CardTitle>口コミ・評価</CardTitle>
                 </CardHeader>
@@ -776,7 +785,7 @@ function RequestAttendanceForm({
         <p>・リクエスト成立後のチェンジ・キャンセルはできません。</p>
       </div>
 
-      <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600">
+      <div className="rounded-lg border border-[#3b2e1f] bg-[#121212] p-3 text-xs text-[#cbb88f]">
         <p>※確認メールをお送りします。ドメイン指定は「customer.goldball@gmail.com」を許可してください。</p>
         <p>※女性の事情によりご希望に添えない場合があります。</p>
         <p>※3営業日以内に予定が立てられない場合は不成立となります。</p>

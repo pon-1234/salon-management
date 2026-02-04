@@ -143,9 +143,9 @@ export function ReviewSubmissionForm({ storeId, storeSlug, onReviewCreated }: Re
 
   if (status === 'loading') {
     return (
-      <Card>
+      <Card className="luxury-panel">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
+          <CardTitle className="flex items-center gap-2 text-lg text-[#f5e6c4]">
             <Loader2 className="h-4 w-4 animate-spin" />
             口コミ投稿フォームを読み込み中...
           </CardTitle>
@@ -156,23 +156,27 @@ export function ReviewSubmissionForm({ storeId, storeSlug, onReviewCreated }: Re
 
   if (!isCustomer) {
     return (
-      <Card>
+      <Card className="luxury-panel">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
+          <CardTitle className="flex items-center gap-2 text-lg text-[#f5e6c4]">
             <Lock className="h-4 w-4" />
             会員様限定機能
           </CardTitle>
           <CardDescription>ご利用履歴のあるお客様のみ口コミを投稿できます。</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             ログインまたは会員登録を行うと、過去のご利用分に対する口コミを投稿できます。
           </p>
           <div className="flex flex-wrap gap-2">
             <Button asChild>
               <Link href={`/${storeSlug}/login`}>ログインする</Link>
             </Button>
-            <Button variant="outline" asChild>
+            <Button
+              variant="outline"
+              className="border-[#3b2e1f] text-[#f5e6c4] hover:bg-[#2b2114]"
+              asChild
+            >
               <Link href={`/${storeSlug}/register`}>会員登録</Link>
             </Button>
           </div>
@@ -182,10 +186,10 @@ export function ReviewSubmissionForm({ storeId, storeSlug, onReviewCreated }: Re
   }
 
   return (
-    <Card>
+    <Card className="luxury-panel">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <MessageCircle className="h-4 w-4 text-purple-600" />
+        <CardTitle className="flex items-center gap-2 text-lg text-[#f5e6c4]">
+          <MessageCircle className="h-4 w-4 text-[#f3d08a]" />
           口コミを投稿する
         </CardTitle>
         <CardDescription>
@@ -225,7 +229,7 @@ export function ReviewSubmissionForm({ storeId, storeSlug, onReviewCreated }: Re
               </SelectContent>
             </Select>
             {eligibleReservations.length === 0 && !loadingReservations && (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 投稿可能なご利用履歴がありません。施術完了後に表示されます。
               </p>
             )}
@@ -264,11 +268,13 @@ export function ReviewSubmissionForm({ storeId, storeSlug, onReviewCreated }: Re
               rows={5}
               disabled={submitting}
             />
-            <p className="text-xs text-gray-500">※ 10文字以上で入力してください。公開前に運営で内容を確認します。</p>
+            <p className="text-xs text-muted-foreground">
+              ※ 10文字以上で入力してください。公開前に運営で内容を確認します。
+            </p>
           </div>
 
           {selectedReservation && (
-            <div className="rounded-md bg-purple-50 p-3 text-sm text-purple-900">
+            <div className="rounded-md border border-[#3b2e1f] bg-[#121212] p-3 text-sm text-[#f5e6c4]">
               <strong>{selectedReservation.castName}</strong> のご利用に対する口コミです。
             </div>
           )}

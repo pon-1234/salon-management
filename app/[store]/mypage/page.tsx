@@ -36,7 +36,7 @@ export default async function MyPage({ params }: { params: { store: string } }) 
     <>
       <StoreNavigation />
 
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen bg-[#0b0b0b] text-foreground">
         <MyPageContent store={store} />
       </main>
 

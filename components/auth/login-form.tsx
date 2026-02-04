@@ -82,17 +82,17 @@ export function LoginForm({ store }: LoginFormProps) {
   }
 
   return (
-    <Card className="w-full">
+    <Card className="luxury-panel w-full">
       <CardHeader>
-        <CardTitle className="text-center text-2xl">ログイン</CardTitle>
+        <CardTitle className="text-center text-2xl text-[#f5e6c4]">ログイン</CardTitle>
         <CardDescription className="text-center">
           会員の方はこちらからログインしてください
         </CardDescription>
       </CardHeader>
       <CardContent>
         {/* Demo Credentials */}
-        <div className="mb-6 rounded-lg bg-blue-50 p-4">
-          <p className="text-sm text-blue-800">
+        <div className="mb-6 rounded-lg border border-[#3b2e1f] bg-[#121212] p-4">
+          <p className="text-sm text-[#d7c39c]">
             <strong>デモ用ログイン情報:</strong>
             <br />
             メール: tanaka@example.com
@@ -113,7 +113,7 @@ export function LoginForm({ store }: LoginFormProps) {
           <div className="space-y-2">
             <Label htmlFor="email">メールアドレス</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-[#cbb88f]" />
               <Input
                 id="email"
                 type="email"
@@ -130,7 +130,7 @@ export function LoginForm({ store }: LoginFormProps) {
           <div className="space-y-2">
             <Label htmlFor="password">パスワード</Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-[#cbb88f]" />
               <Input
                 id="password"
                 type="password"
@@ -147,7 +147,7 @@ export function LoginForm({ store }: LoginFormProps) {
           <div className="flex justify-end">
             <Link
               href={`/${store.slug}/forgot-password`}
-              className="text-sm text-blue-600 hover:underline"
+              className="text-sm text-[#f3d08a] hover:underline"
             >
               パスワードを忘れた方
             </Link>
@@ -163,10 +163,10 @@ export function LoginForm({ store }: LoginFormProps) {
         {/* Divider */}
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300" />
+            <div className="w-full border-t border-[#3b2e1f]" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="bg-white px-2 text-gray-500">または</span>
+            <span className="bg-[#0b0b0b] px-2 text-[#cbb88f]">または</span>
           </div>
         </div>
 
@@ -194,9 +194,9 @@ export function LoginForm({ store }: LoginFormProps) {
 
         {/* Register Link */}
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             アカウントをお持ちでない方は
-            <Link href={`/${store.slug}/register`} className="ml-1 text-blue-600 hover:underline">
+            <Link href={`/${store.slug}/register`} className="ml-1 text-[#f3d08a] hover:underline">
               新規会員登録
             </Link>
           </p>
@@ -204,7 +204,7 @@ export function LoginForm({ store }: LoginFormProps) {
 
         {/* Guest Link */}
         <div className="mt-3 text-center">
-          <Link href={`/${store.slug}`} className="text-sm text-gray-500 hover:underline">
+          <Link href={`/${store.slug}`} className="text-sm text-muted-foreground hover:underline">
             会員登録せずに続ける
           </Link>
         </div>

@@ -125,16 +125,20 @@ export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleConte
   const isAuthLoading = sessionStatus === 'loading'
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 py-12 text-white">
-        <div className="mx-auto max-w-7xl px-4">
-          <h1 className="mb-4 text-center text-4xl font-bold">出勤一覧</h1>
-          <p className="text-center text-xl">{store.name}の出勤スケジュール</p>
+    <main className="min-h-screen bg-[#0b0b0b] text-foreground">
+      <div className="relative overflow-hidden border-b border-[#2f2416] bg-[#0f0f0f] py-14">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,206,126,0.18),_transparent_60%)]" />
+        <div className="relative mx-auto max-w-6xl px-4 text-center">
+          <p className="luxury-display text-xs tracking-[0.45em] text-[#d7b46a]">SCHEDULE</p>
+          <h1 className="mt-4 text-3xl font-semibold text-[#f7e2b5] md:text-4xl">出勤一覧</h1>
+          <p className="mt-3 text-sm text-[#d7c39c] md:text-base">
+            {store.name}の出勤スケジュール
+          </p>
         </div>
       </div>
 
-      <section className="sticky top-16 z-40 border-b bg-white shadow-sm">
-        <div className="mx-auto max-w-7xl px-4 py-4">
+      <section className="sticky top-16 z-40 border-b border-[#3b2e1f] bg-[#121212]/95 shadow-sm backdrop-blur">
+        <div className="mx-auto max-w-6xl px-4 py-4">
           <div className="flex flex-wrap gap-2">
             {sortedDays.map((day) => {
               const dateObj = parseISO(day.date)
@@ -142,15 +146,19 @@ export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleConte
               return (
                 <Button
                   key={day.date}
-                  variant={isActive ? 'default' : 'outline'}
+                  variant="outline"
                   onClick={() => setSelectedDate(day.date)}
-                  className="flex h-auto flex-col px-4 py-2 text-left"
+                  className={`flex h-auto flex-col px-4 py-2 text-left ${
+                    isActive
+                      ? 'border-[#f6d48a] bg-[#f6d48a] text-[#2b1b0d]'
+                      : 'border-[#3b2e1f] text-[#f5e6c4] hover:bg-[#2b2114]'
+                  }`}
                 >
-                  <span className="text-xs text-muted-foreground">
+                  <span className={`text-xs ${isActive ? 'text-[#2b1b0d]' : 'text-[#cbb88f]'}`}>
                     {format(dateObj, 'E', { locale: ja })}
                   </span>
                   <span className="text-sm font-semibold">{format(dateObj, 'M月d日')}</span>
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className={`text-[10px] ${isActive ? 'text-[#2b1b0d]' : 'text-[#cbb88f]'}`}>
                     {day.entries.length}件
                   </span>
                 </Button>
@@ -158,20 +166,20 @@ export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleConte
             })}
           </div>
         </div>
-        <div className="border-t bg-white">
-          <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-6 px-4 py-3 text-xs text-muted-foreground">
+        <div className="border-t border-[#3b2e1f] bg-[#0f0f0f]">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-6 px-4 py-3 text-xs text-[#cbb88f]">
             <div className="flex items-center gap-2">
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-emerald-400 bg-emerald-50 text-emerald-600 text-base font-semibold">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#2fc8b7] bg-[#10211e] text-base font-semibold text-[#2fc8b7]">
                 ○
               </span>
               予約可能
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-base font-semibold text-red-500">×</span>
+              <span className="text-base font-semibold text-[#e05a4f]">×</span>
               予約済み
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-base text-muted-foreground">-</span>
+              <span className="text-base text-[#8d7a55]">-</span>
               終了済み
             </div>
           </div>
@@ -179,18 +187,22 @@ export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleConte
       </section>
 
       <section className="py-8">
-        <div className="mx-auto max-w-7xl px-4">
+        <div className="mx-auto max-w-6xl px-4">
           {activeDay.entries.length === 0 ? (
-            <Card>
+            <Card className="luxury-panel">
               <CardContent className="space-y-4 p-8 text-center text-muted-foreground">
-                <Calendar className="mx-auto h-10 w-10 text-purple-400" />
+                <Calendar className="mx-auto h-10 w-10 text-[#cbb88f]" />
                 <div>
-                  <p className="text-lg font-semibold">出勤予定がありません</p>
+                  <p className="text-lg font-semibold text-[#f5e6c4]">出勤予定がありません</p>
                   <p className="text-sm">
                     他の日付を選択するか、お問い合わせフォームから最新の出勤状況をご確認ください。
                   </p>
                 </div>
-                <Button asChild variant="outline">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="border-[#3b2e1f] text-[#f5e6c4] hover:bg-[#2b2114]"
+                >
                   <Link href={`/${store.slug}/booking`}>お問い合わせ</Link>
                 </Button>
               </CardContent>
@@ -198,12 +210,17 @@ export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleConte
           ) : (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {activeDay.entries.map((entry) => (
-                <Card key={entry.id} className="transition-shadow hover:shadow-lg">
+                <Card
+                  key={entry.id}
+                  className="luxury-panel transition-shadow hover:shadow-[0_20px_40px_rgba(0,0,0,0.45)]"
+                >
                   <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center justify-between text-lg">
+                    <CardTitle className="flex items-center justify-between text-lg text-[#f5e6c4]">
                       <span>{entry.cast.name}</span>
                       {entry.cast.panelDesignationRank > 0 && (
-                        <Badge variant="secondary">Rank {entry.cast.panelDesignationRank}</Badge>
+                        <Badge className="border border-[#3b2e1f] bg-[#1a1a1a] text-[#f6d48a]">
+                          Rank {entry.cast.panelDesignationRank}
+                        </Badge>
                       )}
                     </CardTitle>
                     <p className="text-sm text-muted-foreground">
@@ -212,7 +229,7 @@ export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleConte
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center gap-4">
-                      <div className="h-20 w-20 overflow-hidden rounded-lg bg-gradient-to-br from-purple-300 to-pink-400">
+                      <div className="h-20 w-20 overflow-hidden rounded-lg border border-[#4a3b28] bg-[#0f0f0f]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={entry.cast.image ?? '/images/non-photo.svg'}
@@ -222,7 +239,7 @@ export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleConte
                       </div>
                       <div className="space-y-1 text-sm">
                         <p className="flex items-center gap-1">
-                          <User className="h-4 w-4 text-purple-500" />
+                          <User className="h-4 w-4 text-[#f3d08a]" />
                           {entry.cast.age ? `${entry.cast.age}歳` : '年齢非公開'}
                         </p>
                         {entry.cast.type && (
@@ -237,18 +254,29 @@ export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleConte
 
                     <div className="flex flex-wrap gap-2 text-xs">
                       {entry.cast.bust && (
-                        <Badge variant="outline">B{entry.cast.bust}</Badge>
+                        <Badge variant="outline" className="border-[#3b2e1f] text-[#cbb88f]">
+                          B{entry.cast.bust}
+                        </Badge>
                       )}
                       {entry.cast.waist && (
-                        <Badge variant="outline">W{entry.cast.waist}</Badge>
+                        <Badge variant="outline" className="border-[#3b2e1f] text-[#cbb88f]">
+                          W{entry.cast.waist}
+                        </Badge>
                       )}
                       {entry.cast.hip && (
-                        <Badge variant="outline">H{entry.cast.hip}</Badge>
+                        <Badge variant="outline" className="border-[#3b2e1f] text-[#cbb88f]">
+                          H{entry.cast.hip}
+                        </Badge>
                       )}
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                      <Button asChild variant="outline" size="sm">
+                      <Button
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        className="border-[#3b2e1f] text-[#f5e6c4] hover:bg-[#2b2114]"
+                      >
                         <Link href={`/${store.slug}/cast/${entry.castId}`}>
                           詳細を見る
                         </Link>
@@ -278,7 +306,10 @@ export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleConte
                               <thead>
                                 <tr>
                                   {slots.map((slot) => (
-                                    <th key={`${slot.id}-label`} className="px-2 pb-2 text-[11px] font-medium text-muted-foreground">
+                                    <th
+                                      key={`${slot.id}-label`}
+                                      className="px-2 pb-2 text-[11px] font-medium text-[#cbb88f]"
+                                    >
                                       {slot.label}
                                     </th>
                                   ))}
@@ -287,15 +318,15 @@ export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleConte
                               <tbody>
                                 <tr>
                                   {slots.map((slot) => (
-                                    <td key={slot.id} className="border px-2 py-3">
+                                    <td key={slot.id} className="border border-[#2f2416] px-2 py-3">
                                       {slot.status === 'booked' ? (
-                                        <span className="text-sm font-semibold text-red-500">×</span>
+                                        <span className="text-sm font-semibold text-[#e05a4f]">×</span>
                                       ) : slot.isPast ? (
-                                        <span className="text-sm text-muted-foreground">-</span>
+                                        <span className="text-sm text-[#8d7a55]">-</span>
                                       ) : (
                                         <button
                                           type="button"
-                                          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-emerald-400 text-base font-semibold text-emerald-600 transition-colors hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#2fc8b7] text-base font-semibold text-[#2fc8b7] transition-colors hover:bg-[#10211e] disabled:cursor-not-allowed disabled:opacity-60"
                                           onClick={() => handleSlotClick(entry.castId, slot.startIso)}
                                           disabled={isAuthLoading}
                                           aria-label={`${entry.cast.name} ${slot.label}の予約を進める`}
@@ -320,9 +351,9 @@ export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleConte
         </div>
       </section>
 
-      <section className="bg-white py-8">
-        <div className="mx-auto max-w-4xl space-y-4 px-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2 font-semibold text-purple-600">
+      <section className="luxury-section py-8">
+        <div className="mx-auto max-w-4xl space-y-4 px-4 text-sm text-[#cbb88f]">
+          <div className="flex items-center gap-2 font-semibold text-[#f3d08a]">
             <MapPin className="h-4 w-4" />
             ご利用前のお願い
           </div>

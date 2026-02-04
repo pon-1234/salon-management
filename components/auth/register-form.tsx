@@ -150,19 +150,19 @@ export function RegisterForm({ store }: RegisterFormProps) {
   const years = Array.from({ length: 80 }, (_, i) => currentYear - 18 - i)
 
   return (
-    <Card className="w-full">
+    <Card className="luxury-panel w-full">
       <CardHeader>
-        <CardTitle className="text-center text-2xl">会員登録</CardTitle>
+        <CardTitle className="text-center text-2xl text-[#f5e6c4]">会員登録</CardTitle>
         <CardDescription className="text-center">会員登録で特典がいっぱい！</CardDescription>
       </CardHeader>
       <CardContent>
         {/* Benefits */}
-        <div className="mb-6 rounded-lg bg-purple-50 p-4">
-          <h3 className="mb-2 flex items-center gap-2 font-semibold">
-            <Gift className="h-5 w-5 text-purple-600" />
+        <div className="mb-6 rounded-lg border border-[#3b2e1f] bg-[#121212] p-4">
+          <h3 className="mb-2 flex items-center gap-2 font-semibold text-[#f5e6c4]">
+            <Gift className="h-5 w-5 text-[#f3d08a]" />
             会員特典
           </h3>
-          <ul className="space-y-1 text-sm text-gray-700">
+          <ul className="space-y-1 text-sm text-[#d7c39c]">
             <li>• 初回登録で1000ポイントプレゼント</li>
             <li>• 会員限定の特別割引</li>
             <li>• 誕生日月に特別クーポン</li>
@@ -185,7 +185,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
               既存アカウントの引き継ぎは
               <Link
                 href={`/${store.slug}/verify-phone?mode=claim&phone=${encodeURIComponent(phoneClaim)}`}
-                className="ml-1 text-blue-600 hover:underline"
+                className="ml-1 text-[#f3d08a] hover:underline"
               >
                 SMS認証ページ
               </Link>
@@ -206,7 +206,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
           <div className="space-y-2">
             <Label htmlFor="nickname">ニックネーム</Label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-[#cbb88f]" />
               <Input
                 id="nickname"
                 placeholder="お好きなニックネーム"
@@ -223,7 +223,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
           <div className="space-y-2">
             <Label htmlFor="email">メールアドレス</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-[#cbb88f]" />
               <Input
                 id="email"
                 type="email"
@@ -240,7 +240,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
           <div className="space-y-2">
             <Label htmlFor="phone">電話番号</Label>
             <div className="relative">
-              <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+              <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-[#cbb88f]" />
               <Input
                 id="phone"
                 type="tel"

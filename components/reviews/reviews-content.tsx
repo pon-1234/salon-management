@@ -92,31 +92,40 @@ export function ReviewsContent({ store, initialReviews, initialStats, castFilter
     <>
       <StoreNavigation />
 
-      <main className="min-h-screen bg-gray-50">
-        <section className="bg-gradient-to-b from-purple-900 to-pink-900 py-16 text-white">
-          <div className="mx-auto max-w-7xl px-4">
-            <h1 className="mb-4 text-4xl font-bold">{store.name} 口コミ・評価</h1>
-            <p className="text-xl opacity-90">お客様の生の声をお届けします</p>
+      <main className="min-h-screen bg-[#0b0b0b] text-foreground">
+        <section className="relative overflow-hidden border-b border-[#2f2416] bg-[#0f0f0f] py-16">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,206,126,0.18),_transparent_60%)]" />
+          <div className="relative mx-auto max-w-6xl px-4 text-center">
+            <p className="luxury-display text-xs tracking-[0.45em] text-[#d7b46a]">VOICE</p>
+            <h1 className="mt-4 text-3xl font-semibold text-[#f7e2b5] md:text-4xl">
+              {store.name} 口コミ・評価
+            </h1>
+            <p className="mt-3 text-sm text-[#d7c39c] md:text-base">お客様の生の声をお届けします</p>
           </div>
         </section>
 
         {castFilter && (
-          <div className="mx-auto max-w-7xl px-4 py-6">
-            <div className="flex flex-col gap-3 rounded-lg border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-900 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mx-auto max-w-6xl px-4 py-6">
+            <div className="flex flex-col gap-3 rounded-lg border border-[#3b2e1f] bg-[#121212] px-4 py-3 text-sm text-[#f5e6c4] sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-base font-semibold">
                   キャスト指定: {castFilter.name || '指定キャスト'}
                 </p>
-                <p className="text-xs text-purple-800/80">このキャストの口コミのみ表示しています。</p>
+                <p className="text-xs text-[#cbb88f]">このキャストの口コミのみ表示しています。</p>
               </div>
-              <Button variant="outline" size="sm" asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-[#3b2e1f] text-[#f5e6c4] hover:bg-[#2b2114]"
+                asChild
+              >
                 <Link href={`/${store.slug}/reviews`}>フィルタを解除</Link>
               </Button>
             </div>
           </div>
         )}
 
-        <div className="mx-auto max-w-7xl px-4 py-8">
+        <div className="mx-auto max-w-6xl px-4 py-8">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
             <aside className="lg:col-span-1 space-y-6">
               <ReviewStats stats={stats} />
@@ -136,10 +145,10 @@ export function ReviewsContent({ store, initialReviews, initialStats, castFilter
                 onReviewCreated={handleReviewCreated}
               />
 
-              <div className="rounded-lg bg-white p-4 shadow">
+              <div className="luxury-panel rounded-lg p-4">
                 <div className="flex flex-col gap-4 sm:flex-row">
                   <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-[#cbb88f]" />
                     <Input
                       type="text"
                       placeholder="キャスト名や口コミ内容を検索..."
@@ -152,6 +161,7 @@ export function ReviewsContent({ store, initialReviews, initialStats, castFilter
                     <Button
                       variant={sortBy === 'newest' ? 'default' : 'outline'}
                       size="sm"
+                      className={sortBy === 'newest' ? '' : 'border-[#3b2e1f] text-[#f5e6c4] hover:bg-[#2b2114]'}
                       onClick={() => setSortBy('newest')}
                     >
                       新着順
@@ -159,6 +169,7 @@ export function ReviewsContent({ store, initialReviews, initialStats, castFilter
                     <Button
                       variant={sortBy === 'helpful' ? 'default' : 'outline'}
                       size="sm"
+                      className={sortBy === 'helpful' ? '' : 'border-[#3b2e1f] text-[#f5e6c4] hover:bg-[#2b2114]'}
                       onClick={() => setSortBy('helpful')}
                     >
                       参考になった順
@@ -166,6 +177,7 @@ export function ReviewsContent({ store, initialReviews, initialStats, castFilter
                     <Button
                       variant={sortBy === 'rating' ? 'default' : 'outline'}
                       size="sm"
+                      className={sortBy === 'rating' ? '' : 'border-[#3b2e1f] text-[#f5e6c4] hover:bg-[#2b2114]'}
                       onClick={() => setSortBy('rating')}
                     >
                       評価順
@@ -174,7 +186,7 @@ export function ReviewsContent({ store, initialReviews, initialStats, castFilter
                 </div>
               </div>
 
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 {filteredReviews.length}件の口コミが見つかりました
               </p>
 
@@ -186,7 +198,7 @@ export function ReviewsContent({ store, initialReviews, initialStats, castFilter
 
               {filteredReviews.length === 0 && (
                 <div className="py-12 text-center">
-                  <p className="text-gray-500">条件に一致する口コミが見つかりませんでした</p>
+                  <p className="text-muted-foreground">条件に一致する口コミが見つかりませんでした</p>
                 </div>
               )}
             </div>

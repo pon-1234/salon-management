@@ -102,7 +102,7 @@ export function MyPageContent({ store }: MyPageContentProps) {
   if (status === 'loading' || profileLoading) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-8">
-        <div className="rounded-lg bg-white p-6 shadow">
+        <div className="luxury-panel rounded-lg p-6 shadow">
           <div className="animate-pulse">
             <div className="mb-4 h-8 w-1/3 rounded bg-gray-200"></div>
             <div className="h-4 w-1/4 rounded bg-gray-200"></div>
@@ -116,7 +116,7 @@ export function MyPageContent({ store }: MyPageContentProps) {
   if (!session?.user) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-8">
-        <div className="rounded-lg bg-white p-6 shadow">
+        <div className="luxury-panel rounded-lg p-6 shadow">
           <p>認証が必要です。ログインしてください。</p>
         </div>
       </div>
@@ -126,7 +126,7 @@ export function MyPageContent({ store }: MyPageContentProps) {
   if (profileError) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-8">
-        <div className="rounded-lg bg-white p-6 shadow">
+        <div className="luxury-panel rounded-lg p-6 shadow">
           <p className="text-sm text-red-600">{profileError}</p>
         </div>
       </div>
@@ -179,19 +179,21 @@ export function MyPageContent({ store }: MyPageContentProps) {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       {/* Header */}
-      <div className="mb-6 rounded-lg bg-white p-6 shadow">
+      <div className="luxury-panel mb-6 rounded-lg p-6 shadow">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="flex-1">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h1 className="mb-1 text-2xl font-bold">{user.nickname}さんのマイページ</h1>
-                <p className="text-gray-600">
+                <h1 className="mb-1 text-2xl font-bold text-[#f5e6c4]">
+                  {user.nickname}さんのマイページ
+                </h1>
+                <p className="text-muted-foreground">
                   会員ランク: {user.memberType === 'regular' ? '通常会員' : 'VIP会員'}
                 </p>
               </div>
               <div className="text-left sm:text-right">
-                <p className="text-sm text-gray-500">保有ポイント</p>
-                <p className="text-3xl font-bold text-purple-600">
+                <p className="text-sm text-muted-foreground">保有ポイント</p>
+                <p className="text-3xl font-bold text-[#f3d08a]">
                   {user.points.toLocaleString()}
                   <span className="ml-1 text-sm">pt</span>
                 </p>
