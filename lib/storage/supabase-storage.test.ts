@@ -58,10 +58,25 @@ describe('SupabaseStorageService', () => {
 
     it('should throw error if SUPABASE_ANON_KEY is missing', () => {
       delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      delete process.env.SUPABASE_SERVICE_ROLE_KEY
 
       expect(() => new SupabaseStorageService(defaultConfig)).toThrow(
         'Supabase環境変数が設定されていません'
       )
+    })
+
+    it('should use SUPABASE_SERVICE_ROLE_KEY when ANON_KEY is missing', () => {
+      delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key'
+
+      expect(() => new SupabaseStorageService(defaultConfig)).not.toThrow()
+    })
+
+    it('should use SUPABASE_URL when NEXT_PUBLIC_SUPABASE_URL is missing', () => {
+      delete process.env.NEXT_PUBLIC_SUPABASE_URL
+      process.env.SUPABASE_URL = 'https://service.supabase.co'
+
+      expect(() => new SupabaseStorageService(defaultConfig)).not.toThrow()
     })
   })
 
