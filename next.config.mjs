@@ -1,5 +1,13 @@
 import path from 'node:path'
 
+if (!process.env.NEXTAUTH_URL?.trim()) {
+  process.env.NEXTAUTH_URL = 'http://localhost:3000'
+}
+
+if (!process.env.NEXTAUTH_URL_INTERNAL?.trim()) {
+  process.env.NEXTAUTH_URL_INTERNAL = process.env.NEXTAUTH_URL
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {

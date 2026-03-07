@@ -84,28 +84,6 @@ if (shouldUseMockFallbacks()) {
   options = getFallbackOptions()
 }
 
-// Asynchronously update with real data
-/** @no-test-required reason: Self-executing async initialization - tested via the exported arrays */
-;(async () => {
-  try {
-    courses = await getCourses()
-    options = await getOptions()
-  } catch (error) {
-    console.error('Failed to hydrate pricing cache on startup:', error)
-    if (shouldUseMockFallbacks()) {
-      if (courses.length === 0) {
-        courses = getFallbackCourses()
-      }
-      if (options.length === 0) {
-        options = getFallbackOptions()
-      }
-    } else {
-      courses = []
-      options = []
-    }
-  }
-})()
-
 /**
  * Fallback data in case the pricing system is unavailable
  * @no-test-required reason: Internal fallback function called by exported getCourses which handles errors
