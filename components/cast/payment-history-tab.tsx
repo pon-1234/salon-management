@@ -30,7 +30,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Calendar, CreditCard, User, Plus, Eye, Receipt } from 'lucide-react'
-import { CastSettlementRecordDetail, CastSettlementsData, SettlementPaymentDto } from '@/lib/cast-portal/types'
+import {
+  CastSettlementRecordDetail,
+  CastSettlementsData,
+  SettlementPaymentDto,
+} from '@/lib/cast-portal/types'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 
@@ -85,7 +89,7 @@ export function PaymentHistoryTab({ castId, storeId }: PaymentHistoryTabProps) {
     fetchPendingReservations()
   }, [])
 
-  const handleAddPayment = async (payload: Partial<SettlementPaymentDto>) => {
+  const handleAddPayment = async (payload: PaymentRecordSubmitData) => {
     try {
       const res = await fetch('/api/admin/cast/settlements', {
         method: 'POST',
@@ -98,7 +102,7 @@ export function PaymentHistoryTab({ castId, storeId }: PaymentHistoryTabProps) {
           handledBy: payload.handledBy,
           paidAt: payload.paidAt,
           notes: payload.notes,
-          reservationIds: payload.reservations?.map((r) => r.id) ?? [],
+          reservationIds: payload.reservationIds,
         }),
       })
       if (!res.ok) throw new Error('入金記録の保存に失敗しました')
@@ -114,9 +118,7 @@ export function PaymentHistoryTab({ castId, storeId }: PaymentHistoryTabProps) {
 
   const lastPaidAt = useMemo(() => {
     if (paymentRecords.length === 0) return null
-    return new Date(
-      Math.max(...paymentRecords.map((r) => new Date(r.paidAt).getTime()))
-    )
+    return new Date(Math.max(...paymentRecords.map((r) => new Date(r.paidAt).getTime())))
   }, [paymentRecords])
 
   const getPaymentTypeColor = (type: string) => {
@@ -223,13 +225,13 @@ export function PaymentHistoryTab({ castId, storeId }: PaymentHistoryTabProps) {
                   <TableCell>
                     <div className="text-sm">
                       <div>{format(new Date(record.paidAt), 'yyyy/M/d(E)', { locale: ja })}</div>
-                      <div className="text-gray-500">{format(new Date(record.paidAt), 'HH:mm')}</div>
+                      <div className="text-gray-500">
+                        {format(new Date(record.paidAt), 'HH:mm')}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getPaymentTypeColor(record.method)}>
-                      {record.method}
-                    </Badge>
+                    <Badge className={getPaymentTypeColor(record.method)}>{record.method}</Badge>
                   </TableCell>
                   <TableCell className="text-lg font-medium">
                     ¥{record.amount.toLocaleString()}
@@ -282,20 +284,39 @@ export function PaymentHistoryTab({ castId, storeId }: PaymentHistoryTabProps) {
 }
 
 interface PaymentRecordFormProps {
-  onSubmit: (data: Partial<SettlementPaymentDto>) => void
+  onSubmit: (data: PaymentRecordSubmitData) => void
   reservations: CastSettlementRecordDetail[]
   initialData?: Partial<SettlementPaymentDto>
 }
 
+type PaymentRecordSubmitData = {
+  amount: number
+  method: string
+  handledBy: string
+  paidAt: string
+  reservationIds: string[]
+  notes?: string | null
+}
+
+type PaymentRecordFormState = {
+  date: string
+  time: string
+  paymentType: string
+  amount: number
+  reservationIds: string[]
+  handledBy: string
+  notes: string
+}
+
 function PaymentRecordForm({ onSubmit, reservations, initialData }: PaymentRecordFormProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<PaymentRecordFormState>({
     date: initialData?.paidAt
       ? format(new Date(initialData.paidAt), 'yyyy-MM-dd')
       : format(new Date(), 'yyyy-MM-dd'),
     time: initialData?.paidAt ? format(new Date(initialData.paidAt), 'HH:mm') : '10:00',
-    paymentType: (initialData as any)?.method || '現金精算',
+    paymentType: initialData?.method || '現金精算',
     amount: initialData?.amount || 0,
-    reservationIds: (initialData as any)?.reservations?.map((r: any) => r.id) || [],
+    reservationIds: initialData?.reservations?.map((reservation) => reservation.id) || [],
     handledBy: initialData?.handledBy || '',
     notes: initialData?.notes || '',
   })
@@ -308,7 +329,7 @@ function PaymentRecordForm({ onSubmit, reservations, initialData }: PaymentRecor
       method: formData.paymentType,
       handledBy: formData.handledBy,
       paidAt: dateTime.toISOString(),
-      reservations: formData.reservationIds.map((id) => ({ id } as any)),
+      reservationIds: formData.reservationIds,
       notes: formData.notes,
     })
   }
@@ -488,9 +509,7 @@ function PaymentDetailView({ payment }: PaymentDetailViewProps) {
               <div key={record.id} className="rounded-lg border bg-gray-50 p-3">
                 <div className="flex items-start justify-between">
                   <div>
-                    <div className="font-medium">
-                      {record.courseName ?? 'コース未設定'}
-                    </div>
+                    <div className="font-medium">{record.courseName ?? 'コース未設定'}</div>
                     <div className="text-sm text-gray-600">
                       {format(new Date(record.startTime), 'M/d(E) HH:mm', { locale: ja })}
                     </div>

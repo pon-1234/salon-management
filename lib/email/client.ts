@@ -5,6 +5,7 @@
  */
 import { Resend } from 'resend'
 import { env } from '@/lib/config/env'
+import logger from '@/lib/logger'
 
 // 環境変数からAPIキーを取得
 const resendClient = env.resend.apiKey ? new Resend(env.resend.apiKey) : null
@@ -22,7 +23,7 @@ export const emailClient = {
     body?: string
   }): Promise<{ success: boolean; id?: string; error?: string }> {
     if (!resendClient || !env.resend.apiKey) {
-      console.error('RESEND_API_KEY is not set. Skipping email sending.')
+      logger.error('RESEND_API_KEY is not set. Skipping email sending.')
       // 開発環境でキーがない場合でもアプリケーション全体が停止しないようにする
       return { success: false, error: 'RESEND_API_KEY is not configured.' }
     }
@@ -38,7 +39,7 @@ export const emailClient = {
       })
 
       if (response.error) {
-        console.error('Failed to send email:', response.error)
+        logger.error('Failed to send email:', response.error)
         return { success: false, error: response.error.message }
       }
 
@@ -47,7 +48,7 @@ export const emailClient = {
         id: response.data?.id,
       }
     } catch (error) {
-      console.error('An exception occurred while sending email:', error)
+      logger.error('An exception occurred while sending email:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       return { success: false, error: errorMessage }
     }

@@ -47,9 +47,7 @@ export function StaffAttendanceTable({ year, month, data }: StaffAttendanceTable
   const totalStaff = data.length
   const totalPossibleShifts = totalStaff * daysInMonth
   const overallAttendanceRate =
-    totalPossibleShifts > 0
-      ? Math.round((grandTotal / totalPossibleShifts) * 1000) / 10
-      : 0
+    totalPossibleShifts > 0 ? Math.round((grandTotal / totalPossibleShifts) * 1000) / 10 : 0
   const averagePerDay = Math.round((grandTotal / daysInMonth) * 10) / 10
   const averagePerStaff = totalStaff > 0 ? Math.round((grandTotal / totalStaff) * 10) / 10 : 0
   const totalAbsences = totalPossibleShifts - grandTotal
@@ -73,9 +71,7 @@ export function StaffAttendanceTable({ year, month, data }: StaffAttendanceTable
         <Card>
           <CardContent className="p-4">
             <p className="text-xs uppercase text-muted-foreground">出勤率</p>
-            <div className="text-2xl font-semibold">
-              {overallAttendanceRate.toFixed(1)}%
-            </div>
+            <div className="text-2xl font-semibold">{overallAttendanceRate.toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground">
               {totalStaff}人 × {daysInMonth}日 = {totalPossibleShifts.toLocaleString()}枠
             </p>
@@ -85,16 +81,16 @@ export function StaffAttendanceTable({ year, month, data }: StaffAttendanceTable
           <CardContent className="p-4">
             <p className="text-xs uppercase text-muted-foreground">平均出勤人数</p>
             <div className="text-2xl font-semibold">{averagePerDay.toLocaleString()}人/日</div>
-            <p className="text-xs text-muted-foreground">1人あたり {averagePerStaff.toFixed(1)}日</p>
+            <p className="text-xs text-muted-foreground">
+              1人あたり {averagePerStaff.toFixed(1)}日
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-xs uppercase text-muted-foreground">延べ出勤</p>
             <div className="text-2xl font-semibold">{grandTotal.toLocaleString()}日</div>
-            <p className="text-xs text-muted-foreground">
-              欠勤 {totalAbsences.toLocaleString()}日
-            </p>
+            <p className="text-xs text-muted-foreground">欠勤 {totalAbsences.toLocaleString()}日</p>
           </CardContent>
         </Card>
         <Card>
@@ -114,8 +110,9 @@ export function StaffAttendanceTable({ year, month, data }: StaffAttendanceTable
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {data.map((staff) => {
-          const attendanceArray = Array.from({ length: daysInMonth }, (_, index) =>
-            staff.attendance[index] ?? 0
+          const attendanceArray = Array.from(
+            { length: daysInMonth },
+            (_, index) => staff.attendance[index] ?? 0
           )
 
           const attendanceRate =
@@ -138,14 +135,15 @@ export function StaffAttendanceTable({ year, month, data }: StaffAttendanceTable
                 day: dayNumber,
                 weekday,
                 attended,
-                title: `${month}/${String(dayNumber).padStart(2, '0')}(${dayOfWeekLabels[weekday]})`
-                  + `${attended ? '：出勤' : '：休み'}`,
+                title:
+                  `${month}/${String(dayNumber).padStart(2, '0')}(${dayOfWeekLabels[weekday]})` +
+                  `${attended ? '：出勤' : '：休み'}`,
               }
             })
           })
 
-          const rateBadgeVariant: 'default' | 'secondary' | 'destructive' |
-            'success' = attendanceRate >= 80 ? 'success' : attendanceRate >= 60 ? 'secondary' : 'destructive'
+          const rateBadgeVariant: 'default' | 'secondary' | 'destructive' | 'success' =
+            attendanceRate >= 80 ? 'success' : attendanceRate >= 60 ? 'secondary' : 'destructive'
 
           return (
             <Card key={staff.id} className="shadow-sm">
@@ -159,7 +157,8 @@ export function StaffAttendanceTable({ year, month, data }: StaffAttendanceTable
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      出勤 {staff.total}日 / 欠勤 {absenceDays}日 ・ 週末出勤 {staff.weekendAttendance}日
+                      出勤 {staff.total}日 / 欠勤 {absenceDays}日 ・ 週末出勤{' '}
+                      {staff.weekendAttendance}日
                     </p>
                   </div>
                   <Badge variant={rateBadgeVariant} className="text-xs uppercase tracking-wide">
@@ -169,25 +168,23 @@ export function StaffAttendanceTable({ year, month, data }: StaffAttendanceTable
 
                 <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
                   <div className="rounded-md border border-border/60 bg-muted/20 p-2">
-                    <p className="text-[11px] uppercase text-muted-foreground">総出勤</p>
+                    <p className="text-xs uppercase text-muted-foreground">総出勤</p>
                     <p className="text-sm font-semibold text-foreground">{staff.total}日</p>
                   </div>
                   <div className="rounded-md border border-border/60 bg-muted/20 p-2">
-                    <p className="text-[11px] uppercase text-muted-foreground">週末</p>
+                    <p className="text-xs uppercase text-muted-foreground">週末</p>
                     <p className="text-sm font-semibold text-foreground">
                       {staff.weekendAttendance}日
                     </p>
                   </div>
                   <div className="rounded-md border border-border/60 bg-muted/20 p-2">
-                    <p className="text-[11px] uppercase text-muted-foreground">連続欠勤</p>
-                    <p className="text-sm font-semibold text-foreground">
-                      {longestAbsence}日
-                    </p>
+                    <p className="text-xs uppercase text-muted-foreground">連続欠勤</p>
+                    <p className="text-sm font-semibold text-foreground">{longestAbsence}日</p>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="grid grid-cols-7 gap-1 text-[10px] uppercase text-muted-foreground">
+                <div className="grid grid-cols-7 gap-1 text-xs uppercase text-muted-foreground">
                   {dayOfWeekLabels.map((label) => (
                     <span key={label} className="text-center">
                       {label}
@@ -207,7 +204,7 @@ export function StaffAttendanceTable({ year, month, data }: StaffAttendanceTable
                             key={dayInfo.day}
                             title={dayInfo.title}
                             className={cn(
-                              'flex h-8 items-center justify-center rounded-md border text-[11px] font-medium transition',
+                              'flex h-8 items-center justify-center rounded-md border text-xs font-medium transition',
                               dayInfo.attended
                                 ? 'border-emerald-500 bg-emerald-500 text-white'
                                 : 'border-border bg-muted/40 text-muted-foreground',
@@ -222,7 +219,7 @@ export function StaffAttendanceTable({ year, month, data }: StaffAttendanceTable
                     </div>
                   ))}
                 </div>
-                <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                   <span className="inline-flex items-center gap-1">
                     <span className="h-3 w-3 rounded bg-emerald-500" /> 出勤
                   </span>
@@ -251,7 +248,10 @@ export function StaffAttendanceTable({ year, month, data }: StaffAttendanceTable
             const date = new Date(year, month - 1, index + 1)
             const weekday = dayOfWeekLabels[date.getDay()]
             return (
-              <div key={index} className="rounded-md border border-border/60 bg-muted/20 p-3 text-sm">
+              <div
+                key={index}
+                className="rounded-md border border-border/60 bg-muted/20 p-3 text-sm"
+              >
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-foreground">
                     {month}/{String(index + 1).padStart(2, '0')} ({weekday})

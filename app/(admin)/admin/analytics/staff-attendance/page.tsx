@@ -85,7 +85,9 @@ export default function StaffAttendancePage() {
   const [selectedStaff, setSelectedStaff] = useState('全スタッフ')
 
   const [attendanceData, setAttendanceData] = useState<StaffAttendanceSummary[]>([])
-  const [previousAttendance, setPreviousAttendance] = useState<StaffAttendanceSummary[] | null>(null)
+  const [previousAttendance, setPreviousAttendance] = useState<StaffAttendanceSummary[] | null>(
+    null
+  )
   const [previousPeriod, setPreviousPeriod] = useState<PreviousPeriod | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -103,7 +105,10 @@ export default function StaffAttendancePage() {
 
     const fetchAttendance = async () => {
       try {
-        const current = await analyticsUseCases.getStaffAttendanceReport(selectedYear, selectedMonth)
+        const current = await analyticsUseCases.getStaffAttendanceReport(
+          selectedYear,
+          selectedMonth
+        )
 
         const previousDate = new Date(selectedYear, selectedMonth - 1, 1)
         previousDate.setMonth(previousDate.getMonth() - 1)
@@ -153,7 +158,10 @@ export default function StaffAttendancePage() {
   }, [attendanceData, selectedStaff])
 
   const currentYear = new Date().getFullYear()
-  const years = useMemo(() => Array.from({ length: 5 }, (_, i) => currentYear - 2 + i), [currentYear])
+  const years = useMemo(
+    () => Array.from({ length: 5 }, (_, i) => currentYear - 2 + i),
+    [currentYear]
+  )
   const months = useMemo(() => Array.from({ length: 12 }, (_, i) => i + 1), [])
   const staffOptions = useMemo(
     () => ['全スタッフ', ...attendanceData.map((staff) => staff.name)],
@@ -223,8 +231,7 @@ export default function StaffAttendancePage() {
       : 0
 
   const totalAbsences = totalStaff * daysInMonth - totalAttendanceCount
-  const previousTotalAbsences =
-    previousStaffCount * previousDaysInMonth - previousAttendanceTotal
+  const previousTotalAbsences = previousStaffCount * previousDaysInMonth - previousAttendanceTotal
 
   const shiftStats: StaffShiftStat[] = filteredAttendance.map((staff) => {
     const totalHours = staff.totalMinutes / 60
@@ -266,8 +273,7 @@ export default function StaffAttendancePage() {
     ? `${previousPeriod.year}年${previousPeriod.month}月`
     : '前月'
 
-  const activeStaffRate =
-    totalStaff > 0 ? Math.round((activeStaff / totalStaff) * 1000) / 10 : 0
+  const activeStaffRate = totalStaff > 0 ? Math.round((activeStaff / totalStaff) * 1000) / 10 : 0
   const averageAttendanceDiff = averageAttendance - previousAverageAttendance
   const attendanceRateDelta = attendanceRate - previousAttendanceRate
   const totalAbsenceDelta = totalAbsences - previousTotalAbsences
@@ -352,7 +358,8 @@ export default function StaffAttendancePage() {
         {
           tone: 'neutral',
           title: 'スタッフデータがありません',
-          description: '対象期間の出勤データがまだ登録されていません。シフト管理システムの連携状況を確認してください。',
+          description:
+            '対象期間の出勤データがまだ登録されていません。シフト管理システムの連携状況を確認してください。',
         },
       ]
     }
@@ -466,7 +473,10 @@ export default function StaffAttendancePage() {
         <div className="flex flex-wrap items-center gap-4">
           <h1 className="text-3xl font-bold">就業データ管理</h1>
           <div className="flex flex-wrap gap-2">
-            <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+            <Select
+              value={selectedYear.toString()}
+              onValueChange={(value) => setSelectedYear(parseInt(value))}
+            >
               <SelectTrigger className="w-[100px]">
                 <SelectValue />
               </SelectTrigger>
@@ -479,7 +489,10 @@ export default function StaffAttendancePage() {
               </SelectContent>
             </Select>
 
-            <Select value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(parseInt(value))}>
+            <Select
+              value={selectedMonth.toString()}
+              onValueChange={(value) => setSelectedMonth(parseInt(value))}
+            >
               <SelectTrigger className="w-[80px]">
                 <SelectValue />
               </SelectTrigger>
@@ -492,7 +505,10 @@ export default function StaffAttendancePage() {
               </SelectContent>
             </Select>
 
-            <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as StatusFilter)}>
+            <Select
+              value={selectedStatus}
+              onValueChange={(value) => setSelectedStatus(value as StatusFilter)}
+            >
               <SelectTrigger className="w-[130px]">
                 <SelectValue />
               </SelectTrigger>
@@ -538,10 +554,7 @@ export default function StaffAttendancePage() {
             来月
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <Button
-            onClick={handlePrint}
-            className="bg-emerald-600 text-white hover:bg-emerald-700"
-          >
+          <Button onClick={handlePrint} className="bg-emerald-600 text-white hover:bg-emerald-700">
             <Printer className="mr-2 h-4 w-4" />
             印刷する
           </Button>
@@ -605,70 +618,70 @@ export default function StaffAttendancePage() {
           <CardHeader className="space-y-1">
             <CardTitle className="text-lg font-semibold">月間出勤推移</CardTitle>
             <p className="text-sm text-muted-foreground">
-                日別の出勤人数を可視化しています。ピークや谷間を確認し、人員配置の調整に活用してください。
-              </p>
-            </CardHeader>
-            <CardContent>
-              {error ? (
-                <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
-                  データを表示できません。選択期間を変更するか、再読み込みしてください。
-                </div>
-              ) : isLoading ? (
-                <div className="rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground">
-                  データを読み込み中です...
-                </div>
-              ) : (
-                <StaffAttendanceChart
-                  year={selectedYear}
-                  month={selectedMonth}
-                  data={filteredAttendance}
-                />
-              )}
+              日別の出勤人数を可視化しています。ピークや谷間を確認し、人員配置の調整に活用してください。
+            </p>
+          </CardHeader>
+          <CardContent>
+            {error ? (
+              <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+                データを表示できません。選択期間を変更するか、再読み込みしてください。
+              </div>
+            ) : isLoading ? (
+              <div className="rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground">
+                データを読み込み中です...
+              </div>
+            ) : (
+              <StaffAttendanceChart
+                year={selectedYear}
+                month={selectedMonth}
+                data={filteredAttendance}
+              />
+            )}
           </CardContent>
         </Card>
 
         <Card className="shadow-sm">
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-lg font-semibold">詳細データビュー</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                出勤表・シフト分析・欠勤状況の3つのタブから多面的に状況を把握できます。
-              </p>
-            </CardHeader>
-            <CardContent>
-              {error ? (
-                <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
-                  詳細データを取得できませんでした。
-                </div>
-              ) : isLoading ? (
-                <div className="rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground">
-                  データを読み込み中です...
-                </div>
-              ) : (
-                <Tabs defaultValue="attendance" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="attendance">出勤表</TabsTrigger>
-                    <TabsTrigger value="shift">シフト分析</TabsTrigger>
-                    <TabsTrigger value="absence">欠勤状況</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="attendance" className="mt-4">
-                    <StaffAttendanceTable
-                      year={selectedYear}
-                      month={selectedMonth}
-                      data={filteredAttendance}
-                    />
-                  </TabsContent>
-                  <TabsContent value="shift" className="mt-4">
-                    <StaffShiftAnalysis
-                      data={shiftStats}
-                      daysInMonth={daysInMonth}
-                      weekendDaysInMonth={weekendDaysInMonth}
-                    />
-                  </TabsContent>
-                  <TabsContent value="absence" className="mt-4">
-                    <StaffAbsenceTable data={absenceSummary} />
-                  </TabsContent>
-                </Tabs>
-              )}
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-lg font-semibold">詳細データビュー</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              出勤表・シフト分析・欠勤状況の3つのタブから多面的に状況を把握できます。
+            </p>
+          </CardHeader>
+          <CardContent>
+            {error ? (
+              <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+                詳細データを取得できませんでした。
+              </div>
+            ) : isLoading ? (
+              <div className="rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground">
+                データを読み込み中です...
+              </div>
+            ) : (
+              <Tabs defaultValue="attendance" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="attendance">出勤表</TabsTrigger>
+                  <TabsTrigger value="shift">シフト分析</TabsTrigger>
+                  <TabsTrigger value="absence">欠勤状況</TabsTrigger>
+                </TabsList>
+                <TabsContent value="attendance" className="mt-4">
+                  <StaffAttendanceTable
+                    year={selectedYear}
+                    month={selectedMonth}
+                    data={filteredAttendance}
+                  />
+                </TabsContent>
+                <TabsContent value="shift" className="mt-4">
+                  <StaffShiftAnalysis
+                    data={shiftStats}
+                    daysInMonth={daysInMonth}
+                    weekendDaysInMonth={weekendDaysInMonth}
+                  />
+                </TabsContent>
+                <TabsContent value="absence" className="mt-4">
+                  <StaffAbsenceTable data={absenceSummary} />
+                </TabsContent>
+              </Tabs>
+            )}
           </CardContent>
         </Card>
         <Card className="shadow-sm">
@@ -716,7 +729,7 @@ export default function StaffAttendancePage() {
               </div>
             </div>
             <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
-              <div className="flex items-center justify_between text-sm">
+              <div className="justify_between flex items-center text-sm">
                 <span className="text-muted-foreground">週末出勤率</span>
                 <span className="font-semibold">{weekendAttendanceRateRounded.toFixed(1)}%</span>
               </div>
@@ -725,9 +738,15 @@ export default function StaffAttendancePage() {
               </p>
             </div>
             <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
-              <div className="flex items-center justify_between text-sm">
+              <div className="justify_between flex items-center text-sm">
                 <span className="text-muted-foreground">当日欠勤</span>
-                <span className={suddenAbsenceCount > 0 ? 'font-semibold text-amber-600' : 'text-muted-foreground'}>
+                <span
+                  className={
+                    suddenAbsenceCount > 0
+                      ? 'font-semibold text-amber-600'
+                      : 'text-muted-foreground'
+                  }
+                >
                   {suddenAbsenceCount}名
                 </span>
               </div>

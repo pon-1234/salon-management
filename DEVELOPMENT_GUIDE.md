@@ -46,8 +46,7 @@
   1.  UIコンポーネント (`app/`, `components/`) がユーザー操作を受け付ける。
   2.  `usecases.ts` (ビジネスロジック) を呼び出す。
   3.  `usecases.ts` が `repository.ts` (抽象リポジトリ) を経由してデータ操作を行う。
-  4.  `repository-impl.ts` (具象リポジトリ) がモックデータ (`data.ts`) を操作し、結果を返す。
-      - **注記**: 現状はモックデータだが、将来的にはこの層を実際のDBやAPIへの接続に置き換える設計。
+  4.  `repository-impl.ts` (具象リポジトリ) は、主要ドメインでは `/api/*` を呼び出すHTTPクライアントとして動作し、APIルートや `lib/*/server.ts` が Prisma 経由で永続化を扱う。analytics など一部にはモック/生成データが残る。
 
 ### 2.2. 主要ドメイン
 
@@ -84,21 +83,20 @@
 
 ## 4. ディレクトリ構成
 
-| ディレクトリ・ファイル | 説明                                                                 |
-| :--------------------- | :------------------------------------------------------------------- |
-| `app/`                 | Next.js App Routerの規約に基づくルーティングとページコンポーネント。 |
-| `app/(admin)/`         | 管理者向け画面のグルーピング。                                       |
-| `app/(public)/`        | 一般公開サイトのグルーピング（未ログインユーザー向け）。             |
-| `app/[store]/`         | 店舗ごとの動的ルーティング。顧客向けの主要なページが含まれる。       |
-| `app/api/`             | APIエンドポイント。現在は画像アップロード機能のみ。                  |
-| `components/`          | 再利用可能なUIコンポーネント群。機能ごとに整理されている。           |
-| `components/ui/`       | shadcn/uiによって生成された基本的なUIコンポーネント。                |
-| `contexts/`            | React Context。現在は通知機能と店舗情報管理に使用。                  |
-| `docs/`                | ドキュメントファイル。                                               |
-| `hooks/`               | カスタムフック。CTI連携、認証、Toast通知などで使用。                 |
-| `lib/`                 | アプリケーションのコアロジック。ドメインごとに整理。                 |
-| `public/`              | 静的ファイル（画像、動画など）。                                     |
-| `styles/`              | グローバルCSSや印刷用CSS。                                           |
+| ディレクトリ・ファイル | 説明                                                                                  |
+| :--------------------- | :------------------------------------------------------------------------------------ |
+| `app/`                 | Next.js App Routerの規約に基づくルーティングとページコンポーネント。                  |
+| `app/(admin)/`         | 管理者向け画面のグルーピング。                                                        |
+| `app/[store]/`         | 店舗ごとの動的ルーティング。顧客向けの主要なページが含まれる。                        |
+| `app/api/`             | 認証、予約、顧客、キャスト、分析、チャット、画像アップロードなどのAPIエンドポイント。 |
+| `components/`          | 再利用可能なUIコンポーネント群。機能ごとに整理されている。                            |
+| `components/ui/`       | shadcn/uiによって生成された基本的なUIコンポーネント。                                 |
+| `contexts/`            | React Context。現在は通知機能と店舗情報管理に使用。                                   |
+| `docs/`                | ドキュメントファイル。                                                                |
+| `hooks/`               | カスタムフック。CTI連携、認証、Toast通知などで使用。                                  |
+| `lib/`                 | アプリケーションのコアロジック。ドメインごとに整理。                                  |
+| `public/`              | 静的ファイル（画像、動画など）。                                                      |
+| `styles/`              | グローバルCSSや印刷用CSS。                                                            |
 
 ---
 
@@ -154,23 +152,23 @@
 
 ## 6. データモデル設計
 
-本システムは現在モックデータで動作しており、データベーススキーマは未確定である。ここでは、将来のデータベース設計の基礎となる、アプリケーションのコアなデータモデルを定義する。
-各モデルは `lib/**/types.ts` に定義されたTypeScriptの型に基づいている。
+本システムは Prisma (`prisma/schema.prisma`) を用いた PostgreSQL 永続化を前提に動作する。ここでは、アプリケーションの主要なデータモデルを概観する。
+各モデルは Prisma スキーマおよび `lib/**/types.ts` に定義されたTypeScriptの型に基づいている。
 
 ### 6.1. エンティティ一覧と概要
 
-| エンティティ名    | 型定義ファイル                      | 概要                                       |
-| :---------------- | :---------------------------------- | :----------------------------------------- |
-| **Cast**          | `lib/cast/types.ts`                 | サロンに所属するスタッフ（キャスト）の情報 |
-| **Customer**      | `lib/customer/types.ts`             | サービスを利用する顧客の情報               |
-| **Reservation**   | `lib/types/reservation.ts`          | 顧客からの予約情報                         |
-| **CoursePrice**   | `lib/pricing/types.ts`              | 提供するコースの料金体系                   |
-| **OptionPrice**   | `lib/pricing/types.ts`              | コースに追加するオプションの料金体系       |
-| **AdditionalFee** | `lib/pricing/types.ts`              | 指名料などの追加料金                       |
-| **Store**         | `lib/store/types.ts`                | 店舗情報                                   |
-| **Review**        | `lib/reviews/types.ts`              | 顧客からの口コミ情報                       |
-| **Message**       | `lib/types/chat.ts`                 | チャットメッセージ                         |
-| **Notification**  | `contexts/notification-context.tsx` | 管理者への通知情報                         |
+| エンティティ名     | 型定義ファイル                                     | 概要                                       |
+| :----------------- | :------------------------------------------------- | :----------------------------------------- |
+| **Cast**           | `lib/cast/types.ts`                                | サロンに所属するスタッフ（キャスト）の情報 |
+| **Customer**       | `lib/customer/types.ts`                            | サービスを利用する顧客の情報               |
+| **Reservation**    | `lib/types/reservation.ts`                         | 顧客からの予約情報                         |
+| **CoursePrice**    | `lib/pricing/types.ts`                             | 提供するコースの料金体系                   |
+| **OptionPrice**    | `lib/pricing/types.ts`                             | コースに追加するオプションの料金体系       |
+| **DesignationFee** | `prisma/schema.prisma`, `lib/designation/types.ts` | 指名料と店舗/キャスト取り分                |
+| **Store**          | `lib/store/types.ts`                               | 店舗情報                                   |
+| **Review**         | `lib/reviews/types.ts`                             | 顧客からの口コミ情報                       |
+| **Message**        | `lib/types/chat.ts`                                | チャットメッセージ                         |
+| **Notification**   | `contexts/notification-context.tsx`                | 管理者への通知情報                         |
 
 ### 6.2. エンティティ詳細
 
@@ -237,7 +235,7 @@ _(注意: 他のエンティティについても同様に定義を追記する�
 | `/api/auth/register`             | `POST`     | 顧客の新規会員登録API。パスワードハッシュ化、メール重複チェック、顧客情報の作成を行う。             |
 | `/api/customer/by-email/[email]` | `GET`      | メールアドレスによる顧客検索API。認証時の顧客情報取得に使用。                                       |
 
-**注記**: 現在のシステムでは、認証関連のAPIが実装済みです。その他のデータ操作はクライアントサイドのリポジトリ実装（モック）で行われています。本番環境では、キャスト、予約などの残りのCRUD操作を行うためのAPIエンドポイントを別途設計・実装する必要があります。
+**注記**: 現在のシステムでは、認証、予約、顧客、キャスト、分析、チャットなど多数のAPIが実装済みです。ドメイン別の `repository-impl.ts` は主にこれらのAPIを呼び出します。一部の分析表示や開発用フォールバックにはモックデータが残っています。
 
 ---
 
@@ -324,10 +322,7 @@ graph TD
       {
         "matcher": "",
         "hooks": [
-          { "type": "command", "command": "echo 'Running final checks...' && pnpm lint && pnpm typecheck && pnpm vitest run", "blocking": true, "timeout": 120 },
-          { "type": "command", "command": "pnpm vitest run --coverage", "blocking": false },
-          // TODO: カバレッジが安定したら、目標値を段階的に100%に戻す
-          { "type": "command", "command": "npx coverage-check --statements 5 --branches 5 --functions 5 --lines 5", "blocking": true }
+          { "type": "command", "command": "echo 'Running final checks...' && pnpm lint && pnpm typecheck && pnpm vitest run && pnpm vitest run --coverage", "blocking": true, "timeout": 120 }
         ]
       }
     ]
@@ -350,7 +345,7 @@ Claudeがタスクを完了したと見なすためには、以下の条件を�
 
 1.  **静的解析**: `eslint`, `prettier`, `tsc`がすべてエラーなく通過すること。
 2.  **テスト**: すべてのテスト (`vitest`) がパスすること。
-3.  **カバレッジ**: テストカバレッジが**設定された目標値（現在: 5%）**を満たすこと。（現在の実績値: 約5.4%）。例外は`vitest.config.ts`または`@no-test-required`アノテーションで管理し、将来的にはこの目標値を100%に戻すことを目指す。
+3.  **カバレッジ**: テストカバレッジが**設定された目標値（現在: 30%）**を満たすこと。現在の強制値は `vitest.config.ts` の branches/functions/lines/statements 30% である。例外は`vitest.config.ts`または`@no-test-required`アノテーションで管理する。
 4.  **ドキュメント**: 関連するドキュメント（`README.md`や本設計書など）が更新されていること。（これはClaudeの最終的な責務）
 
 ### 9.5. 開発・運用上の注意点
@@ -359,7 +354,7 @@ Claudeがタスクを完了したと見なすためには、以下の条件を�
 2.  **権限管理:** `claude --dangerously-skip-permissions` は開発環境でのみ限定的に使用し、共有環境では `permissions.allow/deny` で実行可能コマンドを厳密に制限する。
 3.  **設定反映のタイミング:** `.claude/settings.local.json` の変更は、Claudeとのセッションを再起動（`/reset`）するまで反映されない。
 4.  **Linter/Formatterのパフォーマンス:** プロジェクト規模が拡大した場合、`lint-staged`のようなツールを導入し、それをHooksから呼び出すことで、差分ファイルのみを対象とし、パフォーマンスを維持する。
-5.  **カバレッジ例外管理:** テストが困難なコードについては、`/** @no-test-required reason: ... */` アノテーションを付与する。これをカバレッジ計測から除外するスクリプトをCIに組み込むことで、原則100%カバレッジを維持しつつ、例外を許容する。
+5.  **カバレッジ例外管理:** テストが困難なコードについては、`/** @no-test-required reason: ... */` アノテーションを付与する。現在の強制閾値は30%であり、将来的な引き上げは実測値が安定してから段階的に検討する。
 
 ### 9.6. LINEユーザーID登録フロー（Webhook）
 
@@ -388,14 +383,14 @@ LINE公式アカウントの管理画面だけでは U〜 形式のユーザーI
 
 ## 10. 今後の課題・改善点
 
-- **バックエンド実装**: 現在のモックデータリポジトリを、実際のデータベースと連携するAPIに置き換える。
+- **バックエンド実装**: 主要ドメインは Prisma-backed API へ移行済み。一部に残るモック/生成データの利用箇所を、実データAPIへ段階的に接続する。
 - **認証・認可の追加機能**:
   - ✅ **完了**: 管理者画面の認証ロジックを`middleware.ts`に実装済み
   - ✅ **完了**: 顧客向けサイトのログイン、マイページ機能の認証を実装済み
   - 🚧 **未実装**: パスワードリセット機能
   - 🚧 **未実装**: メール認証機能
   - 🚧 **未実装**: ソーシャルログイン（LINE、Twitter等）
-- **テスト**: ✅ **改善中**: Vitestを用いた単体テストを拡充中（約40%カバレッジ達成）。UI テストの追加を検討。
+- **テスト**: ✅ **改善中**: Vitestを用いた単体テストを拡充中（現在の強制閾値は30%）。UI テストの追加を検討。
 - **状態管理**: 現在はローカルステートやContextが中心だが、アプリケーションの複雑化に伴い、ZustandやJotaiなどのグローバルな状態管理ライブラリの導入を検討する。
 - **エラー監視**: Sentryなどの外部サービスと連携し、本番環境でのエラーを監視・記録する仕組みを構築する。
 

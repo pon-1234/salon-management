@@ -23,7 +23,6 @@ import { ja } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { useStore } from '@/contexts/store-context'
 
-
 export default function ReservationListPage() {
   const { currentStore } = useStore()
   const [selectedReservation, setSelectedReservation] = useState<ReservationData | null>(null)
@@ -38,22 +37,19 @@ export default function ReservationListPage() {
     [currentStore.id]
   )
 
-  const updateDailyReservations = useCallback(
-    (source: Reservation[], targetDate: Date) => {
-      const filtered = source.filter((reservation) =>
-        isSameDay(new Date(reservation.startTime), targetDate)
-      )
-      const mapped = filtered.map((reservation) =>
-        mapReservationToReservationData({
-          ...reservation,
-          startTime: new Date(reservation.startTime),
-          endTime: new Date(reservation.endTime),
-        } as Reservation)
-      )
-      setDailyReservations(mapped.sort((a, b) => a.startTime.getTime() - b.startTime.getTime()))
-    },
-    []
-  )
+  const updateDailyReservations = useCallback((source: Reservation[], targetDate: Date) => {
+    const filtered = source.filter((reservation) =>
+      isSameDay(new Date(reservation.startTime), targetDate)
+    )
+    const mapped = filtered.map((reservation) =>
+      mapReservationToReservationData({
+        ...reservation,
+        startTime: new Date(reservation.startTime),
+        endTime: new Date(reservation.endTime),
+      } as Reservation)
+    )
+    setDailyReservations(mapped.sort((a, b) => a.startTime.getTime() - b.startTime.getTime()))
+  }, [])
 
   const fetchReservations = useCallback(async () => {
     setLoading(true)
@@ -159,7 +155,9 @@ export default function ReservationListPage() {
     reservationId: string,
     payload: ReservationUpdatePayload
   ): Promise<void> => {
-    const targetReservation = rawReservations.find((reservation) => reservation.id === reservationId)
+    const targetReservation = rawReservations.find(
+      (reservation) => reservation.id === reservationId
+    )
     if (!targetReservation) {
       const err = new Error('対象の予約が見つかりません。')
       toast({
@@ -228,7 +226,9 @@ export default function ReservationListPage() {
       } as Reservation
 
       setRawReservations((prev) =>
-        prev.map((reservation) => (reservation.id === reservationId ? normalizedUpdated : reservation))
+        prev.map((reservation) =>
+          reservation.id === reservationId ? normalizedUpdated : reservation
+        )
       )
 
       const updatedData = mapReservationToReservationData(normalizedUpdated)

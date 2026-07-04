@@ -57,7 +57,10 @@ export function ReservationTable({ reservations, onOpenReservation }: Reservatio
           className: 'bg-slate-200 text-slate-700 border-slate-300',
           dot: 'bg-slate-500',
         },
-      }) as Record<ReservationStatus | 'tentative' | string, { label: string; className: string; dot: string }>,
+      }) as Record<
+        ReservationStatus | 'tentative' | string,
+        { label: string; className: string; dot: string }
+      >,
     []
   )
 
@@ -108,7 +111,7 @@ export function ReservationTable({ reservations, onOpenReservation }: Reservatio
         <TableBody>
           {reservations.map((reservation, index) => (
             <TableRow key={index} onClick={() => handleOpenReservation(reservation)}>
-              <TableCell className="font-medium whitespace-nowrap">
+              <TableCell className="whitespace-nowrap font-medium">
                 {(index + 1).toString().padStart(4, '0')}
               </TableCell>
               <TableCell>
@@ -151,7 +154,7 @@ export function ReservationTable({ reservations, onOpenReservation }: Reservatio
                 </div>
               </TableCell>
               <TableCell className="text-right">
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" aria-label="予約操作メニューを開く">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </TableCell>

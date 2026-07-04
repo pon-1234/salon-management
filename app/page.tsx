@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @design_doc   ui-improvement-instructions.md U-3 portal link label correction
+ * @related_to   app/[store]/recruitment/page.tsx: destination is newcomer information
+ * @known_issues Real recruitment page remains a product proposal, not implemented here
+ */
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { AgeVerification } from '@/components/age-verification'
@@ -7,7 +12,7 @@ import { AgeVerification } from '@/components/age-verification'
 const navigation = [
   { label: 'GOLD ESTHE GROUP 総合TOP', href: '/' },
   { label: '金の玉クラブ 池袋店', href: '/ikebukuro' },
-  { label: '【女性求人】金の玉クラブ 池袋店', href: '/ikebukuro/recruitment' },
+  { label: '新人情報 金の玉クラブ 池袋店', href: '/ikebukuro/recruitment' },
 ]
 
 export default function HomePage() {
@@ -54,7 +59,7 @@ export default function HomePage() {
               <p className="text-sm text-white/60">GOLD ESTHE GROUP ロゴ</p>
             </div>
           </div>
-          <span className="rounded-full border border-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.25em] text-amber-100">
+          <span className="rounded-full border border-white/10 px-3 py-1 text-xs uppercase tracking-[0.25em] text-amber-100">
             Adult Only
           </span>
         </header>
@@ -97,7 +102,9 @@ export default function HomePage() {
                 className="group flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm tracking-wide text-amber-100 transition hover:border-amber-200/60 hover:bg-white/10"
               >
                 <span className="leading-tight">{item.label}</span>
-                <span className="text-base text-white/50 transition group-hover:text-amber-200">→</span>
+                <span className="text-base text-white/50 transition group-hover:text-amber-200">
+                  →
+                </span>
               </Link>
             ))}
           </nav>

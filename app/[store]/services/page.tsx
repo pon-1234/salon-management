@@ -1,3 +1,8 @@
+/**
+ * @design_doc   ui-improvement-instructions.md U-12 store route metadata/runtime contract
+ * @related_to   StoreLayout: validates store slug; StoreNavigation: public store navigation
+ * @known_issues Service content remains static until service settings are modeled
+ */
 import { notFound } from 'next/navigation'
 import { fetchStoreBySlug } from '@/lib/store/public-api'
 import { StoreNavigation } from '@/components/store-navigation'
@@ -6,8 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Sparkles, Heart, Star, Shield } from 'lucide-react'
 
-export default async function ServicesPage({ params }: { params: { store: string } }) {
-  const { store: storeSlug } = params
+export default async function ServicesPage({ params }: { params: Promise<{ store: string }> }) {
+  const { store: storeSlug } = await params
   const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {

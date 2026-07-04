@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { getAllReservations, getReservationsByCustomerId, addReservation, updateReservation } from './data'
+import {
+  getAllReservations,
+  getReservationsByCustomerId,
+  addReservation,
+  updateReservation,
+} from './data'
 
 vi.mock('@/lib/http/base-url', () => ({
   resolveApiUrl: (path: string) => `http://localhost:3000${path}`,
@@ -197,7 +202,7 @@ describe('reservation data (API-backed)', () => {
     const fetchMock = vi.mocked(fetch)
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
       const url = input.toString()
-      if (url.includes('/api/reservation') && !url.includes('?id=')) {
+      if (url.includes('/api/reservation?id=1')) {
         return jsonResponse({ id: '1', status: 'completed', customerId: 'cust_1' })
       }
       if (url.includes('cust_1')) {
@@ -208,7 +213,7 @@ describe('reservation data (API-backed)', () => {
 
     const result = await updateReservation('1', { status: 'completed' } as any)
 
-    expect(fetch).toHaveBeenCalledWith('http://localhost:3000/api/reservation', {
+    expect(fetch).toHaveBeenCalledWith('http://localhost:3000/api/reservation?id=1', {
       method: 'PUT',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },

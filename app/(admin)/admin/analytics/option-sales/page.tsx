@@ -75,7 +75,10 @@ export default function OptionSalesPage() {
           try {
             previousOptions = await analyticsUseCases.getOptionSalesReport(selectedYear - 1)
           } catch (prevError) {
-            console.warn('[OptionSalesPage] failed to fetch previous year option analytics', prevError)
+            console.warn(
+              '[OptionSalesPage] failed to fetch previous year option analytics',
+              prevError
+            )
           }
         }
 
@@ -142,28 +145,26 @@ export default function OptionSalesPage() {
 
   const optionCount = optionData.length
   const activeOptionsCount = optionSummaries.filter((option) => option.count > 0).length
-  const averageOptionPrice = totalOptionCount > 0 ? Math.round(totalOptionSales / totalOptionCount) : 0
+  const averageOptionPrice =
+    totalOptionCount > 0 ? Math.round(totalOptionSales / totalOptionCount) : 0
   const totalReservations = monthlyData.reduce((sum, month) => sum + month.totalCount, 0)
   const attachRate = totalReservations > 0 ? (totalOptionCount / totalReservations) * 100 : 0
   const attachRateDisplay = Math.round(attachRate * 10) / 10
 
-  const chartData = useMemo(
-    () => {
-      if (optionSummaries.length === 0) return []
-      const totalRevenue = optionSummaries.reduce((sum, option) => sum + option.revenue, 0)
-      return optionSummaries
-        .filter((option) => option.revenue > 0)
-        .sort((a, b) => b.revenue - a.revenue)
-        .map((option) => ({
-          id: option.id,
-          name: option.name,
-          revenue: option.revenue,
-          count: option.count,
-          share: totalRevenue > 0 ? Math.round((option.revenue / totalRevenue) * 1000) / 10 : 0,
-        }))
-    },
-    [optionSummaries]
-  )
+  const chartData = useMemo(() => {
+    if (optionSummaries.length === 0) return []
+    const totalRevenue = optionSummaries.reduce((sum, option) => sum + option.revenue, 0)
+    return optionSummaries
+      .filter((option) => option.revenue > 0)
+      .sort((a, b) => b.revenue - a.revenue)
+      .map((option) => ({
+        id: option.id,
+        name: option.name,
+        revenue: option.revenue,
+        count: option.count,
+        share: totalRevenue > 0 ? Math.round((option.revenue / totalRevenue) * 1000) / 10 : 0,
+      }))
+  }, [optionSummaries])
 
   const trendData = useMemo<TrendPoint[]>(() => {
     return Array.from({ length: 12 }, (_, index) => {
@@ -176,7 +177,8 @@ export default function OptionSalesPage() {
         (sum, option) => sum + (option.monthlySales[index] ?? 0) * option.price,
         0
       )
-      const reservationsForMonth = monthlyData.find((item) => item.month === monthNumber)?.totalCount ?? 0
+      const reservationsForMonth =
+        monthlyData.find((item) => item.month === monthNumber)?.totalCount ?? 0
       const monthlyAttachRate =
         reservationsForMonth > 0 ? (optionCountForMonth / reservationsForMonth) * 100 : 0
 
@@ -301,7 +303,7 @@ export default function OptionSalesPage() {
           </CardHeader>
           <CardContent>
             <div className="truncate text-sm font-bold">
-              {haveValues ? topOption?.name ?? '-' : '--'}
+              {haveValues ? (topOption?.name ?? '-') : '--'}
             </div>
             <p className="text-xs text-muted-foreground">
               売上: {haveValues && topOption ? `¥${topOptionRevenue.toLocaleString()}` : '--'}
@@ -319,7 +321,8 @@ export default function OptionSalesPage() {
               {haveValues ? `${activeOptionsCount} / ${optionCount}` : '--'}
             </div>
             <p className="text-xs text-muted-foreground">
-              稼働率: {haveValues && optionCount > 0
+              稼働率:{' '}
+              {haveValues && optionCount > 0
                 ? `${Math.round((activeOptionsCount / optionCount) * 100)}%`
                 : '--'}
             </p>

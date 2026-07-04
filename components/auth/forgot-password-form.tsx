@@ -83,7 +83,9 @@ export function ForgotPasswordForm({ store }: ForgotPasswordFormProps) {
   return (
     <Card className="luxury-panel w-full">
       <CardHeader>
-        <CardTitle className="text-center text-2xl text-[#f5e6c4]">パスワードをお忘れの方</CardTitle>
+        <CardTitle className="text-center text-2xl text-[#f5e6c4]">
+          パスワードをお忘れの方
+        </CardTitle>
         <CardDescription className="text-center">
           ご登録のメールアドレスを入力してください
         </CardDescription>
@@ -104,7 +106,9 @@ export function ForgotPasswordForm({ store }: ForgotPasswordFormProps) {
                 required
               />
             </div>
-            <p className="text-xs text-muted-foreground">パスワードリセット用のリンクをお送りします</p>
+            <p className="text-xs text-muted-foreground">
+              パスワードリセット用のリンクをお送りします
+            </p>
           </div>
 
           {/* Submit Button */}

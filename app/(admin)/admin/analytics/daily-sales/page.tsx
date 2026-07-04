@@ -39,6 +39,7 @@ import {
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { useStore } from '@/contexts/store-context'
+import { formatYen } from '@/lib/shared'
 
 // KPIカードコンポーネント
 function KPICard({
@@ -111,35 +112,38 @@ export default function DailySalesPage() {
     return new DailySalesUseCases(repository)
   }, [currentStore.id])
 
-  const fetchDailySales = useCallback(async (date: Date) => {
-    setIsLoading(true)
-    try {
-      const data = await dailySalesUseCases.getDailySales(date)
-      setSalesData(data)
+  const fetchDailySales = useCallback(
+    async (date: Date) => {
+      setIsLoading(true)
+      try {
+        const data = await dailySalesUseCases.getDailySales(date)
+        setSalesData(data)
 
-      setHourlyData(
-        data.hourlyBreakdown?.map((entry) => ({
-          hour: entry.hour,
-          sales: entry.sales,
-          customers: entry.customers,
-        })) ?? []
-      )
+        setHourlyData(
+          data.hourlyBreakdown?.map((entry) => ({
+            hour: entry.hour,
+            sales: entry.sales,
+            customers: entry.customers,
+          })) ?? []
+        )
 
-      setWeeklyData(
-        data.weeklyTrend?.map((entry) => ({
-          day: entry.date,
-          sales: entry.sales,
-        })) ?? []
-      )
-    } catch (error) {
-      console.error('Failed to fetch daily sales:', error)
-      setSalesData(null)
-      setHourlyData([])
-      setWeeklyData([])
-    } finally {
-      setIsLoading(false)
-    }
-  }, [dailySalesUseCases])
+        setWeeklyData(
+          data.weeklyTrend?.map((entry) => ({
+            day: entry.date,
+            sales: entry.sales,
+          })) ?? []
+        )
+      } catch (error) {
+        console.error('Failed to fetch daily sales:', error)
+        setSalesData(null)
+        setHourlyData([])
+        setWeeklyData([])
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [dailySalesUseCases]
+  )
 
   useEffect(() => {
     fetchDailySales(selectedDate)
@@ -162,7 +166,7 @@ export default function DailySalesPage() {
   const kpiData = salesData
     ? {
         totalSales: {
-          value: `¥${salesData.totals.sales.total.toLocaleString()}`,
+          value: formatYen(salesData.totals.sales.total),
           change: undefined,
           trend: 'neutral' as const,
         },
@@ -172,7 +176,11 @@ export default function DailySalesPage() {
           trend: 'neutral' as const,
         },
         averageSpend: {
-          value: `¥${Math.floor(salesData.totals.sales.total / Math.max(salesData.totals.totalTransactions, 1)).toLocaleString()}`,
+          value: formatYen(
+            Math.floor(
+              salesData.totals.sales.total / Math.max(salesData.totals.totalTransactions, 1)
+            )
+          ),
           change: undefined,
           trend: 'neutral' as const,
         },
@@ -196,7 +204,12 @@ export default function DailySalesPage() {
         </div>
         <div className="flex items-center gap-2">
           <DateSelector selectedDate={selectedDate} onDateChange={handleDateChange} />
-          <Button onClick={handleRefresh} variant="outline" size="icon">
+          <Button
+            onClick={handleRefresh}
+            variant="outline"
+            size="icon"
+            aria-label="売上日報を再読み込み"
+          >
             <RefreshCw className="h-4 w-4" />
           </Button>
           <Button onClick={handleExport} variant="outline">
@@ -272,7 +285,7 @@ export default function DailySalesPage() {
                       tickFormatter={(value) => `¥${(value / 1000).toFixed(0)}k`}
                     />
                     <Tooltip
-                      formatter={(value: any) => [`¥${value.toLocaleString()}`, '売上']}
+                      formatter={(value: any) => [formatYen(Number(value)), '売上']}
                       contentStyle={{
                         backgroundColor: 'rgba(255, 255, 255, 0.95)',
                         border: '1px solid #e5e7eb',
@@ -310,7 +323,7 @@ export default function DailySalesPage() {
                       tickFormatter={(value) => `¥${(value / 1000).toFixed(0)}k`}
                     />
                     <Tooltip
-                      formatter={(value: any) => [`¥${value.toLocaleString()}`, '売上']}
+                      formatter={(value: any) => [formatYen(Number(value)), '売上']}
                       contentStyle={{
                         backgroundColor: 'rgba(255, 255, 255, 0.95)',
                         border: '1px solid #e5e7eb',

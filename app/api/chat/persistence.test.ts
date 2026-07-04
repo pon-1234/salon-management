@@ -31,7 +31,6 @@ describe('Chat Message Persistence', () => {
 
     // Step 1: Create a new message
     const newMessage = {
-      castId: null,
       customerId: 'test-customer-1',
       sender: 'staff' as const,
       content: 'This message should persist across page refreshes',
@@ -40,6 +39,7 @@ describe('Chat Message Persistence', () => {
     const createdMessage = {
       id: 'persisted-msg-1',
       ...newMessage,
+      castId: null,
       timestamp: new Date(),
       readStatus: '未読',
       isReservationInfo: false,

@@ -52,7 +52,10 @@ export async function addPointTransaction(
   })
 }
 
-export function calculateEarnedPoints(amount: number, config: PointConfig = DEFAULT_POINT_CONFIG): number {
+export function calculateEarnedPoints(
+  amount: number,
+  config: PointConfig = DEFAULT_POINT_CONFIG
+): number {
   if (!Number.isFinite(amount) || amount <= 0) {
     return 0
   }
@@ -87,15 +90,19 @@ export async function getExpiringPoints(
   })
 }
 
-export function resolvePointConfig(settings?: {
-  pointEarnRate?: Prisma.Decimal | number | null
-  pointExpirationMonths?: number | null
-  pointMinUsage?: number | null
-} | null): PointConfig {
+export function resolvePointConfig(
+  settings?: {
+    pointEarnRate?: Prisma.Decimal | number | null
+    pointExpirationMonths?: number | null
+    pointMinUsage?: number | null
+  } | null
+): PointConfig {
   const rawEarnRate = Number(settings?.pointEarnRate ?? 1)
   const earnRate = Number.isFinite(rawEarnRate) ? rawEarnRate / 100 : DEFAULT_POINT_CONFIG.earnRate
 
-  const rawExpiration = Number(settings?.pointExpirationMonths ?? DEFAULT_POINT_CONFIG.expirationMonths)
+  const rawExpiration = Number(
+    settings?.pointExpirationMonths ?? DEFAULT_POINT_CONFIG.expirationMonths
+  )
   const expirationMonths = Number.isFinite(rawExpiration)
     ? Math.max(1, Math.floor(rawExpiration))
     : DEFAULT_POINT_CONFIG.expirationMonths

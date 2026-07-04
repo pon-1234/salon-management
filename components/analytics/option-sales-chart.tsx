@@ -35,7 +35,12 @@ export function OptionSalesChart({ data }: OptionSalesChartProps) {
       return null
     }
 
-    const point = payload[0].payload as { name: string; revenue: number; count: number; share: number }
+    const point = payload[0].payload as {
+      name: string
+      revenue: number
+      count: number
+      share: number
+    }
 
     return (
       <div className="rounded border bg-white p-2 text-sm shadow-lg">

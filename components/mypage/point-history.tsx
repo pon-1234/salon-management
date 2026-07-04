@@ -112,9 +112,7 @@ export function PointHistory({ customerId, initialBalance = 0 }: PointHistoryPro
           hasMore: Boolean(payload.pagination?.hasMore),
         })
       } catch (error) {
-        setHistoryError(
-          error instanceof Error ? error.message : 'ポイント履歴の取得に失敗しました'
-        )
+        setHistoryError(error instanceof Error ? error.message : 'ポイント履歴の取得に失敗しました')
       } finally {
         if (active) {
           setHistoryLoading(false)
@@ -231,9 +229,7 @@ export function PointHistory({ customerId, initialBalance = 0 }: PointHistoryPro
             </div>
             <div className="mt-4 text-right md:mt-0">
               {renderAmount(entry)}
-              <p className="mt-1 text-xs text-gray-500">
-                残高: {entry.balance.toLocaleString()}pt
-              </p>
+              <p className="mt-1 text-xs text-gray-500">残高: {entry.balance.toLocaleString()}pt</p>
             </div>
           </div>
         ))}
@@ -301,7 +297,9 @@ export function PointHistory({ customerId, initialBalance = 0 }: PointHistoryPro
               <div className="mt-2 h-1 w-1 rounded-full bg-gray-400" />
               <div>
                 <p className="font-medium">有効期限</p>
-                <p className="text-gray-600">ポイントには有効期限があります。期限前にご利用ください。</p>
+                <p className="text-gray-600">
+                  ポイントには有効期限があります。期限前にご利用ください。
+                </p>
               </div>
             </div>
           </div>

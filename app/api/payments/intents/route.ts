@@ -36,7 +36,8 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     const { reservationId, customerId, amount, currency, paymentMethod } = body
     const provider: PaymentProviderType =
-      typeof body.provider === 'string' && ['manual', 'bank_transfer', 'cash'].includes(body.provider)
+      typeof body.provider === 'string' &&
+      ['manual', 'bank_transfer', 'cash'].includes(body.provider)
         ? body.provider
         : 'manual'
 

@@ -6,7 +6,13 @@ import { ja } from 'date-fns/locale'
 import { AlertTriangle, Loader2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/use-toast'
 import { Badge } from '@/components/ui/badge'
@@ -49,34 +55,33 @@ export function CastScheduleManager() {
   const [isLoading, setIsLoading] = useState(true)
   const [isPending, startTransition] = useTransition()
 
-  const handleBulkUpdate = useCallback(
-    (mode: 'working' | 'off') => {
-      setEntries((prev) =>
-        prev.map((entry) =>
-          !entry.canEdit
-            ? entry
-            : mode === 'working'
-              ? {
-                  ...entry,
-                  isAvailable: true,
-                  startTime: entry.startTime || '10:00',
-                  endTime: entry.endTime || '18:00',
-                }
-              : {
-                  ...entry,
-                  isAvailable: false,
-                }
-        )
+  const handleBulkUpdate = useCallback((mode: 'working' | 'off') => {
+    setEntries((prev) =>
+      prev.map((entry) =>
+        !entry.canEdit
+          ? entry
+          : mode === 'working'
+            ? {
+                ...entry,
+                isAvailable: true,
+                startTime: entry.startTime || '10:00',
+                endTime: entry.endTime || '18:00',
+              }
+            : {
+                ...entry,
+                isAvailable: false,
+              }
       )
-    },
-    []
-  )
+    )
+  }, [])
 
   const hasChanges = useMemo(() => {
     if (entries.length !== initialEntries.length) {
       return true
     }
-    return entries.some((entry, index) => entry.canEdit && hasScheduleChanged(entry, initialEntries[index]))
+    return entries.some(
+      (entry, index) => entry.canEdit && hasScheduleChanged(entry, initialEntries[index])
+    )
   }, [entries, initialEntries])
 
   const loadSchedule = useCallback(async () => {
@@ -245,13 +250,28 @@ export function CastScheduleManager() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => handleBulkUpdate('off')} disabled={isLoading || isPending}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleBulkUpdate('off')}
+            disabled={isLoading || isPending}
+          >
             全て休日
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => handleBulkUpdate('working')} disabled={isLoading || isPending}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleBulkUpdate('working')}
+            disabled={isLoading || isPending}
+          >
             全て出勤
           </Button>
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading || isPending}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isLoading || isPending}
+          >
             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             再読み込み
           </Button>
@@ -323,7 +343,7 @@ function ScheduleRow({
         <div className="flex items-center gap-2">
           <span>{dayLabel}</span>
           {entry.hasReservations ? (
-            <Badge variant="outline" className="border-amber-300 text-[11px] text-amber-700">
+            <Badge variant="outline" className="border-amber-300 text-xs text-amber-700">
               予約あり
             </Badge>
           ) : null}

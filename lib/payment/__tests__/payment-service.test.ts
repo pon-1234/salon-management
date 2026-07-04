@@ -29,8 +29,8 @@ vi.mock('@/lib/logger', () => ({
   },
 }))
 
-vi.mock('@/lib/generated/prisma', () => ({
-  prisma: {
+vi.mock('@/lib/db', () => ({
+  db: {
     paymentTransaction: {
       create: vi.fn(),
       update: vi.fn(),
@@ -45,8 +45,8 @@ vi.mock('@/lib/generated/prisma', () => ({
   },
 }))
 
-import { prisma } from '@/lib/generated/prisma'
-const mockPrisma = vi.mocked(prisma)
+import { db } from '@/lib/db'
+const mockDb = vi.mocked(db)
 
 // Mock payment provider
 class MockPaymentProvider extends PaymentProvider {
@@ -169,8 +169,8 @@ describe('PaymentService', () => {
     })
 
     // Setup default mock responses
-    vi.mocked(mockPrisma.paymentTransaction.findMany).mockResolvedValue([])
-    vi.mocked(mockPrisma.paymentTransaction.findUnique).mockResolvedValue({
+    vi.mocked(mockDb.paymentTransaction.findMany).mockResolvedValue([])
+    vi.mocked(mockDb.paymentTransaction.findUnique).mockResolvedValue({
       id: 'txn_123',
       reservationId: 'res_123',
       customerId: 'cust_123',
@@ -190,7 +190,7 @@ describe('PaymentService', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     })
-    vi.mocked(mockPrisma.paymentIntent.findUnique).mockResolvedValue({
+    vi.mocked(mockDb.paymentIntent.findUnique).mockResolvedValue({
       id: 'pi_123',
       stripeIntentId: 'pi_manual_123',
       provider: 'manual',
@@ -274,7 +274,7 @@ describe('PaymentService', () => {
 
       await service.createPaymentIntent(request)
 
-      expect(mockPrisma.paymentIntent.create).toHaveBeenCalledWith(
+      expect(mockDb.paymentIntent.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             customerId: 'cust_456',

@@ -1,6 +1,12 @@
 'use client'
 
+/**
+ * @design_doc   ui-improvement-instructions.md U-6 admin page header
+ * @related_to   PageHeader: shared admin title area; Header: global admin navigation
+ * @known_issues Coming-soon settings still use the existing toast/alert flow
+ */
 import { useState } from 'react'
+import { PageHeader } from '@/components/admin/page-header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -194,10 +200,7 @@ export default function SettingsPage() {
   return (
     <div className="p-8">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-6 flex items-center gap-3">
-          <SettingsIcon className="h-8 w-8 text-gray-700" />
-          <h1 className="text-3xl font-bold text-gray-900">設定</h1>
-        </div>
+        <PageHeader title="設定" icon={SettingsIcon} />
 
         {/* カテゴリフィルター */}
         <div className="mb-8 flex flex-wrap gap-2">

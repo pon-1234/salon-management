@@ -32,4 +32,3 @@ export class DailySalesRepositoryImpl implements DailySalesRepository {
     console.info('Daily sales manual update is not implemented yet.')
   }
 }
-

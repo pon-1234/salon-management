@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @design_doc   ui-improvement-instructions.md U-3 false authentication UI removal
+ * @related_to   setup-admin.ts: creates admin users without exposing shared demo passwords
+ * @known_issues Password visibility toggle is still handled separately from customer auth forms
+ */
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -58,23 +63,6 @@ export function AdminLoginClient() {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
-            <div className="space-y-2 rounded-lg bg-blue-50 p-4">
-              <p className="text-sm font-semibold text-blue-900">デモ用ログイン情報</p>
-              <ul className="space-y-1 text-sm text-blue-800">
-                <li>
-                  <span className="font-medium">スーパー管理者:</span> admin@example.com / admin123
-                </li>
-                <li>
-                  <span className="font-medium">マネージャー:</span> manager@example.com / manager123
-                </li>
-                <li>
-                  <span className="font-medium">スタッフ:</span> staff@example.com / staff123
-                </li>
-              </ul>
-              <p className="text-xs text-blue-700">
-                * スタッフロールは閲覧制限があります。必要に応じてロールを切り替えて動作を確認してください。
-              </p>
-            </div>
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />

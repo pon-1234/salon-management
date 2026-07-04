@@ -5,7 +5,11 @@
  */
 import { useState, useCallback } from 'react'
 import { zonedTimeToUtc } from 'date-fns-tz'
-import { BusinessHoursRange, DEFAULT_BUSINESS_HOURS, minutesToIsoInJst } from '@/lib/settings/business-hours'
+import {
+  BusinessHoursRange,
+  DEFAULT_BUSINESS_HOURS,
+  minutesToIsoInJst,
+} from '@/lib/settings/business-hours'
 import { useStore } from '@/contexts/store-context'
 
 interface TimeSlot {
@@ -31,43 +35,46 @@ export function useAvailability() {
     conflicts: [],
   })
 
-  const checkAvailability = useCallback(async (castId: string, startTime: Date, endTime: Date) => {
-    setState((prev) => ({ ...prev, loading: true, error: null }))
+  const checkAvailability = useCallback(
+    async (castId: string, startTime: Date, endTime: Date) => {
+      setState((prev) => ({ ...prev, loading: true, error: null }))
 
-    try {
-      const params = new URLSearchParams({
-        castId,
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
-      })
+      try {
+        const params = new URLSearchParams({
+          castId,
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+        })
 
-      params.set('mode', 'check')
-      params.set('storeId', currentStore.id)
+        params.set('mode', 'check')
+        params.set('storeId', currentStore.id)
 
-      const response = await fetch(`/api/reservation/availability?${params}`)
-      const data = await response.json()
+        const response = await fetch(`/api/reservation/availability?${params}`)
+        const data = await response.json()
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to check availability')
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to check availability')
+        }
+
+        setState({
+          loading: false,
+          error: null,
+          availableSlots: [],
+          conflicts: data.conflicts || [],
+        })
+
+        return data
+      } catch (error) {
+        setState((prev) => ({
+          ...prev,
+          loading: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }))
+        return { available: false, conflicts: [] }
       }
-
-      setState({
-        loading: false,
-        error: null,
-        availableSlots: [],
-        conflicts: data.conflicts || [],
-      })
-
-      return data
-    } catch (error) {
-      setState((prev) => ({
-        ...prev,
-        loading: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }))
-      return { available: false, conflicts: [] }
-    }
-  }, [currentStore.id])
+    },
+    [currentStore.id]
+  )
 
   const getAvailableSlots = useCallback(
     async (
@@ -94,9 +101,7 @@ export function useAvailability() {
         }
 
         // Process slots to add availability status
-        const slots: TimeSlot[] = Array.isArray(data.availableSlots)
-          ? data.availableSlots
-          : []
+        const slots: TimeSlot[] = Array.isArray(data.availableSlots) ? data.availableSlots : []
         const processedSlots = slots.map((slot: TimeSlot) => ({
           ...slot,
           available: true,

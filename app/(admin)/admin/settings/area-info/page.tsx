@@ -1,6 +1,12 @@
 'use client'
 
+/**
+ * @design_doc   ui-improvement-instructions.md U-4 destructive confirmation dialogs
+ * @related_to   ConfirmDialog: replaces native confirm for area deletion
+ * @known_issues Existing area form behavior is unchanged
+ */
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { PageHeader } from '@/components/admin/page-header'
 import { Header } from '@/components/header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -18,19 +24,10 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import Link from 'next/link'
-import {
-  ArrowLeft,
-  MapPin,
-  Plus,
-  Edit,
-  Trash2,
-  RefreshCw,
-  Building2,
-  Train,
-} from 'lucide-react'
+import { ArrowLeft, MapPin, Plus, Edit, Trash2, RefreshCw, Building2, Train } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useStore } from '@/contexts/store-context'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 interface StationSummary {
   id: string
@@ -175,9 +172,7 @@ export default function AreaInfoPage() {
 
       toast({
         title: '保存しました',
-        description: editingArea
-          ? 'エリア情報を更新しました'
-          : '新しいエリアを追加しました',
+        description: editingArea ? 'エリア情報を更新しました' : '新しいエリアを追加しました',
       })
 
       setDialogOpen(false)
@@ -195,8 +190,6 @@ export default function AreaInfoPage() {
   }
 
   const handleDelete = async (area: AreaSettings) => {
-    if (!confirm(`${area.name}を削除しますか？`)) return
-
     try {
       const params = new URLSearchParams({ id: area.id })
       if (currentStore?.id) {
@@ -309,34 +302,28 @@ export default function AreaInfoPage() {
       <Header />
       <main className="p-8">
         <div className="mx-auto max-w-6xl space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/admin/settings">
-                <Button variant="ghost" size="icon">
-                  <ArrowLeft className="h-5 w-5" />
+          <PageHeader
+            title="エリア情報設定"
+            description="サービス提供エリアの基本情報と登録駅を管理します"
+            backHref="/admin/settings"
+            backIcon={ArrowLeft}
+            icon={MapPin}
+            actions={
+              <>
+                <Button variant="outline" onClick={handleSync} disabled={syncing}>
+                  <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+                  最新情報に更新
                 </Button>
-              </Link>
-              <div>
-                <h1 className="flex items-center gap-3 text-3xl font-bold text-gray-900">
-                  <MapPin className="h-8 w-8 text-emerald-600" />
-                  エリア情報設定
-                </h1>
-                <p className="text-sm text-gray-600">
-                  サービス提供エリアの基本情報と登録駅を管理します
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={handleSync} disabled={syncing}>
-                <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-                最新情報に更新
-              </Button>
-              <Button onClick={() => handleOpenDialog()} className="bg-emerald-600 hover:bg-emerald-700">
-                <Plus className="mr-2 h-4 w-4" />
-                新規エリア追加
-              </Button>
-            </div>
-          </div>
+                <Button
+                  onClick={() => handleOpenDialog()}
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  新規エリア追加
+                </Button>
+              </>
+            }
+          />
 
           <div className="grid gap-4 md:grid-cols-3">
             <Card>
@@ -441,17 +428,29 @@ export default function AreaInfoPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(area)}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="text-red-600 hover:text-red-700"
-                              onClick={() => handleDelete(area)}
+                              onClick={() => handleOpenDialog(area)}
+                              aria-label={`${area.name}を編集`}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Edit className="h-4 w-4" />
                             </Button>
+                            <ConfirmDialog
+                              title="エリア情報を削除しますか？"
+                              description={`「${area.name}」を削除します。この操作は取り消せません。`}
+                              confirmLabel="削除する"
+                              onConfirm={() => handleDelete(area)}
+                            >
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-red-600 hover:text-red-700"
+                                aria-label={`${area.name}を削除`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </ConfirmDialog>
                           </div>
                         </TableCell>
                       </TableRow>

@@ -37,6 +37,41 @@ import type {
 } from './types'
 
 type ReservationWithRelations = Awaited<ReturnType<typeof fetchReservationsForCast>>[number]
+type SettlementReservationOptionRow = {
+  optionId: string
+  optionName: string | null
+  optionPrice: number | null
+  storeShare?: number | null
+  castShare?: number | null
+  option?: {
+    id: string
+    name: string
+    price: number
+    storeShare?: number | null
+    castShare?: number | null
+  } | null
+}
+type SettlementReservationRow = {
+  id: string
+  startTime: Date
+  status: string
+  price: number | null
+  settlementStatus?: SettlementStatus | string | null
+  staffRevenue?: number | null
+  storeRevenue?: number | null
+  welfareExpense?: number | null
+  designationType?: CastSettlementRecordDetail['designationType']
+  designationFee?: number | null
+  transportationFee?: number | null
+  additionalFee?: number | null
+  discountAmount?: number | null
+  castCheckedOutAt?: Date | null
+  course?: {
+    name: string
+    duration: number
+  } | null
+  options?: SettlementReservationOptionRow[]
+}
 
 const DEFAULT_SCHEDULE_START_TIME = '10:00'
 const DEFAULT_SCHEDULE_END_TIME = '18:00'
@@ -135,7 +170,9 @@ export function serializeCastReservation(
   const durationMinutes = Math.max(0, Math.round((endTime.getTime() - startTime.getTime()) / 60000))
 
   const canCheckIn =
-    !reservation.castCheckedInAt && isAfter(now, addMinutes(startTime, -30)) && isBefore(now, addMinutes(endTime, 60))
+    !reservation.castCheckedInAt &&
+    isAfter(now, addMinutes(startTime, -30)) &&
+    isBefore(now, addMinutes(endTime, 60))
   const canCheckOut =
     Boolean(reservation.castCheckedInAt) && !reservation.castCheckedOutAt && isAfter(now, startTime)
 
@@ -177,7 +214,9 @@ function aggregateDashboardStats(params: {
 }): CastDashboardStats {
   const { todayReservations, upcomingReservations, monthReservations } = params
   const todayCount = todayReservations.length
-  const completedToday = todayReservations.filter((reservation) => reservation.castCheckedOutAt).length
+  const completedToday = todayReservations.filter(
+    (reservation) => reservation.castCheckedOutAt
+  ).length
   const upcomingCount = upcomingReservations.length
 
   const todayRevenue = todayReservations.reduce((total, reservation) => {
@@ -297,85 +336,94 @@ function computeRank(
   }
 }
 
-export async function getCastDashboardData(castId: string, storeId: string): Promise<CastDashboardData> {
+export async function getCastDashboardData(
+  castId: string,
+  storeId: string
+): Promise<CastDashboardData> {
   const now = new Date()
   const todayStart = startOfDayInTimeZone(now, DEFAULT_TIME_ZONE)
   const todayEnd = endOfDayInTimeZone(now, DEFAULT_TIME_ZONE)
   const monthStart = startOfMonthInTimeZone(now, DEFAULT_TIME_ZONE)
   const monthEnd = endOfMonthInTimeZone(now, DEFAULT_TIME_ZONE)
 
-  const [cast, todayReservationsRaw, upcomingReservationsRaw, monthReservationsRaw, attendanceRequestsRaw, todaySchedule] =
-    await Promise.all([
-      db.cast.findFirst({
-        where: { id: castId, storeId },
-        include: {
-          store: {
-            select: {
-              id: true,
-              name: true,
-            },
+  const [
+    cast,
+    todayReservationsRaw,
+    upcomingReservationsRaw,
+    monthReservationsRaw,
+    attendanceRequestsRaw,
+    todaySchedule,
+  ] = await Promise.all([
+    db.cast.findFirst({
+      where: { id: castId, storeId },
+      include: {
+        store: {
+          select: {
+            id: true,
+            name: true,
           },
         },
-      }),
-      fetchReservationsForCast({
+      },
+    }),
+    fetchReservationsForCast({
+      castId,
+      storeId,
+      start: todayStart,
+      end: todayEnd,
+      order: 'asc',
+    }),
+    fetchReservationsForCast({
+      castId,
+      storeId,
+      start: now,
+      comparator: 'gte',
+      order: 'asc',
+      limit: 10,
+    }),
+    db.reservation.findMany({
+      where: {
         castId,
         storeId,
-        start: todayStart,
-        end: todayEnd,
-        order: 'asc',
-      }),
-      fetchReservationsForCast({
+        startTime: {
+          gte: monthStart,
+          lte: monthEnd,
+        },
+      },
+      select: {
+        price: true,
+        staffRevenue: true,
+        storeRevenue: true,
+        welfareExpense: true,
+        status: true,
+        castCheckedOutAt: true,
+      },
+    }),
+    db.reservationAttendanceRequest.findMany({
+      where: {
         castId,
-        storeId,
-        start: now,
-        comparator: 'gte',
-        order: 'asc',
-        limit: 10,
-      }),
-      db.reservation.findMany({
-        where: {
-          castId,
+        status: {
+          in: ['pending', 'in_review'],
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: 5,
+    }),
+    db.castSchedule.findFirst({
+      where: {
+        castId,
+        date: {
+          gte: todayStart,
+          lt: addDays(todayStart, 1),
+        },
+        isAvailable: true,
+        cast: {
           storeId,
-          startTime: {
-            gte: monthStart,
-            lte: monthEnd,
-          },
         },
-        select: {
-          price: true,
-          staffRevenue: true,
-          storeRevenue: true,
-          welfareExpense: true,
-          status: true,
-          castCheckedOutAt: true,
-        },
-      }),
-      db.reservationAttendanceRequest.findMany({
-        where: {
-          castId,
-          status: {
-            in: ['pending', 'in_review'],
-          },
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-        take: 5,
-      }),
-      db.castSchedule.findFirst({
-        where: {
-          castId,
-          date: {
-            gte: todayStart,
-            lt: addDays(todayStart, 1),
-          },
-          isAvailable: true,
-          cast: {
-            storeId,
-          },
-        },
-      }),
-    ])
+      },
+    }),
+  ])
 
   if (!cast) {
     throw new Error('Cast not found or access denied')
@@ -402,7 +450,10 @@ export async function getCastDashboardData(castId: string, storeId: string): Pro
     cast: {
       id: cast.id,
       name: cast.name,
-      image: Array.isArray(cast.images) && cast.images.length > 0 ? cast.images[0] : cast.image ?? null,
+      image:
+        Array.isArray(cast.images) && cast.images.length > 0
+          ? cast.images[0]
+          : (cast.image ?? null),
       workStatus: cast.workStatus,
       storeId: cast.storeId,
       storeName: cast.store?.name ?? null,
@@ -621,7 +672,9 @@ export async function getCastReservationDetail(
     entryReceivedAt: reservation.entryReceivedAt ? reservation.entryReceivedAt.toISOString() : null,
     entryReceivedBy: reservation.entryReceivedBy ?? null,
     entryNotifiedAt: reservation.entryNotifiedAt ? reservation.entryNotifiedAt.toISOString() : null,
-    entryConfirmedAt: reservation.entryConfirmedAt ? reservation.entryConfirmedAt.toISOString() : null,
+    entryConfirmedAt: reservation.entryConfirmedAt
+      ? reservation.entryConfirmedAt.toISOString()
+      : null,
     entryReminderSentAt: reservation.entryReminderSentAt
       ? reservation.entryReminderSentAt.toISOString()
       : null,
@@ -631,11 +684,17 @@ export async function getCastReservationDetail(
   }
 }
 
-export async function getCastSettlements(castId: string, storeId: string): Promise<CastSettlementsData> {
+export async function getCastSettlements(
+  castId: string,
+  storeId: string
+): Promise<CastSettlementsData> {
   try {
     return await loadCastSettlements(castId, storeId)
   } catch (err) {
-    logger.error({ err, castId, storeId }, 'Failed to load cast settlements; returning empty dataset')
+    logger.error(
+      { err, castId, storeId },
+      'Failed to load cast settlements; returning empty dataset'
+    )
     return {
       summary: {
         month: format(startOfMonth(new Date()), 'yyyy-MM'),
@@ -739,7 +798,7 @@ async function loadCastSettlements(castId: string, storeId: string): Promise<Cas
     },
   ] as const
 
-  let reservations: Awaited<ReturnType<typeof db.reservation.findMany>> = []
+  let reservations: SettlementReservationRow[] = []
   for (const step of querySteps) {
     try {
       reservations = await db.reservation.findMany({
@@ -756,16 +815,7 @@ async function loadCastSettlements(castId: string, storeId: string): Promise<Cas
   }
 
   const reservationIds = reservations.map((reservation) => reservation.id).filter(Boolean)
-  const reservationOptionsMap = new Map<
-    string,
-    Array<{
-      optionId: string
-      optionName: string
-      optionPrice: number
-      storeShare: number | null
-      castShare: number | null
-    }>
-  >()
+  const reservationOptionsMap = new Map<string, SettlementReservationOptionRow[]>()
 
   if (reservationIds.length > 0) {
     try {
@@ -836,9 +886,9 @@ async function loadCastSettlements(castId: string, storeId: string): Promise<Cas
     }
 
     const rawOptions =
-      Array.isArray((reservation as any).options) && (reservation as any).options.length > 0
-        ? (reservation as any).options
-        : reservationOptionsMap.get(reservation.id) ?? []
+      Array.isArray(reservation.options) && reservation.options.length > 0
+        ? reservation.options
+        : (reservationOptionsMap.get(reservation.id) ?? [])
 
     const record: CastSettlementRecordDetail = {
       id: reservation.id,
@@ -856,13 +906,25 @@ async function loadCastSettlements(castId: string, storeId: string): Promise<Cas
       transportationFee: reservation.transportationFee ?? 0,
       additionalFee: reservation.additionalFee ?? 0,
       discountAmount: reservation.discountAmount ?? 0,
-      options: rawOptions.map((option: any) => ({
-        id: option.optionId ?? option.option?.id,
-        name: option.optionName ?? option.option?.name,
-        price: option.optionPrice ?? option.option?.price ?? 0,
-        storeShare: option.storeShare ?? option.option?.storeShare ?? undefined,
-        castShare: option.castShare ?? option.option?.castShare ?? undefined,
-      })),
+      options: rawOptions
+        .map((option) => ({
+          id: option.optionId ?? option.option?.id,
+          name: option.optionName ?? option.option?.name,
+          price: option.optionPrice ?? option.option?.price ?? 0,
+          storeShare: option.storeShare ?? option.option?.storeShare ?? undefined,
+          castShare: option.castShare ?? option.option?.castShare ?? undefined,
+        }))
+        .filter(
+          (
+            option
+          ): option is {
+            id: string
+            name: string
+            price: number
+            storeShare: number | undefined
+            castShare: number | undefined
+          } => Boolean(option.id && option.name)
+        ),
     }
 
     day.records.push(record)
@@ -930,7 +992,9 @@ function combineDateAndTime(dateKey: string, time: string): Date {
 }
 
 function toScheduleEntry(
-  record: { id: string; date: Date; startTime: Date; endTime: Date; isAvailable: boolean } | undefined,
+  record:
+    | { id: string; date: Date; startTime: Date; endTime: Date; isAvailable: boolean }
+    | undefined,
   dateKey: string,
   options?: { hasReservations?: boolean; lockReasons?: CastScheduleLockReason[] }
 ): CastScheduleEntry {
@@ -1076,7 +1140,9 @@ export async function updateCastScheduleWindow(
       }
 
       if (scheduleDate < editRestrictedUntil) {
-        throw new CastScheduleValidationError('直近1週間の予定はキャストページから変更できません。店舗スタッフへ連絡してください。')
+        throw new CastScheduleValidationError(
+          '直近1週間の予定はキャストページから変更できません。店舗スタッフへ連絡してください。'
+        )
       }
 
       const reservationCount = await tx.reservation.count({

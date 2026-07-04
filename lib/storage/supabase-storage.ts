@@ -81,8 +81,7 @@ export class SupabaseStorageService implements StorageService {
     const folder = options?.folder || 'uploads'
     const path = `${folder}/${filename}`
 
-    const contentType =
-      options?.contentType || fileAny?.type || 'application/octet-stream'
+    const contentType = options?.contentType || fileAny?.type || 'application/octet-stream'
 
     let uploadBody: Blob | ArrayBuffer
     if (typeof fileAny?.arrayBuffer === 'function') {
@@ -114,8 +113,7 @@ export class SupabaseStorageService implements StorageService {
       url: data.path,
       filename: originalName,
       size:
-        fileAny?.size ??
-        (uploadBody instanceof ArrayBuffer ? uploadBody.byteLength : undefined),
+        fileAny?.size ?? (uploadBody instanceof ArrayBuffer ? uploadBody.byteLength : undefined),
       publicUrl,
     }
   }

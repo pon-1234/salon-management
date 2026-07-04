@@ -4,7 +4,15 @@ import { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { Printer, TrendingUp, TrendingDown, MapPin, DollarSign, Users, Activity } from 'lucide-react'
+import {
+  Printer,
+  TrendingUp,
+  TrendingDown,
+  MapPin,
+  DollarSign,
+  Users,
+  Activity,
+} from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -113,11 +121,12 @@ export default function AreaSalesPage() {
     const growthLeader = areaData.reduce<{ name: string; rate: number } | null>((leader, area) => {
       const previous = previousAreaData.find((item) => item.area === area.area)
       const previousTotal = previous?.total ?? 0
-      const growthRate = previousTotal > 0
-        ? ((area.total - previousTotal) / previousTotal) * 100
-        : area.total > 0
-          ? 100
-          : 0
+      const growthRate =
+        previousTotal > 0
+          ? ((area.total - previousTotal) / previousTotal) * 100
+          : area.total > 0
+            ? 100
+            : 0
 
       if (!leader || growthRate > leader.rate) {
         return { name: area.area, rate: growthRate }

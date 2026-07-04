@@ -130,7 +130,9 @@ export class CastNotificationService {
 
     if (reservation.status) {
       const label =
-        STATUS_LABELS[reservation.status] ?? STATUS_LABELS[reservation.status.toLowerCase()] ?? reservation.status
+        STATUS_LABELS[reservation.status] ??
+        STATUS_LABELS[reservation.status.toLowerCase()] ??
+        reservation.status
       lines.push(`ステータス: ${label}`)
     }
 
@@ -227,9 +229,7 @@ export class CastNotificationService {
       '',
       preview,
       '',
-      siteUrl
-        ? `管理画面から返信: ${siteUrl}`
-        : '管理画面にアクセスして内容を確認してください。',
+      siteUrl ? `管理画面から返信: ${siteUrl}` : '管理画面にアクセスして内容を確認してください。',
     ].filter((line): line is string => typeof line === 'string' && line.length >= 0)
 
     const message = lines.join('\n')

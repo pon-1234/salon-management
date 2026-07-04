@@ -1,6 +1,11 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+/**
+ * @design_doc   Next 15 dynamic route params contract
+ * @related_to   CastForm: edit form; CastDashboard: cast operational dashboard
+ * @known_issues This large client page still needs the refactor plan proposed for admin cast surfaces
+ */
+import { use, useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { CastForm } from '@/components/cast/cast-form'
 import { CastDashboard } from '@/components/cast/cast-dashboard'
@@ -31,10 +36,11 @@ import { WorkPerformanceTab } from '@/components/cast/work-performance-tab'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useStore } from '@/contexts/store-context'
 
-export default function CastManagePage({ params }: { params: { id: string } }) {
+export default function CastManagePage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params)
   const { currentStore } = useStore()
   const [cast, setCast] = useState<Cast | null>(null)
-  const [id, setId] = useState<string>(params.id ?? '')
+  const [id, setId] = useState<string>(resolvedParams.id ?? '')
   const [loading, setLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const router = useRouter()
@@ -45,8 +51,8 @@ export default function CastManagePage({ params }: { params: { id: string } }) {
   const isNewCast = id === 'new'
 
   useEffect(() => {
-    setId(params.id ?? '')
-  }, [params.id])
+    setId(resolvedParams.id ?? '')
+  }, [resolvedParams.id])
 
   useEffect(() => {
     if (!id) return
@@ -210,7 +216,12 @@ export default function CastManagePage({ params }: { params: { id: string } }) {
 
         <div className="mx-auto max-w-7xl">
           {isNewCast ? (
-            <CastForm cast={null} onSubmit={handleSubmit} onCancel={() => router.back()} isSubmitting={isSaving} />
+            <CastForm
+              cast={null}
+              onSubmit={handleSubmit}
+              onCancel={() => router.back()}
+              isSubmitting={isSaving}
+            />
           ) : (
             cast && (
               <Tabs defaultValue="overview" className="space-y-6">
@@ -259,7 +270,12 @@ export default function CastManagePage({ params }: { params: { id: string } }) {
                         キャストの基本情報や稼働ステータス、料金設定を更新します。保存するとすぐに管理画面へ反映されます。
                       </p>
                     </div>
-                    <CastForm cast={cast} onSubmit={handleSubmit} onCancel={() => router.back()} isSubmitting={isSaving} />
+                    <CastForm
+                      cast={cast}
+                      onSubmit={handleSubmit}
+                      onCancel={() => router.back()}
+                      isSubmitting={isSaving}
+                    />
                   </section>
 
                   <Separator />

@@ -7,7 +7,13 @@ html {
 }
 
 body {
-  font-family: var(--font-body), 'Noto Sans JP', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family:
+    var(--font-body),
+    'Noto Sans JP',
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
   letter-spacing: 0.01em;
 }
 
@@ -19,6 +25,84 @@ body {
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  .luxury-body {
+    font-family: var(--font-luxury-serif), serif;
+  }
+  .luxury-display {
+    font-family: var(--font-luxury-display), var(--font-luxury-serif), serif;
+    letter-spacing: 0.08em;
+  }
+  .luxury-text-shadow {
+    text-shadow: 0 6px 20px rgba(247, 208, 136, 0.35);
+  }
+  .luxury-panel {
+    background: linear-gradient(160deg, #2a2a2a 0%, #1a1a1a 55%, #121212 100%);
+    border: 1px solid rgba(179, 140, 76, 0.35);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
+  .luxury-section {
+    background: linear-gradient(180deg, rgba(24, 24, 24, 0.98) 0%, rgba(12, 12, 12, 0.98) 100%);
+  }
+  .luxury-body .bg-white {
+    background-color: #121212 !important;
+  }
+  .luxury-body .bg-white\/90 {
+    background-color: rgba(18, 18, 18, 0.9) !important;
+  }
+  .luxury-body .bg-white\/70 {
+    background-color: rgba(18, 18, 18, 0.7) !important;
+  }
+  .luxury-body .bg-gray-50 {
+    background-color: #0b0b0b !important;
+  }
+  .luxury-body .bg-gray-100 {
+    background-color: #0f0f0f !important;
+  }
+  .luxury-body .bg-purple-50,
+  .luxury-body .bg-pink-50,
+  .luxury-body .bg-blue-50,
+  .luxury-body .bg-green-50,
+  .luxury-body .bg-emerald-50 {
+    background-color: #121212 !important;
+  }
+  .luxury-body .bg-purple-50\/50,
+  .luxury-body .bg-purple-50\/60 {
+    background-color: rgba(18, 18, 18, 0.7) !important;
+  }
+  .luxury-body .bg-emerald-50\/80 {
+    background-color: rgba(16, 33, 30, 0.8) !important;
+  }
+  .luxury-body .text-gray-900,
+  .luxury-body .text-gray-800,
+  .luxury-body .text-gray-700 {
+    color: #f5e6c4 !important;
+  }
+  .luxury-body .text-gray-600,
+  .luxury-body .text-gray-500 {
+    color: #d7c39c !important;
+  }
+  .luxury-body .text-gray-400,
+  .luxury-body .text-gray-300 {
+    color: #cbb88f !important;
+  }
+  .luxury-body .text-purple-900,
+  .luxury-body .text-purple-800,
+  .luxury-body .text-purple-700,
+  .luxury-body .text-purple-600 {
+    color: #f3d08a !important;
+  }
+  .luxury-body .text-blue-600 {
+    color: #f3d08a !important;
+  }
+  .luxury-body .text-emerald-600,
+  .luxury-body .text-emerald-800 {
+    color: #2fc8b7 !important;
+  }
+  .luxury-body .border-gray-200,
+  .luxury-body .border-purple-200,
+  .luxury-body .border-emerald-200 {
+    border-color: #2f2416 !important;
   }
 }
 

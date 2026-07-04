@@ -1,5 +1,7 @@
 # Chat Database Implementation
 
+> HISTORICAL — This document records the original chat persistence implementation. The current `Message` Prisma model has evolved since this snapshot; use `prisma/schema.prisma` as the source of truth for fields, indexes, and relations.
+
 ## Overview
 
 Successfully implemented database persistence for the chat feature, replacing the previous in-memory storage with proper database integration using Prisma ORM.
@@ -59,7 +61,7 @@ Created comprehensive test suites:
 - **`/app/api/chat/customers/route.test.ts`**: Tests for customer list functionality
 - **`/app/api/chat/persistence.test.ts`**: Tests verifying data persistence across requests
 
-All tests are passing with 100% coverage for the implemented features.
+At the time this document was written, focused chat tests covered the implemented feature paths. The repository-wide enforced coverage threshold is currently 30% in `vitest.config.ts`.
 
 ### 4. Additional Files
 

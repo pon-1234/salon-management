@@ -52,7 +52,9 @@ export function OptionSalesTable({ data }: OptionSalesTableProps) {
             .map((option) => (
               <TableRow key={option.id}>
                 <TableCell className="font-medium">{option.name}</TableCell>
-                <TableCell>{option.price > 0 ? `${option.price.toLocaleString()}円` : '無料'}</TableCell>
+                <TableCell>
+                  {option.price > 0 ? `${option.price.toLocaleString()}円` : '無料'}
+                </TableCell>
                 {option.monthlySales.map((count, index) => (
                   <TableCell key={index} className="text-right">
                     {count || ''}

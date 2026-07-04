@@ -219,7 +219,9 @@ export async function POST(request: NextRequest) {
         points: data.points || 0,
         smsEnabled: Boolean(data.smsEnabled),
         emailNotificationEnabled:
-          data.emailNotificationEnabled === undefined ? true : Boolean(data.emailNotificationEnabled),
+          data.emailNotificationEnabled === undefined
+            ? true
+            : Boolean(data.emailNotificationEnabled),
       },
       include: {
         ngCasts: {

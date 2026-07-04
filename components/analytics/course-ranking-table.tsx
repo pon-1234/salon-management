@@ -151,7 +151,11 @@ export function CourseRankingTable({ current, previous }: CourseRankingTableProp
                 )}
               </TableCell>
               <TableCell className="text-right">
-                {course.previousRank ? `${course.previousRank}位` : <span className="text-muted-foreground">-</span>}
+                {course.previousRank ? (
+                  `${course.previousRank}位`
+                ) : (
+                  <span className="text-muted-foreground">-</span>
+                )}
               </TableCell>
             </TableRow>
           ))}

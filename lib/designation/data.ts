@@ -76,10 +76,13 @@ export async function createDesignationFee(
     params.set('storeId', storeId)
   }
   const query = params.toString()
-  const result = await fetchJson<DesignationFee>(query ? `/api/designation-fee?${query}` : '/api/designation-fee', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  })
+  const result = await fetchJson<DesignationFee>(
+    query ? `/api/designation-fee?${query}` : '/api/designation-fee',
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }
+  )
   return mapDesignationFee(result)
 }
 
@@ -93,10 +96,13 @@ export async function updateDesignationFee(
     params.set('storeId', storeId)
   }
   const query = params.toString()
-  const result = await fetchJson<DesignationFee>(query ? `/api/designation-fee?${query}` : '/api/designation-fee', {
-    method: 'PUT',
-    body: JSON.stringify({ id, ...payload }),
-  })
+  const result = await fetchJson<DesignationFee>(
+    query ? `/api/designation-fee?${query}` : '/api/designation-fee',
+    {
+      method: 'PUT',
+      body: JSON.stringify({ id, ...payload }),
+    }
+  )
   return mapDesignationFee(result)
 }
 
@@ -106,7 +112,10 @@ export async function deleteDesignationFee(id: string, storeId?: string): Promis
     params.set('storeId', storeId)
   }
   const query = params.toString()
-  await fetchJson(query ? `/api/designation-fee?${query}` : `/api/designation-fee?id=${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-  })
+  await fetchJson(
+    query ? `/api/designation-fee?${query}` : `/api/designation-fee?id=${encodeURIComponent(id)}`,
+    {
+      method: 'DELETE',
+    }
+  )
 }

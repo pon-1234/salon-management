@@ -90,7 +90,9 @@ export function calculateReservationRevenue(
   input: ReservationRevenueInput
 ): ReservationRevenueResult {
   const basePrice = Math.max(0, Math.round(input.basePrice ?? 0))
-  const welfareRateRaw = Number.isFinite(input.welfareRate ?? null) ? (input.welfareRate as number) : null
+  const welfareRateRaw = Number.isFinite(input.welfareRate ?? null)
+    ? (input.welfareRate as number)
+    : null
   const welfareRate = clamp(welfareRateRaw ?? DEFAULT_WELFARE_RATE, 0, 100)
   const welfareExpense = Math.max(Math.round(basePrice * (welfareRate / 100)), 0)
 

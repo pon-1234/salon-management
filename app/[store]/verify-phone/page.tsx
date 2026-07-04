@@ -1,10 +1,16 @@
+/**
+ * @design_doc   ui-improvement-instructions.md U-14 verify phone mobile input
+ * @related_to   VerifyPhoneForm: SMS code entry and resend cooldown
+ * @known_issues Missing store falls back to inline text instead of notFound
+ */
 import { VerifyPhoneForm } from '@/components/auth/verify-phone-form'
 import { fetchStoreBySlug } from '@/lib/store/public-api'
 import { StoreNavigation } from '@/components/store-navigation'
 import { StoreFooter } from '@/components/store-footer'
 
-export default async function VerifyPhonePage({ params }: { params: { store: string } }) {
-  const store = await fetchStoreBySlug(params.store)
+export default async function VerifyPhonePage({ params }: { params: Promise<{ store: string }> }) {
+  const { store: storeSlug } = await params
+  const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {
     return (
@@ -21,7 +27,9 @@ export default async function VerifyPhonePage({ params }: { params: { store: str
         <div className="border-b border-[#2f2416] bg-[#0f0f0f] py-10">
           <div className="mx-auto max-w-3xl px-4 text-center">
             <p className="luxury-display text-xs tracking-[0.4em] text-[#d7b46a]">PHONE VERIFY</p>
-            <h1 className="mt-4 text-2xl font-semibold text-[#f7e2b5] md:text-3xl">電話番号の認証</h1>
+            <h1 className="mt-4 text-2xl font-semibold text-[#f7e2b5] md:text-3xl">
+              電話番号の認証
+            </h1>
             <p className="mt-2 text-sm text-[#d7c39c]">SMSで届く認証コードを入力してください</p>
           </div>
         </div>

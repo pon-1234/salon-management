@@ -1,11 +1,11 @@
-/**
- * @design_doc   Customer login form component with NextAuth.js integration
- * @related_to   NextAuth.js configuration, customer authentication
- * @known_issues None currently
- */
 'use client'
 
-import { useState } from 'react'
+/**
+ * @design_doc   ui-improvement-instructions.md U-3 customer login false UI removal
+ * @related_to   NextAuth.js configuration, customer authentication
+ * @known_issues Social login is removed until providers are actually implemented
+ */
+import { useEffect, useState } from 'react'
 import { signIn, useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
@@ -13,11 +13,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import Link from 'next/link'
 import { Store } from '@/lib/store/types'
+import { sanitizeCallbackUrl } from '@/lib/auth/callback-url'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Mail, Lock, AlertCircle, Loader2 } from 'lucide-react'
 
@@ -50,9 +50,13 @@ export function LoginForm({ store }: LoginFormProps) {
     resolver: zodResolver(loginSchema),
   })
 
-  // Redirect if already authenticated
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.role === 'customer') {
+      router.push(`/${store.slug}/mypage`)
+    }
+  }, [router, session?.user?.role, status, store.slug])
+
   if (status === 'authenticated' && session?.user?.role === 'customer') {
-    router.push(`/${store.slug}/mypage`)
     return null
   }
 
@@ -71,7 +75,9 @@ export function LoginForm({ store }: LoginFormProps) {
         setError('メールアドレスまたはパスワードが正しくありません')
       } else {
         // Redirect to callback URL or default mypage
-        const callbackUrl = searchParams.get('callbackUrl') || `/${store.slug}/mypage`
+        const callbackUrl = sanitizeCallbackUrl(searchParams.get('callbackUrl'), {
+          fallback: `/${store.slug}/mypage`,
+        })
         router.push(callbackUrl)
       }
     } catch (err) {
@@ -90,17 +96,6 @@ export function LoginForm({ store }: LoginFormProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {/* Demo Credentials */}
-        <div className="mb-6 rounded-lg border border-[#3b2e1f] bg-[#121212] p-4">
-          <p className="text-sm text-[#d7c39c]">
-            <strong>デモ用ログイン情報:</strong>
-            <br />
-            メール: tanaka@example.com
-            <br />
-            パスワード: password123
-          </p>
-        </div>
-
         {error && (
           <Alert variant="destructive" className="mb-6">
             <AlertCircle className="h-4 w-4" />
@@ -160,38 +155,6 @@ export function LoginForm({ store }: LoginFormProps) {
           </Button>
         </form>
 
-        {/* Divider */}
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-[#3b2e1f]" />
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="bg-[#0b0b0b] px-2 text-[#cbb88f]">または</span>
-          </div>
-        </div>
-
-        {/* Social Login */}
-        <div className="space-y-3">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={() => alert('LINE ログインは準備中です')}
-          >
-            <LineIcon className="mr-2 h-5 w-5" />
-            LINE でログイン
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={() => alert('Twitter ログインは準備中です')}
-          >
-            <TwitterIcon className="mr-2 h-5 w-5" />
-            Twitter でログイン
-          </Button>
-        </div>
-
         {/* Register Link */}
         <div className="mt-6 text-center">
           <p className="text-sm text-muted-foreground">
@@ -210,22 +173,5 @@ export function LoginForm({ store }: LoginFormProps) {
         </div>
       </CardContent>
     </Card>
-  )
-}
-
-// Social Media Icons
-function LineIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2C6.48 2 2 6.28 2 11.53c0 2.36.91 4.51 2.41 6.19.17.19.18.49.06.7l-.67 1.51c-.14.31.2.64.52.5l1.63-.7c.21-.09.45-.04.62.11 1.35.91 2.97 1.46 4.73 1.46 5.52 0 10-4.28 10-9.53C22 6.28 17.52 2 12 2zm-5.5 9.5c0 .28-.22.5-.5.5s-.5-.22-.5-.5v-3c0-.28.22-.5.5-.5s.5.22.5.5v3zm2.5.5c-.28 0-.5-.22-.5-.5v-3c0-.28.22-.5.5-.5s.5.22.5.5v3c0 .28-.22.5-.5.5zm3.5-.5c0 .19-.11.36-.28.44-.06.03-.12.04-.18.04-.12 0-.24-.04-.33-.13l-1.5-1.5c-.09-.09-.14-.21-.14-.35V8.5c0-.28.22-.5.5-.5s.5.22.5.5v1.29l1.15 1.15c.12.12.17.29.13.46-.02.08-.06.15-.12.21l-.23.23v.66c0 .28-.22.5-.5.5zm3.5 0c0 .28-.22.5-.5.5h-1.5c-.28 0-.5-.22-.5-.5v-3c0-.28.22-.5.5-.5h1.5c.28 0 .5.22.5.5s-.22.5-.5.5H15v.5h1c.28 0 .5.22.5.5s-.22.5-.5.5h-1v.5h1c.28 0 .5.22.5.5z" />
-    </svg>
-  )
-}
-
-function TwitterIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-    </svg>
   )
 }

@@ -57,35 +57,27 @@ const castSchema = z.object({
     )
     .optional(),
   lineUserId: z.union([z.string().trim().min(1), z.null()]).optional(),
-  welfareExpenseRate: z
-    .union([z.coerce.number().min(0).max(100), z.null()])
-    .optional(),
+  welfareExpenseRate: z.union([z.coerce.number().min(0).max(100), z.null()]).optional(),
   loginEmail: z
-    .preprocess(
-      (value) => {
-        if (value === null || value === undefined) {
-          return null
-        }
-        if (typeof value !== 'string') {
-          return value
-        }
-        const trimmed = value.trim()
-        return trimmed.length === 0 ? null : trimmed.toLowerCase()
-      },
-      z.string().email().nullable()
-    )
+    .preprocess((value) => {
+      if (value === null || value === undefined) {
+        return null
+      }
+      if (typeof value !== 'string') {
+        return value
+      }
+      const trimmed = value.trim()
+      return trimmed.length === 0 ? null : trimmed.toLowerCase()
+    }, z.string().email().nullable())
     .optional(),
   loginPassword: z
-    .preprocess(
-      (value) => {
-        if (typeof value !== 'string') {
-          return undefined
-        }
-        const trimmed = value.trim()
-        return trimmed.length === 0 ? undefined : trimmed
-      },
-      z.string().min(6).max(128).optional()
-    )
+    .preprocess((value) => {
+      if (typeof value !== 'string') {
+        return undefined
+      }
+      const trimmed = value.trim()
+      return trimmed.length === 0 ? undefined : trimmed
+    }, z.string().min(6).max(128).optional())
     .optional(),
 })
 
@@ -126,7 +118,9 @@ function normalizeAvailableOptions(raw: unknown): string[] {
   return Array.from(new Set(normalized))
 }
 
-function normalizeAvailableOptionSettings(raw: unknown): Array<{ optionId: string; visibility: 'public' | 'internal' }> {
+function normalizeAvailableOptionSettings(
+  raw: unknown
+): Array<{ optionId: string; visibility: 'public' | 'internal' }> {
   if (!raw) {
     return []
   }
@@ -147,7 +141,9 @@ function normalizeAvailableOptionSettings(raw: unknown): Array<{ optionId: strin
       const visibility = (entry as any).visibility === 'internal' ? 'internal' : 'public'
       return { optionId, visibility }
     })
-    .filter((entry): entry is { optionId: string; visibility: 'public' | 'internal' } => Boolean(entry))
+    .filter((entry): entry is { optionId: string; visibility: 'public' | 'internal' } =>
+      Boolean(entry)
+    )
 
   const seen = new Set<string>()
   return normalized.filter((entry) => {
@@ -334,7 +330,9 @@ export async function POST(request: NextRequest) {
         : normalizedOptions.map((optionId) => ({ optionId, visibility: 'public' as const }))
     const images = Array.isArray(imageList) ? imageList : []
     const normalizedWelfare =
-      welfareExpenseRate === null || welfareExpenseRate === undefined ? null : Number(welfareExpenseRate)
+      welfareExpenseRate === null || welfareExpenseRate === undefined
+        ? null
+        : Number(welfareExpenseRate)
 
     const normalizedEmail =
       loginEmail === null || loginEmail === undefined ? null : loginEmail.trim().toLowerCase()
@@ -355,7 +353,8 @@ export async function POST(request: NextRequest) {
         availableOptions: normalizedOptions,
         welfareExpenseRate:
           normalizedWelfare === null ? null : new Prisma.Decimal(normalizedWelfare),
-        castOptionSettings: optionSettingsToCreate.length > 0 ? { create: optionSettingsToCreate } : undefined,
+        castOptionSettings:
+          optionSettingsToCreate.length > 0 ? { create: optionSettingsToCreate } : undefined,
       },
       include: {
         castOptionSettings: true,
@@ -443,14 +442,11 @@ export async function PUT(request: NextRequest) {
 
     if (welfareExpenseRate !== undefined) {
       updatePayload.welfareExpenseRate =
-        welfareExpenseRate === null
-          ? null
-          : new Prisma.Decimal(Number(welfareExpenseRate))
+        welfareExpenseRate === null ? null : new Prisma.Decimal(Number(welfareExpenseRate))
     }
 
     if (loginEmail !== undefined) {
-      updatePayload.loginEmail =
-        loginEmail === null ? null : loginEmail.trim().toLowerCase()
+      updatePayload.loginEmail = loginEmail === null ? null : loginEmail.trim().toLowerCase()
     }
 
     if (loginPassword) {

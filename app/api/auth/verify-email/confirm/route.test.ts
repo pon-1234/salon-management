@@ -32,6 +32,11 @@ const createMockCustomer = (overrides = {}) => ({
   emailVerified: false,
   emailVerificationToken: null,
   emailVerificationExpiry: null,
+  phoneVerified: false,
+  phoneVerifiedAt: null,
+  phoneVerificationCode: null,
+  phoneVerificationExpiry: null,
+  phoneVerificationAttempts: 0,
   ...overrides,
 })
 

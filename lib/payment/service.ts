@@ -14,7 +14,7 @@ import {
   RefundResult,
   PaymentProviderType,
 } from './types'
-import { prisma } from '@/lib/generated/prisma'
+import { db } from '@/lib/db'
 import logger from '@/lib/logger'
 import { validatePaymentRequest, sanitizeMetadata } from './validators'
 import { PaymentProviderNotFoundError } from './errors'
@@ -247,7 +247,7 @@ export class PaymentService {
   }
 
   async getPaymentHistory(customerId: string): Promise<PaymentTransaction[]> {
-    const transactions = await prisma.paymentTransaction.findMany({
+    const transactions = await db.paymentTransaction.findMany({
       where: { customerId },
       orderBy: { createdAt: 'desc' },
     })
@@ -255,7 +255,7 @@ export class PaymentService {
   }
 
   async getPaymentHistoryByReservation(reservationId: string): Promise<PaymentTransaction[]> {
-    const transactions = await prisma.paymentTransaction.findMany({
+    const transactions = await db.paymentTransaction.findMany({
       where: { reservationId },
       orderBy: { createdAt: 'desc' },
     })
@@ -264,7 +264,7 @@ export class PaymentService {
 
   private async saveTransaction(transaction: PaymentTransaction): Promise<void> {
     try {
-      await prisma.paymentTransaction.create({
+      await db.paymentTransaction.create({
         data: {
           id: transaction.id,
           reservationId: transaction.reservationId,
@@ -307,7 +307,7 @@ export class PaymentService {
   }
 
   private async saveIntent(intent: PaymentIntent): Promise<void> {
-    await prisma.paymentIntent.create({
+    await db.paymentIntent.create({
       data: {
         id: intent.id,
         stripeIntentId: intent.providerId, // Use providerId as stripeIntentId
@@ -339,14 +339,14 @@ export class PaymentService {
   }
 
   private async getIntent(intentId: string): Promise<PaymentIntent | null> {
-    const intent = await prisma.paymentIntent.findUnique({
+    const intent = await db.paymentIntent.findUnique({
       where: { id: intentId },
     })
     return intent as PaymentIntent | null
   }
 
   private async updateIntent(intentId: string, data: Partial<PaymentIntent>): Promise<void> {
-    await prisma.paymentIntent.update({
+    await db.paymentIntent.update({
       where: { id: intentId },
       data: {
         status: data.status,
@@ -356,7 +356,7 @@ export class PaymentService {
   }
 
   private async getTransaction(transactionId: string): Promise<PaymentTransaction | null> {
-    const transaction = await prisma.paymentTransaction.findUnique({
+    const transaction = await db.paymentTransaction.findUnique({
       where: { id: transactionId },
     })
     return transaction as PaymentTransaction | null
@@ -366,7 +366,7 @@ export class PaymentService {
     transactionId: string,
     data: Partial<PaymentTransaction>
   ): Promise<void> {
-    await prisma.paymentTransaction.update({
+    await db.paymentTransaction.update({
       where: { id: transactionId },
       data: {
         status: data.status,

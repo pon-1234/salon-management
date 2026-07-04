@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { db } from '@/lib/db'
 import { requireAdmin } from '@/lib/auth/utils'
 import { attachmentSchema } from '@/lib/chat/schema'
+import logger from '@/lib/logger'
 import { Prisma } from '@prisma/client'
 
 const broadcastSchema = z
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Broadcast failed:', error)
+    logger.error('Broadcast failed:', error)
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: error.issues.map((issue) => issue.message).join(', ') },

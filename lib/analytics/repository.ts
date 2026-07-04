@@ -1,3 +1,8 @@
+/**
+ * @design_doc   refactor-instructions.md Phase 6 D-11 analytics real-data connection
+ * @related_to   AnalyticsUseCases, app/api/analytics/*: client-side analytics API adapter
+ * @known_issues Staff performance requires selected year/month from the page state
+ */
 import {
   AnalyticsRepository,
   MonthlyData,
@@ -14,7 +19,6 @@ import { AreaSalesData } from '@/lib/types/area-sales'
 import { DistrictSalesReport } from '@/lib/types/district-sales'
 import { HourlySalesReport } from '@/lib/types/hourly-sales'
 import { StaffAttendanceSummary } from '@/lib/types/staff-attendance'
-import { staffPerformanceData } from './data'
 
 export class AnalyticsRepositoryImpl implements AnalyticsRepository {
   constructor(private readonly storeId?: string) {}
@@ -54,8 +58,11 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
     })
   }
 
-  async getStaffPerformanceData(): Promise<StaffPerformanceData[]> {
-    return staffPerformanceData
+  async getStaffPerformanceData(year: number, month: number): Promise<StaffPerformanceData[]> {
+    return this.fetchWithQuery<StaffPerformanceData[]>('/api/analytics/staff-performance', {
+      year: String(year),
+      month: String(month),
+    })
   }
 
   async getCourseSalesData(year: number, month: number): Promise<CourseSalesData[]> {

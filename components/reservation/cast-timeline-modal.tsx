@@ -103,10 +103,7 @@ export function CastTimelineModal({
     setActiveDate(initialDate)
   }, [initialDate, open])
 
-  const activeDateKey = useMemo(
-    () => format(activeDate, 'yyyy-MM-dd'),
-    [activeDate]
-  )
+  const activeDateKey = useMemo(() => format(activeDate, 'yyyy-MM-dd'), [activeDate])
 
   const fetchSchedule = useCallback(async () => {
     if (!open) return
@@ -161,10 +158,7 @@ export function CastTimelineModal({
     const hasSlots = slots.length > 0
 
     return (
-      <div
-        key={`${entry.castId}-${entry.id}`}
-        className="rounded-lg border bg-card p-4 shadow-sm"
-      >
+      <div key={`${entry.castId}-${entry.id}`} className="rounded-lg border bg-card p-4 shadow-sm">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="flex items-center gap-2 text-base font-semibold">
@@ -207,7 +201,9 @@ export function CastTimelineModal({
                     !isSelected && slot.status === 'open' && !slot.isPast
                       ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
                       : '',
-                    isDisabled && !isSelected && 'cursor-not-allowed border-dashed text-muted-foreground',
+                    isDisabled &&
+                      !isSelected &&
+                      'cursor-not-allowed border-dashed text-muted-foreground',
                     slot.status === 'booked' && 'bg-red-50 text-red-500',
                     slot.isPast && slot.status === 'open' && 'bg-gray-50 text-gray-400'
                   )}

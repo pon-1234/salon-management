@@ -32,15 +32,16 @@ type ReviewServiceErrorCode =
   | 'REVIEW_ALREADY_EXISTS'
   | 'INVALID_STATUS'
 
-const MockReviewServiceError = vi.hoisted(() =>
-  class extends Error {
-    code: ReviewServiceErrorCode
-    constructor(code: ReviewServiceErrorCode, message: string) {
-      super(message)
-      this.name = 'ReviewServiceError'
-      this.code = code
+const MockReviewServiceError = vi.hoisted(
+  () =>
+    class extends Error {
+      code: ReviewServiceErrorCode
+      constructor(code: ReviewServiceErrorCode, message: string) {
+        super(message)
+        this.name = 'ReviewServiceError'
+        this.code = code
+      }
     }
-  }
 )
 
 vi.mock('next-auth', () => ({
@@ -117,15 +118,23 @@ describe('Review API', () => {
 
     it('returns reviews and stats when stats=true', async () => {
       const reviews = [{ id: 'r-1' }]
-      const stats = { totalReviews: 1, averageRating: 5, ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 1 }, popularTags: [] }
+      const stats = {
+        totalReviews: 1,
+        averageRating: 5,
+        ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 1 },
+        popularTags: [],
+      }
 
       mockSearchReviews.mockResolvedValueOnce(reviews)
       mockGetReviewStatsForStore.mockResolvedValueOnce(stats)
       vi.mocked(getServerSession).mockResolvedValueOnce(null)
 
-      const request = new NextRequest('http://localhost:3000/api/review?storeId=store-1&stats=true', {
-        method: 'GET',
-      })
+      const request = new NextRequest(
+        'http://localhost:3000/api/review?storeId=store-1&stats=true',
+        {
+          method: 'GET',
+        }
+      )
 
       const response = await GET(request)
       const data = await response.json()

@@ -4,6 +4,7 @@
  * @known_issues Fallbacks to mock send when Vonage credentials are missing
  */
 import { env } from '@/lib/config/env'
+import logger from '@/lib/logger'
 
 function normalizeToE164(phone: string): string {
   const digits = phone.replace(/\D/g, '')
@@ -19,7 +20,7 @@ function normalizeToE164(phone: string): string {
 function buildMockResponse() {
   return {
     success: true,
-    id: `sms-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    id: `sms-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
   }
 }
 
@@ -27,7 +28,7 @@ export const smsClient = {
   async send(data: { to: string; message: string }): Promise<{ success: boolean; id?: string }> {
     const { apiKey, apiSecret, smsFrom } = env.vonage
     if (!apiKey || !apiSecret) {
-      console.log('Sending SMS (mock):', { to: data.to, message: data.message })
+      logger.info('Sending SMS (mock):', { to: data.to, message: data.message })
       await new Promise((resolve) => setTimeout(resolve, 100))
       return buildMockResponse()
     }
@@ -47,14 +48,14 @@ export const smsClient = {
     })
 
     if (!response.ok) {
-      console.error('Vonage SMS request failed:', response.status)
+      logger.error('Vonage SMS request failed:', response.status)
       return { success: false }
     }
 
     const result = await response.json().catch(() => null)
     const message = result?.messages?.[0]
     if (!message || message.status !== '0') {
-      console.error('Vonage SMS error:', message)
+      logger.error('Vonage SMS error:', message)
       return { success: false }
     }
 

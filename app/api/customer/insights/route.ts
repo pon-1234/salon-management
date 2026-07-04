@@ -102,7 +102,9 @@ export async function GET(request: NextRequest) {
       }),
     ])
 
-    const completedReservations = reservations.filter((reservation) => reservation.status !== 'cancelled')
+    const completedReservations = reservations.filter(
+      (reservation) => reservation.status !== 'cancelled'
+    )
     const lastCompletedReservation = completedReservations[0] ?? null
     const totalRevenue = completedReservations.reduce(
       (sum, reservation) => sum + resolveReservationAmount(reservation),
@@ -144,15 +146,19 @@ export async function GET(request: NextRequest) {
     }
 
     const customerCancelCount = reservations.filter(
-      (reservation) => reservation.status === 'cancelled' && reservation.cancellationSource === 'customer'
+      (reservation) =>
+        reservation.status === 'cancelled' && reservation.cancellationSource === 'customer'
     ).length
     const storeCancelCount = reservations.filter(
-      (reservation) => reservation.status === 'cancelled' && reservation.cancellationSource !== 'customer'
+      (reservation) =>
+        reservation.status === 'cancelled' && reservation.cancellationSource !== 'customer'
     ).length
 
     return NextResponse.json({
       data: {
-        lastVisitDate: lastCompletedReservation ? lastCompletedReservation.startTime.toISOString() : null,
+        lastVisitDate: lastCompletedReservation
+          ? lastCompletedReservation.startTime.toISOString()
+          : null,
         lastCastName: lastCompletedReservation?.cast?.name ?? null,
         totalVisits,
         totalRevenue,

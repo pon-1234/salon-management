@@ -26,8 +26,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/hooks/use-toast'
 
 const adjustmentSchema = z.object({
-  amount: z
-    .coerce.number()
+  amount: z.coerce
+    .number()
     .int()
     .refine((value) => value !== 0, { message: '1pt以上の加算または減算を入力してください' }),
   reason: z.string().min(5, '理由は5文字以上で入力してください'),
@@ -92,8 +92,7 @@ export function PointAdjustmentDialog({
     } catch (error) {
       toast({
         title: 'エラー',
-        description:
-          error instanceof Error ? error.message : 'ポイント調整の処理に失敗しました',
+        description: error instanceof Error ? error.message : 'ポイント調整の処理に失敗しました',
         variant: 'destructive',
       })
     } finally {

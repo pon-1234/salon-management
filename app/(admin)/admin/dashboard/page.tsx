@@ -389,13 +389,16 @@ export default function DashboardPage() {
 
   const kpis = useMemo(() => {
     const totalRevenue = filteredReservations.reduce((sum, r) => sum + r.price, 0)
-    const avgRevenue = filteredReservations.length > 0 ? totalRevenue / filteredReservations.length : 0
+    const avgRevenue =
+      filteredReservations.length > 0 ? totalRevenue / filteredReservations.length : 0
     const confirmedCount = filteredReservations.filter((r) => r.status === 'confirmed').length
     const cancelledCount = filteredReservations.filter((r) => r.status === 'cancelled').length
-    const cancelRate = filteredReservations.length > 0 ? (cancelledCount / filteredReservations.length) * 100 : 0
+    const cancelRate =
+      filteredReservations.length > 0 ? (cancelledCount / filteredReservations.length) * 100 : 0
 
     const previousRevenue = previousPeriodReservations.reduce((sum, r) => sum + r.price, 0)
-    const revenueChange = previousRevenue > 0 ? ((totalRevenue - previousRevenue) / previousRevenue) * 100 : 0
+    const revenueChange =
+      previousRevenue > 0 ? ((totalRevenue - previousRevenue) / previousRevenue) * 100 : 0
 
     return {
       totalRevenue,
@@ -423,7 +426,9 @@ export default function DashboardPage() {
     const upcoming = reservations
       .filter((reservation) => {
         const start =
-          reservation.startTime instanceof Date ? reservation.startTime : new Date(reservation.startTime)
+          reservation.startTime instanceof Date
+            ? reservation.startTime
+            : new Date(reservation.startTime)
         return start >= windowStart && start <= windowEnd
       })
       .sort((a, b) => {
@@ -709,15 +714,20 @@ export default function DashboardPage() {
                       formatter={(value: any) => `¥${value.toLocaleString()}`}
                       labelFormatter={(label) => `日付: ${label}`}
                     />
-                  <Area
-                    type="monotone"
-                    dataKey="revenue"
-                    stroke={colors.primary}
-                    fillOpacity={1}
-                    fill="url(#colorRevenue)"
-                  />
-                  <Line type="monotone" dataKey="count" stroke={colors.secondary} strokeWidth={2} />
-                </AreaChart>
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke={colors.primary}
+                      fillOpacity={1}
+                      fill="url(#colorRevenue)"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="count"
+                      stroke={colors.secondary}
+                      strokeWidth={2}
+                    />
+                  </AreaChart>
                 </ResponsiveContainer>
               </div>
             ) : (
@@ -878,11 +888,17 @@ export default function DashboardPage() {
                   (reservation.customerId ? `顧客${reservation.customerId.slice(0, 8)}` : '顧客')
                 const staffDisplayName =
                   reservation.staffName ??
-                  (reservation.staffId ? `担当キャスト${reservation.staffId.slice(0, 8)}` : '担当キャスト')
+                  (reservation.staffId
+                    ? `担当キャスト${reservation.staffId.slice(0, 8)}`
+                    : '担当キャスト')
                 const startAt =
-                  reservation.startTime instanceof Date ? reservation.startTime : new Date(reservation.startTime)
+                  reservation.startTime instanceof Date
+                    ? reservation.startTime
+                    : new Date(reservation.startTime)
                 const endAt =
-                  reservation.endTime instanceof Date ? reservation.endTime : new Date(reservation.endTime)
+                  reservation.endTime instanceof Date
+                    ? reservation.endTime
+                    : new Date(reservation.endTime)
                 const timingBadge = hasUpcomingReservations ? getUpcomingTimingBadge(startAt) : null
 
                 return (
@@ -896,7 +912,7 @@ export default function DashboardPage() {
                       <div>
                         <div className="flex items-center gap-2">
                           <p className="font-medium">{customerDisplayName}</p>
-                          <Badge variant="outline" className="font-mono text-[10px] uppercase">
+                          <Badge variant="outline" className="font-mono text-xs uppercase">
                             {reservation.id.slice(0, 8)}
                           </Badge>
                         </div>

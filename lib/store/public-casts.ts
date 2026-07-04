@@ -87,11 +87,11 @@ export async function getPublicCastProfiles(storeId: string): Promise<PublicCast
       ? profile.personality.filter((tag: unknown) => typeof tag === 'string')
       : []
     const introMessage =
-      (typeof profile.customerMessage === 'string' && profile.customerMessage.trim().length > 0
+      typeof profile.customerMessage === 'string' && profile.customerMessage.trim().length > 0
         ? profile.customerMessage
         : typeof profile.shopMessage === 'string' && profile.shopMessage.trim().length > 0
           ? profile.shopMessage
-          : null)
+          : null
 
     return {
       id: record.id,
@@ -180,7 +180,10 @@ export async function getPublicRankingData(storeId: string): Promise<PublicRanki
 
   const overall = overallSource.slice(0, 5).map((profile, index) => ({
     cast: profile,
-    score: profile.panelDesignationRank && profile.panelDesignationRank > 0 ? profile.panelDesignationRank : (reservationsMap.get(profile.id) ?? 0),
+    score:
+      profile.panelDesignationRank && profile.panelDesignationRank > 0
+        ? profile.panelDesignationRank
+        : (reservationsMap.get(profile.id) ?? 0),
     label:
       profile.panelDesignationRank && profile.panelDesignationRank > 0
         ? `指名順位 ${profile.panelDesignationRank}`
@@ -194,7 +197,7 @@ export async function getPublicRankingData(storeId: string): Promise<PublicRanki
     .map((profile, index) => ({
       cast: profile,
       score: index + 1,
-      label: `入店${differenceInDays(new Date(), new Date(profile.createdAt))}日` ,
+      label: `入店${differenceInDays(new Date(), new Date(profile.createdAt))}日`,
     }))
 
   const reviews = reviewStats
@@ -271,10 +274,7 @@ export async function getPublicRecruitmentData(storeId: string): Promise<PublicR
   }
 }
 
-export async function getPublicCastDetail(
-  storeId: string,
-  castId: string
-): Promise<Cast | null> {
+export async function getPublicCastDetail(storeId: string, castId: string): Promise<Cast | null> {
   const record = await db.cast.findFirst({
     where: { id: castId, storeId },
     include: {

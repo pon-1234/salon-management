@@ -3,6 +3,8 @@
  * @related_to   notification/service.ts
  * @known_issues Mock implementation - replace with actual push service (FCM, APNs, etc.)
  */
+import logger from '@/lib/logger'
+
 export const pushClient = {
   async send(data: {
     userId: string
@@ -11,7 +13,7 @@ export const pushClient = {
     data?: any
   }): Promise<{ success: boolean; id?: string }> {
     // Mock implementation
-    console.log('Sending push notification:', {
+    logger.info('Sending push notification:', {
       userId: data.userId,
       title: data.title,
       body: data.body,

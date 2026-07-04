@@ -147,16 +147,21 @@ export class PricingUseCases {
   async migrateFromOldFormat(oldCourses: any[], oldOptions: any[], storeId: string): Promise<void> {
     // Migrate courses
     for (const oldCourse of oldCourses) {
-      const durationEntries = Array.isArray(oldCourse.durations) && oldCourse.durations.length > 0
-        ? oldCourse.durations
-        : [{ time: oldCourse.duration ?? 60, price: oldCourse.price ?? 0, storeShare: oldCourse.storeShare, castShare: oldCourse.castShare }]
+      const durationEntries =
+        Array.isArray(oldCourse.durations) && oldCourse.durations.length > 0
+          ? oldCourse.durations
+          : [
+              {
+                time: oldCourse.duration ?? 60,
+                price: oldCourse.price ?? 0,
+                storeShare: oldCourse.storeShare,
+                castShare: oldCourse.castShare,
+              },
+            ]
 
       for (const entry of durationEntries) {
         await this.createCourse({
-          name:
-            durationEntries.length > 1
-              ? `${oldCourse.name} ${entry.time}分`
-              : oldCourse.name,
+          name: durationEntries.length > 1 ? `${oldCourse.name} ${entry.time}分` : oldCourse.name,
           description: oldCourse.description || '',
           duration: entry.time,
           price: entry.price,
@@ -178,6 +183,7 @@ export class PricingUseCases {
         category: this.determineOptionCategory(oldOption.name),
         displayOrder: oldOption.displayOrder || 999,
         isActive: oldOption.isActive ?? true,
+        visibility: oldOption.visibility ?? 'public',
         note: oldOption.note,
       })
     }

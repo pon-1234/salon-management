@@ -67,7 +67,8 @@ describe('Middleware Authentication', () => {
       const response = await middleware(request)
 
       expect(response).toBeInstanceOf(NextResponse)
-      expect(response?.status).toBe(403) // Forbidden
+      expect(response?.status).toBe(307)
+      expect(response?.headers.get('location')).toContain('/admin/login')
     })
   })
 

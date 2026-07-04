@@ -13,11 +13,7 @@ function categorizePayment(method: string | null | undefined): CategorizedPaymen
   if (normalized.includes('card') || normalized.includes('カード')) {
     return 'card'
   }
-  if (
-    normalized.includes('cash') ||
-    normalized.includes('現金') ||
-    normalized.includes('手渡し')
-  ) {
+  if (normalized.includes('cash') || normalized.includes('現金') || normalized.includes('手渡し')) {
     return 'cash'
   }
   return 'other'
@@ -84,9 +80,7 @@ export async function getDailySalesReport(
 
   const reservations = weeklyReservations.filter(
     (reservation) =>
-      reservation.startTime &&
-      reservation.startTime >= start &&
-      reservation.startTime <= end
+      reservation.startTime && reservation.startTime >= start && reservation.startTime <= end
   )
 
   const staffMap = new Map<string, StaffAggregation>()

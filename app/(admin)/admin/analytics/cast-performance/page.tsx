@@ -1,15 +1,13 @@
 'use client'
 
+/**
+ * @design_doc   refactor-instructions.md Phase 6 D-11 analytics real-data connection
+ * @related_to   CastPerformanceTable, AnalyticsRepositoryImpl: selected store/month report UI
+ * @known_issues Display-type and cast dropdowns are presentation-only until server filters exist
+ */
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Printer,
-  Sparkles,
-  AlertTriangle,
-  RotateCcw,
-  Users,
-} from 'lucide-react'
+import { Printer, RotateCcw } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -20,9 +18,7 @@ import {
 import { CastPerformanceTable } from '@/components/analytics/cast-performance-table'
 import { AnalyticsUseCases } from '@/lib/analytics/usecases'
 import { AnalyticsRepositoryImpl } from '@/lib/analytics/repository'
-
-const analyticsRepository = new AnalyticsRepositoryImpl()
-const analyticsUseCases = new AnalyticsUseCases(analyticsRepository)
+import { useStore } from '@/contexts/store-context'
 
 export default function CastPerformancePage() {
   const now = new Date()
@@ -33,6 +29,11 @@ export default function CastPerformancePage() {
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth)
   const [displayType, setDisplayType] = useState('全て表示')
   const [selectedCast, setSelectedCast] = useState('')
+  const { currentStore } = useStore()
+  const analyticsUseCases = useMemo(() => {
+    const repository = new AnalyticsRepositoryImpl(currentStore.id)
+    return new AnalyticsUseCases(repository)
+  }, [currentStore.id])
 
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i)
@@ -140,10 +141,7 @@ export default function CastPerformancePage() {
               条件をリセット
             </Button>
           )}
-          <Button
-            onClick={handlePrint}
-            className="bg-emerald-600 text-white hover:bg-emerald-700"
-          >
+          <Button onClick={handlePrint} className="bg-emerald-600 text-white hover:bg-emerald-700">
             <Printer className="mr-2 h-4 w-4" />
             印刷する
           </Button>
@@ -170,7 +168,11 @@ export default function CastPerformancePage() {
         ※ 厚生費は未払いも含めて全て表示しています
       </div>
 
-      <CastPerformanceTable analyticsUseCases={analyticsUseCases} />
+      <CastPerformanceTable
+        analyticsUseCases={analyticsUseCases}
+        year={selectedYear}
+        month={selectedMonth}
+      />
     </div>
   )
 }

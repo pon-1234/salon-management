@@ -21,7 +21,12 @@ vi.mock('@/lib/auth/config', () => ({
 vi.mock('@/lib/db', () => ({
   db: {
     $transaction: vi.fn(),
+    store: {
+      findUnique: vi.fn(() => Promise.resolve({ id: 'ikebukuro' })),
+      upsert: vi.fn(() => Promise.resolve({ id: 'ikebukuro' })),
+    },
     coursePrice: {
+      findFirst: vi.fn(),
       findUnique: vi.fn(),
       findMany: vi.fn(),
       create: vi.fn(),
@@ -57,7 +62,7 @@ describe('GET /api/course', () => {
       reservations: [],
     }
 
-    vi.mocked(db.coursePrice.findUnique).mockResolvedValueOnce(mockCourse as any)
+    vi.mocked(db.coursePrice.findFirst).mockResolvedValueOnce(mockCourse as any)
 
     const request = new NextRequest('http://localhost:3000/api/course?id=course1', {
       method: 'GET',
@@ -69,8 +74,8 @@ describe('GET /api/course', () => {
     expect(response.status).toBe(200)
     expect(data.id).toBe('course1')
     expect(data.name).toBe('60-minute Course')
-    expect(vi.mocked(db.coursePrice.findUnique)).toHaveBeenCalledWith({
-      where: { id: 'course1' },
+    expect(vi.mocked(db.coursePrice.findFirst)).toHaveBeenCalledWith({
+      where: { id: 'course1', storeId: 'ikebukuro' },
       include: {
         reservations: {
           include: {
@@ -83,7 +88,7 @@ describe('GET /api/course', () => {
   })
 
   it('should return 404 for non-existent course', async () => {
-    vi.mocked(db.coursePrice.findUnique).mockResolvedValueOnce(null)
+    vi.mocked(db.coursePrice.findFirst).mockResolvedValueOnce(null)
 
     vi.mocked(getServerSession).mockResolvedValueOnce({
       user: { id: 'admin1', role: 'admin' },
@@ -134,6 +139,7 @@ describe('GET /api/course', () => {
     expect(vi.mocked(db.coursePrice.findMany)).toHaveBeenCalledWith({
       where: {
         isActive: true,
+        storeId: 'ikebukuro',
       },
       include: {
         reservations: {
@@ -167,7 +173,7 @@ describe('GET /api/course', () => {
     vi.mocked(getServerSession).mockResolvedValueOnce({
       user: { id: 'customer1', role: 'customer' },
     } as any)
-    vi.mocked(db.coursePrice.findUnique).mockResolvedValueOnce(mockCourse as any)
+    vi.mocked(db.coursePrice.findFirst).mockResolvedValueOnce(mockCourse as any)
 
     const request = new NextRequest('http://localhost:3000/api/course?id=course1', {
       method: 'GET',
@@ -181,8 +187,9 @@ describe('GET /api/course', () => {
     expect(data.id).toBe('course1')
   })
 
-  it('should require authentication', async () => {
+  it('should allow unauthenticated public course listing', async () => {
     vi.mocked(getServerSession).mockResolvedValueOnce(null as any)
+    vi.mocked(db.coursePrice.findMany).mockResolvedValueOnce([] as any)
 
     const request = new NextRequest('http://localhost:3000/api/course', {
       method: 'GET',
@@ -191,8 +198,8 @@ describe('GET /api/course', () => {
     const response = await GET(request)
     const data = await response.json()
 
-    expect(response.status).toBe(401)
-    expect(data.error).toBe('Authentication required')
+    expect(response.status).toBe(200)
+    expect(data).toEqual([])
   })
 })
 
@@ -237,7 +244,9 @@ describe('POST /api/course', () => {
         name: '90-minute Course',
         description: 'Extended 90-minute session',
         duration: 90,
+        enableWebBooking: true,
         price: 15000,
+        storeId: 'ikebukuro',
       },
       include: {
         reservations: true,
@@ -275,7 +284,9 @@ describe('POST /api/course', () => {
         name: '120-minute Course',
         description: '',
         duration: 120,
+        enableWebBooking: true,
         price: 20000,
+        storeId: 'ikebukuro',
       },
       include: {
         reservations: true,
@@ -402,7 +413,7 @@ describe('PUT /api/course', () => {
       reservations: [],
     }
 
-    vi.mocked(db.coursePrice.findUnique).mockResolvedValueOnce(existingCourse as any)
+    vi.mocked(db.coursePrice.findFirst).mockResolvedValueOnce(existingCourse as any)
     vi.mocked(db.coursePrice.update).mockResolvedValueOnce(existingCourse as any)
     vi.mocked(db.coursePrice.create).mockResolvedValueOnce(newCourseVersion as any)
 
@@ -445,7 +456,7 @@ describe('PUT /api/course', () => {
   })
 
   it('should handle non-existent course', async () => {
-    vi.mocked(db.coursePrice.findUnique).mockResolvedValueOnce(null)
+    vi.mocked(db.coursePrice.findFirst).mockResolvedValueOnce(null)
 
     const request = new NextRequest('http://localhost:3000/api/course', {
       method: 'PUT',
@@ -507,6 +518,7 @@ describe('DELETE /api/course', () => {
   })
 
   it('should archive course instead of hard delete', async () => {
+    vi.mocked(db.coursePrice.findFirst).mockResolvedValueOnce({ id: 'course1' } as any)
     vi.mocked(db.coursePrice.update).mockResolvedValueOnce({} as any)
 
     const request = new NextRequest('http://localhost:3000/api/course?id=course1', {
@@ -526,10 +538,7 @@ describe('DELETE /api/course', () => {
   })
 
   it('should handle non-existent course', async () => {
-    vi.mocked(db.coursePrice.update).mockRejectedValueOnce({
-      code: 'P2025',
-      message: 'Record not found',
-    })
+    vi.mocked(db.coursePrice.findFirst).mockResolvedValueOnce(null)
 
     vi.mocked(getServerSession).mockResolvedValueOnce({
       user: { id: 'admin1', role: 'admin' },
@@ -643,7 +652,7 @@ describe('Course API - Validation and Edge Cases', () => {
       ],
     }
 
-    vi.mocked(db.coursePrice.findUnique).mockResolvedValueOnce(mockCourseWithReservations as any)
+    vi.mocked(db.coursePrice.findFirst).mockResolvedValueOnce(mockCourseWithReservations as any)
 
     const request = new NextRequest('http://localhost:3000/api/course?id=course1', {
       method: 'GET',

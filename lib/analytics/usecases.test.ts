@@ -176,7 +176,9 @@ describe('AnalyticsUseCases', () => {
   })
 
   describe('getStaffPerformance', () => {
-    it('should return staff performance data', async () => {
+    it('should return staff performance data for a specific year and month', async () => {
+      const year = 2026
+      const month = 7
       const mockStaffData: StaffPerformanceData[] = [
         {
           id: 'staff-1',
@@ -240,18 +242,20 @@ describe('AnalyticsUseCases', () => {
 
       vi.mocked(mockRepository.getStaffPerformanceData).mockResolvedValue(mockStaffData)
 
-      const result = await useCases.getStaffPerformance()
+      const result = await useCases.getStaffPerformance(year, month)
 
-      expect(mockRepository.getStaffPerformanceData).toHaveBeenCalled()
+      expect(mockRepository.getStaffPerformanceData).toHaveBeenCalledWith(year, month)
       expect(result).toEqual(mockStaffData)
     })
 
     it('should return empty array when no staff data available', async () => {
+      const year = 2026
+      const month = 7
       vi.mocked(mockRepository.getStaffPerformanceData).mockResolvedValue([])
 
-      const result = await useCases.getStaffPerformance()
+      const result = await useCases.getStaffPerformance(year, month)
 
-      expect(mockRepository.getStaffPerformanceData).toHaveBeenCalled()
+      expect(mockRepository.getStaffPerformanceData).toHaveBeenCalledWith(year, month)
       expect(result).toEqual([])
     })
   })

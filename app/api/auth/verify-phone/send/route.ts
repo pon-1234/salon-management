@@ -5,7 +5,11 @@ import { db } from '@/lib/db'
 import { normalizePhoneNumber } from '@/lib/customer/utils'
 import { smsClient } from '@/lib/sms/client'
 import logger from '@/lib/logger'
-import { checkSendRateLimit, recordSendAttempt, generateVerificationCode } from '@/lib/auth/phone-verification'
+import {
+  checkSendRateLimit,
+  recordSendAttempt,
+  generateVerificationCode,
+} from '@/lib/auth/phone-verification'
 
 const EXPIRY_MINUTES = 10
 

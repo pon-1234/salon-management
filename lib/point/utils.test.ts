@@ -9,8 +9,16 @@ import { calculateEarnedPoints, calculateExpiryDate, resolvePointConfig } from '
 describe('point utils', () => {
   describe('calculateEarnedPoints', () => {
     it('should floor earned points based on config rate', () => {
-      expect(calculateEarnedPoints(10000, { earnRate: 0.015, expirationMonths: 12, minPointsToUse: 100 })).toBe(150)
-      expect(calculateEarnedPoints(9999.99, { earnRate: 0.01, expirationMonths: 12, minPointsToUse: 100 })).toBe(99)
+      expect(
+        calculateEarnedPoints(10000, { earnRate: 0.015, expirationMonths: 12, minPointsToUse: 100 })
+      ).toBe(150)
+      expect(
+        calculateEarnedPoints(9999.99, {
+          earnRate: 0.01,
+          expirationMonths: 12,
+          minPointsToUse: 100,
+        })
+      ).toBe(99)
     })
 
     it('should return 0 for non-positive amounts', () => {
@@ -23,7 +31,10 @@ describe('point utils', () => {
   describe('calculateExpiryDate', () => {
     it('should add configured months to provided date', () => {
       const base = new Date('2024-01-15T00:00:00Z')
-      const expiry = calculateExpiryDate({ earnRate: 0.01, expirationMonths: 6, minPointsToUse: 100 }, base)
+      const expiry = calculateExpiryDate(
+        { earnRate: 0.01, expirationMonths: 6, minPointsToUse: 100 },
+        base
+      )
       expect(expiry.getUTCFullYear()).toBe(2024)
       expect(expiry.getUTCMonth()).toBe(6) // July (0-indexed)
     })

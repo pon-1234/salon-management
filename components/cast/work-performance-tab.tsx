@@ -336,8 +336,7 @@ function MonthlyTargetProgress({ monthlyStats }: MonthlyTargetProgressProps) {
       targets.designationRate) *
     100
   const repeatProgress = (monthlyStats.averageRepeatRate / targets.repeatRate) * 100
-  const storeRepeatProgress =
-    (monthlyStats.storeRepeatShare / targets.storeRepeatShare) * 100
+  const storeRepeatProgress = (monthlyStats.storeRepeatShare / targets.storeRepeatShare) * 100
 
   return (
     <Card>
@@ -402,7 +401,8 @@ function MonthlyTargetProgress({ monthlyStats }: MonthlyTargetProgressProps) {
             </div>
             <Progress value={Math.min(storeRepeatProgress, 100)} className="h-2" />
             <div className="mt-1 text-xs text-gray-500">
-              {storeRepeatProgress.toFixed(1)}% 達成（店舗シェア {monthlyStats.storeRepeatShare.toFixed(1)}%）
+              {storeRepeatProgress.toFixed(1)}% 達成（店舗シェア{' '}
+              {monthlyStats.storeRepeatShare.toFixed(1)}%）
             </div>
           </div>
         </div>

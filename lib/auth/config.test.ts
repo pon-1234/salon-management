@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import bcrypt from 'bcryptjs'
 import { authOptions } from './config'
 import { checkRateLimit, recordLoginAttempt } from './rate-limit'
+import logger from '@/lib/logger'
 
 // Mock dependencies
 vi.mock('@/lib/db', () => ({
@@ -35,7 +36,7 @@ describe('Auth Config', () => {
 
   describe('authOptions', () => {
     it('should have correct configuration', () => {
-      expect(authOptions.providers).toHaveLength(2)
+      expect(authOptions.providers).toHaveLength(3)
       expect(authOptions.pages).toEqual({
         signIn: '/login',
         error: '/auth/error',
@@ -97,7 +98,6 @@ describe('Auth Config', () => {
 
     it('should handle inactive admin', async () => {
       const { db } = await import('@/lib/db')
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       vi.mocked(db.admin.findUnique).mockResolvedValueOnce({
         id: '1',
@@ -117,12 +117,10 @@ describe('Auth Config', () => {
 
       expect(result).toBeNull()
       expect(recordLoginAttempt).toHaveBeenCalledWith('admin:admin@example.com', false)
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(logger.error).toHaveBeenCalledWith(
         'Error during admin authentication:',
         expect.any(Error)
       )
-
-      consoleSpy.mockRestore()
     })
 
     it('should return null for invalid password', async () => {
@@ -268,6 +266,19 @@ describe('Auth Config', () => {
       expect(recordLoginAttempt).toHaveBeenCalledWith('customer:notfound@example.com', false)
     })
 
+    it('should not authenticate the removed demo customer fallback', async () => {
+      const { db } = await import('@/lib/db')
+      vi.mocked(db.customer.findUnique).mockResolvedValueOnce(null)
+
+      const result = await authorize({
+        email: 'tanaka@example.com',
+        password: 'password123',
+      })
+
+      expect(result).toBeNull()
+      expect(recordLoginAttempt).toHaveBeenCalledWith('customer:tanaka@example.com', false)
+    })
+
     it('should successfully authenticate customer', async () => {
       const { db } = await import('@/lib/db')
       vi.mocked(db.customer.findUnique).mockResolvedValueOnce({
@@ -293,6 +304,11 @@ describe('Auth Config', () => {
         emailVerified: false,
         emailVerificationToken: null,
         emailVerificationExpiry: null,
+        phoneVerified: false,
+        phoneVerifiedAt: null,
+        phoneVerificationCode: null,
+        phoneVerificationExpiry: null,
+        phoneVerificationAttempts: 0,
       })
       vi.mocked(bcrypt.compare).mockResolvedValueOnce(true as never)
 
@@ -335,6 +351,11 @@ describe('Auth Config', () => {
         emailVerified: false,
         emailVerificationToken: null,
         emailVerificationExpiry: null,
+        phoneVerified: false,
+        phoneVerifiedAt: null,
+        phoneVerificationCode: null,
+        phoneVerificationExpiry: null,
+        phoneVerificationAttempts: 0,
       })
       vi.mocked(bcrypt.compare).mockResolvedValueOnce(true as never)
 

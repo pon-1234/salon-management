@@ -20,14 +20,24 @@ import { cn } from '@/lib/utils'
 
 interface PublicProfileFormProps {
   cast: Cast
-  onSubmit: (data: { publicProfile: PublicProfile; basicInfo: Partial<Cast> }) => Promise<void> | void
+  onSubmit: (data: {
+    publicProfile: PublicProfile
+    basicInfo: Partial<Cast>
+  }) => Promise<void> | void
   onCancel?: () => void
   isEditing?: boolean
   setIsEditing?: (editing: boolean) => void
   isSubmitting?: boolean
 }
 
-const PROFILE_STYLE_OPTIONS = ['カワイイ系', 'キレイ系', 'セクシー系', 'お姉さん系', 'モデル系', 'おっとり系']
+const PROFILE_STYLE_OPTIONS = [
+  'カワイイ系',
+  'キレイ系',
+  'セクシー系',
+  'お姉さん系',
+  'モデル系',
+  'おっとり系',
+]
 const BODY_TYPE_OPTIONS = ['スレンダー', '普通', 'グラマー', 'ぽっちゃり', '小柄', '長身']
 const PERSONALITY_OPTIONS = [
   '正統派セラピスト',
@@ -385,7 +395,9 @@ export function PublicProfileForm({
               <Label>血液型</Label>
               <Select
                 value={publicProfile.bloodType}
-                onValueChange={(value: PublicProfile['bloodType']) => handleChange('bloodType', value)}
+                onValueChange={(value: PublicProfile['bloodType']) =>
+                  handleChange('bloodType', value)
+                }
                 disabled={!isEditing}
               >
                 <SelectTrigger>
@@ -404,7 +416,9 @@ export function PublicProfileForm({
               <Label>自宅派遣</Label>
               <Select
                 value={publicProfile.homeVisit}
-                onValueChange={(value: PublicProfile['homeVisit']) => handleChange('homeVisit', value)}
+                onValueChange={(value: PublicProfile['homeVisit']) =>
+                  handleChange('homeVisit', value)
+                }
                 disabled={!isEditing}
               >
                 <SelectTrigger>

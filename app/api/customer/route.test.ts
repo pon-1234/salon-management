@@ -373,7 +373,7 @@ describe('PUT /api/customer', () => {
 
   it('should update password with hashing', async () => {
     vi.mocked(getServerSession).mockResolvedValueOnce({
-      user: { id: 'customer1', role: 'customer' },
+      user: { id: 'admin1', role: 'admin' },
     } as any)
 
     const updateData = {
@@ -419,7 +419,7 @@ describe('PUT /api/customer', () => {
     })
 
     vi.mocked(getServerSession).mockResolvedValueOnce({
-      user: { id: 'customer1', role: 'customer' },
+      user: { id: 'admin1', role: 'admin' },
     } as any)
 
     const request = new NextRequest('http://localhost:3000/api/customer', {

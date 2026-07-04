@@ -1,6 +1,12 @@
 'use client'
 
+/**
+ * @design_doc   ui-improvement-instructions.md U-6 admin page header
+ * @related_to   PageHeader: shared settings header; Header: global admin navigation
+ * @known_issues Form validation remains ad hoc until U-11 settings migration
+ */
 import { useState, useEffect, useCallback } from 'react'
+import { PageHeader } from '@/components/admin/page-header'
 import { Header } from '@/components/header'
 import { toast } from '@/hooks/use-toast'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -47,12 +53,14 @@ export default function StoreInfoPage() {
       setFormData((prev) => ({
         ...prev,
         ...settings,
-        welfareExpenseRate: settings?.welfareExpenseRate !== undefined
-          ? String(Number(settings.welfareExpenseRate))
-          : prev.welfareExpenseRate,
-        marketingChannelsInput: Array.isArray(settings?.marketingChannels) && settings.marketingChannels.length > 0
-          ? settings.marketingChannels.join('\n')
-          : prev.marketingChannelsInput,
+        welfareExpenseRate:
+          settings?.welfareExpenseRate !== undefined
+            ? String(Number(settings.welfareExpenseRate))
+            : prev.welfareExpenseRate,
+        marketingChannelsInput:
+          Array.isArray(settings?.marketingChannels) && settings.marketingChannels.length > 0
+            ? settings.marketingChannels.join('\n')
+            : prev.marketingChannelsInput,
       }))
     } catch (error) {
       console.error('Error fetching store settings:', error)
@@ -86,7 +94,8 @@ export default function StoreInfoPage() {
       const payload = {
         ...restForm,
         welfareExpenseRate: Number(formData.welfareExpenseRate || 0),
-        marketingChannels: marketingChannels.length > 0 ? marketingChannels : [...MARKETING_CHANNELS],
+        marketingChannels:
+          marketingChannels.length > 0 ? marketingChannels : [...MARKETING_CHANNELS],
       }
       const response = await fetch('/api/settings/store', {
         method: 'PUT',
@@ -108,9 +117,10 @@ export default function StoreInfoPage() {
             updated?.welfareExpenseRate !== undefined
               ? String(Number(updated.welfareExpenseRate))
               : prev.welfareExpenseRate,
-          marketingChannelsInput: Array.isArray(updated?.marketingChannels) && updated.marketingChannels.length > 0
-            ? updated.marketingChannels.join('\n')
-            : prev.marketingChannelsInput,
+          marketingChannelsInput:
+            Array.isArray(updated?.marketingChannels) && updated.marketingChannels.length > 0
+              ? updated.marketingChannels.join('\n')
+              : prev.marketingChannelsInput,
         }))
       }
 
@@ -153,16 +163,12 @@ export default function StoreInfoPage() {
       <Header />
       <main className="p-8">
         <div className="mx-auto max-w-4xl">
-          {/* ヘッダー */}
-          <div className="mb-6 flex items-center gap-4">
-            <Link href="/admin/settings">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            <Store className="h-8 w-8 text-emerald-600" />
-            <h1 className="text-3xl font-bold text-gray-900">店舗情報設定</h1>
-          </div>
+          <PageHeader
+            title="店舗情報設定"
+            backHref="/admin/settings"
+            backIcon={ArrowLeft}
+            icon={Store}
+          />
 
           <div className="space-y-6">
             {/* 基本情報 */}

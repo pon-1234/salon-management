@@ -33,9 +33,7 @@ export function StoreFooter({ store }: StoreFooterProps) {
         <div className="space-y-6 text-center">
           {/* Store Title */}
           <div className="space-y-2">
-            <p className="luxury-display text-sm tracking-[0.4em] text-[#d7b46a]">
-              OFFICIAL SITE
-            </p>
+            <p className="luxury-display text-sm tracking-[0.4em] text-[#d7b46a]">OFFICIAL SITE</p>
             <h3 className="text-xl font-semibold md:text-2xl">
               {store.name.replace('店', '')}の回春エステなら贅沢密着トリートメント
             </h3>

@@ -403,12 +403,15 @@ function DayRow({
               </div>
               <div className="rounded border border-dashed px-3 py-2">
                 <p className="text-xs text-muted-foreground">指名料</p>
-                <p className="text-lg font-semibold">¥{breakdown.designationTotal.toLocaleString()}</p>
+                <p className="text-lg font-semibold">
+                  ¥{breakdown.designationTotal.toLocaleString()}
+                </p>
               </div>
               <div className="rounded border border-dashed px-3 py-2">
                 <p className="text-xs text-muted-foreground">調整分</p>
                 <p className="text-lg font-semibold">
-                  {breakdown.adjustmentTotal >= 0 ? '+' : '-'}¥{Math.abs(breakdown.adjustmentTotal).toLocaleString()}
+                  {breakdown.adjustmentTotal >= 0 ? '+' : '-'}¥
+                  {Math.abs(breakdown.adjustmentTotal).toLocaleString()}
                 </p>
               </div>
               <div className="rounded border border-dashed px-3 py-2">
@@ -435,13 +438,16 @@ function DayRow({
                 <div className="mt-2 space-y-1">
                   {courseSummary.rows.map((row) => (
                     <div key={row.courseLabel} className="flex items-center justify-between">
-                      <span className="font-medium text-foreground">{row.courseLabel} ×{row.count}</span>
+                      <span className="font-medium text-foreground">
+                        {row.courseLabel} ×{row.count}
+                      </span>
                       <span>¥{row.total.toLocaleString()}</span>
                     </div>
                   ))}
                 </div>
                 <div className="mt-2 text-xs text-muted-foreground">
-                  合計 {courseSummary.totals.count} 本 / ¥{courseSummary.totals.total.toLocaleString()}
+                  合計 {courseSummary.totals.count} 本 / ¥
+                  {courseSummary.totals.total.toLocaleString()}
                 </div>
               </div>
               <div>
@@ -450,7 +456,9 @@ function DayRow({
                   <div className="mt-2 space-y-1">
                     {optionSummary.rows.map((row) => (
                       <div key={row.name} className="flex items-center justify-between">
-                        <span className="font-medium text-foreground">{row.name} ×{row.count}</span>
+                        <span className="font-medium text-foreground">
+                          {row.name} ×{row.count}
+                        </span>
                         <span>¥{row.total.toLocaleString()}</span>
                       </div>
                     ))}
@@ -465,7 +473,9 @@ function DayRow({
                   <div className="mt-2 space-y-1">
                     {designationSummary.rows.map((row) => (
                       <div key={row.label} className="flex items-center justify-between">
-                        <span className="font-medium text-foreground">{row.label} ×{row.count}</span>
+                        <span className="font-medium text-foreground">
+                          {row.label} ×{row.count}
+                        </span>
                         <span>¥{row.total.toLocaleString()}</span>
                       </div>
                     ))}
@@ -482,9 +492,7 @@ function DayRow({
                     : `${breakdown.adjustmentTotal > 0 ? '+' : '-'}¥${Math.abs(breakdown.adjustmentTotal).toLocaleString()}`}
                 </span>
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                ※姫予約など手取りを変動した場合
-              </p>
+              <p className="text-xs text-muted-foreground">※姫予約など手取りを変動した場合</p>
               <div className="border-t pt-2 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">女性小計</span>
@@ -496,7 +504,10 @@ function DayRow({
                 </div>
                 <div className="flex items-center justify-between font-semibold text-emerald-700">
                   <span>手取り</span>
-                  <span>¥{Math.max(breakdown.staffSubtotal - breakdown.welfareTotal, 0).toLocaleString()}</span>
+                  <span>
+                    ¥
+                    {Math.max(breakdown.staffSubtotal - breakdown.welfareTotal, 0).toLocaleString()}
+                  </span>
                 </div>
               </div>
             </div>
@@ -504,7 +515,7 @@ function DayRow({
           <div className="space-y-2 rounded-md border border-dashed border-muted-foreground/40 bg-white/70 px-3 py-2">
             <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
               <span>予約ごとの精算状況</span>
-              <span className="text-[11px]">手取り = キャスト売上 - 厚生費</span>
+              <span className="text-xs">手取り = キャスト売上 - 厚生費</span>
             </div>
             <div className="divide-y">
               {day.records.map((record) => {
@@ -527,7 +538,8 @@ function DayRow({
                         {record.courseName ?? 'コース未設定'}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        オプション {record.options.length}件・キャスト売上 ¥{record.staffRevenue.toLocaleString()}
+                        オプション {record.options.length}件・キャスト売上 ¥
+                        {record.staffRevenue.toLocaleString()}
                       </div>
                     </div>
                     <Badge variant="outline" className={style}>
@@ -535,7 +547,7 @@ function DayRow({
                     </Badge>
                     <div className="ml-auto text-right">
                       <div className="font-semibold text-foreground">¥{net.toLocaleString()}</div>
-                      <div className="text-[11px] text-muted-foreground">手取り</div>
+                      <div className="text-xs text-muted-foreground">手取り</div>
                     </div>
                   </div>
                 )

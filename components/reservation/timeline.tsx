@@ -29,7 +29,8 @@ const BOOKING_STEP_MINUTES = 10
 const MIN_BOOKING_DURATION_MINUTES = 10
 const MIN_DISPLAY_SLOT_MINUTES = 10
 
-const snapToStep = (minute: number) => Math.ceil(minute / BOOKING_STEP_MINUTES) * BOOKING_STEP_MINUTES
+const snapToStep = (minute: number) =>
+  Math.ceil(minute / BOOKING_STEP_MINUTES) * BOOKING_STEP_MINUTES
 
 // safeMapを安全に実装（undefinedやnullでも空配列を返す）
 function safeMap<T, U>(arr: T[] | undefined | null, callback: (item: T, index: number) => U): U[] {
@@ -139,9 +140,7 @@ export function Timeline({
         .sort((a, b) => a - b)
 
       const filteredMinutes =
-        nowMinutes !== null
-          ? validMinutes.filter((minute) => minute >= nowMinutes)
-          : validMinutes
+        nowMinutes !== null ? validMinutes.filter((minute) => minute >= nowMinutes) : validMinutes
 
       return filteredMinutes.map(minutesToUtcDate)
     },
@@ -178,12 +177,8 @@ export function Timeline({
   }
 
   const filteredStaff = safeMap(staff, (member) => {
-    const filteredAppointments = safeMap(
-      member.appointments,
-      (app) =>
-        formatInTimeZone(app.startTime, JST_TIMEZONE, 'yyyy-MM-dd') === selectedDateKey
-          ? app
-          : null
+    const filteredAppointments = safeMap(member.appointments, (app) =>
+      formatInTimeZone(app.startTime, JST_TIMEZONE, 'yyyy-MM-dd') === selectedDateKey ? app : null
     ).filter((app): app is Appointment => app !== null)
 
     return {
@@ -253,10 +248,7 @@ export function Timeline({
           getMinutesFromDate(appointment.startTime),
           startMinutes
         )
-        const appointmentEndMinute = Math.min(
-          getMinutesFromDate(appointment.endTime),
-          endMinutes
-        )
+        const appointmentEndMinute = Math.min(getMinutesFromDate(appointment.endTime), endMinutes)
 
         if (appointmentEndMinute <= currentMinute) {
           continue
@@ -481,8 +473,7 @@ export function Timeline({
                     </div>
                     <div className="flex items-center gap-1 text-xs text-gray-600">
                       <Clock className="h-3 w-3" />
-                      {formatInTimeZone(appointment.startTime, JST_TIMEZONE, 'HH:mm')}
-                      -
+                      {formatInTimeZone(appointment.startTime, JST_TIMEZONE, 'HH:mm')}-
                       {formatInTimeZone(appointment.endTime, JST_TIMEZONE, 'HH:mm')}
                     </div>
                     {appointment.serviceId && (
@@ -512,9 +503,7 @@ export function Timeline({
                             : 'bg-white/80 text-gray-600 hover:border-emerald-500 hover:bg-emerald-50'
                         )}
                       >
-                        <div className="mb-2 text-xs text-gray-500">
-                          空き {slot.duration}分
-                        </div>
+                        <div className="mb-2 text-xs text-gray-500">空き {slot.duration}分</div>
                         <div className="flex flex-wrap items-center justify-center gap-2">
                           {selectableTimes.map((startTime) => {
                             const label = formatInTimeZone(startTime, JST_TIMEZONE, 'HH:mm')
@@ -538,7 +527,7 @@ export function Timeline({
                           })}
                         </div>
                         {disabled && (
-                          <span className="mt-1 text-[10px] text-gray-400">顧客を選択してください</span>
+                          <span className="mt-1 text-xs text-gray-400">顧客を選択してください</span>
                         )}
                       </div>
                     </div>

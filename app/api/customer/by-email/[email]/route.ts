@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Next 15 dynamic route params contract
+ * @related_to   customer lookup routes: admin/self customer data lookup
+ * @known_issues Returns full customer include shape minus password
+ */
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
@@ -5,19 +10,20 @@ import { db } from '@/lib/db'
 import logger from '@/lib/logger'
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     email: string
-  }
+  }>
 }
 
 export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
+    const { email } = await params
     const session = await getServerSession(authOptions)
     if (!session) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const rawEmail = params.email ? decodeURIComponent(params.email) : ''
+    const rawEmail = email ? decodeURIComponent(email) : ''
     const trimmedEmail = rawEmail.trim()
     if (!trimmedEmail) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 })

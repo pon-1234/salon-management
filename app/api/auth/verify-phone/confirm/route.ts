@@ -88,7 +88,10 @@ export async function POST(request: Request) {
     if (!session && email && password) {
       const emailOwner = await db.customer.findUnique({ where: { email } })
       if (emailOwner && emailOwner.id !== customer.id) {
-        return NextResponse.json({ error: 'このメールアドレスは既に登録されています。' }, { status: 409 })
+        return NextResponse.json(
+          { error: 'このメールアドレスは既に登録されています。' },
+          { status: 409 }
+        )
       }
 
       if (customer.email && !isPlaceholderEmail(customer.email) && customer.email !== email) {

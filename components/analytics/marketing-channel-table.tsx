@@ -15,7 +15,6 @@ interface MarketingChannelTableProps {
 }
 
 export function MarketingChannelTable({ data }: MarketingChannelTableProps) {
-
   const months = Array.from({ length: 12 }, (_, i) => i + 1)
 
   // Calculate totals

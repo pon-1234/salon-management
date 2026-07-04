@@ -1,15 +1,51 @@
+/**
+ * @design_doc   ui-improvement-instructions.md U-12 metadata
+ * @related_to   StoreProvider: public store context; fetchStoreBySlug: store metadata source
+ * @known_issues Client child pages inherit layout metadata until page split work
+ */
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { fetchStoreBySlug } from '@/lib/store/public-api'
 import { StoreProvider } from '@/components/store-provider'
+
+type StoreLayoutParams = {
+  store: string
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<StoreLayoutParams>
+}): Promise<Metadata> {
+  const { store: storeSlug } = await params
+  const store = await fetchStoreBySlug(storeSlug)
+
+  if (!store) {
+    return {
+      title: {
+        default: '店舗情報',
+        template: '%s | GOLD ESTHE GROUP',
+      },
+    }
+  }
+
+  return {
+    title: {
+      default: `${store.displayName ?? store.name} | GOLD ESTHE GROUP`,
+      template: `%s | ${store.displayName ?? store.name}`,
+    },
+    description: store.seoDescription ?? `${store.displayName ?? store.name}の店舗情報です。`,
+  }
+}
 
 export default async function StoreLayout({
   children,
   params,
 }: {
   children: React.ReactNode
-  params: { store: string }
+  params: Promise<StoreLayoutParams>
 }) {
-  const { store: storeSlug } = params
+  const { store: storeSlug } = await params
   const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {
@@ -19,7 +55,7 @@ export default async function StoreLayout({
   return (
     <StoreProvider store={store}>
       <div
-        className="luxury-body bg-[#0b0b0b] text-foreground"
+        className="luxury-body bg-luxury-black-deep text-foreground"
         style={
           {
             '--primary-color': store.theme?.primaryColor,

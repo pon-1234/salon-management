@@ -1,8 +1,14 @@
-import type { Metadata } from 'next'
-import { Noto_Sans_JP, Playfair_Display } from 'next/font/google'
+/**
+ * @design_doc   ui-improvement-instructions.md U-1 toast wiring
+ * @related_to   Toaster, AuthProvider, StoreProvider: global app shell providers
+ * @known_issues Route-specific client pages still rely on nearest layout metadata
+ */
+import type { Metadata, Viewport } from 'next'
+import { Cinzel, Noto_Sans_JP, Noto_Serif_JP, Playfair_Display } from 'next/font/google'
 import '../styles/globals.css'
 import { StoreProvider } from '@/contexts/store-context'
 import { AuthProvider } from '@/contexts/auth-context'
+import { Toaster } from '@/components/ui/toaster'
 
 const bodyFont = Noto_Sans_JP({
   subsets: ['latin'],
@@ -16,18 +22,38 @@ const displayFont = Playfair_Display({
   variable: '--font-display',
 })
 
+const luxurySerifFont = Noto_Serif_JP({
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  variable: '--font-luxury-serif',
+})
+
+const luxuryDisplayFont = Cinzel({
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  variable: '--font-luxury-display',
+})
+
 export const metadata: Metadata = {
   title: '金の玉クラブ | GOLD ESTHE GROUP',
   description: '密着度の高い性感睾丸マッサージ専門店「金の玉クラブ」公式サイト',
-  generator: 'v0.dev',
+}
+
+export const viewport: Viewport = {
+  themeColor: '#0b0b0b',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja">
-      <body className={`${bodyFont.variable} ${displayFont.variable} antialiased`}>
+      <body
+        className={`${bodyFont.variable} ${displayFont.variable} ${luxurySerifFont.variable} ${luxuryDisplayFont.variable} antialiased`}
+      >
         <AuthProvider>
-          <StoreProvider>{children}</StoreProvider>
+          <StoreProvider>
+            {children}
+            <Toaster />
+          </StoreProvider>
         </AuthProvider>
       </body>
     </html>

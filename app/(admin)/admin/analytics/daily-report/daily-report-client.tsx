@@ -56,7 +56,7 @@ export function DailyReportPageClient() {
       <h1 className="mb-4 text-2xl font-bold">日報</h1>
       <div className="mb-6 flex items-center gap-4">
         <DatePicker selected={selectedDate} onSelect={(date) => date && setSelectedDate(date)} />
-        <Button onClick={handleRefresh} variant="outline" size="icon">
+        <Button onClick={handleRefresh} variant="outline" size="icon" aria-label="日報を再読み込み">
           <RefreshCw className="h-4 w-4" />
         </Button>
       </div>

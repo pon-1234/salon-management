@@ -110,7 +110,7 @@ export default function CustomerProfile() {
   const router = useRouter()
   const params = useParams<{ id: string }>()
   const idParam = params?.id
-  const id = Array.isArray(idParam) ? idParam[0] : idParam ?? ''
+  const id = Array.isArray(idParam) ? idParam[0] : (idParam ?? '')
 
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [usageHistory, setUsageHistory] = useState<CustomerUsageRecord[]>([])
@@ -157,8 +157,7 @@ export default function CustomerProfile() {
     } catch (error) {
       toast({
         title: 'エラー',
-        description:
-          error instanceof Error ? error.message : 'ポイント履歴の取得に失敗しました',
+        description: error instanceof Error ? error.message : 'ポイント履歴の取得に失敗しました',
         variant: 'destructive',
       })
     }
@@ -645,7 +644,9 @@ export default function CustomerProfile() {
               </span>
             )}
           </CardTitle>
-          <CardDescription>予約およびチャット履歴から自動で集計された警戒度と嗜好データ</CardDescription>
+          <CardDescription>
+            予約およびチャット履歴から自動で集計された警戒度と嗜好データ
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {insightsLoading ? (

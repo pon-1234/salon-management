@@ -3,7 +3,15 @@
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
-import { CalendarDays, CheckCircle2, Clock, Loader2, RefreshCcw, TrendingUp, UserCheck } from 'lucide-react'
+import {
+  CalendarDays,
+  CheckCircle2,
+  Clock,
+  Loader2,
+  RefreshCcw,
+  TrendingUp,
+  UserCheck,
+} from 'lucide-react'
 import type { CastDashboardData, CastPortalReservation } from '@/lib/cast-portal/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -36,7 +44,9 @@ export function CastDashboardContent({ initialData }: Props) {
       return null
     }
     return (
-      data.todayReservations.find((reservation) => reservation.id === data.attendance.currentReservationId) ??
+      data.todayReservations.find(
+        (reservation) => reservation.id === data.attendance.currentReservationId
+      ) ??
       (data.nextReservation && data.nextReservation.id === data.attendance.currentReservationId
         ? data.nextReservation
         : null)
@@ -166,12 +176,18 @@ export function CastDashboardContent({ initialData }: Props) {
     <div className="space-y-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-sm text-muted-foreground">{format(new Date(), 'yyyy年M月d日（E）', { locale: ja })}</p>
+          <p className="text-sm text-muted-foreground">
+            {format(new Date(), 'yyyy年M月d日（E）', { locale: ja })}
+          </p>
           <h2 className="text-2xl font-bold">本日のサマリー</h2>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isPending}>
-            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
+            {isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCcw className="mr-2 h-4 w-4" />
+            )}
             更新
           </Button>
         </div>
@@ -187,8 +203,14 @@ export function CastDashboardContent({ initialData }: Props) {
         <SummaryCard
           icon={Clock}
           label="直近の予定"
-          value={data.nextReservation ? formatTimeline(data.nextReservation) : '次の予約はありません'}
-          helper={data.nextReservation ? `${format(new Date(data.nextReservation.startTime), 'HH:mm')} 開始` : 'スケジュールを確認してください'}
+          value={
+            data.nextReservation ? formatTimeline(data.nextReservation) : '次の予約はありません'
+          }
+          helper={
+            data.nextReservation
+              ? `${format(new Date(data.nextReservation.startTime), 'HH:mm')} 開始`
+              : 'スケジュールを確認してください'
+          }
         />
         <SummaryCard
           icon={TrendingUp}
@@ -242,8 +264,12 @@ export function CastDashboardContent({ initialData }: Props) {
         reservation={currentReservation}
         canCheckIn={data.attendance.canCheckIn}
         canCheckOut={data.attendance.canCheckOut}
-        onCheckIn={() => handleAttendanceAction('check-in', data.attendance.currentReservationId ?? undefined)}
-        onCheckOut={() => handleAttendanceAction('check-out', data.attendance.currentReservationId ?? undefined)}
+        onCheckIn={() =>
+          handleAttendanceAction('check-in', data.attendance.currentReservationId ?? undefined)
+        }
+        onCheckOut={() =>
+          handleAttendanceAction('check-out', data.attendance.currentReservationId ?? undefined)
+        }
         isPending={isPending}
       />
       <section className="space-y-4">
@@ -330,7 +356,9 @@ function AttendanceCard({
           <div>
             <p className="text-xs font-semibold uppercase text-primary">次のアクション</p>
           </div>
-          <span className={cn('rounded-full px-3 py-1 text-xs font-semibold', statusMeta.className)}>
+          <span
+            className={cn('rounded-full px-3 py-1 text-xs font-semibold', statusMeta.className)}
+          >
             {statusMeta.label}
           </span>
         </div>
@@ -340,7 +368,9 @@ function AttendanceCard({
           </p>
           {reservation ? (
             <p className="text-sm text-muted-foreground">
-              {format(new Date(reservation.startTime), 'HH:mm')} - {format(new Date(reservation.endTime), 'HH:mm')} / {reservation.courseName ?? 'コース未設定'}
+              {format(new Date(reservation.startTime), 'HH:mm')} -{' '}
+              {format(new Date(reservation.endTime), 'HH:mm')} /{' '}
+              {reservation.courseName ?? 'コース未設定'}
             </p>
           ) : (
             <p className="text-sm text-muted-foreground">予定が入るとこちらに表示されます。</p>
@@ -353,7 +383,11 @@ function AttendanceCard({
             onClick={onCheckIn}
             disabled={!canCheckIn || isPending}
           >
-            {isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle2 className="mr-2 h-5 w-5" />}
+            {isPending ? (
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            ) : (
+              <CheckCircle2 className="mr-2 h-5 w-5" />
+            )}
             チェックイン
           </Button>
           <Button
@@ -362,7 +396,11 @@ function AttendanceCard({
             onClick={onCheckOut}
             disabled={!canCheckOut || isPending}
           >
-            {isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Clock className="mr-2 h-5 w-5" />}
+            {isPending ? (
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            ) : (
+              <Clock className="mr-2 h-5 w-5" />
+            )}
             チェックアウト
           </Button>
         </div>
@@ -381,7 +419,9 @@ function ReservationItem({ reservation }: { reservation: CastPortalReservation }
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm font-semibold">
-            <span>{format(start, 'HH:mm')} - {format(end, 'HH:mm')}</span>
+            <span>
+              {format(start, 'HH:mm')} - {format(end, 'HH:mm')}
+            </span>
             {statusBadge}
           </div>
           <p className="text-sm text-muted-foreground">
@@ -389,7 +429,9 @@ function ReservationItem({ reservation }: { reservation: CastPortalReservation }
           </p>
           <p className="text-xs text-muted-foreground">
             {reservation.areaName ?? 'エリア未設定'}
-            {reservation.designationType ? ` / 指名: ${renderDesignation(reservation.designationType)}` : ''}
+            {reservation.designationType
+              ? ` / 指名: ${renderDesignation(reservation.designationType)}`
+              : ''}
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -521,7 +563,9 @@ function CastRequestAttendanceControl({
           >
             受付しない
           </Button>
-          <span className="text-xs text-muted-foreground">現在: {enabled ? '受付中' : '停止中'}</span>
+          <span className="text-xs text-muted-foreground">
+            現在: {enabled ? '受付中' : '停止中'}
+          </span>
         </div>
       </CardContent>
     </Card>
@@ -574,10 +618,22 @@ function renderDesignation(type?: string | null) {
 
 function renderReservationStatus(reservation: CastPortalReservation) {
   if (reservation.checkedOutAt) {
-    return <Badge variant="outline" className="border-emerald-200 text-emerald-600">完了</Badge>
+    return (
+      <Badge variant="outline" className="border-emerald-200 text-emerald-600">
+        完了
+      </Badge>
+    )
   }
   if (reservation.checkedInAt) {
-    return <Badge variant="outline" className="border-primary/30 text-primary">対応中</Badge>
+    return (
+      <Badge variant="outline" className="border-primary/30 text-primary">
+        対応中
+      </Badge>
+    )
   }
-  return <Badge variant="outline" className="border-muted-foreground/20 text-muted-foreground">待機</Badge>
+  return (
+    <Badge variant="outline" className="border-muted-foreground/20 text-muted-foreground">
+      待機
+    </Badge>
+  )
 }

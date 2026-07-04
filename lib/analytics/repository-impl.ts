@@ -1,3 +1,8 @@
+/**
+ * @design_doc   refactor-instructions.md Phase 6 D-11 analytics real-data connection
+ * @related_to   AnalyticsRepository: legacy in-memory analytics implementation
+ * @known_issues Retained for tests and non-API callers; primary UI uses repository.ts
+ */
 import {
   AnalyticsRepository,
   MonthlyData,
@@ -36,7 +41,7 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
     return generateDailyData(year, month)
   }
 
-  async getStaffPerformanceData(): Promise<StaffPerformanceData[]> {
+  async getStaffPerformanceData(_year: number, _month: number): Promise<StaffPerformanceData[]> {
     return staffPerformanceData
   }
 

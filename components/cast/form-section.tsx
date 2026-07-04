@@ -11,18 +11,13 @@ interface FormSectionProps {
   contentClassName?: string
 }
 
-export function FormSection({
-  title,
-  description,
-  children,
-  contentClassName,
-}: FormSectionProps) {
+export function FormSection({ title, description, children, contentClassName }: FormSectionProps) {
   return (
     <Card>
       <CardHeader className="space-y-1">
         <CardTitle className="text-lg font-semibold">{title}</CardTitle>
         {description ? (
-          <CardDescription className="text-sm text-muted-foreground leading-relaxed">
+          <CardDescription className="text-sm leading-relaxed text-muted-foreground">
             {description}
           </CardDescription>
         ) : null}
@@ -31,4 +26,3 @@ export function FormSection({
     </Card>
   )
 }
-

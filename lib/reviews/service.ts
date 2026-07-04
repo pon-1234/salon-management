@@ -54,7 +54,7 @@ const REVIEW_STATUS_VALUES: ReviewStatus[] = ['pending', 'published', 'hidden']
 
 type PrismaReviewWithRelations = Prisma.ReviewGetPayload<{
   include: typeof reviewDefaultInclude
-}>;
+}>
 
 export type ReviewServiceErrorCode =
   | 'RESERVATION_NOT_FOUND'
@@ -65,7 +65,10 @@ export type ReviewServiceErrorCode =
   | 'INVALID_STATUS'
 
 export class ReviewServiceError extends Error {
-  constructor(public code: ReviewServiceErrorCode, message: string) {
+  constructor(
+    public code: ReviewServiceErrorCode,
+    message: string
+  ) {
     super(message)
     this.name = 'ReviewServiceError'
   }
@@ -324,7 +327,7 @@ export async function updateReview(params: UpdateReviewParams): Promise<Review> 
     }
     const normalized = ensureValidStatuses([params.status])![0]
     data.status = normalized
-    data.publishedAt = normalized === 'published' ? existing.publishedAt ?? new Date() : null
+    data.publishedAt = normalized === 'published' ? (existing.publishedAt ?? new Date()) : null
   }
 
   if (Object.keys(data).length === 0) {

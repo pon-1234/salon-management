@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
+import logger from '@/lib/logger'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 
@@ -50,7 +51,10 @@ function serializeAdmin(admin: any) {
   let permissions: string[] = []
   if (admin.permissions) {
     try {
-      const parsed = typeof admin.permissions === 'string' ? admin.permissions : JSON.stringify(admin.permissions)
+      const parsed =
+        typeof admin.permissions === 'string'
+          ? admin.permissions
+          : JSON.stringify(admin.permissions)
       permissions = JSON.parse(parsed)
       if (!Array.isArray(permissions)) {
         permissions = []
@@ -130,14 +134,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ admin: serializeAdmin(admin) }, { status: 201 })
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: '入力内容に不備があります', details: err.issues }, { status: 400 })
+      return NextResponse.json(
+        { error: '入力内容に不備があります', details: err.issues },
+        { status: 400 }
+      )
     }
 
     if ((err as any)?.code === 'P2002') {
-      return NextResponse.json({ error: 'このメールアドレスは既に登録されています' }, { status: 409 })
+      return NextResponse.json(
+        { error: 'このメールアドレスは既に登録されています' },
+        { status: 409 }
+      )
     }
 
-    console.error('Failed to create admin:', err)
+    logger.error('Failed to create admin:', err)
     return NextResponse.json({ error: '管理者の作成に失敗しました' }, { status: 500 })
   }
 }
@@ -190,12 +200,18 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ admin: serializeAdmin(admin) })
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: '入力内容に不備があります', details: err.issues }, { status: 400 })
+      return NextResponse.json(
+        { error: '入力内容に不備があります', details: err.issues },
+        { status: 400 }
+      )
     }
     if ((err as any)?.code === 'P2002') {
-      return NextResponse.json({ error: 'このメールアドレスは既に使用されています' }, { status: 409 })
+      return NextResponse.json(
+        { error: 'このメールアドレスは既に使用されています' },
+        { status: 409 }
+      )
     }
-    console.error('Failed to update admin:', err)
+    logger.error('Failed to update admin:', err)
     return NextResponse.json({ error: '管理者の更新に失敗しました' }, { status: 500 })
   }
 }
@@ -243,7 +259,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('Failed to delete admin:', err)
+    logger.error('Failed to delete admin:', err)
     return NextResponse.json({ error: '管理者の削除に失敗しました' }, { status: 500 })
   }
 }

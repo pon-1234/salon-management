@@ -52,7 +52,9 @@ const normalizeAvailableOptionSettings = (value: unknown) => {
       const visibility = (item as any).visibility === 'internal' ? 'internal' : 'public'
       return { optionId, visibility }
     })
-    .filter((entry): entry is { optionId: string; visibility: 'public' | 'internal' } => Boolean(entry))
+    .filter((entry): entry is { optionId: string; visibility: 'public' | 'internal' } =>
+      Boolean(entry)
+    )
 
   const seen = new Set<string>()
   return normalized.filter((entry) => {
@@ -112,15 +114,11 @@ const normalizeAppointment = (raw: any): Appointment | null => {
 
 export const normalizeCast = (raw: any): Cast => {
   const appointmentsFromApi = Array.isArray(raw.appointments)
-    ? raw.appointments
-        .map(normalizeAppointment)
-        .filter(isAppointment)
+    ? raw.appointments.map(normalizeAppointment).filter(isAppointment)
     : []
 
   const reservationAppointments = Array.isArray(raw.reservations)
-    ? raw.reservations
-        .map(normalizeAppointment)
-        .filter(isAppointment)
+    ? raw.reservations.map(normalizeAppointment).filter(isAppointment)
     : []
 
   const appointments =
@@ -147,7 +145,7 @@ export const normalizeCast = (raw: any): Cast => {
     image:
       typeof raw.image === 'string' && raw.image.trim().length > 0
         ? raw.image
-        : normalizeImages(raw.images)[0] ?? FALLBACK_IMAGE,
+        : (normalizeImages(raw.images)[0] ?? FALLBACK_IMAGE),
     images: (() => {
       const normalized = normalizeImages(raw.images ?? raw.image)
       return normalized.length > 0 ? normalized : [FALLBACK_IMAGE]

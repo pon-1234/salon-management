@@ -66,9 +66,7 @@ export function CustomerList({ selectedCustomerId, onSelectCustomer }: CustomerL
 
       setCustomers((prev) =>
         prev.map((customer) =>
-          customer.id === customerId
-            ? { ...customer, hasUnread: false, unreadCount: 0 }
-            : customer
+          customer.id === customerId ? { ...customer, hasUnread: false, unreadCount: 0 } : customer
         )
       )
     }

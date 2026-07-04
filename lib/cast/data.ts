@@ -1,8 +1,6 @@
 import { Cast, type CastSchedule, Appointment } from './types'
 import { addDays, format } from 'date-fns'
-import { zonedTimeToUtc } from 'date-fns-tz'
-
-const JST_TIMEZONE = 'Asia/Tokyo'
+import { toUtcFromJst } from '@/lib/shared/timezone'
 
 export const createDate = (hours: number, minutes = 0) => {
   const now = new Date()
@@ -14,7 +12,7 @@ export const createDate = (hours: number, minutes = 0) => {
   const hourPart = Math.floor(normalizedMinutes / 60)
   const minutePart = normalizedMinutes % 60
   const isoLocal = `${datePart}T${String(hourPart).padStart(2, '0')}:${String(minutePart).padStart(2, '0')}:00`
-  return zonedTimeToUtc(isoLocal, JST_TIMEZONE)
+  return toUtcFromJst(isoLocal)
 }
 
 export type { Cast, Appointment }

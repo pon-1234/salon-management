@@ -1,11 +1,25 @@
+'use client'
+
+/**
+ * @design_doc   ui-improvement-instructions.md U-6 admin analytics navigation
+ * @related_to   app/(admin)/admin/analytics/layout.tsx: analytics route shell
+ * @known_issues Sidebar structure remains otherwise unchanged
+ */
 import { Calendar, BarChart3, CalendarDays, Clock, Users } from 'lucide-react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { cn } from '@/lib/utils'
 
 const navigation = [
   {
     name: '日次レポート',
     href: '/admin/analytics/daily-sales',
     icon: Calendar,
+  },
+  {
+    name: '業務日報',
+    href: '/admin/analytics/daily-report',
+    icon: CalendarDays,
   },
   {
     name: '月次レポート',
@@ -57,15 +71,29 @@ const navigation = [
     href: '/admin/analytics/staff-attendance',
     icon: Users,
   },
+  {
+    name: '決済状況',
+    href: '/admin/analytics/payment-status',
+    icon: BarChart3,
+  },
 ]
 
 export function AnalyticsLayout() {
+  const pathname = usePathname()
+
   return (
     <nav className="sticky top-[83px] h-[calc(100vh-83px)] w-64 flex-shrink-0 overflow-y-auto border-r bg-gray-100">
       <ul className="space-y-2 p-4">
         {navigation.map((item) => (
           <li key={item.name}>
-            <Link href={item.href} className="flex items-center rounded p-2 hover:bg-gray-200">
+            <Link
+              href={item.href}
+              aria-current={pathname === item.href ? 'page' : undefined}
+              className={cn(
+                'flex items-center rounded p-2 hover:bg-gray-200',
+                pathname === item.href && 'bg-gray-900 text-white hover:bg-gray-900'
+              )}
+            >
               <item.icon className="mr-2 h-5 w-5" />
               {item.name}
             </Link>

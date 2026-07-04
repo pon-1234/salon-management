@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
+import logger from '@/lib/logger'
+import { requireAdmin } from '@/lib/auth/utils'
 import { getOptionCombinationReport } from '@/lib/analytics/server'
 import { FALLBACK_STORE_ID } from '@/lib/analytics/server/common'
 
 export async function GET(request: NextRequest) {
+  const authError = await requireAdmin()
+  if (authError) return authError
+
   try {
     const searchParams = request.nextUrl.searchParams
     const yearParam = searchParams.get('year')
@@ -20,7 +25,7 @@ export async function GET(request: NextRequest) {
     const report = await getOptionCombinationReport(year, storeId)
     return NextResponse.json(report, { status: 200 })
   } catch (error) {
-    console.error('[analytics.option-combinations] failed to build report', error)
+    logger.error('[analytics.option-combinations] failed to build report', error)
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
   }
 }

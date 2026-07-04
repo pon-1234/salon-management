@@ -88,18 +88,13 @@ export default function AnnualReportPage() {
   const totalSales = monthlyData.reduce((sum, item) => sum + item.totalSales, 0)
   const previousYearSales = previousMonthlyData.reduce((sum, item) => sum + item.totalSales, 0)
   const customerCount = monthlyData.reduce((sum, item) => sum + item.totalCount, 0)
-  const previousYearCustomers = previousMonthlyData.reduce(
-    (sum, item) => sum + item.totalCount,
-    0
-  )
-  const averageMonthly =
-    monthlyData.length > 0 ? Math.round(totalSales / monthlyData.length) : 0
+  const previousYearCustomers = previousMonthlyData.reduce((sum, item) => sum + item.totalCount, 0)
+  const averageMonthly = monthlyData.length > 0 ? Math.round(totalSales / monthlyData.length) : 0
   const previousAverageMonthly =
     previousMonthlyData.length > 0 ? Math.round(previousYearSales / previousMonthlyData.length) : 0
   const storeCount = availableStores.length
   const newStoreCount = availableStores.filter((store) => {
-    const createdAt =
-      store.createdAt instanceof Date ? store.createdAt : new Date(store.createdAt)
+    const createdAt = store.createdAt instanceof Date ? store.createdAt : new Date(store.createdAt)
     return createdAt.getFullYear() === selectedYear
   }).length
 

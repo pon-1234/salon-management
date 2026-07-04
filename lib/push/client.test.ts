@@ -1,18 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { pushClient } from './client'
+import logger from '@/lib/logger'
 
 describe('Push Client', () => {
-  let consoleLogSpy: any
-
   beforeEach(() => {
     vi.clearAllMocks()
     vi.useFakeTimers()
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
   })
 
   afterEach(() => {
     vi.useRealTimers()
-    consoleLogSpy.mockRestore()
   })
 
   describe('send', () => {
@@ -28,7 +25,7 @@ describe('Push Client', () => {
 
       await promise
 
-      expect(consoleLogSpy).toHaveBeenCalledWith('Sending push notification:', {
+      expect(logger.info).toHaveBeenCalledWith('Sending push notification:', {
         userId: 'user123',
         title: 'Test Notification',
         body: 'This is a test push notification',
@@ -94,7 +91,7 @@ describe('Push Client', () => {
 
       expect(result.success).toBe(true)
       // Note: The data field is not logged in the current implementation
-      expect(consoleLogSpy).toHaveBeenCalledWith('Sending push notification:', {
+      expect(logger.info).toHaveBeenCalledWith('Sending push notification:', {
         userId: 'user123',
         title: 'Order Update',
         body: 'Your order has been shipped',
@@ -113,7 +110,7 @@ describe('Push Client', () => {
       const result = await promise
 
       expect(result.success).toBe(true)
-      expect(consoleLogSpy).toHaveBeenCalledWith('Sending push notification:', {
+      expect(logger.info).toHaveBeenCalledWith('Sending push notification:', {
         userId: 'user123',
         title: '',
         body: '',
@@ -135,7 +132,7 @@ describe('Push Client', () => {
       const result = await promise
 
       expect(result.success).toBe(true)
-      expect(consoleLogSpy).toHaveBeenCalledWith('Sending push notification:', {
+      expect(logger.info).toHaveBeenCalledWith('Sending push notification:', {
         userId: 'user123',
         title: longTitle,
         body: longBody,
@@ -154,7 +151,7 @@ describe('Push Client', () => {
       const result = await promise
 
       expect(result.success).toBe(true)
-      expect(consoleLogSpy).toHaveBeenCalledWith('Sending push notification:', {
+      expect(logger.info).toHaveBeenCalledWith('Sending push notification:', {
         userId: 'user123',
         title: '🎉 Special Characters!',
         body: 'Japanese: こんにちは, Emoji: 🚀',

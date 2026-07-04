@@ -30,6 +30,14 @@ vi.mock('crypto', async () => {
   }
 })
 
+const customerPhoneVerificationFields = {
+  phoneVerified: false,
+  phoneVerifiedAt: null,
+  phoneVerificationCode: null,
+  phoneVerificationExpiry: null,
+  phoneVerificationAttempts: 0,
+}
+
 describe('POST /api/auth/forgot-password', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -57,6 +65,7 @@ describe('POST /api/auth/forgot-password', () => {
       emailVerified: false,
       emailVerificationToken: null,
       emailVerificationExpiry: null,
+      ...customerPhoneVerificationFields,
     }
 
     vi.mocked(db.customer.findUnique).mockResolvedValue(mockCustomer)
@@ -164,6 +173,7 @@ describe('POST /api/auth/forgot-password', () => {
       emailVerified: false,
       emailVerificationToken: null,
       emailVerificationExpiry: null,
+      ...customerPhoneVerificationFields,
     }
 
     vi.mocked(db.customer.findUnique).mockResolvedValue(mockCustomer)
@@ -207,6 +217,7 @@ describe('POST /api/auth/forgot-password', () => {
       emailVerified: false,
       emailVerificationToken: null,
       emailVerificationExpiry: null,
+      ...customerPhoneVerificationFields,
     }
 
     vi.mocked(db.customer.findUnique).mockResolvedValue(mockCustomer)

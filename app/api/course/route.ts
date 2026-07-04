@@ -212,25 +212,37 @@ export async function POST(request: NextRequest) {
       }
       if (error instanceof Error && error.message === 'INVALID_DURATION') {
         return NextResponse.json(
-          { error: 'Validation error', details: [{ path: ['duration'], message: 'Duration must be greater than 0' }] },
+          {
+            error: 'Validation error',
+            details: [{ path: ['duration'], message: 'Duration must be greater than 0' }],
+          },
           { status: 400 }
         )
       }
       if (error instanceof Error && error.message === 'INVALID_PRICE') {
         return NextResponse.json(
-          { error: 'Validation error', details: [{ path: ['price'], message: 'Price must be 0以上の数値です' }] },
+          {
+            error: 'Validation error',
+            details: [{ path: ['price'], message: 'Price must be 0以上の数値です' }],
+          },
           { status: 400 }
         )
       }
       if (error instanceof Error && error.message === 'INVALID_STORE_SHARE') {
         return NextResponse.json(
-          { error: 'Validation error', details: [{ path: ['storeShare'], message: 'Store share must be 0以上の数値です' }] },
+          {
+            error: 'Validation error',
+            details: [{ path: ['storeShare'], message: 'Store share must be 0以上の数値です' }],
+          },
           { status: 400 }
         )
       }
       if (error instanceof Error && error.message === 'INVALID_CAST_SHARE') {
         return NextResponse.json(
-          { error: 'Validation error', details: [{ path: ['castShare'], message: 'Cast share must be 0以上の数値です' }] },
+          {
+            error: 'Validation error',
+            details: [{ path: ['castShare'], message: 'Cast share must be 0以上の数値です' }],
+          },
           { status: 400 }
         )
       }
@@ -285,25 +297,37 @@ export async function PUT(request: NextRequest) {
       }
       if (error instanceof Error && error.message === 'INVALID_DURATION') {
         return NextResponse.json(
-          { error: 'Validation error', details: [{ path: ['duration'], message: 'Duration must be greater than 0' }] },
+          {
+            error: 'Validation error',
+            details: [{ path: ['duration'], message: 'Duration must be greater than 0' }],
+          },
           { status: 400 }
         )
       }
       if (error instanceof Error && error.message === 'INVALID_PRICE') {
         return NextResponse.json(
-          { error: 'Validation error', details: [{ path: ['price'], message: 'Price must be 0以上の数値です' }] },
+          {
+            error: 'Validation error',
+            details: [{ path: ['price'], message: 'Price must be 0以上の数値です' }],
+          },
           { status: 400 }
         )
       }
       if (error instanceof Error && error.message === 'INVALID_STORE_SHARE') {
         return NextResponse.json(
-          { error: 'Validation error', details: [{ path: ['storeShare'], message: 'Store share must be 0以上の数値です' }] },
+          {
+            error: 'Validation error',
+            details: [{ path: ['storeShare'], message: 'Store share must be 0以上の数値です' }],
+          },
           { status: 400 }
         )
       }
       if (error instanceof Error && error.message === 'INVALID_CAST_SHARE') {
         return NextResponse.json(
-          { error: 'Validation error', details: [{ path: ['castShare'], message: 'Cast share must be 0以上の数値です' }] },
+          {
+            error: 'Validation error',
+            details: [{ path: ['castShare'], message: 'Cast share must be 0以上の数値です' }],
+          },
           { status: 400 }
         )
       }

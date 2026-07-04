@@ -1,20 +1,33 @@
 import { DistrictSalesReport } from '../types/district-sales'
 
+function createSeededRandom(seedSource: string) {
+  let seed = 0
+  for (let index = 0; index < seedSource.length; index += 1) {
+    seed = (seed * 31 + seedSource.charCodeAt(index)) >>> 0
+  }
+
+  return () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0
+    return seed / 0x100000000
+  }
+}
+
 export function generateDistrictSalesData(year: number, area: string): DistrictSalesReport {
+  const random = createSeededRandom(`${year}:${area}`)
   const districts = Array.from({ length: 8 }, (_, index) => {
     const districtName =
       area === '東京都'
         ? ['千代田区', '中央区', '港区', '新宿区', '渋谷区', '品川区', '目黒区', '世田谷区'][index]
-        : ['横浜市', '川崎市', '相模原市', '藤沢市', '鎌倉市', '茅ヶ崎市', '平塚市', '小田原市'][index]
+        : ['横浜市', '川崎市', '相模原市', '藤沢市', '鎌倉市', '茅ヶ崎市', '平塚市', '小田原市'][
+            index
+          ]
 
     const monthlySales = Array.from({ length: 12 }, () =>
-      Math.floor(8_000_000 + Math.random() * 6_000_000)
+      Math.floor(8_000_000 + random() * 6_000_000)
     )
-    const monthlyCustomers = Array.from({ length: 12 }, () =>
-      Math.floor(300 + Math.random() * 200)
-    )
+    const monthlyCustomers = Array.from({ length: 12 }, () => Math.floor(300 + random() * 200))
     const monthlyNewCustomers = monthlyCustomers.map((count) =>
-      Math.floor(count * (0.2 + Math.random() * 0.15))
+      Math.floor(count * (0.2 + random() * 0.15))
     )
 
     const total = monthlySales.reduce((sum, value) => sum + value, 0)
@@ -23,7 +36,7 @@ export function generateDistrictSalesData(year: number, area: string): DistrictS
 
     return {
       district: districtName,
-      code: area,
+      code: 'G7',
       monthlySales,
       total,
       monthlyCustomers,

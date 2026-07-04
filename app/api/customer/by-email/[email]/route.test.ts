@@ -31,6 +31,9 @@ describe('GET /api/customer/by-email/[email]', () => {
     new NextRequest(`http://localhost:3000/api/customer/by-email/${email}`, {
       method: 'GET',
     })
+  const buildContext = (email: string) => ({
+    params: Promise.resolve({ email }),
+  })
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -39,9 +42,7 @@ describe('GET /api/customer/by-email/[email]', () => {
   it('returns 401 when unauthenticated', async () => {
     vi.mocked(getServerSession).mockResolvedValueOnce(null)
 
-    const response = await GET(buildRequest('test@example.com'), {
-      params: { email: 'test@example.com' },
-    })
+    const response = await GET(buildRequest('test@example.com'), buildContext('test@example.com'))
 
     expect(response.status).toBe(401)
   })
@@ -51,9 +52,7 @@ describe('GET /api/customer/by-email/[email]', () => {
       user: { email: 'other@example.com', role: 'customer' },
     } as any)
 
-    const response = await GET(buildRequest('test@example.com'), {
-      params: { email: 'test@example.com' },
-    })
+    const response = await GET(buildRequest('test@example.com'), buildContext('test@example.com'))
 
     expect(response.status).toBe(403)
   })
@@ -70,9 +69,7 @@ describe('GET /api/customer/by-email/[email]', () => {
       password: 'hashed',
     } as any)
 
-    const response = await GET(buildRequest('test@example.com'), {
-      params: { email: 'test@example.com' },
-    })
+    const response = await GET(buildRequest('test@example.com'), buildContext('test@example.com'))
     const data = await response.json()
 
     expect(response.status).toBe(200)
@@ -86,9 +83,10 @@ describe('GET /api/customer/by-email/[email]', () => {
     } as any)
     vi.mocked(db.customer.findFirst).mockResolvedValueOnce(null)
 
-    const response = await GET(buildRequest('missing@example.com'), {
-      params: { email: 'missing@example.com' },
-    })
+    const response = await GET(
+      buildRequest('missing@example.com'),
+      buildContext('missing@example.com')
+    )
 
     expect(response.status).toBe(404)
   })
@@ -105,9 +103,10 @@ describe('GET /api/customer/by-email/[email]', () => {
       password: 'hashed',
     } as any)
 
-    const response = await GET(buildRequest('CUSTOMER@example.com'), {
-      params: { email: 'CUSTOMER@example.com' },
-    })
+    const response = await GET(
+      buildRequest('CUSTOMER@example.com'),
+      buildContext('CUSTOMER@example.com')
+    )
 
     const data = await response.json()
 

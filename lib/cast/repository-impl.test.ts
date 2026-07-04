@@ -86,9 +86,7 @@ describe('CastRepositoryImpl', () => {
       const [url, init] = vi.mocked(fetch).mock.calls[0]
       expect(url).toBe('/api/cast')
       expect(init?.method).toBe('GET')
-      expect(result).toEqual([
-        expect.objectContaining({ id: mockCast.id, name: mockCast.name }),
-      ])
+      expect(result).toEqual([expect.objectContaining({ id: mockCast.id, name: mockCast.name })])
     })
 
     it('should throw error when fetch fails', async () => {
@@ -325,9 +323,7 @@ describe('CastRepositoryImpl', () => {
       expect(url).toContain(`startDate=${encodeURIComponent(startDate.toISOString())}`)
       expect(url).toContain(`endDate=${encodeURIComponent(endDate.toISOString())}`)
       expect(init?.method).toBe('GET')
-      expect(result).toEqual([
-        expect.objectContaining({ castId: '1' }),
-      ])
+      expect(result).toEqual([expect.objectContaining({ castId: '1' })])
     })
 
     it('should throw error when fetch fails', async () => {
@@ -368,9 +364,7 @@ describe('CastRepositoryImpl', () => {
       }
 
       // Mock getCastSchedule call
-      vi.mocked(fetch).mockResolvedValueOnce(
-        mockResponse({ body: [existingSchedule] })
-      )
+      vi.mocked(fetch).mockResolvedValueOnce(mockResponse({ body: [existingSchedule] }))
 
       // Mock update call
       vi.mocked(fetch).mockResolvedValueOnce(mockResponse({ body: { success: true } }))

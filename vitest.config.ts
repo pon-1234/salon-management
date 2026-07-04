@@ -32,7 +32,7 @@ export default defineConfig({
         '**/*.mjs',
         '**/ui/**', // shadcn/ui components (already tested upstream)
         'app/layout.tsx',
-        'app/globals.css',
+        'styles/globals.css',
         'lib/utils.ts', // utility functions
       ],
       thresholds: {

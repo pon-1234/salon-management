@@ -13,8 +13,8 @@ vi.mock('@/lib/payment/service')
 const MockPaymentService = vi.mocked(PaymentService)
 
 // Mock Prisma
-vi.mock('@/lib/generated/prisma', () => ({
-  prisma: {
+vi.mock('@/lib/db', () => ({
+  db: {
     reservation: {
       create: vi.fn(),
       update: vi.fn(),

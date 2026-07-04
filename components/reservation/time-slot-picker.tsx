@@ -57,8 +57,7 @@ export function TimeSlotPicker({
     setAllSlots((prev) =>
       prev.map((slot) => ({
         ...slot,
-        available:
-          availableSlots.length > 0 ? isSlotAvailable(slot, availableSlots) : false,
+        available: availableSlots.length > 0 ? isSlotAvailable(slot, availableSlots) : false,
       }))
     )
   }, [availableSlots, isSlotAvailable])

@@ -12,15 +12,12 @@ import { db } from '@/lib/db'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
 import { getDefaultBanners } from '@/lib/store/public-fallbacks'
 
-const optionalDateSchema = z.preprocess(
-  (value) => {
-    if (value === undefined || value === null || value === '') {
-      return null
-    }
-    return value
-  },
-  z.coerce.date().nullable()
-)
+const optionalDateSchema = z.preprocess((value) => {
+  if (value === undefined || value === null || value === '') {
+    return null
+  }
+  return value
+}, z.coerce.date().nullable())
 
 const bannerSchema = z
   .object({

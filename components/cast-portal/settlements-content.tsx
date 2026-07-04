@@ -78,7 +78,9 @@ export function CastSettlementsContent({ initialData }: { initialData: CastSettl
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-2xl font-bold">精算・売上</h2>
-          <p className="text-sm text-muted-foreground">今月の売上と精算状況をリアルタイムで確認できます。</p>
+          <p className="text-sm text-muted-foreground">
+            今月の売上と精算状況をリアルタイムで確認できます。
+          </p>
         </div>
         <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isPending}>
           {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
@@ -120,7 +122,9 @@ export function CastSettlementsContent({ initialData }: { initialData: CastSettl
         </CardHeader>
         <CardContent>
           {data.days.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">今月の精算データはまだありません。</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              今月の精算データはまだありません。
+            </p>
           ) : (
             <div className="divide-y rounded-md border">
               <div className="grid grid-cols-[1.5fr_repeat(2,_1fr)_auto] gap-3 bg-muted/40 px-4 py-2 text-xs font-medium text-muted-foreground">
@@ -315,7 +319,9 @@ function DayRow({
         className="grid w-full grid-cols-[1.5fr_repeat(2,_1fr)_auto] items-center gap-3 px-4 py-3 text-sm hover:bg-muted/30"
       >
         <span className="text-left font-medium text-foreground">{dayLabel}</span>
-        <span className="text-right font-semibold text-foreground">¥{day.totalRevenue.toLocaleString()}</span>
+        <span className="text-right font-semibold text-foreground">
+          ¥{day.totalRevenue.toLocaleString()}
+        </span>
         <span className="text-right text-muted-foreground">{day.reservationCount} 件</span>
         <span className="flex items-center justify-end gap-2">
           <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
@@ -325,7 +331,10 @@ function DayRow({
             済 {dayStatus.settledCount}件
           </Badge>
           <ChevronDown
-            className={cn('h-4 w-4 text-muted-foreground transition-transform', isExpanded && 'rotate-180')}
+            className={cn(
+              'h-4 w-4 text-muted-foreground transition-transform',
+              isExpanded && 'rotate-180'
+            )}
           />
         </span>
       </button>
@@ -344,12 +353,15 @@ function DayRow({
               </div>
               <div className="rounded border border-dashed px-3 py-2">
                 <p className="text-xs text-muted-foreground">指名料</p>
-                <p className="text-lg font-semibold">¥{breakdown.designationTotal.toLocaleString()}</p>
+                <p className="text-lg font-semibold">
+                  ¥{breakdown.designationTotal.toLocaleString()}
+                </p>
               </div>
               <div className="rounded border border-dashed px-3 py-2">
                 <p className="text-xs text-muted-foreground">調整分</p>
                 <p className="text-lg font-semibold">
-                  {breakdown.adjustmentTotal >= 0 ? '+' : '-'}¥{Math.abs(breakdown.adjustmentTotal).toLocaleString()}
+                  {breakdown.adjustmentTotal >= 0 ? '+' : '-'}¥
+                  {Math.abs(breakdown.adjustmentTotal).toLocaleString()}
                 </p>
               </div>
               <div className="rounded border border-dashed px-3 py-2">
@@ -376,13 +388,16 @@ function DayRow({
                 <div className="mt-2 space-y-1">
                   {courseSummary.rows.map((row) => (
                     <div key={row.courseLabel} className="flex items-center justify-between">
-                      <span className="font-medium text-foreground">{row.courseLabel} ×{row.count}</span>
+                      <span className="font-medium text-foreground">
+                        {row.courseLabel} ×{row.count}
+                      </span>
                       <span>¥{row.total.toLocaleString()}</span>
                     </div>
                   ))}
                 </div>
                 <div className="mt-2 text-xs text-muted-foreground">
-                  合計 {courseSummary.totals.count} 本 / ¥{courseSummary.totals.total.toLocaleString()}
+                  合計 {courseSummary.totals.count} 本 / ¥
+                  {courseSummary.totals.total.toLocaleString()}
                 </div>
               </div>
               <div>
@@ -391,7 +406,9 @@ function DayRow({
                   <div className="mt-2 space-y-1">
                     {optionSummary.rows.map((row) => (
                       <div key={row.name} className="flex items-center justify-between">
-                        <span className="font-medium text-foreground">{row.name} ×{row.count}</span>
+                        <span className="font-medium text-foreground">
+                          {row.name} ×{row.count}
+                        </span>
                         <span>¥{row.total.toLocaleString()}</span>
                       </div>
                     ))}
@@ -406,7 +423,9 @@ function DayRow({
                   <div className="mt-2 space-y-1">
                     {designationSummary.rows.map((row) => (
                       <div key={row.label} className="flex items-center justify-between">
-                        <span className="font-medium text-foreground">{row.label} ×{row.count}</span>
+                        <span className="font-medium text-foreground">
+                          {row.label} ×{row.count}
+                        </span>
                         <span>¥{row.total.toLocaleString()}</span>
                       </div>
                     ))}
@@ -423,9 +442,7 @@ function DayRow({
                     : `${breakdown.adjustmentTotal > 0 ? '+' : '-'}¥${Math.abs(breakdown.adjustmentTotal).toLocaleString()}`}
                 </span>
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                ※姫予約など手取りを変動した場合
-              </p>
+              <p className="text-xs text-muted-foreground">※姫予約など手取りを変動した場合</p>
               <div className="border-t pt-2 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">女性小計</span>
@@ -437,7 +454,10 @@ function DayRow({
                 </div>
                 <div className="flex items-center justify-between font-semibold text-emerald-700">
                   <span>手取り</span>
-                  <span>¥{Math.max(breakdown.staffSubtotal - breakdown.welfareTotal, 0).toLocaleString()}</span>
+                  <span>
+                    ¥
+                    {Math.max(breakdown.staffSubtotal - breakdown.welfareTotal, 0).toLocaleString()}
+                  </span>
                 </div>
               </div>
             </div>
@@ -445,7 +465,7 @@ function DayRow({
           <div className="space-y-2 rounded-md border border-dashed border-muted-foreground/40 bg-white/70 px-3 py-2">
             <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
               <span>予約ごとの精算状況</span>
-              <span className="text-[11px]">手取り = キャスト売上 - 厚生費</span>
+              <span className="text-xs">手取り = キャスト売上 - 厚生費</span>
             </div>
             <div className="divide-y">
               {day.records.map((record) => {
@@ -468,7 +488,8 @@ function DayRow({
                         {record.courseName ?? 'コース未設定'}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        オプション {record.options.length}件・キャスト売上 ¥{record.staffRevenue.toLocaleString()}
+                        オプション {record.options.length}件・キャスト売上 ¥
+                        {record.staffRevenue.toLocaleString()}
                       </div>
                     </div>
                     <Badge variant="outline" className={style}>
@@ -476,7 +497,7 @@ function DayRow({
                     </Badge>
                     <div className="ml-auto text-right">
                       <div className="font-semibold text-foreground">¥{net.toLocaleString()}</div>
-                      <div className="text-[11px] text-muted-foreground">手取り</div>
+                      <div className="text-xs text-muted-foreground">手取り</div>
                     </div>
                   </div>
                 )

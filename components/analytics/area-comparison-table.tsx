@@ -36,11 +36,12 @@ export function AreaComparisonTable({ current, previous }: AreaComparisonTablePr
       const previousEntry = previousMap.get(area.area)
       const previousSales = previousEntry?.total ?? 0
       const previousCustomerCount = previousEntry?.customerTotal ?? 0
-      const growthRate = previousSales > 0
-        ? ((area.total - previousSales) / previousSales) * 100
-        : area.total > 0
-          ? 100
-          : 0
+      const growthRate =
+        previousSales > 0
+          ? ((area.total - previousSales) / previousSales) * 100
+          : area.total > 0
+            ? 100
+            : 0
       const marketShare = totalCurrentSales > 0 ? (area.total / totalCurrentSales) * 100 : 0
       const customerCount = area.customerTotal ?? 0
       const averageSpending = customerCount > 0 ? area.total / customerCount : 0

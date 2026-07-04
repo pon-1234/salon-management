@@ -19,6 +19,14 @@ vi.mock('bcryptjs', () => ({
   },
 }))
 
+const customerPhoneVerificationFields = {
+  phoneVerified: false,
+  phoneVerifiedAt: null,
+  phoneVerificationCode: null,
+  phoneVerificationExpiry: null,
+  phoneVerificationAttempts: 0,
+}
+
 describe('POST /api/auth/reset-password', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -44,6 +52,7 @@ describe('POST /api/auth/reset-password', () => {
       emailVerified: false,
       emailVerificationToken: null,
       emailVerificationExpiry: null,
+      ...customerPhoneVerificationFields,
     }
 
     vi.mocked(db.customer.findFirst).mockResolvedValue(mockCustomer)
@@ -132,6 +141,7 @@ describe('POST /api/auth/reset-password', () => {
       emailVerified: false,
       emailVerificationToken: null,
       emailVerificationExpiry: null,
+      ...customerPhoneVerificationFields,
     }
 
     vi.mocked(db.customer.findFirst).mockResolvedValue(null) // Won't find due to expiry condition
@@ -221,6 +231,7 @@ describe('POST /api/auth/reset-password', () => {
       emailVerified: false,
       emailVerificationToken: null,
       emailVerificationExpiry: null,
+      ...customerPhoneVerificationFields,
     }
 
     vi.mocked(db.customer.findFirst).mockResolvedValue(mockCustomer)

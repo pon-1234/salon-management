@@ -1,5 +1,7 @@
 # Pricing Synchronization System
 
+> HISTORICAL — This document describes an earlier pricing synchronization design. The current application uses Prisma-backed `CoursePrice`, `OptionPrice`, and `DesignationFee` models plus API/server modules; `AdditionalFee` and `StorePricing` are not present Prisma models. Treat this file as design history unless it is updated against `prisma/schema.prisma`.
+
 ## Overview
 
 The pricing synchronization system ensures that pricing information is consistent between the admin panel and the customer-facing frontend across all stores.
@@ -20,12 +22,12 @@ The pricing synchronization system ensures that pricing information is consisten
    - Category (relaxation/body-care/extension/special)
    - Display order and active status
 
-3. **AdditionalFee** - Extra charges
+3. **DesignationFee** - Nomination/designation charges
    - Type: fixed/percentage/range
    - Value (amount or percentage)
    - Description and display order
 
-4. **StorePricing** - Store-specific pricing configuration
+4. Store-specific pricing fields are represented through store-scoped Prisma records rather than a `StorePricing` model
    - Links pricing to specific stores
    - Includes notes and last update timestamp
 
@@ -64,7 +66,7 @@ The system uses a repository pattern with:
 
 - Manage nomination fees such as free designation, panel designation, repeat designation
 - Configure total fee along with store and cast share
-- Currently backed by mock data in the admin UI
+- Backed by the current designation fee data path; verify against `app/(admin)/admin/settings/designation-fees` before changing behavior
 
 ## Frontend Integration
 

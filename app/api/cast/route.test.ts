@@ -108,8 +108,10 @@ describe('Cast API endpoints', () => {
         appointments: [],
       })
       expect(mockedDb.cast.findMany).toHaveBeenCalledWith({
+        where: { storeId: 'ikebukuro' },
         include: {
           schedules: true,
+          castOptionSettings: true,
           reservations: {
             include: {
               customer: true,
@@ -128,7 +130,7 @@ describe('Cast API endpoints', () => {
         reservations: [],
       }
 
-      mockedDb.cast.findUnique.mockResolvedValue(mockCast)
+      mockedDb.cast.findFirst.mockResolvedValue(mockCast)
 
       const request = new NextRequest('http://localhost:3000/api/cast?id=test-id')
       const response = await GET(request)
@@ -136,10 +138,11 @@ describe('Cast API endpoints', () => {
 
       expect(response.status).toBe(200)
       expect(data).toHaveProperty('id', 'test-id')
-      expect(mockedDb.cast.findUnique).toHaveBeenCalledWith({
-        where: { id: 'test-id' },
+      expect(mockedDb.cast.findFirst).toHaveBeenCalledWith({
+        where: { id: 'test-id', storeId: 'ikebukuro' },
         include: {
           schedules: true,
+          castOptionSettings: true,
           reservations: {
             include: {
               customer: true,
@@ -156,7 +159,7 @@ describe('Cast API endpoints', () => {
     })
 
     it('should return 404 when cast member not found', async () => {
-      mockedDb.cast.findUnique.mockResolvedValue(null)
+      mockedDb.cast.findFirst.mockResolvedValue(null)
 
       const request = new NextRequest('http://localhost:3000/api/cast?id=non-existent')
       const response = await GET(request)
@@ -220,7 +223,9 @@ describe('Cast API endpoints', () => {
       expect(mockedDb.cast.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           availableOptions: ['6', '10'],
+          storeId: 'ikebukuro',
         }),
+        include: { castOptionSettings: true },
       })
     })
   })
@@ -242,9 +247,12 @@ describe('Cast API endpoints', () => {
         reservations: [],
       }
 
-      // Mock findUnique to return existing cast
-      mockedDb.cast.findUnique.mockResolvedValue({ id: 'test-id', name: 'Old Cast' })
+      // Mock findFirst to return existing cast
+      mockedDb.cast.findFirst.mockResolvedValue({ id: 'test-id', name: 'Old Cast' })
       mockedDb.cast.update.mockResolvedValue(mockUpdatedCast)
+      mockedDb.cast.findFirst
+        .mockResolvedValueOnce({ id: 'test-id', name: 'Old Cast' })
+        .mockResolvedValueOnce(mockUpdatedCast)
 
       const request = new NextRequest('http://localhost:3000/api/cast', {
         method: 'PUT',
@@ -267,6 +275,7 @@ describe('Cast API endpoints', () => {
           age: 26,
           availableOptions: ['1'],
         }),
+        include: { castOptionSettings: true },
       })
     })
 
@@ -276,8 +285,8 @@ describe('Cast API endpoints', () => {
         name: 'Updated Cast',
       }
 
-      // Mock findUnique to return null (not found)
-      mockedDb.cast.findUnique.mockResolvedValue(null)
+      // Mock findFirst to return null (not found)
+      mockedDb.cast.findFirst.mockResolvedValue(null)
 
       const request = new NextRequest('http://localhost:3000/api/cast', {
         method: 'PUT',
@@ -317,7 +326,7 @@ describe('Cast API endpoints', () => {
         reservations: [],
       }
 
-      mockedDb.cast.findUnique.mockResolvedValue({ id: 'test-id' })
+      mockedDb.cast.findFirst.mockResolvedValue({ id: 'test-id' })
       mockedDb.cast.update.mockResolvedValue(coercedResult)
 
       const request = new NextRequest('http://localhost:3000/api/cast', {
@@ -341,6 +350,7 @@ describe('Cast API endpoints', () => {
           specialDesignationFee: 5000,
           regularDesignationFee: null,
         }),
+        include: { castOptionSettings: true },
       })
       expect(data).toMatchObject({
         id: 'test-id',
@@ -362,7 +372,7 @@ describe('Cast API endpoints', () => {
         images: ['/images/cast/emiri-main.jpg', 'https://example.com/backup.jpg'],
       }
 
-      mockedDb.cast.findUnique.mockResolvedValue({ id: 'test-id' })
+      mockedDb.cast.findFirst.mockResolvedValue({ id: 'test-id' })
       mockedDb.cast.update.mockResolvedValue({
         ...updateData,
         updatedAt: new Date(),
@@ -384,6 +394,7 @@ describe('Cast API endpoints', () => {
           image: '/images/cast/emiri-main.jpg',
           images: updateData.images,
         }),
+        include: { castOptionSettings: true },
       })
     })
 
@@ -411,8 +422,8 @@ describe('Cast API endpoints', () => {
 
   describe('DELETE /api/cast', () => {
     it('should delete an existing cast member', async () => {
-      // Mock findUnique to return existing cast
-      mockedDb.cast.findUnique.mockResolvedValue({ id: 'test-id', name: 'Cast to Delete' })
+      // Mock findFirst to return existing cast
+      mockedDb.cast.findFirst.mockResolvedValue({ id: 'test-id', name: 'Cast to Delete' })
       mockedDb.cast.delete.mockResolvedValue({})
 
       const request = new NextRequest('http://localhost:3000/api/cast?id=test-id', {
@@ -428,8 +439,8 @@ describe('Cast API endpoints', () => {
     })
 
     it('should return 404 for non-existent cast member', async () => {
-      // Mock findUnique to return null (not found)
-      mockedDb.cast.findUnique.mockResolvedValue(null)
+      // Mock findFirst to return null (not found)
+      mockedDb.cast.findFirst.mockResolvedValue(null)
 
       const request = new NextRequest('http://localhost:3000/api/cast?id=non-existent-id', {
         method: 'DELETE',

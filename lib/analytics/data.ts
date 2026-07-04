@@ -211,17 +211,15 @@ export function generateDailyData(year: number, month: number): DailyData[] {
   })
 }
 
-export function generateStaffAttendanceData(
-  year: number,
-  month: number
-): StaffAttendanceSummary[] {
+export function generateStaffAttendanceData(year: number, month: number): StaffAttendanceSummary[] {
   const daysInMonth = new Date(year, month, 0).getDate()
   const staffNames = ['みお', 'みるく', 'しほ', 'みなみ', 'ななみ', 'しのん']
 
   return staffNames.map((name, index) => {
-    const attendance = Array.from({ length: daysInMonth }, () =>
-      Math.random() > 0.6 ? 1 : 0
-    ) as (0 | 1)[]
+    const attendance = Array.from({ length: daysInMonth }, () => (Math.random() > 0.6 ? 1 : 0)) as (
+      | 0
+      | 1
+    )[]
     const total = attendance.reduce<number>((sum, value) => sum + value, 0)
     const weekdayAttendance = attendance.reduce<number>((sum, value, dayIndex) => {
       const date = new Date(year, month - 1, dayIndex + 1)

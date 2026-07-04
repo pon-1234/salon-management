@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import {
   generateMonthlyData,
   generateDailyData,
@@ -7,18 +7,9 @@ import {
   generateMarketingChannelData,
   staffPerformanceData,
 } from './data'
-import { getCourses, getOptions } from '@/lib/course-option/data'
-
-let courses: any[] = []
-let options: any[] = []
+import { courses, options } from '@/lib/course-option/data'
 
 describe('Analytics Data Generators', () => {
-  beforeAll(async () => {
-    // Initialize courses and options for tests
-    courses = await getCourses()
-    options = await getOptions()
-  })
-
   describe('generateMonthlyData', () => {
     it('should generate 12 months of data', () => {
       const data = generateMonthlyData(2024)
@@ -63,12 +54,7 @@ describe('Analytics Data Generators', () => {
   })
 
   describe('generateCourseSalesData', () => {
-    it('should generate sales data for all courses', async () => {
-      // Ensure courses are loaded
-      if (courses.length === 0) {
-        courses = await getCourses()
-      }
-
+    it('should generate sales data for all courses', () => {
       const data = generateCourseSalesData(2024, 7)
       expect(data).toHaveLength(courses.length)
       if (data.length > 0) {
@@ -80,12 +66,7 @@ describe('Analytics Data Generators', () => {
   })
 
   describe('generateOptionSalesData', () => {
-    it('should generate sales data for all options', async () => {
-      // Ensure options are loaded
-      if (options.length === 0) {
-        options = await getOptions()
-      }
-
+    it('should generate sales data for all options', () => {
       const data = generateOptionSalesData(2024)
       expect(data).toHaveLength(options.length)
       if (data.length > 0) {

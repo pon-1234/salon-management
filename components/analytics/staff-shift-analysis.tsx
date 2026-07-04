@@ -28,7 +28,11 @@ interface StaffShiftAnalysisProps {
   weekendDaysInMonth: number
 }
 
-export function StaffShiftAnalysis({ data, daysInMonth, weekendDaysInMonth }: StaffShiftAnalysisProps) {
+export function StaffShiftAnalysis({
+  data,
+  daysInMonth,
+  weekendDaysInMonth,
+}: StaffShiftAnalysisProps) {
   if (data.length === 0) {
     return (
       <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
@@ -86,7 +90,9 @@ export function StaffShiftAnalysis({ data, daysInMonth, weekendDaysInMonth }: St
                     <Progress value={Math.min(staff.attendanceRate, 100)} className="h-2 w-20" />
                   </div>
                 </TableCell>
-                <TableCell className="text-center">{getPerformanceBadge(staff.attendanceRate)}</TableCell>
+                <TableCell className="text-center">
+                  {getPerformanceBadge(staff.attendanceRate)}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -96,7 +102,9 @@ export function StaffShiftAnalysis({ data, daysInMonth, weekendDaysInMonth }: St
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <div className="rounded-lg border p-4 text-center">
           <h4 className="mb-2 text-sm font-medium text-muted-foreground">平均出勤率</h4>
-          <div className="text-2xl font-bold text-green-600">{averageAttendanceRate.toFixed(1)}%</div>
+          <div className="text-2xl font-bold text-green-600">
+            {averageAttendanceRate.toFixed(1)}%
+          </div>
         </div>
         <div className="rounded-lg border p-4 text-center">
           <h4 className="mb-2 text-sm font-medium text-muted-foreground">平均勤務時間</h4>

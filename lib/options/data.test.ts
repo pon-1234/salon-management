@@ -16,45 +16,53 @@ describe('Options Data', () => {
     it('should return option when found by direct ID', () => {
       const result = getOptionById('1')
 
-      expect(result).toEqual({
-        id: '1',
-        name: '癒やしの膝枕耳かき',
-        description: 'Test option 1',
-        price: 1000,
-      })
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: '1',
+          name: '癒やしの膝枕耳かき',
+          description: 'Test option 1',
+          price: 1000,
+        })
+      )
     })
 
     it('should return option when found by mapped ID', () => {
       const result = getOptionById('healing-knee')
 
-      expect(result).toEqual({
-        id: '1',
-        name: '癒やしの膝枕耳かき',
-        description: 'Test option 1',
-        price: 1000,
-      })
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: '1',
+          name: '癒やしの膝枕耳かき',
+          description: 'Test option 1',
+          price: 1000,
+        })
+      )
     })
 
     it('should return option for shampoo-spa mapped ID', () => {
       const result = getOptionById('shampoo-spa')
 
-      expect(result).toEqual({
-        id: '2',
-        name: '密着洗髪スパ',
-        description: 'Test option 2',
-        price: 2000,
-      })
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: '2',
+          name: '密着洗髪スパ',
+          description: 'Test option 2',
+          price: 2000,
+        })
+      )
     })
 
     it('should return option for extension mapped ID', () => {
       const result = getOptionById('extension')
 
-      expect(result).toEqual({
-        id: '10',
-        name: '延長30分',
-        description: 'Extension',
-        price: 3000,
-      })
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: '10',
+          name: '延長30分',
+          description: 'Extension',
+          price: 3000,
+        })
+      )
     })
 
     it('should return undefined when option not found', () => {

@@ -80,18 +80,13 @@ export default function MonthlyReportPage() {
   const previousSales = previousMonthData?.totalSales ?? 0
   const customerCount = currentMonthData?.totalCount ?? 0
   const previousCustomerCount = previousMonthData?.totalCount ?? 0
-  const averageSpending =
-    customerCount > 0 ? Math.round(totalSales / customerCount) : 0
+  const averageSpending = customerCount > 0 ? Math.round(totalSales / customerCount) : 0
   const previousAverageSpending =
-    previousCustomerCount > 0
-      ? Math.round(previousSales / previousCustomerCount)
-      : 0
+    previousCustomerCount > 0 ? Math.round(previousSales / previousCustomerCount) : 0
   const cardSalesRatio =
     totalSales > 0 ? ((currentMonthData?.cardSales ?? 0) / totalSales) * 100 : 0
   const previousCardSalesRatio =
-    previousSales > 0
-      ? ((previousMonthData?.cardSales ?? 0) / previousSales) * 100
-      : 0
+    previousSales > 0 ? ((previousMonthData?.cardSales ?? 0) / previousSales) * 100 : 0
 
   const calculateGrowthRate = (current: number, previous: number) => {
     if (previous === 0) {
@@ -102,10 +97,7 @@ export default function MonthlyReportPage() {
 
   const salesGrowth = calculateGrowthRate(totalSales, previousSales)
   const customerGrowth = calculateGrowthRate(customerCount, previousCustomerCount)
-  const averageSpendingGrowth = calculateGrowthRate(
-    averageSpending,
-    previousAverageSpending
-  )
+  const averageSpendingGrowth = calculateGrowthRate(averageSpending, previousAverageSpending)
   const cardRatioDiff = cardSalesRatio - previousCardSalesRatio
   const hasMonthlyValues = !isMonthlyLoading && monthlyError === null
 
@@ -212,14 +204,8 @@ export default function MonthlyReportPage() {
                   ) : (
                     <TrendingDown className="h-3 w-3 text-red-600" />
                   )}
-                  <span
-                    className={
-                      averageSpendingGrowth >= 0 ? 'text-green-600' : 'text-red-600'
-                    }
-                  >
-                    {`${averageSpendingGrowth >= 0 ? '+' : ''}${averageSpendingGrowth.toFixed(
-                      1
-                    )}%`}
+                  <span className={averageSpendingGrowth >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {`${averageSpendingGrowth >= 0 ? '+' : ''}${averageSpendingGrowth.toFixed(1)}%`}
                   </span>
                   前月比
                 </>

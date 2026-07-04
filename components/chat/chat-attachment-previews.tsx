@@ -12,7 +12,10 @@ interface ChatAttachmentPreviewListProps {
   onRemove: (id: string) => void
 }
 
-export function ChatAttachmentPreviewList({ attachments, onRemove }: ChatAttachmentPreviewListProps) {
+export function ChatAttachmentPreviewList({
+  attachments,
+  onRemove,
+}: ChatAttachmentPreviewListProps) {
   if (attachments.length === 0) {
     return null
   }
@@ -40,12 +43,12 @@ export function ChatAttachmentPreviewList({ attachments, onRemove }: ChatAttachm
                 draggable={false}
               />
             ) : attachment.status === 'uploading' ? (
-              <div className="flex flex-col items-center justify-center text-[11px] text-gray-500">
+              <div className="flex flex-col items-center justify-center text-xs text-gray-500">
                 <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-500" />
                 <span className="mt-1">アップロード中...</span>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center text-[11px] text-red-600">
+              <div className="flex flex-col items-center justify-center text-xs text-red-600">
                 <AlertCircle className="h-5 w-5" />
                 <span className="mt-1 text-center">{attachment.error ?? 'エラー'}</span>
               </div>
@@ -56,6 +59,7 @@ export function ChatAttachmentPreviewList({ attachments, onRemove }: ChatAttachm
               variant="ghost"
               className="absolute right-1 top-1 h-6 w-6 rounded-full bg-white/90 text-gray-700 shadow"
               onClick={() => onRemove(attachment.id)}
+              aria-label="添付ファイルを削除"
             >
               <X className="h-3 w-3" />
             </Button>

@@ -47,7 +47,10 @@ export async function POST(request: NextRequest) {
     const email = data.email?.trim().toLowerCase() || buildPlaceholderEmail(normalizedPhone)
     const existingEmail = await db.customer.findUnique({ where: { email } })
     if (existingEmail) {
-      return NextResponse.json({ error: 'このメールアドレスは既に登録されています' }, { status: 409 })
+      return NextResponse.json(
+        { error: 'このメールアドレスは既に登録されています' },
+        { status: 409 }
+      )
     }
 
     const password = generateTemporaryPassword()

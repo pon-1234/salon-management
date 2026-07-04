@@ -61,10 +61,9 @@ describe('POST /api/customer/points/notify-expiring', () => {
       },
     ] as any)
 
-    const request = new NextRequest(
-      'http://localhost:3000/api/customer/points/notify-expiring',
-      { method: 'POST' }
-    )
+    const request = new NextRequest('http://localhost:3000/api/customer/points/notify-expiring', {
+      method: 'POST',
+    })
     const response = await POST(request)
     const data = await response.json()
 
@@ -77,10 +76,9 @@ describe('POST /api/customer/points/notify-expiring', () => {
     const authResponse = new Response('forbidden', { status: 401 }) as any
     vi.mocked(requireAdmin).mockResolvedValueOnce(authResponse)
 
-    const request = new NextRequest(
-      'http://localhost:3000/api/customer/points/notify-expiring',
-      { method: 'POST' }
-    )
+    const request = new NextRequest('http://localhost:3000/api/customer/points/notify-expiring', {
+      method: 'POST',
+    })
     const response = await POST(request)
     expect(response).toBe(authResponse)
     expect(emailClient.send).not.toHaveBeenCalled()

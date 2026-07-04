@@ -104,6 +104,7 @@ export function ChatAttachmentGallery({ attachments, align = 'left' }: ChatAttac
                     variant="ghost"
                     className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 text-white hover:bg-black/60"
                     onClick={handlePrev}
+                    aria-label="前の添付画像を表示"
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </Button>
@@ -113,6 +114,7 @@ export function ChatAttachmentGallery({ attachments, align = 'left' }: ChatAttac
                     variant="ghost"
                     className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 text-white hover:bg-black/60"
                     onClick={handleNext}
+                    aria-label="次の添付画像を表示"
                   >
                     <ChevronRight className="h-5 w-5" />
                   </Button>

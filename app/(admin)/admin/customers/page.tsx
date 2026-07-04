@@ -4,7 +4,14 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Header } from '@/components/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Customer } from '@/lib/customer/types'
@@ -28,7 +35,7 @@ export default function CustomerListPage() {
         }
 
         const data = await response.json()
-        setCustomers(Array.isArray(data) ? data : data?.data ?? [])
+        setCustomers(Array.isArray(data) ? data : (data?.data ?? []))
       } catch (error) {
         console.error('Failed to load customers:', error)
         toast({

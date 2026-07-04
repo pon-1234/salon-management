@@ -41,6 +41,12 @@ vi.mock('@/lib/db', () => ({
       findUnique: vi.fn(),
       upsert: vi.fn(),
     },
+    storeSettings: {
+      findUnique: vi.fn(),
+    },
+    ngCastEntry: {
+      findUnique: vi.fn(),
+    },
   },
 }))
 
@@ -84,8 +90,8 @@ vi.mock('@/lib/notification/service', () => {
   }
 })
 
-let POST: typeof import('./route')['POST']
-let db: typeof import('@/lib/db')['db']
+let POST: (typeof import('./route'))['POST']
+let db: (typeof import('@/lib/db'))['db']
 
 beforeAll(async () => {
   ;({ db } = await import('@/lib/db'))
@@ -96,6 +102,8 @@ describe('Reservation API - Notification Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(db.store.findUnique).mockResolvedValue({ id: 'store-1' } as any)
+    vi.mocked(db.storeSettings.findUnique).mockResolvedValue(null as any)
+    vi.mocked(db.ngCastEntry.findUnique).mockResolvedValue(null as any)
   })
 
   it('should send notification when reservation is created successfully', async () => {

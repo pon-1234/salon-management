@@ -68,9 +68,13 @@ export class PricingRepositoryImpl implements PricingRepository {
   }
 
   async getCourseById(id: string): Promise<CoursePrice | null> {
-    return this.fetchJson<CoursePrice>(this.withStore(`${COURSE_API_PATH}?id=${id}`, undefined), undefined, {
-      allowNotFound: true,
-    })
+    return this.fetchJson<CoursePrice>(
+      this.withStore(`${COURSE_API_PATH}?id=${id}`, undefined),
+      undefined,
+      {
+        allowNotFound: true,
+      }
+    )
   }
 
   async createCourse(
@@ -104,9 +108,13 @@ export class PricingRepositoryImpl implements PricingRepository {
   }
 
   async getOptionById(id: string): Promise<OptionPrice | null> {
-    return this.fetchJson<OptionPrice>(this.withStore(`${OPTION_API_PATH}?id=${id}`, undefined), undefined, {
-      allowNotFound: true,
-    })
+    return this.fetchJson<OptionPrice>(
+      this.withStore(`${OPTION_API_PATH}?id=${id}`, undefined),
+      undefined,
+      {
+        allowNotFound: true,
+      }
+    )
   }
 
   async createOption(

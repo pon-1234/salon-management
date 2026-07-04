@@ -66,27 +66,19 @@ function createEnv() {
     VONAGE_SMS_FROM: process.env.VONAGE_SMS_FROM,
   })
 
-  const databaseUrl =
-    rawEnv.DATABASE_URL ??
-    rawEnv.POSTGRES_PRISMA_URL ??
-    rawEnv.POSTGRES_URL ??
-    ''
+  const databaseUrl = rawEnv.DATABASE_URL ?? rawEnv.POSTGRES_PRISMA_URL ?? rawEnv.POSTGRES_URL ?? ''
   const directDatabaseUrl =
     rawEnv.DIRECT_URL ?? rawEnv.POSTGRES_URL_NON_POOLING ?? rawEnv.POSTGRES_URL ?? databaseUrl
 
   const nextAuthUrl = rawEnv.NEXTAUTH_URL ?? 'http://localhost:3000'
   const defaultDevSecret = 'development-secret-key-not-for-production'
-  const nextAuthSecret =
-    rawEnv.NEXTAUTH_SECRET ?? (isProduction ? undefined : defaultDevSecret)
+  const nextAuthSecret = rawEnv.NEXTAUTH_SECRET ?? (isProduction ? undefined : defaultDevSecret)
 
   if (isProduction && !nextAuthSecret) {
-    throw new Error(
-      '[env] NEXTAUTH_SECRET is required in production. Set it in your environment.'
-    )
+    throw new Error('[env] NEXTAUTH_SECRET is required in production. Set it in your environment.')
   }
 
-  const supabaseUrl =
-    rawEnv.NEXT_PUBLIC_SUPABASE_URL ?? rawEnv.SUPABASE_URL ?? ''
+  const supabaseUrl = rawEnv.NEXT_PUBLIC_SUPABASE_URL ?? rawEnv.SUPABASE_URL ?? ''
   const supabaseAnonKey = rawEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
   const supabaseServiceRoleKey = rawEnv.SUPABASE_SERVICE_ROLE_KEY ?? ''
 
@@ -96,15 +88,10 @@ function createEnv() {
   const businessHourStart = rawEnv.BUSINESS_HOUR_START ?? '09:00'
   const businessHourEnd = rawEnv.BUSINESS_HOUR_END ?? '23:00'
 
-  const mockFallbackPreference =
-    rawEnv.NEXT_PUBLIC_USE_MOCK_FALLBACK ?? rawEnv.USE_MOCK_FALLBACK
+  const mockFallbackPreference = rawEnv.NEXT_PUBLIC_USE_MOCK_FALLBACK ?? rawEnv.USE_MOCK_FALLBACK
   const mockFallbackRaw = mockFallbackPreference?.toLowerCase() ?? ''
   const useMockFallbacks =
-    mockFallbackRaw === 'true'
-      ? true
-      : mockFallbackRaw === 'false'
-        ? false
-        : !isProduction
+    mockFallbackRaw === 'true' ? true : mockFallbackRaw === 'false' ? false : !isProduction
 
   const initialAdminPassword = rawEnv.INITIAL_ADMIN_PASSWORD ?? ''
   const lineChannelAccessToken = rawEnv.LINE_MESSAGING_CHANNEL_ACCESS_TOKEN ?? ''

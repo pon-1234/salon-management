@@ -149,7 +149,12 @@ describe('Pricing Data', () => {
           case 'range':
             expect(fee.value).toHaveProperty('min')
             expect(fee.value).toHaveProperty('max')
-            if (typeof fee.value === 'object' && fee.value !== null && 'min' in fee.value && 'max' in fee.value) {
+            if (
+              typeof fee.value === 'object' &&
+              fee.value !== null &&
+              'min' in fee.value &&
+              'max' in fee.value
+            ) {
               expect(typeof fee.value.min).toBe('number')
               expect(typeof fee.value.max).toBe('number')
               expect(fee.value.min).toBeLessThanOrEqual(fee.value.max)

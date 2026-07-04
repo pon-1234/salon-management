@@ -14,6 +14,18 @@ interface CastLoginFormProps {
   storeSlug?: string
 }
 
+function mapCastLoginError(error: string | undefined) {
+  if (!error) {
+    return 'ログインに失敗しました'
+  }
+
+  if (error === 'CredentialsSignin' || error === 'Invalid credentials') {
+    return 'メールアドレスまたはパスワードが正しくありません'
+  }
+
+  return 'ログイン中にエラーが発生しました'
+}
+
 export function CastLoginForm({ storeSlug }: CastLoginFormProps = {}) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -40,10 +52,11 @@ export function CastLoginForm({ storeSlug }: CastLoginFormProps = {}) {
       })
 
       if (result?.error) {
-        setError(result.error)
+        const message = mapCastLoginError(result.error)
+        setError(message)
         toast({
           title: 'ログインに失敗しました',
-          description: result.error,
+          description: message,
           variant: 'destructive',
         })
         return
@@ -58,7 +71,9 @@ export function CastLoginForm({ storeSlug }: CastLoginFormProps = {}) {
     <Card className="shadow-lg">
       <CardHeader>
         <CardTitle className="text-2xl font-bold">キャストログイン</CardTitle>
-        <CardDescription>メールアドレスとパスワードを入力してサインインしてください。</CardDescription>
+        <CardDescription>
+          メールアドレスとパスワードを入力してサインインしてください。
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form className="space-y-4" onSubmit={handleSubmit}>
@@ -86,7 +101,11 @@ export function CastLoginForm({ storeSlug }: CastLoginFormProps = {}) {
           </div>
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
           <Button type="submit" className="w-full" disabled={isPending}>
-            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
+            {isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <LogIn className="mr-2 h-4 w-4" />
+            )}
             ログイン
           </Button>
         </form>

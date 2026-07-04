@@ -138,10 +138,7 @@ async function fetchStoreScheduleDays(
       include: {
         cast: true,
       },
-      orderBy: [
-        { date: 'asc' },
-        { startTime: 'asc' },
-      ],
+      orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     })
 
     const reservations = await db.reservation.findMany({
@@ -190,7 +187,10 @@ async function fetchStoreScheduleDays(
     const grouped = new Map<string, PublicScheduleDay>()
 
     normalized.forEach((entry) => {
-      const dayKey = formatDateFns(utcToZonedTime(new Date(entry.date), DEFAULT_TIME_ZONE), 'yyyy-MM-dd')
+      const dayKey = formatDateFns(
+        utcToZonedTime(new Date(entry.date), DEFAULT_TIME_ZONE),
+        'yyyy-MM-dd'
+      )
       if (!grouped.has(dayKey)) {
         grouped.set(dayKey, { date: entry.date, entries: [] })
       }

@@ -40,7 +40,10 @@ export async function POST(request: NextRequest) {
     })
 
     if (!cast || !cast.requestAttendanceEnabled) {
-      return NextResponse.json({ error: '現在リクエスト出勤を受け付けていません。' }, { status: 400 })
+      return NextResponse.json(
+        { error: '現在リクエスト出勤を受け付けていません。' },
+        { status: 400 }
+      )
     }
 
     const store = await db.store.findUnique({ where: { id: data.storeId } })

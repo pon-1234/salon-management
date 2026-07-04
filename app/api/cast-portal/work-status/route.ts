@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { requireCast } from '@/lib/auth/utils'
 import { resolveCastStoreId } from '@/lib/cast-portal/server'
 import { db } from '@/lib/db'
+import logger from '@/lib/logger'
 
 const statusSchema = z.object({
   workStatus: z.enum(['出勤', '未出勤', '休日']),
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '入力値が不正です。' }, { status: 400 })
     }
 
-    console.error('Failed to update cast work status:', err)
+    logger.error('Failed to update cast work status:', err)
     return NextResponse.json({ error: 'ステータスの更新に失敗しました。' }, { status: 500 })
   }
 }

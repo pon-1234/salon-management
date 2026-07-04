@@ -40,9 +40,7 @@ async function compressImage(file: File): Promise<File> {
   }
 }
 
-async function uploadImage(
-  file: File
-): Promise<{ url: string; filename: string; path?: string }> {
+async function uploadImage(file: File): Promise<{ url: string; filename: string; path?: string }> {
   const formData = new FormData()
   formData.append('file', file)
   formData.append('folder', 'chat')
@@ -118,7 +116,8 @@ export function useChatAttachments(maxCount = 5) {
                   ? {
                       ...draft,
                       status: 'error',
-                      error: error instanceof Error ? error.message : 'アップロードに失敗しました。',
+                      error:
+                        error instanceof Error ? error.message : 'アップロードに失敗しました。',
                     }
                   : draft
               )

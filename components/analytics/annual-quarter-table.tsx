@@ -39,10 +39,7 @@ export function AnnualQuarterTable({ data, previousData }: AnnualQuarterTablePro
     return new Map(previousData.map((entry) => [entry.month, entry]))
   }, [previousData])
 
-  const totalSales = useMemo(
-    () => data.reduce((sum, month) => sum + month.totalSales, 0),
-    [data]
-  )
+  const totalSales = useMemo(() => data.reduce((sum, month) => sum + month.totalSales, 0), [data])
 
   const quarters = useMemo<QuarterSummary[]>(() => {
     return QUARTERS.map(({ label, months, rangeLabel }) => {
@@ -55,13 +52,10 @@ export function AnnualQuarterTable({ data, previousData }: AnnualQuarterTablePro
       const customerCount = currentMonths.reduce((sum, item) => sum + item.totalCount, 0)
       const previousSales = previousMonths.reduce((sum, item) => sum + item.totalSales, 0)
 
-      const averagePerCustomer =
-        customerCount > 0 ? Math.round(quarterSales / customerCount) : 0
+      const averagePerCustomer = customerCount > 0 ? Math.round(quarterSales / customerCount) : 0
       const composition = totalSales > 0 ? (quarterSales / totalSales) * 100 : 0
       const growthRate =
-        previousSales > 0
-          ? ((quarterSales - previousSales) / previousSales) * 100
-          : null
+        previousSales > 0 ? ((quarterSales - previousSales) / previousSales) * 100 : null
 
       return {
         quarter: label,

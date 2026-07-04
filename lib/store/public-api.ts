@@ -15,8 +15,7 @@ function normalizeStore(raw: any): Store | null {
   }
 
   const fallback = getFallbackStoreBySlug(raw.slug ?? raw.id ?? '')
-  const openingHours =
-    raw.openingHours ??
+  const openingHours = raw.openingHours ??
     fallback?.openingHours ?? {
       weekday: { open: '10:00', close: '22:00' },
       weekend: { open: '9:00', close: '21:00' },
@@ -38,8 +37,8 @@ function normalizeStore(raw: any): Store | null {
     seoTitle: raw.seoTitle ?? fallback?.seoTitle,
     seoDescription: raw.seoDescription ?? fallback?.seoDescription,
     isActive: raw.isActive ?? fallback?.isActive ?? true,
-    createdAt: raw.createdAt ? new Date(raw.createdAt) : fallback?.createdAt ?? new Date(),
-    updatedAt: raw.updatedAt ? new Date(raw.updatedAt) : fallback?.updatedAt ?? new Date(),
+    createdAt: raw.createdAt ? new Date(raw.createdAt) : (fallback?.createdAt ?? new Date()),
+    updatedAt: raw.updatedAt ? new Date(raw.updatedAt) : (fallback?.updatedAt ?? new Date()),
   }
 }
 
@@ -57,14 +56,12 @@ function normalizeCastSummary(raw: any): PublicCastSummary | null {
     type: raw.type ?? null,
     image: raw.image ?? raw.images?.[0] ?? null,
     images: Array.isArray(raw.images) ? raw.images : raw.images ? [raw.images] : [],
-    panelDesignationRank: Number.isFinite(raw.panelDesignationRank)
-      ? raw.panelDesignationRank
-      : 0,
+    panelDesignationRank: Number.isFinite(raw.panelDesignationRank) ? raw.panelDesignationRank : 0,
     regularDesignationRank: Number.isFinite(raw.regularDesignationRank)
       ? raw.regularDesignationRank
       : 0,
     netReservation: Boolean(
-      raw.netReservation !== undefined ? raw.netReservation : raw.netReservationAvailable ?? true
+      raw.netReservation !== undefined ? raw.netReservation : (raw.netReservationAvailable ?? true)
     ),
     workStatus: raw.workStatus ?? null,
     sizeLabel: raw.sizeLabel ?? buildSizeLabel(raw),
@@ -116,14 +113,13 @@ function normalizeBanner(raw: any, storeSlug: string): PublicBannerItem | null {
     id: raw.id ?? `banner-${Math.random().toString(36).slice(2, 8)}`,
     title: raw.title ?? 'キャンペーン',
     imageUrl: raw.imageUrl ?? raw.image ?? '/images/banners/campaign-1.jpg',
-    mobileImageUrl: raw.mobileImageUrl ?? raw.mobileImage ?? '/images/banners/campaign-1-mobile.jpg',
+    mobileImageUrl:
+      raw.mobileImageUrl ?? raw.mobileImage ?? '/images/banners/campaign-1-mobile.jpg',
     link: raw.link ?? `/${storeSlug}/pricing`,
   }
 }
 
-export async function fetchPublicStoreHomeData(
-  slug: string
-): Promise<PublicStoreHomeData | null> {
+export async function fetchPublicStoreHomeData(slug: string): Promise<PublicStoreHomeData | null> {
   try {
     const response = await fetch(resolveApiUrl(`/api/public/stores/${slug}`), {
       cache: 'no-store',
@@ -140,33 +136,33 @@ export async function fetchPublicStoreHomeData(
     }
 
     const banners: PublicBannerItem[] = Array.isArray(payload.banners)
-      ? payload.banners
+      ? (payload.banners
           .map((banner: any) => normalizeBanner(banner, store.slug))
-          .filter(Boolean) as PublicBannerItem[]
+          .filter(Boolean) as PublicBannerItem[])
       : []
 
     const ranking: PublicCastSummary[] = Array.isArray(payload.highlights?.ranking)
-      ? payload.highlights.ranking
+      ? (payload.highlights.ranking
           .map(normalizeCastSummary)
-          .filter(Boolean) as PublicCastSummary[]
+          .filter(Boolean) as PublicCastSummary[])
       : []
 
     const newcomers: PublicCastSummary[] = Array.isArray(payload.highlights?.newcomers)
-      ? payload.highlights.newcomers
+      ? (payload.highlights.newcomers
           .map(normalizeCastSummary)
-          .filter(Boolean) as PublicCastSummary[]
+          .filter(Boolean) as PublicCastSummary[])
       : []
 
     const todaysSchedules: PublicScheduleSummary[] = Array.isArray(
       payload.highlights?.todaysSchedules
     )
-      ? payload.highlights.todaysSchedules
+      ? (payload.highlights.todaysSchedules
           .map(normalizeSchedule)
-          .filter(Boolean) as PublicScheduleSummary[]
+          .filter(Boolean) as PublicScheduleSummary[])
       : []
 
     const reviews: PublicReviewSummary[] = Array.isArray(payload.reviews)
-      ? payload.reviews.map(normalizeReview).filter(Boolean) as PublicReviewSummary[]
+      ? (payload.reviews.map(normalizeReview).filter(Boolean) as PublicReviewSummary[])
       : []
 
     return {

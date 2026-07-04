@@ -1,6 +1,11 @@
 'use client'
 
-import Link from 'next/link'
+/**
+ * @design_doc   ui-improvement-instructions.md U-6 admin page header
+ * @related_to   PageHeader: shared settings header; public pricing pages: eventual display surface
+ * @known_issues This page remains a prepared UI shell
+ */
+import { PageHeader } from '@/components/admin/page-header'
 import { Header } from '@/components/header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,23 +17,14 @@ export default function HpPricingPage() {
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 pb-12 pt-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <CreditCard className="h-8 w-8 text-emerald-600" />
-            <div>
-              <h1 className="text-2xl font-semibold">HP料金情報</h1>
-              <p className="text-sm text-muted-foreground">
-                ホームページに掲載する料金表の構成を管理します。まずは下書きレイアウトを作成し、後から内容を更新できます。
-              </p>
-            </div>
-          </div>
-          <Button variant="outline" asChild>
-            <Link href="/admin/settings">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              設定一覧へ戻る
-            </Link>
-          </Button>
-        </div>
+        <PageHeader
+          title="HP料金情報"
+          description="ホームページに掲載する料金表の構成を管理します。まずは下書きレイアウトを作成し、後から内容を更新できます。"
+          backHref="/admin/settings"
+          backLabel="設定一覧へ戻る"
+          backIcon={ArrowLeft}
+          icon={CreditCard}
+        />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <Card className="lg:col-span-2">
@@ -41,7 +37,9 @@ export default function HpPricingPage() {
             <CardContent className="flex flex-col items-center justify-center gap-4 rounded-md border border-dashed border-muted-foreground/30 py-12 text-center text-muted-foreground">
               <CreditCard className="h-10 w-10 text-muted-foreground/60" />
               <div>
-                <p className="text-base font-medium text-foreground">料金セクションを作成しましょう</p>
+                <p className="text-base font-medium text-foreground">
+                  料金セクションを作成しましょう
+                </p>
                 <p className="text-sm">
                   「コース」「オプション」「追加料金」などホームページに掲載するカテゴリーを決めたら、ここに入力欄を追加してください。
                 </p>
@@ -57,7 +55,8 @@ export default function HpPricingPage() {
                 </Button>
               </div>
               <small className="text-xs text-muted-foreground">
-                ※ 現段階ではUIのみが用意されています。後ほど管理画面/APIと接続し実データを保存します。
+                ※
+                現段階ではUIのみが用意されています。後ほど管理画面/APIと接続し実データを保存します。
               </small>
             </CardContent>
           </Card>

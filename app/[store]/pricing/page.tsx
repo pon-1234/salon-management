@@ -1,3 +1,9 @@
+/**
+ * @design_doc   ui-improvement-instructions.md U-12 metadata
+ * @related_to   StoreLayout: store-specific title template; public-pricing: displayed price data
+ * @known_issues Dynamic course names are not reflected in metadata
+ */
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { fetchStoreBySlug } from '@/lib/store/public-api'
 import { StoreNavigation } from '@/components/store-navigation'
@@ -6,6 +12,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Clock, Star, Phone } from 'lucide-react'
 import { getPublicStorePricing } from '@/lib/store/public-pricing'
+
+export const metadata: Metadata = {
+  title: '料金システム',
+}
 
 const OPTION_CATEGORY_LABELS: Record<string, string> = {
   special: '特別オプション',
@@ -25,8 +35,8 @@ function pickHighlight(duration: number, index: number) {
   return highlight?.label ?? null
 }
 
-export default async function PricingPage({ params }: { params: { store: string } }) {
-  const { store: storeSlug } = params
+export default async function PricingPage({ params }: { params: Promise<{ store: string }> }) {
+  const { store: storeSlug } = await params
   const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {
@@ -36,9 +46,7 @@ export default async function PricingPage({ params }: { params: { store: string 
   const storePricing = await getPublicStorePricing(store.id)
   const { courses, options, additionalFees, notes } = storePricing
 
-  const sortedCourses = courses
-    .slice()
-    .sort((a, b) => a.duration - b.duration || a.price - b.price)
+  const sortedCourses = courses.slice().sort((a, b) => a.duration - b.duration || a.price - b.price)
 
   const optionsByCategory = options.reduce(
     (acc, option) => {
@@ -153,7 +161,9 @@ export default async function PricingPage({ params }: { params: { store: string 
                           <div className="flex-1">
                             <p className="text-lg font-medium text-[#f5e6c4]">{option.name}</p>
                             {option.description && (
-                              <p className="mt-1 text-sm text-muted-foreground">{option.description}</p>
+                              <p className="mt-1 text-sm text-muted-foreground">
+                                {option.description}
+                              </p>
                             )}
                             {option.duration && (
                               <p className="mt-1 text-sm text-[#cbb88f]">
@@ -230,7 +240,9 @@ export default async function PricingPage({ params }: { params: { store: string 
                   <p key={index}>・{note}</p>
                 ))}
                 <p>・表示価格は{store.name}の料金です。</p>
-                <p>・混雑時はご希望のお時間に添えない場合がございます。事前予約をおすすめします。</p>
+                <p>
+                  ・混雑時はご希望のお時間に添えない場合がございます。事前予約をおすすめします。
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -249,7 +261,9 @@ export default async function PricingPage({ params }: { params: { store: string 
             </Card>
             <Card className="luxury-panel">
               <CardHeader>
-                <CardTitle className="text-xl text-[#f5e6c4]">チェンジ・キャンセルについて</CardTitle>
+                <CardTitle className="text-xl text-[#f5e6c4]">
+                  チェンジ・キャンセルについて
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm text-muted-foreground">
                 <p>・ご来店前のキャンセル・変更はお電話で承ります。</p>

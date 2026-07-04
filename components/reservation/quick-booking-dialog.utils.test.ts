@@ -40,10 +40,7 @@ describe('getCastAvailableOptions', () => {
   })
 
   it('returns an empty list when the cast has no available options', () => {
-    const result = getCastAvailableOptions(
-      { ...baseCast, availableOptions: [] },
-      normalizedOptions
-    )
+    const result = getCastAvailableOptions({ ...baseCast, availableOptions: [] }, normalizedOptions)
     expect(result).toEqual([])
   })
 

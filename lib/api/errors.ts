@@ -6,6 +6,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { Prisma } from '@prisma/client'
+import logger from '@/lib/logger'
 
 /**
  * Standard error response interface
@@ -62,7 +63,7 @@ export function handlePrismaError(error: unknown): NextResponse<ErrorResponse> {
           'FOREIGN_KEY_ERROR'
         )
       default:
-        console.error('Prisma error:', error)
+        logger.error('Prisma error:', error)
         return createErrorResponse(
           'データベースエラーが発生しました',
           500,
@@ -73,7 +74,7 @@ export function handlePrismaError(error: unknown): NextResponse<ErrorResponse> {
   }
 
   if (error instanceof Prisma.PrismaClientValidationError) {
-    console.error('Prisma validation error:', error)
+    logger.error('Prisma validation error:', error)
     return createErrorResponse(
       'データベースバリデーションエラー',
       400,
@@ -104,7 +105,7 @@ export function handleApiError(error: unknown): NextResponse<ErrorResponse> {
 
   // Handle generic errors with message
   if (error instanceof Error) {
-    console.error('API error:', error)
+    logger.error('API error:', error)
     return createErrorResponse(
       error.message || '予期しないエラーが発生しました',
       500,
@@ -114,7 +115,7 @@ export function handleApiError(error: unknown): NextResponse<ErrorResponse> {
   }
 
   // Handle unknown errors
-  console.error('Unknown error:', error)
+  logger.error('Unknown error:', error)
   return createErrorResponse('予期しないエラーが発生しました', 500, undefined, 'UNKNOWN_ERROR')
 }
 

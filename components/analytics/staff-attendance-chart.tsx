@@ -32,10 +32,7 @@ export function StaffAttendanceChart({ year, month, data }: StaffAttendanceChart
   }
 
   const chartData = Array.from({ length: daysInMonth }, (_, index) => {
-    const attendanceCount = data.reduce(
-      (sum, staff) => sum + (staff.attendance[index] ?? 0),
-      0
-    )
+    const attendanceCount = data.reduce((sum, staff) => sum + (staff.attendance[index] ?? 0), 0)
     const absenceCount = Math.max(totalStaff - attendanceCount, 0)
     return {
       date: index + 1,

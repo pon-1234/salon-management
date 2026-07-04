@@ -44,22 +44,18 @@ export function CastLineLinkGuide({ castId }: CastLineLinkGuideProps) {
       <Card>
         <CardHeader>
           <CardTitle>LINE連携のやり方</CardTitle>
-          <CardDescription>公式LINEに1行送るだけで、マイページとLINEを紐づけできます。</CardDescription>
+          <CardDescription>
+            公式LINEに1行送るだけで、マイページとLINEを紐づけできます。
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 md:grid-cols-3">
-            <Step
-              title="1. 公式LINEを追加"
-              description="下のボタンから友だち追加してください。"
-            />
+            <Step title="1. 公式LINEを追加" description="下のボタンから友だち追加してください。" />
             <Step
               title="2. コマンドを送信"
               description={`トークで「${registrationCommand}」を送ってください。`}
             />
-            <Step
-              title="3. 結果を確認"
-              description="成功・失敗がLINEに返信されます。"
-            />
+            <Step title="3. 結果を確認" description="成功・失敗がLINEに返信されます。" />
           </div>
           <div className="rounded-lg border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
             すでに別のキャストに紐づいているLINEアカウントは自動でブロックされ、失敗メッセージが送られます。

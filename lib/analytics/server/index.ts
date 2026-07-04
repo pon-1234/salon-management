@@ -1,3 +1,8 @@
+/**
+ * @design_doc   refactor-instructions.md Phase 6 D-11 analytics real-data connection
+ * @related_to   app/api/analytics/*: database-backed analytics report builders
+ * @known_issues Baseline analytics tests are partial; see refactor-baseline.md
+ */
 import {
   addDays,
   addMonths,
@@ -109,10 +114,7 @@ function buildTimeSlotSummary(hourlyTotals: number[]): TimeSlotSummary[] {
   }))
 }
 
-export async function getMonthlyAnalytics(
-  year: number,
-  storeId?: string
-): Promise<MonthlyData[]> {
+export async function getMonthlyAnalytics(year: number, storeId?: string): Promise<MonthlyData[]> {
   const normalizedStoreId = normaliseStoreId(storeId)
   const start = startOfYear(new Date(year, 0, 1))
   const end = endOfYear(start)
@@ -158,14 +160,20 @@ export async function getMonthlyAnalytics(
         .filter((value): value is string => Boolean(value))
     )
 
-    const totalSales = monthReservations.reduce((sum, reservation) => sum + (reservation.price ?? 0), 0)
+    const totalSales = monthReservations.reduce(
+      (sum, reservation) => sum + (reservation.price ?? 0),
+      0
+    )
     const cashSales = monthReservations
       .filter((reservation) => categorizePayment(reservation.paymentMethod) === 'cash')
       .reduce((sum, reservation) => sum + (reservation.price ?? 0), 0)
     const cardReservations = monthReservations.filter(
       (reservation) => categorizePayment(reservation.paymentMethod) === 'card'
     )
-    const cardSales = cardReservations.reduce((sum, reservation) => sum + (reservation.price ?? 0), 0)
+    const cardSales = cardReservations.reduce(
+      (sum, reservation) => sum + (reservation.price ?? 0),
+      0
+    )
 
     const totalTransactions = monthReservations.length
     const staffRevenue = sumStaffRevenue(monthReservations)
@@ -182,7 +190,9 @@ export async function getMonthlyAnalytics(
     })
 
     const prefectureCounter = new Map<string, number>()
-    monthReservations.forEach((reservation) => incrementPrefectureCounter(prefectureCounter, reservation))
+    monthReservations.forEach((reservation) =>
+      incrementPrefectureCounter(prefectureCounter, reservation)
+    )
 
     const tokyoCount = prefectureCounter.get('東京都') ?? 0
     const kanagawaCount = prefectureCounter.get('神奈川県') ?? 0
@@ -216,8 +226,7 @@ export async function getMonthlyAnalytics(
       kanagawaCount,
       totalCount: totalTransactions,
       totalSales,
-      salesPerCustomer:
-        totalTransactions > 0 ? Math.round(totalSales / totalTransactions) : 0,
+      salesPerCustomer: totalTransactions > 0 ? Math.round(totalSales / totalTransactions) : 0,
       discounts: 0,
       pointRewards: 0,
       totalRevenue: storeRevenue + staffRevenue,
@@ -265,16 +274,14 @@ export async function getMonthlyStaffSummary(
     const price = reservation.price ?? 0
     const workDay = reservation.startTime ? format(reservation.startTime, 'yyyy-MM-dd') : null
 
-    const entry =
-      staffMap.get(castId) ??
-      {
-        name: castName,
-        days: new Set<string>(),
-        customerCount: 0,
-        totalSales: 0,
-        newCustomers: 0,
-        repeaters: 0,
-      }
+    const entry = staffMap.get(castId) ?? {
+      name: castName,
+      days: new Set<string>(),
+      customerCount: 0,
+      totalSales: 0,
+      newCustomers: 0,
+      repeaters: 0,
+    }
 
     if (workDay) {
       entry.days.add(workDay)
@@ -346,20 +353,15 @@ export async function getMonthlyAreaSummary(
 
   reservations.forEach((reservation) => {
     const areaName =
-      reservation.area?.name ??
-      reservation.area?.city ??
-      reservation.area?.prefecture ??
-      '未設定'
+      reservation.area?.name ?? reservation.area?.city ?? reservation.area?.prefecture ?? '未設定'
     const price = reservation.price ?? 0
 
-    const entry =
-      areaMap.get(areaName) ??
-      {
-        customerCount: 0,
-        totalSales: 0,
-        newCustomers: 0,
-        repeaters: 0,
-      }
+    const entry = areaMap.get(areaName) ?? {
+      customerCount: 0,
+      totalSales: 0,
+      newCustomers: 0,
+      repeaters: 0,
+    }
 
     entry.customerCount += 1
     entry.totalSales += price
@@ -384,10 +386,7 @@ export async function getMonthlyAreaSummary(
   const previousSalesMap = new Map<string, number>()
   previousReservations.forEach((reservation) => {
     const areaName =
-      reservation.area?.name ??
-      reservation.area?.city ??
-      reservation.area?.prefecture ??
-      '未設定'
+      reservation.area?.name ?? reservation.area?.city ?? reservation.area?.prefecture ?? '未設定'
     const price = reservation.price ?? 0
     previousSalesMap.set(areaName, (previousSalesMap.get(areaName) ?? 0) + price)
   })
@@ -507,12 +506,14 @@ export async function getDailyAnalytics(
 }
 
 export async function getStaffPerformanceReport(
-  storeId?: string,
-  months: number = 2
+  year: number,
+  month: number,
+  storeId?: string
 ): Promise<StaffPerformanceData[]> {
   const normalizedStoreId = normaliseStoreId(storeId)
-  const end = endOfDay(new Date())
-  const start = startOfDay(addMonths(end, -months))
+  const targetMonth = new Date(year, month - 1, 1)
+  const start = startOfMonth(targetMonth)
+  const end = endOfMonth(targetMonth)
 
   const reservations = await fetchReservationsBetween(normalizedStoreId, start, end)
   const firstReservationMap = await buildCustomerFirstReservationMap(normalizedStoreId)
@@ -552,25 +553,24 @@ export async function getStaffPerformanceReport(
       Math.max(price - staffRevenue - (reservation.transportationFee ?? 0), 0)
     const storeRevenue = Math.max(baseStoreRevenue, reservation.welfareExpense ?? 0)
 
-    const entry =
-      castMap.get(castId) ?? {
-        name: castName,
-        age: castAge,
-        workDays: new Set<string>(),
-        cashCount: 0,
-        cashAmount: 0,
-        cardCount: 0,
-        cardAmount: 0,
-        totalTransactions: 0,
-        newFree: 0,
-        newPaid: 0,
-        designationRegular: 0,
-        designationTotal: 0,
-        totalAmount: 0,
-        staffFee: 0,
-        staffRevenue: 0,
-        storeRevenue: 0,
-      }
+    const entry = castMap.get(castId) ?? {
+      name: castName,
+      age: castAge,
+      workDays: new Set<string>(),
+      cashCount: 0,
+      cashAmount: 0,
+      cardCount: 0,
+      cardAmount: 0,
+      totalTransactions: 0,
+      newFree: 0,
+      newPaid: 0,
+      designationRegular: 0,
+      designationTotal: 0,
+      totalAmount: 0,
+      staffFee: 0,
+      staffRevenue: 0,
+      storeRevenue: 0,
+    }
 
     if (workDay) {
       entry.workDays.add(workDay)
@@ -610,7 +610,7 @@ export async function getStaffPerformanceReport(
     castMap.set(castId, entry)
   })
 
-  const totalDays = Math.max(differenceInMinutes(end, start) / (60 * 24), 1)
+  const totalDays = getDaysInMonth(targetMonth)
 
   return Array.from(castMap.entries()).map(([castId, data]) => {
     const designationRate =
@@ -676,14 +676,12 @@ export async function getCourseSalesReport(
     const course = reservation.course
     const daysInMonth = getDaysInMonth(targetMonth)
 
-    const entry =
-      courseMap.get(reservation.courseId) ??
-      {
-        name: course?.name ?? '未設定',
-        duration: course?.duration ?? 0,
-        price: course?.price ?? 0,
-        dailySales: Array(daysInMonth).fill(0),
-      }
+    const entry = courseMap.get(reservation.courseId) ?? {
+      name: course?.name ?? '未設定',
+      duration: course?.duration ?? 0,
+      price: course?.price ?? 0,
+      dailySales: Array(daysInMonth).fill(0),
+    }
 
     const day = reservation.startTime ? reservation.startTime.getDate() : null
     if (day) {
@@ -744,13 +742,11 @@ export async function getOptionSalesReport(
     const optionName = entry.option?.name ?? entry.optionName ?? '未設定'
     const optionPrice = entry.option?.price ?? entry.optionPrice ?? 0
 
-    const optionEntry =
-      optionMap.get(optionId) ??
-      {
-        name: optionName,
-        price: optionPrice,
-        monthlySales: Array(12).fill(0),
-      }
+    const optionEntry = optionMap.get(optionId) ?? {
+      name: optionName,
+      price: optionPrice,
+      monthlySales: Array(12).fill(0),
+    }
 
     optionEntry.monthlySales[month] += 1
     optionMap.set(optionId, optionEntry)
@@ -815,17 +811,15 @@ export async function getOptionCombinationReport(
 
       const optionName = optionEntry.option?.name ?? optionEntry.optionName ?? '未設定'
       const key = `${courseId}:${optionId}`
-      const combination =
-        combinationMap.get(key) ??
-        {
-          courseId,
-          courseName,
-          optionId,
-          optionName,
-          count: 0,
-          optionRevenue: 0,
-          reservationRevenue: 0,
-        }
+      const combination = combinationMap.get(key) ?? {
+        courseId,
+        courseName,
+        optionId,
+        optionName,
+        count: 0,
+        optionRevenue: 0,
+        reservationRevenue: 0,
+      }
 
       combination.count += 1
       combination.optionRevenue += optionEntry.optionPrice ?? optionEntry.option?.price ?? 0
@@ -838,12 +832,12 @@ export async function getOptionCombinationReport(
   return Array.from(combinationMap.values())
     .map((entry) => {
       const courseStats = courseTotals.get(entry.courseId)
-      const attachRate = courseStats && courseStats.count > 0
-        ? Math.round((entry.count / courseStats.count) * 1000) / 10
-        : 0
-      const averageSpending = entry.count > 0
-        ? Math.round(entry.reservationRevenue / entry.count)
-        : 0
+      const attachRate =
+        courseStats && courseStats.count > 0
+          ? Math.round((entry.count / courseStats.count) * 1000) / 10
+          : 0
+      const averageSpending =
+        entry.count > 0 ? Math.round(entry.reservationRevenue / entry.count) : 0
 
       return {
         courseId: entry.courseId,
@@ -896,10 +890,7 @@ export async function getMarketingChannelReport(
   }))
 }
 
-export async function getAreaSalesReport(
-  year: number,
-  storeId?: string
-): Promise<AreaSalesData[]> {
+export async function getAreaSalesReport(year: number, storeId?: string): Promise<AreaSalesData[]> {
   const normalizedStoreId = normaliseStoreId(storeId)
   const yearStart = startOfYear(new Date(year, 0, 1))
   const yearEnd = endOfYear(yearStart)
@@ -930,14 +921,12 @@ export async function getAreaSalesReport(
     const displayName = prefecture || name || city || '未設定'
     const groupingKey = (prefecture || displayName).toLowerCase()
 
-    const entry =
-      areaMap.get(groupingKey) ??
-      {
-        displayName,
-        prefecture: prefecture || displayName,
-        monthlySales: Array(12).fill(0),
-        monthlyCustomers: Array(12).fill(0),
-      }
+    const entry = areaMap.get(groupingKey) ?? {
+      displayName,
+      prefecture: prefecture || displayName,
+      monthlySales: Array(12).fill(0),
+      monthlyCustomers: Array(12).fill(0),
+    }
 
     if (entry.displayName === '未設定' && displayName !== '未設定') {
       entry.displayName = displayName
@@ -1001,14 +990,12 @@ export async function getDistrictSalesReport(
       const month = startTime.getMonth()
       const price = reservation.price ?? 0
 
-      const entry =
-        districtMap.get(district) ??
-        {
-          monthlySales: Array(12).fill(0),
-          monthlyCustomers: Array(12).fill(0),
-          monthlyNewCustomers: Array(12).fill(0),
-          customerIds: new Set<string>(),
-        }
+      const entry = districtMap.get(district) ?? {
+        monthlySales: Array(12).fill(0),
+        monthlyCustomers: Array(12).fill(0),
+        monthlyNewCustomers: Array(12).fill(0),
+        customerIds: new Set<string>(),
+      }
 
       entry.monthlySales[month] += price
       entry.monthlyCustomers[month] += 1
@@ -1087,7 +1074,9 @@ export async function getHourlySalesReport(
   const daysInMonth = getDaysInMonth(targetMonth)
   const data = Array.from({ length: daysInMonth }, (_, index) => ({
     date: index + 1,
-    dayOfWeek: ['日', '月', '火', '水', '木', '金', '土'][new Date(year, month - 1, index + 1).getDay()],
+    dayOfWeek: ['日', '月', '火', '水', '木', '金', '土'][
+      new Date(year, month - 1, index + 1).getDay()
+    ],
     hours: Array(HOURS_RANGE.length).fill(0),
     total: 0,
   }))
@@ -1119,10 +1108,7 @@ export async function getHourlySalesReport(
   }
 }
 
-export async function getDailyReport(
-  date: string,
-  storeId?: string
-): Promise<DailyReport> {
+export async function getDailyReport(date: string, storeId?: string): Promise<DailyReport> {
   const normalizedStoreId = normaliseStoreId(storeId)
   return generateDailyReport(date, normalizedStoreId)
 }
@@ -1188,15 +1174,13 @@ export async function getStaffAttendanceReport(
     const castName = schedule.cast?.name ?? '未設定'
     const day = schedule.date.getDate()
 
-    const entry =
-      attendanceMap.get(castId) ??
-      {
-        name: castName,
-        attendance: Array(daysInMonth).fill(0) as (0 | 1)[],
-        weekdayAttendance: 0,
-        weekendAttendance: 0,
-        totalMinutes: 0,
-      }
+    const entry = attendanceMap.get(castId) ?? {
+      name: castName,
+      attendance: Array(daysInMonth).fill(0) as (0 | 1)[],
+      weekdayAttendance: 0,
+      weekendAttendance: 0,
+      totalMinutes: 0,
+    }
 
     if (!schedule.isAvailable) {
       attendanceMap.set(castId, entry)

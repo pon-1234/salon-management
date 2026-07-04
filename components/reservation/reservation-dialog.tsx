@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @design_doc   refactor-instructions.md Phase 5 reservation dialog extraction
+ * @related_to   reservation-dialog.utils: pure formatting and normalization helpers
+ * @known_issues Large UI/state sections remain for later extraction proposals
+ */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Dialog,
@@ -95,6 +100,15 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { zonedTimeToUtc } from 'date-fns-tz'
 import { CastTimelineModal } from '@/components/reservation/cast-timeline-modal'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import {
+  PAYMENT_METHOD_OPTIONS,
+  formatCurrency,
+  formatMinutes,
+  normalizeMarketingChannelValue,
+  normalizePaymentMethodValue,
+  toNullableNumber,
+  toNumber,
+} from '@/components/reservation/reservation-dialog.utils'
 
 type EditFormState = {
   date: string
@@ -194,45 +208,6 @@ const NG_REASON_LABELS: Record<'customer' | 'cast' | 'staff', string> = {
   staff: '店舗NG',
 }
 
-function toNumber(value: unknown, fallback = 0): number {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value
-  }
-
-  if (typeof value === 'string') {
-    const normalized = value.replace(/[^\d.-]/g, '')
-    const parsed = Number(normalized)
-    if (Number.isFinite(parsed)) {
-      return parsed
-    }
-  }
-
-  return fallback
-}
-
-function toNullableNumber(value: unknown): number | null {
-  const parsed = toNumber(value, Number.NaN)
-  return Number.isFinite(parsed) ? parsed : null
-}
-
-function formatMinutes(value: number | null | undefined): string {
-  if (!Number.isFinite(value ?? Number.NaN) || !value || value <= 0) {
-    return '0分'
-  }
-
-  const wholeMinutes = Math.round(value)
-  const hours = Math.floor(wholeMinutes / 60)
-  const minutes = wholeMinutes % 60
-
-  if (hours > 0 && minutes > 0) {
-    return `${hours}時間${minutes}分`
-  }
-  if (hours > 0) {
-    return `${hours}時間`
-  }
-  return `${minutes}分`
-}
-
 function StatusBadge({ status }: { status: ReservationStatus | 'completed' }) {
   const color = statusColorMap[status] ?? 'bg-gray-500'
   const label = statusTextMap[status] ?? status
@@ -254,55 +229,7 @@ function formatRemainingTime(totalSeconds: number) {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
-function formatCurrency(amount: number | undefined) {
-  if (typeof amount !== 'number') return '¥0'
-  return `¥${amount.toLocaleString()}`
-}
-
-const PAYMENT_METHOD_OPTIONS = Object.values(PAYMENT_METHODS) as PaymentMethod[]
-
-function normalizePaymentMethodValue(input?: string | null): PaymentMethod {
-  if (!input) {
-    return PAYMENT_METHODS.CASH
-  }
-  const trimmed = input.trim()
-  if (trimmed.length === 0) {
-    return PAYMENT_METHODS.CASH
-  }
-  const lower = trimmed.toLowerCase()
-  if (trimmed.includes('カード') || lower.includes('card')) {
-    return PAYMENT_METHODS.CARD
-  }
-  if (trimmed.includes('現金') || lower.includes('cash')) {
-    return PAYMENT_METHODS.CASH
-  }
-  if (PAYMENT_METHOD_OPTIONS.includes(trimmed as PaymentMethod)) {
-    return trimmed as PaymentMethod
-  }
-  return PAYMENT_METHODS.CASH
-}
-
 const DEFAULT_MARKETING_CHANNELS = [...MARKETING_CHANNELS]
-
-function normalizeMarketingChannelValue(
-  input: string | null | undefined,
-  available: string[]
-): string {
-  const fallback = available[0] ?? DEFAULT_MARKETING_CHANNELS[0] ?? 'WEB'
-  if (typeof input !== 'string') {
-    return fallback
-  }
-  const trimmed = input.trim()
-  if (trimmed.length === 0) {
-    return fallback
-  }
-  if (available.includes(trimmed)) {
-    return trimmed
-  }
-  const lower = trimmed.toLowerCase()
-  const match = available.find((channel) => channel.toLowerCase() === lower)
-  return match ?? trimmed
-}
 
 interface ReservationDialogProps {
   open: boolean
@@ -323,6 +250,7 @@ export function ReservationDialog({
   const [isCastTimelineOpen, setIsCastTimelineOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'history'>('overview')
   const [isEditMode, setIsEditMode] = useState(false)
+  const [discardEditConfirmOpen, setDiscardEditConfirmOpen] = useState(false)
   const [status, setStatus] = useState<ReservationStatus | 'completed'>(
     ((reservation?.status as ReservationStatus) ?? 'pending') as ReservationStatus
   )
@@ -355,10 +283,7 @@ export function ReservationDialog({
   const [isSaving, setIsSaving] = useState(false)
   const [remainingTime, setRemainingTime] = useState<number | null>(null)
   const { data: session } = useSession()
-  const canViewFinancialDetails = hasPermission(
-    session?.user?.permissions ?? [],
-    'analytics:read'
-  )
+  const canViewFinancialDetails = hasPermission(session?.user?.permissions ?? [], 'analytics:read')
   const {
     coursePrices,
     courses,
@@ -366,11 +291,7 @@ export function ReservationDialog({
     options,
     loading: pricingLoading,
   } = usePricing(currentStore.id)
-  const {
-    areas,
-    stations,
-    loading: locationsLoading,
-  } = useLocations()
+  const { areas, stations, loading: locationsLoading } = useLocations()
 
   const [modificationHistory, setModificationHistory] = useState<ModificationHistory[]>([])
   const [modificationAlerts, setModificationAlerts] = useState<ModificationAlert[]>([])
@@ -414,7 +335,9 @@ export function ReservationDialog({
   >([])
   const [customerNgLoading, setCustomerNgLoading] = useState(false)
   const [cancelReasonDialogOpen, setCancelReasonDialogOpen] = useState(false)
-  const [pendingStatusChange, setPendingStatusChange] = useState<ReservationStatus | 'completed' | null>(null)
+  const [pendingStatusChange, setPendingStatusChange] = useState<
+    ReservationStatus | 'completed' | null
+  >(null)
   const [cancelReason, setCancelReason] = useState<'customer' | 'store'>('customer')
   const handleCancelReasonDialogToggle = (open: boolean) => {
     setCancelReasonDialogOpen(open)
@@ -450,11 +373,13 @@ export function ReservationDialog({
             .map((channel: unknown) => (typeof channel === 'string' ? channel.trim() : ''))
             .filter((channel: string) => channel.length > 0)
           const merged = Array.from(
-            new Set([
-              ...normalized,
-              ...DEFAULT_MARKETING_CHANNELS,
-              reservation?.marketingChannel ?? '',
-            ].filter((channel) => channel.length > 0))
+            new Set(
+              [
+                ...normalized,
+                ...DEFAULT_MARKETING_CHANNELS,
+                reservation?.marketingChannel ?? '',
+              ].filter((channel) => channel.length > 0)
+            )
           )
           if (merged.length > 0) {
             setMarketingChannelOptions(merged)
@@ -477,7 +402,10 @@ export function ReservationDialog({
 
   useEffect(() => {
     setFormState((prev) => {
-      const normalized = normalizeMarketingChannelValue(prev.marketingChannel, marketingChannelOptions)
+      const normalized = normalizeMarketingChannelValue(
+        prev.marketingChannel,
+        marketingChannelOptions
+      )
       if (normalized === prev.marketingChannel) {
         return prev
       }
@@ -666,8 +594,7 @@ export function ReservationDialog({
         if (!ignore) {
           toast({
             title: '履歴の取得に失敗しました',
-            description:
-              error instanceof Error ? error.message : '不明なエラーが発生しました。',
+            description: error instanceof Error ? error.message : '不明なエラーが発生しました。',
             variant: 'destructive',
           })
         }
@@ -725,8 +652,7 @@ export function ReservationDialog({
           description: STATUS_META[nextStatus]?.label ?? nextStatus,
         })
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'ステータスの更新に失敗しました。'
+        const message = error instanceof Error ? error.message : 'ステータスの更新に失敗しました。'
         toast({
           title: '更新に失敗しました',
           description: message,
@@ -775,13 +701,10 @@ export function ReservationDialog({
     const loadCasts = async () => {
       setIsLoadingCasts(true)
       try {
-        const response = await fetch(
-          `/api/cast?storeId=${encodeURIComponent(currentStore.id)}`,
-          {
-            cache: 'no-store',
-            credentials: 'include',
-          }
-        )
+        const response = await fetch(`/api/cast?storeId=${encodeURIComponent(currentStore.id)}`, {
+          cache: 'no-store',
+          credentials: 'include',
+        })
         if (!response.ok) {
           throw new Error(`Failed to fetch casts: ${response.status}`)
         }
@@ -837,11 +760,14 @@ export function ReservationDialog({
     const loadCustomerNg = async () => {
       setCustomerNgLoading(true)
       try {
-        const response = await fetch(`/api/customer?id=${encodeURIComponent(reservation.customerId)}`, {
-          cache: 'no-store',
-          credentials: 'include',
-          signal: controller.signal,
-        })
+        const response = await fetch(
+          `/api/customer?id=${encodeURIComponent(reservation.customerId)}`,
+          {
+            cache: 'no-store',
+            credentials: 'include',
+            signal: controller.signal,
+          }
+        )
         if (!response.ok) {
           throw new Error(`Failed to fetch customer: ${response.status}`)
         }
@@ -1051,14 +977,17 @@ export function ReservationDialog({
     reservation?.price,
   ])
 
-  const mapLineLogEntry = useCallback((raw: any): LineLogEntry => ({
-    id: String(raw.id),
-    message: String(raw.message ?? ''),
-    status: String(raw.status ?? 'sent'),
-    errorMessage: raw.errorMessage ? String(raw.errorMessage) : null,
-    createdAt: raw.createdAt ? new Date(raw.createdAt) : new Date(),
-    castName: raw.cast?.name ?? null,
-  }), [])
+  const mapLineLogEntry = useCallback(
+    (raw: any): LineLogEntry => ({
+      id: String(raw.id),
+      message: String(raw.message ?? ''),
+      status: String(raw.status ?? 'sent'),
+      errorMessage: raw.errorMessage ? String(raw.errorMessage) : null,
+      createdAt: raw.createdAt ? new Date(raw.createdAt) : new Date(),
+      castName: raw.cast?.name ?? null,
+    }),
+    []
+  )
 
   const refreshLineLogs = useCallback(async () => {
     if (!reservation?.id) {
@@ -1079,7 +1008,11 @@ export function ReservationDialog({
       }
 
       const payload = await response.json().catch(() => null)
-      const rawLogs: any[] = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : []
+      const rawLogs: any[] = Array.isArray(payload?.data)
+        ? payload.data
+        : Array.isArray(payload)
+          ? payload
+          : []
       setLineLogs(
         rawLogs
           .map((entry: any) => mapLineLogEntry(entry))
@@ -1189,7 +1122,8 @@ export function ReservationDialog({
   const lineMessageLength = trimmedLineMessage.length
   const isLineMessageTooLong = lineMessageLength > MAX_LINE_MESSAGE_LENGTH
 
-  const canSendLineMessage = lineMessageLength > 0 && !isLineMessageTooLong && Boolean(selectedCast?.lineUserId)
+  const canSendLineMessage =
+    lineMessageLength > 0 && !isLineMessageTooLong && Boolean(selectedCast?.lineUserId)
 
   const handleLineMessageChange = (value: string) => {
     setLineMessage(value)
@@ -1346,45 +1280,48 @@ export function ReservationDialog({
   const priceDelta = priceBreakdown.total - originalTotal
   const durationDelta = effectiveDurationMinutes - reservationDurationMinutes
 
-useEffect(() => {
-  if (reservation) {
-    setFormState({
-      date: format(reservation.startTime, 'yyyy-MM-dd'),
-      startTime: format(reservation.startTime, 'HH:mm'),
-      castId: reservation.staffId || '',
-      courseId: reservation.serviceId || null,
-      designationId: reservationDesignation?.id || '',
-      storeMemo: reservation.storeMemo || '',
-      notes: reservation.notes || '',
-      paymentMethod: normalizePaymentMethodValue(reservation.paymentMethod),
-      marketingChannel: normalizeMarketingChannelValue(reservation.marketingChannel, marketingChannelOptions),
-      transportationFee: reservation.transportationFee ?? 0,
-      additionalFee: reservation.additionalFee ?? 0,
-      discountAmount: reservation.discountAmount ?? 0,
-      designationFee: Number(reservation.designationFee ?? 0),
-      price: Number(reservation.totalPayment ?? reservation.price ?? 0),
-      areaId: reservation.areaId ?? null,
-      stationId: reservation.stationId ?? null,
-      optionIds: normalizedInitialOptionIds,
-      hotelName: reservation.hotelName ?? '',
-      roomNumber: reservation.roomNumber ?? '',
-      locationMemo: reservation.locationMemo ?? '',
-    })
-    setEntryForm({
-      hotelName: reservation.hotelName ?? '',
-      roomNumber: reservation.roomNumber ?? '',
-      entryMemo: reservation.entryMemo ?? '',
-    })
-    setEntryMeta({
-      entryReceivedAt: reservation.entryReceivedAt ?? null,
-      entryReceivedBy: reservation.entryReceivedBy ?? null,
-      entryNotifiedAt: reservation.entryNotifiedAt ?? null,
-      entryConfirmedAt: reservation.entryConfirmedAt ?? null,
-      entryReminderSentAt: reservation.entryReminderSentAt ?? null,
-    })
-    setValidationError(null)
-  }
-}, [reservation, reservationDesignation, normalizedInitialOptionIds, marketingChannelOptions])
+  useEffect(() => {
+    if (reservation) {
+      setFormState({
+        date: format(reservation.startTime, 'yyyy-MM-dd'),
+        startTime: format(reservation.startTime, 'HH:mm'),
+        castId: reservation.staffId || '',
+        courseId: reservation.serviceId || null,
+        designationId: reservationDesignation?.id || '',
+        storeMemo: reservation.storeMemo || '',
+        notes: reservation.notes || '',
+        paymentMethod: normalizePaymentMethodValue(reservation.paymentMethod),
+        marketingChannel: normalizeMarketingChannelValue(
+          reservation.marketingChannel,
+          marketingChannelOptions
+        ),
+        transportationFee: reservation.transportationFee ?? 0,
+        additionalFee: reservation.additionalFee ?? 0,
+        discountAmount: reservation.discountAmount ?? 0,
+        designationFee: Number(reservation.designationFee ?? 0),
+        price: Number(reservation.totalPayment ?? reservation.price ?? 0),
+        areaId: reservation.areaId ?? null,
+        stationId: reservation.stationId ?? null,
+        optionIds: normalizedInitialOptionIds,
+        hotelName: reservation.hotelName ?? '',
+        roomNumber: reservation.roomNumber ?? '',
+        locationMemo: reservation.locationMemo ?? '',
+      })
+      setEntryForm({
+        hotelName: reservation.hotelName ?? '',
+        roomNumber: reservation.roomNumber ?? '',
+        entryMemo: reservation.entryMemo ?? '',
+      })
+      setEntryMeta({
+        entryReceivedAt: reservation.entryReceivedAt ?? null,
+        entryReceivedBy: reservation.entryReceivedBy ?? null,
+        entryNotifiedAt: reservation.entryNotifiedAt ?? null,
+        entryConfirmedAt: reservation.entryConfirmedAt ?? null,
+        entryReminderSentAt: reservation.entryReminderSentAt ?? null,
+      })
+      setValidationError(null)
+    }
+  }, [reservation, reservationDesignation, normalizedInitialOptionIds, marketingChannelOptions])
 
   useEffect(() => {
     if (!isEditMode) return
@@ -1404,7 +1341,9 @@ useEffect(() => {
     entryReceivedBy: payload?.entryReceivedBy ?? null,
     entryNotifiedAt: payload?.entryNotifiedAt ? new Date(payload.entryNotifiedAt) : null,
     entryConfirmedAt: payload?.entryConfirmedAt ? new Date(payload.entryConfirmedAt) : null,
-    entryReminderSentAt: payload?.entryReminderSentAt ? new Date(payload.entryReminderSentAt) : null,
+    entryReminderSentAt: payload?.entryReminderSentAt
+      ? new Date(payload.entryReminderSentAt)
+      : null,
   })
 
   const handleSendEntryReminder = useCallback(async () => {
@@ -1472,11 +1411,13 @@ useEffect(() => {
     return null
   }
 
-  const designationSelectValue = rawDesignationId && rawDesignationId.length > 0 ? rawDesignationId : 'none'
+  const designationSelectValue =
+    rawDesignationId && rawDesignationId.length > 0 ? rawDesignationId : 'none'
+  const entryNotifiedAt = entryMeta.entryNotifiedAt
   const entryOverdue =
-    Boolean(entryMeta.entryNotifiedAt) &&
+    entryNotifiedAt !== null &&
     !entryMeta.entryConfirmedAt &&
-    Date.now() - entryMeta.entryNotifiedAt.getTime() > 10 * 60 * 1000
+    Date.now() - entryNotifiedAt.getTime() > 10 * 60 * 1000
 
   const handleEnterEditMode = () => {
     if (!reservation) return
@@ -1494,7 +1435,10 @@ useEffect(() => {
       storeMemo: reservation.storeMemo || '',
       notes: reservation.notes || '',
       paymentMethod: normalizePaymentMethodValue(reservation.paymentMethod),
-      marketingChannel: normalizeMarketingChannelValue(reservation.marketingChannel, marketingChannelOptions),
+      marketingChannel: normalizeMarketingChannelValue(
+        reservation.marketingChannel,
+        marketingChannelOptions
+      ),
       transportationFee: reservation.transportationFee ?? 0,
       additionalFee: reservation.additionalFee ?? 0,
       discountAmount: reservation.discountAmount ?? 0,
@@ -1507,6 +1451,26 @@ useEffect(() => {
       roomNumber: reservation.roomNumber ?? '',
       locationMemo: reservation.locationMemo ?? '',
     })
+  }
+
+  const closeDialogWithoutSaving = () => {
+    setIsEditMode(false)
+    resetForm()
+    setDiscardEditConfirmOpen(false)
+    onOpenChange(false)
+  }
+
+  const requestDialogOpenChange = (next: boolean) => {
+    if (!next && isEditMode) {
+      setDiscardEditConfirmOpen(true)
+      return
+    }
+
+    if (!next) {
+      setIsEditMode(false)
+      resetForm()
+    }
+    onOpenChange(next)
   }
 
   const handleTimelineSelection = (castId: string, slotIso: string) => {
@@ -1588,7 +1552,8 @@ useEffect(() => {
       return
     }
 
-    const durationMinutes = effectiveDurationMinutes > 0 ? effectiveDurationMinutes : reservationDurationMinutes
+    const durationMinutes =
+      effectiveDurationMinutes > 0 ? effectiveDurationMinutes : reservationDurationMinutes
     const end = addMinutes(start, durationMinutes)
 
     const designationIdToSave = formState.designationId || reservationDesignation?.id || ''
@@ -1599,7 +1564,12 @@ useEffect(() => {
 
     if (selectedCast?.workStart && selectedCast?.workEnd) {
       const workStart = new Date(start)
-      workStart.setHours(selectedCast.workStart.getHours(), selectedCast.workStart.getMinutes(), 0, 0)
+      workStart.setHours(
+        selectedCast.workStart.getHours(),
+        selectedCast.workStart.getMinutes(),
+        0,
+        0
+      )
       const workEnd = new Date(start)
       workEnd.setHours(selectedCast.workEnd.getHours(), selectedCast.workEnd.getMinutes(), 0, 0)
 
@@ -1659,1334 +1629,1405 @@ useEffect(() => {
 
   return (
     <>
-      <Dialog open={open} onOpenChange={(next) => {
-      if (!next) {
-        setIsEditMode(false)
-        resetForm()
-      }
-      onOpenChange(next)
-    }}>
-      <DialogContent
-        className="flex max-h-[90vh] max-w-6xl flex-col overflow-hidden p-0"
-        aria-describedby="reservation-dialog-description"
-      >
-        <DialogTitle className="sr-only">{reservation.customerName} 様の予約詳細</DialogTitle>
-        <DialogDescription id="reservation-dialog-description" className="sr-only">
-          予約の詳細情報を表示し、必要に応じて編集できます。
-        </DialogDescription>
+      <Dialog open={open} onOpenChange={requestDialogOpenChange}>
+        <DialogContent
+          className="flex max-h-[90vh] max-w-6xl flex-col overflow-hidden p-0"
+          aria-describedby="reservation-dialog-description"
+        >
+          <DialogTitle className="sr-only">{reservation.customerName} 様の予約詳細</DialogTitle>
+          <DialogDescription id="reservation-dialog-description" className="sr-only">
+            予約の詳細情報を表示し、必要に応じて編集できます。
+          </DialogDescription>
 
-        <div className="sticky top-0 z-20 border-b bg-white p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-xl font-semibold">{reservation.customerName} 様</h2>
-                <StatusBadge status={status} />
-                {reservation.customerType && (
-                  <Badge variant="secondary" className="text-xs">
-                    {reservation.customerType}
-                  </Badge>
-                )}
-              </div>
-              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                <span>予約ID: {reservation.id}</span>
-                {remainingTime !== null && (
-                  <span className="inline-flex items-center gap-1 text-orange-600">
-                    <AlertCircle className="h-3 w-3" />
-                    修正可能残り時間: {formatRemainingTime(remainingTime)}
-                  </span>
-                )}
-          </div>
-          {statusMeta.description && (
-            <p className="mt-1 text-xs text-muted-foreground">{statusMeta.description}</p>
-          )}
-        </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={statusUpdating || !onSave}
-                    className="flex items-center gap-2"
-                  >
-                    ステータス変更
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-72">
-                  <DropdownMenuLabel className="text-xs text-muted-foreground">
-                    ステータスを選択
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {STATUS_OPTIONS.map((option) => (
-                    <DropdownMenuItem
-                      key={option.value}
-                      disabled={statusUpdating || status === option.value}
-                      onSelect={() => handleStatusChange(option.value as ReservationStatus)}
-                      className="flex flex-col items-start gap-1 py-2"
-                    >
-                      <div className="flex w-full items-center justify-between">
-                        <span className="text-sm font-medium">{option.label}</span>
-                        {status === option.value && <Check className="h-4 w-4 text-primary" />}
-                      </div>
-                      <p className="text-xs leading-snug text-muted-foreground">
-                        {option.description}
-                      </p>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              {isEditMode ? (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCancelEdit}
-                    disabled={isSaving}
-                  >
-                    キャンセル
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700"
-                    onClick={handleSaveChanges}
-                    disabled={isSaving}
-                  >
-                    {isSaving ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Check className="mr-2 h-4 w-4" />
-                    )}
-                    保存
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button variant="outline" size="sm" onClick={handleEnterEditMode}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    編集
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
-                    <X className="h-4 w-4" />
-                    <span className="sr-only">閉じる</span>
-                  </Button>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-
-    <div className="flex-1 overflow-y-auto">
-          {validationError && (
-            <div className="border-b bg-red-50 px-4 py-3">
-              <Alert variant="destructive">
-                <AlertDescription>{validationError}</AlertDescription>
-              </Alert>
-            </div>
-          )}
-
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
-            <div className="border-b bg-white px-4 pt-3">
-              <TabsList className="grid w-full grid-cols-3 md:w-auto md:grid-cols-3">
-                <TabsTrigger value="overview">概要</TabsTrigger>
-                <TabsTrigger value="details">詳細</TabsTrigger>
-                <TabsTrigger value="history" className="relative">
-                  履歴
-                  {modificationAlerts.length > 0 && (
-                    <Badge variant="destructive" className="ml-2 h-4 px-1.5 py-0 text-[10px]">
-                      {modificationAlerts.length}
+          <div className="sticky top-0 z-20 border-b bg-white p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-xl font-semibold">{reservation.customerName} 様</h2>
+                  <StatusBadge status={status} />
+                  {reservation.customerType && (
+                    <Badge variant="secondary" className="text-xs">
+                      {reservation.customerType}
                     </Badge>
                   )}
-                </TabsTrigger>
-              </TabsList>
-            </div>
-
-            <TabsContent value="overview" className="space-y-6 p-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">日時</CardTitle>
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {isEditMode ? (
-                    <div className="space-y-3">
-                      <div>
-                        <Label htmlFor="reservation-date">日付</Label>
-                        <Input
-                          id="reservation-date"
-                          type="date"
-                          value={formState.date}
-                          onChange={(event) =>
-                            setFormState((prev) => ({ ...prev, date: event.target.value }))
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="reservation-start-time">開始時間</Label>
-                        <Input
-                          id="reservation-start-time"
-                          type="time"
-                          value={formState.startTime}
-                          onChange={(event) =>
-                            setFormState((prev) => ({ ...prev, startTime: event.target.value }))
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="reservation-end-time">終了時間</Label>
-                        <Input id="reservation-end-time" type="time" value={computedEndTime} readOnly />
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          施術時間: {effectiveDurationMinutes}分
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  <span>予約ID: {reservation.id}</span>
+                  {remainingTime !== null && (
+                    <span className="inline-flex items-center gap-1 text-orange-600">
+                      <AlertCircle className="h-3 w-3" />
+                      修正可能残り時間: {formatRemainingTime(remainingTime)}
+                    </span>
+                  )}
+                </div>
+                {statusMeta.description && (
+                  <p className="mt-1 text-xs text-muted-foreground">{statusMeta.description}</p>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={statusUpdating || !onSave}
+                      className="flex items-center gap-2"
+                    >
+                      ステータス変更
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-72">
+                    <DropdownMenuLabel className="text-xs text-muted-foreground">
+                      ステータスを選択
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {STATUS_OPTIONS.map((option) => (
+                      <DropdownMenuItem
+                        key={option.value}
+                        disabled={statusUpdating || status === option.value}
+                        onSelect={() => handleStatusChange(option.value as ReservationStatus)}
+                        className="flex flex-col items-start gap-1 py-2"
+                      >
+                        <div className="flex w-full items-center justify-between">
+                          <span className="text-sm font-medium">{option.label}</span>
+                          {status === option.value && <Check className="h-4 w-4 text-primary" />}
+                        </div>
+                        <p className="text-xs leading-snug text-muted-foreground">
+                          {option.description}
                         </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      <p className="text-lg font-semibold">
-                        {format(reservation.startTime, 'yyyy年MM月dd日(E)', { locale: ja })}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {format(reservation.startTime, 'HH:mm')} - {format(reservation.endTime, 'HH:mm')}
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">場所</CardTitle>
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
-                  {isEditMode ? (
-                    <div className="space-y-3">
-                      <div>
-                        <Label htmlFor="reservation-area">対応エリア</Label>
-                        <Select
-                          value={formState.areaId ?? UNASSIGNED_VALUE}
-                          onValueChange={(value) =>
-                            setFormState((prev) => ({
-                              ...prev,
-                              areaId: value === UNASSIGNED_VALUE ? null : value,
-                              stationId:
-                                value === UNASSIGNED_VALUE ? null : prev.stationId,
-                            }))
-                          }
-                        >
-                          <SelectTrigger id="reservation-area" disabled={locationsLoading}>
-                            <SelectValue
-                              placeholder={
-                                locationsLoading ? '読み込み中...' : 'エリアを選択'
-                              }
-                            />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={UNASSIGNED_VALUE}>未設定</SelectItem>
-                            {areas.map((area) => (
-                              <SelectItem key={area.id} value={area.id}>
-                                {area.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="reservation-station">最寄り駅</Label>
-                        <Select
-                          value={formState.stationId ?? UNASSIGNED_VALUE}
-                          onValueChange={(value) =>
-                            setFormState((prev) => ({
-                              ...prev,
-                              stationId: value === UNASSIGNED_VALUE ? null : value,
-                            }))
-                          }
-                          disabled={filteredStations.length === 0}
-                        >
-                          <SelectTrigger id="reservation-station">
-                            <SelectValue
-                              placeholder={
-                                filteredStations.length === 0
-                                  ? formState.areaId
-                                    ? '該当する駅がありません'
-                                    : 'エリアを選択してください'
-                                  : '駅を選択'
-                              }
-                            />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={UNASSIGNED_VALUE}>未設定</SelectItem>
-                            {filteredStations.map((station) => (
-                              <SelectItem key={station.id} value={station.id}>
-                                {station.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="reservation-location-memo">訪問先メモ</Label>
-                        <Textarea
-                          id="reservation-location-memo"
-                          value={formState.locationMemo}
-                          onChange={(event) =>
-                            setFormState((prev) => ({ ...prev, locationMemo: event.target.value }))
-                          }
-                          rows={3}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="reservation-hotel-name">ホテル名</Label>
-                        <Input
-                          id="reservation-hotel-name"
-                          value={formState.hotelName}
-                          onChange={(event) =>
-                            setFormState((prev) => ({ ...prev, hotelName: event.target.value }))
-                          }
-                          placeholder="例: 渋谷グランドホテル"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="reservation-room-number">部屋番号</Label>
-                        <Input
-                          id="reservation-room-number"
-                          value={formState.roomNumber}
-                          onChange={(event) =>
-                            setFormState((prev) => ({ ...prev, roomNumber: event.target.value }))
-                          }
-                          placeholder="例: 1203"
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="font-medium">
-                        {reservation.areaName || reservation.location || '未設定'}
-                      </div>
-                      <div className="text-muted-foreground">
-                        {(reservation.prefecture || '未設定')}{' '}
-                        / {(reservation.district || '未設定')}
-                      </div>
-                      {reservation.stationName && (
-                        <div className="text-xs text-muted-foreground">
-                          最寄り駅: {reservation.stationName}
-                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {isEditMode ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCancelEdit}
+                      disabled={isSaving}
+                    >
+                      キャンセル
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-emerald-600 hover:bg-emerald-700"
+                      onClick={handleSaveChanges}
+                      disabled={isSaving}
+                    >
+                      {isSaving ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Check className="mr-2 h-4 w-4" />
                       )}
-                      {reservation.specificLocation && (
-                        <div className="rounded-md bg-muted px-3 py-2 text-xs">
-                          {reservation.specificLocation}
-                        </div>
-                      )}
-                      {reservation.locationMemo && (
-                        <div className="rounded-md bg-muted px-3 py-2 text-xs whitespace-pre-wrap">
-                          {reservation.locationMemo}
-                        </div>
-                      )}
-                      {(reservation.hotelName || reservation.roomNumber) && (
-                        <div className="rounded-md bg-muted px-3 py-2 text-xs">
-                          {reservation.hotelName && <div>ホテル: {reservation.hotelName}</div>}
-                          {reservation.roomNumber && <div>部屋番号: {reservation.roomNumber}</div>}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                      保存
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button variant="outline" size="sm" onClick={handleEnterEditMode}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      編集
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => requestDialogOpenChange(false)}
+                      aria-label="予約詳細を閉じる"
+                    >
+                      <X className="h-4 w-4" />
+                      <span className="sr-only">閉じる</span>
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
+          </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">料金</CardTitle>
-                  <CreditCard className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
-                  {!canViewFinancialDetails ? (
-                    <p className="text-sm text-muted-foreground">売上情報は表示できません。</p>
-                  ) : isEditMode ? (
-                    <div className="space-y-3">
-                      <div className="space-y-2">
-                        <Label htmlFor="reservation-designation">指名設定</Label>
-                        <Select
-                          value={designationSelectValue}
-                          onValueChange={(value) => {
-                            const fee =
-                              value === 'none'
-                                ? undefined
-                                : selectableDesignationOptions.find((item) => item.id === value)
-                            setFormState((prev) => ({
-                              ...prev,
-                              designationId: value === 'none' ? '' : value,
-                              designationFee: fee?.price ?? 0,
-                            }))
-                          }}
-                        >
-                          <SelectTrigger id="reservation-designation">
-                            <SelectValue placeholder="指名を選択" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">指名なし</SelectItem>
-                            {selectableDesignationOptions.map((fee) => (
-                              <SelectItem key={fee.id} value={fee.id}>
-                                {fee.name}（¥{fee.price.toLocaleString()}）
-                                {!fee.isActive && ' (非表示)'}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="reservation-total">総額</Label>
-                        <Input
-                          id="reservation-total"
-                          type="number"
-                          value={formState.price}
-                          onChange={(event) =>
-                            setFormState((prev) => ({
-                              ...prev,
-                              price: Number(event.target.value || 0),
-                            }))
-                          }
-                        />
-                      </div>
-                      <div className="grid gap-3 sm:grid-cols-3">
-                        <div>
-                          <Label htmlFor="reservation-transportation">交通費</Label>
-                          <Input
-                            id="reservation-transportation"
-                            type="number"
-                            value={formState.transportationFee}
-                            readOnly
-                            disabled
-                            className="bg-gray-100"
-                          />
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            駅選択に応じて自動計算されます
+          <div className="flex-1 overflow-y-auto">
+            {validationError && (
+              <div className="border-b bg-red-50 px-4 py-3">
+                <Alert variant="destructive">
+                  <AlertDescription>{validationError}</AlertDescription>
+                </Alert>
+              </div>
+            )}
+
+            <Tabs
+              value={activeTab}
+              onValueChange={(value) => setActiveTab(value as typeof activeTab)}
+            >
+              <div className="border-b bg-white px-4 pt-3">
+                <TabsList className="grid w-full grid-cols-3 md:w-auto md:grid-cols-3">
+                  <TabsTrigger value="overview">概要</TabsTrigger>
+                  <TabsTrigger value="details">詳細</TabsTrigger>
+                  <TabsTrigger value="history" className="relative">
+                    履歴
+                    {modificationAlerts.length > 0 && (
+                      <Badge variant="destructive" className="ml-2 h-4 px-1.5 py-0 text-xs">
+                        {modificationAlerts.length}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              <TabsContent value="overview" className="space-y-6 p-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">日時</CardTitle>
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {isEditMode ? (
+                        <div className="space-y-3">
+                          <div>
+                            <Label htmlFor="reservation-date">日付</Label>
+                            <Input
+                              id="reservation-date"
+                              type="date"
+                              value={formState.date}
+                              onChange={(event) =>
+                                setFormState((prev) => ({ ...prev, date: event.target.value }))
+                              }
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="reservation-start-time">開始時間</Label>
+                            <Input
+                              id="reservation-start-time"
+                              type="time"
+                              value={formState.startTime}
+                              onChange={(event) =>
+                                setFormState((prev) => ({ ...prev, startTime: event.target.value }))
+                              }
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="reservation-end-time">終了時間</Label>
+                            <Input
+                              id="reservation-end-time"
+                              type="time"
+                              value={computedEndTime}
+                              readOnly
+                            />
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              施術時間: {effectiveDurationMinutes}分
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <p className="text-lg font-semibold">
+                            {format(reservation.startTime, 'yyyy年MM月dd日(E)', { locale: ja })}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {format(reservation.startTime, 'HH:mm')} -{' '}
+                            {format(reservation.endTime, 'HH:mm')}
                           </p>
                         </div>
-                        <div>
-                          <Label htmlFor="reservation-additional">追加料金</Label>
-                          <Input
-                            id="reservation-additional"
-                            type="number"
-                            value={formState.additionalFee}
-                            onChange={(event) =>
-                              setFormState((prev) => ({
-                                ...prev,
-                                additionalFee: Number(event.target.value || 0),
-                              }))
-                            }
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="reservation-discount">割引</Label>
-                          <Input
-                            id="reservation-discount"
-                            type="number"
-                            value={formState.discountAmount}
-                            onChange={(event) =>
-                              setFormState((prev) => ({
-                                ...prev,
-                                discountAmount: Math.max(Number(event.target.value || 0), 0),
-                              }))
-                            }
-                          />
-                        </div>
-                      </div>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div>
-                          <Label htmlFor="reservation-payment">支払い方法</Label>
-                          <Select
-                            value={formState.paymentMethod}
-                            onValueChange={(value) =>
-                              setFormState((prev) => ({
-                                ...prev,
-                                paymentMethod: value as PaymentMethod,
-                              }))
-                            }
-                          >
-                            <SelectTrigger id="reservation-payment">
-                              <SelectValue placeholder="支払い方法を選択" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {paymentMethodOptions.map((method) => (
-                                <SelectItem key={method} value={method}>
-                                  {method}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor="reservation-channel">集客チャネル</Label>
-                          <Select
-                            value={formState.marketingChannel}
-                            onValueChange={(value) =>
-                              setFormState((prev) => ({ ...prev, marketingChannel: value }))
-                            }
-                          >
-                            <SelectTrigger id="reservation-channel">
-                              <SelectValue placeholder="チャネルを選択" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {marketingChannelOptions.map((channel) => (
-                                <SelectItem key={channel} value={channel}>
-                                  {channel}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between font-medium">
-                        <span>総額</span>
-                        <span>{formatCurrency(reservation.totalPayment)}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-muted-foreground">
-                        <span>指名料</span>
-                        {selectedDesignation ? (
-                          <span>
-                            ¥{selectedDesignation.price.toLocaleString()} （店舗 ¥
-                            {selectedDesignation.storeShare.toLocaleString()} / キャスト ¥
-                            {selectedDesignation.castShare.toLocaleString()}）
-                          </span>
-                        ) : (
-                          <span>なし</span>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between text-muted-foreground">
-                        <span>支払い方法</span>
-                        <span>
-                          {reservation.paymentMethod
-                            ? normalizePaymentMethodValue(reservation.paymentMethod)
-                            : '未設定'}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-muted-foreground">
-                        <span>集客チャネル</span>
-                        <span>{reservation.marketingChannel || '未設定'}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-muted-foreground">
-                        <span>交通費</span>
-                        <span>{formatCurrency(reservation.transportationFee)}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-muted-foreground">
-                        <span>追加料金</span>
-                        <span>{formatCurrency(reservation.additionalFee)}</span>
-                      </div>
-                      {reservation.discountAmount ? (
-                        <div className="flex items-center justify-between text-red-600">
-                          <span>割引</span>
-                          <span>-{formatCurrency(reservation.discountAmount)}</span>
-                        </div>
-                      ) : null}
-                      <Separator className="my-2" />
-                      <div className="flex items-center justify-between text-muted-foreground">
-                        <span>店舗売上</span>
-                        <span>{formatCurrency(reservation.storeRevenue)}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-muted-foreground">
-                        <span>キャスト売上</span>
-                        <span>{formatCurrency(reservation.staffRevenue)}</span>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">担当キャスト</CardTitle>
-                  <User className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
-                  {isEditMode ? (
-                    <>
-                      <Label htmlFor="reservation-cast">キャスト</Label>
-                      <Select
-                        value={activeCastId}
-                        onValueChange={(value) =>
-                          setFormState((prev) => ({
-                            ...prev,
-                            castId: value,
-                          }))
-                        }
-                      >
-                        <SelectTrigger id="reservation-cast">
-                          <SelectValue placeholder={isLoadingCasts ? '読み込み中...' : 'キャストを選択'} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {isLoadingCasts ? (
-                            <div className="px-3 py-2 text-xs text-muted-foreground">読み込み中...</div>
-                          ) : (
-                            castOptions.map((cast) => {
-                              const ngEntry = customerNgMap.get(cast.id)
-                              const disabled = Boolean(ngEntry && cast.id !== activeCastId)
-                              const assignment = (ngEntry?.assignedBy ?? 'customer') as
-                                | 'customer'
-                                | 'cast'
-                                | 'staff'
-
-                              return (
-                                <SelectItem key={cast.id} value={cast.id} disabled={disabled}>
-                                  <div className="flex items-center justify-between gap-2">
-                                    <span>{cast.name}</span>
-                                    {ngEntry && (
-                                      <Badge
-                                        variant={assignment === 'cast' ? 'destructive' : 'secondary'}
-                                        className="text-[10px]"
-                                      >
-                                        {NG_REASON_LABELS[assignment]}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </SelectItem>
-                              )
-                            })
-                          )}
-                        </SelectContent>
-                      </Select>
-                      {activeNgEntry && (
-                        <Alert variant="destructive" className="mt-2 text-xs">
-                          <AlertDescription>
-                            この顧客は{NG_REASON_LABELS[(activeNgEntry.assignedBy ?? 'customer') as 'customer' | 'cast' | 'staff']}
-                            として現在のキャストをNG指定しています。別のキャストでのご案内をご検討ください。
-                          </AlertDescription>
-                        </Alert>
                       )}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="px-0 text-left text-xs text-purple-600"
-                        onClick={() => setIsCastTimelineOpen(true)}
-                      >
-                        タイムラインで空き状況を見る
-                      </Button>
-                      {selectedCast?.workStart && selectedCast?.workEnd && (
-                        <p className="text-xs text-muted-foreground">
-                          勤務時間: {format(selectedCast.workStart, 'HH:mm')} -{' '}
-                          {format(selectedCast.workEnd, 'HH:mm')}
-                        </p>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-2">
-                        <div className="font-medium">{reservation.staff}</div>
-                        {selectedCast?.workStatus && (
-                          <Badge variant="secondary" className="text-xs">
-                            {selectedCast.workStatus}
-                          </Badge>
-                        )}
-                      </div>
-                      {selectedCast?.workStart && selectedCast?.workEnd && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          {format(selectedCast.workStart, 'HH:mm')} - {format(selectedCast.workEnd, 'HH:mm')}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+                    </CardContent>
+                  </Card>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">連絡先</CardTitle>
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <div>
-                    <div className="text-muted-foreground">電話番号</div>
-                    <div className="font-medium">{reservation.phoneNumber || '未登録'}</div>
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground">メール</div>
-                    <div className="font-medium">{reservation.email || '未登録'}</div>
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground">保有ポイント</div>
-                    <div className="font-medium">{reservation.points.toLocaleString()} pt</div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">店舗メモ</CardTitle>
-                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  {isEditMode ? (
-                    <Textarea
-                      value={formState.storeMemo}
-                      onChange={(event) =>
-                        setFormState((prev) => ({ ...prev, storeMemo: event.target.value }))
-                      }
-                      rows={4}
-                    />
-                  ) : reservation.storeMemo ? (
-                    <p className="text-sm">{reservation.storeMemo}</p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">店舗メモは登録されていません。</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">LINE通知</CardTitle>
-                <Phone className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent className="space-y-4 text-sm">
-                {!selectedCast?.lineUserId && (
-                  <Alert variant="destructive">
-                    <AlertDescription>キャストにLINEユーザーIDが未登録のため送信できません。キャスト管理でLINEユーザーIDを設定してください。</AlertDescription>
-                  </Alert>
-                )}
-
-                <div className="space-y-2">
-                  <Label htmlFor="line-message">メッセージ本文</Label>
-                  <Textarea
-                    id="line-message"
-                    value={lineMessage}
-                    onChange={(event) => handleLineMessageChange(event.target.value)}
-                    rows={6}
-                    maxLength={MAX_LINE_MESSAGE_LENGTH}
-                    placeholder={buildDefaultLineMessage()}
-                  />
-                  <div className="flex items-center justify-between text-xs">
-                    <span className={cn('text-muted-foreground', isLineMessageTooLong && 'text-red-600')}>
-                      {lineMessageLength} / {MAX_LINE_MESSAGE_LENGTH} 文字
-                    </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleResetLineMessage}
-                      disabled={lineSending}
-                    >
-                      テンプレートに戻す
-                    </Button>
-                  </div>
-                  {isLineMessageTooLong && (
-                    <p className="text-xs text-red-600">メッセージは{MAX_LINE_MESSAGE_LENGTH}文字以内で入力してください。</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label>送信プレビュー</Label>
-                  <div className="whitespace-pre-wrap rounded-md border bg-muted/40 p-3 font-mono text-xs leading-relaxed">
-                    {lineMessageLength > 0 ? lineMessage : 'メッセージを入力してください。'}
-                  </div>
-                </div>
-
-                {lineSendError && (
-                  <p className="text-sm text-red-600">{lineSendError}</p>
-                )}
-                {lineSendSuccess && (
-                  <p className="text-sm text-emerald-600">{lineSendSuccess}</p>
-                )}
-
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <p className="text-xs text-muted-foreground">送信先: {selectedCast?.name ?? 'キャスト未設定'}</p>
-                  <AlertDialog open={lineConfirmOpen} onOpenChange={setLineConfirmOpen}>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        type="button"
-                        disabled={lineSending || !canSendLineMessage}
-                      >
-                        LINE送信
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>LINE通知を送信しますか？</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          {selectedCast?.name
-                            ? `${selectedCast.name}さんに以下の内容でLINE通知を送信します。`
-                            : '以下の内容でLINE通知を送信します。'}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <div className="whitespace-pre-wrap rounded-md border bg-muted/40 p-3 font-mono text-sm leading-relaxed">
-                        {lineMessageLength > 0 ? lineMessage : 'メッセージを入力してください。'}
-                      </div>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel disabled={lineSending}>キャンセル</AlertDialogCancel>
-                        <AlertDialogAction disabled={lineSending} onClick={handleConfirmSendLineMessage}>
-                          {lineSending ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />送信中...
-                            </>
-                          ) : (
-                            '送信する'
-                          )}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-medium">送信ログ</h4>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={refreshLineLogs}
-                      disabled={isLoadingLineLogs}
-                    >
-                      {isLoadingLineLogs ? (
-                        <span className="flex items-center gap-1">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> 更新中
-                        </span>
-                      ) : (
-                        '更新'
-                      )}
-                    </Button>
-                  </div>
-                  {isLoadingLineLogs ? (
-                    <p className="text-xs text-muted-foreground">送信履歴を読み込んでいます...</p>
-                  ) : lineLogs.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">送信履歴はまだありません。</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {lineLogs.map((log) => (
-                        <div key={log.id} className="rounded-md border p-3">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="font-medium">{format(log.createdAt, 'yyyy/MM/dd HH:mm')}</span>
-                            <Badge variant={log.status === 'sent' ? 'default' : 'destructive'}>
-                              {log.status === 'sent' ? '送信済み' : '送信失敗'}
-                            </Badge>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">場所</CardTitle>
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                      {isEditMode ? (
+                        <div className="space-y-3">
+                          <div>
+                            <Label htmlFor="reservation-area">対応エリア</Label>
+                            <Select
+                              value={formState.areaId ?? UNASSIGNED_VALUE}
+                              onValueChange={(value) =>
+                                setFormState((prev) => ({
+                                  ...prev,
+                                  areaId: value === UNASSIGNED_VALUE ? null : value,
+                                  stationId: value === UNASSIGNED_VALUE ? null : prev.stationId,
+                                }))
+                              }
+                            >
+                              <SelectTrigger id="reservation-area" disabled={locationsLoading}>
+                                <SelectValue
+                                  placeholder={locationsLoading ? '読み込み中...' : 'エリアを選択'}
+                                />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value={UNASSIGNED_VALUE}>未設定</SelectItem>
+                                {areas.map((area) => (
+                                  <SelectItem key={area.id} value={area.id}>
+                                    {area.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
-                          <p className="mt-1 text-xs text-muted-foreground">{log.castName ?? 'キャスト未設定'}</p>
-                          <pre className="mt-2 whitespace-pre-wrap rounded bg-muted/40 p-2 text-xs leading-relaxed">{log.message}</pre>
-                          {log.errorMessage && (
-                            <p className="mt-2 text-xs text-red-600">エラー: {log.errorMessage}</p>
-                          )}
+                          <div>
+                            <Label htmlFor="reservation-station">最寄り駅</Label>
+                            <Select
+                              value={formState.stationId ?? UNASSIGNED_VALUE}
+                              onValueChange={(value) =>
+                                setFormState((prev) => ({
+                                  ...prev,
+                                  stationId: value === UNASSIGNED_VALUE ? null : value,
+                                }))
+                              }
+                              disabled={filteredStations.length === 0}
+                            >
+                              <SelectTrigger id="reservation-station">
+                                <SelectValue
+                                  placeholder={
+                                    filteredStations.length === 0
+                                      ? formState.areaId
+                                        ? '該当する駅がありません'
+                                        : 'エリアを選択してください'
+                                      : '駅を選択'
+                                  }
+                                />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value={UNASSIGNED_VALUE}>未設定</SelectItem>
+                                {filteredStations.map((station) => (
+                                  <SelectItem key={station.id} value={station.id}>
+                                    {station.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor="reservation-location-memo">訪問先メモ</Label>
+                            <Textarea
+                              id="reservation-location-memo"
+                              value={formState.locationMemo}
+                              onChange={(event) =>
+                                setFormState((prev) => ({
+                                  ...prev,
+                                  locationMemo: event.target.value,
+                                }))
+                              }
+                              rows={3}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="reservation-hotel-name">ホテル名</Label>
+                            <Input
+                              id="reservation-hotel-name"
+                              value={formState.hotelName}
+                              onChange={(event) =>
+                                setFormState((prev) => ({ ...prev, hotelName: event.target.value }))
+                              }
+                              placeholder="例: 渋谷グランドホテル"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="reservation-room-number">部屋番号</Label>
+                            <Input
+                              id="reservation-room-number"
+                              value={formState.roomNumber}
+                              onChange={(event) =>
+                                setFormState((prev) => ({
+                                  ...prev,
+                                  roomNumber: event.target.value,
+                                }))
+                              }
+                              placeholder="例: 1203"
+                            />
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-          </TabsContent>
-
-          <TabsContent value="details" className="space-y-6 p-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-medium">予約詳細</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
-                <div>
-                  <div className="text-muted-foreground">コース</div>
-                  {isEditMode ? (
-                    <Select
-                      value={formState.courseId ?? UNASSIGNED_VALUE}
-                      onValueChange={(value) =>
-                        setFormState((prev) => ({
-                          ...prev,
-                          courseId: value === UNASSIGNED_VALUE ? null : value,
-                        }))
-                      }
-                    >
-                      <SelectTrigger id="reservation-course">
-                        <SelectValue
-                          placeholder={
-                            pricingLoading ? '読み込み中...' : 'コースを選択'
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={UNASSIGNED_VALUE}>未設定</SelectItem>
-                        {courseOptions.length === 0 ? (
-                          <SelectItem value="__empty" disabled>
-                            コースが登録されていません
-                          </SelectItem>
-                        ) : (
-                          courseOptions.map((course) => (
-                            <SelectItem key={course.id} value={course.id}>
-                              {course.name}（{course.duration}分 / ¥{course.price.toLocaleString()}）
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div className="font-medium">
-                      {selectedCourse?.name || reservation.course || '未設定'}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <div className="text-muted-foreground">指名</div>
-                  {designationForDisplay ? (
-                    <div className="font-medium">
-                      {designationForDisplay.name}{' '}
-                      <span className="text-sm text-muted-foreground">
-                        （¥{designationForDisplay.price.toLocaleString()} / 店舗 ¥
-                        {designationForDisplay.storeShare.toLocaleString()} / キャスト ¥
-                        {designationForDisplay.castShare.toLocaleString()}）
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="font-medium">なし</div>
-                  )}
-                </div>
-                <div>
-                  <div className="text-muted-foreground">無料延長</div>
-                  <div className="font-medium">{reservation.freeExtension || '0'}</div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground">マーケティング経路</div>
-                  <div className="font-medium">{reservation.marketingChannel || '未設定'}</div>
-                </div>
-                <div className="sm:col-span-2">
-                  <div className="text-muted-foreground">オプション</div>
-                  {isEditMode ? (
-                    optionChoices.length === 0 ? (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {pricingLoading ? 'オプションを読み込み中...' : 'オプションが設定されていません。'}
-                      </p>
-                    ) : (
-                      <div className="mt-2 space-y-2">
-                        {optionChoices.map((option) => {
-                          const isChecked = formState.optionIds.includes(option.id)
-                          return (
-                            <label key={option.id} className="flex items-start gap-2 text-xs">
-                              <Checkbox
-                                checked={isChecked}
-                                onCheckedChange={(checkedState) => {
-                                  const checked = checkedState === true
-                                  setFormState((prev) => {
-                                    const next = new Set(prev.optionIds)
-                                    if (checked) {
-                                      next.add(option.id)
-                                    } else {
-                                      next.delete(option.id)
-                                    }
-                                    return {
-                                      ...prev,
-                                      optionIds: Array.from(next),
-                                    }
-                                  })
-                                }}
-                              />
-                              <span className="flex-1">
-                                <span className="font-medium">{option.name}</span>
-                                <span className="ml-2 text-muted-foreground">
-                                  {option.duration ? `${formatMinutes(option.duration)} / ` : ''}
-                                  ¥{option.price.toLocaleString()}
-                                </span>
-                                {option.note && (
-                                  <span className="block text-[11px] text-muted-foreground">
-                                    {option.note}
-                                  </span>
-                                )}
-                              </span>
-                            </label>
-                          )
-                        })}
-                      </div>
-                    )
-                  ) : displayOptionNames.length > 0 ? (
-                    <div className="mt-1 flex flex-wrap gap-2">
-                      {displayOptionNames.map((option) => (
-                        <Badge key={option} variant="secondary" className="text-xs">
-                          {option}
-                        </Badge>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="font-medium">なし</div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <CardTitle className="text-sm font-medium">入室情報</CardTitle>
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                  {entryMeta.entryNotifiedAt && (
-                    <Badge variant="secondary" className="text-xs">
-                      送信済み
-                    </Badge>
-                  )}
-                  {entryMeta.entryConfirmedAt && (
-                    <Badge className="bg-emerald-600 text-white">確認済み</Badge>
-                  )}
-                  {entryOverdue && !entryMeta.entryConfirmedAt && (
-                    <Badge variant="destructive">未確認</Badge>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4 text-sm">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <Label htmlFor="entry-hotel-name">ホテル名</Label>
-                    <Input
-                      id="entry-hotel-name"
-                      value={entryForm.hotelName}
-                      onChange={(event) =>
-                        setEntryForm((prev) => ({ ...prev, hotelName: event.target.value }))
-                      }
-                      placeholder="例: 渋谷グランドホテル"
-                      disabled={entrySending}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="entry-room-number">部屋番号</Label>
-                    <Input
-                      id="entry-room-number"
-                      value={entryForm.roomNumber}
-                      onChange={(event) =>
-                        setEntryForm((prev) => ({ ...prev, roomNumber: event.target.value }))
-                      }
-                      placeholder="例: 1203"
-                      disabled={entrySending}
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Label htmlFor="entry-memo">連絡メモ</Label>
-                    <Textarea
-                      id="entry-memo"
-                      value={entryForm.entryMemo}
-                      onChange={(event) =>
-                        setEntryForm((prev) => ({ ...prev, entryMemo: event.target.value }))
-                      }
-                      rows={3}
-                      placeholder="例: フロントで鍵受け取り済み"
-                      disabled={entrySending}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid gap-3 text-xs text-muted-foreground sm:grid-cols-2">
-                  <div>
-                    <div>受付時刻</div>
-                    <div className="font-medium text-foreground">
-                      {entryMeta.entryReceivedAt
-                        ? format(entryMeta.entryReceivedAt, 'yyyy/MM/dd HH:mm')
-                        : '未登録'}
-                    </div>
-                  </div>
-                  <div>
-                    <div>担当スタッフ</div>
-                    <div className="font-medium text-foreground">
-                      {entryMeta.entryReceivedBy || '未登録'}
-                    </div>
-                  </div>
-                  <div>
-                    <div>送信時刻</div>
-                    <div className="font-medium text-foreground">
-                      {entryMeta.entryNotifiedAt
-                        ? format(entryMeta.entryNotifiedAt, 'yyyy/MM/dd HH:mm')
-                        : '未送信'}
-                    </div>
-                  </div>
-                  <div>
-                    <div>確認時刻</div>
-                    <div className="font-medium text-foreground">
-                      {entryMeta.entryConfirmedAt
-                        ? format(entryMeta.entryConfirmedAt, 'yyyy/MM/dd HH:mm')
-                        : '未確認'}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button size="sm" onClick={handleSaveEntryInfo} disabled={entrySending}>
-                    {entrySending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    保存して通知
-                  </Button>
-                  {entryMeta.entryNotifiedAt && !entryMeta.entryConfirmedAt ? (
-                    <Button
-                      size="sm"
-                      variant={entryOverdue ? 'destructive' : 'outline'}
-                      onClick={handleSendEntryReminder}
-                      disabled={entryReminderSending}
-                    >
-                      {entryReminderSending ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : null}
-                      再通知
-                    </Button>
-                  ) : null}
-                </div>
-
-                {entrySendError && <p className="text-sm text-red-600">{entrySendError}</p>}
-                {entrySendSuccess && (
-                  <p className="text-sm text-emerald-600">{entrySendSuccess}</p>
-                )}
-              </CardContent>
-            </Card>
-
-            {isEditMode && (
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">料金プレビュー</CardTitle>
-                  <Calculator className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent className="space-y-4 text-sm">
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground">変更後の合計</div>
-                    <div className="flex items-baseline justify-between gap-4">
-                      <span className="text-2xl font-semibold">
-                        {formatCurrency(priceBreakdown.total)}
-                      </span>
-                      {priceDelta !== 0 && (
-                        <span
-                          className={cn(
-                            'text-sm font-semibold',
-                            priceDelta > 0
-                              ? 'text-red-600'
-                              : 'text-emerald-600'
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="font-medium">
+                            {reservation.areaName || reservation.location || '未設定'}
+                          </div>
+                          <div className="text-muted-foreground">
+                            {reservation.prefecture || '未設定'} /{' '}
+                            {reservation.district || '未設定'}
+                          </div>
+                          {reservation.stationName && (
+                            <div className="text-xs text-muted-foreground">
+                              最寄り駅: {reservation.stationName}
+                            </div>
                           )}
-                        >
-                          {priceDelta > 0 ? '+' : '-'}
-                          {formatCurrency(Math.abs(priceDelta))}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>現在の金額</span>
-                      <span>{formatCurrency(originalTotal)}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1 pt-2">
-                    <div className="text-muted-foreground">施術時間</div>
-                    <div className="flex items-baseline justify-between gap-4">
-                      <span className="text-lg font-semibold">{formatMinutes(effectiveDurationMinutes)}</span>
-                      {durationDelta !== 0 && (
-                        <span
-                          className={cn(
-                            'text-sm font-semibold',
-                            durationDelta > 0 ? 'text-orange-600' : 'text-emerald-600'
+                          {reservation.specificLocation && (
+                            <div className="rounded-md bg-muted px-3 py-2 text-xs">
+                              {reservation.specificLocation}
+                            </div>
                           )}
-                        >
-                          {durationDelta > 0 ? '+' : '-'}
-                          {formatMinutes(Math.abs(durationDelta))}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>現在の時間</span>
-                      <span>{formatMinutes(reservationDurationMinutes)}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>終了予定</span>
-                      <span>
-                        {computedEndTime ||
-                          (reservation?.endTime ? format(reservation.endTime, 'HH:mm') : '-')}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      内訳
-                    </div>
-                    <dl className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <dt>コース</dt>
-                        <dd>{formatCurrency(priceBreakdown.basePrice)}</dd>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <dt>オプション</dt>
-                        <dd>{formatCurrency(priceBreakdown.optionTotal)}</dd>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <dt>指名料</dt>
-                        <dd>{formatCurrency(priceBreakdown.designation)}</dd>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <dt>交通費</dt>
-                        <dd>{formatCurrency(priceBreakdown.transportation)}</dd>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <dt>追加料金</dt>
-                        <dd>{formatCurrency(priceBreakdown.additional)}</dd>
-                      </div>
-                      {priceBreakdown.discount > 0 && (
-                        <div className="flex items-center justify-between text-red-600">
-                          <dt>割引</dt>
-                          <dd>-{formatCurrency(priceBreakdown.discount)}</dd>
-                        </div>
-                      )}
-                      {priceBreakdown.welfareExpense > 0 && (
-                        <div className="flex items-center justify-between text-sm text-muted-foreground">
-                          <dt>厚生費（{priceBreakdown.welfareRate.toFixed(1).replace(/\.0$/, '')}%）</dt>
-                          <dd>{formatCurrency(priceBreakdown.welfareExpense)}</dd>
-                        </div>
-                      )}
-                    </dl>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
-                      <span>選択オプション</span>
-                      <span>
-                        {selectedOptionDetails.length > 0
-                          ? `${selectedOptionDetails.length}件`
-                          : 'なし'}
-                      </span>
-                    </div>
-                    {selectedOptionDetails.length > 0 ? (
-                      <ul className="divide-y divide-muted/40 overflow-hidden rounded-md border border-muted/40 text-xs">
-                        {selectedOptionDetails.map((option) => (
-                          <li
-                            key={option.id}
-                            className="flex items-center justify-between gap-3 bg-white/30 px-3 py-2"
-                          >
-                            <div className="flex-1">
-                              <div className="font-medium">{option.name}</div>
-                              {option.note && (
-                                <div className="text-[11px] text-muted-foreground">
-                                  {option.note}
-                                </div>
+                          {reservation.locationMemo && (
+                            <div className="whitespace-pre-wrap rounded-md bg-muted px-3 py-2 text-xs">
+                              {reservation.locationMemo}
+                            </div>
+                          )}
+                          {(reservation.hotelName || reservation.roomNumber) && (
+                            <div className="rounded-md bg-muted px-3 py-2 text-xs">
+                              {reservation.hotelName && <div>ホテル: {reservation.hotelName}</div>}
+                              {reservation.roomNumber && (
+                                <div>部屋番号: {reservation.roomNumber}</div>
                               )}
                             </div>
-                            <div className="text-right text-muted-foreground">
-                              {option.duration ? (
-                                <div>{formatMinutes(option.duration)}</div>
-                              ) : null}
-                              <div>{formatCurrency(toNumber(option.price, 0))}</div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">料金</CardTitle>
+                      <CreditCard className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                      {!canViewFinancialDetails ? (
+                        <p className="text-sm text-muted-foreground">売上情報は表示できません。</p>
+                      ) : isEditMode ? (
+                        <div className="space-y-3">
+                          <div className="space-y-2">
+                            <Label htmlFor="reservation-designation">指名設定</Label>
+                            <Select
+                              value={designationSelectValue}
+                              onValueChange={(value) => {
+                                const fee =
+                                  value === 'none'
+                                    ? undefined
+                                    : selectableDesignationOptions.find((item) => item.id === value)
+                                setFormState((prev) => ({
+                                  ...prev,
+                                  designationId: value === 'none' ? '' : value,
+                                  designationFee: fee?.price ?? 0,
+                                }))
+                              }}
+                            >
+                              <SelectTrigger id="reservation-designation">
+                                <SelectValue placeholder="指名を選択" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">指名なし</SelectItem>
+                                {selectableDesignationOptions.map((fee) => (
+                                  <SelectItem key={fee.id} value={fee.id}>
+                                    {fee.name}（¥{fee.price.toLocaleString()}）
+                                    {!fee.isActive && ' (非表示)'}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor="reservation-total">総額</Label>
+                            <Input
+                              id="reservation-total"
+                              type="number"
+                              value={formState.price}
+                              onChange={(event) =>
+                                setFormState((prev) => ({
+                                  ...prev,
+                                  price: Number(event.target.value || 0),
+                                }))
+                              }
+                            />
+                          </div>
+                          <div className="grid gap-3 sm:grid-cols-3">
+                            <div>
+                              <Label htmlFor="reservation-transportation">交通費</Label>
+                              <Input
+                                id="reservation-transportation"
+                                type="number"
+                                value={formState.transportationFee}
+                                readOnly
+                                disabled
+                                className="bg-gray-100"
+                              />
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                駅選択に応じて自動計算されます
+                              </p>
                             </div>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
+                            <div>
+                              <Label htmlFor="reservation-additional">追加料金</Label>
+                              <Input
+                                id="reservation-additional"
+                                type="number"
+                                value={formState.additionalFee}
+                                onChange={(event) =>
+                                  setFormState((prev) => ({
+                                    ...prev,
+                                    additionalFee: Number(event.target.value || 0),
+                                  }))
+                                }
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="reservation-discount">割引</Label>
+                              <Input
+                                id="reservation-discount"
+                                type="number"
+                                value={formState.discountAmount}
+                                onChange={(event) =>
+                                  setFormState((prev) => ({
+                                    ...prev,
+                                    discountAmount: Math.max(Number(event.target.value || 0), 0),
+                                  }))
+                                }
+                              />
+                            </div>
+                          </div>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div>
+                              <Label htmlFor="reservation-payment">支払い方法</Label>
+                              <Select
+                                value={formState.paymentMethod}
+                                onValueChange={(value) =>
+                                  setFormState((prev) => ({
+                                    ...prev,
+                                    paymentMethod: value as PaymentMethod,
+                                  }))
+                                }
+                              >
+                                <SelectTrigger id="reservation-payment">
+                                  <SelectValue placeholder="支払い方法を選択" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {paymentMethodOptions.map((method) => (
+                                    <SelectItem key={method} value={method}>
+                                      {method}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label htmlFor="reservation-channel">集客チャネル</Label>
+                              <Select
+                                value={formState.marketingChannel}
+                                onValueChange={(value) =>
+                                  setFormState((prev) => ({ ...prev, marketingChannel: value }))
+                                }
+                              >
+                                <SelectTrigger id="reservation-channel">
+                                  <SelectValue placeholder="チャネルを選択" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {marketingChannelOptions.map((channel) => (
+                                    <SelectItem key={channel} value={channel}>
+                                      {channel}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between font-medium">
+                            <span>総額</span>
+                            <span>{formatCurrency(reservation.totalPayment)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-muted-foreground">
+                            <span>指名料</span>
+                            {selectedDesignation ? (
+                              <span>
+                                ¥{selectedDesignation.price.toLocaleString()} （店舗 ¥
+                                {selectedDesignation.storeShare.toLocaleString()} / キャスト ¥
+                                {selectedDesignation.castShare.toLocaleString()}）
+                              </span>
+                            ) : (
+                              <span>なし</span>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between text-muted-foreground">
+                            <span>支払い方法</span>
+                            <span>
+                              {reservation.paymentMethod
+                                ? normalizePaymentMethodValue(reservation.paymentMethod)
+                                : '未設定'}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-muted-foreground">
+                            <span>集客チャネル</span>
+                            <span>{reservation.marketingChannel || '未設定'}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-muted-foreground">
+                            <span>交通費</span>
+                            <span>{formatCurrency(reservation.transportationFee)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-muted-foreground">
+                            <span>追加料金</span>
+                            <span>{formatCurrency(reservation.additionalFee)}</span>
+                          </div>
+                          {reservation.discountAmount ? (
+                            <div className="flex items-center justify-between text-red-600">
+                              <span>割引</span>
+                              <span>-{formatCurrency(reservation.discountAmount)}</span>
+                            </div>
+                          ) : null}
+                          <Separator className="my-2" />
+                          <div className="flex items-center justify-between text-muted-foreground">
+                            <span>店舗売上</span>
+                            <span>{formatCurrency(reservation.storeRevenue)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-muted-foreground">
+                            <span>キャスト売上</span>
+                            <span>{formatCurrency(reservation.staffRevenue)}</span>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">担当キャスト</CardTitle>
+                      <User className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                      {isEditMode ? (
+                        <>
+                          <Label htmlFor="reservation-cast">キャスト</Label>
+                          <Select
+                            value={activeCastId}
+                            onValueChange={(value) =>
+                              setFormState((prev) => ({
+                                ...prev,
+                                castId: value,
+                              }))
+                            }
+                          >
+                            <SelectTrigger id="reservation-cast">
+                              <SelectValue
+                                placeholder={isLoadingCasts ? '読み込み中...' : 'キャストを選択'}
+                              />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {isLoadingCasts ? (
+                                <div className="px-3 py-2 text-xs text-muted-foreground">
+                                  読み込み中...
+                                </div>
+                              ) : (
+                                castOptions.map((cast) => {
+                                  const ngEntry = customerNgMap.get(cast.id)
+                                  const disabled = Boolean(ngEntry && cast.id !== activeCastId)
+                                  const assignment = (ngEntry?.assignedBy ?? 'customer') as
+                                    | 'customer'
+                                    | 'cast'
+                                    | 'staff'
+
+                                  return (
+                                    <SelectItem key={cast.id} value={cast.id} disabled={disabled}>
+                                      <div className="flex items-center justify-between gap-2">
+                                        <span>{cast.name}</span>
+                                        {ngEntry && (
+                                          <Badge
+                                            variant={
+                                              assignment === 'cast' ? 'destructive' : 'secondary'
+                                            }
+                                            className="text-xs"
+                                          >
+                                            {NG_REASON_LABELS[assignment]}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </SelectItem>
+                                  )
+                                })
+                              )}
+                            </SelectContent>
+                          </Select>
+                          {activeNgEntry && (
+                            <Alert variant="destructive" className="mt-2 text-xs">
+                              <AlertDescription>
+                                この顧客は
+                                {
+                                  NG_REASON_LABELS[
+                                    (activeNgEntry.assignedBy ?? 'customer') as
+                                      | 'customer'
+                                      | 'cast'
+                                      | 'staff'
+                                  ]
+                                }
+                                として現在のキャストをNG指定しています。別のキャストでのご案内をご検討ください。
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="px-0 text-left text-xs text-purple-600"
+                            onClick={() => setIsCastTimelineOpen(true)}
+                          >
+                            タイムラインで空き状況を見る
+                          </Button>
+                          {selectedCast?.workStart && selectedCast?.workEnd && (
+                            <p className="text-xs text-muted-foreground">
+                              勤務時間: {format(selectedCast.workStart, 'HH:mm')} -{' '}
+                              {format(selectedCast.workEnd, 'HH:mm')}
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <div className="font-medium">{reservation.staff}</div>
+                            {selectedCast?.workStatus && (
+                              <Badge variant="secondary" className="text-xs">
+                                {selectedCast.workStatus}
+                              </Badge>
+                            )}
+                          </div>
+                          {selectedCast?.workStart && selectedCast?.workEnd && (
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Clock className="h-3 w-3" />
+                              {format(selectedCast.workStart, 'HH:mm')} -{' '}
+                              {format(selectedCast.workEnd, 'HH:mm')}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">連絡先</CardTitle>
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                      <div>
+                        <div className="text-muted-foreground">電話番号</div>
+                        <div className="font-medium">{reservation.phoneNumber || '未登録'}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">メール</div>
+                        <div className="font-medium">{reservation.email || '未登録'}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">保有ポイント</div>
+                        <div className="font-medium">{reservation.points.toLocaleString()} pt</div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">店舗メモ</CardTitle>
+                      <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      {isEditMode ? (
+                        <Textarea
+                          value={formState.storeMemo}
+                          onChange={(event) =>
+                            setFormState((prev) => ({ ...prev, storeMemo: event.target.value }))
+                          }
+                          rows={4}
+                        />
+                      ) : reservation.storeMemo ? (
+                        <p className="text-sm">{reservation.storeMemo}</p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          店舗メモは登録されていません。
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">LINE通知</CardTitle>
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent className="space-y-4 text-sm">
+                    {!selectedCast?.lineUserId && (
+                      <Alert variant="destructive">
+                        <AlertDescription>
+                          キャストにLINEユーザーIDが未登録のため送信できません。キャスト管理でLINEユーザーIDを設定してください。
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label htmlFor="line-message">メッセージ本文</Label>
+                      <Textarea
+                        id="line-message"
+                        value={lineMessage}
+                        onChange={(event) => handleLineMessageChange(event.target.value)}
+                        rows={6}
+                        maxLength={MAX_LINE_MESSAGE_LENGTH}
+                        placeholder={buildDefaultLineMessage()}
+                      />
+                      <div className="flex items-center justify-between text-xs">
+                        <span
+                          className={cn(
+                            'text-muted-foreground',
+                            isLineMessageTooLong && 'text-red-600'
+                          )}
+                        >
+                          {lineMessageLength} / {MAX_LINE_MESSAGE_LENGTH} 文字
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleResetLineMessage}
+                          disabled={lineSending}
+                        >
+                          テンプレートに戻す
+                        </Button>
+                      </div>
+                      {isLineMessageTooLong && (
+                        <p className="text-xs text-red-600">
+                          メッセージは{MAX_LINE_MESSAGE_LENGTH}文字以内で入力してください。
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>送信プレビュー</Label>
+                      <div className="whitespace-pre-wrap rounded-md border bg-muted/40 p-3 font-mono text-xs leading-relaxed">
+                        {lineMessageLength > 0 ? lineMessage : 'メッセージを入力してください。'}
+                      </div>
+                    </div>
+
+                    {lineSendError && <p className="text-sm text-red-600">{lineSendError}</p>}
+                    {lineSendSuccess && (
+                      <p className="text-sm text-emerald-600">{lineSendSuccess}</p>
+                    )}
+
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                       <p className="text-xs text-muted-foreground">
-                        オプションは選択されていません。
+                        送信先: {selectedCast?.name ?? 'キャスト未設定'}
+                      </p>
+                      <AlertDialog open={lineConfirmOpen} onOpenChange={setLineConfirmOpen}>
+                        <AlertDialogTrigger asChild>
+                          <Button type="button" disabled={lineSending || !canSendLineMessage}>
+                            LINE送信
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>LINE通知を送信しますか？</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              {selectedCast?.name
+                                ? `${selectedCast.name}さんに以下の内容でLINE通知を送信します。`
+                                : '以下の内容でLINE通知を送信します。'}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <div className="whitespace-pre-wrap rounded-md border bg-muted/40 p-3 font-mono text-sm leading-relaxed">
+                            {lineMessageLength > 0 ? lineMessage : 'メッセージを入力してください。'}
+                          </div>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel disabled={lineSending}>キャンセル</AlertDialogCancel>
+                            <AlertDialogAction
+                              disabled={lineSending}
+                              onClick={handleConfirmSendLineMessage}
+                            >
+                              {lineSending ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  送信中...
+                                </>
+                              ) : (
+                                '送信する'
+                              )}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium">送信ログ</h4>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={refreshLineLogs}
+                          disabled={isLoadingLineLogs}
+                        >
+                          {isLoadingLineLogs ? (
+                            <span className="flex items-center gap-1">
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" /> 更新中
+                            </span>
+                          ) : (
+                            '更新'
+                          )}
+                        </Button>
+                      </div>
+                      {isLoadingLineLogs ? (
+                        <p className="text-xs text-muted-foreground">
+                          送信履歴を読み込んでいます...
+                        </p>
+                      ) : lineLogs.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">送信履歴はまだありません。</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {lineLogs.map((log) => (
+                            <div key={log.id} className="rounded-md border p-3">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-medium">
+                                  {format(log.createdAt, 'yyyy/MM/dd HH:mm')}
+                                </span>
+                                <Badge variant={log.status === 'sent' ? 'default' : 'destructive'}>
+                                  {log.status === 'sent' ? '送信済み' : '送信失敗'}
+                                </Badge>
+                              </div>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {log.castName ?? 'キャスト未設定'}
+                              </p>
+                              <pre className="mt-2 whitespace-pre-wrap rounded bg-muted/40 p-2 text-xs leading-relaxed">
+                                {log.message}
+                              </pre>
+                              {log.errorMessage && (
+                                <p className="mt-2 text-xs text-red-600">
+                                  エラー: {log.errorMessage}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="details" className="space-y-6 p-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium">予約詳細</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
+                    <div>
+                      <div className="text-muted-foreground">コース</div>
+                      {isEditMode ? (
+                        <Select
+                          value={formState.courseId ?? UNASSIGNED_VALUE}
+                          onValueChange={(value) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              courseId: value === UNASSIGNED_VALUE ? null : value,
+                            }))
+                          }
+                        >
+                          <SelectTrigger id="reservation-course">
+                            <SelectValue
+                              placeholder={pricingLoading ? '読み込み中...' : 'コースを選択'}
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={UNASSIGNED_VALUE}>未設定</SelectItem>
+                            {courseOptions.length === 0 ? (
+                              <SelectItem value="__empty" disabled>
+                                コースが登録されていません
+                              </SelectItem>
+                            ) : (
+                              courseOptions.map((course) => (
+                                <SelectItem key={course.id} value={course.id}>
+                                  {course.name}（{course.duration}分 / ¥
+                                  {course.price.toLocaleString()}）
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className="font-medium">
+                          {selectedCourse?.name || reservation.course || '未設定'}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">指名</div>
+                      {designationForDisplay ? (
+                        <div className="font-medium">
+                          {designationForDisplay.name}{' '}
+                          <span className="text-sm text-muted-foreground">
+                            （¥{designationForDisplay.price.toLocaleString()} / 店舗 ¥
+                            {designationForDisplay.storeShare.toLocaleString()} / キャスト ¥
+                            {designationForDisplay.castShare.toLocaleString()}）
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="font-medium">なし</div>
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">無料延長</div>
+                      <div className="font-medium">{reservation.freeExtension || '0'}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">マーケティング経路</div>
+                      <div className="font-medium">{reservation.marketingChannel || '未設定'}</div>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <div className="text-muted-foreground">オプション</div>
+                      {isEditMode ? (
+                        optionChoices.length === 0 ? (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {pricingLoading
+                              ? 'オプションを読み込み中...'
+                              : 'オプションが設定されていません。'}
+                          </p>
+                        ) : (
+                          <div className="mt-2 space-y-2">
+                            {optionChoices.map((option) => {
+                              const isChecked = formState.optionIds.includes(option.id)
+                              return (
+                                <label key={option.id} className="flex items-start gap-2 text-xs">
+                                  <Checkbox
+                                    checked={isChecked}
+                                    onCheckedChange={(checkedState) => {
+                                      const checked = checkedState === true
+                                      setFormState((prev) => {
+                                        const next = new Set(prev.optionIds)
+                                        if (checked) {
+                                          next.add(option.id)
+                                        } else {
+                                          next.delete(option.id)
+                                        }
+                                        return {
+                                          ...prev,
+                                          optionIds: Array.from(next),
+                                        }
+                                      })
+                                    }}
+                                  />
+                                  <span className="flex-1">
+                                    <span className="font-medium">{option.name}</span>
+                                    <span className="ml-2 text-muted-foreground">
+                                      {option.duration
+                                        ? `${formatMinutes(option.duration)} / `
+                                        : ''}
+                                      ¥{option.price.toLocaleString()}
+                                    </span>
+                                    {option.note && (
+                                      <span className="block text-xs text-muted-foreground">
+                                        {option.note}
+                                      </span>
+                                    )}
+                                  </span>
+                                </label>
+                              )
+                            })}
+                          </div>
+                        )
+                      ) : displayOptionNames.length > 0 ? (
+                        <div className="mt-1 flex flex-wrap gap-2">
+                          {displayOptionNames.map((option) => (
+                            <Badge key={option} variant="secondary" className="text-xs">
+                              {option}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="font-medium">なし</div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <CardTitle className="text-sm font-medium">入室情報</CardTitle>
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      {entryMeta.entryNotifiedAt && (
+                        <Badge variant="secondary" className="text-xs">
+                          送信済み
+                        </Badge>
+                      )}
+                      {entryMeta.entryConfirmedAt && (
+                        <Badge className="bg-emerald-600 text-white">確認済み</Badge>
+                      )}
+                      {entryOverdue && !entryMeta.entryConfirmedAt && (
+                        <Badge variant="destructive">未確認</Badge>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4 text-sm">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <Label htmlFor="entry-hotel-name">ホテル名</Label>
+                        <Input
+                          id="entry-hotel-name"
+                          value={entryForm.hotelName}
+                          onChange={(event) =>
+                            setEntryForm((prev) => ({ ...prev, hotelName: event.target.value }))
+                          }
+                          placeholder="例: 渋谷グランドホテル"
+                          disabled={entrySending}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="entry-room-number">部屋番号</Label>
+                        <Input
+                          id="entry-room-number"
+                          value={entryForm.roomNumber}
+                          onChange={(event) =>
+                            setEntryForm((prev) => ({ ...prev, roomNumber: event.target.value }))
+                          }
+                          placeholder="例: 1203"
+                          disabled={entrySending}
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <Label htmlFor="entry-memo">連絡メモ</Label>
+                        <Textarea
+                          id="entry-memo"
+                          value={entryForm.entryMemo}
+                          onChange={(event) =>
+                            setEntryForm((prev) => ({ ...prev, entryMemo: event.target.value }))
+                          }
+                          rows={3}
+                          placeholder="例: フロントで鍵受け取り済み"
+                          disabled={entrySending}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 text-xs text-muted-foreground sm:grid-cols-2">
+                      <div>
+                        <div>受付時刻</div>
+                        <div className="font-medium text-foreground">
+                          {entryMeta.entryReceivedAt
+                            ? format(entryMeta.entryReceivedAt, 'yyyy/MM/dd HH:mm')
+                            : '未登録'}
+                        </div>
+                      </div>
+                      <div>
+                        <div>担当スタッフ</div>
+                        <div className="font-medium text-foreground">
+                          {entryMeta.entryReceivedBy || '未登録'}
+                        </div>
+                      </div>
+                      <div>
+                        <div>送信時刻</div>
+                        <div className="font-medium text-foreground">
+                          {entryMeta.entryNotifiedAt
+                            ? format(entryMeta.entryNotifiedAt, 'yyyy/MM/dd HH:mm')
+                            : '未送信'}
+                        </div>
+                      </div>
+                      <div>
+                        <div>確認時刻</div>
+                        <div className="font-medium text-foreground">
+                          {entryMeta.entryConfirmedAt
+                            ? format(entryMeta.entryConfirmedAt, 'yyyy/MM/dd HH:mm')
+                            : '未確認'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button size="sm" onClick={handleSaveEntryInfo} disabled={entrySending}>
+                        {entrySending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        保存して通知
+                      </Button>
+                      {entryMeta.entryNotifiedAt && !entryMeta.entryConfirmedAt ? (
+                        <Button
+                          size="sm"
+                          variant={entryOverdue ? 'destructive' : 'outline'}
+                          onClick={handleSendEntryReminder}
+                          disabled={entryReminderSending}
+                        >
+                          {entryReminderSending ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : null}
+                          再通知
+                        </Button>
+                      ) : null}
+                    </div>
+
+                    {entrySendError && <p className="text-sm text-red-600">{entrySendError}</p>}
+                    {entrySendSuccess && (
+                      <p className="text-sm text-emerald-600">{entrySendSuccess}</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {isEditMode && (
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">料金プレビュー</CardTitle>
+                      <Calculator className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent className="space-y-4 text-sm">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground">変更後の合計</div>
+                        <div className="flex items-baseline justify-between gap-4">
+                          <span className="text-2xl font-semibold">
+                            {formatCurrency(priceBreakdown.total)}
+                          </span>
+                          {priceDelta !== 0 && (
+                            <span
+                              className={cn(
+                                'text-sm font-semibold',
+                                priceDelta > 0 ? 'text-red-600' : 'text-emerald-600'
+                              )}
+                            >
+                              {priceDelta > 0 ? '+' : '-'}
+                              {formatCurrency(Math.abs(priceDelta))}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>現在の金額</span>
+                          <span>{formatCurrency(originalTotal)}</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1 pt-2">
+                        <div className="text-muted-foreground">施術時間</div>
+                        <div className="flex items-baseline justify-between gap-4">
+                          <span className="text-lg font-semibold">
+                            {formatMinutes(effectiveDurationMinutes)}
+                          </span>
+                          {durationDelta !== 0 && (
+                            <span
+                              className={cn(
+                                'text-sm font-semibold',
+                                durationDelta > 0 ? 'text-orange-600' : 'text-emerald-600'
+                              )}
+                            >
+                              {durationDelta > 0 ? '+' : '-'}
+                              {formatMinutes(Math.abs(durationDelta))}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>現在の時間</span>
+                          <span>{formatMinutes(reservationDurationMinutes)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>終了予定</span>
+                          <span>
+                            {computedEndTime ||
+                              (reservation?.endTime ? format(reservation.endTime, 'HH:mm') : '-')}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          内訳
+                        </div>
+                        <dl className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <dt>コース</dt>
+                            <dd>{formatCurrency(priceBreakdown.basePrice)}</dd>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <dt>オプション</dt>
+                            <dd>{formatCurrency(priceBreakdown.optionTotal)}</dd>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <dt>指名料</dt>
+                            <dd>{formatCurrency(priceBreakdown.designation)}</dd>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <dt>交通費</dt>
+                            <dd>{formatCurrency(priceBreakdown.transportation)}</dd>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <dt>追加料金</dt>
+                            <dd>{formatCurrency(priceBreakdown.additional)}</dd>
+                          </div>
+                          {priceBreakdown.discount > 0 && (
+                            <div className="flex items-center justify-between text-red-600">
+                              <dt>割引</dt>
+                              <dd>-{formatCurrency(priceBreakdown.discount)}</dd>
+                            </div>
+                          )}
+                          {priceBreakdown.welfareExpense > 0 && (
+                            <div className="flex items-center justify-between text-sm text-muted-foreground">
+                              <dt>
+                                厚生費（{priceBreakdown.welfareRate.toFixed(1).replace(/\.0$/, '')}
+                                %）
+                              </dt>
+                              <dd>{formatCurrency(priceBreakdown.welfareExpense)}</dd>
+                            </div>
+                          )}
+                        </dl>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
+                          <span>選択オプション</span>
+                          <span>
+                            {selectedOptionDetails.length > 0
+                              ? `${selectedOptionDetails.length}件`
+                              : 'なし'}
+                          </span>
+                        </div>
+                        {selectedOptionDetails.length > 0 ? (
+                          <ul className="divide-y divide-muted/40 overflow-hidden rounded-md border border-muted/40 text-xs">
+                            {selectedOptionDetails.map((option) => (
+                              <li
+                                key={option.id}
+                                className="flex items-center justify-between gap-3 bg-white/30 px-3 py-2"
+                              >
+                                <div className="flex-1">
+                                  <div className="font-medium">{option.name}</div>
+                                  {option.note && (
+                                    <div className="text-xs text-muted-foreground">
+                                      {option.note}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="text-right text-muted-foreground">
+                                  {option.duration ? (
+                                    <div>{formatMinutes(option.duration)}</div>
+                                  ) : null}
+                                  <div>{formatCurrency(toNumber(option.price, 0))}</div>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">
+                            オプションは選択されていません。
+                          </p>
+                        )}
+                      </div>
+
+                      <p className="text-xs text-muted-foreground">
+                        変更内容は「保存する」で反映され、履歴にも記録されます。
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium">詳細メモ</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {isEditMode ? (
+                      <Textarea
+                        value={formState.notes}
+                        onChange={(event) =>
+                          setFormState((prev) => ({ ...prev, notes: event.target.value }))
+                        }
+                        rows={5}
+                        placeholder="予約に関する詳細メモを入力してください"
+                      />
+                    ) : reservation.notes ? (
+                      <p className="whitespace-pre-wrap text-sm">{reservation.notes}</p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        詳細メモは登録されていません。
                       </p>
                     )}
-                  </div>
+                  </CardContent>
+                </Card>
 
-                  <p className="text-xs text-muted-foreground">
-                    変更内容は「保存する」で反映され、履歴にも記録されます。
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium">確認状況</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
+                    <div>
+                      <div className="text-muted-foreground">担当キャスト確認</div>
+                      <div className="font-medium">{reservation.staffConfirmation}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">顧客確認</div>
+                      <div className="font-medium">{reservation.customerConfirmation}</div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-medium">詳細メモ</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isEditMode ? (
-                  <Textarea
-                    value={formState.notes}
-                    onChange={(event) =>
-                      setFormState((prev) => ({ ...prev, notes: event.target.value }))
-                    }
-                    rows={5}
-                    placeholder="予約に関する詳細メモを入力してください"
-                  />
-                ) : reservation.notes ? (
-                  <p className="text-sm whitespace-pre-wrap">{reservation.notes}</p>
-                ) : (
-                  <p className="text-sm text-muted-foreground">詳細メモは登録されていません。</p>
+              <TabsContent value="history" className="space-y-4 p-4">
+                <Alert variant="default" className="bg-muted/40">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    ステータス・時間帯・料金などの更新は自動で記録されます。スタッフ間の共有メモや監査対応の証跡として活用してください。
+                  </AlertDescription>
+                </Alert>
+                {isHistoryLoading && (
+                  <p className="text-xs text-muted-foreground">履歴を読み込み中...</p>
                 )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-medium">確認状況</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
+                <ModificationHistoryTable
+                  modifications={modificationHistory}
+                  alerts={modificationAlerts}
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
+          <div className="border-t bg-white px-4 py-3 shadow-inner">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-baseline gap-3">
                 <div>
-                  <div className="text-muted-foreground">担当キャスト確認</div>
-                  <div className="font-medium">{reservation.staffConfirmation}</div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground">顧客確認</div>
-                  <div className="font-medium">{reservation.customerConfirmation}</div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="history" className="p-4 space-y-4">
-            <Alert variant="default" className="bg-muted/40">
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                ステータス・時間帯・料金などの更新は自動で記録されます。スタッフ間の共有メモや監査対応の証跡として活用してください。
-              </AlertDescription>
-            </Alert>
-            {isHistoryLoading && (
-              <p className="text-xs text-muted-foreground">履歴を読み込み中...</p>
-            )}
-            <ModificationHistoryTable
-              modifications={modificationHistory}
-              alerts={modificationAlerts}
-            />
-          </TabsContent>
-        </Tabs>
-        </div>
-        <div className="border-t bg-white px-4 py-3 shadow-inner">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-baseline gap-3">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">
-                  {isEditMode ? '変更後の合計' : '予約合計'}
-                </p>
-                <p className="text-xl font-semibold leading-none">
-                  {formatCurrency(isEditMode ? priceBreakdown.total : originalTotal)}
-                </p>
-              </div>
-              {isEditMode && priceDelta !== 0 && (
-                <span
-                  className={cn(
-                    'rounded-full px-2 py-0.5 text-xs font-semibold',
-                    priceDelta > 0
-                      ? 'bg-red-50 text-red-600 ring-1 ring-inset ring-red-200'
-                      : 'bg-emerald-50 text-emerald-600 ring-1 ring-inset ring-emerald-200'
-                  )}
-                >
-                  {priceDelta > 0 ? '+' : '-'}
-                  {formatCurrency(Math.abs(priceDelta))}
-                </span>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:items-center sm:gap-4">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="font-medium text-foreground">
-                    {formatMinutes(effectiveDurationMinutes)}
+                  <p className="text-xs font-medium text-muted-foreground">
+                    {isEditMode ? '変更後の合計' : '予約合計'}
                   </p>
-                  <p>{isEditMode ? '変更後の施術時間' : '施術時間'}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="font-medium text-foreground">
-                    {computedEndTime ||
-                      (reservation?.endTime ? format(reservation.endTime, 'HH:mm') : '-')}
+                  <p className="text-xl font-semibold leading-none">
+                    {formatCurrency(isEditMode ? priceBreakdown.total : originalTotal)}
                   </p>
-                  <p>{isEditMode ? '変更後の終了予定' : '終了予定'}</p>
+                </div>
+                {isEditMode && priceDelta !== 0 && (
+                  <span
+                    className={cn(
+                      'rounded-full px-2 py-0.5 text-xs font-semibold',
+                      priceDelta > 0
+                        ? 'bg-red-50 text-red-600 ring-1 ring-inset ring-red-200'
+                        : 'bg-emerald-50 text-emerald-600 ring-1 ring-inset ring-emerald-200'
+                    )}
+                  >
+                    {priceDelta > 0 ? '+' : '-'}
+                    {formatCurrency(Math.abs(priceDelta))}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:items-center sm:gap-4">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium text-foreground">
+                      {formatMinutes(effectiveDurationMinutes)}
+                    </p>
+                    <p>{isEditMode ? '変更後の施術時間' : '施術時間'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium text-foreground">
+                      {computedEndTime ||
+                        (reservation?.endTime ? format(reservation.endTime, 'HH:mm') : '-')}
+                    </p>
+                    <p>{isEditMode ? '変更後の終了予定' : '終了予定'}</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </DialogContent>
+        </DialogContent>
       </Dialog>
+      <AlertDialog open={discardEditConfirmOpen} onOpenChange={setDiscardEditConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>編集内容を破棄しますか？</AlertDialogTitle>
+            <AlertDialogDescription>
+              保存していない予約の編集内容があります。閉じると変更は破棄されます。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>戻る</AlertDialogCancel>
+            <AlertDialogAction onClick={closeDialogWithoutSaving}>破棄する</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <AlertDialog open={cancelReasonDialogOpen} onOpenChange={handleCancelReasonDialogToggle}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -2997,7 +3038,9 @@ useEffect(() => {
           </AlertDialogHeader>
           <RadioGroup
             value={cancelReason}
-            onValueChange={(value) => setCancelReason((value as 'customer' | 'store') ?? 'customer')}
+            onValueChange={(value) =>
+              setCancelReason((value as 'customer' | 'store') ?? 'customer')
+            }
             className="space-y-2"
           >
             <div className="flex items-center gap-3 rounded-md border p-3">
@@ -3038,4 +3081,3 @@ useEffect(() => {
     </>
   )
 }
- 

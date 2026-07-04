@@ -102,8 +102,8 @@ export function useLocations(): LocationResponse {
       const areaResponse = await fetch(
         `/api/settings/area${params.toString() ? `?${params.toString()}` : ''}`,
         {
-        credentials: 'include',
-        cache: 'no-store',
+          credentials: 'include',
+          cache: 'no-store',
         }
       )
 

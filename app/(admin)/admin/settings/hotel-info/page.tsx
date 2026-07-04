@@ -1,6 +1,13 @@
 'use client'
 
+/**
+ * @design_doc   ui-improvement-instructions.md U-4 destructive confirmation dialogs
+ * @related_to   ConfirmDialog: replaces native confirm for hotel deletion
+ * @known_issues Existing hotel form behavior is unchanged
+ */
 import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
+import { PageHeader } from '@/components/admin/page-header'
 import { Header } from '@/components/header'
 import { toast } from '@/hooks/use-toast'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { ArrowLeft, Building, MapPin, Phone, Trash2, Plus } from 'lucide-react'
-import Link from 'next/link'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 interface Hotel {
   id: string
@@ -131,28 +138,26 @@ export default function HotelInfoPage() {
   }
 
   const handleDeleteHotel = async (id: string) => {
-    if (confirm('このホテル情報を削除しますか？')) {
-      try {
-        const response = await fetch(`/api/settings/hotel?id=${id}`, {
-          method: 'DELETE',
-        })
+    try {
+      const response = await fetch(`/api/settings/hotel?id=${id}`, {
+        method: 'DELETE',
+      })
 
-        if (!response.ok) throw new Error('Failed to delete hotel')
+      if (!response.ok) throw new Error('Failed to delete hotel')
 
-        setHotels(hotels.filter((hotel) => hotel.id !== id))
+      setHotels(hotels.filter((hotel) => hotel.id !== id))
 
-        toast({
-          title: '成功',
-          description: 'ホテル情報を削除しました',
-        })
-      } catch (error) {
-        console.error('Error deleting hotel:', error)
-        toast({
-          title: 'エラー',
-          description: 'ホテル情報の削除に失敗しました',
-          variant: 'destructive',
-        })
-      }
+      toast({
+        title: '成功',
+        description: 'ホテル情報を削除しました',
+      })
+    } catch (error) {
+      console.error('Error deleting hotel:', error)
+      toast({
+        title: 'エラー',
+        description: 'ホテル情報の削除に失敗しました',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -196,16 +201,12 @@ export default function HotelInfoPage() {
       <Header />
       <main className="p-8">
         <div className="mx-auto max-w-6xl">
-          {/* ヘッダー */}
-          <div className="mb-6 flex items-center gap-4">
-            <Link href="/admin/settings">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            <Building className="h-8 w-8 text-emerald-600" />
-            <h1 className="text-3xl font-bold text-gray-900">ホテル情報設定</h1>
-          </div>
+          <PageHeader
+            title="ホテル情報設定"
+            backHref="/admin/settings"
+            backIcon={ArrowLeft}
+            icon={Building}
+          />
 
           <div className="space-y-6">
             {/* ホテル一覧 */}
@@ -269,14 +270,20 @@ export default function HotelInfoPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteHotel(hotel.id)}
-                            className="text-red-600 hover:text-red-700"
+                          <ConfirmDialog
+                            title="ホテル情報を削除しますか？"
+                            description={`「${hotel.hotelName}」を削除します。この操作は取り消せません。`}
+                            confirmLabel="削除する"
+                            onConfirm={() => handleDeleteHotel(hotel.id)}
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </ConfirmDialog>
                         </div>
                       </div>
                     </div>

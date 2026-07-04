@@ -55,9 +55,7 @@ export default function CourseSalesPage() {
     const fetchCourseSales = async () => {
       const monthsToFetch = buildTrailingMonths(selectedYear, selectedMonth, 3)
       const results = await Promise.allSettled(
-        monthsToFetch.map(({ year, month }) =>
-          analyticsUseCases.getCourseSalesReport(year, month)
-        )
+        monthsToFetch.map(({ year, month }) => analyticsUseCases.getCourseSalesReport(year, month))
       )
 
       if (!isMounted) return
@@ -109,10 +107,7 @@ export default function CourseSalesPage() {
   }
 
   const courseSummaries = useMemo(() => summarizeCourses(courses), [courses])
-  const previousSummaries = useMemo(
-    () => summarizeCourses(previousCourses),
-    [previousCourses]
-  )
+  const previousSummaries = useMemo(() => summarizeCourses(previousCourses), [previousCourses])
   const chartData = useMemo(() => {
     const totalRevenue = courseSummaries.reduce((sum, course) => sum + course.revenue, 0)
     if (totalRevenue === 0) return []
@@ -140,8 +135,7 @@ export default function CourseSalesPage() {
     if (!acc || course.revenue > acc.revenue) return course
     return acc
   }, null)
-  const averagePrice =
-    totalBookings > 0 ? Math.round(totalCourseSales / totalBookings) : 0
+  const averagePrice = totalBookings > 0 ? Math.round(totalCourseSales / totalBookings) : 0
 
   const calculateGrowthRate = (current: number, previous: number) => {
     if (previous === 0) {
@@ -229,7 +223,11 @@ export default function CourseSalesPage() {
             </div>
             <p className="text-xs text-muted-foreground">
               平均単価:{' '}
-              {haveValues ? `¥${averagePrice.toLocaleString()}` : <span className="text-muted-foreground">--</span>}
+              {haveValues ? (
+                `¥${averagePrice.toLocaleString()}`
+              ) : (
+                <span className="text-muted-foreground">--</span>
+              )}
             </p>
           </CardContent>
         </Card>
@@ -241,7 +239,7 @@ export default function CourseSalesPage() {
           </CardHeader>
           <CardContent>
             <div className="truncate text-sm font-bold">
-              {haveValues ? topCourse?.name ?? '-' : '--'}
+              {haveValues ? (topCourse?.name ?? '-') : '--'}
             </div>
             <p className="text-xs text-muted-foreground">
               売上:{' '}
@@ -296,11 +294,7 @@ export default function CourseSalesPage() {
               <TabsTrigger value="trend">トレンド分析</TabsTrigger>
             </TabsList>
             <TabsContent value="daily" className="mt-4">
-              <CourseSalesTable
-                year={selectedYear}
-                month={selectedMonth}
-                courses={courses}
-              />
+              <CourseSalesTable year={selectedYear} month={selectedMonth} courses={courses} />
             </TabsContent>
             <TabsContent value="ranking" className="mt-4">
               <CourseRankingTable current={courseSummaries} previous={previousSummaries} />

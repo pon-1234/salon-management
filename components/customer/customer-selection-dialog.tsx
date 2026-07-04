@@ -57,10 +57,7 @@ export function CustomerSelectionDialog({
   const router = useRouter()
   const hasLoadedRef = useRef(false)
 
-  const customerUseCases = useMemo(
-    () => new CustomerUseCases(new CustomerRepositoryImpl()),
-    []
-  )
+  const customerUseCases = useMemo(() => new CustomerUseCases(new CustomerRepositoryImpl()), [])
 
   useEffect(() => {
     if (open && !hasLoadedRef.current) {
@@ -269,7 +266,11 @@ export function CustomerSelectionDialog({
           </Button>
 
           {!isLookupMode && (
-            <Button onClick={handleOpenTimeline} variant="secondary" className="w-full justify-start">
+            <Button
+              onClick={handleOpenTimeline}
+              variant="secondary"
+              className="w-full justify-start"
+            >
               <Clock className="mr-2 h-4 w-4" />
               タイムラインを確認する
             </Button>

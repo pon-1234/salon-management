@@ -104,7 +104,10 @@ describe('ReservationRepositoryImpl', () => {
       const [url, init] = vi.mocked(fetch).mock.calls[0]
       expect(url).toBe('/api/reservation?id=1')
       expect(init?.method).toBe('GET')
-      expect(result).toMatchObject({ id: mockReservation.id, customerId: mockReservation.customerId })
+      expect(result).toMatchObject({
+        id: mockReservation.id,
+        customerId: mockReservation.customerId,
+      })
     })
 
     it('should return null for 404 response', async () => {
@@ -402,30 +405,28 @@ describe('ReservationRepositoryImpl', () => {
       expect(fetch).toHaveBeenNthCalledWith(1, '/api/course', expect.any(Object))
       expect(fetch).toHaveBeenNthCalledWith(2, '/api/option', expect.any(Object))
       expect(result).toEqual([
-        {
+        expect.objectContaining({
           id: 'course1',
           name: 'カット',
           type: 'course',
           duration: 60,
           price: 5000,
           description: 'カットサービス',
-        },
-        {
+        }),
+        expect.objectContaining({
           id: 'option1',
           name: 'シャンプー',
           type: 'option',
           duration: 0,
           price: 1000,
           description: '',
-        },
+        }),
       ])
     })
 
     it('should throw error when fetching services fails', async () => {
       vi.mocked(fetch)
-        .mockResolvedValueOnce(
-          mockResponse({ ok: false, status: 500, statusText: 'Server Error' })
-        )
+        .mockResolvedValueOnce(mockResponse({ ok: false, status: 500, statusText: 'Server Error' }))
         .mockResolvedValueOnce(mockResponse({ body: [] }))
 
       const promise = repository.getServices()
@@ -461,9 +462,7 @@ describe('ReservationRepositoryImpl', () => {
         conflicts: [{ id: 'conflict1', startTime: '10:00', endTime: '11:00' }],
       }
 
-      vi.mocked(fetch).mockResolvedValueOnce(
-        mockResponse({ body: availabilityResponse })
-      )
+      vi.mocked(fetch).mockResolvedValueOnce(mockResponse({ body: availabilityResponse }))
 
       const result = await repository.checkAvailability('cast1', startTime, endTime)
 

@@ -1,8 +1,13 @@
 'use client'
 
+/**
+ * @design_doc   ui-improvement-instructions.md U-4 destructive confirmation dialogs
+ * @related_to   ConfirmDialog: replaces native confirm for admin deletion
+ * @known_issues Existing admin form behavior is unchanged
+ */
 import { useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
 import { useSession } from 'next-auth/react'
+import { PageHeader } from '@/components/admin/page-header'
 import { Header } from '@/components/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -18,9 +23,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/hooks/use-toast'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import {
   ArrowLeft,
   Shield,
@@ -265,9 +277,6 @@ export default function AdminInfoPage() {
 
   const handleDelete = async (admin: AdminRecord) => {
     if (!isSuperAdmin) return
-    if (!window.confirm(`「${admin.name}」を削除しますか？`)) {
-      return
-    }
 
     try {
       setSaving(true)
@@ -331,34 +340,30 @@ export default function AdminInfoPage() {
       <Header />
       <main className="p-8">
         <div className="mx-auto max-w-6xl space-y-6">
-          <div className="flex items-center gap-4">
-            <Link href="/admin/settings">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            <Shield className="h-8 w-8 text-emerald-600" />
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">管理者情報</h1>
-              <p className="text-sm text-gray-600">
-                管理画面にアクセスできるメンバーのアカウントや権限を管理します。
-              </p>
-            </div>
-            <div className="flex-1" />
-            {lastSyncedAt && (
-              <span className="mr-4 hidden text-xs text-gray-500 md:block">
-                最終更新 {formatInTimeZone(lastSyncedAt, JST_TIMEZONE, 'MM/dd HH:mm')}
-              </span>
-            )}
-            <Button variant="outline" size="sm" onClick={fetchAdmins} disabled={loading}>
-              <RefreshCw className={cn('mr-2 h-4 w-4', loading ? 'animate-spin' : '')} />
-              再読み込み
-            </Button>
-            <Button onClick={openCreateDialog} disabled={!isSuperAdmin}>
-              <UserPlus className="mr-2 h-4 w-4" />
-              管理者を追加
-            </Button>
-          </div>
+          <PageHeader
+            title="管理者情報"
+            description="管理画面にアクセスできるメンバーのアカウントや権限を管理します。"
+            backHref="/admin/settings"
+            backIcon={ArrowLeft}
+            icon={Shield}
+            actions={
+              <>
+                {lastSyncedAt && (
+                  <span className="mr-2 hidden self-center text-xs text-gray-500 md:block">
+                    最終更新 {formatInTimeZone(lastSyncedAt, JST_TIMEZONE, 'MM/dd HH:mm')}
+                  </span>
+                )}
+                <Button variant="outline" size="sm" onClick={fetchAdmins} disabled={loading}>
+                  <RefreshCw className={cn('mr-2 h-4 w-4', loading ? 'animate-spin' : '')} />
+                  再読み込み
+                </Button>
+                <Button onClick={openCreateDialog} disabled={!isSuperAdmin}>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  管理者を追加
+                </Button>
+              </>
+            }
+          />
           {lastSyncedAt && (
             <p className="text-xs text-gray-500 md:hidden">
               最終更新 {formatInTimeZone(lastSyncedAt, JST_TIMEZONE, 'MM/dd HH:mm')}
@@ -474,7 +479,7 @@ export default function AdminInfoPage() {
                             const permissionList =
                               admin.permissions && admin.permissions.length > 0
                                 ? admin.permissions
-                                : ROLE_PERMISSIONS[admin.role] ?? []
+                                : (ROLE_PERMISSIONS[admin.role] ?? [])
 
                             if (permissionList.length === 0) {
                               return <span className="text-xs text-gray-500">設定なし</span>
@@ -506,7 +511,11 @@ export default function AdminInfoPage() {
                         </TableCell>
                         <TableCell>
                           {admin.lastLogin
-                            ? formatInTimeZone(new Date(admin.lastLogin), JST_TIMEZONE, 'yyyy/MM/dd HH:mm')
+                            ? formatInTimeZone(
+                                new Date(admin.lastLogin),
+                                JST_TIMEZONE,
+                                'yyyy/MM/dd HH:mm'
+                              )
                             : '未ログイン'}
                         </TableCell>
                         <TableCell>
@@ -522,18 +531,26 @@ export default function AdminInfoPage() {
                               onClick={() => openEditDialog(admin)}
                               disabled={!isSuperAdmin}
                               title="編集"
+                              aria-label={`${admin.name}を編集`}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => handleDelete(admin)}
-                              disabled={!isSuperAdmin || saving}
-                              title="削除"
+                            <ConfirmDialog
+                              title="管理者を削除しますか？"
+                              description={`「${admin.name}」を削除します。この操作は取り消せません。`}
+                              confirmLabel="削除する"
+                              onConfirm={() => handleDelete(admin)}
                             >
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                disabled={!isSuperAdmin || saving}
+                                title="削除"
+                                aria-label={`${admin.name}を削除`}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </ConfirmDialog>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -546,7 +563,10 @@ export default function AdminInfoPage() {
         </div>
       </main>
 
-      <Dialog open={dialogOpen} onOpenChange={(open) => (!open ? closeDialog() : setDialogOpen(open))}>
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(open) => (!open ? closeDialog() : setDialogOpen(open))}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{editingAdmin ? '管理者を編集' : '管理者を追加'}</DialogTitle>
@@ -577,7 +597,9 @@ export default function AdminInfoPage() {
               <Label htmlFor="admin-role">権限</Label>
               <Select
                 value={formState.role}
-                onValueChange={(value) => handleInputChange('role', value as AdminFormState['role'])}
+                onValueChange={(value) =>
+                  handleInputChange('role', value as AdminFormState['role'])
+                }
                 disabled={!isSuperAdmin}
               >
                 <SelectTrigger id="admin-role">

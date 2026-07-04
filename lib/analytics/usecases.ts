@@ -1,3 +1,8 @@
+/**
+ * @design_doc   refactor-instructions.md Phase 6 D-11 analytics real-data connection
+ * @related_to   AnalyticsRepository: delegates analytics report retrieval
+ * @known_issues Baseline coverage is below the project target; see refactor-baseline.md
+ */
 import {
   AnalyticsRepository,
   MonthlyData,
@@ -26,8 +31,8 @@ export class AnalyticsUseCases {
     return this.repository.getDailyData(year, month)
   }
 
-  async getStaffPerformance(): Promise<StaffPerformanceData[]> {
-    return this.repository.getStaffPerformanceData()
+  async getStaffPerformance(year: number, month: number): Promise<StaffPerformanceData[]> {
+    return this.repository.getStaffPerformanceData(year, month)
   }
 
   async getCourseSalesReport(year: number, month: number): Promise<CourseSalesData[]> {

@@ -48,14 +48,10 @@ export function AnnualStoreTable({
     const totalStaff = data.reduce((sum, item) => sum + item.staffCount, 0)
     const averageStaff = data.length > 0 ? Math.round(totalStaff / data.length) : 0
 
-    const averagePerCustomer =
-      customerCount > 0 ? Math.round(totalSales / customerCount) : 0
-    const salesPerStaff =
-      averageStaff > 0 ? Math.round(totalSales / averageStaff) : 0
+    const averagePerCustomer = customerCount > 0 ? Math.round(totalSales / customerCount) : 0
+    const salesPerStaff = averageStaff > 0 ? Math.round(totalSales / averageStaff) : 0
     const growthRate =
-      previousSales > 0
-        ? ((totalSales - previousSales) / previousSales) * 100
-        : null
+      previousSales > 0 ? ((totalSales - previousSales) / previousSales) * 100 : null
 
     return {
       id: 'current-store',
@@ -99,9 +95,7 @@ export function AnnualStoreTable({
             <TableCell className="font-medium">{summary.name}</TableCell>
             <TableCell>{summary.location}</TableCell>
             <TableCell className="text-right">¥{summary.totalSales.toLocaleString()}</TableCell>
-            <TableCell className="text-right">
-              {summary.customerCount.toLocaleString()}人
-            </TableCell>
+            <TableCell className="text-right">{summary.customerCount.toLocaleString()}人</TableCell>
             <TableCell className="text-right">
               ¥{summary.averagePerCustomer.toLocaleString()}
             </TableCell>
@@ -120,9 +114,7 @@ export function AnnualStoreTable({
           <TableRow className="bg-gray-50 font-bold">
             <TableCell colSpan={2}>合計</TableCell>
             <TableCell className="text-right">¥{summary.totalSales.toLocaleString()}</TableCell>
-            <TableCell className="text-right">
-              {summary.customerCount.toLocaleString()}人
-            </TableCell>
+            <TableCell className="text-right">{summary.customerCount.toLocaleString()}人</TableCell>
             <TableCell className="text-right">
               ¥{summary.averagePerCustomer.toLocaleString()}
             </TableCell>

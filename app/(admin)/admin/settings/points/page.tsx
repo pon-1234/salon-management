@@ -1,12 +1,19 @@
 'use client'
 
+/**
+ * @design_doc   ui-improvement-instructions.md U-6 admin page header
+ * @related_to   PageHeader: shared settings header; PointExpirationPanel: destructive point cleanup
+ * @known_issues Form validation remains ad hoc until U-11 settings migration
+ */
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { PageHeader } from '@/components/admin/page-header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/hooks/use-toast'
 import { PointExpirationPanel } from '@/components/admin/point-expiration-panel'
+import { ArrowLeft, Coins } from 'lucide-react'
 
 export default function PointSettingsPage() {
   const [form, setForm] = useState({
@@ -46,13 +53,12 @@ export default function PointSettingsPage() {
     fetchSettings()
   }, [])
 
-  const handleChange =
-    (field: keyof typeof form) => (event: ChangeEvent<HTMLInputElement>) => {
-      setForm((prev) => ({
-        ...prev,
-        [field]: Number(event.target.value),
-      }))
-    }
+  const handleChange = (field: keyof typeof form) => (event: ChangeEvent<HTMLInputElement>) => {
+    setForm((prev) => ({
+      ...prev,
+      [field]: Number(event.target.value),
+    }))
+  }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -88,6 +94,13 @@ export default function PointSettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
+      <PageHeader
+        title="ポイント設定"
+        backHref="/admin/settings"
+        backIcon={ArrowLeft}
+        icon={Coins}
+      />
+
       <Card>
         <CardHeader>
           <CardTitle>ポイント設定</CardTitle>

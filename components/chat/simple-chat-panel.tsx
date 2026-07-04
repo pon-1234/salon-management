@@ -46,8 +46,14 @@ export function SimpleChatPanel({
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const { drafts: attachmentDrafts, addFiles, removeAttachment, reset, readyAttachments, hasUploading } =
-    useChatAttachments(maxAttachments)
+  const {
+    drafts: attachmentDrafts,
+    addFiles,
+    removeAttachment,
+    reset,
+    readyAttachments,
+    hasUploading,
+  } = useChatAttachments(maxAttachments)
 
   const loadMessages = useCallback(async () => {
     setIsLoading(true)
@@ -148,7 +154,8 @@ export function SimpleChatPanel({
   )
 
   const hasMessages = messages.length > 0
-  const canSend = !isPending && !hasUploading && (draft.trim().length > 0 || readyAttachments.length > 0)
+  const canSend =
+    !isPending && !hasUploading && (draft.trim().length > 0 || readyAttachments.length > 0)
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
@@ -166,8 +173,17 @@ export function SimpleChatPanel({
           <p className="text-sm text-muted-foreground">{description}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => void loadMessages()} disabled={isLoading || isPending}>
-            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void loadMessages()}
+            disabled={isLoading || isPending}
+          >
+            {isLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCcw className="mr-2 h-4 w-4" />
+            )}
             再読み込み
           </Button>
         </div>
@@ -186,7 +202,7 @@ export function SimpleChatPanel({
                 ))}
               </div>
             ) : (
-              <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground text-center px-4">
+              <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center text-sm text-muted-foreground">
                 <p>{emptyState.title}</p>
                 <p>{emptyState.description}</p>
               </div>
@@ -233,7 +249,11 @@ export function SimpleChatPanel({
               </span>
             </div>
             <Button onClick={handleSend} disabled={!canSend}>
-              {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+              {isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="mr-2 h-4 w-4" />
+              )}
               送信
             </Button>
           </div>
@@ -243,7 +263,13 @@ export function SimpleChatPanel({
   )
 }
 
-function ChatBubble({ message, selfSender }: { message: Message; selfSender: 'cast' | 'customer' }) {
+function ChatBubble({
+  message,
+  selfSender,
+}: {
+  message: Message
+  selfSender: 'cast' | 'customer'
+}) {
   const isSelf = message.sender === selfSender
   const timestampLabel = useMemo(() => {
     const date = new Date(message.timestamp)
@@ -276,14 +302,12 @@ function ChatBubble({ message, selfSender }: { message: Message; selfSender: 'ca
         <ChatAttachmentGallery attachments={attachments} align={isSelf ? 'right' : 'left'} />
         <div
           className={cn(
-            'mt-2 flex items-center gap-2 text-[11px]',
+            'mt-2 flex items-center gap-2 text-xs',
             isSelf ? 'text-primary-foreground/70' : 'text-muted-foreground/80'
           )}
         >
           <span>{timestampLabel}</span>
-          {isSelf ? (
-            <span>{message.readStatus === '既読' ? '既読' : '送信済み'}</span>
-          ) : null}
+          {isSelf ? <span>{message.readStatus === '既読' ? '既読' : '送信済み'}</span> : null}
         </div>
       </div>
       {isSelf && (

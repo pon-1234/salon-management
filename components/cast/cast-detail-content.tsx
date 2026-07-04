@@ -277,7 +277,11 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
                   <DialogHeader>
                     <DialogTitle>リクエスト出勤のお問い合わせ</DialogTitle>
                   </DialogHeader>
-                  <RequestAttendanceForm cast={cast} store={store} onSubmitted={() => setIsRequestOpen(false)} />
+                  <RequestAttendanceForm
+                    cast={cast}
+                    store={store}
+                    onSubmitted={() => setIsRequestOpen(false)}
+                  />
                 </DialogContent>
               </Dialog>
             )}
@@ -457,7 +461,9 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
                           <div>
                             <h4 className="font-medium">{option!.name}</h4>
                             {option!.description && (
-                            <p className="mt-1 text-sm text-muted-foreground">{option!.description}</p>
+                              <p className="mt-1 text-sm text-muted-foreground">
+                                {option!.description}
+                              </p>
                             )}
                           </div>
                           <span
@@ -503,17 +509,12 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
         </div>
       </div>
 
-      {/* Image Modal */}
-      {isImageModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4">
-          <button
-            onClick={() => setIsImageModalOpen(false)}
-            className="absolute right-4 top-4 rounded-full p-2 text-white hover:bg-white/20"
-          >
-            <X className="h-6 w-6" />
-          </button>
-
-          <div className="relative max-h-[90vh] max-w-4xl">
+      <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
+        <DialogContent className="border-0 bg-black/90 p-4 text-white sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="sr-only">{cast.name}の画像プレビュー</DialogTitle>
+          </DialogHeader>
+          <div className="relative mx-auto max-h-[90vh] max-w-4xl">
             <Image
               src={cast.images[selectedImageIndex]}
               alt={cast.name}
@@ -527,20 +528,22 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
                 <button
                   onClick={prevImage}
                   className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-3 text-white hover:bg-black/70"
+                  aria-label="前の画像を表示"
                 >
                   <ChevronLeft className="h-6 w-6" />
                 </button>
                 <button
                   onClick={nextImage}
                   className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-3 text-white hover:bg-black/70"
+                  aria-label="次の画像を表示"
                 >
                   <ChevronRight className="h-6 w-6" />
                 </button>
               </>
             )}
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -637,7 +640,9 @@ function RequestAttendanceForm({
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       {error && <p className="rounded-md bg-red-50 p-2 text-sm text-red-600">{error}</p>}
-      {success && <p className="rounded-md bg-emerald-50 p-2 text-sm text-emerald-700">{success}</p>}
+      {success && (
+        <p className="rounded-md bg-emerald-50 p-2 text-sm text-emerald-700">{success}</p>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
@@ -786,7 +791,9 @@ function RequestAttendanceForm({
       </div>
 
       <div className="rounded-lg border border-[#3b2e1f] bg-[#121212] p-3 text-xs text-[#cbb88f]">
-        <p>※確認メールをお送りします。ドメイン指定は「customer.goldball@gmail.com」を許可してください。</p>
+        <p>
+          ※確認メールをお送りします。ドメイン指定は「customer.goldball@gmail.com」を許可してください。
+        </p>
         <p>※女性の事情によりご希望に添えない場合があります。</p>
         <p>※3営業日以内に予定が立てられない場合は不成立となります。</p>
       </div>

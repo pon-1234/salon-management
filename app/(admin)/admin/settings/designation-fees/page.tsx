@@ -1,7 +1,12 @@
 'use client'
 
+/**
+ * @design_doc   ui-improvement-instructions.md U-4 destructive confirmation dialogs
+ * @related_to   ConfirmDialog: replaces native confirm for designation fee deletion
+ * @known_issues Existing designation fee behavior is unchanged
+ */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
+import { PageHeader } from '@/components/admin/page-header'
 import { Header } from '@/components/header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -29,6 +34,7 @@ import {
 } from '@/lib/designation/data'
 import type { DesignationFee } from '@/lib/designation/types'
 import { useStore } from '@/contexts/store-context'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 export default function DesignationFeesPage() {
   const { toast } = useToast()
@@ -76,10 +82,7 @@ export default function DesignationFeesPage() {
     void loadFees()
   }, [loadFees])
 
-  const orderedFees = useMemo(
-    () => [...fees].sort((a, b) => a.sortOrder - b.sortOrder),
-    [fees]
-  )
+  const orderedFees = useMemo(() => [...fees].sort((a, b) => a.sortOrder - b.sortOrder), [fees])
 
   const openCreateDialog = useCallback(() => {
     setEditingFee(null)
@@ -181,7 +184,6 @@ export default function DesignationFeesPage() {
 
   const removeFee = useCallback(
     async (id: string) => {
-      if (!confirm('この指名料を削除しますか？')) return
       try {
         await deleteDesignationFee(id, currentStore.id)
         setFees((prev) => prev.filter((fee) => fee.id !== id))
@@ -230,31 +232,22 @@ export default function DesignationFeesPage() {
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 pb-12 pt-8">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/admin/settings">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-5 w-5" />
+        <PageHeader
+          title="指名料設定"
+          description="フリー指名や本指名などの料金とキャスト・店舗それぞれの売上配分を設定できます。"
+          backHref="/admin/settings"
+          backIcon={ArrowLeft}
+          actions={
+            <>
+              <Button variant="outline" onClick={handleSync}>
+                <RefreshCw className="mr-2 h-4 w-4" /> 全店舗に同期
               </Button>
-            </Link>
-            <div>
-              <h1 className="flex items-center gap-2 text-2xl font-semibold text-gray-900">
-                指名料設定
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                フリー指名や本指名などの料金とキャスト・店舗それぞれの売上配分を設定できます。
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleSync}>
-              <RefreshCw className="mr-2 h-4 w-4" /> 全店舗に同期
-            </Button>
-            <Button onClick={openCreateDialog}>
-              <Plus className="mr-2 h-4 w-4" /> 新規項目追加
-            </Button>
-          </div>
-        </div>
+              <Button onClick={openCreateDialog}>
+                <Plus className="mr-2 h-4 w-4" /> 新規項目追加
+              </Button>
+            </>
+          }
+        />
 
         <Card>
           <CardHeader>
@@ -284,9 +277,12 @@ export default function DesignationFeesPage() {
                       #{fee.sortOrder.toString().padStart(2, '0')}
                     </TableCell>
                     <TableCell className="whitespace-nowrap font-medium">{fee.name}</TableCell>
-                    <TableCell className="whitespace-nowrap">¥{fee.price.toLocaleString()}</TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      ¥{fee.price.toLocaleString()}
+                    </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
-                      店舗 ¥{fee.storeShare.toLocaleString()} / キャスト ¥{fee.castShare.toLocaleString()}
+                      店舗 ¥{fee.storeShare.toLocaleString()} / キャスト ¥
+                      {fee.castShare.toLocaleString()}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {fee.description || '—'}
@@ -299,26 +295,39 @@ export default function DesignationFeesPage() {
                             void toggleActive(fee.id, value)
                           }}
                         />
-                        <Badge variant={fee.isActive ? 'secondary' : 'outline'} className="whitespace-nowrap">
+                        <Badge
+                          variant={fee.isActive ? 'secondary' : 'outline'}
+                          className="whitespace-nowrap"
+                        >
                           {fee.isActive ? '有効' : '非表示'}
                         </Badge>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(fee)}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-red-600 hover:text-red-700"
-                          onClick={() => {
-                            void removeFee(fee.id)
-                          }}
+                          onClick={() => openEditDialog(fee)}
+                          aria-label={`${fee.name}を編集`}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Pencil className="h-4 w-4" />
                         </Button>
+                        <ConfirmDialog
+                          title="指名料を削除しますか？"
+                          description={`「${fee.name}」を削除します。この操作は取り消せません。`}
+                          confirmLabel="削除する"
+                          onConfirm={() => removeFee(fee.id)}
+                        >
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-600 hover:text-red-700"
+                            aria-label={`${fee.name}を削除`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </ConfirmDialog>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -383,7 +392,9 @@ export default function DesignationFeesPage() {
               <Input
                 id="designation-desc"
                 value={formData.description}
-                onChange={(event) => setFormData((prev) => ({ ...prev, description: event.target.value }))}
+                onChange={(event) =>
+                  setFormData((prev) => ({ ...prev, description: event.target.value }))
+                }
               />
             </div>
 

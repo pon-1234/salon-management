@@ -63,13 +63,9 @@ export function mapReservationToReservationData(
 
   const customerName = reservation.customerName || customer?.name || `顧客${reservation.customerId}`
   const staffName =
-    reservation.staffName ||
-    cast?.name ||
-    (rawCast && rawCast.name) ||
-    '担当キャスト未設定'
+    reservation.staffName || cast?.name || (rawCast && rawCast.name) || '担当キャスト未設定'
 
-  const normalizedStaffName =
-    staffName.startsWith('スタッフ') && cast?.name ? cast.name : staffName
+  const normalizedStaffName = staffName.startsWith('スタッフ') && cast?.name ? cast.name : staffName
 
   const totalPayment = reservation.price ?? course?.price ?? 0
   const storeRevenue = reservation.storeRevenue ?? Math.floor(totalPayment * 0.6)
@@ -110,7 +106,8 @@ export function mapReservationToReservationData(
     staff: normalizedStaffName,
     staffId: castId,
     storeId: reservation.storeId,
-    marketingChannel: reservation.marketingChannel || (reservation as any).marketingChannel || '未設定',
+    marketingChannel:
+      reservation.marketingChannel || (reservation as any).marketingChannel || '未設定',
     date: format(start, 'yyyy-MM-dd'),
     time: format(start, 'HH:mm'),
     inOutTime: `${format(start, 'HH:mm')} - ${format(end, 'HH:mm')}`,

@@ -1,7 +1,20 @@
 'use client'
 
-import { useEffect, useMemo, useState, useId, useRef, type ChangeEvent, type ReactNode } from 'react'
-import Link from 'next/link'
+/**
+ * @design_doc   ui-improvement-instructions.md U-6 admin page header
+ * @related_to   PageHeader: shared settings header; StoreHomeContent: public banner display surface
+ * @known_issues Form validation remains ad hoc until U-11 settings migration
+ */
+import {
+  useEffect,
+  useMemo,
+  useState,
+  useId,
+  useRef,
+  type ChangeEvent,
+  type ReactNode,
+} from 'react'
+import { PageHeader } from '@/components/admin/page-header'
 import { Header } from '@/components/header'
 import { toast } from '@/hooks/use-toast'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -126,9 +139,7 @@ export default function EventBannersPage() {
 
   const handleRemoveBanner = (index: number) => {
     setBanners((prev) =>
-      prev
-        .filter((_, i) => i !== index)
-        .map((banner, i) => ({ ...banner, displayOrder: i }))
+      prev.filter((_, i) => i !== index).map((banner, i) => ({ ...banner, displayOrder: i }))
     )
   }
 
@@ -174,11 +185,7 @@ export default function EventBannersPage() {
     return result.url as string
   }
 
-  const handleImageUpload = async (
-    index: number,
-    field: BannerImageField,
-    file: File | null
-  ) => {
+  const handleImageUpload = async (index: number, field: BannerImageField, file: File | null) => {
     if (!file) return
     const fieldKey = `${index}-${field}`
     setUploadingField(fieldKey)
@@ -249,9 +256,7 @@ export default function EventBannersPage() {
       }
 
       const responseBody = await response.json().catch(() => null)
-      const updated = Array.isArray(responseBody?.data)
-        ? responseBody.data.map(mapBanner)
-        : banners
+      const updated = Array.isArray(responseBody?.data) ? responseBody.data.map(mapBanner) : banners
       setBanners(updated)
 
       toast({ title: '保存しました', description: 'バナー設定を更新しました' })
@@ -287,18 +292,13 @@ export default function EventBannersPage() {
       <Header />
       <main className="p-8">
         <div className="mx-auto max-w-5xl space-y-6">
-          <div className="flex items-center gap-4">
-            <Link href="/admin/settings">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            <div>
-              <p className="text-sm text-gray-500">PC版トップページに表示されるイベントバナー</p>
-              <h1 className="text-3xl font-bold text-gray-900">トップバナー管理</h1>
-            </div>
-            <div className="flex-1" />
-          </div>
+          <PageHeader
+            title="トップバナー管理"
+            description="PC版トップページに表示されるイベントバナー"
+            backHref="/admin/settings"
+            backIcon={ArrowLeft}
+            icon={ImageIcon}
+          />
 
           <Card>
             <CardHeader>
@@ -306,7 +306,9 @@ export default function EventBannersPage() {
             </CardHeader>
             <CardContent>
               <ul className="list-disc space-y-2 pl-5 text-sm text-gray-600">
-                <li>PC用（横長）とSP用（縦長）の2種類の画像を登録できます。未登録の場合はPC画像が使用されます。</li>
+                <li>
+                  PC用（横長）とSP用（縦長）の2種類の画像を登録できます。未登録の場合はPC画像が使用されます。
+                </li>
                 <li>リンクは外部URLまたは「/ikebukuro/cast」などの内部パスを設定できます。</li>
                 <li>上にあるバナーほど優先して表示されます。矢印ボタンで並び替えてください。</li>
               </ul>
@@ -445,7 +447,9 @@ export default function EventBannersPage() {
                   <div className="flex items-center justify-between rounded-md bg-gray-50 p-3">
                     <div>
                       <Label className="text-sm font-medium">表示・非表示</Label>
-                      <p className="text-xs text-gray-500">チェックを外すとバナーは公開されません</p>
+                      <p className="text-xs text-gray-500">
+                        チェックを外すとバナーは公開されません
+                      </p>
                     </div>
                     <Switch
                       checked={banner.isActive}
@@ -557,7 +561,15 @@ interface ImageFieldProps {
   onChange: (value: string) => void
 }
 
-function ImageField({ label, icon, helper, value, uploading, onUpload, onChange }: ImageFieldProps) {
+function ImageField({
+  label,
+  icon,
+  helper,
+  value,
+  uploading,
+  onUpload,
+  onChange,
+}: ImageFieldProps) {
   const inputId = useId()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -579,11 +591,7 @@ function ImageField({ label, icon, helper, value, uploading, onUpload, onChange 
         <div className="flex flex-col items-center justify-center rounded-md border border-dashed bg-gray-50 p-3">
           {value ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={value}
-              alt={label}
-              className="max-h-32 w-full rounded-md object-cover"
-            />
+            <img src={value} alt={label} className="max-h-32 w-full rounded-md object-cover" />
           ) : (
             <div className="flex flex-col items-center gap-2 text-xs text-gray-400">
               <ImageIcon className="h-6 w-6" />

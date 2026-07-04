@@ -32,18 +32,20 @@ export function ReviewFilters({
   return (
     <Card className="luxury-panel">
       <CardHeader>
-        <CardTitle className="text-[#f5e6c4]">絞り込み</CardTitle>
+        <CardTitle className="text-luxury-gold-cream">絞り込み</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Rating Filter */}
         <div>
-          <h4 className="mb-3 text-sm font-semibold text-[#f5e6c4]">評価</h4>
+          <h4 className="mb-3 text-sm font-semibold text-luxury-gold-cream">評価</h4>
           <div className="space-y-2">
             <Button
               variant={selectedRating === null ? 'default' : 'outline'}
               size="sm"
               className={`w-full justify-start ${
-                selectedRating === null ? '' : 'border-[#3b2e1f] text-[#f5e6c4] hover:bg-[#2b2114]'
+                selectedRating === null
+                  ? ''
+                  : 'border-luxury-border text-luxury-gold-cream hover:bg-luxury-brown-muted'
               }`}
               onClick={() => onRatingChange(null)}
             >
@@ -57,7 +59,7 @@ export function ReviewFilters({
                 className={`w-full justify-start ${
                   selectedRating === rating
                     ? ''
-                    : 'border-[#3b2e1f] text-[#f5e6c4] hover:bg-[#2b2114]'
+                    : 'border-luxury-border text-luxury-gold-cream hover:bg-luxury-brown-muted'
                 }`}
                 onClick={() => onRatingChange(rating)}
               >
@@ -66,7 +68,7 @@ export function ReviewFilters({
                     <Star
                       key={i}
                       className={`h-3 w-3 ${
-                        i < rating ? 'fill-[#f3d08a] text-[#f3d08a]' : 'text-[#5a4a2f]'
+                        i < rating ? 'fill-luxury-gold text-luxury-gold' : 'text-[#5a4a2f]'
                       }`}
                     />
                   ))}
@@ -80,7 +82,7 @@ export function ReviewFilters({
         {/* Tag Filter */}
         {availableTags.length > 0 && (
           <div>
-            <h4 className="mb-3 text-sm font-semibold text-[#f5e6c4]">タグ</h4>
+            <h4 className="mb-3 text-sm font-semibold text-luxury-gold-cream">タグ</h4>
             <div className="space-y-2">
               {availableTags.map((tag) => (
                 <div key={tag} className="flex items-center space-x-2">
@@ -89,7 +91,10 @@ export function ReviewFilters({
                     checked={selectedTags.includes(tag)}
                     onCheckedChange={() => handleTagToggle(tag)}
                   />
-                  <Label htmlFor={tag} className="cursor-pointer text-sm font-normal text-[#f5e6c4]">
+                  <Label
+                    htmlFor={tag}
+                    className="cursor-pointer text-sm font-normal text-luxury-gold-cream"
+                  >
                     {tag}
                   </Label>
                 </div>
@@ -103,7 +108,7 @@ export function ReviewFilters({
           <Button
             variant="outline"
             size="sm"
-            className="w-full border-[#3b2e1f] text-[#f5e6c4] hover:bg-[#2b2114]"
+            className="w-full border-luxury-border text-luxury-gold-cream hover:bg-luxury-brown-muted"
             onClick={() => {
               onRatingChange(null)
               onTagsChange([])

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { addDays, startOfWeek } from 'date-fns'
+import { addDays, format, startOfWeek } from 'date-fns'
 import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz'
 import { ja } from 'date-fns/locale'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -198,9 +198,7 @@ export function ScheduleEditDialog({
     return timeOptions.filter((time) => {
       const [hours, minutes] = time.split(':').map(Number)
       const totalMinutes = hours * 60 + minutes
-      return (
-        totalMinutes >= businessHours.startMinutes && totalMinutes <= businessHours.endMinutes
-      )
+      return totalMinutes >= businessHours.startMinutes && totalMinutes <= businessHours.endMinutes
     })
   }, [timeOptions, businessHours])
 

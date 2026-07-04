@@ -156,21 +156,21 @@ export function NotificationDetailDialog({
         <div className="space-y-4 text-sm">
           <section className="grid gap-3 rounded-lg border border-border/60 bg-muted/20 p-4 sm:grid-cols-2">
             <div className="space-y-1">
-              <p className="text-[11px] uppercase text-muted-foreground">ご予約日時</p>
+              <p className="text-xs uppercase text-muted-foreground">ご予約日時</p>
               <p className="text-base font-semibold text-foreground">
                 {startLabel} - {endLabel}
               </p>
             </div>
             <div className="space-y-1">
-              <p className="text-[11px] uppercase text-muted-foreground">受付</p>
+              <p className="text-xs uppercase text-muted-foreground">受付</p>
               <p className="font-semibold text-foreground">{notification.details.receivedTime}</p>
             </div>
             <div className="space-y-1">
-              <p className="text-[11px] uppercase text-muted-foreground">顧客</p>
+              <p className="text-xs uppercase text-muted-foreground">顧客</p>
               <p className="font-semibold text-foreground">{notification.details.customerName}</p>
             </div>
             <div className="space-y-1">
-              <p className="text-[11px] uppercase text-muted-foreground">担当キャスト</p>
+              <p className="text-xs uppercase text-muted-foreground">担当キャスト</p>
               <p className="font-semibold text-foreground">
                 {notification.details.staffName ?? '未割当'}
               </p>
@@ -182,12 +182,12 @@ export function NotificationDetailDialog({
             {detailError && <p className="text-xs text-destructive">{detailError}</p>}
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
-                <p className="text-[11px] uppercase text-muted-foreground">コース</p>
+                <p className="text-xs uppercase text-muted-foreground">コース</p>
                 <p className="font-semibold text-foreground">{courseName}</p>
                 <p className="text-xs text-muted-foreground">{coursePrice}</p>
               </div>
               <div className="space-y-1">
-                <p className="text-[11px] uppercase text-muted-foreground">お支払い</p>
+                <p className="text-xs uppercase text-muted-foreground">お支払い</p>
                 <p className="font-semibold text-foreground">{paymentMethod}</p>
                 <p className="text-xs text-muted-foreground">チャネル: {marketingChannel}</p>
               </div>
@@ -197,7 +197,7 @@ export function NotificationDetailDialog({
             )}
             {!detailLoading && optionList.length > 0 && (
               <div>
-                <p className="text-[11px] uppercase text-muted-foreground">オプション</p>
+                <p className="text-xs uppercase text-muted-foreground">オプション</p>
                 <ul className="mt-1 space-y-1 text-sm">
                   {optionList.map((option) => (
                     <li
@@ -213,7 +213,7 @@ export function NotificationDetailDialog({
             )}
             {detail?.notes && (
               <div>
-                <p className="text-[11px] uppercase text-muted-foreground">備考</p>
+                <p className="text-xs uppercase text-muted-foreground">備考</p>
                 <p className="text-sm text-foreground">{detail.notes}</p>
               </div>
             )}

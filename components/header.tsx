@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @design_doc   ui-improvement-instructions.md U-6 admin navigation
+ * @related_to   StoreSelector, NotificationList: global admin header controls
+ * @known_issues Full breadcrumb rollout is left for later page-by-page adoption
+ */
 import {
   Home,
   Search,
@@ -14,6 +19,8 @@ import {
   Settings,
   ListChecks,
   LogOut,
+  Menu,
+  Star,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -41,6 +48,19 @@ import { useSession, signOut } from 'next-auth/react'
 import { CustomerSelectionDialog } from '@/components/customer/customer-selection-dialog'
 import { hasPermission } from '@/lib/auth/permissions'
 import { useStore } from '@/contexts/store-context'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+
+const adminNavigationLinks = [
+  { href: '/admin/dashboard', label: 'ホーム', icon: Home },
+  { href: '/admin/reservation-list', label: '予約一覧', icon: ListChecks },
+  { href: '/admin/chat', label: 'チャット', icon: MessageSquare },
+  { href: '/admin/cast/list', label: 'キャスト', icon: Users },
+  { href: '/admin/cast/weekly-schedule', label: '出勤表', icon: Clock },
+  { href: '/admin/customers', label: '顧客管理', icon: Search },
+  { href: '/admin/reviews', label: '口コミ', icon: Star },
+  { href: '/admin/search', label: '検索', icon: Search },
+  { href: '/admin/settings', label: '設定', icon: Settings },
+]
 
 export function Header() {
   const { data: session } = useSession()
@@ -94,11 +114,14 @@ export function Header() {
     [markAsRead, router]
   )
 
-  const handleNavigateFromNotification = useCallback((notification: ReservationNotification) => {
-    const reservationId = notification.details.reservationId
-    router.push(`/admin/reservation-list?highlight=${encodeURIComponent(reservationId)}`)
-    setSelectedNotification(null)
-  }, [router])
+  const handleNavigateFromNotification = useCallback(
+    (notification: ReservationNotification) => {
+      const reservationId = notification.details.reservationId
+      router.push(`/admin/reservation-list?highlight=${encodeURIComponent(reservationId)}`)
+      setSelectedNotification(null)
+    },
+    [router]
+  )
 
   useEffect(() => {
     if (!selectedNotification) return
@@ -114,7 +137,41 @@ export function Header() {
   return (
     <>
       <div className="fixed left-0 right-0 top-0 z-50 flex items-center gap-4 border-b bg-white p-4 shadow-sm">
-        <Link href="/admin">
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="icon" className="md:hidden" aria-label="メニューを開く">
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-80">
+            <SheetHeader>
+              <SheetTitle>管理メニュー</SheetTitle>
+            </SheetHeader>
+            <nav className="mt-6 grid gap-2">
+              {adminNavigationLinks.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-muted"
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.label}
+                </Link>
+              ))}
+              {canViewAnalytics && (
+                <Link
+                  href="/admin/analytics/daily-sales"
+                  className="flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-muted"
+                >
+                  <BarChart2 className="h-4 w-4" />
+                  集計
+                </Link>
+              )}
+            </nav>
+          </SheetContent>
+        </Sheet>
+
+        <Link href="/admin/dashboard" className="hidden md:block">
           <Button
             variant="ghost"
             className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
@@ -130,7 +187,7 @@ export function Header() {
         <Button
           type="button"
           variant="ghost"
-          className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
+          className="hidden h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2 md:flex"
           onClick={() => setShowCustomerSelection(true)}
         >
           <Calendar className="h-5 w-5" />
@@ -140,14 +197,14 @@ export function Header() {
         <Button
           type="button"
           variant="ghost"
-          className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
+          className="hidden h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2 md:flex"
           onClick={() => setShowCustomerLookup(true)}
         >
           <Search className="h-5 w-5" />
           <span className="text-xs text-gray-600">顧客検索</span>
         </Button>
 
-        <Link href="/admin/reservation-list">
+        <Link href="/admin/reservation-list" className="hidden md:block">
           <Button
             variant="ghost"
             className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
@@ -157,7 +214,7 @@ export function Header() {
           </Button>
         </Link>
 
-        <Link href="/admin/chat">
+        <Link href="/admin/chat" className="hidden md:block">
           <Button
             variant="ghost"
             className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
@@ -167,7 +224,7 @@ export function Header() {
           </Button>
         </Link>
 
-        <Link href="/admin/cast/list">
+        <Link href="/admin/cast/list" className="hidden md:block">
           <Button
             variant="ghost"
             className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
@@ -177,7 +234,7 @@ export function Header() {
           </Button>
         </Link>
 
-        <Link href="/admin/cast/weekly-schedule">
+        <Link href="/admin/cast/weekly-schedule" className="hidden md:block">
           <Button
             variant="ghost"
             className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
@@ -187,53 +244,55 @@ export function Header() {
           </Button>
         </Link>
 
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={open}
-              className="w-[160px] justify-between"
-            >
-              {value
-                ? castList.find((cast) => cast.id === value)?.name || 'キャスト検索'
-                : 'キャスト検索'}
-              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[240px] p-0">
-            <Command>
-              <CommandInput placeholder="キャストを検索..." className="h-9" />
-              <CommandList>
-                <CommandEmpty>キャストが見つかりません。</CommandEmpty>
-                <CommandGroup>
-                  {castList.map((cast) => (
-                    <CommandItem
-                      key={cast.id}
-                      value={cast.id}
-                      onSelect={(currentValue) => {
-                        setValue(currentValue === value ? '' : currentValue)
-                        setOpen(false)
-                        router.push(`/admin/cast/manage/${cast.id}`)
-                      }}
-                    >
-                      {cast.name}
-                      <Check
-                        className={cn(
-                          'ml-auto h-4 w-4',
-                          value === cast.id ? 'opacity-100' : 'opacity-0'
-                        )}
-                      />
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+        <div className="hidden md:block">
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={open}
+                className="w-[160px] justify-between"
+              >
+                {value
+                  ? castList.find((cast) => cast.id === value)?.name || 'キャスト検索'
+                  : 'キャスト検索'}
+                <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[240px] p-0">
+              <Command>
+                <CommandInput placeholder="キャストを検索..." className="h-9" />
+                <CommandList>
+                  <CommandEmpty>キャストが見つかりません。</CommandEmpty>
+                  <CommandGroup>
+                    {castList.map((cast) => (
+                      <CommandItem
+                        key={cast.id}
+                        value={cast.id}
+                        onSelect={(currentValue) => {
+                          setValue(currentValue === value ? '' : currentValue)
+                          setOpen(false)
+                          router.push(`/admin/cast/manage/${cast.id}`)
+                        }}
+                      >
+                        {cast.name}
+                        <Check
+                          className={cn(
+                            'ml-auto h-4 w-4',
+                            value === cast.id ? 'opacity-100' : 'opacity-0'
+                          )}
+                        />
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
 
         {canViewAnalytics && (
-          <Link href="/admin/analytics/daily-sales">
+          <Link href="/admin/analytics/daily-sales" className="hidden md:block">
             <Button
               variant="ghost"
               className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
@@ -244,7 +303,27 @@ export function Header() {
           </Link>
         )}
 
-        <Link href="/admin/settings">
+        <Link href="/admin/reviews" className="hidden md:block">
+          <Button
+            variant="ghost"
+            className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
+          >
+            <Star className="h-5 w-5" />
+            <span className="text-xs text-gray-600">口コミ</span>
+          </Button>
+        </Link>
+
+        <Link href="/admin/search" className="hidden md:block">
+          <Button
+            variant="ghost"
+            className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
+          >
+            <Search className="h-5 w-5" />
+            <span className="text-xs text-gray-600">検索</span>
+          </Button>
+        </Link>
+
+        <Link href="/admin/settings" className="hidden md:block">
           <Button
             variant="ghost"
             className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"

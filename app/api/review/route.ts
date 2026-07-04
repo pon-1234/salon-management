@@ -19,15 +19,15 @@ import {
 } from '@/lib/reviews/service'
 import type { ReviewStatus } from '@/lib/reviews/types'
 
-type AppSession = (
-  Awaited<ReturnType<typeof getServerSession>> & {
-    user?: {
-      id?: string
-      role?: string
-      name?: string
-    }
-  }
-) | null
+type AppSession =
+  | (Awaited<ReturnType<typeof getServerSession>> & {
+      user?: {
+        id?: string
+        role?: string
+        name?: string
+      }
+    })
+  | null
 
 const reviewStatusSchema = z.enum(['pending', 'published', 'hidden'])
 
@@ -46,7 +46,8 @@ const updateReviewSchema = z
     status: reviewStatusSchema.optional(),
   })
   .refine(
-    (payload) => payload.rating !== undefined || payload.comment !== undefined || payload.status !== undefined,
+    (payload) =>
+      payload.rating !== undefined || payload.comment !== undefined || payload.status !== undefined,
     {
       message: 'At least one field (rating, comment, status) must be provided',
     }
@@ -92,7 +93,8 @@ function resolveStatusesForAudience(
   targetCustomerId?: string | null
 ): ReviewStatus[] | undefined {
   const isAdmin = actorRole === 'admin'
-  const isOwner = actorRole === 'customer' && targetCustomerId && session?.user?.id === targetCustomerId
+  const isOwner =
+    actorRole === 'customer' && targetCustomerId && session?.user?.id === targetCustomerId
 
   if (isAdmin) {
     return requested
@@ -166,7 +168,12 @@ export async function GET(request: NextRequest) {
     }
 
     const requestedStatuses = parseStatusParam(statusParam)
-    const effectiveStatuses = resolveStatusesForAudience(requestedStatuses, actorRole, session, customerId)
+    const effectiveStatuses = resolveStatusesForAudience(
+      requestedStatuses,
+      actorRole,
+      session,
+      customerId
+    )
     const limit = limitParam ? Math.max(1, Math.min(100, Number(limitParam))) : undefined
 
     const filters = {
@@ -206,7 +213,10 @@ export async function POST(request: NextRequest) {
 
     const payload = createReviewSchema.safeParse(await request.json())
     if (!payload.success) {
-      return NextResponse.json({ error: payload.error.issues[0]?.message ?? 'Invalid payload' }, { status: 400 })
+      return NextResponse.json(
+        { error: payload.error.issues[0]?.message ?? 'Invalid payload' },
+        { status: 400 }
+      )
     }
 
     try {
@@ -251,7 +261,10 @@ export async function PUT(request: NextRequest) {
 
     const payload = updateReviewSchema.safeParse(await request.json())
     if (!payload.success) {
-      return NextResponse.json({ error: payload.error.issues[0]?.message ?? 'Invalid payload' }, { status: 400 })
+      return NextResponse.json(
+        { error: payload.error.issues[0]?.message ?? 'Invalid payload' },
+        { status: 400 }
+      )
     }
 
     try {

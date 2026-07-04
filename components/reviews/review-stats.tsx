@@ -14,7 +14,7 @@ export function ReviewStats({ stats }: ReviewStatsProps) {
   return (
     <Card className="luxury-panel mb-6">
       <CardHeader>
-        <CardTitle className="text-[#f5e6c4]">評価サマリー</CardTitle>
+        <CardTitle className="text-luxury-gold-cream">評価サマリー</CardTitle>
       </CardHeader>
       <CardContent>
         {/* Average Rating */}
@@ -26,7 +26,7 @@ export function ReviewStats({ stats }: ReviewStatsProps) {
                 key={i}
                 className={`h-6 w-6 ${
                   i < Math.round(stats.averageRating)
-                    ? 'fill-[#f3d08a] text-[#f3d08a]'
+                    ? 'fill-luxury-gold text-luxury-gold'
                     : 'text-[#5a4a2f]'
                 }`}
               />
@@ -47,9 +47,9 @@ export function ReviewStats({ stats }: ReviewStatsProps) {
                   <span className="text-sm">{rating}</span>
                   <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                 </div>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#2f2416]">
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-luxury-border-dark">
                   <div
-                    className="h-full bg-[#f3d08a] transition-all duration-300"
+                    className="h-full bg-luxury-gold transition-all duration-300"
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
@@ -62,12 +62,12 @@ export function ReviewStats({ stats }: ReviewStatsProps) {
         {/* Popular Tags */}
         {stats.popularTags.length > 0 && (
           <div className="mt-6">
-            <h4 className="mb-3 text-sm font-semibold text-[#f5e6c4]">人気のタグ</h4>
+            <h4 className="mb-3 text-sm font-semibold text-luxury-gold-cream">人気のタグ</h4>
             <div className="flex flex-wrap gap-2">
               {stats.popularTags.slice(0, 5).map(({ tag, count }) => (
                 <span
                   key={tag}
-                  className="rounded-full border border-[#3b2e1f] bg-[#1a1a1a] px-2 py-1 text-xs text-[#cbb88f]"
+                  className="rounded-full border border-luxury-border bg-luxury-panel-soft px-2 py-1 text-xs text-luxury-gold-muted"
                 >
                   {tag} ({count})
                 </span>

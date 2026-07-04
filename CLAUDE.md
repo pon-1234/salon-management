@@ -54,8 +54,8 @@ Your workflow is monitored by Code Hooks.
 - **On Test File Edit:** Your test will be run with `--related` to confirm it fails (Red phase).
 - **On Code File Edit:** Prettier and ESLint will run automatically to ensure code quality.
 - **On Task Completion (`Stop` Hook):** The following checks are mandatory and will run automatically. You cannot complete the task until they all pass.
-  1.  **CI Script (`./scripts/ci.sh`):** Runs lint, prettier, typecheck, test, build, and playwright tests.
-  2.  **Test Coverage:** Must be 100%. Exceptions are managed via `vitest.config.ts` and `@no-test-required` annotations.
+  1.  **CI Script (`./scripts/ci.sh`):** Runs format:check, lint, typecheck, test, coverage, and build. Playwright is not currently configured in this repository.
+  2.  **Test Coverage:** The enforced coverage threshold is 30% in `vitest.config.ts`. Exceptions are managed via `vitest.config.ts` and `@no-test-required` annotations.
 
 #### 2. Post-TDD Tasks (Finalization)
 
@@ -89,7 +89,7 @@ This is a Next.js salon management application built with React 19, TypeScript, 
 - **Data Layer**: Each domain follows a repository pattern:
   - `types.ts`: Domain models and interfaces.
   - `repository.ts`: Abstract repository interface.
-  - `repository-impl.ts`: Concrete implementation (currently with mock data).
+  - `repository-impl.ts`: Concrete implementation. Most active domains call `/api/*` HTTP endpoints; remaining legacy/mock-backed areas include analytics repository data and cast-schedule in-memory state.
   - `usecases.ts`: Business logic layer.
   - `data.ts`: Mock data generators.
 - **UI Components**: Components are in `components/`. Domain-specific components (e.g., `cast/`, `reservation/`) and shared UI components in `ui/` (shadcn/ui based).
@@ -106,7 +106,7 @@ This is a Next.js salon management application built with React 19, TypeScript, 
 
 #### Data Patterns & Development Notes
 
-- All data is currently mocked but follows realistic business patterns.
+- Data is no longer purely mocked. Prisma-backed API routes and server modules are the source of truth for many domains, while development mock fallbacks remain available for selected UI data paths.
 - The codebase uses TypeScript strict mode.
 - Components use modern React patterns (hooks, functional components).
 - State management is primarily handled locally with React state and Contexts.

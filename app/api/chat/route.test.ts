@@ -228,7 +228,6 @@ describe('Chat API', () => {
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
       const newMessage = {
-        castId: null,
         customerId: 'customer1',
         sender: 'staff' as const,
         content: 'How can I help you?',
@@ -237,6 +236,7 @@ describe('Chat API', () => {
       const createdMessage = {
         id: 'msg123',
         ...newMessage,
+        castId: null,
         timestamp: new Date('2024-01-01T12:00:00.000Z'),
         readStatus: '未読',
         isReservationInfo: false,
@@ -259,6 +259,7 @@ describe('Chat API', () => {
       expect(response.status).toBe(201)
       expect(prisma.message.create).toHaveBeenCalledWith({
         data: {
+          castId: undefined,
           customerId: 'customer1',
           sender: 'staff',
           content: 'How can I help you?',
@@ -266,6 +267,7 @@ describe('Chat API', () => {
           readStatus: '未読',
           isReservationInfo: false,
           reservationInfo: Prisma.JsonNull,
+          attachments: Prisma.JsonNull,
         },
       })
       expect(data).toMatchObject({
@@ -287,7 +289,6 @@ describe('Chat API', () => {
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
       const newMessage = {
-        castId: null,
         customerId: 'customer1',
         sender: 'staff' as const,
         content: 'Reservation confirmed',
@@ -302,6 +303,7 @@ describe('Chat API', () => {
       const createdMessage = {
         id: 'msg124',
         ...newMessage,
+        castId: null,
         timestamp: new Date('2024-01-01T12:00:00.000Z'),
         readStatus: '未読',
         attachments: [],

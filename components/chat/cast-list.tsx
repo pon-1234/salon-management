@@ -61,13 +61,12 @@ export function CastList({ selectedCastId, onSelectCast }: CastListProps) {
     }
 
     window.addEventListener('chat:messagesRead', handleMessagesRead as EventListener)
-    return () => window.removeEventListener('chat:messagesRead', handleMessagesRead as EventListener)
+    return () =>
+      window.removeEventListener('chat:messagesRead', handleMessagesRead as EventListener)
   }, [])
 
   const filteredCasts = useMemo(() => {
-    return casts.filter((cast) =>
-      cast.name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    return casts.filter((cast) => cast.name.toLowerCase().includes(searchQuery.toLowerCase()))
   }, [casts, searchQuery])
 
   return (

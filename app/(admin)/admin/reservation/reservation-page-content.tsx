@@ -34,7 +34,6 @@ import {
 } from '@/lib/settings/business-hours'
 import { useStore } from '@/contexts/store-context'
 
-
 interface ScheduleEntry {
   castId: string
   startTime?: string
@@ -56,9 +55,7 @@ export function ReservationPageContent() {
   const [filterDialogOpen, setFilterDialogOpen] = useState(false)
   const [selectedAppointment, setSelectedAppointment] = useState<ReservationData | null>(null)
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
-  const [customers, setCustomers] = useState<Customer[]>(
-    useMockFallbacks ? fallbackCustomers : []
-  )
+  const [customers, setCustomers] = useState<Customer[]>(useMockFallbacks ? fallbackCustomers : [])
   const [rawReservations, setRawReservations] = useState<Reservation[]>([])
   const [currentDayReservations, setCurrentDayReservations] = useState<ReservationData[]>([])
   const [businessHours, setBusinessHours] = useState<BusinessHoursRange>(DEFAULT_BUSINESS_HOURS)
@@ -67,10 +64,7 @@ export function ReservationPageContent() {
     [currentStore.id]
   )
   const { data: session } = useSession()
-  const customerUseCases = useMemo(
-    () => new CustomerUseCases(new CustomerRepositoryImpl()),
-    []
-  )
+  const customerUseCases = useMemo(() => new CustomerUseCases(new CustomerRepositoryImpl()), [])
 
   const searchParams = useSearchParams()
   const customerId = searchParams.get('customerId')
@@ -197,13 +191,10 @@ export function ReservationPageContent() {
   useEffect(() => {
     const loadCasts = async () => {
       try {
-        const response = await fetch(
-          `/api/cast?storeId=${encodeURIComponent(currentStore.id)}`,
-          {
-            cache: 'no-store',
-            credentials: 'include',
-          }
-        )
+        const response = await fetch(`/api/cast?storeId=${encodeURIComponent(currentStore.id)}`, {
+          cache: 'no-store',
+          credentials: 'include',
+        })
         if (!response.ok) {
           throw new Error(`Failed to fetch casts: ${response.status}`)
         }
@@ -351,7 +342,9 @@ export function ReservationPageContent() {
     reservationId: string,
     payload: ReservationUpdatePayload
   ) => {
-    const targetReservation = rawReservations.find((reservation) => reservation.id === reservationId)
+    const targetReservation = rawReservations.find(
+      (reservation) => reservation.id === reservationId
+    )
     if (!targetReservation) {
       toast({
         title: '予約が見つかりません',

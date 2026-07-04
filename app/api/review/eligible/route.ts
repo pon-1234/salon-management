@@ -27,7 +27,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const reservations = await getEligibleReservationsForCustomer(targetCustomerId, storeId ?? undefined)
+    const reservations = await getEligibleReservationsForCustomer(
+      targetCustomerId,
+      storeId ?? undefined
+    )
     return NextResponse.json(reservations)
   } catch (error) {
     logger.error({ err: error }, 'Failed to fetch eligible reservations for reviews')

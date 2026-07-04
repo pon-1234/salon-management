@@ -9,7 +9,9 @@ async function main() {
   const storage = getStorageService()
   const cutoff = new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000)
 
-  console.log(`Pruning chat attachments older than ${RETENTION_DAYS} days (before ${cutoff.toISOString()})`)
+  console.log(
+    `Pruning chat attachments older than ${RETENTION_DAYS} days (before ${cutoff.toISOString()})`
+  )
 
   const messages = await prisma.message.findMany({
     where: {

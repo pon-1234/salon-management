@@ -89,7 +89,9 @@ function normalizeReservation(entry: any): Reservation {
     entryReceivedBy: entry.entryReceivedBy ?? undefined,
     entryNotifiedAt: entry.entryNotifiedAt ? new Date(entry.entryNotifiedAt) : undefined,
     entryConfirmedAt: entry.entryConfirmedAt ? new Date(entry.entryConfirmedAt) : undefined,
-    entryReminderSentAt: entry.entryReminderSentAt ? new Date(entry.entryReminderSentAt) : undefined,
+    entryReminderSentAt: entry.entryReminderSentAt
+      ? new Date(entry.entryReminderSentAt)
+      : undefined,
     locationMemo: entry.locationMemo ?? undefined,
     castCheckedInAt: entry.castCheckedInAt ? new Date(entry.castCheckedInAt) : undefined,
     castCheckedOutAt: entry.castCheckedOutAt ? new Date(entry.castCheckedOutAt) : undefined,
@@ -128,7 +130,9 @@ async function enrichCustomerNames(reservations: Reservation[]): Promise<Reserva
   const missingIds = Array.from(
     new Set(
       reservations
-        .filter((reservation) => !reservation.customerName || reservation.customerName.trim().length === 0)
+        .filter(
+          (reservation) => !reservation.customerName || reservation.customerName.trim().length === 0
+        )
         .map((reservation) => reservation.customerId)
         .filter(Boolean)
     )
@@ -163,7 +167,10 @@ async function enrichCustomerNames(reservations: Reservation[]): Promise<Reserva
   )
 
   return reservations.map((reservation) =>
-    withDisplayName(reservation, reservation.customerId ? nameMap.get(reservation.customerId) : undefined)
+    withDisplayName(
+      reservation,
+      reservation.customerId ? nameMap.get(reservation.customerId) : undefined
+    )
   )
 }
 

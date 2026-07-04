@@ -1,11 +1,11 @@
+'use client'
+
 /**
  * @design_doc   Customer registration form component with NextAuth.js integration
  * @related_to   NextAuth.js configuration, customer authentication
  * @known_issues None currently
  */
-'use client'
-
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useForm } from 'react-hook-form'
@@ -96,9 +96,13 @@ export function RegisterForm({ store }: RegisterFormProps) {
 
   const agreed = watch('agreed')
 
-  // Redirect if already authenticated
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.role === 'customer') {
+      router.push(`/${store.slug}/mypage`)
+    }
+  }, [router, session?.user?.role, status, store.slug])
+
   if (status === 'authenticated' && session?.user?.role === 'customer') {
-    router.push(`/${store.slug}/mypage`)
     return null
   }
 
@@ -251,7 +255,9 @@ export function RegisterForm({ store }: RegisterFormProps) {
               />
             </div>
             {errors.phone && <p className="text-sm text-red-600">{errors.phone.message}</p>}
-            <p className="text-xs text-gray-500">ハイフンの有無は問いません。入力内容は自動で整形されます。</p>
+            <p className="text-xs text-gray-500">
+              ハイフンの有無は問いません。入力内容は自動で整形されます。
+            </p>
           </div>
 
           {/* Birth Date */}
@@ -296,7 +302,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
                 </div>
                 <Calendar
                   selectedDay={birthDate}
-                  onSelectedDayChange={(date) => {
+                  onSelectedDayChange={(date: Date | undefined) => {
                     setBirthDate(date)
                     setValue('birthDate', date)
                   }}

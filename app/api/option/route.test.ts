@@ -21,7 +21,12 @@ vi.mock('@/lib/auth/config', () => ({
 vi.mock('@/lib/db', () => ({
   db: {
     $transaction: vi.fn(),
+    store: {
+      findUnique: vi.fn(() => Promise.resolve({ id: 'ikebukuro' })),
+      upsert: vi.fn(() => Promise.resolve({ id: 'ikebukuro' })),
+    },
     optionPrice: {
+      findFirst: vi.fn(),
       findUnique: vi.fn(),
       findMany: vi.fn(),
       create: vi.fn(),
@@ -66,7 +71,7 @@ describe('GET /api/option', () => {
       reservations: [],
     }
 
-    vi.mocked(db.optionPrice.findUnique).mockResolvedValueOnce(mockOption as any)
+    vi.mocked(db.optionPrice.findFirst).mockResolvedValueOnce(mockOption as any)
 
     const request = new NextRequest('http://localhost:3000/api/option?id=option1', {
       method: 'GET',
@@ -79,8 +84,8 @@ describe('GET /api/option', () => {
     expect(data.id).toBe('option1')
     expect(data.name).toBe('Extended Service')
     expect(data.price).toBe(2000)
-    expect(vi.mocked(db.optionPrice.findUnique)).toHaveBeenCalledWith({
-      where: { id: 'option1' },
+    expect(vi.mocked(db.optionPrice.findFirst)).toHaveBeenCalledWith({
+      where: { id: 'option1', storeId: 'ikebukuro' },
       include: {
         reservations: {
           include: {
@@ -97,7 +102,7 @@ describe('GET /api/option', () => {
   })
 
   it('should return 404 for non-existent option', async () => {
-    vi.mocked(db.optionPrice.findUnique).mockResolvedValueOnce(null)
+    vi.mocked(db.optionPrice.findFirst).mockResolvedValueOnce(null)
 
     vi.mocked(getServerSession).mockResolvedValueOnce({
       user: { id: 'admin1', role: 'admin' },
@@ -156,6 +161,7 @@ describe('GET /api/option', () => {
     expect(data[0].name).toBe('Basic Add-on')
     expect(data[1].name).toBe('Premium Add-on')
     expect(vi.mocked(db.optionPrice.findMany)).toHaveBeenCalledWith({
+      where: { storeId: 'ikebukuro' },
       include: {
         reservations: {
           include: {
@@ -168,10 +174,7 @@ describe('GET /api/option', () => {
           },
         },
       },
-      orderBy: [
-        { displayOrder: 'asc' },
-        { price: 'asc' },
-      ],
+      orderBy: [{ displayOrder: 'asc' }, { price: 'asc' }],
     })
   })
 
@@ -191,7 +194,7 @@ describe('GET /api/option', () => {
       ],
     }
 
-    vi.mocked(db.optionPrice.findUnique).mockResolvedValueOnce(mockOptionWithReservations as any)
+    vi.mocked(db.optionPrice.findFirst).mockResolvedValueOnce(mockOptionWithReservations as any)
 
     const request = new NextRequest('http://localhost:3000/api/option?id=option1', {
       method: 'GET',
@@ -210,6 +213,7 @@ describe('GET /api/option', () => {
       id: 'option1',
       name: 'Service',
       price: 2000,
+      visibility: 'public',
       reservations: [
         {
           reservation: {
@@ -224,7 +228,7 @@ describe('GET /api/option', () => {
     vi.mocked(getServerSession).mockResolvedValueOnce({
       user: { id: 'customer1', role: 'customer' },
     } as any)
-    vi.mocked(db.optionPrice.findUnique).mockResolvedValueOnce(mockOption as any)
+    vi.mocked(db.optionPrice.findFirst).mockResolvedValueOnce(mockOption as any)
 
     const request = new NextRequest('http://localhost:3000/api/option?id=option1', {
       method: 'GET',
@@ -238,8 +242,9 @@ describe('GET /api/option', () => {
     expect(data.id).toBe('option1')
   })
 
-  it('should require authentication', async () => {
+  it('should allow unauthenticated public option listing', async () => {
     vi.mocked(getServerSession).mockResolvedValueOnce(null as any)
+    vi.mocked(db.optionPrice.findMany).mockResolvedValueOnce([] as any)
 
     const request = new NextRequest('http://localhost:3000/api/option', {
       method: 'GET',
@@ -248,8 +253,8 @@ describe('GET /api/option', () => {
     const response = await GET(request)
     const data = await response.json()
 
-    expect(response.status).toBe(401)
-    expect(data.error).toBe('Authentication required')
+    expect(response.status).toBe(200)
+    expect(data).toEqual([])
   })
 })
 
@@ -492,7 +497,7 @@ describe('PUT /api/option', () => {
       reservations: [],
     }
 
-    vi.mocked(db.optionPrice.findUnique).mockResolvedValueOnce(existingOption as any)
+    vi.mocked(db.optionPrice.findFirst).mockResolvedValueOnce(existingOption as any)
     vi.mocked(db.optionPrice.update).mockResolvedValueOnce(existingOption as any)
     vi.mocked(db.optionPrice.create).mockResolvedValueOnce(newOptionVersion as any)
 
@@ -538,7 +543,7 @@ describe('PUT /api/option', () => {
   })
 
   it('should handle non-existent option', async () => {
-    vi.mocked(db.optionPrice.findUnique).mockResolvedValueOnce(null)
+    vi.mocked(db.optionPrice.findFirst).mockResolvedValueOnce(null)
 
     const request = new NextRequest('http://localhost:3000/api/option', {
       method: 'PUT',
@@ -586,7 +591,7 @@ describe('PUT /api/option', () => {
       archivedAt: null,
     }
 
-    vi.mocked(db.optionPrice.findUnique).mockResolvedValueOnce(existingOption as any)
+    vi.mocked(db.optionPrice.findFirst).mockResolvedValueOnce(existingOption as any)
     vi.mocked(db.optionPrice.update).mockResolvedValueOnce(existingOption as any)
     vi.mocked(db.optionPrice.create).mockResolvedValueOnce(newOptionVersion as any)
 
@@ -617,7 +622,7 @@ describe('PUT /api/option', () => {
   })
 
   it('should toggle active status without creating a new version', async () => {
-    vi.mocked(db.optionPrice.findUnique).mockResolvedValueOnce({
+    vi.mocked(db.optionPrice.findFirst).mockResolvedValueOnce({
       id: 'option1',
       name: 'Existing Name',
       price: 3000,
@@ -713,6 +718,7 @@ describe('DELETE /api/option', () => {
   })
 
   it('should delete option', async () => {
+    vi.mocked(db.optionPrice.findFirst).mockResolvedValueOnce({ id: 'option1' } as any)
     vi.mocked(db.optionPrice.update).mockResolvedValueOnce({} as any)
 
     const request = new NextRequest('http://localhost:3000/api/option?id=option1', {
@@ -732,10 +738,7 @@ describe('DELETE /api/option', () => {
   })
 
   it('should handle non-existent option', async () => {
-    vi.mocked(db.optionPrice.update).mockRejectedValueOnce({
-      code: 'P2025',
-      message: 'Record not found',
-    })
+    vi.mocked(db.optionPrice.findFirst).mockResolvedValueOnce(null)
 
     vi.mocked(getServerSession).mockResolvedValueOnce({
       user: { id: 'admin1', role: 'admin' },
@@ -874,7 +877,7 @@ describe('Option API - Business Logic and Validation', () => {
       ],
     }
 
-    vi.mocked(db.optionPrice.findUnique).mockResolvedValueOnce(mockOptionWithReservations as any)
+    vi.mocked(db.optionPrice.findFirst).mockResolvedValueOnce(mockOptionWithReservations as any)
 
     const request = new NextRequest('http://localhost:3000/api/option?id=option1', {
       method: 'GET',

@@ -19,15 +19,20 @@ function normalizeHistoryEntry(entry: any): ModificationHistory {
   }
 }
 
-export async function getModificationHistory(reservationId: string): Promise<ModificationHistory[]> {
+export async function getModificationHistory(
+  reservationId: string
+): Promise<ModificationHistory[]> {
   if (!reservationId) {
     return []
   }
 
-  const response = await fetch(`${HISTORY_ENDPOINT}?reservationId=${encodeURIComponent(reservationId)}`, {
-    cache: 'no-store',
-    credentials: 'include',
-  })
+  const response = await fetch(
+    `${HISTORY_ENDPOINT}?reservationId=${encodeURIComponent(reservationId)}`,
+    {
+      cache: 'no-store',
+      credentials: 'include',
+    }
+  )
 
   if (!response.ok) {
     throw new Error(`Failed to load reservation history (${response.status})`)

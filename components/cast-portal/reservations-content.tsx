@@ -20,7 +20,11 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 const SCOPES: CastReservationScope[] = ['upcoming', 'today', 'past']
 
-export function CastReservationsContent({ initialData }: { initialData: CastReservationListResponse }) {
+export function CastReservationsContent({
+  initialData,
+}: {
+  initialData: CastReservationListResponse
+}) {
   const [scope, setScope] = useState<CastReservationScope>(initialData.meta.scope)
   const [reservations, setReservations] = useState<CastPortalReservation[]>(initialData.items)
   const [isPending, startTransition] = useTransition()
@@ -31,21 +35,18 @@ export function CastReservationsContent({ initialData }: { initialData: CastRese
   const router = useRouter()
   const pathname = usePathname()
 
-  const fetchReservations = useCallback(
-    async (nextScope: CastReservationScope) => {
-      const response = await fetch(`/api/cast-portal/reservations?scope=${nextScope}`, {
-        cache: 'no-store',
-      })
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}))
-        throw new Error(payload.error ?? '予約情報の取得に失敗しました。')
-      }
-      const payload = (await response.json()) as CastReservationListResponse
-      setScope(payload.meta.scope)
-      setReservations(payload.items)
-    },
-    []
-  )
+  const fetchReservations = useCallback(async (nextScope: CastReservationScope) => {
+    const response = await fetch(`/api/cast-portal/reservations?scope=${nextScope}`, {
+      cache: 'no-store',
+    })
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}))
+      throw new Error(payload.error ?? '予約情報の取得に失敗しました。')
+    }
+    const payload = (await response.json()) as CastReservationListResponse
+    setScope(payload.meta.scope)
+    setReservations(payload.items)
+  }, [])
 
   const handleScopeChange = (nextScope: CastReservationScope) => {
     if (nextScope === scope) return
@@ -113,27 +114,24 @@ export function CastReservationsContent({ initialData }: { initialData: CastRese
     [toast]
   )
 
-  const confirmEntryInfo = useCallback(
-    async (reservationId: string) => {
-      const response = await fetch(`/api/cast-portal/reservations/${reservationId}/entry-confirm`, {
-        method: 'POST',
-      })
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}))
-        throw new Error(payload.error ?? '確認に失敗しました。')
-      }
+  const confirmEntryInfo = useCallback(async (reservationId: string) => {
+    const response = await fetch(`/api/cast-portal/reservations/${reservationId}/entry-confirm`, {
+      method: 'POST',
+    })
+    if (!response.ok) {
       const payload = await response.json().catch(() => ({}))
-      setSelectedReservation((prev) =>
-        prev
-          ? {
-              ...prev,
-              entryConfirmedAt: payload.entryConfirmedAt ?? prev.entryConfirmedAt,
-            }
-          : prev
-      )
-    },
-    []
-  )
+      throw new Error(payload.error ?? '確認に失敗しました。')
+    }
+    const payload = await response.json().catch(() => ({}))
+    setSelectedReservation((prev) =>
+      prev
+        ? {
+            ...prev,
+            entryConfirmedAt: payload.entryConfirmedAt ?? prev.entryConfirmedAt,
+          }
+        : prev
+    )
+  }, [])
 
   useEffect(() => {
     const highlight = searchParams.get('highlight')
@@ -151,7 +149,9 @@ export function CastReservationsContent({ initialData }: { initialData: CastRese
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">予約一覧</h2>
-          <p className="text-sm text-muted-foreground">ステータスごとに予約状況を確認し、抜け漏れを防ぎましょう。</p>
+          <p className="text-sm text-muted-foreground">
+            ステータスごとに予約状況を確認し、抜け漏れを防ぎましょう。
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isPending}>
@@ -161,7 +161,10 @@ export function CastReservationsContent({ initialData }: { initialData: CastRese
         </div>
       </div>
 
-      <Tabs value={scope} onValueChange={(value) => handleScopeChange(value as CastReservationScope)}>
+      <Tabs
+        value={scope}
+        onValueChange={(value) => handleScopeChange(value as CastReservationScope)}
+      >
         <TabsList className="grid w-full max-w-md grid-cols-3">
           {SCOPES.map((item) => (
             <TabsTrigger key={item} value={item} disabled={isPending}>
@@ -191,25 +194,28 @@ export function CastReservationsContent({ initialData }: { initialData: CastRese
         )}
       </div>
 
-        <Dialog
-          open={isDetailLoading || Boolean(selectedReservation)}
-          onOpenChange={(open) => {
-            if (!open) {
-              setSelectedReservation(null)
-              setIsDetailLoading(false)
-            }
-          }}
-        >
-          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto p-0">
-            {isDetailLoading ? (
-              <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 読み込み中です...
-              </div>
-            ) : selectedReservation ? (
-              <ReservationDetailView reservation={selectedReservation} onConfirmEntryInfo={confirmEntryInfo} />
-            ) : null}
-          </DialogContent>
-        </Dialog>
+      <Dialog
+        open={isDetailLoading || Boolean(selectedReservation)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedReservation(null)
+            setIsDetailLoading(false)
+          }
+        }}
+      >
+        <DialogContent className="max-h-[80vh] max-w-3xl overflow-y-auto p-0">
+          {isDetailLoading ? (
+            <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 読み込み中です...
+            </div>
+          ) : selectedReservation ? (
+            <ReservationDetailView
+              reservation={selectedReservation}
+              onConfirmEntryInfo={confirmEntryInfo}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -240,13 +246,20 @@ function ReservationCard({
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span className="rounded-full bg-muted px-2 py-1">{reservation.durationMinutes} 分</span>
-          <span className="rounded-full bg-muted px-2 py-1">指名: {renderDesignation(reservation.designationType)}</span>
+          <span className="rounded-full bg-muted px-2 py-1">
+            指名: {renderDesignation(reservation.designationType)}
+          </span>
         </div>
       </CardHeader>
       <CardContent className="space-y-3 text-sm text-muted-foreground">
         <div className="flex flex-wrap gap-x-4 gap-y-1">
           <span>エリア: {reservation.areaName ?? '未設定'}</span>
-          <span>オプション: {reservation.options.length ? reservation.options.map((option) => option.name).join(' / ') : 'なし'}</span>
+          <span>
+            オプション:{' '}
+            {reservation.options.length
+              ? reservation.options.map((option) => option.name).join(' / ')
+              : 'なし'}
+          </span>
         </div>
         <div className="flex flex-wrap gap-3 text-xs">
           <StatusBadge active={Boolean(reservation.checkedInAt)} label="チェックイン" />
@@ -288,12 +301,24 @@ function renderScopeLabel(scope: CastReservationScope) {
 
 function renderReservationStatus(reservation: CastPortalReservation) {
   if (reservation.checkedOutAt) {
-    return <Badge variant="outline" className="border-emerald-200 text-emerald-600">完了</Badge>
+    return (
+      <Badge variant="outline" className="border-emerald-200 text-emerald-600">
+        完了
+      </Badge>
+    )
   }
   if (reservation.checkedInAt) {
-    return <Badge variant="outline" className="border-primary/30 text-primary">対応中</Badge>
+    return (
+      <Badge variant="outline" className="border-primary/30 text-primary">
+        対応中
+      </Badge>
+    )
   }
-  return <Badge variant="outline" className="border-muted-foreground/20 text-muted-foreground">待機</Badge>
+  return (
+    <Badge variant="outline" className="border-muted-foreground/20 text-muted-foreground">
+      待機
+    </Badge>
+  )
 }
 
 function renderDesignation(type?: string | null) {
@@ -321,7 +346,10 @@ function ReservationDetailView({
   const pricingItems = useMemo<Array<{ label: string; value: string }>>(() => {
     const rows: Array<{ label: string; value: string }> = []
     if (reservation.courseName) {
-      rows.push({ label: 'コース', value: `${reservation.courseName} ${reservation.courseDuration ?? ''}分` })
+      rows.push({
+        label: 'コース',
+        value: `${reservation.courseName} ${reservation.courseDuration ?? ''}分`,
+      })
     }
     if (reservation.coursePrice) {
       rows.push({ label: 'コース料金', value: `¥${reservation.coursePrice.toLocaleString()}` })
@@ -339,7 +367,10 @@ function ReservationDetailView({
       rows.push({ label: '割引', value: `-¥${reservation.discountAmount.toLocaleString()}` })
     }
     rows.push({ label: '店舗売上', value: `¥${(reservation.storeRevenue ?? 0).toLocaleString()}` })
-    rows.push({ label: 'キャスト売上', value: `¥${(reservation.staffRevenue ?? 0).toLocaleString()}` })
+    rows.push({
+      label: 'キャスト売上',
+      value: `¥${(reservation.staffRevenue ?? 0).toLocaleString()}`,
+    })
     return rows
   }, [reservation])
 
@@ -350,7 +381,10 @@ function ReservationDetailView({
       </DialogHeader>
       <div className="space-y-6">
         <section className="grid gap-4 rounded-lg border border-border/60 bg-muted/20 p-4 sm:grid-cols-2">
-          <InfoItem label="日時" value={`${format(startTime, 'yyyy/MM/dd (EEE) HH:mm')} - ${format(endTime, 'HH:mm')}`} />
+          <InfoItem
+            label="日時"
+            value={`${format(startTime, 'yyyy/MM/dd (EEE) HH:mm')} - ${format(endTime, 'HH:mm')}`}
+          />
           <InfoItem label="顧客" value={reservation.customerAlias} />
           <InfoItem label="電話番号" value={reservation.customerPhone ?? '未登録'} />
           <InfoItem label="支払い方法" value={reservation.paymentMethod ?? '未設定'} />
@@ -370,7 +404,10 @@ function ReservationDetailView({
         <section className="space-y-3 rounded-lg border border-border/60 p-4">
           <h3 className="text-sm font-semibold text-foreground">備考・移動情報</h3>
           <InfoItem label="集合場所" value={reservation.areaName ?? '未設定'} />
-          <InfoItem label="詳細" value={reservation.locationMemo ?? reservation.areaMemo ?? '特記事項なし'} />
+          <InfoItem
+            label="詳細"
+            value={reservation.locationMemo ?? reservation.areaMemo ?? '特記事項なし'}
+          />
           {reservation.hotelName && <InfoItem label="ホテル名" value={reservation.hotelName} />}
           {reservation.roomNumber && <InfoItem label="部屋番号" value={reservation.roomNumber} />}
           <InfoItem label="メモ" value={reservation.notes ?? '入力されていません'} />
@@ -451,7 +488,9 @@ function InfoItem({
     <div className={cn('flex', inline ? 'items-center justify-between' : 'flex-col gap-1')}>
       <span className="text-xs font-medium uppercase text-muted-foreground">{label}</span>
       <span className="text-sm text-foreground">
-        {value !== undefined && value !== null && String(value).trim().length > 0 ? String(value) : '未設定'}
+        {value !== undefined && value !== null && String(value).trim().length > 0
+          ? String(value)
+          : '未設定'}
       </span>
     </div>
   )

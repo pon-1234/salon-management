@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useEffect, useMemo, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
 import { Cast } from '@/lib/cast/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,13 +16,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { Plus, Loader2 } from 'lucide-react'
+import { Plus, Loader2, Eye, EyeOff } from 'lucide-react'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { FormSection } from '@/components/cast/form-section'
 import { cn } from '@/lib/utils'
 import { usePricing } from '@/hooks/use-pricing'
 import { resolveOptionId } from '@/lib/options/data'
-import { toast } from '@/hooks/use-toast'
 
 type OptionChoice = {
   id: string
@@ -30,6 +31,51 @@ type OptionChoice = {
   note?: string | null
   storeShare?: number | null
   castShare?: number | null
+}
+
+const castFormSchema = z
+  .object({
+    name: z.string().trim().min(1, '源氏名を入力してください'),
+    nameKana: z.string().trim().min(1, '本名（ひらがな）を入力してください'),
+    loginEmail: z
+      .string()
+      .trim()
+      .refine((value) => value.length === 0 || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value), {
+        message: '正しいメールアドレスを入力してください',
+      }),
+    loginPassword: z.string(),
+    loginPasswordConfirm: z.string(),
+  })
+  .superRefine((value, context) => {
+    const password = value.loginPassword.trim()
+    const confirm = value.loginPasswordConfirm.trim()
+
+    if (!password && !confirm) {
+      return
+    }
+
+    if (password.length < 6) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['loginPassword'],
+        message: 'パスワードは6文字以上で入力してください',
+      })
+    }
+
+    if (password !== confirm) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['loginPasswordConfirm'],
+        message: 'ログイン用パスワードが一致しません',
+      })
+    }
+  })
+
+type CastFormValidationValues = z.infer<typeof castFormSchema>
+type CastFormValidationField = keyof CastFormValidationValues
+
+export function validateCastFormInput(input: CastFormValidationValues) {
+  return castFormSchema.safeParse(input)
 }
 
 interface CastFormProps {
@@ -136,9 +182,7 @@ const OptionPill = ({
       {description ? (
         <span className="mt-1 block text-xs text-muted-foreground">{description}</span>
       ) : null}
-      {caption ? (
-        <span className="mt-1 block text-xs text-muted-foreground">{caption}</span>
-      ) : null}
+      {caption ? <span className="mt-1 block text-xs text-muted-foreground">{caption}</span> : null}
     </button>
     {selected && onVisibilityChange ? (
       <div className="mt-2 flex items-center gap-2 text-xs">
@@ -190,6 +234,13 @@ function calculateRevenueSplit(
 
 export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: CastFormProps) {
   const [formData, setFormData] = useState(() => buildInitialFormState(cast))
+  const [showLoginPassword, setShowLoginPassword] = useState(false)
+  const [showLoginPasswordConfirm, setShowLoginPasswordConfirm] = useState(false)
+  const {
+    setError,
+    clearErrors,
+    formState: { errors },
+  } = useForm<CastFormValidationValues>()
   const fieldId = (suffix: string) => `cast-${suffix}`
   const { optionPrices, options: legacyOptions, loading: optionsLoading } = usePricing()
 
@@ -257,6 +308,31 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    clearErrors()
+
+    const validation = validateCastFormInput({
+      name: formData.name,
+      nameKana: formData.nameKana,
+      loginEmail: formData.loginEmail,
+      loginPassword: formData.loginPassword,
+      loginPasswordConfirm: formData.loginPasswordConfirm,
+    })
+
+    if (!validation.success) {
+      validation.error.issues.forEach((issue) => {
+        const field = issue.path[0]
+        if (
+          field === 'name' ||
+          field === 'nameKana' ||
+          field === 'loginEmail' ||
+          field === 'loginPassword' ||
+          field === 'loginPasswordConfirm'
+        ) {
+          setError(field as CastFormValidationField, { message: issue.message })
+        }
+      })
+      return
+    }
 
     const toOptionalNumber = (value: number | string) => {
       if (value === '' || value === null || value === undefined) {
@@ -284,25 +360,6 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
     const loginEmail = formData.loginEmail?.trim() ?? ''
     const loginPassword = formData.loginPassword?.trim() ?? ''
     const loginPasswordConfirm = formData.loginPasswordConfirm?.trim() ?? ''
-
-    if (loginPassword || loginPasswordConfirm) {
-      if (loginPassword !== loginPasswordConfirm) {
-        toast({
-          title: 'エラー',
-          description: 'ログイン用パスワードが一致しません。',
-          variant: 'destructive',
-        })
-        return
-      }
-      if (loginPassword.length < 6) {
-        toast({
-          title: 'エラー',
-          description: 'パスワードは6文字以上で入力してください。',
-          variant: 'destructive',
-        })
-        return
-      }
-    }
 
     const normalizedOptionSettings = formData.availableOptions
       .map((optionId) => ({
@@ -451,7 +508,7 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
       const newImages = prev.images.filter((_, i) => i !== index)
       const nextMain =
         prev.image && removedValue && prev.image.trim() === removedValue
-          ? newImages.find((img) => (img ?? '').trim().length > 0) ?? ''
+          ? (newImages.find((img) => (img ?? '').trim().length > 0) ?? '')
           : prev.image
       return {
         ...prev,
@@ -472,14 +529,19 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
+    <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off" noValidate>
       <FormSection
         title="基本プロフィール"
         description="公開プロフィールで表示されるキャストの基礎情報を整えます。"
       >
         <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor={fieldId('name')}>源氏名</Label>
+            <Label htmlFor={fieldId('name')}>
+              源氏名{' '}
+              <span className="text-red-600" aria-hidden="true">
+                *
+              </span>
+            </Label>
             <Input
               id={fieldId('name')}
               name="name"
@@ -487,11 +549,24 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
               onChange={handleInputChange}
               placeholder="例：高橋 えみり"
               required
+              aria-required="true"
+              aria-invalid={Boolean(errors.name)}
+              aria-describedby={errors.name ? fieldId('name-error') : undefined}
               autoComplete="tel"
             />
+            {errors.name && (
+              <p id={fieldId('name-error')} className="text-sm text-red-600">
+                {errors.name.message}
+              </p>
+            )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor={fieldId('nameKana')}>本名（ひらがな）</Label>
+            <Label htmlFor={fieldId('nameKana')}>
+              本名（ひらがな）{' '}
+              <span className="text-red-600" aria-hidden="true">
+                *
+              </span>
+            </Label>
             <Input
               id={fieldId('nameKana')}
               name="nameKana"
@@ -499,9 +574,19 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
               onChange={handleInputChange}
               placeholder="たかはし えみり"
               required
+              aria-required="true"
+              aria-invalid={Boolean(errors.nameKana)}
+              aria-describedby={errors.nameKana ? fieldId('nameKana-error') : undefined}
               autoComplete="off"
             />
-            <p className="text-xs text-muted-foreground">サイト上には表示されませんが検索時に使用します。</p>
+            {errors.nameKana && (
+              <p id={fieldId('nameKana-error')} className="text-sm text-red-600">
+                {errors.nameKana.message}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              サイト上には表示されませんが検索時に使用します。
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor={fieldId('age')}>年齢</Label>
@@ -622,33 +707,92 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
               onChange={handleInputChange}
               placeholder="cast@example.com"
               autoComplete="off"
+              aria-invalid={Boolean(errors.loginEmail)}
+              aria-describedby={errors.loginEmail ? fieldId('loginEmail-error') : undefined}
             />
-            <p className="text-xs text-muted-foreground">キャスト本人がログインする際に使用します。未設定の場合はログインできません。</p>
+            {errors.loginEmail && (
+              <p id={fieldId('loginEmail-error')} className="text-sm text-red-600">
+                {errors.loginEmail.message}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              キャスト本人がログインする際に使用します。未設定の場合はログインできません。
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor={fieldId('loginPassword')}>新しいパスワード</Label>
-            <Input
-              id={fieldId('loginPassword')}
-              name="loginPassword"
-              type="password"
-              value={formData.loginPassword}
-              onChange={handleInputChange}
-              placeholder="••••••••"
-              autoComplete="new-password"
-            />
-            <p className="text-xs text-muted-foreground">変更が不要な場合は空欄のままにしてください。</p>
+            <div className="relative">
+              <Input
+                id={fieldId('loginPassword')}
+                name="loginPassword"
+                type={showLoginPassword ? 'text' : 'password'}
+                value={formData.loginPassword}
+                onChange={handleInputChange}
+                placeholder="••••••••"
+                autoComplete="new-password"
+                className="pr-10"
+                aria-invalid={Boolean(errors.loginPassword)}
+                aria-describedby={errors.loginPassword ? fieldId('loginPassword-error') : undefined}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2"
+                onClick={() => setShowLoginPassword((prev) => !prev)}
+                aria-label={showLoginPassword ? 'パスワードを隠す' : 'パスワードを表示'}
+              >
+                {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
+            {errors.loginPassword && (
+              <p id={fieldId('loginPassword-error')} className="text-sm text-red-600">
+                {errors.loginPassword.message}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              変更が不要な場合は空欄のままにしてください。
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor={fieldId('loginPasswordConfirm')}>パスワード（確認）</Label>
-            <Input
-              id={fieldId('loginPasswordConfirm')}
-              name="loginPasswordConfirm"
-              type="password"
-              value={formData.loginPasswordConfirm}
-              onChange={handleInputChange}
-              placeholder="••••••••"
-              autoComplete="new-password"
-            />
+            <div className="relative">
+              <Input
+                id={fieldId('loginPasswordConfirm')}
+                name="loginPasswordConfirm"
+                type={showLoginPasswordConfirm ? 'text' : 'password'}
+                value={formData.loginPasswordConfirm}
+                onChange={handleInputChange}
+                placeholder="••••••••"
+                autoComplete="new-password"
+                className="pr-10"
+                aria-invalid={Boolean(errors.loginPasswordConfirm)}
+                aria-describedby={
+                  errors.loginPasswordConfirm ? fieldId('loginPasswordConfirm-error') : undefined
+                }
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2"
+                onClick={() => setShowLoginPasswordConfirm((prev) => !prev)}
+                aria-label={
+                  showLoginPasswordConfirm ? '確認用パスワードを隠す' : '確認用パスワードを表示'
+                }
+              >
+                {showLoginPasswordConfirm ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            {errors.loginPasswordConfirm && (
+              <p id={fieldId('loginPasswordConfirm-error')} className="text-sm text-red-600">
+                {errors.loginPasswordConfirm.message}
+              </p>
+            )}
           </div>
         </div>
       </FormSection>
@@ -660,9 +804,9 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
         <div className="grid gap-6 md:grid-cols-2">
           <div className="flex items-center justify-between rounded-lg border bg-muted/40 px-4 py-3">
             <div>
-            <Label htmlFor={fieldId('netReservation')} className="text-sm font-medium">
-              ネット予約
-            </Label>
+              <Label htmlFor={fieldId('netReservation')} className="text-sm font-medium">
+                ネット予約
+              </Label>
               <p className="text-xs text-muted-foreground">
                 オンラインからの予約を受け付ける場合はオンにします。
               </p>
@@ -675,10 +819,7 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
           </div>
           <div className="space-y-2">
             <Label htmlFor={fieldId('workStatus')}>稼働ステータス</Label>
-            <Select
-              value={formData.workStatus}
-              onValueChange={handleWorkStatusChange}
-            >
+            <Select value={formData.workStatus} onValueChange={handleWorkStatusChange}>
               <SelectTrigger id={fieldId('workStatus')}>
                 <SelectValue placeholder="稼働ステータスを選択" />
               </SelectTrigger>
@@ -704,7 +845,9 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
               onChange={handleInputChange}
               placeholder="10"
             />
-            <p className="text-xs text-muted-foreground">コース料金に対する厚生費の割合です。未設定の場合は店舗既定値が適用されます。</p>
+            <p className="text-xs text-muted-foreground">
+              コース料金に対する厚生費の割合です。未設定の場合は店舗既定値が適用されます。
+            </p>
           </div>
         </div>
         <div className="grid gap-6 md:grid-cols-2">
@@ -913,9 +1056,10 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
                 option.castShare
               )
 
-              const caption = option.price === 0
-                ? `無料 / 店舗 ${storeShare.toLocaleString()}円 / キャスト ${castShare.toLocaleString()}円`
-                : `料金 ¥${option.price.toLocaleString()} / 店舗 ${storeShare.toLocaleString()}円 / キャスト ${castShare.toLocaleString()}円`
+              const caption =
+                option.price === 0
+                  ? `無料 / 店舗 ${storeShare.toLocaleString()}円 / キャスト ${castShare.toLocaleString()}円`
+                  : `料金 ¥${option.price.toLocaleString()} / 店舗 ${storeShare.toLocaleString()}円 / キャスト ${castShare.toLocaleString()}円`
 
               return (
                 <OptionPill

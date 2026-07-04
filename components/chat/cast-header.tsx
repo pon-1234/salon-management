@@ -54,11 +54,19 @@ export function CastHeader({ cast }: CastHeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" className="text-gray-600 hover:bg-purple-50 hover:text-purple-600">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-gray-600 hover:bg-purple-50 hover:text-purple-600"
+        >
           <PhoneCall className="h-4 w-4" />
         </Button>
         <Link href={`/admin/cast/manage/${cast.id}`}>
-          <Button variant="ghost" size="sm" className="text-gray-600 hover:bg-purple-50 hover:text-purple-600">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-gray-600 hover:bg-purple-50 hover:text-purple-600"
+          >
             <User className="mr-2 h-4 w-4" />
             詳細
           </Button>

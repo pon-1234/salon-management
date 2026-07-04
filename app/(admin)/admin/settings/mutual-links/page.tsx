@@ -1,6 +1,11 @@
 'use client'
 
-import Link from 'next/link'
+/**
+ * @design_doc   ui-improvement-instructions.md U-6 admin page header
+ * @related_to   PageHeader: shared settings header; public footer/sidebar links: eventual display surface
+ * @known_issues This page remains a prepared UI shell
+ */
+import { PageHeader } from '@/components/admin/page-header'
 import { Header } from '@/components/header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,23 +17,14 @@ export default function MutualLinksPage() {
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-6 pb-12 pt-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link2 className="h-8 w-8 text-blue-600" />
-            <div>
-              <h1 className="text-2xl font-semibold">相互リンク</h1>
-              <p className="text-sm text-muted-foreground">
-                提携サイトやメディアとの相互リンクを管理します。リンクカードの一覧と詳細は後ほど接続できます。
-              </p>
-            </div>
-          </div>
-          <Button variant="outline" asChild>
-            <Link href="/admin/settings">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              設定一覧へ戻る
-            </Link>
-          </Button>
-        </div>
+        <PageHeader
+          title="相互リンク"
+          description="提携サイトやメディアとの相互リンクを管理します。リンクカードの一覧と詳細は後ほど接続できます。"
+          backHref="/admin/settings"
+          backLabel="設定一覧へ戻る"
+          backIcon={ArrowLeft}
+          icon={Link2}
+        />
 
         <Card>
           <CardHeader>

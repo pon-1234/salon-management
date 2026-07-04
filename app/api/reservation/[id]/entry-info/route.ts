@@ -60,16 +60,13 @@ function buildEntryInfoMessage(params: {
   return lines.join('\n')
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id: reservationId } = await params
   const session = await getServerSession(authOptions)
   if (!session || session.user.role !== 'admin') {
     return NextResponse.json({ error: '認証が必要です' }, { status: 401 })
   }
 
-  const reservationId = params.id
   if (!reservationId) {
     return NextResponse.json({ error: 'reservationId is required' }, { status: 400 })
   }
@@ -229,7 +226,10 @@ export async function POST(
   } catch (error) {
     logger.error({ err: error, reservationId }, 'Failed to update entry info')
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues[0]?.message ?? '入力が不正です。' }, { status: 400 })
+      return NextResponse.json(
+        { error: error.issues[0]?.message ?? '入力が不正です。' },
+        { status: 400 }
+      )
     }
     return NextResponse.json({ error: '入室情報の更新に失敗しました。' }, { status: 500 })
   }

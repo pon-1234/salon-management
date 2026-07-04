@@ -1,18 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { smsClient } from './client'
+import logger from '@/lib/logger'
 
 describe('SMS Client', () => {
-  let consoleLogSpy: any
-
   beforeEach(() => {
     vi.clearAllMocks()
     vi.useFakeTimers()
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
   })
 
   afterEach(() => {
     vi.useRealTimers()
-    consoleLogSpy.mockRestore()
   })
 
   describe('send', () => {
@@ -27,7 +24,7 @@ describe('SMS Client', () => {
 
       await promise
 
-      expect(consoleLogSpy).toHaveBeenCalledWith('Sending SMS:', {
+      expect(logger.info).toHaveBeenCalledWith('Sending SMS (mock):', {
         to: '+1234567890',
         message: 'Test SMS message',
       })
@@ -82,7 +79,7 @@ describe('SMS Client', () => {
       const result = await promise
 
       expect(result.success).toBe(true)
-      expect(consoleLogSpy).toHaveBeenCalledWith('Sending SMS:', {
+      expect(logger.info).toHaveBeenCalledWith('Sending SMS (mock):', {
         to: '+1234567890',
         message: '',
       })
@@ -99,7 +96,7 @@ describe('SMS Client', () => {
       const result = await promise
 
       expect(result.success).toBe(true)
-      expect(consoleLogSpy).toHaveBeenCalledWith('Sending SMS:', {
+      expect(logger.info).toHaveBeenCalledWith('Sending SMS (mock):', {
         to: '+44123456789',
         message: 'International SMS',
       })
@@ -117,7 +114,7 @@ describe('SMS Client', () => {
       const result = await promise
 
       expect(result.success).toBe(true)
-      expect(consoleLogSpy).toHaveBeenCalledWith('Sending SMS:', {
+      expect(logger.info).toHaveBeenCalledWith('Sending SMS (mock):', {
         to: '+1234567890',
         message: longMessage,
       })

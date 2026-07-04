@@ -102,9 +102,7 @@ export function CourseTrendTable({ series }: CourseTrendTableProps) {
           trend.monthlyData.push({ month: label, bookings: 0, revenue: 0 })
         }
       })
-      trend.monthlyData.sort(
-        (a, b) => labels.indexOf(a.month) - labels.indexOf(b.month)
-      )
+      trend.monthlyData.sort((a, b) => labels.indexOf(a.month) - labels.indexOf(b.month))
       if (trend.monthlyData.length >= 2) {
         const firstRevenue = trend.monthlyData[0].revenue
         const lastRevenue = trend.monthlyData[trend.monthlyData.length - 1].revenue
@@ -154,7 +152,9 @@ export function CourseTrendTable({ series }: CourseTrendTableProps) {
             {courses.map((course) => (
               <TableRow key={course.id}>
                 <TableCell className="font-medium">{course.name}</TableCell>
-                <TableCell className="text-right">{course.totalBookings.toLocaleString()}件</TableCell>
+                <TableCell className="text-right">
+                  {course.totalBookings.toLocaleString()}件
+                </TableCell>
                 <TableCell className="text-right">
                   ¥{course.totalRevenue.toLocaleString()}
                 </TableCell>

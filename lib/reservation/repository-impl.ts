@@ -51,9 +51,7 @@ export class ReservationRepositoryImpl implements ReservationRepository {
       if (this.storeId) {
         params.set('storeId', this.storeId)
       }
-      return await this.client.get<Reservation>(
-        `${RESERVATION_ENDPOINT}?${params.toString()}`
-      )
+      return await this.client.get<Reservation>(`${RESERVATION_ENDPOINT}?${params.toString()}`)
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
         return null
@@ -89,9 +87,12 @@ export class ReservationRepositoryImpl implements ReservationRepository {
 
   async delete(id: string): Promise<boolean> {
     try {
-      await this.client.delete(this.withStore(`${RESERVATION_ENDPOINT}?id=${encodeURIComponent(id)}`), {
-        parseJson: false,
-      })
+      await this.client.delete(
+        this.withStore(`${RESERVATION_ENDPOINT}?id=${encodeURIComponent(id)}`),
+        {
+          parseJson: false,
+        }
+      )
       return true
     } catch (error) {
       if (error instanceof ApiError) {
@@ -190,9 +191,9 @@ export class ReservationRepositoryImpl implements ReservationRepository {
       params.set('storeId', this.storeId)
     }
 
-    const payload = await this.client.get<{ availableSlots?: { startTime: string; endTime: string }[] }>(
-      `${AVAILABILITY_ENDPOINT}?${params.toString()}`
-    )
+    const payload = await this.client.get<{
+      availableSlots?: { startTime: string; endTime: string }[]
+    }>(`${AVAILABILITY_ENDPOINT}?${params.toString()}`)
 
     return payload?.availableSlots ?? []
   }

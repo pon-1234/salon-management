@@ -7,15 +7,42 @@ import { addDays, format, startOfDay } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { formatInTimeZone } from 'date-fns-tz'
 import { useSession } from 'next-auth/react'
-import { Sparkles, ShieldCheck, CalendarDays, Clock, Loader2, CheckCircle, AlertTriangle, Phone, Star, Heart, Zap, CreditCard, ArrowRight } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Sparkles,
+  ShieldCheck,
+  CalendarDays,
+  Clock,
+  Loader2,
+  CheckCircle,
+  AlertTriangle,
+  Phone,
+  Star,
+  Heart,
+  Zap,
+  CreditCard,
+  ArrowRight,
+} from 'lucide-react'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -89,7 +116,10 @@ const getInitialCourseId = (courseList: CourseSummary[]) => {
   return courseList.find((course) => course.enableWebBooking !== false)?.id ?? ''
 }
 
-const buildTimeSlotChoices = (ranges: TimeSlotRange[], durationMinutes: number): TimeSlotChoice[] => {
+const buildTimeSlotChoices = (
+  ranges: TimeSlotRange[],
+  durationMinutes: number
+): TimeSlotChoice[] => {
   if (!durationMinutes) {
     return []
   }
@@ -153,7 +183,9 @@ export function StoreBookingContent({
     }
     return casts[0]?.id ?? ''
   })
-  const [selectedCourseId, setSelectedCourseId] = useState<string>(() => getInitialCourseId(courses))
+  const [selectedCourseId, setSelectedCourseId] = useState<string>(() =>
+    getInitialCourseId(courses)
+  )
   const [selectedDate, setSelectedDate] = useState<Date>(() =>
     initialSlotDate ? startOfDay(initialSlotDate) : startOfDay(new Date())
   )
@@ -182,7 +214,10 @@ export function StoreBookingContent({
     [courses]
   )
   const optionMap = useMemo(() => new Map(options.map((option) => [option.id, option])), [options])
-  const selectedCast = useMemo(() => casts.find((cast) => cast.id === selectedCastId) ?? null, [casts, selectedCastId])
+  const selectedCast = useMemo(
+    () => casts.find((cast) => cast.id === selectedCastId) ?? null,
+    [casts, selectedCastId]
+  )
   const selectedCourse = useMemo(
     () => bookableCourses.find((course) => course.id === selectedCourseId) ?? null,
     [bookableCourses, selectedCourseId]
@@ -216,36 +251,36 @@ export function StoreBookingContent({
       return name.includes(query) || type.includes(query)
     })
   }, [castSearch, casts])
-const selectedSlotLabel = selectedSlot
-  ? formatInTimeZone(new Date(selectedSlot.start), JST_TIMEZONE, 'M/d HH:mm', { locale: ja })
-  : '未選択'
-const isStepEnabled = (stepId: number) => {
-  if (stepId === 1) return true
-  if (stepId === 2) return Boolean(selectedCast)
-  if (stepId === 3) return Boolean(selectedSlot)
-  if (stepId === 4) return Boolean(selectedCourse)
-  if (stepId === 5) return Boolean(selectedCourse)
-  return false
-}
-const isStepComplete = (stepId: number) => {
-  if (stepId === 1) return Boolean(selectedCast)
-  if (stepId === 2) return Boolean(selectedSlot)
-  if (stepId === 3) return Boolean(selectedCourse)
-  if (stepId === 4) return Boolean(selectedCourse)
-  if (stepId === 5) return Boolean(selectedCourse && selectedSlot)
-  return false
-}
-const stepNavigationItems = [
-  { id: 1, label: 'キャスト', caption: selectedCast?.name ?? '未選択' },
-  { id: 2, label: '日付・時間', caption: selectedSlotLabel },
-  { id: 3, label: 'コース', caption: selectedCourse ? selectedCourse.name : '未選択' },
-  {
-    id: 4,
-    label: 'オプション',
-    caption: selectedOptionIds.size > 0 ? `${selectedOptionIds.size}件選択` : '任意',
-  },
-  { id: 5, label: '確認', caption: '内容を確認' },
-]
+  const selectedSlotLabel = selectedSlot
+    ? formatInTimeZone(new Date(selectedSlot.start), JST_TIMEZONE, 'M/d HH:mm', { locale: ja })
+    : '未選択'
+  const isStepEnabled = (stepId: number) => {
+    if (stepId === 1) return true
+    if (stepId === 2) return Boolean(selectedCast)
+    if (stepId === 3) return Boolean(selectedSlot)
+    if (stepId === 4) return Boolean(selectedCourse)
+    if (stepId === 5) return Boolean(selectedCourse)
+    return false
+  }
+  const isStepComplete = (stepId: number) => {
+    if (stepId === 1) return Boolean(selectedCast)
+    if (stepId === 2) return Boolean(selectedSlot)
+    if (stepId === 3) return Boolean(selectedCourse)
+    if (stepId === 4) return Boolean(selectedCourse)
+    if (stepId === 5) return Boolean(selectedCourse && selectedSlot)
+    return false
+  }
+  const stepNavigationItems = [
+    { id: 1, label: 'キャスト', caption: selectedCast?.name ?? '未選択' },
+    { id: 2, label: '日付・時間', caption: selectedSlotLabel },
+    { id: 3, label: 'コース', caption: selectedCourse ? selectedCourse.name : '未選択' },
+    {
+      id: 4,
+      label: 'オプション',
+      caption: selectedOptionIds.size > 0 ? `${selectedOptionIds.size}件選択` : '任意',
+    },
+    { id: 5, label: '確認', caption: '内容を確認' },
+  ]
   const visibleStepNavigationItems = hasPrefilledSlot
     ? stepNavigationItems.filter((step) => step.id >= 3)
     : stepNavigationItems
@@ -310,7 +345,10 @@ const stepNavigationItems = [
         if (cancelled) {
           return
         }
-        const slots = buildTimeSlotChoices(Array.isArray(payload.availableSlots) ? payload.availableSlots : [], selectedCourse.duration)
+        const slots = buildTimeSlotChoices(
+          Array.isArray(payload.availableSlots) ? payload.availableSlots : [],
+          selectedCourse.duration
+        )
         setTimeSlots(slots)
         const slotStarts = new Set(slots.map((slot) => slot.start))
         let nextSelection = ''
@@ -322,14 +360,20 @@ const stepNavigationItems = [
           nextSelection = previousSelection
         }
         setSelectedSlotStart(nextSelection)
-        setAvailabilityError(slots.length === 0 ? '選択した条件では空きがありません。別の時間帯をご検討ください。' : null)
+        setAvailabilityError(
+          slots.length === 0
+            ? '選択した条件では空きがありません。別の時間帯をご検討ください。'
+            : null
+        )
       } catch (error) {
         if (cancelled || controller.signal.aborted) {
           return
         }
         setTimeSlots([])
         setAvailabilityError(
-          error instanceof Error ? error.message : '空き状況の取得に失敗しました。時間をおいて再度お試しください。'
+          error instanceof Error
+            ? error.message
+            : '空き状況の取得に失敗しました。時間をおいて再度お試しください。'
         )
       } finally {
         if (!cancelled) {
@@ -430,8 +474,7 @@ const stepNavigationItems = [
       toast({
         variant: 'destructive',
         title: '予約に失敗しました',
-        description:
-          error instanceof Error ? error.message : '時間をおいて再度お試しください。',
+        description: error instanceof Error ? error.message : '時間をおいて再度お試しください。',
       })
     } finally {
       setSubmitting(false)
@@ -442,40 +485,43 @@ const stepNavigationItems = [
     !isAuthenticated || !selectedCast || !selectedCourse || !selectedSlot || submitting
 
   return (
-    <main className="min-h-screen bg-[#0b0b0b] text-foreground">
-      <section className="relative overflow-hidden border-b border-[#2f2416] bg-[#0f0f0f] py-14">
+    <main className="min-h-screen bg-luxury-black-deep text-foreground">
+      <section className="relative overflow-hidden border-b border-luxury-border-dark bg-[#0f0f0f] py-14">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,206,126,0.18),_transparent_60%)]" />
         <div className="relative mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
           <div className="flex flex-wrap justify-center gap-3">
-            <Badge className="border border-[#f3d08a]/50 bg-black/40 text-[#f5e6c4]">
+            <Badge className="border border-luxury-gold/50 bg-black/40 text-luxury-gold-cream">
               <Sparkles className="mr-1 h-4 w-4" />
               ネット予約
             </Badge>
-            <Badge className="border border-[#f3d08a]/50 bg-black/40 text-[#f5e6c4]">
+            <Badge className="border border-luxury-gold/50 bg-black/40 text-luxury-gold-cream">
               <ShieldCheck className="mr-1 h-4 w-4" />
               会員限定
             </Badge>
-            <Badge className="border border-[#f3d08a]/50 bg-black/40 text-[#f5e6c4]">
+            <Badge className="border border-luxury-gold/50 bg-black/40 text-luxury-gold-cream">
               <Zap className="mr-1 h-4 w-4" />
               API連携でリアルタイム反映
             </Badge>
           </div>
-          <h1 className="mt-6 text-4xl font-bold text-[#f7e2b5] sm:text-5xl">
+          <h1 className="mt-6 text-4xl font-bold text-luxury-gold-title sm:text-5xl">
             {store.displayName} オンライン予約
           </h1>
-          <p className="mt-4 text-lg leading-relaxed text-[#d7c39c]">
+          <p className="mt-4 text-lg leading-relaxed text-luxury-gold-dim">
             {hasPrefilledSlot
               ? '出勤一覧で選んだキャストと時間帯を引き継ぎました。あとはメニューを選び、内容を確認するだけでご予約いただけます。'
               : '画面の案内にそって「キャスト」「日時」「確認」の順に進むだけでご予約いただけます。ご不明点があればいつでもお電話ください。'}
           </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-sm text-[#cbb88f]">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-sm text-luxury-gold-muted">
             <span className="flex items-center gap-2">
               <CalendarDays className="h-4 w-4" />
               受付時間 {store.openingHours.weekday.open} - {store.openingHours.weekday.close}
             </span>
             <span className="flex items-center gap-2">
               <Phone className="h-4 w-4" />
-              <a href={`tel:${store.phone}`} className="font-semibold text-[#f3d08a] underline-offset-2 hover:underline">
+              <a
+                href={`tel:${store.phone}`}
+                className="font-semibold text-luxury-gold underline-offset-2 hover:underline"
+              >
                 {store.phone}
               </a>
             </span>
@@ -484,7 +530,7 @@ const stepNavigationItems = [
       </section>
 
       <section className="-mt-10 pb-16 pt-6">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 space-y-6">
+        <div className="mx-auto max-w-6xl space-y-6 px-4 sm:px-6 lg:px-8">
           <div className="grid gap-4 lg:grid-cols-[2fr,1fr]">
             <Card className="luxury-panel">
               <CardHeader className="pb-3">
@@ -505,11 +551,11 @@ const stepNavigationItems = [
                         onClick={() => handleStepChange(step.id)}
                         disabled={!enabled}
                         className={cn(
-                          'flex-1 rounded-xl border p-3 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f3d08a]',
+                          'flex-1 rounded-xl border p-3 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-luxury-gold',
                           isActive
-                            ? 'border-[#f3d08a] bg-[#121212] text-[#f3d08a]'
+                            ? 'border-luxury-gold bg-luxury-panel-dark text-luxury-gold'
                             : enabled
-                              ? 'border-border bg-white hover:border-[#f3d08a]'
+                              ? 'border-border bg-white hover:border-luxury-gold'
                               : 'cursor-not-allowed border-dashed border-muted-foreground/30 bg-muted-foreground'
                         )}
                       >
@@ -532,7 +578,9 @@ const stepNavigationItems = [
             </Card>
             <Card className="luxury-panel">
               <CardHeader>
-                <CardTitle className="text-base font-semibold text-muted-foreground">現在の選択</CardTitle>
+                <CardTitle className="text-base font-semibold text-muted-foreground">
+                  現在の選択
+                </CardTitle>
                 <CardDescription>
                   {hasPrefilledSlot
                     ? 'このままメニューを選び、内容を確認するだけです。'
@@ -542,15 +590,20 @@ const stepNavigationItems = [
               <CardContent className="space-y-3 text-sm text-muted-foreground">
                 <div className="space-y-1">
                   <p className="font-semibold text-foreground">キャスト</p>
-                  <p className="rounded-lg border border-dashed border-[#3b2e1f] bg-white px-3 py-2 text-sm text-[#f3d08a]">
+                  <p className="rounded-lg border border-dashed border-luxury-border bg-white px-3 py-2 text-sm text-luxury-gold">
                     {selectedCast?.name ?? '未選択'}
                   </p>
                 </div>
                 <div className="space-y-1">
                   <p className="font-semibold text-foreground">日時</p>
-                  <p className="rounded-lg border border-dashed border-[#3b2e1f] bg-white px-3 py-2 text-sm text-[#f3d08a]">
+                  <p className="rounded-lg border border-dashed border-luxury-border bg-white px-3 py-2 text-sm text-luxury-gold">
                     {selectedSlot
-                      ? formatInTimeZone(new Date(selectedSlot.start), JST_TIMEZONE, 'M月d日(E) HH:mm', { locale: ja })
+                      ? formatInTimeZone(
+                          new Date(selectedSlot.start),
+                          JST_TIMEZONE,
+                          'M月d日(E) HH:mm',
+                          { locale: ja }
+                        )
                       : '未選択'}
                   </p>
                 </div>
@@ -577,7 +630,9 @@ const stepNavigationItems = [
                   <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-semibold text-emerald-800">
                     日時:{' '}
                     {selectedSlot
-                      ? formatInTimeZone(new Date(selectedSlot.start), JST_TIMEZONE, 'M/d HH:mm', { locale: ja })
+                      ? formatInTimeZone(new Date(selectedSlot.start), JST_TIMEZONE, 'M/d HH:mm', {
+                          locale: ja,
+                        })
                       : '読み込み中'}
                   </span>
                 </div>
@@ -600,9 +655,11 @@ const stepNavigationItems = [
                   <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <CardTitle className="text-2xl">STEP 1. キャストをえらぶ</CardTitle>
-                      <CardDescription>名前を押すだけで選択できます。迷ったら「電話で予約する」からご相談ください。</CardDescription>
+                      <CardDescription>
+                        名前を押すだけで選択できます。迷ったら「電話で予約する」からご相談ください。
+                      </CardDescription>
                     </div>
-                    <Badge variant="secondary" className="bg-[#1a1a1a] text-[#f3d08a]">
+                    <Badge variant="secondary" className="bg-luxury-panel-soft text-luxury-gold">
                       ネット予約対応 {casts.filter((cast) => cast.netReservation).length}名
                     </Badge>
                   </CardHeader>
@@ -616,7 +673,9 @@ const stepNavigationItems = [
                         />
                         <ScrollArea className="h-[360px] rounded-lg border bg-white">
                           {filteredCasts.length === 0 ? (
-                            <p className="p-4 text-sm text-muted-foreground">該当するキャストが見つかりません。</p>
+                            <p className="p-4 text-sm text-muted-foreground">
+                              該当するキャストが見つかりません。
+                            </p>
                           ) : (
                             <div className="divide-y">
                               {filteredCasts.map((cast) => {
@@ -628,16 +687,21 @@ const stepNavigationItems = [
                                     onClick={() => setSelectedCastId(cast.id)}
                                     className={cn(
                                       'flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition',
-                                      isSelected ? 'bg-[#121212] font-semibold text-[#f3d08a]' : 'hover:bg-muted'
+                                      isSelected
+                                        ? 'bg-luxury-panel-dark font-semibold text-luxury-gold'
+                                        : 'hover:bg-muted'
                                     )}
                                   >
                                     <div>
                                       <p className="text-base">{cast.name}</p>
                                       <p className="text-xs text-muted-foreground">
-                                        {cast.type ?? 'タイプ未設定'} / {cast.sizeLabel || 'サイズ情報なし'}
+                                        {cast.type ?? 'タイプ未設定'} /{' '}
+                                        {cast.sizeLabel || 'サイズ情報なし'}
                                       </p>
                                     </div>
-                                    {isSelected && <CheckCircle className="h-4 w-4 text-[#f3d08a]" />}
+                                    {isSelected && (
+                                      <CheckCircle className="h-4 w-4 text-luxury-gold" />
+                                    )}
                                   </button>
                                 )
                               })}
@@ -656,7 +720,9 @@ const stepNavigationItems = [
                                 className="h-32 w-32 rounded-lg object-cover"
                               />
                               <div className="space-y-2">
-                                <p className="text-xl font-semibold text-foreground">{selectedCast.name}</p>
+                                <p className="text-xl font-semibold text-foreground">
+                                  {selectedCast.name}
+                                </p>
                                 <p className="text-sm text-muted-foreground">
                                   {selectedCast.age ? `${selectedCast.age}歳` : '年齢非公開'} /{' '}
                                   {selectedCast.type ?? 'タイプ非公開'}
@@ -671,11 +737,14 @@ const stepNavigationItems = [
                               </div>
                             </div>
                             <p className="text-sm text-muted-foreground">
-                              {selectedCast.introMessage ?? 'このキャストで問題なければ、下の「日時を選ぶ」を押してください。'}
+                              {selectedCast.introMessage ??
+                                'このキャストで問題なければ、下の「日時を選ぶ」を押してください。'}
                             </p>
                           </div>
                         ) : (
-                          <p className="text-sm text-muted-foreground">キャストを選ぶと詳細が表示されます。</p>
+                          <p className="text-sm text-muted-foreground">
+                            キャストを選ぶと詳細が表示されます。
+                          </p>
                         )}
                       </div>
                     </div>
@@ -689,170 +758,181 @@ const stepNavigationItems = [
               )}
 
               {activeStep === 2 && (
-              <Card>
-                <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <CardTitle className="text-2xl">STEP 2. 日付と時間を決める</CardTitle>
-                    <CardDescription>カレンダーで日付を押すと、その日で選べる時間が大きなボタンで表示されます。</CardDescription>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setAvailabilityRefreshKey((prev) => prev + 1)}
-                    disabled={timeSlotsLoading}
-                  >
-                    {timeSlotsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    最新の空き状況を再取得
-                  </Button>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="rounded-lg border border-dashed border-[#3b2e1f] bg-[#121212] p-3 text-sm text-muted-foreground">
-                    <p className="font-semibold text-[#f3d08a]">時間の選び方</p>
-                    <p>【1】カレンダーで日付を選ぶ → 【2】右側に出てきた時間の中からご希望を押してください。</p>
-                  </div>
+                <Card>
+                  <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <CardTitle className="text-2xl">STEP 2. 日付と時間を決める</CardTitle>
+                      <CardDescription>
+                        カレンダーで日付を押すと、その日で選べる時間が大きなボタンで表示されます。
+                      </CardDescription>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAvailabilityRefreshKey((prev) => prev + 1)}
+                      disabled={timeSlotsLoading}
+                    >
+                      {timeSlotsLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      最新の空き状況を再取得
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="rounded-lg border border-dashed border-luxury-border bg-luxury-panel-dark p-3 text-sm text-muted-foreground">
+                      <p className="font-semibold text-luxury-gold">時間の選び方</p>
+                      <p>
+                        【1】カレンダーで日付を選ぶ →
+                        【2】右側に出てきた時間の中からご希望を押してください。
+                      </p>
+                    </div>
 
-                  <div className="grid gap-6 lg:grid-cols-2">
-                    <div className="rounded-lg border bg-white p-2">
-                      <Calendar
-                        selectedDay={selectedDate}
-                        onSelectedDayChange={(date) => date && setSelectedDate(startOfDay(date))}
-                        disabled={(date) => {
-                          const today = startOfDay(new Date())
-                          const limit = addDays(today, MAX_BOOKING_DAYS)
-                          return date < today || date > limit
-                        }}
-                      />
-                    </div>
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        {selectedCourse
-                          ? `${selectedCourse.name} / ${formatDuration(selectedCourse.duration)}`
-                          : 'コースを選択してください'}
+                    <div className="grid gap-6 lg:grid-cols-2">
+                      <div className="rounded-lg border bg-white p-2">
+                        <Calendar
+                          selectedDay={selectedDate}
+                          onSelectedDayChange={(date) => date && setSelectedDate(startOfDay(date))}
+                          disabled={(date) => {
+                            const today = startOfDay(new Date())
+                            const limit = addDays(today, MAX_BOOKING_DAYS)
+                            return date < today || date > limit
+                          }}
+                        />
                       </div>
-                      {availabilityError && (
-                        <Alert variant="destructive">
-                          <AlertTriangle className="h-4 w-4" />
-                          <AlertTitle>空き状況の取得に失敗しました</AlertTitle>
-                          <AlertDescription>{availabilityError}</AlertDescription>
-                        </Alert>
-                      )}
-                      <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
-                        {timeSlotsLoading ? (
-                          <div className="col-span-2 flex items-center gap-2 rounded-lg border border-dashed border-[#3b2e1f] bg-[#121212] p-4 text-sm text-[#f3d08a] md:col-span-3">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            空き状況を読み込み中...
-                          </div>
-                        ) : timeSlots.length === 0 ? (
-                          <div className="col-span-2 rounded-lg border border-dashed border-muted-foreground/20 bg-muted/30 p-4 text-sm text-muted-foreground md:col-span-3">
-                            日付とコースを選択すると空き時間が表示されます。空き時間が表示されない場合は別の日時をご検討ください。
-                          </div>
-                        ) : (
-                          timeSlots.map((slot) => {
-                            const isSelected = selectedSlotStart === slot.start
-                            return (
-                              <button
-                                key={slot.start}
-                                type="button"
-                                onClick={() => setSelectedSlotStart(slot.start)}
-                                className={cn(
-                                  'rounded-lg border p-2 text-left text-sm transition hover:border-[#f3d08a] hover:text-[#f3d08a]',
-                                  isSelected
-                                    ? 'border-[#f3d08a] bg-[#121212] text-[#f3d08a]'
-                                    : 'border-border bg-white text-foreground'
-                                )}
-                              >
-                                <p className="text-xs text-muted-foreground">{slot.dayLabel}</p>
-                                <p className="text-base font-semibold">{slot.label}</p>
-                              </button>
-                            )
-                          })
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Clock className="h-4 w-4" />
+                          {selectedCourse
+                            ? `${selectedCourse.name} / ${formatDuration(selectedCourse.duration)}`
+                            : 'コースを選択してください'}
+                        </div>
+                        {availabilityError && (
+                          <Alert variant="destructive">
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertTitle>空き状況の取得に失敗しました</AlertTitle>
+                            <AlertDescription>{availabilityError}</AlertDescription>
+                          </Alert>
                         )}
+                        <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                          {timeSlotsLoading ? (
+                            <div className="col-span-2 flex items-center gap-2 rounded-lg border border-dashed border-luxury-border bg-luxury-panel-dark p-4 text-sm text-luxury-gold md:col-span-3">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              空き状況を読み込み中...
+                            </div>
+                          ) : timeSlots.length === 0 ? (
+                            <div className="col-span-2 rounded-lg border border-dashed border-muted-foreground/20 bg-muted/30 p-4 text-sm text-muted-foreground md:col-span-3">
+                              日付とコースを選択すると空き時間が表示されます。空き時間が表示されない場合は別の日時をご検討ください。
+                            </div>
+                          ) : (
+                            timeSlots.map((slot) => {
+                              const isSelected = selectedSlotStart === slot.start
+                              return (
+                                <button
+                                  key={slot.start}
+                                  type="button"
+                                  onClick={() => setSelectedSlotStart(slot.start)}
+                                  className={cn(
+                                    'rounded-lg border p-2 text-left text-sm transition hover:border-luxury-gold hover:text-luxury-gold',
+                                    isSelected
+                                      ? 'border-luxury-gold bg-luxury-panel-dark text-luxury-gold'
+                                      : 'border-border bg-white text-foreground'
+                                  )}
+                                >
+                                  <p className="text-xs text-muted-foreground">{slot.dayLabel}</p>
+                                  <p className="text-base font-semibold">{slot.label}</p>
+                                </button>
+                              )
+                            })
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              <CardFooter className="flex flex-col gap-3 sm:flex-row sm:justify-between">
-                <Button variant="outline" onClick={() => setActiveStep(1)}>
-                  STEP 1 に戻る
-                </Button>
-                <Button onClick={() => setActiveStep(3)} disabled={!selectedSlot}>
-                  STEP 3 コースを選ぶ
-                </Button>
-              </CardFooter>
-              </Card>
+                  </CardContent>
+                  <CardFooter className="flex flex-col gap-3 sm:flex-row sm:justify-between">
+                    <Button variant="outline" onClick={() => setActiveStep(1)}>
+                      STEP 1 に戻る
+                    </Button>
+                    <Button onClick={() => setActiveStep(3)} disabled={!selectedSlot}>
+                      STEP 3 コースを選ぶ
+                    </Button>
+                  </CardFooter>
+                </Card>
               )}
 
               {activeStep === 3 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-2xl">STEP 3. コースを選ぶ</CardTitle>
-                  <CardDescription>よく分からない場合は「スタンダードコース」を選んでいただければスタッフが丁寧にご案内します。</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {bookableCourses.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-[#3b2e1f] bg-[#121212] p-4 text-center text-sm text-muted-foreground">
-                      料金プランを準備しています。詳細はお電話にてお問い合わせください。
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {bookableCourses.map((course) => {
-                        const isSelected = course.id === selectedCourseId
-                        return (
-                          <button
-                            key={course.id}
-                            type="button"
-                            onClick={() => setSelectedCourseId(course.id)}
-                            className={cn(
-                              'w-full rounded-xl border p-4 text-left transition hover:border-[#f3d08a]',
-                              isSelected
-                                ? 'border-[#f3d08a] bg-[#121212] shadow'
-                                : 'border-border bg-white'
-                            )}
-                          >
-                            <div className="flex items-center justify-between gap-4">
-                              <div>
-                                <p className="text-lg font-semibold">{course.name}</p>
-                                <p className="text-sm text-muted-foreground">
-                                  {formatDuration(course.duration)}
-                                </p>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-2xl">STEP 3. コースを選ぶ</CardTitle>
+                    <CardDescription>
+                      よく分からない場合は「スタンダードコース」を選んでいただければスタッフが丁寧にご案内します。
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {bookableCourses.length === 0 ? (
+                      <div className="rounded-lg border border-dashed border-luxury-border bg-luxury-panel-dark p-4 text-center text-sm text-muted-foreground">
+                        料金プランを準備しています。詳細はお電話にてお問い合わせください。
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {bookableCourses.map((course) => {
+                          const isSelected = course.id === selectedCourseId
+                          return (
+                            <button
+                              key={course.id}
+                              type="button"
+                              onClick={() => setSelectedCourseId(course.id)}
+                              className={cn(
+                                'w-full rounded-xl border p-4 text-left transition hover:border-luxury-gold',
+                                isSelected
+                                  ? 'border-luxury-gold bg-luxury-panel-dark shadow'
+                                  : 'border-border bg-white'
+                              )}
+                            >
+                              <div className="flex items-center justify-between gap-4">
+                                <div>
+                                  <p className="text-lg font-semibold">{course.name}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {formatDuration(course.duration)}
+                                  </p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-xl font-bold text-luxury-gold">
+                                    {formatCurrency(course.price)}
+                                  </p>
+                                  {isSelected && (
+                                    <span className="text-xs font-medium text-luxury-gold">
+                                      選択中
+                                    </span>
+                                  )}
+                                </div>
                               </div>
-                              <div className="text-right">
-                                <p className="text-xl font-bold text-[#f3d08a]">
-                                  {formatCurrency(course.price)}
+                              {course.description && (
+                                <p className="mt-2 text-sm text-muted-foreground">
+                                  {course.description}
                                 </p>
-                                {isSelected && (
-                                  <span className="text-xs font-medium text-[#f3d08a]">
-                                    選択中
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            {course.description && (
-                              <p className="mt-2 text-sm text-muted-foreground">{course.description}</p>
-                            )}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  )}
-                </CardContent>
-                <CardFooter className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-between">
-                  <Button variant="outline" onClick={() => setActiveStep(2)}>
-                    STEP 2 に戻る
-                  </Button>
-                  <Button onClick={() => setActiveStep(4)} disabled={!selectedCourse}>
-                    STEP 4 オプションを選ぶ
-                  </Button>
-                </CardFooter>
-              </Card>
+                              )}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                  <CardFooter className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-between">
+                    <Button variant="outline" onClick={() => setActiveStep(2)}>
+                      STEP 2 に戻る
+                    </Button>
+                    <Button onClick={() => setActiveStep(4)} disabled={!selectedCourse}>
+                      STEP 4 オプションを選ぶ
+                    </Button>
+                  </CardFooter>
+                </Card>
               )}
 
               {activeStep === 4 && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-2xl">STEP 4. オプションを選ぶ</CardTitle>
-                    <CardDescription>チェックしなくてもそのまま進めます。ご希望がある場合だけチェックしてください。</CardDescription>
+                    <CardDescription>
+                      チェックしなくてもそのまま進めます。ご希望がある場合だけチェックしてください。
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {optionGroups.length === 0 ? (
@@ -862,7 +942,9 @@ const stepNavigationItems = [
                     ) : (
                       optionGroups.map((group) => (
                         <div key={group.key} className="space-y-3 rounded-lg border p-4">
-                          <p className="text-sm font-semibold text-muted-foreground">{group.label}</p>
+                          <p className="text-sm font-semibold text-muted-foreground">
+                            {group.label}
+                          </p>
                           <div className="space-y-2">
                             {group.items.map((option) => {
                               const checked = selectedOptionIds.has(option.id)
@@ -870,18 +952,22 @@ const stepNavigationItems = [
                                 <label
                                   key={option.id}
                                   className={cn(
-                                    'flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition hover:border-[#f3d08a]',
-                                    checked ? 'border-[#f3d08a] bg-[#121212]' : 'border-border bg-white'
+                                    'flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition hover:border-luxury-gold',
+                                    checked
+                                      ? 'border-luxury-gold bg-luxury-panel-dark'
+                                      : 'border-border bg-white'
                                   )}
                                 >
                                   <Checkbox
                                     checked={checked}
-                                    onCheckedChange={(value) => toggleOption(option.id, value === true)}
+                                    onCheckedChange={(value) =>
+                                      toggleOption(option.id, value === true)
+                                    }
                                   />
                                   <div className="flex-1">
                                     <div className="flex items-center justify-between gap-2">
                                       <div className="font-medium">{option.name}</div>
-                                      <div className="text-sm font-semibold text-[#f3d08a]">
+                                      <div className="text-sm font-semibold text-luxury-gold">
                                         {formatCurrency(option.price)}
                                       </div>
                                     </div>
@@ -891,7 +977,10 @@ const stepNavigationItems = [
                                       </p>
                                     )}
                                     {option.isPopular && (
-                                      <Badge variant="secondary" className="mt-2 text-xs text-[#f3d08a]">
+                                      <Badge
+                                        variant="secondary"
+                                        className="mt-2 text-xs text-luxury-gold"
+                                      >
                                         人気
                                       </Badge>
                                     )}
@@ -908,9 +997,7 @@ const stepNavigationItems = [
                     <Button variant="outline" onClick={() => setActiveStep(3)}>
                       STEP 3 に戻る
                     </Button>
-                    <Button onClick={() => setActiveStep(5)}>
-                      STEP 5 確認へ進む
-                    </Button>
+                    <Button onClick={() => setActiveStep(5)}>STEP 5 確認へ進む</Button>
                   </CardFooter>
                 </Card>
               )}
@@ -962,10 +1049,12 @@ const stepNavigationItems = [
             </div>
 
             <aside className="space-y-6">
-              <Card className="luxury-panel border-2 border-[#3b2e1f] bg-white">
+              <Card className="luxury-panel border-2 border-luxury-border bg-white">
                 <CardHeader>
                   <CardTitle className="text-2xl">最後に内容を確認してください</CardTitle>
-                  <CardDescription>すべてご確認いただけましたら下の大きなボタンを押して予約完了です。</CardDescription>
+                  <CardDescription>
+                    すべてご確認いただけましたら下の大きなボタンを押して予約完了です。
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
                   <div className="flex justify-between">
@@ -1018,28 +1107,40 @@ const stepNavigationItems = [
                   <div className="border-t pt-3">
                     <div className="flex items-center justify-between text-lg font-semibold">
                       <span>お支払い見込み</span>
-                      <span className="text-2xl text-[#f3d08a]">{formatCurrency(reservationTotal)}</span>
+                      <span className="text-2xl text-luxury-gold">
+                        {formatCurrency(reservationTotal)}
+                      </span>
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
                       料金は当日の延長やご希望内容により変動する場合があります。
                     </p>
                   </div>
                   {lastReservation && (
-                    <Alert className="border-[#2fc8b7] bg-[#10211e] text-[#d7c39c]">
-                      <CheckCircle className="h-4 w-4 text-[#2fc8b7]" />
+                    <Alert className="border-luxury-aqua bg-[#10211e] text-luxury-gold-dim">
+                      <CheckCircle className="h-4 w-4 text-luxury-aqua" />
                       <AlertTitle>予約を受け付けました</AlertTitle>
                       <AlertDescription className="text-xs">
                         予約ID: {lastReservation.id} /{' '}
-                        {formatInTimeZone(new Date(lastReservation.start), JST_TIMEZONE, 'M月d日(E) HH:mm', {
-                          locale: ja,
-                        })}
+                        {formatInTimeZone(
+                          new Date(lastReservation.start),
+                          JST_TIMEZONE,
+                          'M月d日(E) HH:mm',
+                          {
+                            locale: ja,
+                          }
+                        )}
                         。マイページで詳細をご確認ください。
                       </AlertDescription>
                     </Alert>
                   )}
                 </CardContent>
                 <CardFooter className="flex flex-col gap-3">
-                  <Button disabled={disableBooking} className="w-full" onClick={handleSubmit} size="lg">
+                  <Button
+                    disabled={disableBooking}
+                    className="w-full"
+                    onClick={handleSubmit}
+                    size="lg"
+                  >
                     {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     この内容で予約する
                   </Button>
@@ -1048,7 +1149,7 @@ const stepNavigationItems = [
                       会員登録済みのお客様のみオンライン予約をご利用いただけます。{' '}
                       <Link
                         href={`/${store.slug}/login?callbackUrl=/${store.slug}/booking`}
-                        className="text-[#f3d08a] underline underline-offset-2"
+                        className="text-luxury-gold underline underline-offset-2"
                       >
                         ログインする
                       </Link>
@@ -1065,26 +1166,27 @@ const stepNavigationItems = [
 
               <Card className="luxury-panel">
                 <CardHeader>
-                  <CardTitle className="text-xl text-[#f5e6c4]">安心サポート</CardTitle>
+                  <CardTitle className="text-xl text-luxury-gold-cream">安心サポート</CardTitle>
                   <CardDescription>お電話でもご予約・ご相談を承ります</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4 text-sm">
-                  <div className="rounded-lg border bg-[#121212] p-4 text-[#f3d08a]">
+                  <div className="rounded-lg border bg-luxury-panel-dark p-4 text-luxury-gold">
                     <p className="text-xs">今すぐ相談する</p>
                     <a
                       href={`tel:${store.phone}`}
-                      className="mt-1 flex items-center text-lg font-semibold text-[#f3d08a]"
+                      className="mt-1 flex items-center text-lg font-semibold text-luxury-gold"
                     >
                       <Phone className="mr-2 h-4 w-4" />
                       {store.phone}
                     </a>
-                    <p className="text-xs text-[#f3d08a]">
-                      受付時間 {store.openingHours.weekday.open} - {store.openingHours.weekday.close}
+                    <p className="text-xs text-luxury-gold">
+                      受付時間 {store.openingHours.weekday.open} -{' '}
+                      {store.openingHours.weekday.close}
                     </p>
                   </div>
                   <ul className="space-y-2 text-muted-foreground">
                     <li className="flex items-start gap-2">
-                      <Star className="mt-0.5 h-4 w-4 text-[#f3d08a]" />
+                      <Star className="mt-0.5 h-4 w-4 text-luxury-gold" />
                       事前決済は不要。ご来店時のお支払いとなります。
                     </li>
                     <li className="flex items-start gap-2">
@@ -1092,7 +1194,7 @@ const stepNavigationItems = [
                       指名料・交通費などの追加料金は当日にご案内します。
                     </li>
                     <li className="flex items-start gap-2">
-                      <CreditCard className="mt-0.5 h-4 w-4 text-[#2fc8b7]" />
+                      <CreditCard className="mt-0.5 h-4 w-4 text-luxury-aqua" />
                       現金・クレジットカードに対応しています。
                     </li>
                   </ul>

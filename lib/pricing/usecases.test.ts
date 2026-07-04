@@ -96,7 +96,6 @@ describe('PricingUseCases', () => {
         expect(result).toBeNull()
       })
     })
-
   })
 
   describe('Option management', () => {
@@ -112,6 +111,7 @@ describe('PricingUseCases', () => {
             category: 'relaxation',
             displayOrder: 1,
             isActive: true,
+            visibility: 'public',
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -136,6 +136,7 @@ describe('PricingUseCases', () => {
           category: 'relaxation',
           displayOrder: 1,
           isActive: false,
+          visibility: 'public',
           createdAt: new Date(),
           updatedAt: new Date(),
         }
@@ -186,6 +187,7 @@ describe('PricingUseCases', () => {
         category: 'relaxation',
         displayOrder: 1,
         isActive: true,
+        visibility: 'public',
         createdAt: new Date(),
         updatedAt: new Date(),
       }
@@ -199,6 +201,7 @@ describe('PricingUseCases', () => {
         category: 'body-care',
         displayOrder: 2,
         isActive: true,
+        visibility: 'public',
         createdAt: new Date(),
         updatedAt: new Date(),
       }

@@ -13,10 +13,19 @@ vi.mock('./lib/db', () => ({
   db: {
     cast: {
       findMany: vi.fn(() => Promise.resolve([])),
+      findFirst: vi.fn(() => Promise.resolve(null)),
       findUnique: vi.fn(() => Promise.resolve(null)),
       create: vi.fn(() => Promise.resolve({ id: 'test-id' })),
       update: vi.fn(() => Promise.resolve({ id: 'test-id' })),
       delete: vi.fn(() => Promise.resolve()),
+    },
+    castOptionSetting: {
+      deleteMany: vi.fn(() => Promise.resolve({ count: 0 })),
+      createMany: vi.fn(() => Promise.resolve({ count: 0 })),
+    },
+    store: {
+      findUnique: vi.fn(() => Promise.resolve({ id: 'ikebukuro' })),
+      upsert: vi.fn(() => Promise.resolve({ id: 'ikebukuro' })),
     },
     customer: {
       findMany: vi.fn(() => Promise.resolve([])),
@@ -143,13 +152,16 @@ vi.mock('./lib/email/client', () => ({
 }))
 
 // Mock logger
+const loggerMock = {
+  error: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  debug: vi.fn(),
+}
+
 vi.mock('./lib/logger', () => ({
-  logger: {
-    error: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    debug: vi.fn(),
-  },
+  default: loggerMock,
+  logger: loggerMock,
 }))
 
 // Mock bcryptjs

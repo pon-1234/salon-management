@@ -9,16 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
-import {
-  Clock,
-  CalendarDays,
-  User,
-  Phone,
-  Mail,
-  Settings,
-  Edit,
-  DollarSign,
-} from 'lucide-react'
+import { Clock, CalendarDays, User, Phone, Mail, Settings, Edit, DollarSign } from 'lucide-react'
 import { ReservationDialog } from '@/components/reservation/reservation-dialog'
 import { ReservationData, Reservation } from '@/lib/types/reservation'
 import { getAllReservations } from '@/lib/reservation/data'
@@ -158,8 +149,7 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
       const key = format(date, 'yyyy-MM-dd')
       const record = scheduleMap[key]
       if (record) {
-        const status: WorkStatus =
-          record.isAvailable === false ? '休日' : '出勤予定'
+        const status: WorkStatus = record.isAvailable === false ? '休日' : '出勤予定'
         initial[key] = {
           date: key,
           status,
@@ -248,8 +238,7 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
         console.error('Failed to update schedule:', error)
         toast({
           title: 'エラー',
-          description:
-            error instanceof Error ? error.message : 'スケジュールの更新に失敗しました',
+          description: error instanceof Error ? error.message : 'スケジュールの更新に失敗しました',
           variant: 'destructive',
         })
         throw error
@@ -264,8 +253,7 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
       const record = scheduleMap[key]
       const isAvailable = record ? record.isAvailable !== false : false
       const isWorking = Boolean(record) && isAvailable
-      const isToday =
-        format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
+      const isToday = format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
 
       const time = record
         ? `${format(record.startTime, 'HH:mm')} - ${format(record.endTime, 'HH:mm')}`
@@ -291,7 +279,8 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
       const record = scheduleMap[key]
       if (!record) return
 
-      const status = (record.status as WorkStatus | undefined) ??
+      const status =
+        (record.status as WorkStatus | undefined) ??
         (record.isAvailable !== false ? '出勤予定' : '休日')
 
       schedule[key] = {
@@ -511,7 +500,7 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
                     <span className="hidden sm:inline">{item.time}</span>
                   </div>
                   {item.note && (
-                    <div className="mt-1 whitespace-pre-wrap text-[10px] text-gray-500">
+                    <div className="mt-1 whitespace-pre-wrap text-xs text-gray-500">
                       {item.note}
                     </div>
                   )}
@@ -532,85 +521,81 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
           <CardContent>
             <div className="space-y-3">
               {upcomingReservations.length > 0 ? (
-                upcomingReservations
-                  .slice(0, 3)
-                  .map((reservation) => {
-                    const normalized = mapReservationToReservationData(reservation, {
-                      casts: [cast],
-                    })
-                    const customerLabel = normalized?.customerName?.trim()
-                      ? normalized.customerName
-                      : reservation.customerId
-                        ? `顧客${reservation.customerId.slice(0, 8)}`
-                        : '顧客'
-                    const serviceLabel = normalized?.course?.trim()
-                      ? normalized.course
-                      : reservation.serviceName?.trim() || 'サービス未設定'
-                    const today = new Date()
-                    const tomorrow = new Date(today)
-                    tomorrow.setDate(tomorrow.getDate() + 1)
+                upcomingReservations.slice(0, 3).map((reservation) => {
+                  const normalized = mapReservationToReservationData(reservation, {
+                    casts: [cast],
+                  })
+                  const customerLabel = normalized?.customerName?.trim()
+                    ? normalized.customerName
+                    : reservation.customerId
+                      ? `顧客${reservation.customerId.slice(0, 8)}`
+                      : '顧客'
+                  const serviceLabel = normalized?.course?.trim()
+                    ? normalized.course
+                    : reservation.serviceName?.trim() || 'サービス未設定'
+                  const today = new Date()
+                  const tomorrow = new Date(today)
+                  tomorrow.setDate(tomorrow.getDate() + 1)
 
-                    const isToday = reservation.startTime.toDateString() === today.toDateString()
-                    const isTomorrow =
-                      reservation.startTime.toDateString() === tomorrow.toDateString()
+                  const isToday = reservation.startTime.toDateString() === today.toDateString()
+                  const isTomorrow =
+                    reservation.startTime.toDateString() === tomorrow.toDateString()
 
-                    return (
-                      <div
-                        key={reservation.id}
-                        className={`cursor-pointer rounded-lg border p-3 transition-all hover:shadow-md ${
-                          isToday
-                            ? 'border-emerald-200 bg-emerald-50 hover:bg-emerald-100'
+                  return (
+                    <div
+                      key={reservation.id}
+                      className={`cursor-pointer rounded-lg border p-3 transition-all hover:shadow-md ${
+                        isToday
+                          ? 'border-emerald-200 bg-emerald-50 hover:bg-emerald-100'
+                          : isTomorrow
+                            ? 'border-blue-200 bg-blue-50 hover:bg-blue-100'
+                            : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+                      }`}
+                      onClick={() => setSelectedReservation(reservation)}
+                    >
+                      <div className="mb-2 flex items-center gap-2">
+                        <Badge
+                          className={isToday ? 'bg-emerald-600' : isTomorrow ? 'bg-blue-600' : ''}
+                          variant={!isToday && !isTomorrow ? 'outline' : 'default'}
+                        >
+                          {isToday
+                            ? '今日'
                             : isTomorrow
-                              ? 'border-blue-200 bg-blue-50 hover:bg-blue-100'
-                              : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
-                        }`}
-                        onClick={() => setSelectedReservation(reservation)}
-                      >
-                        <div className="mb-2 flex items-center gap-2">
-                          <Badge
-                            className={isToday ? 'bg-emerald-600' : isTomorrow ? 'bg-blue-600' : ''}
-                            variant={!isToday && !isTomorrow ? 'outline' : 'default'}
-                          >
-                            {isToday
-                              ? '今日'
-                              : isTomorrow
-                                ? '明日'
-                                : format(reservation.startTime, 'M/d')}
-                          </Badge>
-                          <span className="font-medium">{customerLabel}</span>
-                          <Badge variant="outline" className="text-xs">
-                            {normalized?.status === 'confirmed'
-                              ? '確定'
-                              : normalized?.status === 'pending'
-                                ? '仮予約'
-                                : '修正可能'}
-                          </Badge>
+                              ? '明日'
+                              : format(reservation.startTime, 'M/d')}
+                        </Badge>
+                        <span className="font-medium">{customerLabel}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {normalized?.status === 'confirmed'
+                            ? '確定'
+                            : normalized?.status === 'pending'
+                              ? '仮予約'
+                              : '修正可能'}
+                        </Badge>
+                      </div>
+                      <div className="space-y-1 text-sm text-gray-700">
+                        <div className="font-medium">
+                          {format(reservation.startTime, 'HH:mm')} -{' '}
+                          {format(reservation.endTime, 'HH:mm')}
                         </div>
-                        <div className="space-y-1 text-sm text-gray-700">
-                          <div className="font-medium">
-                            {format(reservation.startTime, 'HH:mm')} -{' '}
-                            {format(reservation.endTime, 'HH:mm')}
-                          </div>
-                          <div>{serviceLabel}</div>
-                          <div
-                            className={`font-semibold ${isToday ? 'text-emerald-700' : isTomorrow ? 'text-blue-700' : ''}`}
-                          >
-                            {(normalized?.totalPayment ?? reservation.price).toLocaleString()}円
-                          </div>
-                        </div>
-                        <div className="mt-2 flex gap-1">
-                          <Badge
-                            variant={
-                              normalized?.status === 'confirmed' ? 'secondary' : 'destructive'
-                            }
-                            className="text-xs"
-                          >
-                            {normalized?.status === 'confirmed' ? '確認済み' : '要確認'}
-                          </Badge>
+                        <div>{serviceLabel}</div>
+                        <div
+                          className={`font-semibold ${isToday ? 'text-emerald-700' : isTomorrow ? 'text-blue-700' : ''}`}
+                        >
+                          {(normalized?.totalPayment ?? reservation.price).toLocaleString()}円
                         </div>
                       </div>
-                    )
-                  })
+                      <div className="mt-2 flex gap-1">
+                        <Badge
+                          variant={normalized?.status === 'confirmed' ? 'secondary' : 'destructive'}
+                          className="text-xs"
+                        >
+                          {normalized?.status === 'confirmed' ? '確認済み' : '要確認'}
+                        </Badge>
+                      </div>
+                    </div>
+                  )
+                })
               ) : (
                 <div className="py-8 text-center text-gray-500">
                   <CalendarDays className="mx-auto mb-3 h-12 w-12 text-gray-300" />
@@ -619,7 +604,6 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
                 </div>
               )}
             </div>
-
           </CardContent>
         </Card>
       </div>

@@ -1,11 +1,16 @@
 'use client'
 
+/**
+ * @design_doc   ui-improvement-instructions.md U-1 toast wiring
+ * @related_to   components/ui/toaster.tsx: renders queued toast notifications
+ * @known_issues Toast visual QA is covered by manual UI checks in U1
+ */
 // Inspired by react-hot-toast library
 import * as React from 'react'
 
 import type { ToastActionElement, ToastProps } from '@/components/ui/toast'
 
-const TOAST_LIMIT = 1
+const TOAST_LIMIT = 3
 const TOAST_REMOVE_DELAY = 1000000
 
 type ToasterToast = ToastProps & {

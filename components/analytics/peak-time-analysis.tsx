@@ -28,8 +28,7 @@ export function PeakTimeAnalysis({ data }: PeakTimeAnalysisProps) {
   // 時間帯別の分析データを作成
   const hourlyAnalysis = data.hourlyTotals.map((total, index) => {
     const hour = index + 7
-    const percentage =
-      data.grandTotal > 0 ? ((total / data.grandTotal) * 100).toFixed(1) : '0.0'
+    const percentage = data.grandTotal > 0 ? ((total / data.grandTotal) * 100).toFixed(1) : '0.0'
     return {
       hour: `${hour}:00-${hour + 1}:00`,
       total,

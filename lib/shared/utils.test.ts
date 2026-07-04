@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   generateId,
   formatCurrency,
+  formatYen,
   formatNumber,
   formatDate,
   formatDateTime,
@@ -32,6 +33,16 @@ describe('Shared Utilities', () => {
 
     it('should handle negative numbers', () => {
       expect(formatCurrency(-500)).toBe('-500')
+    })
+  })
+
+  describe('formatYen', () => {
+    it('should format a number with a yen prefix', () => {
+      expect(formatYen(1234567)).toBe('¥1,234,567')
+    })
+
+    it('should keep the minus sign before the yen symbol for negative values', () => {
+      expect(formatYen(-500)).toBe('-¥500')
     })
   })
 

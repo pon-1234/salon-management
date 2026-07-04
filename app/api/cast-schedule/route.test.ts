@@ -14,12 +14,20 @@ import { Prisma } from '@prisma/client'
 // Mock the database
 vi.mock('@/lib/db', () => ({
   db: {
+    store: {
+      findUnique: vi.fn(() => Promise.resolve({ id: 'ikebukuro' })),
+      upsert: vi.fn(() => Promise.resolve({ id: 'ikebukuro' })),
+    },
     castSchedule: {
+      findFirst: vi.fn(),
       findUnique: vi.fn(),
       findMany: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
+    },
+    cast: {
+      findFirst: vi.fn(() => Promise.resolve({ id: 'cast1' })),
     },
   },
 }))
@@ -52,7 +60,7 @@ describe('GET /api/cast-schedule', () => {
       cast: { id: 'cast1', name: 'Test Cast' },
     }
 
-    vi.mocked(db.castSchedule.findUnique).mockResolvedValueOnce(mockSchedule as any)
+    vi.mocked(db.castSchedule.findFirst).mockResolvedValueOnce(mockSchedule as any)
 
     const request = new NextRequest('http://localhost:3000/api/cast-schedule?id=schedule1', {
       method: 'GET',
@@ -63,14 +71,14 @@ describe('GET /api/cast-schedule', () => {
 
     expect(response.status).toBe(200)
     expect(data.data.id).toBe('schedule1')
-    expect(vi.mocked(db.castSchedule.findUnique)).toHaveBeenCalledWith({
-      where: { id: 'schedule1' },
+    expect(vi.mocked(db.castSchedule.findFirst)).toHaveBeenCalledWith({
+      where: { id: 'schedule1', cast: { storeId: 'ikebukuro' } },
       include: { cast: true },
     })
   })
 
   it('should return 404 for non-existent schedule', async () => {
-    vi.mocked(db.castSchedule.findUnique).mockResolvedValueOnce(null)
+    vi.mocked(db.castSchedule.findFirst).mockResolvedValueOnce(null)
 
     const request = new NextRequest('http://localhost:3000/api/cast-schedule?id=non-existent', {
       method: 'GET',
@@ -108,7 +116,7 @@ describe('GET /api/cast-schedule', () => {
     expect(response.status).toBe(200)
     expect(data.data).toHaveLength(1)
     expect(vi.mocked(db.castSchedule.findMany)).toHaveBeenCalledWith({
-      where: { castId: 'cast1' },
+      where: { castId: 'cast1', cast: { storeId: 'ikebukuro' } },
       include: { cast: true },
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     })
@@ -128,7 +136,7 @@ describe('GET /api/cast-schedule', () => {
 
     expect(response.status).toBe(200)
     expect(vi.mocked(db.castSchedule.findMany)).toHaveBeenCalledWith({
-      where: { date: new Date('2025-07-15') },
+      where: { date: new Date('2025-07-15'), cast: { storeId: 'ikebukuro' } },
       include: { cast: true },
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     })
@@ -152,6 +160,7 @@ describe('GET /api/cast-schedule', () => {
     expect(response.status).toBe(200)
     expect(vi.mocked(db.castSchedule.findMany)).toHaveBeenCalledWith({
       where: {
+        cast: { storeId: 'ikebukuro' },
         date: {
           gte: new Date('2025-07-14'),
           lte: new Date('2025-07-16'),
@@ -180,6 +189,7 @@ describe('GET /api/cast-schedule', () => {
     expect(response.status).toBe(200)
     expect(vi.mocked(db.castSchedule.findMany)).toHaveBeenCalledWith({
       where: {
+        cast: { storeId: 'ikebukuro' },
         castId: 'cast1',
         date: {
           gte: new Date('2025-07-14'),
@@ -317,6 +327,7 @@ describe('PUT /api/cast-schedule', () => {
     }
 
     vi.mocked(db.castSchedule.update).mockResolvedValueOnce(mockUpdatedSchedule as any)
+    vi.mocked(db.castSchedule.findFirst).mockResolvedValueOnce({ id: 'schedule1' } as any)
 
     const request = new NextRequest('http://localhost:3000/api/cast-schedule', {
       method: 'PUT',
@@ -360,7 +371,7 @@ describe('PUT /api/cast-schedule', () => {
     const data = await response.json()
 
     expect(response.status).toBe(404)
-    expect(data.error).toBe('データが見つかりません')
+    expect(data.error).toBe('スケジュールが見つかりません')
   })
 })
 
@@ -382,6 +393,7 @@ describe('DELETE /api/cast-schedule', () => {
   })
 
   it('should delete schedule', async () => {
+    vi.mocked(db.castSchedule.findFirst).mockResolvedValueOnce({ id: 'schedule1' } as any)
     vi.mocked(db.castSchedule.delete).mockResolvedValueOnce({} as any)
 
     const request = new NextRequest('http://localhost:3000/api/cast-schedule?id=schedule1', {
@@ -412,7 +424,7 @@ describe('DELETE /api/cast-schedule', () => {
     const data = await response.json()
 
     expect(response.status).toBe(404)
-    expect(data.error).toBe('データが見つかりません')
+    expect(data.error).toBe('スケジュールが見つかりません')
   })
 })
 

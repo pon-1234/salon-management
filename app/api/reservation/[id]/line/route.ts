@@ -14,7 +14,11 @@ import { castNotificationService } from '@/lib/notification/cast-service'
 import { ensureStoreId, resolveStoreId } from '@/lib/store/server'
 
 const sendMessageSchema = z.object({
-  message: z.string().trim().min(1, 'メッセージを入力してください。').max(1000, 'メッセージは1000文字以内で入力してください。'),
+  message: z
+    .string()
+    .trim()
+    .min(1, 'メッセージを入力してください。')
+    .max(1000, 'メッセージは1000文字以内で入力してください。'),
 })
 
 const toDto = (log: {
@@ -38,15 +42,12 @@ const toDto = (log: {
     : null,
 })
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const authError = await requireAdmin()
   if (authError) return authError
 
   try {
-    const reservationId = params.id
+    const { id: reservationId } = await params
     if (!reservationId) {
       return NextResponse.json({ error: 'Reservation ID is required' }, { status: 400 })
     }
@@ -79,15 +80,12 @@ export async function GET(
   }
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const authError = await requireAdmin()
   if (authError) return authError
 
   try {
-    const reservationId = params.id
+    const { id: reservationId } = await params
     if (!reservationId) {
       return NextResponse.json({ error: 'Reservation ID is required' }, { status: 400 })
     }
@@ -150,7 +148,9 @@ export async function POST(
     } catch (error) {
       status = 'failed'
       errorMessage =
-        error instanceof Error ? error.message : 'LINE通知の送信に失敗しました。時間を置いて再度お試しください。'
+        error instanceof Error
+          ? error.message
+          : 'LINE通知の送信に失敗しました。時間を置いて再度お試しください。'
     }
 
     const log = await db.reservationLineLog.create({

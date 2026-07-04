@@ -237,9 +237,7 @@ async function handleAvailableSlots(searchParams: URLSearchParams): Promise<Next
     const rangeStartUtc = convertJstStringToUtc(
       minutesToIsoInJst(dateStr, businessHours.startMinutes)
     )
-    const rangeEndUtc = convertJstStringToUtc(
-      minutesToIsoInJst(dateStr, businessHours.endMinutes)
-    )
+    const rangeEndUtc = convertJstStringToUtc(minutesToIsoInJst(dateStr, businessHours.endMinutes))
 
     const reservations = await db.reservation.findMany({
       where: {
@@ -292,9 +290,7 @@ async function handleAvailableSlots(searchParams: URLSearchParams): Promise<Next
 
       if (reservationStartMinute - currentMinute >= duration) {
         availableSlots.push({
-          startTime: convertJstStringToUtc(
-            minutesToIsoInJst(dateStr, currentMinute)
-          ).toISOString(),
+          startTime: convertJstStringToUtc(minutesToIsoInJst(dateStr, currentMinute)).toISOString(),
           endTime: convertJstStringToUtc(
             minutesToIsoInJst(dateStr, reservationStartMinute)
           ).toISOString(),
@@ -306,9 +302,7 @@ async function handleAvailableSlots(searchParams: URLSearchParams): Promise<Next
 
     if (businessHours.endMinutes - currentMinute >= duration) {
       availableSlots.push({
-        startTime: convertJstStringToUtc(
-          minutesToIsoInJst(dateStr, currentMinute)
-        ).toISOString(),
+        startTime: convertJstStringToUtc(minutesToIsoInJst(dateStr, currentMinute)).toISOString(),
         endTime: convertJstStringToUtc(
           minutesToIsoInJst(dateStr, businessHours.endMinutes)
         ).toISOString(),

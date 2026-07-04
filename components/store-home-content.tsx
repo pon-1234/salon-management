@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @design_doc   ui-improvement-instructions.md U-3 store home false UI removal
+ * @related_to   PublicStoreHomeData: derives visible hero stats from real public data
+ * @known_issues Total cast count is hidden until the public home API exposes an exact value
+ */
 import type { ComponentType } from 'react'
 import Link from 'next/link'
 import { format } from 'date-fns'
@@ -36,9 +41,7 @@ interface StoreHomeContentProps {
 }
 
 const FALLBACK_STATS = {
-  totalCasts: '150+',
-  averageRating: '4.8',
-  openHoursLabel: '24H',
+  openHoursLabel: '営業時間未設定',
 }
 
 function buildBannerItems(store: Store, data?: PublicStoreHomeData | null): BannerItem[] {
@@ -49,7 +52,7 @@ function buildBannerItems(store: Store, data?: PublicStoreHomeData | null): Bann
 
   return banners.map((banner) => ({
     ...banner,
-    link: banner.link?.startsWith('/') ? banner.link : banner.link ?? `/${store.slug}/pricing`,
+    link: banner.link?.startsWith('/') ? banner.link : (banner.link ?? `/${store.slug}/pricing`),
   }))
 }
 
@@ -92,10 +95,24 @@ export function StoreHomeContent({ store, data }: StoreHomeContentProps) {
   const newcomers = data?.highlights?.newcomers ?? []
   const todaysSchedules = data?.highlights?.todaysSchedules ?? []
   const reviews = data?.reviews ?? []
-  const heroImage = store.images?.main || store.images?.gallery?.[0] || '/images/banners/campaign-1.jpg'
+  const heroImage =
+    store.images?.main || store.images?.gallery?.[0] || '/images/banners/campaign-1.jpg'
+  const averageRating =
+    reviews.length > 0
+      ? (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)
+      : null
+  const weekdayHours = store.openingHours?.weekday
+  const openingHoursLabel = weekdayHours
+    ? `${weekdayHours.open}-${weekdayHours.close}`
+    : FALLBACK_STATS.openHoursLabel
+  const heroStats = [
+    { label: '本日出勤', value: `${todaysSchedules.length}名` },
+    averageRating ? { label: '平均評価', value: averageRating } : null,
+    { label: '営業時間', value: openingHoursLabel },
+  ].filter((item): item is { label: string; value: string } => item !== null)
 
   return (
-    <div className="luxury-body bg-[#0b0b0b] text-white">
+    <div className="luxury-body bg-luxury-black-deep text-white">
       <StoreNavigation />
 
       <main className="relative">
@@ -109,32 +126,35 @@ export function StoreHomeContent({ store, data }: StoreHomeContentProps) {
           </div>
 
           <div className="relative z-10 mx-auto max-w-6xl px-4 py-20 sm:py-28">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#f3d08a]/60 bg-black/50 px-4 py-2 text-xs uppercase tracking-[0.4em] text-[#f3d08a]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-luxury-gold/60 bg-black/50 px-4 py-2 text-xs uppercase tracking-[0.4em] text-luxury-gold">
               <Crown className="h-4 w-4" />
               Tokyo Premium
             </div>
 
             <div className="mt-6 space-y-6">
-              <h1 className="luxury-display luxury-text-shadow text-4xl font-semibold text-[#f7e2b5] sm:text-5xl md:text-6xl">
+              <h1 className="luxury-display luxury-text-shadow text-4xl font-semibold text-luxury-gold-title sm:text-5xl md:text-6xl">
                 {store.displayName}
               </h1>
-              <p className="max-w-2xl text-lg text-[#f5e6c4] sm:text-xl">
+              <p className="max-w-2xl text-lg text-luxury-gold-cream sm:text-xl">
                 都内屈指のラグジュアリー空間で、五感を刺激する濃密トリートメントを。
                 完全予約制のプライベートサロンで極上の時間をご提供します。
               </p>
 
               <div className="flex flex-col gap-4 sm:flex-row">
                 <Button
+                  asChild
                   size="lg"
-                  className="bg-gradient-to-r from-[#f6dfab] to-[#c79548] px-8 py-6 text-base font-semibold text-[#2b1b0d] shadow-[0_12px_30px_rgba(0,0,0,0.55)] transition hover:from-[#ffe8bf] hover:to-[#e2b463]"
+                  className="bg-gradient-to-r from-[#f6dfab] to-[#c79548] px-8 py-6 text-base font-semibold text-luxury-text-dark shadow-[0_12px_30px_rgba(0,0,0,0.55)] transition hover:from-[#ffe8bf] hover:to-[#e2b463]"
                 >
-                  <Phone className="mr-2 h-5 w-5" />
-                  今すぐ予約
+                  <Link href={`/${store.slug}/booking`}>
+                    <Phone className="mr-2 h-5 w-5" />
+                    今すぐ予約
+                  </Link>
                 </Button>
                 <Button
                   size="lg"
                   variant="outline"
-                  className="border-[#f3d08a]/70 px-8 py-6 text-base font-semibold text-[#f5e6c4] hover:bg-[#2b2114]"
+                  className="border-luxury-gold/70 px-8 py-6 text-base font-semibold text-luxury-gold-cream hover:bg-luxury-brown-muted"
                   asChild
                 >
                   <Link href={`/${store.slug}/cast`}>セラピストを見る</Link>
@@ -146,7 +166,7 @@ export function StoreHomeContent({ store, data }: StoreHomeContentProps) {
                   {store.features.map((feature) => (
                     <span
                       key={feature}
-                      className="rounded-full border border-[#f3d08a]/40 bg-black/40 px-4 py-1 text-xs text-[#f5e6c4]"
+                      className="rounded-full border border-luxury-gold/40 bg-black/40 px-4 py-1 text-xs text-luxury-gold-cream"
                     >
                       {feature}
                     </span>
@@ -155,9 +175,9 @@ export function StoreHomeContent({ store, data }: StoreHomeContentProps) {
               ) : null}
 
               <div className="grid grid-cols-1 gap-4 pt-8 sm:grid-cols-3">
-                <StatCard label="在籍セラピスト" value={FALLBACK_STATS.totalCasts} />
-                <StatCard label="平均評価" value={FALLBACK_STATS.averageRating} />
-                <StatCard label="営業時間" value={FALLBACK_STATS.openHoursLabel} />
+                {heroStats.map((stat) => (
+                  <StatCard key={stat.label} label={stat.label} value={stat.value} />
+                ))}
               </div>
             </div>
           </div>
@@ -178,11 +198,11 @@ export function StoreHomeContent({ store, data }: StoreHomeContentProps) {
         <section className="luxury-section py-16">
           <div className="mx-auto max-w-4xl space-y-6 px-4 text-center">
             <SectionHeading title="CONCEPT" subtitle="至福の密着トリートメント" />
-            <p className="text-lg text-[#f5e6c4]">
+            <p className="text-lg text-luxury-gold-cream">
               寝ているだけで極上の癒やしを。洗練されたセラピストの手技が、
               日常から解き放つ非日常のひとときを演出します。
             </p>
-            <p className="text-sm text-[#d7c39c]">
+            <p className="text-sm text-luxury-gold-dim">
               完全個室、上質なアロマ、厳選されたプログラムで、
               あなたのためだけの特別な時間をお届けします。
             </p>
@@ -193,7 +213,7 @@ export function StoreHomeContent({ store, data }: StoreHomeContentProps) {
           <div className="mx-auto max-w-6xl px-4">
             <SectionHeading title="RANKING" subtitle="人気ランキング" icon={TrendingUp} />
             {ranking.length === 0 ? (
-              <div className="mt-8 rounded-lg border border-dashed border-[#3b2e1f] bg-black/40 p-10 text-center text-[#cbb88f]">
+              <div className="mt-8 rounded-lg border border-dashed border-luxury-border bg-black/40 p-10 text-center text-luxury-gold-muted">
                 表示できるランキング情報がありません。
               </div>
             ) : (
@@ -207,7 +227,7 @@ export function StoreHomeContent({ store, data }: StoreHomeContentProps) {
               <Button
                 asChild
                 variant="outline"
-                className="border-[#f3d08a]/60 text-[#f5e6c4] hover:bg-[#2b2114]"
+                className="border-luxury-gold/60 text-luxury-gold-cream hover:bg-luxury-brown-muted"
               >
                 <Link href={`/${store.slug}/ranking`}>もっと見る</Link>
               </Button>
@@ -219,7 +239,7 @@ export function StoreHomeContent({ store, data }: StoreHomeContentProps) {
           <div className="mx-auto max-w-6xl px-4">
             <SectionHeading title="NEW FACE" subtitle="新人紹介" icon={Sparkles} />
             {newcomers.length === 0 ? (
-              <div className="mt-8 rounded-lg border border-dashed border-[#3b2e1f] bg-black/40 p-10 text-center text-[#cbb88f]">
+              <div className="mt-8 rounded-lg border border-dashed border-luxury-border bg-black/40 p-10 text-center text-luxury-gold-muted">
                 新人キャストの情報は現在準備中です。
               </div>
             ) : (
@@ -232,7 +252,7 @@ export function StoreHomeContent({ store, data }: StoreHomeContentProps) {
             <div className="mt-10 text-center">
               <Button
                 asChild
-                className="bg-gradient-to-r from-[#f6dfab] to-[#c79548] text-[#2b1b0d] hover:from-[#ffe8bf] hover:to-[#e2b463]"
+                className="bg-gradient-to-r from-[#f6dfab] to-[#c79548] text-luxury-text-dark hover:from-[#ffe8bf] hover:to-[#e2b463]"
               >
                 <Link href={`/${store.slug}/cast`}>もっと見る</Link>
               </Button>
@@ -244,7 +264,7 @@ export function StoreHomeContent({ store, data }: StoreHomeContentProps) {
           <div className="mx-auto max-w-6xl px-4">
             <SectionHeading title="SCHEDULE" subtitle="本日の出勤" icon={CalendarDays} />
             {todaysSchedules.length === 0 ? (
-              <div className="mt-8 rounded-lg border border-dashed border-[#3b2e1f] bg-black/40 p-10 text-center text-[#cbb88f]">
+              <div className="mt-8 rounded-lg border border-dashed border-luxury-border bg-black/40 p-10 text-center text-luxury-gold-muted">
                 本日出勤予定のキャスト情報はありません。最新の出勤情報はスケジュールページでご確認ください。
               </div>
             ) : (
@@ -258,7 +278,7 @@ export function StoreHomeContent({ store, data }: StoreHomeContentProps) {
               <Button
                 asChild
                 variant="outline"
-                className="border-[#f3d08a]/60 text-[#f5e6c4] hover:bg-[#2b2114]"
+                className="border-luxury-gold/60 text-luxury-gold-cream hover:bg-luxury-brown-muted"
               >
                 <Link href={`/${store.slug}/schedule`}>もっと見る</Link>
               </Button>
@@ -270,7 +290,7 @@ export function StoreHomeContent({ store, data }: StoreHomeContentProps) {
           <div className="mx-auto max-w-5xl px-4">
             <SectionHeading title="VOICE" subtitle="お客様の声" icon={MessageSquare} />
             {reviews.length === 0 ? (
-              <div className="mt-8 rounded-lg border border-dashed border-[#3b2e1f] bg-black/40 p-10 text-center text-[#cbb88f]">
+              <div className="mt-8 rounded-lg border border-dashed border-luxury-border bg-black/40 p-10 text-center text-luxury-gold-muted">
                 まだ口コミが投稿されていません。初めてのご利用後にぜひご感想をお寄せください。
               </div>
             ) : (
@@ -282,7 +302,6 @@ export function StoreHomeContent({ store, data }: StoreHomeContentProps) {
             )}
           </div>
         </section>
-
       </main>
 
       <StoreFooter store={store} />
@@ -294,8 +313,8 @@ export function StoreHomeContent({ store, data }: StoreHomeContentProps) {
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="luxury-panel flex flex-col items-center justify-center gap-2 rounded-md px-6 py-4 text-center">
-      <div className="luxury-display text-2xl text-[#f6d48a]">{value}</div>
-      <div className="text-xs text-[#d7c39c]">{label}</div>
+      <div className="luxury-display text-2xl text-luxury-gold-bright">{value}</div>
+      <div className="text-xs text-luxury-gold-dim">{label}</div>
     </div>
   )
 }
@@ -311,12 +330,12 @@ function SectionHeading({
 }) {
   return (
     <div className="text-center">
-      <div className="flex items-center justify-center gap-2 text-[#f3d08a]">
+      <div className="flex items-center justify-center gap-2 text-luxury-gold">
         {Icon ? <Icon className="h-5 w-5" /> : null}
         <p className="luxury-display text-sm tracking-[0.4em]">{title}</p>
       </div>
-      <h2 className="mt-3 text-2xl font-semibold text-[#f5e6c4]">{subtitle}</h2>
-      <div className="mx-auto mt-4 h-px w-32 bg-gradient-to-r from-transparent via-[#caa45a] to-transparent" />
+      <h2 className="mt-3 text-2xl font-semibold text-luxury-gold-cream">{subtitle}</h2>
+      <div className="mx-auto mt-4 h-px w-32 bg-gradient-to-r from-transparent via-luxury-gold-border to-transparent" />
     </div>
   )
 }
@@ -324,16 +343,16 @@ function SectionHeading({
 function RankingCard({ cast }: { cast: PublicCastSummary }) {
   const badgeClass =
     cast.panelDesignationRank === 1
-      ? 'bg-[#f6d48a] text-[#2b1b0d]'
+      ? 'bg-luxury-gold-bright text-luxury-text-dark'
       : cast.panelDesignationRank === 2
-        ? 'bg-[#bfc3c8] text-[#1a1a1a]'
+        ? 'bg-[#bfc3c8] text-luxury-panel-soft'
         : cast.panelDesignationRank === 3
-          ? 'bg-[#c97a3f] text-[#1a1a1a]'
-          : 'bg-[#2a2a2a] text-[#f5e6c4]'
+          ? 'bg-[#c97a3f] text-luxury-panel-soft'
+          : 'bg-[#2a2a2a] text-luxury-gold-cream'
 
   return (
     <div className="luxury-panel overflow-hidden rounded-md">
-      <div className="flex items-center justify-between border-b border-[#3b2e1f] bg-[#161616] px-4 py-3">
+      <div className="flex items-center justify-between border-b border-luxury-border bg-[#161616] px-4 py-3">
         <span className={cn('rounded-full px-3 py-1 text-xs font-semibold', badgeClass)}>
           {cast.panelDesignationRank > 0 ? `${cast.panelDesignationRank}位` : 'ランク外'}
         </span>
@@ -345,20 +364,20 @@ function RankingCard({ cast }: { cast: PublicCastSummary }) {
             // eslint-disable-next-line @next/next/no-img-element
             <img src={cast.images[0]} alt={cast.name} className="h-full w-full object-cover" />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-xs text-[#cbb88f]">
+            <div className="flex h-full w-full items-center justify-center text-xs text-luxury-gold-muted">
               NO IMAGE
             </div>
           )}
           {cast.panelDesignationRank === 1 ? (
-            <div className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-black/70 px-2 py-1 text-[10px] text-[#f6d48a]">
+            <div className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-black/70 px-2 py-1 text-xs text-luxury-gold-bright">
               <Crown className="h-3 w-3" />
               No.1
             </div>
           ) : null}
         </div>
-        <h3 className="text-lg font-semibold text-[#f5e6c4]">{cast.name}</h3>
-        {cast.age && <p className="text-sm text-[#d7c39c]">{cast.age}歳</p>}
-        <p className="mt-1 text-xs text-[#cbb88f]">{formatSizeLabel(cast)}</p>
+        <h3 className="text-lg font-semibold text-luxury-gold-cream">{cast.name}</h3>
+        {cast.age && <p className="text-sm text-luxury-gold-dim">{cast.age}歳</p>}
+        <p className="mt-1 text-xs text-luxury-gold-muted">{formatSizeLabel(cast)}</p>
       </div>
     </div>
   )
@@ -373,17 +392,17 @@ function CastSummaryCard({ cast }: { cast: PublicCastSummary }) {
             // eslint-disable-next-line @next/next/no-img-element
             <img src={cast.images[0]} alt={cast.name} className="h-full w-full object-cover" />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-xs text-[#cbb88f]">
+            <div className="flex h-full w-full items-center justify-center text-xs text-luxury-gold-muted">
               NO IMAGE
             </div>
           )}
-          <span className="absolute left-3 top-3 rounded bg-[#2fc8b7] px-2 py-1 text-[10px] font-semibold text-[#0b1a17]">
+          <span className="absolute left-3 top-3 rounded bg-luxury-aqua px-2 py-1 text-xs font-semibold text-luxury-aqua-deep">
             NEW
           </span>
         </div>
-        <h3 className="font-semibold text-[#f5e6c4]">{cast.name}</h3>
-        {cast.age && <p className="text-sm text-[#d7c39c]">{cast.age}歳</p>}
-        <p className="text-xs text-[#cbb88f]">{formatSizeLabel(cast)}</p>
+        <h3 className="font-semibold text-luxury-gold-cream">{cast.name}</h3>
+        {cast.age && <p className="text-sm text-luxury-gold-dim">{cast.age}歳</p>}
+        <p className="text-xs text-luxury-gold-muted">{formatSizeLabel(cast)}</p>
       </div>
     </div>
   )
@@ -399,18 +418,18 @@ function ScheduleCard({ schedule }: { schedule: PublicScheduleSummary }) {
             // eslint-disable-next-line @next/next/no-img-element
             <img src={cast.images[0]} alt={cast.name} className="h-full w-full object-cover" />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-xs text-[#cbb88f]">
+            <div className="flex h-full w-full items-center justify-center text-xs text-luxury-gold-muted">
               NO IMAGE
             </div>
           )}
-          <span className="absolute right-3 top-3 rounded bg-[#1d1d1d]/80 px-2 py-1 text-[10px] text-[#f5e6c4]">
+          <span className="absolute right-3 top-3 rounded bg-luxury-black-soft/80 px-2 py-1 text-xs text-luxury-gold-cream">
             出勤
           </span>
         </div>
-        <h3 className="font-semibold text-[#f5e6c4]">{cast.name}</h3>
-        {cast.age && <p className="text-sm text-[#d7c39c]">{cast.age}歳</p>}
-        <p className="text-xs text-[#cbb88f]">{formatSizeLabel(cast)}</p>
-        <Badge className="mt-3 w-full justify-center border border-[#f3d08a]/60 bg-transparent text-[#f3d08a]">
+        <h3 className="font-semibold text-luxury-gold-cream">{cast.name}</h3>
+        {cast.age && <p className="text-sm text-luxury-gold-dim">{cast.age}歳</p>}
+        <p className="text-xs text-luxury-gold-muted">{formatSizeLabel(cast)}</p>
+        <Badge className="mt-3 w-full justify-center border border-luxury-gold/60 bg-transparent text-luxury-gold">
           {formatScheduleRange(schedule)}
         </Badge>
       </div>
@@ -423,13 +442,13 @@ function ReviewCard({ review }: { review: PublicReviewSummary }) {
     <div className="luxury-panel rounded-md p-6">
       <div className="mb-4 flex items-start justify-between">
         <div>
-          <h4 className="font-semibold text-[#f5e6c4]">{review.castName}</h4>
-          <p className="text-sm text-[#d7c39c]">{review.customerAlias}</p>
-          <p className="text-xs text-[#cbb88f]">{formatReviewDate(review)}</p>
+          <h4 className="font-semibold text-luxury-gold-cream">{review.castName}</h4>
+          <p className="text-sm text-luxury-gold-dim">{review.customerAlias}</p>
+          <p className="text-xs text-luxury-gold-muted">{formatReviewDate(review)}</p>
         </div>
         <div className="flex gap-1">
           {Array.from({ length: review.rating }).map((_, index) => (
-            <Star key={index} className="h-4 w-4 fill-[#f3d08a] text-[#f3d08a]" />
+            <Star key={index} className="h-4 w-4 fill-luxury-gold text-luxury-gold" />
           ))}
         </div>
       </div>
@@ -453,12 +472,12 @@ function FloatingQuickNav({ store }: { store: Store }) {
         const content = (
           <>
             <link.icon className="h-5 w-5" />
-            <span className="text-[10px] tracking-[0.2em]">{link.label}</span>
+            <span className="text-xs tracking-[0.2em]">{link.label}</span>
           </>
         )
 
         const className =
-          'group flex w-20 flex-col items-center gap-2 rounded-md border border-[#3b2e1f] bg-[#1a1a1a]/90 px-2 py-3 text-[#f5e6c4] shadow-[0_8px_22px_rgba(0,0,0,0.55)] transition hover:border-[#f3d08a] hover:text-[#f6d48a]'
+          'group flex w-20 flex-col items-center gap-2 rounded-md border border-luxury-border bg-luxury-panel-soft/90 px-2 py-3 text-luxury-gold-cream shadow-[0_8px_22px_rgba(0,0,0,0.55)] transition hover:border-luxury-gold hover:text-luxury-gold-bright'
 
         return link.href.startsWith('tel:') ? (
           <a key={link.label} href={link.href} className={className} aria-label={link.label}>

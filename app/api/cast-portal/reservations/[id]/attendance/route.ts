@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Next 15 dynamic route params contract
+ * @related_to   lib/cast-portal/server: serializes cast reservation attendance state
+ * @known_issues Attendance timestamps are still validated only at route level
+ */
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import logger from '@/lib/logger'
@@ -10,10 +15,8 @@ const attendanceSchema = z.object({
   timestamp: z.string().datetime().optional(),
 })
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id: reservationId } = await params
   const { error, session } = await requireCast()
   if (error || !session) {
     return error ?? NextResponse.json({ error: '認証が必要です' }, { status: 401 })
@@ -36,7 +39,7 @@ export async function POST(
 
     const reservation = await db.reservation.findFirst({
       where: {
-        id: params.id,
+        id: reservationId,
         castId: session.user.id,
         storeId,
       },
@@ -71,7 +74,10 @@ export async function POST(
       })
     } else {
       if (!reservation.castCheckedInAt) {
-        return NextResponse.json({ error: 'チェックイン前のため、チェックアウトできません。' }, { status: 400 })
+        return NextResponse.json(
+          { error: 'チェックイン前のため、チェックアウトできません。' },
+          { status: 400 }
+        )
       }
 
       if (reservation.castCheckedOutAt) {
@@ -116,7 +122,7 @@ export async function POST(
 
     return NextResponse.json(serializeCastReservation(refreshed, new Date()))
   } catch (err) {
-    logger.error({ err, reservationId: params.id, castId: session.user.id }, 'Failed to update attendance')
+    logger.error({ err, reservationId, castId: session.user.id }, 'Failed to update attendance')
     return NextResponse.json({ error: '勤怠情報の更新に失敗しました。' }, { status: 500 })
   }
 }

@@ -1,3 +1,8 @@
+/**
+ * @design_doc   refactor-instructions.md Phase 6 D-11 analytics real-data connection
+ * @related_to   AnalyticsUseCases, AnalyticsRepositoryImpl: analytics data contracts
+ * @known_issues Baseline coverage is below the project target; see refactor-baseline.md
+ */
 export interface MonthlyData {
   month: number
   days: number
@@ -83,7 +88,7 @@ import { StaffAttendanceSummary } from '@/lib/types/staff-attendance'
 export interface AnalyticsRepository {
   getMonthlyData(year: number): Promise<MonthlyData[]>
   getDailyData(year: number, month: number): Promise<DailyData[]>
-  getStaffPerformanceData(): Promise<StaffPerformanceData[]>
+  getStaffPerformanceData(year: number, month: number): Promise<StaffPerformanceData[]>
   getCourseSalesData(year: number, month: number): Promise<CourseSalesData[]>
   getOptionSalesData(year: number): Promise<OptionSalesData[]>
   getOptionCombinationData(year: number): Promise<OptionCombinationData[]>

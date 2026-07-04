@@ -213,6 +213,7 @@ describe('Customer Journey Integration Tests', () => {
       id: 'customer-integration-1',
       ...customerData,
       password: 'hashed-password',
+      phoneVerified: true,
       birthDate: new Date('1990-01-01'),
       ngCasts: [],
       reservations: [],
@@ -459,6 +460,7 @@ describe('Customer Journey Integration Tests', () => {
     vi.mocked(db.customer.findUnique).mockResolvedValueOnce({
       id: 'customer1',
       name: 'Customer',
+      phoneVerified: true,
     } as any)
     vi.mocked(db.cast.findFirst).mockResolvedValueOnce({
       id: 'cast1',

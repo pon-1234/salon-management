@@ -5,7 +5,11 @@
  */
 
 import { env } from '@/lib/config/env'
-import { DEFAULT_BUSINESS_HOURS, parseBusinessHoursString, type BusinessHoursRange } from './business-hours'
+import {
+  DEFAULT_BUSINESS_HOURS,
+  parseBusinessHoursString,
+  type BusinessHoursRange,
+} from './business-hours'
 
 const FALLBACK_RANGE = DEFAULT_BUSINESS_HOURS
 

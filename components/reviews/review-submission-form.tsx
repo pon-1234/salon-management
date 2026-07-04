@@ -8,7 +8,13 @@ import { ja } from 'date-fns/locale'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, MessageCircle, Star, Lock } from 'lucide-react'
@@ -32,7 +38,11 @@ interface ReviewSubmissionFormProps {
 
 const ratingOptions = [5, 4, 3, 2, 1]
 
-export function ReviewSubmissionForm({ storeId, storeSlug, onReviewCreated }: ReviewSubmissionFormProps) {
+export function ReviewSubmissionForm({
+  storeId,
+  storeSlug,
+  onReviewCreated,
+}: ReviewSubmissionFormProps) {
   const { data: session, status } = useSession()
   const { toast } = useToast()
 
@@ -79,7 +89,8 @@ export function ReviewSubmissionForm({ storeId, storeSlug, onReviewCreated }: Re
   }, [isCustomer, storeId, toast])
 
   const selectedReservation = useMemo(
-    () => eligibleReservations.find((reservation) => reservation.id === selectedReservationId) ?? null,
+    () =>
+      eligibleReservations.find((reservation) => reservation.id === selectedReservationId) ?? null,
     [eligibleReservations, selectedReservationId]
   )
 
@@ -133,7 +144,9 @@ export function ReviewSubmissionForm({ storeId, storeSlug, onReviewCreated }: Re
       setComment('')
       setRating(5)
       setSelectedReservationId('')
-      setEligibleReservations((prev) => prev.filter((reservation) => reservation.id !== payload.reservationId))
+      setEligibleReservations((prev) =>
+        prev.filter((reservation) => reservation.id !== payload.reservationId)
+      )
     } catch (err) {
       setError(err instanceof Error ? err.message : '口コミの投稿に失敗しました')
     } finally {
@@ -145,7 +158,7 @@ export function ReviewSubmissionForm({ storeId, storeSlug, onReviewCreated }: Re
     return (
       <Card className="luxury-panel">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg text-[#f5e6c4]">
+          <CardTitle className="flex items-center gap-2 text-lg text-luxury-gold-cream">
             <Loader2 className="h-4 w-4 animate-spin" />
             口コミ投稿フォームを読み込み中...
           </CardTitle>
@@ -158,7 +171,7 @@ export function ReviewSubmissionForm({ storeId, storeSlug, onReviewCreated }: Re
     return (
       <Card className="luxury-panel">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg text-[#f5e6c4]">
+          <CardTitle className="flex items-center gap-2 text-lg text-luxury-gold-cream">
             <Lock className="h-4 w-4" />
             会員様限定機能
           </CardTitle>
@@ -174,7 +187,7 @@ export function ReviewSubmissionForm({ storeId, storeSlug, onReviewCreated }: Re
             </Button>
             <Button
               variant="outline"
-              className="border-[#3b2e1f] text-[#f5e6c4] hover:bg-[#2b2114]"
+              className="border-luxury-border text-luxury-gold-cream hover:bg-luxury-brown-muted"
               asChild
             >
               <Link href={`/${storeSlug}/register`}>会員登録</Link>
@@ -188,8 +201,8 @@ export function ReviewSubmissionForm({ storeId, storeSlug, onReviewCreated }: Re
   return (
     <Card className="luxury-panel">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg text-[#f5e6c4]">
-          <MessageCircle className="h-4 w-4 text-[#f3d08a]" />
+        <CardTitle className="flex items-center gap-2 text-lg text-luxury-gold-cream">
+          <MessageCircle className="h-4 w-4 text-luxury-gold" />
           口コミを投稿する
         </CardTitle>
         <CardDescription>
@@ -217,7 +230,9 @@ export function ReviewSubmissionForm({ storeId, storeSlug, onReviewCreated }: Re
               disabled={loadingReservations || submitting || eligibleReservations.length === 0}
             >
               <SelectTrigger id="reservation">
-                <SelectValue placeholder={loadingReservations ? '読み込み中...' : 'ご利用履歴を選択'} />
+                <SelectValue
+                  placeholder={loadingReservations ? '読み込み中...' : 'ご利用履歴を選択'}
+                />
               </SelectTrigger>
               <SelectContent>
                 {formattedReservations.map((reservation) => (
@@ -274,7 +289,7 @@ export function ReviewSubmissionForm({ storeId, storeSlug, onReviewCreated }: Re
           </div>
 
           {selectedReservation && (
-            <div className="rounded-md border border-[#3b2e1f] bg-[#121212] p-3 text-sm text-[#f5e6c4]">
+            <div className="rounded-md border border-luxury-border bg-luxury-panel-dark p-3 text-sm text-luxury-gold-cream">
               <strong>{selectedReservation.castName}</strong> のご利用に対する口コミです。
             </div>
           )}

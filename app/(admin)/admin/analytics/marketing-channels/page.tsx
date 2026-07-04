@@ -4,7 +4,15 @@ import { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { Printer, TrendingUp, TrendingDown, Megaphone, DollarSign, Target, BarChart3 } from 'lucide-react'
+import {
+  Printer,
+  TrendingUp,
+  TrendingDown,
+  Megaphone,
+  DollarSign,
+  Target,
+  BarChart3,
+} from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -69,7 +77,10 @@ export default function MarketingChannelsPage() {
           try {
             previous = await analyticsUseCases.getMarketingChannelReport(selectedYear - 1)
           } catch (prevError) {
-            console.warn('[MarketingChannelsPage] failed to fetch previous year marketing analytics', prevError)
+            console.warn(
+              '[MarketingChannelsPage] failed to fetch previous year marketing analytics',
+              prevError
+            )
           }
         }
 
@@ -124,38 +135,61 @@ export default function MarketingChannelsPage() {
     })
   }, [marketingData])
 
-  const roiData = useMemo(() => buildROIRows(marketingData, previousTotals), [marketingData, previousTotals])
-  const previousROIData = useMemo(() => buildROIRows(previousMarketingData, new Map()), [previousMarketingData])
+  const roiData = useMemo(
+    () => buildROIRows(marketingData, previousTotals),
+    [marketingData, previousTotals]
+  )
+  const previousROIData = useMemo(
+    () => buildROIRows(previousMarketingData, new Map()),
+    [previousMarketingData]
+  )
 
   const conversionData = useMemo(() => buildConversionRows(marketingData), [marketingData])
-  const previousConversionData = useMemo(() => buildConversionRows(previousMarketingData), [previousMarketingData])
+  const previousConversionData = useMemo(
+    () => buildConversionRows(previousMarketingData),
+    [previousMarketingData]
+  )
 
   const kpis: KPIData = useMemo(() => {
     const totalCustomers = marketingData.reduce((sum, channel) => sum + channel.total, 0)
-    const previousYearCustomers = previousMarketingData.reduce((sum, channel) => sum + channel.total, 0)
+    const previousYearCustomers = previousMarketingData.reduce(
+      (sum, channel) => sum + channel.total,
+      0
+    )
 
     const topChannel = marketingData.reduce((top, channel) => {
       if (!top || channel.total > top.total) return channel
       return top
     }, marketingData[0] ?? null)
 
-    const topChannelPercentage = totalCustomers > 0 && topChannel
-      ? Math.round((topChannel.total / totalCustomers) * 1000) / 10
-      : 0
+    const topChannelPercentage =
+      totalCustomers > 0 && topChannel
+        ? Math.round((topChannel.total / totalCustomers) * 1000) / 10
+        : 0
 
     const cacValues = roiData.filter((row) => row.cac > 0).map((row) => row.cac)
     const previousCacValues = previousROIData.filter((row) => row.cac > 0).map((row) => row.cac)
-    const averageCAC = cacValues.length > 0 ? Math.round(cacValues.reduce((sum, value) => sum + value, 0) / cacValues.length) : 0
-    const previousCAC = previousCacValues.length > 0
-      ? Math.round(previousCacValues.reduce((sum, value) => sum + value, 0) / previousCacValues.length)
-      : 0
+    const averageCAC =
+      cacValues.length > 0
+        ? Math.round(cacValues.reduce((sum, value) => sum + value, 0) / cacValues.length)
+        : 0
+    const previousCAC =
+      previousCacValues.length > 0
+        ? Math.round(
+            previousCacValues.reduce((sum, value) => sum + value, 0) / previousCacValues.length
+          )
+        : 0
 
-    const averageConversionRate = conversionData.rows.length > 0
-      ? conversionData.rows.reduce((sum, row) => sum + row.conversionRate, 0) / conversionData.rows.length
-      : 0
-    const previousAverageConversionRate = previousConversionData.rows.length > 0
-      ? previousConversionData.rows.reduce((sum, row) => sum + row.conversionRate, 0) / previousConversionData.rows.length
-      : 0
+    const averageConversionRate =
+      conversionData.rows.length > 0
+        ? conversionData.rows.reduce((sum, row) => sum + row.conversionRate, 0) /
+          conversionData.rows.length
+        : 0
+    const previousAverageConversionRate =
+      previousConversionData.rows.length > 0
+        ? previousConversionData.rows.reduce((sum, row) => sum + row.conversionRate, 0) /
+          previousConversionData.rows.length
+        : 0
 
     return {
       totalCustomers,
@@ -167,7 +201,14 @@ export default function MarketingChannelsPage() {
       conversionRate: Math.round(averageConversionRate * 10) / 10,
       previousConversionRate: Math.round(previousAverageConversionRate * 10) / 10,
     }
-  }, [marketingData, previousMarketingData, roiData, previousROIData, conversionData, previousConversionData])
+  }, [
+    marketingData,
+    previousMarketingData,
+    roiData,
+    previousROIData,
+    conversionData,
+    previousConversionData,
+  ])
 
   const haveValues = !isLoading && !error && marketingData.length > 0
 
@@ -229,7 +270,8 @@ export default function MarketingChannelsPage() {
             </div>
             <p className="flex items-center gap-1 text-xs text-muted-foreground">
               {haveValues ? (
-                kpis.previousYearCustomers > 0 && kpis.totalCustomers >= kpis.previousYearCustomers ? (
+                kpis.previousYearCustomers > 0 &&
+                kpis.totalCustomers >= kpis.previousYearCustomers ? (
                   <TrendingUp className="h-3 w-3 text-green-600" />
                 ) : (
                   <TrendingDown className="h-3 w-3 text-red-600" />
@@ -259,9 +301,7 @@ export default function MarketingChannelsPage() {
             <Megaphone className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-lg font-bold">
-              {haveValues ? kpis.topChannel : '--'}
-            </div>
+            <div className="text-lg font-bold">{haveValues ? kpis.topChannel : '--'}</div>
             <p className="text-xs text-muted-foreground">
               {haveValues ? `全体の${kpis.topChannelPercentage.toFixed(1)}%` : '--'}
             </p>
@@ -283,11 +323,12 @@ export default function MarketingChannelsPage() {
                   return <span className="text-muted-foreground">-</span>
                 }
                 const improvement = ((kpis.previousCAC - kpis.averageCAC) / kpis.previousCAC) * 100
-                const icon = improvement >= 0 ? (
-                  <TrendingUp className="h-3 w-3 text-green-600" />
-                ) : (
-                  <TrendingDown className="h-3 w-3 text-red-600" />
-                )
+                const icon =
+                  improvement >= 0 ? (
+                    <TrendingUp className="h-3 w-3 text-green-600" />
+                  ) : (
+                    <TrendingDown className="h-3 w-3 text-red-600" />
+                  )
                 return (
                   <>
                     {icon}
@@ -391,7 +432,10 @@ function buildROIRows(
   previousTotals: Map<string, number>
 ): MarketingROIRow[] {
   return marketingData.map((channel) => {
-    const meta = CHANNEL_COSTS[channel.channel] ?? { monthlyCost: DEFAULT_MONTHLY_COST, ltvMultiplier: 4 }
+    const meta = CHANNEL_COSTS[channel.channel] ?? {
+      monthlyCost: DEFAULT_MONTHLY_COST,
+      ltvMultiplier: 4,
+    }
     const customers = channel.total
     const cost = meta.monthlyCost * 12
     const revenue = customers * AVERAGE_TICKET_PRICE
@@ -399,11 +443,12 @@ function buildROIRows(
     const ltv = AVERAGE_TICKET_PRICE * meta.ltvMultiplier
     const roi = cost > 0 ? Math.round(((revenue - cost) / cost) * 100) : 0
     const previousCustomers = previousTotals.get(channel.channel) ?? 0
-    const trend = previousCustomers > 0
-      ? ((customers - previousCustomers) / previousCustomers) * 100
-      : customers > 0
-        ? 100
-        : 0
+    const trend =
+      previousCustomers > 0
+        ? ((customers - previousCustomers) / previousCustomers) * 100
+        : customers > 0
+          ? 100
+          : 0
 
     return {
       channel: channel.channel,

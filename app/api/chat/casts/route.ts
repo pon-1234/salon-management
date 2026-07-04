@@ -95,10 +95,7 @@ export async function GET(request: NextRequest) {
         lastMessageByCast.set(message.castId, message)
       }
       if (message.sender === 'cast' && message.readStatus === '未読') {
-        unreadCountByCast.set(
-          message.castId,
-          (unreadCountByCast.get(message.castId) || 0) + 1
-        )
+        unreadCountByCast.set(message.castId, (unreadCountByCast.get(message.castId) || 0) + 1)
       }
     })
 

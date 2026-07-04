@@ -1,6 +1,12 @@
 'use client'
 
+/**
+ * @design_doc   ui-improvement-instructions.md U-4 destructive confirmation dialogs
+ * @related_to   ConfirmDialog: replaces native confirm for option deletion
+ * @known_issues Existing option form behavior is unchanged
+ */
 import { useState, useEffect, useCallback } from 'react'
+import { PageHeader } from '@/components/admin/page-header'
 import { Header } from '@/components/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -26,9 +32,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import Link from 'next/link'
 import { getPricingUseCases, OptionPrice } from '@/lib/pricing'
 import { useToast } from '@/hooks/use-toast'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 const DEFAULT_STORE_RATIO = 0.6
 
@@ -182,10 +188,7 @@ export default function OptionInfoPage() {
       if (editingOption) {
         // Update existing option
         const updated = await pricingUseCases.updateOption(editingOption.id, dataToSave)
-        setOptions((prev) => [
-          ...prev.filter((option) => option.id !== editingOption.id),
-          updated,
-        ])
+        setOptions((prev) => [...prev.filter((option) => option.id !== editingOption.id), updated])
         toast({
           title: '更新完了',
           description: 'オプション情報が更新されました',
@@ -210,21 +213,19 @@ export default function OptionInfoPage() {
   }
 
   const handleDeleteOption = async (id: string) => {
-    if (confirm('このオプションを削除しますか？')) {
-      try {
-        await pricingUseCases.deleteOption(id)
-        setOptions((prev) => prev.filter((option) => option.id !== id))
-        toast({
-          title: '削除完了',
-          description: 'オプションが削除されました',
-        })
-      } catch (error) {
-        toast({
-          title: 'エラー',
-          description: '削除に失敗しました',
-          variant: 'destructive',
-        })
-      }
+    try {
+      await pricingUseCases.deleteOption(id)
+      setOptions((prev) => prev.filter((option) => option.id !== id))
+      toast({
+        title: '削除完了',
+        description: 'オプションが削除されました',
+      })
+    } catch (error) {
+      toast({
+        title: 'エラー',
+        description: '削除に失敗しました',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -281,28 +282,24 @@ export default function OptionInfoPage() {
       <Header />
       <main className="p-8">
         <div className="mx-auto max-w-6xl">
-          {/* Header */}
-          <div className="mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/admin/settings">
-                <Button variant="ghost" size="icon">
-                  <ArrowLeft className="h-5 w-5" />
+          <PageHeader
+            title="オプション情報設定"
+            backHref="/admin/settings"
+            backIcon={ArrowLeft}
+            icon={Package}
+            actions={
+              <>
+                <Button onClick={handleSync} variant="outline" disabled={syncing}>
+                  <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+                  全店舗に同期
                 </Button>
-              </Link>
-              <Package className="h-8 w-8 text-emerald-600" />
-              <h1 className="text-3xl font-bold text-gray-900">オプション情報設定</h1>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleSync} variant="outline" disabled={syncing}>
-                <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-                全店舗に同期
-              </Button>
-              <Button onClick={handleAddOption} className="bg-emerald-600 hover:bg-emerald-700">
-                <Plus className="mr-2 h-4 w-4" />
-                新規オプション追加
-              </Button>
-            </div>
-          </div>
+                <Button onClick={handleAddOption} className="bg-emerald-600 hover:bg-emerald-700">
+                  <Plus className="mr-2 h-4 w-4" />
+                  新規オプション追加
+                </Button>
+              </>
+            }
+          />
 
           {/* Statistics */}
           <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-4">
@@ -352,9 +349,9 @@ export default function OptionInfoPage() {
                   <TableRow>
                     <TableHead>表示順</TableHead>
                     <TableHead>オプション名</TableHead>
-                  <TableHead>カテゴリー</TableHead>
-                  <TableHead>表示</TableHead>
-                  <TableHead>料金</TableHead>
+                    <TableHead>カテゴリー</TableHead>
+                    <TableHead>表示</TableHead>
+                    <TableHead>料金</TableHead>
                     <TableHead>時間</TableHead>
                     <TableHead>ステータス</TableHead>
                     <TableHead>操作</TableHead>
@@ -381,9 +378,7 @@ export default function OptionInfoPage() {
                           <Badge variant="outline">{getCategoryLabel(option.category)}</Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            variant={option.visibility === 'public' ? 'default' : 'secondary'}
-                          >
+                          <Badge variant={option.visibility === 'public' ? 'default' : 'secondary'}>
                             {option.visibility === 'public' ? '公開' : '準非公開'}
                           </Badge>
                         </TableCell>
@@ -430,17 +425,25 @@ export default function OptionInfoPage() {
                               variant="ghost"
                               size="icon"
                               onClick={() => handleEditOption(option)}
+                              aria-label={`${option.name}を編集`}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeleteOption(option.id)}
-                              className="text-red-600 hover:text-red-700"
+                            <ConfirmDialog
+                              title="オプションを削除しますか？"
+                              description={`「${option.name}」を削除します。この操作は取り消せません。`}
+                              confirmLabel="削除する"
+                              onConfirm={() => handleDeleteOption(option.id)}
                             >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-red-600 hover:text-red-700"
+                                aria-label={`${option.name}を削除`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </ConfirmDialog>
                           </div>
                         </TableCell>
                       </TableRow>

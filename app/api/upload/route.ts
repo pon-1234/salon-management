@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth/config'
 import { getStorageService } from '@/lib/storage'
 import logger from '@/lib/logger'
 
@@ -6,6 +8,14 @@ export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: '認証が必要です' }, { status: 401 })
+    }
+    if (session.user.role !== 'admin' && session.user.role !== 'cast') {
+      return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
+    }
+
     const data = await request.formData()
     const file: File | null = data.get('file') as unknown as File
     const folder = data.get('folder') as string | null
@@ -44,9 +54,7 @@ export async function POST(request: NextRequest) {
         )
       }
       logger.error({ err: uploadError }, 'Image upload failed')
-      const message =
-        uploadError instanceof Error ? uploadError.message : 'アップロードに失敗しました'
-      return NextResponse.json({ error: message }, { status: 500 })
+      return NextResponse.json({ error: 'アップロードに失敗しました' }, { status: 500 })
     }
   } catch (error) {
     logger.error({ err: error }, 'Upload error')

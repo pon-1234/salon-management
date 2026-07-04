@@ -87,15 +87,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
 
     // Validate request body
-    const {
-      customerId,
-      castId,
-      sender,
-      content,
-      attachments,
-      isReservationInfo,
-      reservationInfo,
-    } = chatMessageSchema.parse(body)
+    const { customerId, castId, sender, content, attachments, isReservationInfo, reservationInfo } =
+      chatMessageSchema.parse(body)
 
     const trimmedContent = (content ?? '').trim()
 
@@ -118,12 +111,7 @@ export async function POST(request: NextRequest) {
         sender,
         content: trimmedContent,
         timestamp: new Date(),
-        readStatus:
-          sender === 'staff'
-            ? '未読'
-            : sender === 'customer'
-              ? '既読'
-              : '既読',
+        readStatus: sender === 'staff' ? '未読' : sender === 'customer' ? '既読' : '既読',
         isReservationInfo: isReservationInfo || false,
         reservationInfo: reservationInfo || Prisma.JsonNull,
         attachments: attachments && attachments.length > 0 ? attachments : Prisma.JsonNull,

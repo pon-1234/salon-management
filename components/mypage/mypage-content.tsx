@@ -78,13 +78,13 @@ export function MyPageContent({ store }: MyPageContentProps) {
           createdAt: data.createdAt ? new Date(data.createdAt) : null,
           smsEnabled: Boolean(data.smsEnabled),
           emailNotificationEnabled:
-            data.emailNotificationEnabled === undefined ? true : Boolean(data.emailNotificationEnabled),
+            data.emailNotificationEnabled === undefined
+              ? true
+              : Boolean(data.emailNotificationEnabled),
         })
       } catch (error) {
         if (!active) return
-        setProfileError(
-          error instanceof Error ? error.message : '顧客情報の取得に失敗しました'
-        )
+        setProfileError(error instanceof Error ? error.message : '顧客情報の取得に失敗しました')
       } finally {
         if (active) {
           setProfileLoading(false)

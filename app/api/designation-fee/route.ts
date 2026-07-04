@@ -9,10 +9,7 @@ import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
 import { Prisma } from '@prisma/client'
 import logger from '@/lib/logger'
-import {
-  DEFAULT_DESIGNATION_FEES,
-  normalizeDesignationShares,
-} from '@/lib/designation/fees'
+import { DEFAULT_DESIGNATION_FEES, normalizeDesignationShares } from '@/lib/designation/fees'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
 
 function normalizeNumber(value: unknown, fallback: number | null = null): number | null {

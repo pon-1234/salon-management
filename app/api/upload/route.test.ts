@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { POST } from './route'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import type { StorageService } from '@/lib/storage'
+import { getServerSession } from 'next-auth'
 
 const mockStorageService: StorageService = {
   upload: vi.fn(),
@@ -20,9 +21,54 @@ vi.mock('@/lib/logger', () => ({
   },
 }))
 
+vi.mock('next-auth', () => ({
+  getServerSession: vi.fn(),
+}))
+
+vi.mock('@/lib/auth/config', () => ({
+  authOptions: {},
+}))
+
 describe('POST /api/upload', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { id: 'admin-1', role: 'admin' },
+    } as never)
+  })
+
+  it('未認証の場合はアップロードを拒否する', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce(null)
+    const formData = new FormData()
+    formData.append('file', new File(['test'], 'test.jpg', { type: 'image/jpeg' }))
+    const request = {
+      formData: vi.fn().mockResolvedValue(formData),
+    } as unknown as NextRequest
+
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(401)
+    expect(data.error).toBe('認証が必要です')
+    expect(mockStorageService.upload).not.toHaveBeenCalled()
+  })
+
+  it('顧客ロールの場合はアップロードを拒否する', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'customer-1', role: 'customer' },
+    } as never)
+    const formData = new FormData()
+    formData.append('file', new File(['test'], 'test.jpg', { type: 'image/jpeg' }))
+    const request = {
+      formData: vi.fn().mockResolvedValue(formData),
+    } as unknown as NextRequest
+
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(403)
+    expect(data.error).toBe('この操作を行う権限がありません')
+    expect(mockStorageService.upload).not.toHaveBeenCalled()
   })
 
   it('ファイルが選択されていない場合はエラーを返す', async () => {

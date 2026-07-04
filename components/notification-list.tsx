@@ -85,15 +85,14 @@ export function NotificationList({
       <div className="flex items-center justify-between bg-emerald-600 p-4 text-white">
         <div>
           <h2 className="text-lg font-semibold">通知センター</h2>
-          <p className="text-xs opacity-80">
-            予約・チャットの最新イベントを表示しています
-          </p>
+          <p className="text-xs opacity-80">予約・チャットの最新イベントを表示しています</p>
         </div>
         <Button
           variant="ghost"
           size="icon"
           className="text-white hover:bg-emerald-700"
           onClick={onClose}
+          aria-label="通知センターを閉じる"
         >
           <X className="h-5 w-5" />
         </Button>
@@ -139,17 +138,19 @@ export function NotificationList({
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-2 text-sm text-emerald-600">
                         <span className="font-medium">{notification.storeName}</span>
-                        <Badge variant="outline" className="capitalize text-xs">
+                        <Badge variant="outline" className="text-xs capitalize">
                           チャット
                         </Badge>
                         <Badge variant="secondary" className="text-xs text-emerald-700">
                           {notification.details.castName}
                         </Badge>
                       </div>
-                      <p className="text-sm font-semibold text-foreground">{notification.message}</p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {notification.message}
+                      </p>
                       <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
                         <div>
-                          <span className="block text-[11px] uppercase text-muted-foreground">
+                          <span className="block text-xs uppercase text-muted-foreground">
                             未読メッセージ
                           </span>
                           <span className="font-semibold text-foreground">
@@ -158,7 +159,7 @@ export function NotificationList({
                         </div>
                         {notification.details.lastMessageTime && (
                           <div>
-                            <span className="block text-[11px] uppercase text-muted-foreground">
+                            <span className="block text-xs uppercase text-muted-foreground">
                               最終受信
                             </span>
                             <span>{notification.details.lastMessageTime}</span>
@@ -206,8 +207,7 @@ export function NotificationList({
               )
             }
 
-            const statusVariant =
-              statusVariantMap[notification.details.status] ?? 'secondary'
+            const statusVariant = statusVariantMap[notification.details.status] ?? 'secondary'
             const statusLabel =
               statusLabelMap[notification.details.status] ?? notification.details.status
 
@@ -231,30 +231,36 @@ export function NotificationList({
                     <p className="text-sm font-semibold text-foreground">{notification.message}</p>
                     <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground sm:grid-cols-3">
                       <div>
-                        <span className="block text-[11px] uppercase text-muted-foreground">ご予約</span>
+                        <span className="block text-xs uppercase text-muted-foreground">
+                          ご予約
+                        </span>
                         <span className="font-medium text-foreground">
                           {notification.details.reservationDate}{' '}
                           {notification.details.reservationTime}
                         </span>
                       </div>
                       <div>
-                        <span className="block text-[11px] uppercase text-muted-foreground">顧客</span>
+                        <span className="block text-xs uppercase text-muted-foreground">顧客</span>
                         <span className="font-medium text-foreground">
                           {notification.details.customerName}
                         </span>
                       </div>
                       <div>
-                        <span className="block text-[11px] uppercase text-muted-foreground">キャスト</span>
+                        <span className="block text-xs uppercase text-muted-foreground">
+                          キャスト
+                        </span>
                         <span className="font-medium text-foreground">
                           {notification.details.staffName ?? '未割当'}
                         </span>
                       </div>
                       <div>
-                        <span className="block text-[11px] uppercase text-muted-foreground">受付</span>
+                        <span className="block text-xs uppercase text-muted-foreground">受付</span>
                         <span>{notification.details.receivedTime}</span>
                       </div>
                       <div>
-                        <span className="block text-[11px] uppercase text-muted-foreground">予約ID</span>
+                        <span className="block text-xs uppercase text-muted-foreground">
+                          予約ID
+                        </span>
                         <span>{notification.details.reservationId}</span>
                       </div>
                     </div>

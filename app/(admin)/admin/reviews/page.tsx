@@ -1,22 +1,44 @@
 'use client'
 
+/**
+ * @design_doc   ui-improvement-instructions.md U-4 destructive confirmation dialogs
+ * @related_to   ConfirmDialog: replaces native confirm for review deletion
+ * @known_issues Existing table layout is unchanged
+ */
 import { useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { useStore } from '@/contexts/store-context'
 import type { Review } from '@/lib/reviews/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { Loader2, RefreshCw, ShieldCheck, Filter, Eye, EyeOff, Trash2, Star } from 'lucide-react'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 type StatusFilter = 'all' | 'published' | 'pending' | 'hidden'
 
-const statusLabels: Record<Review['status'], { label: string; variant: 'default' | 'outline'; className?: string }> = {
+const statusLabels: Record<
+  Review['status'],
+  { label: string; variant: 'default' | 'outline'; className?: string }
+> = {
   published: { label: '公開中', variant: 'default' },
   pending: { label: '審査中', variant: 'outline', className: 'border-amber-400 text-amber-600' },
   hidden: { label: '非公開', variant: 'outline', className: 'border-gray-300 text-gray-500' },
@@ -35,7 +57,9 @@ export default function AdminReviewsPage() {
     if (!currentStore?.id) return
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/review?storeId=${encodeURIComponent(currentStore.id)}&status=all`)
+      const response = await fetch(
+        `/api/review?storeId=${encodeURIComponent(currentStore.id)}&status=all`
+      )
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}))
         throw new Error(payload.error ?? '口コミ一覧の取得に失敗しました')
@@ -93,7 +117,9 @@ export default function AdminReviewsPage() {
         throw new Error(payload.error ?? '口コミの更新に失敗しました')
       }
 
-      setReviews((prev) => prev.map((review) => (review.id === reviewId ? (payload as Review) : review)))
+      setReviews((prev) =>
+        prev.map((review) => (review.id === reviewId ? (payload as Review) : review))
+      )
       toast({ description: '口コミの公開状態を更新しました。' })
     } catch (error) {
       console.error(error)
@@ -105,8 +131,6 @@ export default function AdminReviewsPage() {
   }
 
   const handleDelete = async (reviewId: string) => {
-    if (!confirm('この口コミを削除しますか？この操作は取り消せません。')) return
-
     try {
       const response = await fetch(`/api/review?id=${encodeURIComponent(reviewId)}`, {
         method: 'DELETE',
@@ -138,12 +162,17 @@ export default function AdminReviewsPage() {
               口コミ管理
             </CardTitle>
             <CardDescription>
-              {currentStore?.name ?? '店舗'}に寄せられた口コミを確認し、公開ステータスを管理できます。
+              {currentStore?.name ?? '店舗'}
+              に寄せられた口コミを確認し、公開ステータスを管理できます。
             </CardDescription>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={loadReviews} disabled={isLoading}>
-              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+              {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="mr-2 h-4 w-4" />
+              )}
               再読み込み
             </Button>
           </div>
@@ -167,7 +196,10 @@ export default function AdminReviewsPage() {
                 onChange={(event) => setSearchTerm(event.target.value)}
                 className="w-full sm:w-64"
               />
-              <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
+              <Select
+                value={statusFilter}
+                onValueChange={(value: StatusFilter) => setStatusFilter(value)}
+              >
                 <SelectTrigger className="w-full sm:w-40">
                   <SelectValue placeholder="状態フィルタ" />
                 </SelectTrigger>
@@ -196,12 +228,13 @@ export default function AdminReviewsPage() {
               <TableBody>
                 {filteredReviews.map((review) => {
                   const badgeInfo = statusLabels[review.status]
-                  const createdAt = review.createdAt instanceof Date ? review.createdAt : new Date(review.createdAt)
+                  const createdAt =
+                    review.createdAt instanceof Date ? review.createdAt : new Date(review.createdAt)
                   return (
                     <TableRow key={review.id}>
                       <TableCell>
                         <div className="space-y-1">
-                          <p className="text-sm text-gray-700 line-clamp-3">{review.comment}</p>
+                          <p className="line-clamp-3 text-sm text-gray-700">{review.comment}</p>
                           <p className="text-xs text-gray-500">
                             投稿者: {review.customerAlias}
                             {review.customerArea ? ` / ${review.customerArea}` : ''}
@@ -256,13 +289,16 @@ export default function AdminReviewsPage() {
                               <Filter className="mr-1 h-3.5 w-3.5" /> 審査中に戻す
                             </Button>
                           )}
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDelete(review.id)}
+                          <ConfirmDialog
+                            title="口コミを削除しますか？"
+                            description="この操作は取り消せません。"
+                            confirmLabel="削除する"
+                            onConfirm={() => handleDelete(review.id)}
                           >
-                            <Trash2 className="mr-1 h-3.5 w-3.5" /> 削除
-                          </Button>
+                            <Button size="sm" variant="destructive">
+                              <Trash2 className="mr-1 h-3.5 w-3.5" /> 削除
+                            </Button>
+                          </ConfirmDialog>
                         </div>
                       </TableCell>
                     </TableRow>

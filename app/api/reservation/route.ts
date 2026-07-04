@@ -22,6 +22,11 @@ import {
   calculateExpiryDate,
   resolvePointConfig,
 } from '@/lib/point/utils'
+import {
+  buildReservationConfirmationChatContent,
+  formatChatAmount,
+  resolveReservationTotalAmount,
+} from '@/lib/reservation/confirmation-chat'
 
 // Types
 interface AvailabilityCheck {
@@ -85,60 +90,6 @@ function formatDesignation(value: string | null | undefined): string {
   return DESIGNATION_LABEL_MAP[value] ?? value
 }
 
-function resolveReservationTotalAmount(reservation: any): number | null {
-  if (typeof reservation?.price === 'number') {
-    return reservation.price
-  }
-
-  const storeShare =
-    typeof reservation?.storeRevenue === 'number' ? reservation.storeRevenue : null
-  const staffShare =
-    typeof reservation?.staffRevenue === 'number' ? reservation.staffRevenue : null
-
-  if (storeShare !== null || staffShare !== null) {
-    return (storeShare ?? 0) + (staffShare ?? 0)
-  }
-
-  if (typeof reservation?.course?.price === 'number') {
-    return reservation.course.price
-  }
-
-  return null
-}
-
-function formatChatAmount(amount: number | null): string {
-  if (typeof amount === 'number' && Number.isFinite(amount)) {
-    return `${amount.toLocaleString()}円`
-  }
-  return '店舗より別途ご案内いたします'
-}
-
-function buildReservationConfirmationChatContent(amountLabel: string, phoneNumber: string): string {
-  const telLine = phoneNumber?.trim().length ? `TEL：${phoneNumber.trim()}` : 'TEL：店舗までお問い合わせください'
-  return [
-    'この度はネット予約をご利用いただき誠にありがとうございます。',
-    '',
-    'ご予約内容を確定させていただきました。',
-    '',
-    '＜支払内容＞',
-    `お支払総額：${amountLabel}（ホテル代別途）`,
-    '',
-    'ご予約時間10分前までに、ホテル名・お部屋番号を下記お店までお知らせください。',
-    telLine,
-    '※ご予約内容の変更・キャンセルなどは直接お電話にてご連絡ください。',
-    '',
-    '＜オススメホテルの紹介＞',
-    '※当店が池袋駅西口・北口にございますので下記ホテル及び周辺ホテルですとスムーズのご対応が可能になります。',
-    '・トキワウエスト',
-    '・グランドホテル',
-    '・ホテルトキワ',
-    '・アメジスト',
-    '※池袋東口・南口・西口一部の場合、別途タクシー代を頂く場合がございますのでご了承ください。',
-    '',
-    'ぜひ、素敵な時間をお過ごしください。',
-  ].join('\n')
-}
-
 async function sendReservationConfirmedChatMessage(
   reservation: any,
   storeSettings: any
@@ -148,10 +99,7 @@ async function sendReservationConfirmedChatMessage(
   }
 
   const amountLabel = formatChatAmount(resolveReservationTotalAmount(reservation))
-  const content = buildReservationConfirmationChatContent(
-    amountLabel,
-    storeSettings?.phone ?? ''
-  )
+  const content = buildReservationConfirmationChatContent(amountLabel, storeSettings?.phone ?? '')
 
   const confirmedAt = new Date()
   const reservationInfo = reservation?.startTime
@@ -503,36 +451,29 @@ export async function POST(request: NextRequest) {
 
     const nowUtc = new Date()
     if (startTime.getTime() <= nowUtc.getTime()) {
-      return NextResponse.json(
-        { error: 'Cannot create reservations in the past' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Cannot create reservations in the past' }, { status: 400 })
     }
 
-    const [
-      castRecord,
-      customerRecord,
-      courseRecord,
-      areaRecord,
-      stationRecord,
-      storeSettings,
-    ] = await Promise.all([
-      db.cast.findFirst({ where: { id: reservationData.castId, storeId } }),
-      db.customer.findUnique({
-        where: { id: targetCustomerId },
-        include: {
-          ngCasts: {
-            select: { castId: true, assignedBy: true },
+    const [castRecord, customerRecord, courseRecord, areaRecord, stationRecord, storeSettings] =
+      await Promise.all([
+        db.cast.findFirst({ where: { id: reservationData.castId, storeId } }),
+        db.customer.findUnique({
+          where: { id: targetCustomerId },
+          include: {
+            ngCasts: {
+              select: { castId: true, assignedBy: true },
+            },
           },
-        },
-      }),
-      db.coursePrice.findFirst({ where: { id: reservationData.courseId, storeId } }),
-      reservationData.areaId ? db.areaInfo.findFirst({ where: { id: reservationData.areaId, storeId } }) : Promise.resolve(null),
-      reservationData.stationId
-        ? db.stationInfo.findFirst({ where: { id: reservationData.stationId, storeId } })
-        : Promise.resolve(null),
-      db.storeSettings.findUnique({ where: { storeId } }),
-    ])
+        }),
+        db.coursePrice.findFirst({ where: { id: reservationData.courseId, storeId } }),
+        reservationData.areaId
+          ? db.areaInfo.findFirst({ where: { id: reservationData.areaId, storeId } })
+          : Promise.resolve(null),
+        reservationData.stationId
+          ? db.stationInfo.findFirst({ where: { id: reservationData.stationId, storeId } })
+          : Promise.resolve(null),
+        db.storeSettings.findUnique({ where: { storeId } }),
+      ])
 
     if (!customerRecord) {
       return NextResponse.json(
@@ -592,8 +533,7 @@ export async function POST(request: NextRequest) {
     const resolvedStationId =
       reservationData.stationId && stationRecord ? reservationData.stationId : null
 
-    const rawWelfareRate =
-      castRecord?.welfareExpenseRate ?? storeSettings?.welfareExpenseRate ?? 10
+    const rawWelfareRate = castRecord?.welfareExpenseRate ?? storeSettings?.welfareExpenseRate ?? 10
     const normalizedWelfareRate =
       typeof rawWelfareRate === 'number' && Number.isFinite(Number(rawWelfareRate))
         ? Number(rawWelfareRate)
@@ -611,7 +551,6 @@ export async function POST(request: NextRequest) {
       }
       paymentMethodToPersist = normalized
     }
-
 
     // 事前の空き状況チェック（早期リターン）
     const preflightAvailability = await checkCastAvailability(
@@ -676,10 +615,15 @@ export async function POST(request: NextRequest) {
           })
 
           const optionRecordMap = new Map(optionRecords.map((record) => [record.id, record]))
-          const missingOptionIds = uniqueOptionIds.filter((optionId) => !optionRecordMap.has(optionId))
+          const missingOptionIds = uniqueOptionIds.filter(
+            (optionId) => !optionRecordMap.has(optionId)
+          )
 
           if (missingOptionIds.length) {
-            logger.warn({ missingOptionIds }, 'Some option IDs could not be resolved and will be skipped')
+            logger.warn(
+              { missingOptionIds },
+              'Some option IDs could not be resolved and will be skipped'
+            )
           }
 
           optionsToCreate = optionIds
@@ -711,9 +655,7 @@ export async function POST(request: NextRequest) {
 
         const pointsToUse = requestedPointsValue
         const manualDiscountAmount =
-          typeof reservationData.discountAmount === 'number'
-            ? reservationData.discountAmount
-            : 0
+          typeof reservationData.discountAmount === 'number' ? reservationData.discountAmount : 0
 
         const revenueInputBase = {
           basePrice: Number(courseRecord.price ?? 0),
@@ -944,7 +886,11 @@ export async function PUT(request: NextRequest) {
     const storeId = existingReservation.storeId
     const normalizedStoreId = storeId?.trim().toLowerCase()
     const storeIdParam = request.nextUrl.searchParams.get('storeId')
-    if (storeIdParam && normalizedStoreId && storeIdParam.trim().toLowerCase() !== normalizedStoreId) {
+    if (
+      storeIdParam &&
+      normalizedStoreId &&
+      storeIdParam.trim().toLowerCase() !== normalizedStoreId
+    ) {
       return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
     }
 
@@ -1029,9 +975,7 @@ export async function PUT(request: NextRequest) {
         castShare: number | null
       }
 
-      const rawOptionIds: string[] | null = Array.isArray(updates.options)
-        ? updates.options
-        : null
+      const rawOptionIds: string[] | null = Array.isArray(updates.options) ? updates.options : null
       let normalizedOptionIds: string[] | null = null
       let optionRecordMap: Map<string, OptionRecord> | null = null
 
@@ -1062,13 +1006,18 @@ export async function PUT(request: NextRequest) {
               castShare: true,
             },
           })
-          optionRecordMap = new Map(optionRecords.map((record) => [record.id, {
-            id: record.id,
-            name: record.name,
-            price: record.price,
-            storeShare: record.storeShare ?? null,
-            castShare: record.castShare ?? null,
-          }]))
+          optionRecordMap = new Map(
+            optionRecords.map((record) => [
+              record.id,
+              {
+                id: record.id,
+                name: record.name,
+                price: record.price,
+                storeShare: record.storeShare ?? null,
+                castShare: record.castShare ?? null,
+              },
+            ])
+          )
           const validOptionIds = new Set(optionRecords.map((option) => option.id))
           if (validOptionIds.size !== uniqueOptionIds.length) {
             logger.warn(
@@ -1100,16 +1049,20 @@ export async function PUT(request: NextRequest) {
       if (updates.status) updateData.status = updates.status
       if ('cancellationSource' in updates) {
         updateData.cancellationSource =
-          updates.status === 'cancelled' ? updates.cancellationSource ?? null : null
+          updates.status === 'cancelled' ? (updates.cancellationSource ?? null) : null
       } else if (updates.status && updates.status !== 'cancelled') {
         updateData.cancellationSource = null
       }
       if (typeof updates.price === 'number') updateData.price = updates.price
       if ('designationType' in updates) updateData.designationType = updates.designationType ?? null
-      if (typeof updates.designationFee === 'number') updateData.designationFee = updates.designationFee
-      if (typeof updates.transportationFee === 'number') updateData.transportationFee = updates.transportationFee
-      if (typeof updates.additionalFee === 'number') updateData.additionalFee = updates.additionalFee
-      if (typeof updates.discountAmount === 'number') updateData.discountAmount = updates.discountAmount
+      if (typeof updates.designationFee === 'number')
+        updateData.designationFee = updates.designationFee
+      if (typeof updates.transportationFee === 'number')
+        updateData.transportationFee = updates.transportationFee
+      if (typeof updates.additionalFee === 'number')
+        updateData.additionalFee = updates.additionalFee
+      if (typeof updates.discountAmount === 'number')
+        updateData.discountAmount = updates.discountAmount
       if (updates.marketingChannel) updateData.marketingChannel = updates.marketingChannel
       if ('areaId' in updates) updateData.areaId = updates.areaId ?? null
       if ('stationId' in updates) updateData.stationId = updates.stationId ?? null
@@ -1179,15 +1132,15 @@ export async function PUT(request: NextRequest) {
       const transportFee =
         typeof updates.transportationFee === 'number'
           ? updates.transportationFee
-          : previousReservation.transportationFee ?? 0
+          : (previousReservation.transportationFee ?? 0)
       const additionalFee =
         typeof updates.additionalFee === 'number'
           ? updates.additionalFee
-          : previousReservation.additionalFee ?? 0
+          : (previousReservation.additionalFee ?? 0)
       const discountAmount =
         typeof updates.discountAmount === 'number'
           ? updates.discountAmount
-          : previousReservation.discountAmount ?? 0
+          : (previousReservation.discountAmount ?? 0)
 
       const existingPointsUsed = previousReservation.pointsUsed ?? 0
 
@@ -1195,8 +1148,7 @@ export async function PUT(request: NextRequest) {
         normalizedOptionIds === null
           ? (previousReservation.options ?? []).map((option: any) => ({
               price: Number(option?.option?.price ?? option?.optionPrice ?? 0),
-              storeShare:
-                option?.storeShare ?? option?.option?.storeShare ?? null,
+              storeShare: option?.storeShare ?? option?.option?.storeShare ?? null,
               castShare: option?.castShare ?? option?.option?.castShare ?? null,
             }))
           : (normalizedOptionIds ?? []).map((optionId) => {
@@ -1223,12 +1175,12 @@ export async function PUT(request: NextRequest) {
 
       const nextDesignationType =
         'designationType' in updates
-          ? updates.designationType ?? null
+          ? (updates.designationType ?? null)
           : previousReservation.designationType
       const designationAmount =
         typeof updates.designationFee === 'number'
           ? updates.designationFee
-          : previousReservation.designationFee ?? 0
+          : (previousReservation.designationFee ?? 0)
 
       let designationShare: { storeShare: number | null; castShare: number | null } | null = null
       if (designationAmount > 0 && nextDesignationType) {
@@ -1295,8 +1247,7 @@ export async function PUT(request: NextRequest) {
         typeof updates.staffRevenue === 'number' && Number.isFinite(updates.staffRevenue)
           ? updates.staffRevenue
           : null
-      let staffRevenue =
-        providedStaffRevenue !== null ? providedStaffRevenue : revenue.staffRevenue
+      let staffRevenue = providedStaffRevenue !== null ? providedStaffRevenue : revenue.staffRevenue
 
       if (providedStoreRevenue !== null && providedStoreRevenue < revenue.storeRevenue) {
         staffRevenue = Math.max(revenue.total - storeRevenue, 0)
@@ -1367,7 +1318,8 @@ export async function PUT(request: NextRequest) {
       }
 
       if (valuesDiffer(previousReservation.courseId, updated.courseId)) {
-        const oldCourse = previousReservation.course?.name || previousReservation.courseId || '未設定'
+        const oldCourse =
+          previousReservation.course?.name || previousReservation.courseId || '未設定'
         const newCourse = updated.course?.name || updated.courseId || '未設定'
         historyEntries.push({
           fieldName: 'courseId',
@@ -1494,7 +1446,8 @@ export async function PUT(request: NextRequest) {
       }
 
       if (valuesDiffer(previousReservation.stationId, updated.stationId)) {
-        const oldStation = previousReservation.station?.name || previousReservation.stationId || '未設定'
+        const oldStation =
+          previousReservation.station?.name || previousReservation.stationId || '未設定'
         const newStation = updated.station?.name || updated.stationId || '未設定'
         historyEntries.push({
           fieldName: 'stationId',

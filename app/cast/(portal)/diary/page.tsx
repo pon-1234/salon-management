@@ -1,3 +1,9 @@
+/**
+ * @design_doc   refactor-instructions.md D-1 current route documentation
+ * @related_to   Cast portal navigation: links to this external diary bridge page
+ * @known_issues External diary URL is configured by environment variables outside this module
+ */
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
@@ -30,7 +36,7 @@ export default async function CastDiaryRedirectPage() {
             <p>環境変数に `HEAVEN_MY_PAGE_URL` を設定してください。</p>
           </div>
           <Button asChild variant="outline">
-            <a href="/cast/dashboard">ダッシュボードに戻る</a>
+            <Link href="/cast/dashboard">ダッシュボードに戻る</Link>
           </Button>
         </CardContent>
       </Card>

@@ -43,11 +43,7 @@ export const DEFAULT_DESIGNATION_FEES: DesignationFee[] = [
   },
 ]
 
-export function normalizeDesignationShares(
-  price: number,
-  storeShare: number,
-  castShare: number
-) {
+export function normalizeDesignationShares(price: number, storeShare: number, castShare: number) {
   const normalizedPrice = Math.max(0, Math.round(price))
   const normalizedStore = Math.max(0, Math.round(storeShare))
   const normalizedCast = Math.max(0, Math.round(castShare))
@@ -83,9 +79,7 @@ export function findDesignationFeeByPrice(
 ) {
   if (price === null || price === undefined) return undefined
   const numeric =
-    typeof price === 'number'
-      ? price
-      : Number(String(price).replace(/[^0-9.-]+/g, ''))
+    typeof price === 'number' ? price : Number(String(price).replace(/[^0-9.-]+/g, ''))
 
   if (!Number.isFinite(numeric)) return undefined
   return fees.find((fee) => fee.price === numeric)

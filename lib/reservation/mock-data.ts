@@ -1,7 +1,5 @@
 import { Reservation, Service } from '../types/reservation'
-import { zonedTimeToUtc } from 'date-fns-tz'
-
-const JST_TIMEZONE = 'Asia/Tokyo'
+import { toUtcFromJst } from '@/lib/shared/timezone'
 
 const createJstDate = (
   year: number,
@@ -13,7 +11,7 @@ const createJstDate = (
   const month = monthIndex + 1
   const datePart = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
   const timePart = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
-  return zonedTimeToUtc(`${datePart}T${timePart}`, JST_TIMEZONE)
+  return toUtcFromJst(`${datePart}T${timePart}`)
 }
 
 type ReservationSeed = Omit<Reservation, 'storeId' | 'castId'> & {
@@ -266,9 +264,7 @@ export function getMockReservations(): Reservation[] {
   return [...mockReservations]
 }
 
-export async function getMockReservationsByCustomerId(
-  customerId: string
-): Promise<Reservation[]> {
+export async function getMockReservationsByCustomerId(customerId: string): Promise<Reservation[]> {
   // This is a mock implementation. In the future, replace this with an API call.
   return new Promise((resolve) => {
     setTimeout(() => {

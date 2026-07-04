@@ -113,7 +113,7 @@ export function HourlyHeatmap({ data }: HourlyHeatmapProps) {
       </Card>
 
       <div className="overflow-x-auto">
-        <div className="inline-grid min-w-full grid-cols-[96px_repeat(21,minmax(46px,1fr))] gap-1 text-[11px] md:text-xs">
+        <div className="inline-grid min-w-full grid-cols-[96px_repeat(21,minmax(46px,1fr))] gap-1 text-xs md:text-xs">
           <div className="h-12 rounded-md bg-muted px-2 py-3 text-left font-medium text-muted-foreground">
             曜日
           </div>
@@ -132,12 +132,12 @@ export function HourlyHeatmap({ data }: HourlyHeatmapProps) {
                 <div className="flex items-center gap-2">
                   <span>{summary.day}曜日</span>
                   {summary.day === '土' || summary.day === '日' ? (
-                    <Badge variant="destructive" className="rounded-sm text-[10px] uppercase">
+                    <Badge variant="destructive" className="rounded-sm text-xs uppercase">
                       weekend
                     </Badge>
                   ) : null}
                 </div>
-                <div className="text-[11px] text-muted-foreground">
+                <div className="text-xs text-muted-foreground">
                   平均 {summary.averageVisitors.toLocaleString()}人 / 日
                 </div>
               </div>
@@ -145,14 +145,12 @@ export function HourlyHeatmap({ data }: HourlyHeatmapProps) {
                 <div
                   key={`${summary.day}-${hours[index]}`}
                   className={cn(
-                    'flex h-[70px] flex-col items-center justify-center rounded-md border border-border/40 text-[11px] font-medium transition',
+                    'flex h-[70px] flex-col items-center justify-center rounded-md border border-border/40 text-xs font-medium transition',
                     getCellClasses(value)
                   )}
                 >
                   <span>{value > 0 ? value : '-'}</span>
-                  <span className="text-[10px] text-white/80">
-                    {hours[index]}時
-                  </span>
+                  <span className="text-xs text-white/80">{hours[index]}時</span>
                 </div>
               ))}
             </Fragment>

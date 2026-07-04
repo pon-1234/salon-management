@@ -1,6 +1,12 @@
 'use client'
 
+/**
+ * @design_doc   ui-improvement-instructions.md U-4 destructive confirmation dialogs
+ * @related_to   ConfirmDialog: replaces native confirm for station deletion
+ * @known_issues Existing station form behavior is unchanged
+ */
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { PageHeader } from '@/components/admin/page-header'
 import { Header } from '@/components/header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -25,19 +31,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import Link from 'next/link'
-import {
-  ArrowLeft,
-  Train,
-  Plus,
-  Edit,
-  Trash2,
-  RefreshCw,
-  MapPin,
-  Route,
-} from 'lucide-react'
+import { ArrowLeft, Train, Plus, Edit, Trash2, RefreshCw, MapPin, Route } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useStore } from '@/contexts/store-context'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 interface AreaOption {
   id: string
@@ -139,7 +136,7 @@ export default function StationInfoPage() {
         const response = await fetch(
           query ? `/api/settings/station?${query}` : '/api/settings/station',
           {
-          credentials: 'include',
+            credentials: 'include',
           }
         )
         if (!response.ok) {
@@ -220,14 +217,17 @@ export default function StationInfoPage() {
         params.set('storeId', currentStore.id)
       }
       const query = params.toString()
-      const response = await fetch(query ? `/api/settings/station?${query}` : '/api/settings/station', {
-        method,
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      })
+      const response = await fetch(
+        query ? `/api/settings/station?${query}` : '/api/settings/station',
+        {
+          method,
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        }
+      )
 
       if (!response.ok) {
         throw new Error(await response.text())
@@ -253,18 +253,19 @@ export default function StationInfoPage() {
   }
 
   const handleDelete = async (station: StationSettings) => {
-    if (!confirm(`${station.name}を削除しますか？`)) return
-
     try {
       const params = new URLSearchParams({ id: station.id })
       if (currentStore?.id) {
         params.set('storeId', currentStore.id)
       }
       const query = params.toString()
-      const response = await fetch(query ? `/api/settings/station?${query}` : '/api/settings/station', {
-        method: 'DELETE',
-        credentials: 'include',
-      })
+      const response = await fetch(
+        query ? `/api/settings/station?${query}` : '/api/settings/station',
+        {
+          method: 'DELETE',
+          credentials: 'include',
+        }
+      )
       if (!response.ok) {
         throw new Error(await response.text())
       }
@@ -290,24 +291,27 @@ export default function StationInfoPage() {
         params.set('storeId', currentStore.id)
       }
       const query = params.toString()
-      const response = await fetch(query ? `/api/settings/station?${query}` : '/api/settings/station', {
-        method: 'PUT',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: station.id,
-          name: station.name,
-          line: station.line ?? null,
-          areaId: station.areaId ?? null,
-          transportationFee: station.transportationFee ?? 0,
-          travelTime: station.travelTime ?? 0,
-          description: station.description ?? null,
-          displayOrder: station.displayOrder ?? 0,
-          isActive: !station.isActive,
-        }),
-      })
+      const response = await fetch(
+        query ? `/api/settings/station?${query}` : '/api/settings/station',
+        {
+          method: 'PUT',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: station.id,
+            name: station.name,
+            line: station.line ?? null,
+            areaId: station.areaId ?? null,
+            transportationFee: station.transportationFee ?? 0,
+            travelTime: station.travelTime ?? 0,
+            description: station.description ?? null,
+            displayOrder: station.displayOrder ?? 0,
+            isActive: !station.isActive,
+          }),
+        }
+      )
 
       if (!response.ok) {
         throw new Error(await response.text())
@@ -337,7 +341,10 @@ export default function StationInfoPage() {
     }
   }
 
-  const activeCount = useMemo(() => stations.filter((station) => station.isActive).length, [stations])
+  const activeCount = useMemo(
+    () => stations.filter((station) => station.isActive).length,
+    [stations]
+  )
   const averageFee = useMemo(() => {
     const fees = stations
       .map((station) => station.transportationFee ?? 0)
@@ -369,56 +376,47 @@ export default function StationInfoPage() {
       <Header />
       <main className="p-8">
         <div className="mx-auto max-w-6xl space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Link href="/admin/settings">
-                <Button variant="ghost" size="icon">
-                  <ArrowLeft className="h-5 w-5" />
+          <PageHeader
+            title="駅情報設定"
+            description="最寄り駅や路線別の交通費・所要時間を管理します"
+            backHref="/admin/settings"
+            backIcon={ArrowLeft}
+            icon={Train}
+            actions={
+              <>
+                <Select
+                  value={selectedAreaId}
+                  onValueChange={(value) => {
+                    setSelectedAreaId(value)
+                    fetchStations(value !== 'all' ? value : undefined)
+                  }}
+                >
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="エリアで絞り込み" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">すべてのエリア</SelectItem>
+                    {areas.map((area) => (
+                      <SelectItem key={area.id} value={area.id}>
+                        {area.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" onClick={handleSync} disabled={syncing}>
+                  <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+                  最新情報に更新
                 </Button>
-              </Link>
-              <div>
-                <h1 className="flex items-center gap-3 text-3xl font-bold text-gray-900">
-                  <Train className="h-8 w-8 text-emerald-600" />
-                  駅情報設定
-                </h1>
-                <p className="text-sm text-gray-600">
-                  最寄り駅や路線別の交通費・所要時間を管理します
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Select
-                value={selectedAreaId}
-                onValueChange={(value) => {
-                  setSelectedAreaId(value)
-                  fetchStations(value !== 'all' ? value : undefined)
-                }}
-              >
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="エリアで絞り込み" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">すべてのエリア</SelectItem>
-                  {areas.map((area) => (
-                    <SelectItem key={area.id} value={area.id}>
-                      {area.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button variant="outline" onClick={handleSync} disabled={syncing}>
-                <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-                最新情報に更新
-              </Button>
-              <Button
-                onClick={() => handleOpenDialog()}
-                className="bg-emerald-600 hover:bg-emerald-700"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                新規駅追加
-              </Button>
-            </div>
-          </div>
+                <Button
+                  onClick={() => handleOpenDialog()}
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  新規駅追加
+                </Button>
+              </>
+            }
+          />
 
           <div className="grid gap-4 md:grid-cols-3">
             <Card>
@@ -457,7 +455,9 @@ export default function StationInfoPage() {
           <Card>
             <CardHeader>
               <CardTitle>駅一覧</CardTitle>
-              <CardDescription>エリア別の駅情報を管理し、交通費や所要時間を設定します。</CardDescription>
+              <CardDescription>
+                エリア別の駅情報を管理し、交通費や所要時間を設定します。
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
@@ -487,7 +487,11 @@ export default function StationInfoPage() {
                             </div>
                           )}
                         </TableCell>
-                        <TableCell>{station.line || <span className="text-xs text-muted-foreground">未設定</span>}</TableCell>
+                        <TableCell>
+                          {station.line || (
+                            <span className="text-xs text-muted-foreground">未設定</span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           {station.area?.name ? (
                             <Badge variant="secondary" className="text-xs">
@@ -518,17 +522,25 @@ export default function StationInfoPage() {
                               variant="ghost"
                               size="icon"
                               onClick={() => handleOpenDialog(station)}
+                              aria-label={`${station.name}を編集`}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-red-600 hover:text-red-700"
-                              onClick={() => handleDelete(station)}
+                            <ConfirmDialog
+                              title="駅情報を削除しますか？"
+                              description={`「${station.name}」を削除します。この操作は取り消せません。`}
+                              confirmLabel="削除する"
+                              onConfirm={() => handleDelete(station)}
                             >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-red-600 hover:text-red-700"
+                                aria-label={`${station.name}を削除`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </ConfirmDialog>
                           </div>
                         </TableCell>
                       </TableRow>

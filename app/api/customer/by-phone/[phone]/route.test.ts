@@ -31,6 +31,9 @@ describe('GET /api/customer/by-phone/[phone]', () => {
     new NextRequest(`http://localhost:3000/api/customer/by-phone/${phone}`, {
       method: 'GET',
     })
+  const buildContext = (phone: string) => ({
+    params: Promise.resolve({ phone }),
+  })
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -39,9 +42,7 @@ describe('GET /api/customer/by-phone/[phone]', () => {
   it('returns 401 when session missing', async () => {
     vi.mocked(getServerSession).mockResolvedValueOnce(null)
 
-    const response = await GET(buildRequest('09012345678'), {
-      params: { phone: '09012345678' },
-    })
+    const response = await GET(buildRequest('09012345678'), buildContext('09012345678'))
 
     expect(response.status).toBe(401)
   })
@@ -51,9 +52,7 @@ describe('GET /api/customer/by-phone/[phone]', () => {
       user: { role: 'customer' },
     } as any)
 
-    const response = await GET(buildRequest('09012345678'), {
-      params: { phone: '09012345678' },
-    })
+    const response = await GET(buildRequest('09012345678'), buildContext('09012345678'))
 
     expect(response.status).toBe(403)
   })
@@ -68,9 +67,7 @@ describe('GET /api/customer/by-phone/[phone]', () => {
       password: 'hashed',
     } as any)
 
-    const response = await GET(buildRequest('09012345678'), {
-      params: { phone: '09012345678' },
-    })
+    const response = await GET(buildRequest('09012345678'), buildContext('09012345678'))
     const data = await response.json()
 
     expect(response.status).toBe(200)
@@ -84,9 +81,7 @@ describe('GET /api/customer/by-phone/[phone]', () => {
     } as any)
     vi.mocked(db.customer.findFirst).mockResolvedValueOnce(null)
 
-    const response = await GET(buildRequest('09000000000'), {
-      params: { phone: '09000000000' },
-    })
+    const response = await GET(buildRequest('09000000000'), buildContext('09000000000'))
 
     expect(response.status).toBe(404)
   })

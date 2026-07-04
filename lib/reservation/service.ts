@@ -5,13 +5,13 @@
  */
 
 import { PaymentService } from '@/lib/payment/service'
+import logger from '@/lib/logger'
 import {
   ProcessPaymentRequest,
   ProcessPaymentResult,
   PaymentIntent,
   PaymentTransaction,
 } from '@/lib/payment/types'
-import { prisma } from '@/lib/generated/prisma'
 
 export interface CreateReservationWithPaymentData {
   customerId: string
@@ -228,6 +228,6 @@ export class ReservationService {
 
   private async updateReservationStatus(reservationId: string, status: string) {
     // Mock implementation - would use Prisma to update reservation
-    console.log(`Updating reservation ${reservationId} status to ${status}`)
+    logger.info(`Updating reservation ${reservationId} status to ${status}`)
   }
 }

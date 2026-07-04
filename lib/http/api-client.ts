@@ -74,12 +74,9 @@ export class ApiClient {
         : ((body as BodyInit) ?? undefined)
 
     const finalHeaders = shouldSerialize
-      ? mergeHeaders(
-          headers,
-          {
-            'Content-Type': 'application/json',
-          } satisfies HeadersInit
-        )
+      ? mergeHeaders(headers, {
+          'Content-Type': 'application/json',
+        } satisfies HeadersInit)
       : headers
 
     const response = await fetch(url, {
@@ -90,9 +87,7 @@ export class ApiClient {
       body: payload,
     })
 
-    const matchesExpected = expectedStatus
-      ? expectedStatus.includes(response.status)
-      : response.ok
+    const matchesExpected = expectedStatus ? expectedStatus.includes(response.status) : response.ok
 
     if (!matchesExpected) {
       let errorBody: unknown
@@ -147,7 +142,10 @@ export class ApiClient {
   }
 
   delete<T = unknown>(path: string, options?: ApiRequestOptions): Promise<T> {
-    return this.request<T>('DELETE', path, { ...options, expectedStatus: options?.expectedStatus ?? [200, 204] })
+    return this.request<T>('DELETE', path, {
+      ...options,
+      expectedStatus: options?.expectedStatus ?? [200, 204],
+    })
   }
 }
 

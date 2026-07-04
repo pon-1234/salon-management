@@ -15,18 +15,10 @@ class MockCastRepository {
   constructor(private casts: Map<string, CastRecord>) {}
 
   static withCasts(records: CastRecord[]) {
-    return new MockCastRepository(
-      new Map(records.map((record) => [record.id, { ...record }]))
-    )
+    return new MockCastRepository(new Map(records.map((record) => [record.id, { ...record }])))
   }
 
-  async findUnique({
-    where,
-    select,
-  }: {
-    where: { id: string }
-    select: Record<string, boolean>
-  }) {
+  async findUnique({ where, select }: { where: { id: string }; select: Record<string, boolean> }) {
     const cast = this.casts.get(where.id)
     return cast ? this.pick(cast, select) : null
   }
@@ -39,10 +31,7 @@ class MockCastRepository {
     select: Record<string, boolean>
   }) {
     for (const cast of this.casts.values()) {
-      if (
-        where.lineUserId !== undefined &&
-        cast.lineUserId !== where.lineUserId
-      ) {
+      if (where.lineUserId !== undefined && cast.lineUserId !== where.lineUserId) {
         continue
       }
       if (where.NOT?.id && cast.id === where.NOT.id) {

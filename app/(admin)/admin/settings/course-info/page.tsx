@@ -1,7 +1,12 @@
 'use client'
 
+/**
+ * @design_doc   ui-improvement-instructions.md U-4 destructive confirmation dialogs
+ * @related_to   ConfirmDialog: replaces native confirm for course deletion
+ * @known_issues Existing pricing form behavior is unchanged
+ */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
+import { PageHeader } from '@/components/admin/page-header'
 import { Header } from '@/components/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -20,18 +25,10 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { getPricingUseCases } from '@/lib/pricing'
 import type { CoursePrice } from '@/lib/pricing/types'
-import {
-  ArrowLeft,
-  BookOpen,
-  Clock,
-  DollarSign,
-  Edit,
-  Plus,
-  RefreshCw,
-  Trash2,
-} from 'lucide-react'
+import { ArrowLeft, BookOpen, Clock, DollarSign, Edit, Plus, RefreshCw, Trash2 } from 'lucide-react'
 
 const DEFAULT_STORE_RATIO = 0.6
 
@@ -55,7 +52,8 @@ function toCurrency(amount: number | null | undefined) {
 
 function ensureShares(price: number, storeShare?: number | null, castShare?: number | null) {
   const safePrice = Math.max(0, price)
-  let store = typeof storeShare === 'number' ? storeShare : Math.round(safePrice * DEFAULT_STORE_RATIO)
+  let store =
+    typeof storeShare === 'number' ? storeShare : Math.round(safePrice * DEFAULT_STORE_RATIO)
   let cast = typeof castShare === 'number' ? castShare : safePrice - store
 
   if (store + cast !== safePrice) {
@@ -178,11 +176,7 @@ export default function CourseInfoPage() {
   const handlePriceChange = (price: number) => {
     setFormData((prev) => {
       const safePrice = Math.max(0, price)
-      const { storeShare, castShare } = ensureShares(
-        safePrice,
-        prev.storeShare,
-        prev.castShare
-      )
+      const { storeShare, castShare } = ensureShares(safePrice, prev.storeShare, prev.castShare)
       return { ...prev, price: safePrice, storeShare, castShare }
     })
   }
@@ -245,8 +239,6 @@ export default function CourseInfoPage() {
   }
 
   const handleDeleteCourse = async (id: string) => {
-    if (!confirm('このコースを削除しますか？')) return
-
     try {
       await pricingUseCases.deleteCourse(id)
       setCourses((prev) => prev.filter((course) => course.id !== id))
@@ -291,27 +283,24 @@ export default function CourseInfoPage() {
       <Header />
       <main className="p-8">
         <div className="mx-auto max-w-6xl space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/admin/settings">
-                <Button variant="ghost" size="icon">
-                  <ArrowLeft className="h-5 w-5" />
+          <PageHeader
+            title="コース情報設定"
+            backHref="/admin/settings"
+            backIcon={ArrowLeft}
+            icon={BookOpen}
+            actions={
+              <>
+                <Button onClick={handleSync} variant="outline" disabled={syncing}>
+                  <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+                  全店舗に同期
                 </Button>
-              </Link>
-              <BookOpen className="h-8 w-8 text-emerald-600" />
-              <h1 className="text-3xl font-bold text-gray-900">コース情報設定</h1>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleSync} variant="outline" disabled={syncing}>
-                <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-                全店舗に同期
-              </Button>
-              <Button onClick={openCreateDialog} className="bg-emerald-600 hover:bg-emerald-700">
-                <Plus className="mr-2 h-4 w-4" />
-                新規コース追加
-              </Button>
-            </div>
-          </div>
+                <Button onClick={openCreateDialog} className="bg-emerald-600 hover:bg-emerald-700">
+                  <Plus className="mr-2 h-4 w-4" />
+                  新規コース追加
+                </Button>
+              </>
+            }
+          />
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <Card>
@@ -353,30 +342,33 @@ export default function CourseInfoPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                  <TableHead className="whitespace-nowrap">コース名</TableHead>
-                  <TableHead className="w-32 whitespace-nowrap">時間</TableHead>
-                  <TableHead className="w-40 whitespace-nowrap">料金</TableHead>
-                  <TableHead className="w-48 whitespace-nowrap">売上配分</TableHead>
-                  <TableHead className="w-32 whitespace-nowrap text-center">
-                    WEB予約
-                  </TableHead>
-                  <TableHead className="whitespace-nowrap">説明</TableHead>
-                  <TableHead className="w-32 whitespace-nowrap">操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+                    <TableHead className="whitespace-nowrap">コース名</TableHead>
+                    <TableHead className="w-32 whitespace-nowrap">時間</TableHead>
+                    <TableHead className="w-40 whitespace-nowrap">料金</TableHead>
+                    <TableHead className="w-48 whitespace-nowrap">売上配分</TableHead>
+                    <TableHead className="w-32 whitespace-nowrap text-center">WEB予約</TableHead>
+                    <TableHead className="whitespace-nowrap">説明</TableHead>
+                    <TableHead className="w-32 whitespace-nowrap">操作</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {sortedCourses.map((course) => (
                     <TableRow key={course.id}>
-                      <TableCell className="font-medium whitespace-nowrap">{course.name}</TableCell>
+                      <TableCell className="whitespace-nowrap font-medium">{course.name}</TableCell>
                       <TableCell className="whitespace-nowrap">{course.duration}分</TableCell>
-                      <TableCell className="whitespace-nowrap">{toCurrency(course.price)}</TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {toCurrency(course.price)}
+                      </TableCell>
                       <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                        店舗 {toCurrency(course.storeShare)} / キャスト {toCurrency(course.castShare)}
+                        店舗 {toCurrency(course.storeShare)} / キャスト{' '}
+                        {toCurrency(course.castShare)}
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge
                           variant={course.enableWebBooking ? 'default' : 'secondary'}
-                          className={course.enableWebBooking ? 'bg-emerald-600' : 'bg-gray-200 text-gray-700'}
+                          className={
+                            course.enableWebBooking ? 'bg-emerald-600' : 'bg-gray-200 text-gray-700'
+                          }
                         >
                           {course.enableWebBooking ? '公開中' : '非表示'}
                         </Badge>
@@ -390,17 +382,25 @@ export default function CourseInfoPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => openEditDialog(course)}
+                            aria-label={`${course.name}を編集`}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteCourse(course.id)}
-                            className="text-red-600 hover:text-red-700"
+                          <ConfirmDialog
+                            title="コースを削除しますか？"
+                            description={`「${course.name}」を削除します。この操作は取り消せません。`}
+                            confirmLabel="削除する"
+                            onConfirm={() => handleDeleteCourse(course.id)}
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-600 hover:text-red-700"
+                              aria-label={`${course.name}を削除`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </ConfirmDialog>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -493,9 +493,7 @@ export default function CourseInfoPage() {
                 id="course-description"
                 rows={3}
                 value={formData.description}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, description: e.target.value }))
-                }
+                onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
               />
             </div>
 

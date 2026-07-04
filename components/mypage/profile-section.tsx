@@ -1,5 +1,13 @@
 'use client'
 
+/**
+ * @design_doc   ui-improvement-instructions.md U-1 toast feedback and current mypage UX
+ * @related_to   MypageContent: passes customer profile data into this read-only section
+ * @known_issues Account management buttons remain display-only until account settings APIs exist
+ */
+import { useState } from 'react'
+
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -190,7 +198,7 @@ export function ProfileSection({ user, customerId, onProfileUpdated }: ProfileSe
       </Card>
 
       {/* Birthday Benefits */}
-      {user.birthMonth === new Date().getMonth() + 1 && (
+      {user.birthDate && user.birthDate.getMonth() === new Date().getMonth() && (
         <Alert className="border-yellow-500 bg-yellow-50">
           <Gift className="h-4 w-4 text-yellow-600" />
           <AlertDescription className="text-yellow-800">

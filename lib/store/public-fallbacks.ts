@@ -8,7 +8,9 @@ import type {
 } from './public-types'
 import type { Store } from './types'
 
-function createCastSummary(partial: Partial<PublicCastSummary> & { name: string }): PublicCastSummary {
+function createCastSummary(
+  partial: Partial<PublicCastSummary> & { name: string }
+): PublicCastSummary {
   const {
     panelDesignationRank = 0,
     regularDesignationRank = 0,

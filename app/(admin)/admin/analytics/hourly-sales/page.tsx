@@ -126,7 +126,10 @@ export default function HourlySalesPage() {
         try {
           previous = await analyticsUseCases.getHourlySalesReport(previousYear, previousMonth)
         } catch (prevError) {
-          console.warn('[HourlySalesPage] failed to fetch previous month hourly analytics', prevError)
+          console.warn(
+            '[HourlySalesPage] failed to fetch previous month hourly analytics',
+            prevError
+          )
         }
 
         if (!isMounted) return
@@ -165,12 +168,12 @@ export default function HourlySalesPage() {
     (acc, value, idx) => (value > acc.value ? { value, idx } : acc),
     { value: 0, idx: -1 }
   )
-  const peakHour =
-    peakIndex.idx >= 0 ? `${peakIndex.idx + 7}:00-${peakIndex.idx + 8}:00` : '--'
+  const peakHour = peakIndex.idx >= 0 ? `${peakIndex.idx + 7}:00-${peakIndex.idx + 8}:00` : '--'
   const averagePerHour =
     salesData.hourlyTotals.length > 0
       ? Math.round(
-          salesData.hourlyTotals.reduce((sum, value) => sum + value, 0) / salesData.hourlyTotals.length
+          salesData.hourlyTotals.reduce((sum, value) => sum + value, 0) /
+            salesData.hourlyTotals.length
         )
       : 0
   const busyHours = salesData.hourlyTotals.filter(
@@ -194,9 +197,7 @@ export default function HourlySalesPage() {
     : '前月'
   const totalDifference = kpiData.totalCustomers - kpiData.previousMonthTotal
   const growthRate = calculateGrowthRate(kpiData.totalCustomers, kpiData.previousMonthTotal)
-  const growthRateRounded = Number.isFinite(growthRate)
-    ? Math.round(growthRate * 10) / 10
-    : 0
+  const growthRateRounded = Number.isFinite(growthRate) ? Math.round(growthRate * 10) / 10 : 0
   const growthRateDisplay = `${growthRateRounded >= 0 ? '+' : ''}${growthRateRounded.toFixed(1)}%`
   const efficiencyDelta = kpiData.efficiency - kpiData.previousEfficiency
   const efficiencyDeltaRounded = Math.round(efficiencyDelta * 10) / 10
@@ -368,8 +369,7 @@ export default function HourlySalesPage() {
         (acc, value, index) => (value > acc.value ? { value, index } : acc),
         { value: 0, index: -1 }
       )
-      const peakRange =
-        peak.index >= 0 ? `${peak.index + 7}:00-${peak.index + 8}:00` : '--'
+      const peakRange = peak.index >= 0 ? `${peak.index + 7}:00-${peak.index + 8}:00` : '--'
       const averagePerHour =
         day.hours.length > 0 ? Math.round((day.total / day.hours.length) * 10) / 10 : 0
 
@@ -385,27 +385,24 @@ export default function HourlySalesPage() {
     const busiest = describeDay(sortedByTotal[0])
     const quietest = describeDay(sortedByTotal[sortedByTotal.length - 1])
 
-    const averagePerDay =
-      Math.round((salesData.grandTotal / sortedByTotal.length) * 10) / 10
+    const averagePerDay = Math.round((salesData.grandTotal / sortedByTotal.length) * 10) / 10
 
-    const weekendDays = sortedByTotal.filter((day) => day.dayOfWeek === '土' || day.dayOfWeek === '日')
-    const weekdayDays = sortedByTotal.filter((day) => day.dayOfWeek !== '土' && day.dayOfWeek !== '日')
+    const weekendDays = sortedByTotal.filter(
+      (day) => day.dayOfWeek === '土' || day.dayOfWeek === '日'
+    )
+    const weekdayDays = sortedByTotal.filter(
+      (day) => day.dayOfWeek !== '土' && day.dayOfWeek !== '日'
+    )
 
     const weekendTotal = weekendDays.reduce((sum, day) => sum + day.total, 0)
     const weekdayTotal = weekdayDays.reduce((sum, day) => sum + day.total, 0)
 
     const weekendAverage =
-      weekendDays.length > 0
-        ? Math.round((weekendTotal / weekendDays.length) * 10) / 10
-        : 0
+      weekendDays.length > 0 ? Math.round((weekendTotal / weekendDays.length) * 10) / 10 : 0
     const weekdayAverage =
-      weekdayDays.length > 0
-        ? Math.round((weekdayTotal / weekdayDays.length) * 10) / 10
-        : 0
+      weekdayDays.length > 0 ? Math.round((weekdayTotal / weekdayDays.length) * 10) / 10 : 0
     const weekendShare =
-      salesData.grandTotal > 0
-        ? Math.round((weekendTotal / salesData.grandTotal) * 1000) / 10
-        : 0
+      salesData.grandTotal > 0 ? Math.round((weekendTotal / salesData.grandTotal) * 1000) / 10 : 0
 
     return {
       busiest,
@@ -453,7 +450,8 @@ export default function HourlySalesPage() {
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
-            {currentStore.name}の時間帯別実績です。ピーク時間帯や稼働効率の変化を前月比で確認できます。
+            {currentStore.name}
+            の時間帯別実績です。ピーク時間帯や稼働効率の変化を前月比で確認できます。
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 print:hidden">
@@ -475,10 +473,7 @@ export default function HourlySalesPage() {
             来月
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <Button
-            onClick={handlePrint}
-            className="bg-emerald-600 text-white hover:bg-emerald-700"
-          >
+          <Button onClick={handlePrint} className="bg-emerald-600 text-white hover:bg-emerald-700">
             <Printer className="mr-2 h-4 w-4" />
             印刷する
           </Button>
@@ -519,9 +514,7 @@ export default function HourlySalesPage() {
                     </span>
                     <div className="text-2xl font-semibold">{metric.value}</div>
                   </div>
-                  <span
-                    className={`rounded-full p-2 text-sm font-semibold ${metric.accent}`}
-                  >
+                  <span className={`rounded-full p-2 text-sm font-semibold ${metric.accent}`}>
                     <Icon className="h-4 w-4" />
                   </span>
                 </div>
@@ -580,9 +573,7 @@ export default function HourlySalesPage() {
                                 {dailyHighlights.busiest.dayOfWeek})
                               </div>
                             </div>
-                            <Badge variant="secondary">
-                              {dailyHighlights.busiest.peakRange}
-                            </Badge>
+                            <Badge variant="secondary">{dailyHighlights.busiest.peakRange}</Badge>
                           </div>
                           <p className="text-xs text-muted-foreground">
                             総来客数 {dailyHighlights.busiest.total.toLocaleString()}人（平均比{' '}
@@ -607,9 +598,7 @@ export default function HourlySalesPage() {
                                 {dailyHighlights.quietest.dayOfWeek})
                               </div>
                             </div>
-                            <Badge variant="outline">
-                              {dailyHighlights.quietest.peakRange}
-                            </Badge>
+                            <Badge variant="outline">{dailyHighlights.quietest.peakRange}</Badge>
                           </div>
                           <p className="text-xs text-muted-foreground">
                             総来客数 {dailyHighlights.quietest.total.toLocaleString()}人（平均比{' '}
@@ -620,8 +609,8 @@ export default function HourlySalesPage() {
                             ）
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            平均 {formatPeopleValue(dailyHighlights.quietest.averagePerHour)}人/時 ・
-                            ピーク {dailyHighlights.quietest.peakCount.toLocaleString()}人
+                            平均 {formatPeopleValue(dailyHighlights.quietest.averagePerHour)}人/時
+                            ・ ピーク {dailyHighlights.quietest.peakCount.toLocaleString()}人
                           </p>
                         </div>
                       </CardContent>
@@ -631,7 +620,8 @@ export default function HourlySalesPage() {
                       <CardHeader className="pb-3">
                         <CardTitle className="text-sm font-semibold">曜日別傾向</CardTitle>
                         <p className="text-xs text-muted-foreground">
-                          週末 {dailyHighlights.weekendDays}日 / 平日 {dailyHighlights.weekdayDays}日
+                          週末 {dailyHighlights.weekendDays}日 / 平日 {dailyHighlights.weekdayDays}
+                          日
                         </p>
                       </CardHeader>
                       <CardContent className="grid gap-3 sm:grid-cols-2">
@@ -702,9 +692,7 @@ export default function HourlySalesPage() {
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">{previousPeriodLabel}</span>
-                  <span
-                    className={efficiencyDelta >= 0 ? 'text-emerald-600' : 'text-rose-600'}
-                  >
+                  <span className={efficiencyDelta >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
                     {efficiencyDeltaDisplay}
                   </span>
                 </div>

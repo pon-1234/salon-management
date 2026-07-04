@@ -49,11 +49,12 @@ export function DistrictPerformanceTable({ current, previous }: DistrictPerforma
       const newCustomers = district.newCustomerTotal ?? 0
       const newCustomerRate = customers > 0 ? (newCustomers / customers) * 100 : 0
       const repeatRate = 100 - newCustomerRate
-      const growthRate = previousRevenue > 0
-        ? ((revenue - previousRevenue) / previousRevenue) * 100
-        : revenue > 0
-          ? 100
-          : 0
+      const growthRate =
+        previousRevenue > 0
+          ? ((revenue - previousRevenue) / previousRevenue) * 100
+          : revenue > 0
+            ? 100
+            : 0
 
       return {
         district: district.district,
@@ -111,7 +112,9 @@ export function DistrictPerformanceTable({ current, previous }: DistrictPerforma
               <TableCell className="font-medium">{item.district}</TableCell>
               <TableCell className="text-right">¥{item.revenue.toLocaleString()}</TableCell>
               <TableCell className="text-right">{item.customers.toLocaleString()}人</TableCell>
-              <TableCell className="text-right">¥{Math.round(item.averageSpending).toLocaleString()}</TableCell>
+              <TableCell className="text-right">
+                ¥{Math.round(item.averageSpending).toLocaleString()}
+              </TableCell>
               <TableCell className="text-right">{item.newCustomerRate.toFixed(1)}%</TableCell>
               <TableCell className="text-right">{item.repeatRate.toFixed(1)}%</TableCell>
               <TableCell className="text-center">{getPerformanceBadge(item.repeatRate)}</TableCell>

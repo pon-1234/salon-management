@@ -22,7 +22,20 @@ export function DistrictHeatmapTable({ data }: DistrictHeatmapTableProps) {
     )
   }
 
-  const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+  const months = [
+    '1月',
+    '2月',
+    '3月',
+    '4月',
+    '5月',
+    '6月',
+    '7月',
+    '8月',
+    '9月',
+    '10月',
+    '11月',
+    '12月',
+  ]
   const maxRevenue = Math.max(...data.flatMap((district) => district.monthlySales))
 
   const getCellColor = (revenue: number) => {

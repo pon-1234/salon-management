@@ -1,9 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { customers, getCustomerUsageHistory, getCustomerPointHistory } from './data'
 
 describe('Customer Data', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   describe('customers', () => {

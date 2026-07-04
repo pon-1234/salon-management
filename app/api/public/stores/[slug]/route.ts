@@ -19,7 +19,8 @@ function normalizeOpeningHours(store: any, storeSettings: any, fallback: any) {
     : DEFAULT_BUSINESS_HOURS
 
   const fallbackOpeningHours =
-    fallback?.openingHours ?? ({
+    fallback?.openingHours ??
+    ({
       weekday: { open: businessHoursRange.startLabel, close: businessHoursRange.endLabel },
       weekend: { open: businessHoursRange.startLabel, close: businessHoursRange.endLabel },
     } as const)
@@ -42,7 +43,9 @@ function mapCastToSummary(cast: any) {
         ? [cast.image]
         : []
 
-  const images = rawImages.filter((url: unknown): url is string => typeof url === 'string' && url.length > 0)
+  const images = rawImages.filter(
+    (url: unknown): url is string => typeof url === 'string' && url.length > 0
+  )
   const primaryImage = images[0] ?? '/images/non-photo.svg'
 
   return {
@@ -83,11 +86,8 @@ function anonymizeCustomerName(name?: string | null) {
   return `${first}***`
 }
 
-export async function GET(
-  _request: Request,
-  context: { params: { slug: string } }
-) {
-  const { slug } = context.params
+export async function GET(_request: Request, context: { params: Promise<{ slug: string }> }) {
+  const { slug } = await context.params
   const normalizedSlug = slug?.toLowerCase()
 
   if (!normalizedSlug) {
@@ -170,10 +170,7 @@ export async function GET(
       include: {
         cast: true,
       },
-      orderBy: [
-        { startTime: 'asc' },
-        { endTime: 'asc' },
-      ],
+      orderBy: [{ startTime: 'asc' }, { endTime: 'asc' }],
       take: 12,
     })
 
@@ -189,10 +186,7 @@ export async function GET(
         include: {
           cast: true,
         },
-        orderBy: [
-          { startTime: 'asc' },
-          { endTime: 'asc' },
-        ],
+        orderBy: [{ startTime: 'asc' }, { endTime: 'asc' }],
         take: 12,
       })
     }
@@ -216,11 +210,10 @@ export async function GET(
     const ranking = uniqueBy(rankingCastsRaw.map(mapCastToSummary)).slice(0, 4)
 
     const newcomers = uniqueBy(
-      newcomersRaw
-        .map((cast) => ({
-          ...mapCastToSummary(cast),
-          netReservation: cast.netReservation ?? true,
-        }))
+      newcomersRaw.map((cast) => ({
+        ...mapCastToSummary(cast),
+        netReservation: cast.netReservation ?? true,
+      }))
     ).slice(0, 4)
 
     const todaysSchedules = uniqueBy(
@@ -264,24 +257,25 @@ export async function GET(
       take: 10,
     })
 
-    const banners = (customBanners.length > 0
-      ? customBanners.map((banner) => ({
-          id: banner.id,
-          title: banner.title,
-          imageUrl: banner.imageUrl,
-          mobileImageUrl: banner.mobileImageUrl ?? banner.imageUrl,
-          link: banner.link ?? `/${store.slug}/pricing`,
-        }))
-      : (() => {
-          const bannerSources = ranking.length > 0 ? ranking : newcomers
-          return bannerSources.slice(0, 3).map((cast) => ({
-            id: `banner-${cast.id}`,
-            title: `${cast.name} 最新情報`,
-            imageUrl: cast.image ?? '/images/non-photo.svg',
-            mobileImageUrl: cast.image ?? '/images/non-photo.svg',
-            link: `/${store.slug}/cast/${cast.id}`,
+    const banners =
+      customBanners.length > 0
+        ? customBanners.map((banner) => ({
+            id: banner.id,
+            title: banner.title,
+            imageUrl: banner.imageUrl,
+            mobileImageUrl: banner.mobileImageUrl ?? banner.imageUrl,
+            link: banner.link ?? `/${store.slug}/pricing`,
           }))
-        })())
+        : (() => {
+            const bannerSources = ranking.length > 0 ? ranking : newcomers
+            return bannerSources.slice(0, 3).map((cast) => ({
+              id: `banner-${cast.id}`,
+              title: `${cast.name} 最新情報`,
+              imageUrl: cast.image ?? '/images/non-photo.svg',
+              mobileImageUrl: cast.image ?? '/images/non-photo.svg',
+              link: `/${store.slug}/cast/${cast.id}`,
+            }))
+          })()
 
     return NextResponse.json({
       store,

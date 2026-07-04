@@ -11,9 +11,30 @@ import { HourlySalesReport } from '@/lib/types/hourly-sales'
 import { cn } from '@/lib/utils'
 
 const TIME_BUCKETS = [
-  { key: 'morning', label: 'モーニング', range: '7-12時', start: 7, end: 12, accent: 'bg-amber-400' },
-  { key: 'daytime', label: 'デイタイム', range: '12-18時', start: 12, end: 18, accent: 'bg-sky-400' },
-  { key: 'evening', label: 'イブニング', range: '18-22時', start: 18, end: 22, accent: 'bg-violet-400' },
+  {
+    key: 'morning',
+    label: 'モーニング',
+    range: '7-12時',
+    start: 7,
+    end: 12,
+    accent: 'bg-amber-400',
+  },
+  {
+    key: 'daytime',
+    label: 'デイタイム',
+    range: '12-18時',
+    start: 12,
+    end: 18,
+    accent: 'bg-sky-400',
+  },
+  {
+    key: 'evening',
+    label: 'イブニング',
+    range: '18-22時',
+    start: 18,
+    end: 22,
+    accent: 'bg-violet-400',
+  },
   { key: 'late', label: 'レイト', range: '22-28時', start: 22, end: 28, accent: 'bg-emerald-400' },
 ] as const
 
@@ -63,30 +84,22 @@ export function HourlySalesTable({ data }: HourlySalesTableProps) {
     )
   }
 
-  const averageDailyVisitors =
-    days.length > 0 ? data.grandTotal / days.length : 0
+  const averageDailyVisitors = days.length > 0 ? data.grandTotal / days.length : 0
 
   const bucketTotals = TIME_BUCKETS.map((bucket) => {
-    const total = days.reduce(
-      (sum, day) => sum + sumBucket(day.hours, bucket.start, bucket.end),
-      0
-    )
-    const ratio =
-      data.grandTotal > 0 ? Math.round((total / data.grandTotal) * 1000) / 10 : 0
+    const total = days.reduce((sum, day) => sum + sumBucket(day.hours, bucket.start, bucket.end), 0)
+    const ratio = data.grandTotal > 0 ? Math.round((total / data.grandTotal) * 1000) / 10 : 0
 
     return { ...bucket, total, ratio }
   })
 
-  const overallPeakSlot =
-    data.timeSlots.reduce(
-      (acc, slot) => (slot.count > acc.count ? slot : acc),
-      { range: '--', count: 0, percentage: 0 }
-    ) ?? { range: '--', count: 0, percentage: 0 }
+  const overallPeakSlot = data.timeSlots.reduce(
+    (acc, slot) => (slot.count > acc.count ? slot : acc),
+    { range: '--', count: 0, percentage: 0 }
+  ) ?? { range: '--', count: 0, percentage: 0 }
 
   const averagePerHour =
-    data.hourlyTotals.length > 0
-      ? data.grandTotal / data.hourlyTotals.length
-      : 0
+    data.hourlyTotals.length > 0 ? data.grandTotal / data.hourlyTotals.length : 0
 
   const rows = days.map((day) => {
     const bucketDetails = TIME_BUCKETS.map((bucket) => {
@@ -96,18 +109,13 @@ export function HourlySalesTable({ data }: HourlySalesTableProps) {
     })
 
     const peak = day.hours.reduce(
-      (acc, value, index) =>
-        value > acc.value ? { value, index } : acc,
+      (acc, value, index) => (value > acc.value ? { value, index } : acc),
       { value: 0, index: -1 }
     )
 
-    const peakRange =
-      peak.index >= 0
-        ? `${peak.index + 7}:00-${peak.index + 8}:00`
-        : '--'
+    const peakRange = peak.index >= 0 ? `${peak.index + 7}:00-${peak.index + 8}:00` : '--'
 
-    const averagePerDayHour =
-      day.hours.length > 0 ? day.total / day.hours.length : 0
+    const averagePerDayHour = day.hours.length > 0 ? day.total / day.hours.length : 0
 
     const dateLabel = `${String(data.month).padStart(2, '0')}/${String(day.date).padStart(2, '0')}`
     const isWeekend = WEEKEND_DAYS.has(day.dayOfWeek)
@@ -149,10 +157,7 @@ export function HourlySalesTable({ data }: HourlySalesTableProps) {
             {rows.map((row) => (
               <TableRow
                 key={row.key}
-                className={cn(
-                  'align-top',
-                  row.isWeekend && 'bg-amber-50/60 hover:bg-amber-50'
-                )}
+                className={cn('align-top', row.isWeekend && 'bg-amber-50/60 hover:bg-amber-50')}
               >
                 <TableCell className="whitespace-nowrap">
                   <div className="flex items-center gap-2 font-medium">
@@ -166,9 +171,7 @@ export function HourlySalesTable({ data }: HourlySalesTableProps) {
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="text-lg font-semibold">
-                    {row.total.toLocaleString()}人
-                  </div>
+                  <div className="text-lg font-semibold">{row.total.toLocaleString()}人</div>
                   <div className="text-xs text-muted-foreground">
                     平均比 {formatSigned(row.total - averageDailyVisitors, '人')}
                   </div>
@@ -177,7 +180,9 @@ export function HourlySalesTable({ data }: HourlySalesTableProps) {
                   <TableCell key={bucket.key} className="align-top">
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-medium">{bucket.total.toLocaleString()}人</span>
-                      <span className="text-xs text-muted-foreground">{bucket.ratio.toFixed(1)}%</span>
+                      <span className="text-xs text-muted-foreground">
+                        {bucket.ratio.toFixed(1)}%
+                      </span>
                     </div>
                     <div className="mt-2 h-1.5 rounded-full bg-muted">
                       <div
@@ -189,12 +194,12 @@ export function HourlySalesTable({ data }: HourlySalesTableProps) {
                 ))}
                 <TableCell className="align-top">
                   <div className="font-medium">{row.peakRange}</div>
-                  <div className="text-xs text-muted-foreground">{row.peakCount.toLocaleString()}人</div>
+                  <div className="text-xs text-muted-foreground">
+                    {row.peakCount.toLocaleString()}人
+                  </div>
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="text-lg font-semibold">
-                    {formatPeople(row.averagePerHour)}人
-                  </div>
+                  <div className="text-lg font-semibold">{formatPeople(row.averagePerHour)}人</div>
                   <div className="text-xs text-muted-foreground">平均/時</div>
                 </TableCell>
               </TableRow>
@@ -202,9 +207,7 @@ export function HourlySalesTable({ data }: HourlySalesTableProps) {
             <TableRow className="bg-muted/40 font-semibold">
               <TableCell>合計 / 平均</TableCell>
               <TableCell className="text-right">
-                <div className="text-lg font-semibold">
-                  {data.grandTotal.toLocaleString()}人
-                </div>
+                <div className="text-lg font-semibold">{data.grandTotal.toLocaleString()}人</div>
                 <div className="text-xs text-muted-foreground">
                   平均 {formatPeople(averageDailyVisitors)}人/日
                 </div>
@@ -232,9 +235,7 @@ export function HourlySalesTable({ data }: HourlySalesTableProps) {
                 </div>
               </TableCell>
               <TableCell className="text-right">
-                <div className="text-lg font-semibold">
-                  {formatPeople(averagePerHour)}人
-                </div>
+                <div className="text-lg font-semibold">{formatPeople(averagePerHour)}人</div>
                 <div className="text-xs text-muted-foreground">全時間平均</div>
               </TableCell>
             </TableRow>

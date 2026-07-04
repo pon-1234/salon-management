@@ -86,7 +86,9 @@ export function CourseSalesTable({ year, month, courses }: CourseSalesTableProps
           <TableRow className="bg-gray-50 font-bold">
             <TableCell colSpan={dates.length + 3}>合計</TableCell>
             <TableCell className="text-right">
-              {courses.reduce((sum, course) => sum + calculateTotal(course.sales), 0).toLocaleString()}
+              {courses
+                .reduce((sum, course) => sum + calculateTotal(course.sales), 0)
+                .toLocaleString()}
             </TableCell>
             <TableCell className="text-right text-green-600">
               ¥{courses.reduce((sum, course) => sum + calculateRevenue(course), 0).toLocaleString()}

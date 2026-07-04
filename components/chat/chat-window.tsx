@@ -88,16 +88,18 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
     setLoading(true)
     try {
       const queryParam =
-        participantType === 'customer'
-          ? `customerId=${participantId}`
-          : `castId=${participantId}`
+        participantType === 'customer' ? `customerId=${participantId}` : `castId=${participantId}`
       const response = await fetch(`/api/chat?${queryParam}`, {
         credentials: 'include',
       })
       if (!response.ok) throw new Error('Failed to fetch messages')
 
       const data = await response.json()
-      const initialMessages = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []
+      const initialMessages = Array.isArray(data?.data)
+        ? data.data
+        : Array.isArray(data)
+          ? data
+          : []
       const normalizedMessages: Message[] = (initialMessages as Message[]).map((message) => ({
         ...message,
         attachments: Array.isArray(message.attachments) ? message.attachments : [],
@@ -210,7 +212,12 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
       <div className="flex flex-1 items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="text-center">
           <div className="mb-4 text-gray-400">
-            <svg className="mx-auto h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="mx-auto h-16 w-16"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -300,7 +307,10 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
                         ) : attachments.length > 0 ? (
                           <span className="text-xs italic opacity-75">画像を送信しました</span>
                         ) : null}
-                        <ChatAttachmentGallery attachments={attachments} align={isStaff ? 'right' : 'left'} />
+                        <ChatAttachmentGallery
+                          attachments={attachments}
+                          align={isStaff ? 'right' : 'left'}
+                        />
                         <div className="mt-2 flex items-center justify-end gap-1 text-xs">
                           <span className={`text-gray-400 ${isStaff ? 'text-emerald-50/80' : ''}`}>
                             {new Date(message.timestamp).toLocaleTimeString([], {
@@ -308,13 +318,12 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
                               minute: '2-digit',
                             })}
                           </span>
-                          {isStaff && (
-                            message.readStatus === '既読' ? (
+                          {isStaff &&
+                            (message.readStatus === '既読' ? (
                               <CheckCheck className="h-3 w-3 text-emerald-100" />
                             ) : (
                               <Check className="h-3 w-3 text-emerald-100" />
-                            )
-                          )}
+                            ))}
                         </div>
                       </div>
                     </div>
@@ -370,9 +379,7 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
                 <ImagePlus className="mr-2 h-4 w-4" />
                 画像を添付
               </Button>
-              <span>
-                {attachmentDrafts.length}/5 件
-              </span>
+              <span>{attachmentDrafts.length}/5 件</span>
             </div>
             <div className="flex items-center gap-3">
               {isTyping && <div className="text-xs text-gray-400">入力中...</div>}

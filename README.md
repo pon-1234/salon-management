@@ -28,32 +28,23 @@ Continue building your app on:
 
 **[https://v0.dev/chat/projects/JiGB52cRsTX](https://v0.dev/chat/projects/JiGB52cRsTX)**
 
-## Demo
+## Local Login
 
-Try the live demo with these credentials:
+Create local users with the setup or seed scripts before signing in:
 
-### Admin Access
-
-- **URL**: `/admin/login`
-- **Email**: `admin@example.com`
-- **Password**: `admin123`
-
-### Customer Access
-
-- **URL**: `/[store]/login` (e.g., `/store1/login`)
-- **Email**: `customer@example.com`
-- **Password**: `customer123`
+- **Admin URL**: `/admin/login` after running `npm run setup:admin`
+- **Customer URL**: `/[store]/login` (for example, `/store1/login`) after registration or seeding
 
 ## Recent Updates
 
 ### Test Coverage Improvements (2025-08-05)
 
 - ✅ Added comprehensive tests for core data modules:
-  - `lib/cast/data.ts` - 100% coverage
-  - `lib/customer/data.ts` - 100% coverage  
-  - `lib/reservation/data.ts` - 100% coverage
-  - `lib/store/data.ts` - 100% coverage
-- 📈 Overall test coverage improved from ~30% to ~40%
+  - `lib/cast/data.ts`
+  - `lib/customer/data.ts`
+  - `lib/reservation/data.ts`
+  - `lib/store/data.ts`
+- 📈 The enforced coverage threshold is 30% in `vitest.config.ts`
 - 🔍 Identified and documented unused code patterns with `@no-test-required` annotations
 - 🛠 Fixed `createDate` export in cast module
 
@@ -109,12 +100,14 @@ To enable image uploads:
 Initialize your database with demo data:
 
 ```bash
-# Create admin users
-npm run create:admin
+# Create an admin user interactively
+npm run setup:admin
 
 # Create full demo data (casts, customers, reservations)
 npm run seed:full
 ```
+
+Customer login in development should use customers created by the seed scripts or by normal registration; hardcoded demo customer login is not supported.
 
 ## Payments
 

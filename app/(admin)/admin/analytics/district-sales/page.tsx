@@ -75,7 +75,7 @@ export default function DistrictSalesPage() {
         }))
         setAreaOptions(options)
         setSelectedArea((prev) =>
-          prev && options.some((option) => option.value === prev) ? prev : options[0]?.value ?? ''
+          prev && options.some((option) => option.value === prev) ? prev : (options[0]?.value ?? '')
         )
       } catch (err) {
         console.error('[DistrictSalesPage] failed to fetch area list', err)
@@ -110,9 +110,15 @@ export default function DistrictSalesPage() {
         let previous: DistrictSalesReport | null = null
         if (selectedYear > 0) {
           try {
-            previous = await analyticsUseCases.getDistrictSalesReport(selectedYear - 1, selectedArea)
+            previous = await analyticsUseCases.getDistrictSalesReport(
+              selectedYear - 1,
+              selectedArea
+            )
           } catch (prevError) {
-            console.warn('[DistrictSalesPage] failed to fetch previous district analytics', prevError)
+            console.warn(
+              '[DistrictSalesPage] failed to fetch previous district analytics',
+              prevError
+            )
           }
         }
 
@@ -171,7 +177,9 @@ export default function DistrictSalesPage() {
       previousYearCustomers,
       topDistrict: topDistrict?.district ?? '-',
       topDistrictPercentage:
-        topDistrict && totalSales > 0 ? Math.round((topDistrict.total / totalSales) * 1000) / 10 : 0,
+        topDistrict && totalSales > 0
+          ? Math.round((topDistrict.total / totalSales) * 1000) / 10
+          : 0,
       averageSpending: totalCustomers > 0 ? Math.round(totalSales / totalCustomers) : 0,
       activeDistricts: districtReport.districts.length,
     }
@@ -203,19 +211,25 @@ export default function DistrictSalesPage() {
 
   const growthLeader = useMemo(() => {
     if (!districtReport) return { name: '-', rate: 0 }
-    return districtReport.districts.reduce((leader, district) => {
-      const previous = performancePrevious.find((item) => item.district === district.district)
-      const previousTotal = previous?.total ?? 0
-      const growthRate = previousTotal > 0
-        ? ((district.total - previousTotal) / previousTotal) * 100
-        : district.total > 0
-          ? 100
-          : 0
-      if (!leader || growthRate > leader.rate) {
-        return { name: district.district, rate: growthRate }
-      }
-      return leader
-    }, null as { name: string; rate: number } | null) ?? { name: '-', rate: 0 }
+    return (
+      districtReport.districts.reduce(
+        (leader, district) => {
+          const previous = performancePrevious.find((item) => item.district === district.district)
+          const previousTotal = previous?.total ?? 0
+          const growthRate =
+            previousTotal > 0
+              ? ((district.total - previousTotal) / previousTotal) * 100
+              : district.total > 0
+                ? 100
+                : 0
+          if (!leader || growthRate > leader.rate) {
+            return { name: district.district, rate: growthRate }
+          }
+          return leader
+        },
+        null as { name: string; rate: number } | null
+      ) ?? { name: '-', rate: 0 }
+    )
   }, [districtReport, performancePrevious])
 
   return (
@@ -391,7 +405,10 @@ export default function DistrictSalesPage() {
               <DistrictHeatmapTable data={heatmapDistricts} />
             </TabsContent>
             <TabsContent value="performance" className="mt-4">
-              <DistrictPerformanceTable current={performanceCurrent} previous={performancePrevious} />
+              <DistrictPerformanceTable
+                current={performanceCurrent}
+                previous={performancePrevious}
+              />
             </TabsContent>
           </Tabs>
         </CardContent>

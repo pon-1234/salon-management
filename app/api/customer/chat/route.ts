@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { requireCustomer } from '@/lib/auth/utils'
 import { normalizeChatAttachments } from '@/lib/chat/attachments'
+import logger from '@/lib/logger'
 
 const attachmentSchema = z.object({
   type: z.literal('image'),
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
       }))
     )
   } catch (err) {
-    console.error('Failed to load customer chat messages', err)
+    logger.error('Failed to load customer chat messages', err)
     return NextResponse.json({ error: 'メッセージの取得に失敗しました。' }, { status: 500 })
   }
 }
@@ -97,10 +98,13 @@ export async function POST(request: NextRequest) {
     })
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0]?.message ?? '入力が不正です。' }, { status: 400 })
+      return NextResponse.json(
+        { error: err.issues[0]?.message ?? '入力が不正です。' },
+        { status: 400 }
+      )
     }
 
-    console.error('Failed to send customer chat message', err)
+    logger.error('Failed to send customer chat message', err)
     return NextResponse.json({ error: 'メッセージの送信に失敗しました。' }, { status: 500 })
   }
 }
@@ -145,7 +149,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: '入力が不正です。' }, { status: 400 })
     }
 
-    console.error('Failed to mark customer chat as read', err)
+    logger.error('Failed to mark customer chat as read', err)
     return NextResponse.json({ error: '既読処理に失敗しました。' }, { status: 500 })
   }
 }

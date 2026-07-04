@@ -52,7 +52,9 @@ export async function POST(request: NextRequest) {
     }
 
     const reservationIds = Array.isArray(body?.reservationIds)
-      ? body.reservationIds.filter((id: unknown): id is string => typeof id === 'string' && id.trim().length > 0)
+      ? body.reservationIds.filter(
+          (id: unknown): id is string => typeof id === 'string' && id.trim().length > 0
+        )
       : []
 
     if (reservationIds.length > 0) {

@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @design_doc   refactor-instructions.md Phase 6 D-11 analytics real-data connection
+ * @related_to   AnalyticsUseCases: loads staff performance for the selected report month
+ * @known_issues Display-type and cast filters are still page-level presentation controls
+ */
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -19,6 +24,8 @@ import {
 
 interface CastPerformanceTableProps {
   analyticsUseCases: AnalyticsUseCases
+  year: number
+  month: number
 }
 
 interface TotalsAccumulator {
@@ -49,16 +56,20 @@ interface TotalsAccumulator {
   storeRevenue: number
 }
 
-export function CastPerformanceTable({ analyticsUseCases }: CastPerformanceTableProps) {
+export function CastPerformanceTable({
+  analyticsUseCases,
+  year,
+  month,
+}: CastPerformanceTableProps) {
   const [data, setData] = useState<StaffPerformanceData[]>([])
 
   useEffect(() => {
     const fetchData = async () => {
-      const result = await analyticsUseCases.getStaffPerformance()
+      const result = await analyticsUseCases.getStaffPerformance(year, month)
       setData(result)
     }
     fetchData()
-  }, [analyticsUseCases])
+  }, [analyticsUseCases, month, year])
 
   const totals = data.reduce<TotalsAccumulator>(
     (acc, curr) => ({
@@ -277,7 +288,7 @@ export function CastPerformanceTable({ analyticsUseCases }: CastPerformanceTable
 
           return (
             <Card key={row.id} className="shadow-sm">
-              <CardHeader className="flex flex-col gap-2 justify-between md:flex-row md:items-center">
+              <CardHeader className="flex flex-col justify-between gap-2 md:flex-row md:items-center">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <Link
@@ -389,9 +400,7 @@ export function CastPerformanceTable({ analyticsUseCases }: CastPerformanceTable
                         <span>現金比率</span>
                         <span>
                           {row.totalTransactions > 0
-                            ? Math.round(
-                                (row.cashTransactions.count / row.totalTransactions) * 100
-                              )
+                            ? Math.round((row.cashTransactions.count / row.totalTransactions) * 100)
                             : 0}
                           %
                         </span>
@@ -400,9 +409,7 @@ export function CastPerformanceTable({ analyticsUseCases }: CastPerformanceTable
                         <span>カード比率</span>
                         <span>
                           {row.totalTransactions > 0
-                            ? Math.round(
-                                (row.cardTransactions.count / row.totalTransactions) * 100
-                              )
+                            ? Math.round((row.cardTransactions.count / row.totalTransactions) * 100)
                             : 0}
                           %
                         </span>
@@ -445,7 +452,9 @@ export function CastPerformanceTable({ analyticsUseCases }: CastPerformanceTable
             <div className="rounded-lg border border-border/60 bg-muted/10 p-3 text-sm">
               <p className="text-xs uppercase text-muted-foreground">指名</p>
               <div className="text-lg font-semibold">{totals.designations.total}本</div>
-              <p className="text-xs text-muted-foreground">本指名 {totals.designations.regular}本</p>
+              <p className="text-xs text-muted-foreground">
+                本指名 {totals.designations.regular}本
+              </p>
             </div>
             <div className="rounded-lg border border-border/60 bg-muted/10 p-3 text-sm">
               <p className="text-xs uppercase text-muted-foreground">収益</p>

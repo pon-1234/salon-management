@@ -52,17 +52,17 @@ export async function generateDailyReport(
     const endTime = reservation.endTime ?? addMinutes(startTime, 60)
     const duration = Math.max(differenceInMinutes(endTime, startTime), 0)
     const price = reservation.price ?? 0
-    const optionSales = reservation.options?.reduce((sum, option) => sum + (option.optionPrice ?? 0), 0) ?? 0
+    const optionSales =
+      reservation.options?.reduce((sum, option) => sum + (option.optionPrice ?? 0), 0) ?? 0
 
-    const entry =
-      staffMap.get(staffId) ?? {
-        name: staffName,
-        totalMinutes: 0,
-        salesAmount: 0,
-        customerCount: 0,
-        designationCount: 0,
-        optionSales: 0,
-      }
+    const entry = staffMap.get(staffId) ?? {
+      name: staffName,
+      totalMinutes: 0,
+      salesAmount: 0,
+      customerCount: 0,
+      designationCount: 0,
+      optionSales: 0,
+    }
 
     entry.totalMinutes += duration
     entry.salesAmount += price

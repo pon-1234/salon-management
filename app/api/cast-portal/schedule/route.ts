@@ -21,8 +21,14 @@ const scheduleUpdateSchema = z.object({
       z.object({
         date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
         status: z.enum(['working', 'off']),
-        startTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-        endTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+        startTime: z
+          .string()
+          .regex(/^\d{2}:\d{2}$/)
+          .optional(),
+        endTime: z
+          .string()
+          .regex(/^\d{2}:\d{2}$/)
+          .optional(),
       })
     )
     .min(1),
@@ -85,8 +91,12 @@ export async function POST(request: NextRequest) {
     const parsed = scheduleUpdateSchema.parse(body)
 
     const updateDates = parsed.updates.map((update) => new Date(`${update.date}T00:00:00`))
-    const minDate = startOfDay(updateDates.reduce((acc, current) => (current < acc ? current : acc)))
-    const maxDate = startOfDay(updateDates.reduce((acc, current) => (current > acc ? current : acc)))
+    const minDate = startOfDay(
+      updateDates.reduce((acc, current) => (current < acc ? current : acc))
+    )
+    const maxDate = startOfDay(
+      updateDates.reduce((acc, current) => (current > acc ? current : acc))
+    )
 
     let baseStart = parsed.startDate ? new Date(`${parsed.startDate}T00:00:00`) : minDate
     if (Number.isNaN(baseStart.getTime())) {

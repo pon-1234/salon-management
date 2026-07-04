@@ -29,6 +29,14 @@ vi.mock('@/lib/db', () => ({
   },
 }))
 
+const customerPhoneVerificationFields = {
+  phoneVerified: false,
+  phoneVerifiedAt: null,
+  phoneVerificationCode: null,
+  phoneVerificationExpiry: null,
+  phoneVerificationAttempts: 0,
+}
+
 describe('Chat Customers API', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -59,6 +67,7 @@ describe('Chat Customers API', () => {
           emailVerified: true,
           emailVerificationToken: null,
           emailVerificationExpiry: null,
+          ...customerPhoneVerificationFields,
         },
         {
           id: '2',
@@ -79,6 +88,7 @@ describe('Chat Customers API', () => {
           emailVerified: true,
           emailVerificationToken: null,
           emailVerificationExpiry: null,
+          ...customerPhoneVerificationFields,
         },
       ]
 
@@ -175,6 +185,7 @@ describe('Chat Customers API', () => {
         emailVerified: true,
         emailVerificationToken: null,
         emailVerificationExpiry: null,
+        ...customerPhoneVerificationFields,
       }
 
       const now = new Date()

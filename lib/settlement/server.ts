@@ -103,12 +103,13 @@ function mapPaymentDto(payment: any): SettlementPaymentDto {
     handledBy: payment.handledBy,
     paidAt: payment.paidAt.toISOString(),
     notes: payment.notes,
-    reservations: payment.reservations?.map((rel: any) => ({
-      id: rel.reservation.id,
-      startTime: rel.reservation.startTime.toISOString(),
-      courseName: rel.reservation.course?.name ?? null,
-      staffRevenue: rel.reservation.staffRevenue ?? 0,
-      settlementStatus: (rel.reservation.settlementStatus as SettlementStatus) ?? 'pending',
-    })) ?? [],
+    reservations:
+      payment.reservations?.map((rel: any) => ({
+        id: rel.reservation.id,
+        startTime: rel.reservation.startTime.toISOString(),
+        courseName: rel.reservation.course?.name ?? null,
+        staffRevenue: rel.reservation.staffRevenue ?? 0,
+        settlementStatus: (rel.reservation.settlementStatus as SettlementStatus) ?? 'pending',
+      })) ?? [],
   }
 }

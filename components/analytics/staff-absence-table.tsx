@@ -84,7 +84,9 @@ export function StaffAbsenceTable({ data }: StaffAbsenceTableProps) {
                 <TableCell className="text-center">{staff.absenceDays}日</TableCell>
                 <TableCell className="text-center">{staff.weekendAbsenceDays}日</TableCell>
                 <TableCell className="text-center">{staff.longestAbsenceStreak}日</TableCell>
-                <TableCell className="text-center">{(100 - staff.attendanceRate).toFixed(1)}%</TableCell>
+                <TableCell className="text-center">
+                  {(100 - staff.attendanceRate).toFixed(1)}%
+                </TableCell>
                 <TableCell className="text-center">
                   {getStatusBadge(staff.absenceDays, 100 - staff.attendanceRate)}
                 </TableCell>

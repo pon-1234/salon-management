@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Next 15 dynamic route params contract
+ * @related_to   customer lookup routes: admin phone-based customer search
+ * @known_issues Phone matching still checks both normalized and raw stored values
+ */
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
@@ -5,9 +10,9 @@ import { db } from '@/lib/db'
 import logger from '@/lib/logger'
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     phone: string
-  }
+  }>
 }
 
 function normalizePhone(input: string): string {
@@ -16,12 +21,13 @@ function normalizePhone(input: string): string {
 
 export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
+    const { phone } = await params
     const session = await getServerSession(authOptions)
     if (!session) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const phoneParam = params.phone ? decodeURIComponent(params.phone) : ''
+    const phoneParam = phone ? decodeURIComponent(phone) : ''
     const normalizedPhone = normalizePhone(phoneParam)
     if (!normalizedPhone) {
       return NextResponse.json({ error: 'Phone number is required' }, { status: 400 })

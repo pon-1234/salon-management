@@ -1,18 +1,20 @@
 'use client'
 
+/**
+ * @design_doc   ui-improvement-instructions.md U-4 destructive confirmation dialogs
+ * @related_to   ConfirmDialog: replaces native confirm for point expiration
+ * @known_issues Existing API call and toast behavior are unchanged
+ */
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/hooks/use-toast'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 export function PointExpirationPanel() {
   const [loading, setLoading] = useState(false)
 
   const handleExpirePoints = async () => {
-    if (!confirm('有効期限切れポイントを失効させますか？')) {
-      return
-    }
-
     setLoading(true)
     try {
       const response = await fetch('/api/customer/points/expire', {
@@ -49,9 +51,16 @@ export function PointExpirationPanel() {
         <p className="text-sm text-gray-600">
           Cron ジョブとは別に、手動で有効期限切れポイントの失効処理を実行できます。
         </p>
-        <Button onClick={handleExpirePoints} disabled={loading} className="mt-4">
-          {loading ? '処理中...' : 'ポイント失効処理を実行'}
-        </Button>
+        <ConfirmDialog
+          title="有効期限切れポイントを失効させますか？"
+          description="対象ポイントを一括で失効します。この操作の結果は取り消せません。"
+          confirmLabel="失効処理を実行"
+          onConfirm={handleExpirePoints}
+        >
+          <Button disabled={loading} className="mt-4">
+            {loading ? '処理中...' : 'ポイント失効処理を実行'}
+          </Button>
+        </ConfirmDialog>
       </CardContent>
     </Card>
   )

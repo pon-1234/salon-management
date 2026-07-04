@@ -74,7 +74,12 @@ export function FavoriteCasts({ store }: FavoriteCastsProps) {
 
               {/* Favorite Badge */}
               <div className="absolute right-2 top-2">
-                <Button size="icon" variant="secondary" className="bg-white/90 backdrop-blur">
+                <Button
+                  size="icon"
+                  variant="secondary"
+                  className="bg-white/90 backdrop-blur"
+                  aria-label={`${cast.name}をお気に入りから確認`}
+                >
                   <Heart className="h-5 w-5 fill-red-500 text-red-500" />
                 </Button>
               </div>

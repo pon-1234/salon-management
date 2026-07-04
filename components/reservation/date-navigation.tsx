@@ -75,7 +75,7 @@ export function DateNavigation({ selectedDate, onSelectDate }: DateNavigationPro
       </div>
 
       <div className="flex items-center gap-2 overflow-x-auto">
-        <Button variant="outline" size="icon" onClick={handlePrevWeek}>
+        <Button variant="outline" size="icon" onClick={handlePrevWeek} aria-label="前の週へ">
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <div className="flex gap-2">
@@ -90,7 +90,7 @@ export function DateNavigation({ selectedDate, onSelectDate }: DateNavigationPro
             </Button>
           ))}
         </div>
-        <Button variant="outline" size="icon" onClick={handleNextWeek}>
+        <Button variant="outline" size="icon" onClick={handleNextWeek} aria-label="次の週へ">
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>

@@ -33,8 +33,8 @@ function buildMeasurementLabel(cast: {
   return segments.join(' ')
 }
 
-export default async function RecruitmentPage({ params }: { params: { store: string } }) {
-  const { store: storeSlug } = params
+export default async function RecruitmentPage({ params }: { params: Promise<{ store: string }> }) {
+  const { store: storeSlug } = await params
   const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {
@@ -90,8 +90,12 @@ export default async function RecruitmentPage({ params }: { params: { store: str
               <Card className="luxury-panel">
                 <CardContent className="flex flex-col items-center gap-3 p-8 text-muted-foreground">
                   <Sparkles className="h-10 w-10 text-[#cbb88f]" />
-                  <p className="text-lg font-semibold">現在、表示できる新人キャストはありません。</p>
-                  <p className="text-sm">最新の入店情報は順次更新されますので、少々お待ちください。</p>
+                  <p className="text-lg font-semibold">
+                    現在、表示できる新人キャストはありません。
+                  </p>
+                  <p className="text-sm">
+                    最新の入店情報は順次更新されますので、少々お待ちください。
+                  </p>
                 </CardContent>
               </Card>
             ) : (
@@ -128,7 +132,9 @@ export default async function RecruitmentPage({ params }: { params: { store: str
                         <div className="p-6 md:w-2/3 lg:w-3/4">
                           <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                             <div>
-                              <h3 className="mb-2 text-2xl font-bold text-[#f5e6c4]">{cast.name}</h3>
+                              <h3 className="mb-2 text-2xl font-bold text-[#f5e6c4]">
+                                {cast.name}
+                              </h3>
                               <p className="text-muted-foreground">
                                 {cast.age ? `${cast.age}歳` : '年齢非公開'} {measurement}
                               </p>
@@ -139,23 +145,31 @@ export default async function RecruitmentPage({ params }: { params: { store: str
                             </div>
                             {index === 0 && (
                               <Badge className="bg-[#f6d48a] text-[#2b1b0d]">
-                                <Crown className="mr-1 h-4 w-4" />注目
+                                <Crown className="mr-1 h-4 w-4" />
+                                注目
                               </Badge>
                             )}
                           </div>
 
                           <Card className="mb-4 border-[#3b2e1f] bg-[#121212]">
                             <CardContent className="p-4">
-                              <p className="text-sm italic text-[#d7c39c]">&ldquo;{introMessage}&rdquo;</p>
+                              <p className="text-sm italic text-[#d7c39c]">
+                                &ldquo;{introMessage}&rdquo;
+                              </p>
                             </CardContent>
                           </Card>
 
                           {services.length > 0 && (
                             <div className="mb-4">
-                              <p className="mb-2 text-sm font-semibold text-[#f5e6c4]">得意なプレイ:</p>
+                              <p className="mb-2 text-sm font-semibold text-[#f5e6c4]">
+                                得意なプレイ:
+                              </p>
                               <div className="flex flex-wrap gap-2">
                                 {services.map((service) => (
-                                  <Badge key={service} className="border border-[#3b2e1f] bg-[#1a1a1a] text-[#cbb88f]">
+                                  <Badge
+                                    key={service}
+                                    className="border border-[#3b2e1f] bg-[#1a1a1a] text-[#cbb88f]"
+                                  >
                                     {service}
                                   </Badge>
                                 ))}
@@ -174,7 +188,8 @@ export default async function RecruitmentPage({ params }: { params: { store: str
                           <div className="flex gap-4">
                             <Button asChild className="flex-1">
                               <Link href={`/${store.slug}/cast/${cast.id}`}>
-                                <Heart className="mr-2 h-4 w-4" />詳細を見る
+                                <Heart className="mr-2 h-4 w-4" />
+                                詳細を見る
                               </Link>
                             </Button>
                             <Button

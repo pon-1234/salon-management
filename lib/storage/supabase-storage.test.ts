@@ -50,6 +50,8 @@ describe('SupabaseStorageService', () => {
 
     it('should throw error if SUPABASE_URL is missing', () => {
       delete process.env.NEXT_PUBLIC_SUPABASE_URL
+      delete process.env.SUPABASE_URL
+      refreshEnv()
 
       expect(() => new SupabaseStorageService(defaultConfig)).toThrow(
         'Supabase環境変数が設定されていません'
@@ -59,6 +61,7 @@ describe('SupabaseStorageService', () => {
     it('should throw error if SUPABASE_ANON_KEY is missing', () => {
       delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
       delete process.env.SUPABASE_SERVICE_ROLE_KEY
+      refreshEnv()
 
       expect(() => new SupabaseStorageService(defaultConfig)).toThrow(
         'Supabase環境変数が設定されていません'

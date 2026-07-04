@@ -56,7 +56,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     logger.error({ err: error }, 'Failed to upsert NG cast entry')
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues.map((issue) => issue.message).join(', ') }, { status: 400 })
+      return NextResponse.json(
+        { error: error.issues.map((issue) => issue.message).join(', ') },
+        { status: 400 }
+      )
     }
     return NextResponse.json({ error: 'Failed to update NG settings' }, { status: 500 })
   }

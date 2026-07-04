@@ -1,3 +1,9 @@
+/**
+ * @design_doc   ui-improvement-instructions.md U-12 metadata
+ * @related_to   StoreLayout: store-specific title template; StoreBookingContent: booking flow
+ * @known_issues Query-selected cast/slot is not reflected in metadata
+ */
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { StoreNavigation } from '@/components/store-navigation'
 import { StoreFooter } from '@/components/store-footer'
@@ -5,6 +11,10 @@ import { fetchStoreBySlug } from '@/lib/store/public-api'
 import { getPublicCastProfiles } from '@/lib/store/public-casts'
 import { getPublicStorePricing } from '@/lib/store/public-pricing'
 import { StoreBookingContent } from '@/components/store-booking/store-booking-content'
+
+export const metadata: Metadata = {
+  title: '予約',
+}
 
 type SerializableCourse = {
   id: string
@@ -29,11 +39,11 @@ export default async function StoreBookingPage({
   params,
   searchParams,
 }: {
-  params: { store: string }
-  searchParams?: { cast?: string | string[]; slot?: string | string[] }
+  params: Promise<{ store: string }>
+  searchParams?: Promise<{ cast?: string | string[]; slot?: string | string[] }>
 }) {
-  const { store: storeSlug } = params
-  const resolvedSearchParams = searchParams ?? {}
+  const { store: storeSlug } = await params
+  const resolvedSearchParams = (await searchParams) ?? {}
   const store = await fetchStoreBySlug(storeSlug)
 
   if (!store) {
@@ -69,10 +79,10 @@ export default async function StoreBookingPage({
   const initialCastIdParam = resolvedSearchParams?.cast
   const initialCastId = Array.isArray(initialCastIdParam)
     ? initialCastIdParam[0]
-    : initialCastIdParam ?? null
+    : (initialCastIdParam ?? null)
 
   const slotParam = resolvedSearchParams?.slot
-  const initialSlotStart = Array.isArray(slotParam) ? slotParam[0] : slotParam ?? null
+  const initialSlotStart = Array.isArray(slotParam) ? slotParam[0] : (slotParam ?? null)
 
   return (
     <>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { AlertCircle, Loader2, Phone, ShieldCheck } from 'lucide-react'
@@ -29,8 +29,21 @@ export function VerifyPhoneForm({ storeSlug }: VerifyPhoneFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [codeSent, setCodeSent] = useState(false)
+  const [resendCooldown, setResendCooldown] = useState(0)
 
   const normalizedPhone = useMemo(() => normalizePhoneNumber(phone), [phone])
+
+  useEffect(() => {
+    if (resendCooldown <= 0) {
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      setResendCooldown((prev) => Math.max(prev - 1, 0))
+    }, 1000)
+
+    return () => window.clearTimeout(timer)
+  }, [resendCooldown])
 
   const handleSend = async () => {
     setLoading(true)
@@ -48,6 +61,7 @@ export function VerifyPhoneForm({ storeSlug }: VerifyPhoneFormProps) {
         throw new Error(payload.error ?? 'SMSの送信に失敗しました')
       }
       setCodeSent(true)
+      setResendCooldown(60)
       setSuccess('認証コードを送信しました。')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'SMSの送信に失敗しました')
@@ -80,9 +94,7 @@ export function VerifyPhoneForm({ storeSlug }: VerifyPhoneFormProps) {
       }
 
       setSuccess(
-        mode === 'claim'
-          ? 'SMS認証が完了しました。ログインへ進めます。'
-          : 'SMS認証が完了しました。'
+        mode === 'claim' ? 'SMS認証が完了しました。ログインへ進めます。' : 'SMS認証が完了しました。'
       )
     } catch (err) {
       setError(err instanceof Error ? err.message : '認証に失敗しました')
@@ -140,10 +152,10 @@ export function VerifyPhoneForm({ storeSlug }: VerifyPhoneFormProps) {
           variant="outline"
           className="w-full border-[#3b2e1f] text-[#f5e6c4] hover:bg-[#2b2114]"
           onClick={handleSend}
-          disabled={loading || !normalizedPhone}
+          disabled={loading || !normalizedPhone || resendCooldown > 0}
         >
           {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          認証コードを送信
+          {resendCooldown > 0 ? `再送信まで ${resendCooldown}秒` : '認証コードを送信'}
         </Button>
 
         {codeSent && (
@@ -153,8 +165,11 @@ export function VerifyPhoneForm({ storeSlug }: VerifyPhoneFormProps) {
               <Input
                 id="code"
                 value={code}
-                onChange={(event) => setCode(event.target.value)}
+                onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
                 placeholder="6桁のコード"
+                inputMode="numeric"
+                maxLength={6}
+                autoComplete="one-time-code"
                 disabled={loading}
               />
             </div>

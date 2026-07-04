@@ -5,50 +5,8 @@ import {
   defaultPricingNotes,
   defaultAdditionalFees,
 } from '@/lib/pricing/data'
+import { ensureCourseSerializable, ensureOptionSerializable } from '@/lib/pricing/adapters'
 import type { CoursePrice, OptionPrice, AdditionalFee, StorePricing } from '@/lib/pricing/types'
-
-function ensureCourseSerializable(course: any): CoursePrice {
-  return {
-    id: course.id,
-    name: course.name,
-    description: course.description ?? null,
-    duration: course.duration,
-    price: course.price,
-    storeShare: course.storeShare ?? null,
-    castShare: course.castShare ?? null,
-    isActive: course.isActive,
-    enableWebBooking: course.enableWebBooking ?? true,
-    archivedAt: course.archivedAt ?? null,
-    createdAt: course.createdAt ? new Date(course.createdAt) : new Date(),
-    updatedAt: course.updatedAt ? new Date(course.updatedAt) : new Date(),
-  }
-}
-
-function ensureOptionSerializable(option: any): OptionPrice {
-  const normalized: any = {
-    id: option.id,
-    name: option.name,
-    description: option.description ?? null,
-    price: option.price,
-    duration: option.duration ?? null,
-    category: option.category ?? 'special',
-    displayOrder: option.displayOrder ?? 0,
-    isActive: option.isActive,
-    visibility: option.visibility ?? 'public',
-    isPopular: option.isPopular ?? false,
-    storeShare: option.storeShare ?? null,
-    castShare: option.castShare ?? null,
-    archivedAt: option.archivedAt ?? null,
-    createdAt: option.createdAt ? new Date(option.createdAt) : new Date(),
-    updatedAt: option.updatedAt ? new Date(option.updatedAt) : new Date(),
-  }
-
-  if (option.note !== undefined) {
-    normalized.note = option.note
-  }
-
-  return normalized as OptionPrice
-}
 
 export async function getPublicStorePricing(storeId: string): Promise<StorePricing> {
   try {

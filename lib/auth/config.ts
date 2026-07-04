@@ -9,8 +9,7 @@ import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import { checkRateLimit, recordLoginAttempt } from './rate-limit'
 import { env } from '@/lib/config/env'
-import { shouldUseMockFallbacks } from '@/lib/config/feature-flags'
-import { customers as fallbackCustomers } from '@/lib/customer/data'
+import logger from '@/lib/logger'
 
 // Extend the default session interface
 declare module 'next-auth' {
@@ -124,7 +123,7 @@ export const authOptions: NextAuthOptions = {
             permissions,
           } as User
         } catch (error) {
-          console.error('Error during admin authentication:', error)
+          logger.error('Error during admin authentication:', error)
           recordLoginAttempt(`admin:${credentials.email}`, false)
           return null
         }
@@ -158,7 +157,7 @@ export const authOptions: NextAuthOptions = {
             where: { email: normalizedEmail },
           })
         } catch (error) {
-          console.warn('Customer lookup failed, falling back to mock data:', error)
+          logger.warn('Customer lookup failed:', error)
         }
 
         if (customer) {
@@ -180,52 +179,9 @@ export const authOptions: NextAuthOptions = {
               role: 'customer',
             } as User
           } catch (error) {
-            console.error('Error during password verification:', error)
+            logger.error('Error during password verification:', error)
             recordLoginAttempt(`customer:${credentials.email}`, false)
             return null
-          }
-        }
-
-        if (shouldUseMockFallbacks()) {
-          const fallback = fallbackCustomers.find(
-            (entry) => entry.email?.toLowerCase() === normalizedEmail
-          )
-
-          if (!fallback && normalizedEmail === 'tanaka@example.com') {
-            // Provide a fallback mock if demo user not seeded
-            fallbackCustomers.push({
-              id: 'demo-tanaka',
-              name: '田中 太郎',
-              nameKana: 'タナカ タロウ',
-              phone: '08012345678',
-              email: 'tanaka@example.com',
-              password: 'password123',
-              birthDate: new Date(1992, 4, 12),
-              age: 32,
-              memberType: 'vip',
-              smsEnabled: true,
-              points: 0,
-              registrationDate: new Date(),
-              lastVisitDate: new Date(),
-              notes: 'Auto-provisioned demo customer',
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            } as any)
-          }
-
-          const effectiveFallback = fallbackCustomers.find(
-            (entry) => entry.email?.toLowerCase() === normalizedEmail
-          )
-
-          if (effectiveFallback && effectiveFallback.password === credentials.password) {
-            recordLoginAttempt(`customer:${credentials.email}`, true)
-
-            return {
-              id: effectiveFallback.id ?? `mock-${normalizedEmail}`,
-              email: effectiveFallback.email,
-              name: effectiveFallback.name || 'Customer',
-              role: 'customer',
-            } as User
           }
         }
 
@@ -289,7 +245,7 @@ export const authOptions: NextAuthOptions = {
             image: Array.isArray(cast.images) && cast.images.length > 0 ? cast.images[0] : null,
           } as User
         } catch (error) {
-          console.error('Error during cast authentication:', error)
+          logger.error('Error during cast authentication:', error)
           recordLoginAttempt(`cast:${email}`, false)
           return null
         }

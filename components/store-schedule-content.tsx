@@ -87,10 +87,7 @@ export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleConte
   const { data: session, status: sessionStatus } = useSession()
   const router = useRouter()
   const sortedDays = useMemo(
-    () =>
-      [...scheduleDays].sort(
-        (a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime()
-      ),
+    () => [...scheduleDays].sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime()),
     [scheduleDays]
   )
 
@@ -113,7 +110,7 @@ export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleConte
       const encodedSlot = encodeURIComponent(slotIso)
       const bookingPath = `/${store.slug}/booking?cast=${castId}&slot=${encodedSlot}`
       if (!session?.user) {
-        const loginPath = `/${store.slug}/login?redirect=${encodeURIComponent(bookingPath)}`
+        const loginPath = `/${store.slug}/login?callbackUrl=${encodeURIComponent(bookingPath)}`
         router.push(loginPath)
         return
       }
@@ -131,9 +128,7 @@ export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleConte
         <div className="relative mx-auto max-w-6xl px-4 text-center">
           <p className="luxury-display text-xs tracking-[0.45em] text-[#d7b46a]">SCHEDULE</p>
           <h1 className="mt-4 text-3xl font-semibold text-[#f7e2b5] md:text-4xl">出勤一覧</h1>
-          <p className="mt-3 text-sm text-[#d7c39c] md:text-base">
-            {store.name}の出勤スケジュール
-          </p>
+          <p className="mt-3 text-sm text-[#d7c39c] md:text-base">{store.name}の出勤スケジュール</p>
         </div>
       </div>
 
@@ -158,7 +153,7 @@ export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleConte
                     {format(dateObj, 'E', { locale: ja })}
                   </span>
                   <span className="text-sm font-semibold">{format(dateObj, 'M月d日')}</span>
-                  <span className={`text-[10px] ${isActive ? 'text-[#2b1b0d]' : 'text-[#cbb88f]'}`}>
+                  <span className={`text-xs ${isActive ? 'text-[#2b1b0d]' : 'text-[#cbb88f]'}`}>
                     {day.entries.length}件
                   </span>
                 </Button>
@@ -277,14 +272,10 @@ export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleConte
                         size="sm"
                         className="border-[#3b2e1f] text-[#f5e6c4] hover:bg-[#2b2114]"
                       >
-                        <Link href={`/${store.slug}/cast/${entry.castId}`}>
-                          詳細を見る
-                        </Link>
+                        <Link href={`/${store.slug}/cast/${entry.castId}`}>詳細を見る</Link>
                       </Button>
                       <Button asChild size="sm">
-                        <Link href={`/${store.slug}/booking?cast=${entry.castId}`}>
-                          予約する
-                        </Link>
+                        <Link href={`/${store.slug}/booking?cast=${entry.castId}`}>予約する</Link>
                       </Button>
                     </div>
                   </CardContent>
@@ -308,7 +299,7 @@ export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleConte
                                   {slots.map((slot) => (
                                     <th
                                       key={`${slot.id}-label`}
-                                      className="px-2 pb-2 text-[11px] font-medium text-[#cbb88f]"
+                                      className="px-2 pb-2 text-xs font-medium text-[#cbb88f]"
                                     >
                                       {slot.label}
                                     </th>
@@ -320,14 +311,18 @@ export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleConte
                                   {slots.map((slot) => (
                                     <td key={slot.id} className="border border-[#2f2416] px-2 py-3">
                                       {slot.status === 'booked' ? (
-                                        <span className="text-sm font-semibold text-[#e05a4f]">×</span>
+                                        <span className="text-sm font-semibold text-[#e05a4f]">
+                                          ×
+                                        </span>
                                       ) : slot.isPast ? (
                                         <span className="text-sm text-[#8d7a55]">-</span>
                                       ) : (
                                         <button
                                           type="button"
-                                          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#2fc8b7] text-base font-semibold text-[#2fc8b7] transition-colors hover:bg-[#10211e] disabled:cursor-not-allowed disabled:opacity-60"
-                                          onClick={() => handleSlotClick(entry.castId, slot.startIso)}
+                                          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#2fc8b7] text-base font-semibold text-[#2fc8b7] transition-colors hover:bg-[#10211e] disabled:cursor-not-allowed disabled:opacity-60"
+                                          onClick={() =>
+                                            handleSlotClick(entry.castId, slot.startIso)
+                                          }
                                           disabled={isAuthLoading}
                                           aria-label={`${entry.cast.name} ${slot.label}の予約を進める`}
                                         >
