@@ -11,7 +11,6 @@ import { differenceInCalendarDays, parse } from 'date-fns'
 import { formatInTimeZone } from 'date-fns-tz'
 import {
   BusinessHoursRange,
-  DEFAULT_BUSINESS_HOURS,
   parseBusinessHoursString,
   minutesToIsoInJst,
 } from '@/lib/settings/business-hours'
@@ -86,10 +85,15 @@ export async function GET(request: NextRequest) {
 
 async function handleConflictCheck(searchParams: URLSearchParams): Promise<NextResponse> {
   try {
+    const storeId = searchParams.get('storeId')?.trim().toLowerCase()
     const castId = searchParams.get('castId')
     const castIds = searchParams.get('castIds')
     const startTimeStr = searchParams.get('startTime')
     const endTimeStr = searchParams.get('endTime')
+
+    if (!storeId) {
+      return NextResponse.json({ error: 'Missing required parameter: storeId' }, { status: 400 })
+    }
 
     // Validate required parameters
     if (!castId && !castIds) {
@@ -114,13 +118,31 @@ async function handleConflictCheck(searchParams: URLSearchParams): Promise<NextR
       return NextResponse.json({ error: 'Invalid date format' }, { status: 400 })
     }
 
+    const castIdArray = Array.from(
+      new Set(
+        (castIds ? castIds.split(',') : [castId!])
+          .map((candidate) => candidate.trim())
+          .filter(Boolean)
+      )
+    )
+    const matchingCasts = await db.cast.findMany({
+      where: {
+        id: { in: castIdArray },
+        storeId,
+      },
+      select: { id: true },
+    })
+
+    if (matchingCasts.length !== castIdArray.length) {
+      return NextResponse.json({ error: 'Cast not found' }, { status: 404 })
+    }
+
     // Handle multiple cast check
     if (castIds) {
-      const castIdArray = castIds.split(',')
       const results: Record<string, AvailabilityCheck> = {}
 
       for (const id of castIdArray) {
-        const availability = await checkCastAvailability(id, startTime, endTime)
+        const availability = await checkCastAvailability(storeId, id, startTime, endTime)
         results[id] = availability
       }
 
@@ -128,7 +150,7 @@ async function handleConflictCheck(searchParams: URLSearchParams): Promise<NextR
     }
 
     // Single cast check
-    const availability = await checkCastAvailability(castId!, startTime, endTime)
+    const availability = await checkCastAvailability(storeId, castIdArray[0], startTime, endTime)
     return NextResponse.json(availability)
   } catch (error) {
     logger.error({ err: error }, 'Error in handleConflictCheck')
@@ -142,6 +164,7 @@ type PrismaTransactionClient = Omit<
 >
 
 async function checkCastAvailability(
+  storeId: string,
   castId: string,
   startTime: Date,
   endTime: Date,
@@ -150,6 +173,7 @@ async function checkCastAvailability(
   // Find overlapping reservations
   const conflicts = await tx.reservation.findMany({
     where: {
+      storeId,
       castId,
       status: {
         not: 'cancelled',
@@ -204,8 +228,13 @@ async function checkCastAvailability(
 async function handleAvailableSlots(searchParams: URLSearchParams): Promise<NextResponse> {
   try {
     const castId = searchParams.get('castId')
+    const storeId = searchParams.get('storeId')?.trim().toLowerCase()
     const dateStr = searchParams.get('date')
     const durationStr = searchParams.get('duration')
+
+    if (!storeId) {
+      return NextResponse.json({ error: 'Missing required parameter: storeId' }, { status: 400 })
+    }
 
     if (!castId || !dateStr || !durationStr) {
       return NextResponse.json(
@@ -226,28 +255,78 @@ async function handleAvailableSlots(searchParams: URLSearchParams): Promise<Next
       select: {
         id: true,
         name: true,
+        storeId: true,
+        netReservation: true,
       },
     })
 
-    if (!cast) {
+    if (!cast || (storeId && cast.storeId !== storeId)) {
       return NextResponse.json({ error: 'Cast not found' }, { status: 404 })
     }
 
-    const businessHours = await resolveBusinessHours()
+    const emptyAvailability = () =>
+      NextResponse.json({
+        castId,
+        date: dateStr,
+        duration,
+        availableSlots: [],
+      })
+
+    if (!cast.netReservation) {
+      return emptyAvailability()
+    }
+
+    const businessHours = await resolveBusinessHours(cast.storeId)
     const rangeStartUtc = convertJstStringToUtc(
       minutesToIsoInJst(dateStr, businessHours.startMinutes)
     )
     const rangeEndUtc = convertJstStringToUtc(minutesToIsoInJst(dateStr, businessHours.endMinutes))
 
+    const schedule = await db.castSchedule.findFirst({
+      where: {
+        castId,
+        isAvailable: true,
+        startTime: {
+          lt: rangeEndUtc,
+        },
+        endTime: {
+          gt: rangeStartUtc,
+        },
+      },
+      orderBy: {
+        startTime: 'asc',
+      },
+      select: {
+        startTime: true,
+        endTime: true,
+      },
+    })
+
+    if (!schedule) {
+      return emptyAvailability()
+    }
+
+    const availableStartUtc = new Date(
+      Math.max(rangeStartUtc.getTime(), schedule.startTime.getTime())
+    )
+    const availableEndUtc = new Date(Math.min(rangeEndUtc.getTime(), schedule.endTime.getTime()))
+
+    if (availableStartUtc >= availableEndUtc) {
+      return emptyAvailability()
+    }
+
     const reservations = await db.reservation.findMany({
       where: {
         castId,
+        storeId: cast.storeId,
         status: {
           not: 'cancelled',
         },
         startTime: {
-          gte: rangeStartUtc,
-          lt: rangeEndUtc,
+          lt: availableEndUtc,
+        },
+        endTime: {
+          gt: availableStartUtc,
         },
       },
       orderBy: {
@@ -272,16 +351,24 @@ async function handleAvailableSlots(searchParams: URLSearchParams): Promise<Next
     }
 
     const availableSlots: TimeSlot[] = []
-    let currentMinute = businessHours.startMinutes
+    const availableStartMinute = Math.max(
+      businessHours.startMinutes,
+      getMinutesFromDate(availableStartUtc)
+    )
+    const availableEndMinute = Math.min(
+      businessHours.endMinutes,
+      getMinutesFromDate(availableEndUtc)
+    )
+    let currentMinute = availableStartMinute
 
     for (const reservation of reservations) {
       const reservationStartMinute = Math.max(
         getMinutesFromDate(reservation.startTime),
-        businessHours.startMinutes
+        availableStartMinute
       )
       const reservationEndMinute = Math.min(
         getMinutesFromDate(reservation.endTime),
-        businessHours.endMinutes
+        availableEndMinute
       )
 
       if (reservationEndMinute <= reservationStartMinute) {
@@ -300,11 +387,11 @@ async function handleAvailableSlots(searchParams: URLSearchParams): Promise<Next
       currentMinute = Math.max(currentMinute, reservationEndMinute)
     }
 
-    if (businessHours.endMinutes - currentMinute >= duration) {
+    if (availableEndMinute - currentMinute >= duration) {
       availableSlots.push({
         startTime: convertJstStringToUtc(minutesToIsoInJst(dateStr, currentMinute)).toISOString(),
         endTime: convertJstStringToUtc(
-          minutesToIsoInJst(dateStr, businessHours.endMinutes)
+          minutesToIsoInJst(dateStr, availableEndMinute)
         ).toISOString(),
       })
     }
@@ -320,9 +407,10 @@ async function handleAvailableSlots(searchParams: URLSearchParams): Promise<Next
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
-async function resolveBusinessHours(): Promise<BusinessHoursRange> {
+async function resolveBusinessHours(storeId: string): Promise<BusinessHoursRange> {
   try {
-    const settings = await db.storeSettings.findFirst({
+    const settings = await db.storeSettings.findUnique({
+      where: { storeId },
       select: { businessHours: true },
     })
     if (settings?.businessHours) {

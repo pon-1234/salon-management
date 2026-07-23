@@ -5,14 +5,67 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import type { Session } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
+import { hasPermission } from '@/lib/auth/permissions'
+import { canAdminAccessStore } from '@/lib/auth/store-access'
 import { db } from '@/lib/db'
 import { Prisma } from '@prisma/client'
 import logger from '@/lib/logger'
 import { defaultOptions } from '@/lib/pricing/data'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
+import { sanitizeResponseData } from '@/lib/http/sanitize-response'
+import { env } from '@/lib/config/env'
+import { toPublicOption } from '@/lib/pricing/public'
 
-function normalizeNumber(value: any, fallback: number | null = null): number | null {
+const PRICING_PRIVATE_CAST_FIELDS = ['loginEmail', 'lineUserId', 'welfareExpenseRate']
+const OPTION_VISIBILITIES = ['public', 'internal'] as const
+
+type OptionVisibility = (typeof OPTION_VISIBILITIES)[number]
+
+function isOptionVisibility(value: unknown): value is OptionVisibility {
+  return value === 'public' || value === 'internal'
+}
+
+interface OptionUpdatePayload {
+  name?: string
+  description?: string | null
+  price?: number
+  duration?: number | null
+  category?: string
+  displayOrder?: number
+  isActive?: boolean
+  visibility?: OptionVisibility
+  note?: string | null
+  storeShare?: number | null
+  castShare?: number | null
+}
+
+interface OptionCreatePayload extends OptionUpdatePayload {
+  name: string
+  description: string | null
+  price: number
+  category: string
+  displayOrder: number
+  isActive: boolean
+  visibility: OptionVisibility
+}
+
+class OptionValidationError extends Error {
+  constructor(
+    readonly path: string[],
+    message: string
+  ) {
+    super(message)
+    this.name = 'OptionValidationError'
+  }
+}
+
+function sanitizePricingResponse<T>(value: T): T {
+  return sanitizeResponseData(value, PRICING_PRIVATE_CAST_FIELDS)
+}
+
+function normalizeNumber(value: unknown, fallback: number | null = null): number | null {
   if (value === null || value === undefined || value === '') return fallback
   const num = Number(value)
   if (!Number.isFinite(num)) {
@@ -21,77 +74,164 @@ function normalizeNumber(value: any, fallback: number | null = null): number | n
   return Math.trunc(num)
 }
 
-function buildOptionPayload(data: any, mode: 'create' | 'update' = 'create') {
-  const payload: Record<string, any> = {}
+function isInputRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
 
-  if (data.name !== undefined) {
-    const name = data.name?.toString().trim()
+function asInputRecord(value: unknown): Record<string, unknown> {
+  return isInputRecord(value) ? value : {}
+}
+
+function parseNonNegativeInteger(value: unknown, path: string): number | null {
+  if (value === null) return null
+  const parsed =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string' && value.trim().length > 0
+        ? Number(value)
+        : Number.NaN
+
+  if (!Number.isSafeInteger(parsed) || parsed < 0) {
+    throw new OptionValidationError([path], `${path} must be a non-negative integer`)
+  }
+  return parsed
+}
+
+function validateRevenueSplit(
+  price: number,
+  storeShare: number | null,
+  castShare: number | null
+): void {
+  if (storeShare !== null && storeShare > price) {
+    throw new OptionValidationError(['storeShare'], 'Store share must not exceed the option price')
+  }
+  if (castShare !== null && castShare > price) {
+    throw new OptionValidationError(['castShare'], 'Cast share must not exceed the option price')
+  }
+  if (storeShare !== null && castShare !== null && storeShare + castShare !== price) {
+    throw new OptionValidationError(
+      ['storeShare', 'castShare'],
+      'Store and cast shares must total the option price'
+    )
+  }
+}
+
+function buildOptionPayload(data: unknown, mode: 'create'): OptionCreatePayload
+function buildOptionPayload(data: unknown, mode: 'update'): OptionUpdatePayload
+function buildOptionPayload(
+  data: unknown,
+  mode: 'create' | 'update'
+): OptionCreatePayload | OptionUpdatePayload {
+  const input = asInputRecord(data)
+  const payload: OptionUpdatePayload = {}
+
+  if (input.name !== undefined) {
+    const name = typeof input.name === 'string' ? input.name.trim() : ''
     if (!name) {
-      throw new Error('NAME_REQUIRED')
+      throw new OptionValidationError(['name'], 'Name is required')
     }
     payload.name = name
   } else if (mode === 'create') {
-    throw new Error('NAME_REQUIRED')
+    throw new OptionValidationError(['name'], 'Name is required')
   }
 
-  if (data.description !== undefined) {
-    payload.description = data.description ? data.description.toString() : null
+  if (input.description !== undefined) {
+    payload.description = input.description ? String(input.description) : null
   } else if (mode === 'create') {
     payload.description = null
   }
 
-  if (data.price !== undefined) {
-    payload.price = Math.max(0, normalizeNumber(data.price, 0) ?? 0)
+  if (input.price !== undefined) {
+    payload.price = parseNonNegativeInteger(input.price, 'price') ?? 0
   } else if (mode === 'create') {
     payload.price = 0
   }
 
-  if (data.duration !== undefined) {
-    payload.duration = normalizeNumber(data.duration)
+  if (input.duration !== undefined) {
+    payload.duration = normalizeNumber(input.duration)
   }
 
-  if (data.category !== undefined) {
-    const category = data.category?.toString() || 'special'
+  if (input.category !== undefined) {
+    const category = input.category ? String(input.category) : 'special'
     payload.category = category
   } else if (mode === 'create') {
     payload.category = 'special'
   }
 
-  if (data.displayOrder !== undefined) {
-    payload.displayOrder = normalizeNumber(data.displayOrder, 0) ?? 0
+  if (input.displayOrder !== undefined) {
+    payload.displayOrder = normalizeNumber(input.displayOrder, 0) ?? 0
   } else if (mode === 'create') {
     payload.displayOrder = 0
   }
 
-  if (data.isActive !== undefined) {
-    payload.isActive = Boolean(data.isActive)
+  if (input.isActive !== undefined) {
+    payload.isActive = Boolean(input.isActive)
   } else if (mode === 'create') {
     payload.isActive = true
   }
 
-  if (data.visibility !== undefined) {
-    const visibility = data.visibility?.toString()
-    if (!['public', 'internal'].includes(visibility)) {
-      throw new Error('VISIBILITY_INVALID')
+  if (input.visibility !== undefined) {
+    if (!isOptionVisibility(input.visibility)) {
+      throw new OptionValidationError(['visibility'], 'Visibility is invalid')
     }
-    payload.visibility = visibility
+    payload.visibility = input.visibility
   } else if (mode === 'create') {
     payload.visibility = 'public'
   }
 
-  if (data.note !== undefined) {
-    payload.note = data.note ? data.note.toString() : null
+  if (input.note !== undefined) {
+    payload.note = input.note ? String(input.note) : null
   }
 
-  if (data.storeShare !== undefined) {
-    payload.storeShare = Math.max(0, normalizeNumber(data.storeShare, 0) ?? 0)
+  if (input.storeShare !== undefined) {
+    payload.storeShare = parseNonNegativeInteger(input.storeShare, 'storeShare')
   }
 
-  if (data.castShare !== undefined) {
-    payload.castShare = Math.max(0, normalizeNumber(data.castShare, 0) ?? 0)
+  if (input.castShare !== undefined) {
+    payload.castShare = parseNonNegativeInteger(input.castShare, 'castShare')
   }
 
+  if (mode === 'create') {
+    if (payload.name === undefined) {
+      throw new OptionValidationError(['name'], 'Name is required')
+    }
+    const createPayload: OptionCreatePayload = {
+      ...payload,
+      name: payload.name,
+      description: payload.description ?? null,
+      price: payload.price ?? 0,
+      category: payload.category ?? 'special',
+      displayOrder: payload.displayOrder ?? 0,
+      isActive: payload.isActive ?? true,
+      visibility: payload.visibility ?? 'public',
+    }
+    validateRevenueSplit(
+      createPayload.price,
+      createPayload.storeShare ?? null,
+      createPayload.castShare ?? null
+    )
+    return createPayload
+  }
   return payload
+}
+
+function validationResponse(error: OptionValidationError) {
+  return NextResponse.json(
+    {
+      error: 'Validation error',
+      details: [{ path: error.path, message: error.message }],
+    },
+    { status: 400 }
+  )
+}
+
+function hasErrorCode(error: unknown, code: string): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    Reflect.get(error, 'code') === code
+  )
 }
 
 async function requireSession() {
@@ -102,18 +242,30 @@ async function requireSession() {
   return session
 }
 
+function canManagePricing(session: Session, storeId: string, permission: string): boolean {
+  return (
+    session.user.role === 'admin' &&
+    hasPermission(session.user.permissions, permission) &&
+    canAdminAccessStore(session.user, storeId)
+  )
+}
+
+function forbiddenResponse() {
+  return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+}
+
 function buildFallbackOptionResponse(id: string | null, isAdmin: boolean) {
   if (id) {
     const option = defaultOptions.find((item) => item.id === id)
     if (!option) {
       return NextResponse.json({ error: 'Option not found' }, { status: 404 })
     }
-    const payload = isAdmin ? { ...option, reservations: [] } : option
+    const payload = isAdmin ? { ...option, reservations: [] } : toPublicOption(option)
     return NextResponse.json(payload)
   }
 
   const payload = defaultOptions.map((option) =>
-    isAdmin ? { ...option, reservations: [] } : option
+    isAdmin ? { ...option, reservations: [] } : toPublicOption(option)
   )
   return NextResponse.json(payload)
 }
@@ -127,12 +279,19 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (session?.user?.role === 'admin') {
+      if (!canManagePricing(session, storeId, 'pricing:read')) {
+        return forbiddenResponse()
+      }
       isAdmin = true
     }
 
     if (id) {
       const option = await db.optionPrice.findFirst({
-        where: { id, storeId },
+        where: {
+          id,
+          storeId,
+          ...(isAdmin ? {} : { visibility: 'public', isActive: true, archivedAt: null }),
+        },
         include: {
           reservations: {
             include: {
@@ -152,24 +311,20 @@ export async function GET(request: NextRequest) {
       }
 
       if (isAdmin) {
-        return NextResponse.json(option)
+        return NextResponse.json(sanitizePricingResponse(option))
       }
 
       if (option.visibility !== 'public') {
         return NextResponse.json({ error: 'Option not found' }, { status: 404 })
       }
 
-      const { reservations, ...optionData } = option as typeof option & {
-        reservations?: unknown
-      }
-
-      return NextResponse.json(optionData)
+      return NextResponse.json(toPublicOption(option))
     }
 
     const options = await db.optionPrice.findMany({
       where: {
         storeId,
-        ...(isAdmin ? {} : { visibility: 'public', isActive: true }),
+        ...(isAdmin ? {} : { visibility: 'public', isActive: true, archivedAt: null }),
       },
       include: {
         reservations: {
@@ -194,19 +349,15 @@ export async function GET(request: NextRequest) {
     })
 
     if (isAdmin) {
-      return NextResponse.json(options)
+      return NextResponse.json(sanitizePricingResponse(options))
     }
 
-    const sanitizedOptions = options.map((option) => {
-      const { reservations, ...optionData } = option as typeof option & {
-        reservations?: unknown
-      }
-      return optionData
-    })
-
-    return NextResponse.json(sanitizedOptions)
+    return NextResponse.json(options.map(toPublicOption))
   } catch (error) {
     logger.error({ err: error }, 'Error fetching option data')
+    if (!env.featureFlags.useMockFallbacks) {
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
     return buildFallbackOptionResponse(id, isAdmin)
   }
 }
@@ -218,53 +369,32 @@ export async function POST(request: NextRequest) {
       return session
     }
 
-    if (session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const storeId = await ensureStoreId(await resolveStoreId(request))
+    if (!canManagePricing(session, storeId, 'pricing:create')) {
+      return forbiddenResponse()
     }
 
     const data = await request.json()
-    const storeId = await ensureStoreId(await resolveStoreId(request))
 
     let payload
     try {
       payload = buildOptionPayload(data, 'create')
     } catch (error) {
-      if (error instanceof Error && error.message === 'NAME_REQUIRED') {
-        return NextResponse.json(
-          {
-            error: 'Validation error',
-            details: [{ path: ['name'], message: 'Name is required' }],
-          },
-          { status: 400 }
-        )
-      }
-      if (error instanceof Error && error.message === 'VISIBILITY_INVALID') {
-        return NextResponse.json(
-          {
-            error: 'Validation error',
-            details: [{ path: ['visibility'], message: 'Visibility is invalid' }],
-          },
-          { status: 400 }
-        )
-      }
+      if (error instanceof OptionValidationError) return validationResponse(error)
       throw error
     }
 
-    const prismaPayload = Object.fromEntries(
-      Object.entries(payload).filter(([, value]) => value !== undefined)
-    )
-
     const newOption = await db.optionPrice.create({
       data: {
-        ...(prismaPayload as Prisma.OptionPriceUncheckedCreateInput),
+        ...payload,
         storeId,
-      },
+      } satisfies Prisma.OptionPriceUncheckedCreateInput,
       include: {
         reservations: true,
       },
     })
 
-    return NextResponse.json(newOption, { status: 201 })
+    return NextResponse.json(sanitizePricingResponse(newOption), { status: 201 })
   } catch (error) {
     logger.error({ err: error }, 'Error creating option')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -278,49 +408,29 @@ export async function PUT(request: NextRequest) {
       return session
     }
 
-    if (session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const storeId = await ensureStoreId(await resolveStoreId(request))
+    if (!canManagePricing(session, storeId, 'pricing:update')) {
+      return forbiddenResponse()
     }
 
-    const data = await request.json()
-    const storeId = await ensureStoreId(await resolveStoreId(request))
+    const data = asInputRecord(await request.json())
     const { id, ...updates } = data
 
-    if (!id) {
+    if (typeof id !== 'string' || !id.trim()) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 })
     }
+    const optionId = id.trim()
 
     let payload
     try {
       payload = buildOptionPayload(updates, 'update')
     } catch (error) {
-      if (error instanceof Error && error.message === 'NAME_REQUIRED') {
-        return NextResponse.json(
-          {
-            error: 'Validation error',
-            details: [{ path: ['name'], message: 'Name is required' }],
-          },
-          { status: 400 }
-        )
-      }
-      if (error instanceof Error && error.message === 'VISIBILITY_INVALID') {
-        return NextResponse.json(
-          {
-            error: 'Validation error',
-            details: [{ path: ['visibility'], message: 'Visibility is invalid' }],
-          },
-          { status: 400 }
-        )
-      }
+      if (error instanceof OptionValidationError) return validationResponse(error)
       throw error
     }
 
-    const sanitizedPayload = Object.fromEntries(
-      Object.entries(payload).filter(([, value]) => value !== undefined)
-    )
-
     const existingOption = await db.optionPrice.findFirst({
-      where: { id, storeId },
+      where: { id: optionId, storeId },
       include: {
         reservations: {
           include: {
@@ -339,81 +449,52 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Option not found' }, { status: 404 })
     }
 
-    const updateKeys = Object.keys(sanitizedPayload)
-    const isStatusOnlyUpdate = updateKeys.length === 1 && updateKeys[0] === 'isActive'
-
-    if (isStatusOnlyUpdate) {
-      const updatedOption = await db.optionPrice.update({
-        where: { id },
-        data: {
-          isActive: sanitizedPayload.isActive,
-          archivedAt: sanitizedPayload.isActive ? null : new Date(),
-        },
-        include: {
-          reservations: {
-            include: {
-              reservation: {
-                include: {
-                  customer: true,
-                  cast: true,
-                },
-              },
-            },
-          },
-        },
-      })
-
-      return NextResponse.json(updatedOption)
+    const changesRevenueSplit = ['price', 'storeShare', 'castShare'].some((field) =>
+      Object.prototype.hasOwnProperty.call(payload, field)
+    )
+    if (changesRevenueSplit) {
+      try {
+        validateRevenueSplit(
+          payload.price ?? existingOption.price,
+          Object.prototype.hasOwnProperty.call(payload, 'storeShare')
+            ? (payload.storeShare ?? null)
+            : (existingOption.storeShare ?? null),
+          Object.prototype.hasOwnProperty.call(payload, 'castShare')
+            ? (payload.castShare ?? null)
+            : (existingOption.castShare ?? null)
+        )
+      } catch (error) {
+        if (error instanceof OptionValidationError) return validationResponse(error)
+        throw error
+      }
     }
 
-    const updatedOption = await db.$transaction(async (tx) => {
-      await tx.optionPrice.update({
-        where: { id },
-        data: {
-          isActive: false,
-          archivedAt: new Date(),
-        },
-      })
-
-      const baseOptionData = {
-        name: existingOption.name,
-        description: existingOption.description,
-        price: existingOption.price,
-        duration: existingOption.duration,
-        category: existingOption.category,
-        displayOrder: existingOption.displayOrder,
-        note: existingOption.note,
-        storeShare: existingOption.storeShare,
-        castShare: existingOption.castShare,
-        storeId: existingOption.storeId,
-      }
-
-      return tx.optionPrice.create({
-        data: {
-          ...baseOptionData,
-          ...sanitizedPayload,
-          isActive: sanitizedPayload.isActive ?? true,
-          archivedAt: null,
-        },
-        include: {
-          reservations: {
-            include: {
-              reservation: {
-                include: {
-                  customer: true,
-                  cast: true,
-                },
+    const updatedOption = await db.optionPrice.update({
+      where: { id: optionId },
+      data: {
+        ...payload,
+        ...(payload.isActive === undefined
+          ? {}
+          : { archivedAt: payload.isActive ? null : new Date() }),
+      } satisfies Prisma.OptionPriceUncheckedUpdateInput,
+      include: {
+        reservations: {
+          include: {
+            reservation: {
+              include: {
+                customer: true,
+                cast: true,
               },
             },
           },
         },
-      })
+      },
     })
 
-    return NextResponse.json(updatedOption)
-  } catch (error: any) {
+    return NextResponse.json(sanitizePricingResponse(updatedOption))
+  } catch (error) {
     logger.error({ err: error }, 'Error updating option')
-    if (error?.code === 'P2025') {
+    if (hasErrorCode(error, 'P2025')) {
       return NextResponse.json({ error: 'Option not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -427,13 +508,12 @@ export async function DELETE(request: NextRequest) {
       return session
     }
 
-    if (session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
     const searchParams = request.nextUrl.searchParams
     const id = searchParams.get('id')
     const storeId = await ensureStoreId(await resolveStoreId(request))
+    if (!canManagePricing(session, storeId, 'pricing:delete')) {
+      return forbiddenResponse()
+    }
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 })
@@ -456,9 +536,9 @@ export async function DELETE(request: NextRequest) {
     })
 
     return new NextResponse(null, { status: 204 })
-  } catch (error: any) {
+  } catch (error) {
     logger.error({ err: error }, 'Error deleting option')
-    if (error?.code === 'P2025') {
+    if (hasErrorCode(error, 'P2025')) {
       return NextResponse.json({ error: 'Option not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

@@ -1,3 +1,8 @@
+/**
+ * @design_doc   docs/LEGACY_GOLD_ADMIN_MIGRATION_INVENTORY.md cast settlement management
+ * @related_to   CastSettlementsData, settlement status API
+ * @known_issues Legacy settlement totals require production-data reconciliation
+ */
 'use client'
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
@@ -8,11 +13,13 @@ import type { CastSettlementsData } from '@/lib/cast-portal/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import { cn } from '@/lib/utils'
 
 interface SettlementStatusTabProps {
   castId: string
   castName: string
+  storeId: string
 }
 
 const settlementStatusStyles = {
@@ -21,7 +28,7 @@ const settlementStatusStyles = {
   settled: 'border-emerald-200 bg-emerald-50 text-emerald-700',
 } as const
 
-export function SettlementStatusTab({ castId }: SettlementStatusTabProps) {
+export function SettlementStatusTab({ castId, storeId }: SettlementStatusTabProps) {
   const [data, setData] = useState<CastSettlementsData | null>(null)
   const [isPending, startTransition] = useTransition()
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({})
@@ -29,7 +36,10 @@ export function SettlementStatusTab({ castId }: SettlementStatusTabProps) {
 
   const fetchData = useCallback(async () => {
     const response = await fetch(
-      `/api/admin/cast/settlements?castId=${encodeURIComponent(castId)}`,
+      buildStoreScopedEndpoint(
+        `/api/admin/cast/settlements?castId=${encodeURIComponent(castId)}`,
+        storeId
+      ),
       { cache: 'no-store' }
     )
 
@@ -39,7 +49,7 @@ export function SettlementStatusTab({ castId }: SettlementStatusTabProps) {
     }
 
     return (await response.json()) as CastSettlementsData
-  }, [castId])
+  }, [castId, storeId])
 
   useEffect(() => {
     let ignore = false
@@ -227,7 +237,7 @@ function DayRow({
       inProgressAmount: netSum(inProgress),
       settledAmount: netSum(settled),
     }
-  }, [day.records])
+  }, [day])
   const courseSummary = useMemo(() => {
     const map = new Map<
       string,

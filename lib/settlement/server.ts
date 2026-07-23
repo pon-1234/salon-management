@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Multi-store settlement integrity boundary
+ * @related_to   Settlement API routes and reservation settlement state
+ * @known_issues Settlement reversal accounting requires a separately approved policy
+ */
 import { db } from '@/lib/db'
 import { SettlementStatus, SettlementPaymentDto } from '@/lib/cast-portal/types'
 
@@ -15,8 +20,38 @@ type UpsertInput = {
 
 export async function upsertSettlementPayment(input: UpsertInput): Promise<SettlementPaymentDto> {
   const paidAt = input.paidAt ? new Date(input.paidAt) : new Date()
+  const reservationIds = [...new Set(input.reservationIds)]
 
   const payment = await db.$transaction(async (tx) => {
+    if (input.id) {
+      const existingPayment = await tx.settlementPayment.findFirst({
+        where: {
+          id: input.id,
+          castId: input.castId,
+          storeId: input.storeId,
+        },
+        select: { id: true },
+      })
+
+      if (!existingPayment) {
+        throw new Error('Settlement payment not found')
+      }
+    }
+
+    if (reservationIds.length > 0) {
+      const matchingReservationCount = await tx.reservation.count({
+        where: {
+          id: { in: reservationIds },
+          castId: input.castId,
+          storeId: input.storeId,
+        },
+      })
+
+      if (matchingReservationCount !== reservationIds.length) {
+        throw new Error('Settlement reservation not found')
+      }
+    }
+
     const paymentRecord = input.id
       ? await tx.settlementPayment.update({
           where: { id: input.id },
@@ -45,9 +80,9 @@ export async function upsertSettlementPayment(input: UpsertInput): Promise<Settl
       await tx.settlementPaymentReservation.deleteMany({ where: { paymentId: paymentRecord.id } })
     }
 
-    if (input.reservationIds.length > 0) {
+    if (reservationIds.length > 0) {
       await tx.settlementPaymentReservation.createMany({
-        data: input.reservationIds.map((reservationId) => ({
+        data: reservationIds.map((reservationId) => ({
           paymentId: paymentRecord.id,
           reservationId,
         })),
@@ -55,7 +90,7 @@ export async function upsertSettlementPayment(input: UpsertInput): Promise<Settl
 
       await tx.reservation.updateMany({
         where: {
-          id: { in: input.reservationIds },
+          id: { in: reservationIds },
           castId: input.castId,
           storeId: input.storeId,
         },

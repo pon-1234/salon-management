@@ -16,7 +16,9 @@ import {
 } from 'react'
 import { PageHeader } from '@/components/admin/page-header'
 import { Header } from '@/components/header'
+import { useStore } from '@/contexts/store-context'
 import { toast } from '@/hooks/use-toast'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -86,6 +88,7 @@ function mapBanner(payload: any, index: number): BannerFormState {
 }
 
 export default function EventBannersPage() {
+  const { currentStore } = useStore()
   const [banners, setBanners] = useState<BannerFormState[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -97,7 +100,9 @@ export default function EventBannersPage() {
   useEffect(() => {
     const fetchBanners = async () => {
       try {
-        const response = await fetch('/api/settings/event-banners')
+        const response = await fetch(
+          buildStoreScopedEndpoint('/api/settings/event-banners', currentStore.id)
+        )
         if (!response.ok) {
           throw new Error('バナー情報の取得に失敗しました')
         }
@@ -117,7 +122,7 @@ export default function EventBannersPage() {
     }
 
     fetchBanners()
-  }, [])
+  }, [currentStore.id])
 
   const updateBanner = (index: number, changes: Partial<BannerFormState>) => {
     setBanners((prev) =>
@@ -244,11 +249,14 @@ export default function EventBannersPage() {
         })),
       }
 
-      const response = await fetch('/api/settings/event-banners', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
+      const response = await fetch(
+        buildStoreScopedEndpoint('/api/settings/event-banners', currentStore.id),
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }
+      )
 
       if (!response.ok) {
         const errorPayload = await response.json().catch(() => null)

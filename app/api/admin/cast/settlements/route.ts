@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Admin cast settlement management with store-scoped reservation authorization
+ * @related_to   getCastSettlements, upsertSettlementPayment, requireAdmin
+ * @known_issues Settlement permissions share the reservation namespace until a dedicated namespace exists
+ */
 import { NextRequest, NextResponse } from 'next/server'
 import logger from '@/lib/logger'
 import { requireAdmin } from '@/lib/auth/utils'
@@ -7,9 +12,6 @@ import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
 import { db } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   const castId = request.nextUrl.searchParams.get('castId')
   if (!castId) {
     return NextResponse.json({ error: 'castId が必要です' }, { status: 400 })
@@ -17,6 +19,9 @@ export async function GET(request: NextRequest) {
 
   try {
     const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'reservation:read', storeId })
+    if (authError) return authError
+
     const cast = await db.cast.findFirst({
       where: { id: castId, storeId },
       select: { id: true },
@@ -35,17 +40,17 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'reservation:update', storeId })
+    if (authError) return authError
+
     const body = await request.json()
     const { castId } = body ?? {}
     if (!castId) {
       return NextResponse.json({ error: 'castId が必要です' }, { status: 400 })
     }
 
-    const storeId = await ensureStoreId(await resolveStoreId(request))
     const cast = await db.cast.findFirst({ where: { id: castId, storeId }, select: { id: true } })
     if (!cast) {
       return NextResponse.json({ error: 'キャストが見つかりません' }, { status: 404 })

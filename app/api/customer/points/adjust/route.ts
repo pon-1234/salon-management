@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Authorized manual customer point adjustments
+ * @related_to   Point ledger utilities and customer:update permission
+ * @known_issues Customer store ownership awaits the approved multi-store policy
+ */
 'use server'
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -14,7 +19,7 @@ const adjustPointsSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
-  const authError = await requireAdmin()
+  const authError = await requireAdmin({ permissions: 'customer:update' })
   if (authError) return authError
 
   try {

@@ -77,11 +77,37 @@ describe('Review API', () => {
     it('returns a single review by id', async () => {
       const review = {
         id: 'review-1',
+        storeId: 'store-1',
+        reservationId: 'reservation-1',
         customerId: 'customer-1',
+        customerName: '山田 花子',
+        customerAlias: '山***',
         status: 'published',
       }
 
       mockGetReviewById.mockResolvedValueOnce(review)
+      vi.mocked(getServerSession).mockResolvedValueOnce(null)
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/review?id=review-1&storeId=store-1',
+        {
+          method: 'GET',
+        }
+      )
+
+      const response = await GET(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.id).toBe('review-1')
+      expect(data.customerAlias).toBe('山***')
+      expect(data).not.toHaveProperty('customerId')
+      expect(data).not.toHaveProperty('customerName')
+      expect(data).not.toHaveProperty('reservationId')
+      expect(mockGetReviewById).toHaveBeenCalledWith('review-1', 'store-1')
+    })
+
+    it('requires storeId when fetching a review by id', async () => {
       vi.mocked(getServerSession).mockResolvedValueOnce(null)
 
       const request = new NextRequest('http://localhost:3000/api/review?id=review-1', {
@@ -91,20 +117,66 @@ describe('Review API', () => {
       const response = await GET(request)
       const data = await response.json()
 
-      expect(response.status).toBe(200)
-      expect(data.id).toBe('review-1')
-      expect(mockGetReviewById).toHaveBeenCalledWith('review-1')
+      expect(response.status).toBe(400)
+      expect(data.error).toBe('storeId is required')
+      expect(mockGetReviewById).not.toHaveBeenCalled()
+    })
+
+    it('keeps identity fields for the customer who owns the review', async () => {
+      const review = {
+        id: 'review-1',
+        storeId: 'store-1',
+        reservationId: 'reservation-1',
+        customerId: 'customer-1',
+        customerName: '山田 花子',
+        customerAlias: '山***',
+        status: 'published',
+      }
+
+      mockGetReviewById.mockResolvedValueOnce(review)
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: { id: 'customer-1', role: 'customer' },
+      } as any)
+
+      const response = await GET(
+        new NextRequest('http://localhost:3000/api/review?id=review-1&storeId=store-1')
+      )
+
+      expect(await response.json()).toEqual(review)
+    })
+
+    it('rejects an admin who is not assigned to the requested store', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: { id: 'admin-1', role: 'admin', storeIds: ['store-2'] },
+      } as any)
+
+      const response = await GET(
+        new NextRequest('http://localhost:3000/api/review?storeId=store-1&status=all')
+      )
+
+      expect(response.status).toBe(403)
+      expect(mockSearchReviews).not.toHaveBeenCalled()
     })
 
     it('filters to published reviews for unauthenticated audience', async () => {
-      mockSearchReviews.mockResolvedValueOnce([])
+      mockSearchReviews.mockResolvedValueOnce([
+        {
+          id: 'review-1',
+          customerId: 'customer-1',
+          customerName: '山田 花子',
+          customerAlias: '山***',
+          reservationId: 'reservation-1',
+          status: 'published',
+        },
+      ])
       vi.mocked(getServerSession).mockResolvedValueOnce(null)
 
       const request = new NextRequest('http://localhost:3000/api/review?storeId=store-1', {
         method: 'GET',
       })
 
-      await GET(request)
+      const response = await GET(request)
+      const data = await response.json()
 
       expect(mockSearchReviews).toHaveBeenCalledWith({
         storeId: 'store-1',
@@ -114,6 +186,10 @@ describe('Review API', () => {
         statuses: ['published'],
         limit: undefined,
       })
+      expect(data[0].customerAlias).toBe('山***')
+      expect(data[0]).not.toHaveProperty('customerId')
+      expect(data[0]).not.toHaveProperty('customerName')
+      expect(data[0]).not.toHaveProperty('reservationId')
     })
 
     it('returns reviews and stats when stats=true', async () => {
@@ -167,7 +243,7 @@ describe('Review API', () => {
     it('requires authentication', async () => {
       vi.mocked(getServerSession).mockResolvedValueOnce(null)
 
-      const request = new NextRequest('http://localhost:3000/api/review', {
+      const request = new NextRequest('http://localhost:3000/api/review?storeId=store-1', {
         method: 'POST',
         body: JSON.stringify({}),
       })
@@ -187,7 +263,7 @@ describe('Review API', () => {
       } as any)
       mockCreateReview.mockResolvedValueOnce(review)
 
-      const request = new NextRequest('http://localhost:3000/api/review', {
+      const request = new NextRequest('http://localhost:3000/api/review?storeId=store-1', {
         method: 'POST',
         body: JSON.stringify({
           reservationId: 'reservation-1',
@@ -202,6 +278,7 @@ describe('Review API', () => {
       expect(response.status).toBe(201)
       expect(data).toEqual(review)
       expect(mockCreateReview).toHaveBeenCalledWith({
+        storeId: 'store-1',
         reservationId: 'reservation-1',
         rating: 5,
         comment: '最高でした！',
@@ -209,6 +286,26 @@ describe('Review API', () => {
         actorId: 'customer-1',
         actorRole: 'customer',
       })
+    })
+
+    it('requires storeId before creating a review', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: { id: 'customer-1', role: 'customer' },
+      } as any)
+
+      const response = await POST(
+        new NextRequest('http://localhost:3000/api/review', {
+          method: 'POST',
+          body: JSON.stringify({
+            reservationId: 'reservation-1',
+            rating: 5,
+            comment: 'Great',
+          }),
+        })
+      )
+
+      expect(response.status).toBe(400)
+      expect(mockCreateReview).not.toHaveBeenCalled()
     })
 
     it('maps service errors to HTTP responses', async () => {
@@ -220,7 +317,7 @@ describe('Review API', () => {
         new MockReviewServiceError('RESERVATION_NOT_COMPLETED', 'Reservation not completed')
       )
 
-      const request = new NextRequest('http://localhost:3000/api/review', {
+      const request = new NextRequest('http://localhost:3000/api/review?storeId=store-1', {
         method: 'POST',
         body: JSON.stringify({
           reservationId: 'reservation-1',
@@ -246,7 +343,7 @@ describe('Review API', () => {
       } as any)
       mockUpdateReview.mockResolvedValueOnce(updatedReview)
 
-      const request = new NextRequest('http://localhost:3000/api/review', {
+      const request = new NextRequest('http://localhost:3000/api/review?storeId=store-1', {
         method: 'PUT',
         body: JSON.stringify({
           id: 'review-1',
@@ -261,6 +358,7 @@ describe('Review API', () => {
       expect(data).toEqual(updatedReview)
       expect(mockUpdateReview).toHaveBeenCalledWith({
         id: 'review-1',
+        storeId: 'store-1',
         rating: 4,
         comment: undefined,
         status: undefined,
@@ -278,7 +376,7 @@ describe('Review API', () => {
         new MockReviewServiceError('FORBIDDEN', 'Cannot update review')
       )
 
-      const request = new NextRequest('http://localhost:3000/api/review', {
+      const request = new NextRequest('http://localhost:3000/api/review?storeId=store-1', {
         method: 'PUT',
         body: JSON.stringify({
           id: 'review-1',
@@ -292,24 +390,44 @@ describe('Review API', () => {
       expect(response.status).toBe(403)
       expect(data.error).toBe('操作する権限がありません')
     })
+
+    it('requires storeId before updating a review', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: { id: 'customer-1', role: 'customer' },
+      } as any)
+
+      const response = await PUT(
+        new NextRequest('http://localhost:3000/api/review', {
+          method: 'PUT',
+          body: JSON.stringify({ id: 'review-1', rating: 4 }),
+        })
+      )
+
+      expect(response.status).toBe(400)
+      expect(mockUpdateReview).not.toHaveBeenCalled()
+    })
   })
 
   describe('DELETE /api/review', () => {
     it('deletes review for admin user', async () => {
       vi.mocked(getServerSession).mockResolvedValueOnce({
-        user: { id: 'admin-1', role: 'admin' },
+        user: { id: 'admin-1', role: 'admin', adminRole: 'super_admin' },
       } as any)
       mockDeleteReview.mockResolvedValueOnce(undefined)
 
-      const request = new NextRequest('http://localhost:3000/api/review?id=review-1', {
-        method: 'DELETE',
-      })
+      const request = new NextRequest(
+        'http://localhost:3000/api/review?id=review-1&storeId=store-1',
+        {
+          method: 'DELETE',
+        }
+      )
 
       const response = await DELETE(request)
 
       expect(response.status).toBe(204)
       expect(mockDeleteReview).toHaveBeenCalledWith({
         id: 'review-1',
+        storeId: 'store-1',
         actorId: 'admin-1',
         actorRole: 'admin',
       })
@@ -317,21 +435,39 @@ describe('Review API', () => {
 
     it('maps delete errors appropriately', async () => {
       vi.mocked(getServerSession).mockResolvedValueOnce({
-        user: { id: 'admin-1', role: 'admin' },
+        user: { id: 'admin-1', role: 'admin', adminRole: 'super_admin' },
       } as any)
       mockDeleteReview.mockRejectedValueOnce(
         new MockReviewServiceError('REVIEW_NOT_FOUND', 'Missing review')
       )
 
-      const request = new NextRequest('http://localhost:3000/api/review?id=review-404', {
-        method: 'DELETE',
-      })
+      const request = new NextRequest(
+        'http://localhost:3000/api/review?id=review-404&storeId=store-1',
+        {
+          method: 'DELETE',
+        }
+      )
 
       const response = await DELETE(request)
       const data = await response.json()
 
       expect(response.status).toBe(404)
       expect(data.error).toBe('口コミが見つかりませんでした')
+    })
+
+    it('requires storeId before deleting a review', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: { id: 'admin-1', role: 'admin', adminRole: 'super_admin' },
+      } as any)
+
+      const response = await DELETE(
+        new NextRequest('http://localhost:3000/api/review?id=review-1', {
+          method: 'DELETE',
+        })
+      )
+
+      expect(response.status).toBe(400)
+      expect(mockDeleteReview).not.toHaveBeenCalled()
     })
   })
 })

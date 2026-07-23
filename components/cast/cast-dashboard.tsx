@@ -22,6 +22,7 @@ import {
   WorkStatus,
 } from '@/components/cast/schedule-edit-dialog'
 import { useStore } from '@/contexts/store-context'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import { mapReservationToReservationData } from '@/lib/reservation/transformers'
 interface CastDashboardProps {
   cast: Cast
@@ -175,9 +176,15 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
           if (!shouldPersist) {
             if (existing?.id) {
               operations.push(
-                fetch(`/api/cast-schedule?id=${existing.id}`, {
-                  method: 'DELETE',
-                })
+                fetch(
+                  buildStoreScopedEndpoint(
+                    `/api/cast-schedule?id=${encodeURIComponent(existing.id)}`,
+                    currentStore.id
+                  ),
+                  {
+                    method: 'DELETE',
+                  }
+                )
               )
             }
             continue
@@ -197,7 +204,7 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
 
           if (existing?.id) {
             operations.push(
-              fetch('/api/cast-schedule', {
+              fetch(buildStoreScopedEndpoint('/api/cast-schedule', currentStore.id), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -208,7 +215,7 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
             )
           } else {
             operations.push(
-              fetch('/api/cast-schedule', {
+              fetch(buildStoreScopedEndpoint('/api/cast-schedule', currentStore.id), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -244,7 +251,7 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
         throw error
       }
     },
-    [cast.id, fetchSchedule, scheduleMap, toast]
+    [cast.id, currentStore.id, fetchSchedule, scheduleMap, toast]
   )
 
   const scheduleDisplay = useMemo(() => {

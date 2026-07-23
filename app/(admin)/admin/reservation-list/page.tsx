@@ -1,7 +1,11 @@
 'use client'
 
+/**
+ * @design_doc   Daily admin reservation list with persistent status and detail editing
+ * @related_to   ReservationList, ReservationDialog, ReservationRepositoryImpl
+ * @known_issues None
+ */
 import { useState, useEffect, useCallback, useMemo, ChangeEvent } from 'react'
-import { Header } from '@/components/header'
 import { ReservationList } from '@/components/reservation/reservation-list'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,13 +19,21 @@ import {
 import { ReservationRepositoryImpl } from '@/lib/reservation/repository-impl'
 import { toast } from '@/hooks/use-toast'
 import { ReservationDialog } from '@/components/reservation/reservation-dialog'
-import { Reservation, ReservationData, ReservationUpdatePayload } from '@/lib/types/reservation'
+import {
+  Reservation,
+  ReservationApiUpdatePayload,
+  ReservationData,
+  ReservationSavePayload,
+} from '@/lib/types/reservation'
 import { mapReservationToReservationData } from '@/lib/reservation/transformers'
 import { useSession } from 'next-auth/react'
 import { format, isSameDay, startOfDay, addDays } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { useStore } from '@/contexts/store-context'
+import { hasPermission } from '@/lib/auth/permissions'
+
+const ADJUSTING_STATUSES = new Set(['pending', 'tentative', 'modifiable'])
 
 export default function ReservationListPage() {
   const { currentStore } = useStore()
@@ -29,9 +41,14 @@ export default function ReservationListPage() {
   const [rawReservations, setRawReservations] = useState<Reservation[]>([])
   const [dailyReservations, setDailyReservations] = useState<ReservationData[]>([])
   const [loading, setLoading] = useState(true)
+  const [updatingReservationId, setUpdatingReservationId] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date>(() => startOfDay(new Date()))
   const [statusFilter, setStatusFilter] = useState<'all' | 'confirmed' | 'pending'>('all')
   const { data: session } = useSession()
+  const canUpdateReservations = hasPermission(
+    session?.user?.permissions ?? [],
+    'reservation:update'
+  )
   const reservationRepository = useMemo(
     () => new ReservationRepositoryImpl(undefined, currentStore.id),
     [currentStore.id]
@@ -93,8 +110,8 @@ export default function ReservationListPage() {
       return dailyReservations.filter((reservation) => reservation.status === 'confirmed')
     }
 
-    return dailyReservations.filter(
-      (reservation) => reservation.status !== 'confirmed' && reservation.status !== 'cancelled'
+    return dailyReservations.filter((reservation) =>
+      ADJUSTING_STATUSES.has(reservation.status ?? '')
     )
   }, [dailyReservations, statusFilter])
 
@@ -105,9 +122,8 @@ export default function ReservationListPage() {
 
   const pendingCount = useMemo(
     () =>
-      dailyReservations.filter(
-        (reservation) => reservation.status !== 'confirmed' && reservation.status !== 'cancelled'
-      ).length,
+      dailyReservations.filter((reservation) => ADJUSTING_STATUSES.has(reservation.status ?? ''))
+        .length,
     [dailyReservations]
   )
 
@@ -153,7 +169,7 @@ export default function ReservationListPage() {
 
   const handleReservationSave = async (
     reservationId: string,
-    payload: ReservationUpdatePayload
+    payload: ReservationSavePayload
   ): Promise<void> => {
     const targetReservation = rawReservations.find(
       (reservation) => reservation.id === reservationId
@@ -168,54 +184,7 @@ export default function ReservationListPage() {
       throw err
     }
 
-    const updatePayload: Partial<Reservation> & { castId?: string } = {
-      castId: payload.castId,
-      startTime: payload.startTime,
-      endTime: payload.endTime,
-    }
-
-    if (payload.status) {
-      updatePayload.status = payload.status as Reservation['status']
-    }
-
-    if (payload.notes !== undefined) {
-      updatePayload.notes = payload.notes
-    }
-
-    if (payload.storeMemo !== undefined) {
-      ;(updatePayload as any).storeMemo = payload.storeMemo
-    }
-
-    if (payload.designationType !== undefined) {
-      updatePayload.designationType = payload.designationType
-    }
-    if (payload.designationFee !== undefined) {
-      updatePayload.designationFee = payload.designationFee
-    }
-    if (payload.transportationFee !== undefined) {
-      updatePayload.transportationFee = payload.transportationFee
-    }
-    if (payload.additionalFee !== undefined) {
-      updatePayload.additionalFee = payload.additionalFee
-    }
-    if (payload.paymentMethod !== undefined) {
-      updatePayload.paymentMethod = payload.paymentMethod
-    }
-    if (payload.marketingChannel !== undefined) {
-      updatePayload.marketingChannel = payload.marketingChannel
-    }
-    if (payload.areaId !== undefined) {
-      updatePayload.areaId = payload.areaId
-    }
-    if (payload.stationId !== undefined) {
-      updatePayload.stationId = payload.stationId
-    }
-    if (payload.locationMemo !== undefined) {
-      updatePayload.locationMemo = payload.locationMemo
-    }
-    if (payload.price !== undefined) {
-      updatePayload.price = payload.price
-    }
+    const updatePayload: ReservationApiUpdatePayload = { ...payload }
 
     try {
       const updatedReservation = await reservationRepository.update(reservationId, updatePayload)
@@ -223,6 +192,9 @@ export default function ReservationListPage() {
         ...updatedReservation,
         startTime: new Date(updatedReservation.startTime),
         endTime: new Date(updatedReservation.endTime),
+        modifiableUntil: updatedReservation.modifiableUntil
+          ? new Date(updatedReservation.modifiableUntil)
+          : undefined,
       } as Reservation
 
       setRawReservations((prev) =>
@@ -232,7 +204,7 @@ export default function ReservationListPage() {
       )
 
       const updatedData = mapReservationToReservationData(normalizedUpdated)
-      setSelectedReservation(updatedData)
+      setSelectedReservation((current) => (current?.id === reservationId ? updatedData : current))
 
       toast({
         title: '予約を更新しました',
@@ -249,9 +221,23 @@ export default function ReservationListPage() {
     }
   }
 
+  const handleMakeModifiable = async (reservationId: string): Promise<void> => {
+    if (!canUpdateReservations || updatingReservationId) {
+      return
+    }
+
+    setUpdatingReservationId(reservationId)
+    try {
+      await handleReservationSave(reservationId, { status: 'modifiable' })
+    } catch (error) {
+      console.error('Failed to make reservation modifiable:', error)
+    } finally {
+      setUpdatingReservationId(null)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <main className="container mx-auto px-4 py-8">
         <div className="mb-6 overflow-x-auto">
           <div className="flex min-w-max gap-3">
@@ -330,6 +316,8 @@ export default function ReservationListPage() {
           <ReservationList
             reservations={filteredReservations}
             onOpenReservation={setSelectedReservation}
+            onMakeModifiable={canUpdateReservations ? handleMakeModifiable : undefined}
+            updatingReservationId={updatingReservationId}
           />
         )}
       </main>
@@ -337,7 +325,7 @@ export default function ReservationListPage() {
         open={!!selectedReservation}
         onOpenChange={(open) => !open && setSelectedReservation(null)}
         reservation={selectedReservation}
-        onSave={handleReservationSave}
+        onSave={canUpdateReservations ? handleReservationSave : undefined}
       />
     </div>
   )

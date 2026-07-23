@@ -1,8 +1,13 @@
+/**
+ * @design_doc   Public storefront cast projections expose only explicitly approved profile data
+ * @related_to   Public cast listing, ranking, recruitment, and detail pages
+ * @known_issues Public option labels still use the existing option catalog adapter
+ */
 import { differenceInDays } from 'date-fns'
 import { db } from '@/lib/db'
 import type { PublicCastSummary } from '@/lib/store/public-types'
-import { normalizeCast } from '@/lib/cast/mapper'
-import type { Cast } from '@/lib/cast/types'
+import type { PublicProfile } from '@/lib/cast/types'
+import { normalizePublicProfile } from '@/lib/cast/public-profile'
 
 interface CastRecord {
   id: string
@@ -23,7 +28,7 @@ interface CastRecord {
   publicProfile: any | null
 }
 
-function normalizeImages(record: CastRecord) {
+function normalizeImages(record: Pick<CastRecord, 'image' | 'images'>) {
   const raw = Array.isArray(record.images)
     ? record.images
     : typeof record.images === 'string'
@@ -248,6 +253,33 @@ export interface PublicRecruitmentData {
   graduates: PublicRecruitmentEntry[]
 }
 
+export interface PublicCastDetail {
+  id: string
+  name: string
+  age: number
+  height: number
+  bust: string
+  waist: number
+  hip: number
+  type: string
+  image: string
+  images: string[]
+  description: string
+  netReservation: boolean
+  requestAttendanceEnabled: boolean
+  panelDesignationRank: number
+  regularDesignationRank: number
+  workStatus: string
+  workStart?: Date
+  workEnd?: Date
+  availableOptions: string[]
+  availableOptionSettings: Array<{
+    optionId: string
+    visibility: 'public'
+  }>
+  publicProfile: PublicProfile | null
+}
+
 export async function getPublicRecruitmentData(storeId: string): Promise<PublicRecruitmentData> {
   const profiles = await getPublicCastProfiles(storeId)
   const today = new Date()
@@ -274,21 +306,34 @@ export async function getPublicRecruitmentData(storeId: string): Promise<PublicR
   }
 }
 
-export async function getPublicCastDetail(storeId: string, castId: string): Promise<Cast | null> {
+export async function getPublicCastDetail(
+  storeId: string,
+  castId: string
+): Promise<PublicCastDetail | null> {
   const record = await db.cast.findFirst({
     where: { id: castId, storeId },
-    include: {
-      castOptionSettings: true,
-      reservations: {
-        include: {
-          customer: true,
-          course: true,
-          options: {
-            include: {
-              option: true,
-            },
-          },
-        },
+    select: {
+      id: true,
+      name: true,
+      age: true,
+      height: true,
+      bust: true,
+      waist: true,
+      hip: true,
+      type: true,
+      image: true,
+      images: true,
+      description: true,
+      netReservation: true,
+      requestAttendanceEnabled: true,
+      panelDesignationRank: true,
+      regularDesignationRank: true,
+      workStatus: true,
+      availableOptions: true,
+      publicProfile: true,
+      castOptionSettings: {
+        where: { visibility: 'public' },
+        select: { optionId: true, visibility: true },
       },
     },
   })
@@ -297,5 +342,36 @@ export async function getPublicCastDetail(storeId: string, castId: string): Prom
     return null
   }
 
-  return normalizeCast(record)
+  const { primary, all } = normalizeImages(record)
+  const availableOptionSettings = record.castOptionSettings
+    .filter((setting) => setting.visibility === 'public')
+    .map((setting) => ({ optionId: setting.optionId, visibility: 'public' as const }))
+  const availableOptions =
+    availableOptionSettings.length > 0
+      ? availableOptionSettings.map((setting) => setting.optionId)
+      : record.availableOptions.filter((optionId) => typeof optionId === 'string' && optionId)
+
+  return {
+    id: record.id,
+    name: record.name,
+    age: record.age,
+    height: record.height,
+    bust: record.bust,
+    waist: record.waist,
+    hip: record.hip,
+    type: record.type,
+    image: primary,
+    images: all,
+    description: record.description,
+    netReservation: record.netReservation,
+    requestAttendanceEnabled: record.requestAttendanceEnabled,
+    panelDesignationRank: record.panelDesignationRank,
+    regularDesignationRank: record.regularDesignationRank,
+    workStatus: record.workStatus,
+    workStart: undefined,
+    workEnd: undefined,
+    availableOptions,
+    availableOptionSettings,
+    publicProfile: normalizePublicProfile(record.publicProfile),
+  }
 }

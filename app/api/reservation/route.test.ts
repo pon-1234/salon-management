@@ -5,7 +5,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { NextRequest } from 'next/server'
-import { GET, POST, PUT } from './route'
+import { DELETE, GET, POST, PUT } from './route'
 import { getServerSession } from 'next-auth'
 import { db } from '@/lib/db'
 
@@ -40,6 +40,9 @@ vi.mock('@/lib/db', () => ({
     cast: {
       findFirst: vi.fn(),
     },
+    castSchedule: {
+      findFirst: vi.fn(),
+    },
     coursePrice: {
       findFirst: vi.fn(),
     },
@@ -47,6 +50,9 @@ vi.mock('@/lib/db', () => ({
       findFirst: vi.fn(),
     },
     stationInfo: {
+      findFirst: vi.fn(),
+    },
+    hotelSettings: {
       findFirst: vi.fn(),
     },
     ngCastEntry: {
@@ -92,6 +98,7 @@ vi.mock('@/lib/point/utils', () => ({
 describe('Reservation API - Modifiable Status', () => {
   const mockReservation = {
     id: 'res-123',
+    storeId: 'ikebukuro',
     customerId: 'cust-123',
     castId: 'cast-123',
     courseId: 'course-123',
@@ -134,6 +141,9 @@ describe('Reservation API - Modifiable Status', () => {
       stationInfo: {
         findFirst: vi.fn().mockResolvedValue(null),
       },
+      hotelSettings: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
       reservationHistory: {
         createMany: vi.fn().mockResolvedValue({ count: 0 }),
       },
@@ -168,6 +178,14 @@ describe('Reservation API - Modifiable Status', () => {
     vi.mocked(db.cast.findFirst).mockResolvedValue({
       id: 'cast-123',
       welfareExpenseRate: null,
+      netReservation: true,
+    } as any)
+    vi.mocked(db.castSchedule.findFirst).mockResolvedValue({
+      id: 'schedule-123',
+      castId: 'cast-123',
+      startTime: new Date('2099-07-04T09:00:00.000Z'),
+      endTime: new Date('2099-07-04T12:00:00.000Z'),
+      isAvailable: true,
     } as any)
     vi.mocked(db.coursePrice.findFirst).mockResolvedValue({
       id: 'course-123',
@@ -175,6 +193,7 @@ describe('Reservation API - Modifiable Status', () => {
     } as any)
     vi.mocked(db.areaInfo.findFirst).mockResolvedValue(null)
     vi.mocked(db.stationInfo.findFirst).mockResolvedValue(null)
+    vi.mocked(db.hotelSettings.findFirst).mockResolvedValue(null)
     vi.mocked(db.ngCastEntry.findUnique).mockResolvedValue(null)
     vi.mocked(db.message.create).mockResolvedValue({ id: 'msg-1' } as any)
   })
@@ -189,10 +208,27 @@ describe('Reservation API - Modifiable Status', () => {
         ...mockReservation,
         status: 'modifiable',
         modifiableUntil: new Date('2024-01-20T14:30:00Z'),
+        customer: {
+          ...mockReservation.customer,
+          password: 'customer-secret',
+          resetToken: 'reset-secret',
+          phoneVerificationCode: '123456',
+        },
+        cast: {
+          ...mockReservation.cast,
+          passwordHash: 'cast-secret',
+          loginEmail: 'cast@example.com',
+          lineUserId: 'line-secret',
+        },
       }
 
       vi.mocked(getServerSession).mockResolvedValue({
-        user: { role: 'admin', permissions: ['reservation:read'] },
+        user: {
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:read'],
+          storeIds: ['ikebukuro'],
+        },
       } as any)
 
       vi.mocked(db.reservation.findUnique).mockResolvedValue(modifiableReservation as any)
@@ -205,34 +241,125 @@ describe('Reservation API - Modifiable Status', () => {
       expect(response.status).toBe(200)
       expect(data.status).toBe('modifiable')
       expect(data.modifiableUntil).toBeDefined()
+      expect(JSON.stringify(data)).not.toMatch(
+        /customer-secret|reset-secret|123456|cast-secret|cast@example\.com|line-secret/
+      )
+    })
+
+    it('does not expose internal revenue or pricing shares to the reservation customer', async () => {
+      const customerReservation = {
+        ...mockReservation,
+        price: 35_000,
+        storeRevenue: 12_000,
+        staffRevenue: 18_000,
+        welfareExpense: 3_000,
+        entryReceivedBy: 'staff-secret-id',
+        course: {
+          ...mockReservation.course,
+          price: 30_000,
+          storeShare: 12_000,
+          castShare: 18_000,
+        },
+        options: [
+          {
+            id: 'reservation-option-1',
+            optionId: 'option-1',
+            optionName: '公開オプション',
+            optionPrice: 5_000,
+            storeShare: 2_000,
+            castShare: 3_000,
+            option: {
+              id: 'option-1',
+              name: '公開オプション',
+              price: 5_000,
+              storeShare: 2_000,
+              castShare: 3_000,
+            },
+          },
+        ],
+      }
+
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: { id: 'cust-123', role: 'customer' },
+      } as any)
+      vi.mocked(db.reservation.findFirst).mockResolvedValue(customerReservation as any)
+
+      const request = new NextRequest('http://localhost/api/reservation?id=res-123')
+      const response = await GET(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data).toMatchObject({
+        id: 'res-123',
+        price: customerReservation.price,
+        course: { id: 'course-123', price: 30_000 },
+        options: [{ optionId: 'option-1', optionPrice: 5_000 }],
+      })
+      expect(JSON.stringify(data)).not.toMatch(
+        /storeRevenue|staffRevenue|welfareExpense|entryReceivedBy|storeShare|castShare|staff-secret-id/
+      )
+    })
+
+    it('keeps internal revenue fields in authorized admin responses', async () => {
+      const adminReservation = {
+        ...mockReservation,
+        storeRevenue: 12_000,
+        staffRevenue: 18_000,
+      }
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          role: 'admin',
+          permissions: ['reservation:read'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+      vi.mocked(db.reservation.findFirst).mockResolvedValue(adminReservation as any)
+
+      const response = await GET(new NextRequest('http://localhost/api/reservation?id=res-123'))
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.storeRevenue).toBe(12_000)
+      expect(data.staffRevenue).toBe(18_000)
     })
   })
 
   describe('PUT endpoint - Modifiable Status Support', () => {
-    it('should allow changing status to modifiable with modifiableUntil', async () => {
+    it('persists a server-generated modification deadline when status becomes modifiable', async () => {
       vi.mocked(getServerSession).mockResolvedValue({
-        user: { role: 'admin', permissions: ['reservation:read'] },
+        user: {
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:update'],
+          storeIds: ['ikebukuro'],
+        },
       } as any)
 
-      vi.mocked(db.reservation.findFirst).mockResolvedValue(mockReservation as any)
+      const legacyPaymentReservation = {
+        ...mockReservation,
+        paymentMethod: '現金',
+      }
+      vi.mocked(db.reservation.findUnique).mockResolvedValue(legacyPaymentReservation as any)
+      vi.mocked(db.reservation.findFirst).mockResolvedValue(legacyPaymentReservation as any)
 
-      const modifiableUntil = new Date(Date.now() + 30 * 60 * 1000) // 30 minutes from now
-
-      vi.mocked(db.$transaction).mockImplementation(async (callback) => {
-        const updatedReservation = {
-          ...mockReservation,
-          status: 'modifiable',
-          modifiableUntil,
-        }
-        return callback(buildTransactionContext(updatedReservation) as any)
+      const clientSuppliedDeadline = new Date('2099-01-01T00:00:00.000Z')
+      const transactionContext = buildTransactionContext({
+        ...legacyPaymentReservation,
+        status: 'modifiable',
+        modifiableUntil: clientSuppliedDeadline,
       })
 
+      vi.mocked(db.$transaction).mockImplementation(async (callback) => {
+        return callback(transactionContext as any)
+      })
+
+      const requestStartedAt = Date.now()
       const request = new NextRequest('http://localhost/api/reservation', {
         method: 'PUT',
         body: JSON.stringify({
           id: 'res-123',
           status: 'modifiable',
-          modifiableUntil: modifiableUntil.toISOString(),
+          modifiableUntil: clientSuppliedDeadline.toISOString(),
         }),
       })
 
@@ -242,6 +369,18 @@ describe('Reservation API - Modifiable Status', () => {
       expect(response.status).toBe(200)
       expect(data.status).toBe('modifiable')
       expect(data.modifiableUntil).toBeDefined()
+
+      const updateCall = transactionContext.reservation.update.mock.calls[0]?.[0]
+      const persistedDeadline = updateCall?.data?.modifiableUntil
+      expect(updateCall?.data).not.toHaveProperty('price')
+      expect(updateCall?.data).not.toHaveProperty('storeRevenue')
+      expect(updateCall?.data).not.toHaveProperty('staffRevenue')
+      expect(updateCall?.data).not.toHaveProperty('welfareExpense')
+      expect(updateCall?.data).not.toHaveProperty('paymentMethod')
+      expect(persistedDeadline).toBeInstanceOf(Date)
+      expect(persistedDeadline.getTime()).toBeGreaterThanOrEqual(requestStartedAt + 29 * 60 * 1000)
+      expect(persistedDeadline.getTime()).toBeLessThanOrEqual(requestStartedAt + 31 * 60 * 1000)
+      expect(persistedDeadline.toISOString()).not.toBe(clientSuppliedDeadline.toISOString())
     })
 
     it('sends a chat message when status transitions to confirmed', async () => {
@@ -252,7 +391,12 @@ describe('Reservation API - Modifiable Status', () => {
       }
 
       vi.mocked(getServerSession).mockResolvedValue({
-        user: { role: 'admin', permissions: ['reservation:read'] },
+        user: {
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:update'],
+          storeIds: ['ikebukuro'],
+        },
       } as any)
 
       vi.mocked(db.reservation.findUnique).mockResolvedValue(pendingReservation as any)
@@ -318,7 +462,12 @@ describe('Reservation API - Modifiable Status', () => {
       }
 
       vi.mocked(getServerSession).mockResolvedValue({
-        user: { role: 'admin', permissions: ['reservation:read'] },
+        user: {
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:update'],
+          storeIds: ['ikebukuro'],
+        },
       } as any)
 
       vi.mocked(db.reservation.findFirst).mockResolvedValue(modifiableReservation as any)
@@ -360,19 +509,25 @@ describe('Reservation API - Modifiable Status', () => {
       }
 
       vi.mocked(getServerSession).mockResolvedValue({
-        user: { role: 'admin' },
+        user: {
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:update'],
+          storeIds: ['ikebukuro'],
+        },
       } as any)
 
       vi.mocked(db.reservation.findUnique).mockResolvedValue(expiredModifiableReservation as any)
       vi.mocked(db.reservation.findFirst).mockResolvedValue(expiredModifiableReservation as any)
 
+      const transactionContext = buildTransactionContext({
+        ...expiredModifiableReservation,
+        status: 'confirmed',
+        modifiableUntil: null,
+      })
+
       vi.mocked(db.$transaction).mockImplementation(async (callback) => {
-        const updatedReservation = {
-          ...expiredModifiableReservation,
-          status: 'confirmed',
-          modifiableUntil: null,
-        }
-        return callback(buildTransactionContext(updatedReservation) as any)
+        return callback(transactionContext as any)
       })
 
       const request = new NextRequest('http://localhost/api/reservation', {
@@ -389,10 +544,41 @@ describe('Reservation API - Modifiable Status', () => {
       expect(response.status).toBe(200)
       expect(data.status).toBe('confirmed')
       expect(data.modifiableUntil).toBeNull()
+      expect(transactionContext.reservation.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: 'confirmed',
+            modifiableUntil: null,
+          }),
+        })
+      )
     })
   })
 
   describe('POST endpoint validation and conflicts', () => {
+    it('rejects an admin without reservation:create permission before database mutation', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: { id: 'staff-1', role: 'admin', permissions: ['reservation:read'] },
+      } as any)
+
+      const request = new NextRequest('http://localhost/api/reservation', {
+        method: 'POST',
+        body: JSON.stringify({
+          customerId: 'cust-123',
+          castId: 'cast-123',
+          courseId: 'course-123',
+          startTime: '2099-07-04T18:00:00+09:00',
+          endTime: '2099-07-04T19:00:00+09:00',
+        }),
+      })
+
+      const response = await POST(request)
+
+      expect(response.status).toBe(403)
+      expect(db.customer.findUnique).not.toHaveBeenCalled()
+      expect(db.$transaction).not.toHaveBeenCalled()
+    })
+
     it('rejects requests missing required reservation fields before database lookups', async () => {
       vi.mocked(getServerSession).mockResolvedValue({
         user: { id: 'cust-123', role: 'customer' },
@@ -402,8 +588,8 @@ describe('Reservation API - Modifiable Status', () => {
         method: 'POST',
         body: JSON.stringify({
           castId: 'cast-123',
-          startTime: '2026-07-04T18:00:00+09:00',
-          endTime: '2026-07-04T20:00:00+09:00',
+          startTime: '2099-07-04T18:00:00+09:00',
+          endTime: '2099-07-04T20:00:00+09:00',
         }),
       })
 
@@ -417,15 +603,488 @@ describe('Reservation API - Modifiable Status', () => {
       expect(db.$transaction).not.toHaveBeenCalled()
     })
 
+    it('rejects unknown requested option IDs instead of silently dropping them', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          id: 'admin-1',
+          role: 'admin',
+          permissions: ['reservation:create'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+      const createReservation = vi.fn()
+      vi.mocked(db.$transaction).mockImplementation(async (callback) =>
+        callback({
+          reservation: {
+            findMany: vi.fn().mockResolvedValue([]),
+            create: createReservation,
+          },
+          optionPrice: {
+            findMany: vi.fn().mockResolvedValue([
+              {
+                id: 'option-valid',
+                name: 'Valid option',
+                price: 1000,
+                storeShare: 600,
+                castShare: 400,
+              },
+            ]),
+          },
+        } as any)
+      )
+
+      const response = await POST(
+        new NextRequest('http://localhost/api/reservation', {
+          method: 'POST',
+          body: JSON.stringify({
+            customerId: 'cust-123',
+            castId: 'cast-123',
+            courseId: 'course-123',
+            startTime: '2099-07-04T18:00:00+09:00',
+            endTime: '2099-07-04T19:00:00+09:00',
+            options: ['option-valid', 'option-unknown'],
+          }),
+        })
+      )
+
+      expect(response.status).toBe(400)
+      await expect(response.json()).resolves.toEqual({
+        error: '選択されたオプションが存在しません。',
+        missingOptions: ['option-unknown'],
+      })
+      expect(createReservation).not.toHaveBeenCalled()
+    })
+
+    it('derives the reservation area from a selected station', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          id: 'admin-1',
+          role: 'admin',
+          permissions: ['reservation:create'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+      vi.mocked(db.stationInfo.findFirst).mockResolvedValue({
+        id: 'station-1',
+        areaId: 'area-1',
+      } as any)
+      vi.mocked(db.areaInfo.findFirst).mockResolvedValue({ id: 'area-1' } as any)
+      const createReservation = vi.fn().mockImplementation(async ({ data }) => ({
+        id: 'reservation-with-location',
+        ...data,
+        customer: { id: 'cust-123', name: 'Test Customer' },
+        cast: { id: 'cast-123', name: 'Test Cast' },
+        course: { id: 'course-123', name: 'Test Course' },
+        options: [],
+      }))
+      vi.mocked(db.$transaction).mockImplementation(async (callback) =>
+        callback({
+          reservation: {
+            findMany: vi.fn().mockResolvedValue([]),
+            create: createReservation,
+          },
+        } as any)
+      )
+
+      const response = await POST(
+        new NextRequest('http://localhost/api/reservation?storeId=ikebukuro', {
+          method: 'POST',
+          body: JSON.stringify({
+            customerId: 'cust-123',
+            castId: 'cast-123',
+            courseId: 'course-123',
+            stationId: 'station-1',
+            startTime: '2099-07-04T18:00:00+09:00',
+            endTime: '2099-07-04T19:00:00+09:00',
+          }),
+        })
+      )
+
+      expect(response.status).toBe(201)
+      expect(createReservation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ areaId: 'area-1', stationId: 'station-1' }),
+        })
+      )
+    })
+
+    it('rejects a selected area that does not match the station', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          id: 'admin-1',
+          role: 'admin',
+          permissions: ['reservation:create'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+      vi.mocked(db.areaInfo.findFirst).mockResolvedValue({ id: 'area-2' } as any)
+      vi.mocked(db.stationInfo.findFirst).mockResolvedValue({
+        id: 'station-1',
+        areaId: 'area-1',
+      } as any)
+
+      const response = await POST(
+        new NextRequest('http://localhost/api/reservation?storeId=ikebukuro', {
+          method: 'POST',
+          body: JSON.stringify({
+            customerId: 'cust-123',
+            castId: 'cast-123',
+            courseId: 'course-123',
+            areaId: 'area-2',
+            stationId: 'station-1',
+            startTime: '2099-07-04T18:00:00+09:00',
+            endTime: '2099-07-04T19:00:00+09:00',
+          }),
+        })
+      )
+
+      expect(response.status).toBe(400)
+      await expect(response.json()).resolves.toMatchObject({
+        error: '指定された駅は選択されたエリアに属していません。',
+        code: 'AREA_STATION_MISMATCH',
+      })
+      expect(db.$transaction).not.toHaveBeenCalled()
+    })
+
+    it('persists a selected same-store hotel with its canonical name and separate hotel expense', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          id: 'admin-1',
+          role: 'admin',
+          permissions: ['reservation:create'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+      vi.mocked(db.hotelSettings.findFirst).mockResolvedValue({
+        id: 'hotel-1',
+        hotelName: '池袋グランドホテル',
+      } as any)
+      const createReservation = vi.fn().mockImplementation(async ({ data }) => ({
+        id: 'reservation-with-hotel',
+        ...data,
+        customer: { id: 'cust-123', name: 'Test Customer' },
+        cast: { id: 'cast-123', name: 'Test Cast' },
+        course: { id: 'course-123', name: 'Test Course' },
+        options: [],
+      }))
+      vi.mocked(db.$transaction).mockImplementation(async (callback) =>
+        callback({
+          reservation: {
+            findMany: vi.fn().mockResolvedValue([]),
+            create: createReservation,
+          },
+        } as any)
+      )
+
+      const response = await POST(
+        new NextRequest('http://localhost/api/reservation?storeId=ikebukuro', {
+          method: 'POST',
+          body: JSON.stringify({
+            customerId: 'cust-123',
+            castId: 'cast-123',
+            courseId: 'course-123',
+            hotelId: 'hotel-1',
+            hotelName: '改ざんされたホテル名',
+            hotelExpense: 1_200,
+            startTime: '2099-07-04T18:00:00+09:00',
+            endTime: '2099-07-04T19:00:00+09:00',
+          }),
+        })
+      )
+
+      expect(response.status).toBe(201)
+      expect(db.hotelSettings.findFirst).toHaveBeenCalledWith({
+        where: { id: 'hotel-1', storeId: 'ikebukuro', isActive: true },
+        select: { id: true, hotelName: true },
+      })
+      expect(createReservation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            hotelId: 'hotel-1',
+            hotelName: '池袋グランドホテル',
+            hotelExpense: 1_200,
+            price: 30_000,
+            storeRevenue: 3_000,
+            staffRevenue: 27_000,
+          }),
+        })
+      )
+    })
+
+    it('rejects a selected hotel that is unavailable in the reservation store', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          id: 'admin-1',
+          role: 'admin',
+          permissions: ['reservation:create'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+
+      const response = await POST(
+        new NextRequest('http://localhost/api/reservation?storeId=ikebukuro', {
+          method: 'POST',
+          body: JSON.stringify({
+            customerId: 'cust-123',
+            castId: 'cast-123',
+            courseId: 'course-123',
+            hotelId: 'hotel-other-store',
+            startTime: '2099-07-04T18:00:00+09:00',
+            endTime: '2099-07-04T19:00:00+09:00',
+          }),
+        })
+      )
+
+      expect(response.status).toBe(400)
+      await expect(response.json()).resolves.toMatchObject({ code: 'HOTEL_NOT_AVAILABLE' })
+      expect(db.$transaction).not.toHaveBeenCalled()
+    })
+
+    it.each([-1, 1.5, '1200', Number.POSITIVE_INFINITY])(
+      'rejects invalid admin hotel expense %s',
+      async (hotelExpense) => {
+        vi.mocked(getServerSession).mockResolvedValue({
+          user: {
+            id: 'admin-1',
+            role: 'admin',
+            permissions: ['reservation:create'],
+            storeIds: ['ikebukuro'],
+          },
+        } as any)
+
+        const request = {
+          json: vi.fn().mockResolvedValue({
+            customerId: 'cust-123',
+            castId: 'cast-123',
+            courseId: 'course-123',
+            hotelExpense,
+            startTime: '2099-07-04T18:00:00+09:00',
+            endTime: '2099-07-04T19:00:00+09:00',
+          }),
+          nextUrl: new URL('http://localhost/api/reservation?storeId=ikebukuro'),
+          headers: new Headers(),
+        } as unknown as NextRequest
+
+        const response = await POST(request)
+
+        expect(response.status).toBe(400)
+        await expect(response.json()).resolves.toEqual({
+          error: 'ホテル経費は0以上の整数で指定してください。',
+        })
+        expect(db.$transaction).not.toHaveBeenCalled()
+      }
+    )
+
+    it('rejects a customer booking when the cast has disabled web reservations', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: { id: 'cust-123', role: 'customer' },
+      } as any)
+      vi.mocked(db.cast.findFirst).mockResolvedValue({
+        id: 'cast-123',
+        welfareExpenseRate: null,
+        netReservation: false,
+      } as any)
+
+      const request = new NextRequest('http://localhost/api/reservation', {
+        method: 'POST',
+        body: JSON.stringify({
+          castId: 'cast-123',
+          courseId: 'course-123',
+          startTime: '2099-07-04T18:00:00+09:00',
+          endTime: '2099-07-04T19:00:00+09:00',
+        }),
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(409)
+      expect(data).toEqual({
+        error: 'このキャストは現在ネット予約を受け付けていません。',
+        code: 'WEB_RESERVATION_DISABLED',
+      })
+      expect(db.castSchedule.findFirst).not.toHaveBeenCalled()
+      expect(db.reservation.findMany).not.toHaveBeenCalled()
+      expect(db.$transaction).not.toHaveBeenCalled()
+    })
+
+    it('rejects a customer booking outside the cast working schedule', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: { id: 'cust-123', role: 'customer' },
+      } as any)
+      vi.mocked(db.castSchedule.findFirst).mockResolvedValue(null)
+
+      const request = new NextRequest('http://localhost/api/reservation', {
+        method: 'POST',
+        body: JSON.stringify({
+          castId: 'cast-123',
+          courseId: 'course-123',
+          startTime: '2099-07-04T18:00:00+09:00',
+          endTime: '2099-07-04T19:00:00+09:00',
+        }),
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(409)
+      expect(data).toEqual({
+        error: '指定された時間はキャストの出勤時間外です。',
+        code: 'CAST_NOT_SCHEDULED',
+      })
+      expect(db.castSchedule.findFirst).toHaveBeenCalledWith({
+        where: {
+          castId: 'cast-123',
+          isAvailable: true,
+          startTime: { lte: new Date('2099-07-04T09:00:00.000Z') },
+          endTime: { gte: new Date('2099-07-04T10:00:00.000Z') },
+        },
+        select: { id: true },
+      })
+      expect(db.reservation.findMany).not.toHaveBeenCalled()
+      expect(db.$transaction).not.toHaveBeenCalled()
+    })
+
+    it('ignores customer-supplied status, price, fees, discounts, and revenue fields', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: { id: 'cust-123', role: 'customer' },
+      } as any)
+      const createReservation = vi.fn().mockImplementation(async ({ data }) => ({
+        id: 'reservation-safe',
+        ...data,
+        customer: { id: 'cust-123', name: 'Test Customer' },
+        cast: { id: 'cast-123', name: 'Test Cast' },
+        course: { id: 'course-123', name: 'Test Course' },
+        options: [],
+      }))
+      vi.mocked(db.$transaction).mockImplementation(async (callback) =>
+        callback({
+          reservation: {
+            findMany: vi.fn().mockResolvedValue([]),
+            create: createReservation,
+          },
+        } as any)
+      )
+
+      const request = new NextRequest('http://localhost/api/reservation', {
+        method: 'POST',
+        body: JSON.stringify({
+          castId: 'cast-123',
+          courseId: 'course-123',
+          startTime: '2099-07-04T18:00:00+09:00',
+          endTime: '2099-07-04T19:00:00+09:00',
+          status: 'completed',
+          price: 1,
+          designationFee: -5000,
+          transportationFee: -5000,
+          additionalFee: -5000,
+          discountAmount: 999999,
+          storeRevenue: -5000,
+          staffRevenue: 999999,
+          welfareExpense: -5000,
+          hotelExpense: -5000,
+          marketingChannel: 'forged-channel',
+        }),
+      })
+
+      const response = await POST(request)
+      const responseData = await response.json()
+
+      expect(response.status).toBe(201)
+      expect(createReservation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: 'pending',
+            price: 30000,
+            designationFee: 0,
+            transportationFee: 0,
+            additionalFee: 0,
+            discountAmount: 0,
+            marketingChannel: 'WEB',
+          }),
+        })
+      )
+      const persistedData = createReservation.mock.calls[0]?.[0]?.data
+      expect(persistedData.storeRevenue).not.toBe(-5000)
+      expect(persistedData.staffRevenue).not.toBe(999999)
+      expect(persistedData.hotelExpense).toBe(0)
+      expect(responseData.price).toBe(30000)
+      expect(JSON.stringify(responseData)).not.toMatch(
+        /storeRevenue|staffRevenue|welfareExpense|hotelExpense/
+      )
+    })
+
+    it('derives a customer regular-designation fee from the selected cast', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: { id: 'cust-123', role: 'customer' },
+      } as any)
+      vi.mocked(db.cast.findFirst).mockResolvedValue({
+        id: 'cast-123',
+        welfareExpenseRate: null,
+        regularDesignationFee: 2000,
+        specialDesignationFee: 5000,
+        netReservation: true,
+      } as any)
+      const createReservation = vi.fn().mockImplementation(async ({ data }) => ({
+        id: 'reservation-designated',
+        ...data,
+        customer: { id: 'cust-123', name: 'Test Customer' },
+        cast: { id: 'cast-123', name: 'Test Cast' },
+        course: { id: 'course-123', name: 'Test Course' },
+        options: [],
+      }))
+      vi.mocked(db.$transaction).mockImplementation(async (callback) =>
+        callback({
+          reservation: {
+            findMany: vi.fn().mockResolvedValue([]),
+            create: createReservation,
+          },
+          designationFee: {
+            findFirst: vi.fn().mockResolvedValue(null),
+          },
+        } as any)
+      )
+
+      const request = new NextRequest('http://localhost/api/reservation', {
+        method: 'POST',
+        body: JSON.stringify({
+          castId: 'cast-123',
+          courseId: 'course-123',
+          startTime: '2099-07-04T18:00:00+09:00',
+          endTime: '2099-07-04T19:00:00+09:00',
+          designationType: 'regular',
+        }),
+      })
+
+      const response = await POST(request)
+
+      expect(response.status).toBe(201)
+      expect(createReservation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            designationType: 'regular',
+            designationFee: 2000,
+            price: 32000,
+          }),
+        })
+      )
+    })
+
     it('returns conflict details when the requested cast already has an overlapping reservation', async () => {
       vi.mocked(getServerSession).mockResolvedValue({
-        user: { id: 'admin-1', role: 'admin' },
+        user: {
+          id: 'admin-1',
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:create'],
+          storeIds: ['ikebukuro'],
+        },
       } as any)
       vi.mocked(db.reservation.findMany).mockResolvedValue([
         {
           id: 'conflict-1',
-          startTime: new Date('2026-07-04T09:30:00.000Z'),
-          endTime: new Date('2026-07-04T11:00:00.000Z'),
+          startTime: new Date('2099-07-04T09:30:00.000Z'),
+          endTime: new Date('2099-07-04T11:00:00.000Z'),
         },
       ] as any)
 
@@ -435,8 +1094,8 @@ describe('Reservation API - Modifiable Status', () => {
           customerId: 'cust-123',
           castId: 'cast-123',
           courseId: 'course-123',
-          startTime: '2026-07-04T18:00:00+09:00',
-          endTime: '2026-07-04T19:00:00+09:00',
+          startTime: '2099-07-04T18:00:00+09:00',
+          endTime: '2099-07-04T19:00:00+09:00',
         }),
       })
 
@@ -449,8 +1108,8 @@ describe('Reservation API - Modifiable Status', () => {
         conflicts: [
           {
             id: 'conflict-1',
-            startTime: '2026-07-04T09:30:00.000Z',
-            endTime: '2026-07-04T11:00:00.000Z',
+            startTime: '2099-07-04T09:30:00.000Z',
+            endTime: '2099-07-04T11:00:00.000Z',
           },
         ],
       })
@@ -459,9 +1118,506 @@ describe('Reservation API - Modifiable Status', () => {
   })
 
   describe('PUT endpoint validation and conflicts', () => {
+    it.each(
+      [
+        'price',
+        'designationFee',
+        'transportationFee',
+        'additionalFee',
+        'discountAmount',
+        'storeRevenue',
+        'staffRevenue',
+        'welfareExpense',
+      ].flatMap((field) => [
+        { field, value: -1 },
+        { field, value: Number.POSITIVE_INFINITY },
+      ])
+    )('rejects invalid admin financial value $field=$value', async ({ field, value }) => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:update'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+
+      const request = {
+        json: vi.fn().mockResolvedValue({
+          id: mockReservation.id,
+          [field]: value,
+        }),
+        nextUrl: new URL('http://localhost/api/reservation'),
+        headers: new Headers(),
+      } as unknown as NextRequest
+
+      const response = await PUT(request)
+
+      expect(response.status).toBe(400)
+      await expect(response.json()).resolves.toEqual({
+        error: '料金は0以上の有限な数値で指定してください。',
+      })
+      expect(db.$transaction).not.toHaveBeenCalled()
+      expect(db.reservation.update).not.toHaveBeenCalled()
+    })
+
+    it.each([-1, 1.5, '1200', Number.POSITIVE_INFINITY])(
+      'rejects invalid hotel expense %s',
+      async (hotelExpense) => {
+        vi.mocked(getServerSession).mockResolvedValue({
+          user: {
+            role: 'admin',
+            adminRole: 'manager',
+            permissions: ['reservation:update'],
+            storeIds: ['ikebukuro'],
+          },
+        } as any)
+
+        const request = {
+          json: vi.fn().mockResolvedValue({ id: mockReservation.id, hotelExpense }),
+          nextUrl: new URL('http://localhost/api/reservation'),
+          headers: new Headers(),
+        } as unknown as NextRequest
+
+        const response = await PUT(request)
+
+        expect(response.status).toBe(400)
+        await expect(response.json()).resolves.toEqual({
+          error: 'ホテル経費は0以上の整数で指定してください。',
+        })
+        expect(db.$transaction).not.toHaveBeenCalled()
+      }
+    )
+
+    it('updates hotel master linkage and expense without recalculating reservation revenue', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:update'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+      const existingReservation = {
+        ...mockReservation,
+        hotelId: 'hotel-old',
+        hotelName: '旧ホテル',
+        hotelExpense: 300,
+        price: 30_000,
+        storeRevenue: 3_000,
+        staffRevenue: 27_000,
+        welfareExpense: 3_000,
+        paymentMethod: 'cash',
+        pointsUsed: 0,
+        options: [],
+      }
+      vi.mocked(db.reservation.findUnique).mockResolvedValue(existingReservation as any)
+      const transactionContext = buildTransactionContext(
+        {
+          ...existingReservation,
+          hotelId: 'hotel-new',
+          hotelName: '池袋グランドホテル',
+          hotelExpense: 1_200,
+        },
+        {
+          hotelSettings: {
+            findFirst: vi.fn().mockResolvedValue({
+              id: 'hotel-new',
+              hotelName: '池袋グランドホテル',
+            }),
+          },
+        }
+      )
+      vi.mocked(db.$transaction).mockImplementation(async (callback) =>
+        callback(transactionContext as any)
+      )
+
+      const response = await PUT(
+        new NextRequest('http://localhost/api/reservation', {
+          method: 'PUT',
+          body: JSON.stringify({
+            id: mockReservation.id,
+            hotelId: 'hotel-new',
+            hotelName: '改ざんされた名前',
+            hotelExpense: 1_200,
+          }),
+        })
+      )
+
+      expect(response.status).toBe(200)
+      const persistedData = transactionContext.reservation.update.mock.calls[0]?.[0]?.data
+      expect(persistedData).toMatchObject({
+        hotelId: 'hotel-new',
+        hotelName: '池袋グランドホテル',
+        hotelExpense: 1_200,
+      })
+      expect(persistedData).not.toHaveProperty('price')
+      expect(persistedData).not.toHaveProperty('storeRevenue')
+      expect(persistedData).not.toHaveProperty('staffRevenue')
+      expect(persistedData).not.toHaveProperty('welfareExpense')
+    })
+
+    it('clears hotel linkage when a different free-text hotel name is entered', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:update'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+      const existingReservation = {
+        ...mockReservation,
+        hotelId: 'hotel-old',
+        hotelName: '旧ホテル',
+        price: 30_000,
+        paymentMethod: 'cash',
+        options: [],
+      }
+      vi.mocked(db.reservation.findUnique).mockResolvedValue(existingReservation as any)
+      const transactionContext = buildTransactionContext({
+        ...existingReservation,
+        hotelId: null,
+        hotelName: '当日手入力ホテル',
+      })
+      vi.mocked(db.$transaction).mockImplementation(async (callback) =>
+        callback(transactionContext as any)
+      )
+
+      const response = await PUT(
+        new NextRequest('http://localhost/api/reservation', {
+          method: 'PUT',
+          body: JSON.stringify({
+            id: mockReservation.id,
+            hotelName: '  当日手入力ホテル  ',
+          }),
+        })
+      )
+
+      expect(response.status).toBe(200)
+      expect(transactionContext.reservation.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            hotelId: null,
+            hotelName: '当日手入力ホテル',
+          }),
+        })
+      )
+    })
+
+    it('rejects unknown option IDs before replacing existing reservation options', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:update'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+      const existingReservation = {
+        ...mockReservation,
+        storeId: 'ikebukuro',
+        price: 30000,
+        paymentMethod: 'cash',
+        designationFee: 0,
+        transportationFee: 0,
+        additionalFee: 0,
+        discountAmount: 0,
+        pointsUsed: 0,
+        options: [],
+      }
+      vi.mocked(db.reservation.findUnique).mockResolvedValue(existingReservation as any)
+      const transactionContext = buildTransactionContext(existingReservation, {
+        optionPrice: {
+          findMany: vi.fn().mockResolvedValue([]),
+        },
+      })
+      vi.mocked(db.$transaction).mockImplementation(async (callback) =>
+        callback(transactionContext as any)
+      )
+
+      const response = await PUT(
+        new NextRequest('http://localhost/api/reservation', {
+          method: 'PUT',
+          body: JSON.stringify({ id: mockReservation.id, options: ['option-unknown'] }),
+        })
+      )
+
+      expect(response.status).toBe(400)
+      await expect(response.json()).resolves.toEqual({
+        error: '選択されたオプションが存在しません。',
+        missingOptions: ['option-unknown'],
+      })
+      expect(transactionContext.reservationOption.deleteMany).not.toHaveBeenCalled()
+      expect(transactionContext.reservation.update).not.toHaveBeenCalled()
+    })
+
+    it('derives the area when an administrator changes the station', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:update'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+      const existingReservation = {
+        ...mockReservation,
+        areaId: 'area-old',
+        stationId: 'station-old',
+        price: 30000,
+        paymentMethod: 'cash',
+        options: [],
+      }
+      vi.mocked(db.reservation.findUnique).mockResolvedValue(existingReservation as any)
+      const transactionContext = buildTransactionContext(existingReservation, {
+        stationInfo: {
+          findFirst: vi.fn().mockResolvedValue({ id: 'station-new', areaId: 'area-new' }),
+        },
+        areaInfo: {
+          findFirst: vi.fn().mockResolvedValue({ id: 'area-new' }),
+        },
+      })
+      vi.mocked(db.$transaction).mockImplementation(async (callback) =>
+        callback(transactionContext as any)
+      )
+
+      const response = await PUT(
+        new NextRequest('http://localhost/api/reservation', {
+          method: 'PUT',
+          body: JSON.stringify({ id: mockReservation.id, stationId: 'station-new' }),
+        })
+      )
+
+      expect(response.status).toBe(200)
+      expect(transactionContext.reservation.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ areaId: 'area-new', stationId: 'station-new' }),
+        })
+      )
+    })
+
+    it('rejects an area change that conflicts with the reservation station', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:update'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+      const existingReservation = {
+        ...mockReservation,
+        areaId: 'area-1',
+        stationId: 'station-1',
+        price: 30000,
+        paymentMethod: 'cash',
+        options: [],
+      }
+      vi.mocked(db.reservation.findUnique).mockResolvedValue(existingReservation as any)
+      const transactionContext = buildTransactionContext(existingReservation, {
+        stationInfo: {
+          findFirst: vi.fn().mockResolvedValue({ id: 'station-1', areaId: 'area-1' }),
+        },
+        areaInfo: {
+          findFirst: vi.fn().mockResolvedValue({ id: 'area-2' }),
+        },
+      })
+      vi.mocked(db.$transaction).mockImplementation(async (callback) =>
+        callback(transactionContext as any)
+      )
+
+      const response = await PUT(
+        new NextRequest('http://localhost/api/reservation', {
+          method: 'PUT',
+          body: JSON.stringify({ id: mockReservation.id, areaId: 'area-2' }),
+        })
+      )
+
+      expect(response.status).toBe(400)
+      await expect(response.json()).resolves.toMatchObject({
+        error: '指定された駅は選択されたエリアに属していません。',
+        code: 'AREA_STATION_MISMATCH',
+      })
+      expect(transactionContext.reservation.update).not.toHaveBeenCalled()
+    })
+
+    it('allows a status-only update even when the existing customer/cast pair is now NG', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:update'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+      vi.mocked(db.ngCastEntry.findUnique).mockResolvedValue({
+        customerId: mockReservation.customerId,
+        castId: mockReservation.castId,
+        assignedBy: 'customer',
+      } as any)
+      vi.mocked(db.$transaction).mockImplementation(async (callback) =>
+        callback(
+          buildTransactionContext({
+            ...mockReservation,
+            status: 'completed',
+          }) as any
+        )
+      )
+
+      const response = await PUT(
+        new NextRequest('http://localhost/api/reservation', {
+          method: 'PUT',
+          body: JSON.stringify({ id: mockReservation.id, status: 'completed' }),
+        })
+      )
+
+      expect(response.status).toBe(200)
+      expect(db.$transaction).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not revalidate unchanged assignment and time fields', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:update'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+      const unchangedReservation = {
+        ...mockReservation,
+        price: 32_000,
+        designationType: 'panel',
+        designationFee: 0,
+        transportationFee: 2_000,
+        additionalFee: 0,
+        discountAmount: 0,
+        welfareExpense: 3_000,
+        storeRevenue: 5_000,
+        staffRevenue: 27_000,
+        paymentMethod: 'cash',
+        pointsUsed: 0,
+        options: [],
+      }
+      vi.mocked(db.reservation.findUnique).mockResolvedValue(unchangedReservation as any)
+      vi.mocked(db.ngCastEntry.findUnique).mockResolvedValue({
+        customerId: unchangedReservation.customerId,
+        castId: unchangedReservation.castId,
+        assignedBy: 'customer',
+      } as any)
+      const transactionContext = buildTransactionContext({
+        ...unchangedReservation,
+        notes: 'unchanged assignment',
+      })
+      vi.mocked(db.$transaction).mockImplementation(async (callback) =>
+        callback(transactionContext as any)
+      )
+
+      const response = await PUT(
+        new NextRequest('http://localhost/api/reservation', {
+          method: 'PUT',
+          body: JSON.stringify({
+            id: mockReservation.id,
+            castId: unchangedReservation.castId,
+            courseId: unchangedReservation.courseId,
+            startTime: unchangedReservation.startTime.toISOString(),
+            endTime: unchangedReservation.endTime.toISOString(),
+            designationType: unchangedReservation.designationType,
+            designationFee: unchangedReservation.designationFee,
+            transportationFee: unchangedReservation.transportationFee,
+            additionalFee: unchangedReservation.additionalFee,
+            discountAmount: unchangedReservation.discountAmount,
+            paymentMethod: unchangedReservation.paymentMethod,
+            options: [],
+            notes: 'unchanged assignment',
+          }),
+        })
+      )
+
+      expect(response.status).toBe(200)
+      expect(db.ngCastEntry.findUnique).not.toHaveBeenCalled()
+      const persistedData = transactionContext.reservation.update.mock.calls[0]?.[0]?.data
+      expect(persistedData).not.toHaveProperty('price')
+      expect(persistedData).not.toHaveProperty('storeRevenue')
+      expect(persistedData).not.toHaveProperty('staffRevenue')
+      expect(persistedData).not.toHaveProperty('welfareExpense')
+      expect(transactionContext.reservationOption.deleteMany).not.toHaveBeenCalled()
+    })
+
+    it('rejects customer attempts to alter reservation state or financial fields', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: { id: 'cust-123', role: 'customer' },
+      } as any)
+
+      const request = new NextRequest('http://localhost/api/reservation', {
+        method: 'PUT',
+        body: JSON.stringify({
+          id: 'res-123',
+          status: 'completed',
+          price: 1,
+          designationFee: -5000,
+          transportationFee: -5000,
+          additionalFee: -5000,
+          discountAmount: 999999,
+          storeRevenue: 999999,
+          staffRevenue: 999999,
+          castId: 'cast-other',
+          courseId: 'course-other',
+          paymentMethod: 'cash',
+          options: ['option-other'],
+        }),
+      })
+
+      const response = await PUT(request)
+
+      expect(response.status).toBe(403)
+      await expect(response.json()).resolves.toEqual({
+        error: '予約内容の変更は店舗へお問い合わせください',
+      })
+      expect(db.$transaction).not.toHaveBeenCalled()
+    })
+
+    it('rejects a customer PUT even when no mutable fields are supplied', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: { id: 'cust-123', role: 'customer' },
+      } as any)
+
+      const request = new NextRequest('http://localhost/api/reservation', {
+        method: 'PUT',
+        body: JSON.stringify({ id: 'res-123' }),
+      })
+
+      const response = await PUT(request)
+
+      expect(response.status).toBe(403)
+      expect(db.$transaction).not.toHaveBeenCalled()
+    })
+
+    it('rejects an admin without reservation:update permission before loading the reservation', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: { id: 'staff-1', role: 'admin', permissions: ['reservation:read'] },
+      } as any)
+      const request = new NextRequest('http://localhost/api/reservation', {
+        method: 'PUT',
+        body: JSON.stringify({ id: 'res-123', status: 'confirmed' }),
+      })
+
+      const response = await PUT(request)
+
+      expect(response.status).toBe(403)
+      expect(db.reservation.findUnique).not.toHaveBeenCalled()
+      expect(db.$transaction).not.toHaveBeenCalled()
+    })
+
     it('ignores the current reservation but rejects other overlapping reservations', async () => {
       vi.mocked(getServerSession).mockResolvedValue({
-        user: { role: 'admin', permissions: ['reservation:read'] },
+        user: {
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:update'],
+          storeIds: ['ikebukuro'],
+        },
       } as any)
       vi.mocked(db.reservation.findUnique).mockResolvedValue({
         ...mockReservation,
@@ -477,13 +1633,13 @@ describe('Reservation API - Modifiable Status', () => {
       vi.mocked(db.reservation.findMany).mockResolvedValue([
         {
           id: 'res-123',
-          startTime: new Date('2026-07-04T09:00:00.000Z'),
-          endTime: new Date('2026-07-04T10:00:00.000Z'),
+          startTime: new Date('2099-07-04T09:00:00.000Z'),
+          endTime: new Date('2099-07-04T10:00:00.000Z'),
         },
         {
           id: 'other-reservation',
-          startTime: new Date('2026-07-04T09:30:00.000Z'),
-          endTime: new Date('2026-07-04T11:00:00.000Z'),
+          startTime: new Date('2099-07-04T09:30:00.000Z'),
+          endTime: new Date('2099-07-04T11:00:00.000Z'),
         },
       ] as any)
 
@@ -491,8 +1647,8 @@ describe('Reservation API - Modifiable Status', () => {
         method: 'PUT',
         body: JSON.stringify({
           id: 'res-123',
-          startTime: '2026-07-04T18:00:00+09:00',
-          endTime: '2026-07-04T19:00:00+09:00',
+          startTime: '2099-07-04T18:00:00+09:00',
+          endTime: '2099-07-04T19:00:00+09:00',
         }),
       })
 
@@ -505,12 +1661,60 @@ describe('Reservation API - Modifiable Status', () => {
         conflicts: [
           {
             id: 'other-reservation',
-            startTime: '2026-07-04T09:30:00.000Z',
-            endTime: '2026-07-04T11:00:00.000Z',
+            startTime: '2099-07-04T09:30:00.000Z',
+            endTime: '2099-07-04T11:00:00.000Z',
           },
         ],
       })
       expect(db.$transaction).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('DELETE endpoint permissions', () => {
+    it('rejects an admin without reservation:delete permission before loading the reservation', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: { id: 'staff-1', role: 'admin', permissions: ['reservation:read'] },
+      } as any)
+      const request = new NextRequest('http://localhost/api/reservation?id=res-123', {
+        method: 'DELETE',
+      })
+
+      const response = await DELETE(request)
+
+      expect(response.status).toBe(403)
+      expect(db.reservation.findFirst).not.toHaveBeenCalled()
+      expect(db.reservation.update).not.toHaveBeenCalled()
+    })
+
+    it('sanitizes the cancelled reservation returned to its customer', async () => {
+      const futureReservation = {
+        ...mockReservation,
+        startTime: new Date('2099-07-04T09:00:00.000Z'),
+        endTime: new Date('2099-07-04T10:00:00.000Z'),
+        storeRevenue: 12_000,
+        staffRevenue: 18_000,
+        welfareExpense: 3_000,
+        entryReceivedBy: 'staff-secret-id',
+      }
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: { id: 'cust-123', role: 'customer' },
+      } as any)
+      vi.mocked(db.reservation.findFirst).mockResolvedValue(futureReservation as any)
+      vi.mocked(db.reservation.update).mockResolvedValue({
+        ...futureReservation,
+        status: 'cancelled',
+      } as any)
+
+      const response = await DELETE(
+        new NextRequest('http://localhost/api/reservation?id=res-123', { method: 'DELETE' })
+      )
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data).toMatchObject({ id: 'res-123', status: 'cancelled' })
+      expect(JSON.stringify(data)).not.toMatch(
+        /storeRevenue|staffRevenue|welfareExpense|entryReceivedBy|staff-secret-id/
+      )
     })
   })
 })

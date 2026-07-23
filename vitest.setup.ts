@@ -1,5 +1,15 @@
+/**
+ * @design_doc   Repository-wide Vitest environment and isolation guarantees
+ * @related_to   vitest.config.ts; Testing Library component tests
+ * @known_issues None
+ */
 import '@testing-library/jest-dom'
-import { vi } from 'vitest'
+import { cleanup } from '@testing-library/react'
+import { afterEach, vi } from 'vitest'
+
+afterEach(() => {
+  cleanup()
+})
 
 // Set up test environment variables
 process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/salon_test?schema=public'

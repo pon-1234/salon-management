@@ -11,6 +11,7 @@ import { ErrorResponses, handleApiError } from '@/lib/api/errors'
 import { db } from '@/lib/db'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
 import { getDefaultBanners } from '@/lib/store/public-fallbacks'
+import { shouldUseMockFallbacks } from '@/lib/config/feature-flags'
 
 const optionalDateSchema = z.preprocess((value) => {
   if (value === undefined || value === null || value === '') {
@@ -76,11 +77,11 @@ async function fetchStoreSlug(storeId: string): Promise<string> {
 }
 
 export async function GET(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
     const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'settings:read', storeId })
+    if (authError) return authError
+
     const storeSlug = await fetchStoreSlug(storeId)
 
     let banners = await db.storeEventBanner.findMany({
@@ -88,7 +89,7 @@ export async function GET(request: NextRequest) {
       orderBy: { displayOrder: 'asc' },
     })
 
-    if (banners.length === 0) {
+    if (banners.length === 0 && shouldUseMockFallbacks()) {
       const defaults = getDefaultBanners(storeSlug).map((banner, index) => ({
         storeId,
         title: banner.title,
@@ -117,11 +118,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
     const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'settings:update', storeId })
+    if (authError) return authError
+
     const storeSlug = await fetchStoreSlug(storeId)
     const body = await request.json()
     const { banners } = updateSchema.parse(body)
@@ -145,6 +146,11 @@ export async function PUT(request: NextRequest) {
 
     const existing = await db.storeEventBanner.findMany({ where: { storeId } })
     const payloadIds = normalized.filter((banner) => banner.id).map((banner) => banner.id!)
+    const existingIds = new Set(existing.map((banner) => banner.id))
+    if (payloadIds.some((id) => !existingIds.has(id))) {
+      return ErrorResponses.badRequest('指定されたバナーがこの店舗に存在しません')
+    }
+
     const deleteIds = existing
       .filter((banner) => !payloadIds.includes(banner.id))
       .map((banner) => banner.id)

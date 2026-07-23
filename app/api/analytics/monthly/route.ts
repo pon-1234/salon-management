@@ -1,18 +1,20 @@
+/**
+ * @design_doc   Multi-store analytics authorization boundary
+ * @related_to   requireAnalyticsAccess guards the requested store before report generation
+ * @known_issues URLs without storeId remain bound to the legacy fallback store
+ */
 import { NextRequest, NextResponse } from 'next/server'
 import logger from '@/lib/logger'
-import { requireAdmin } from '@/lib/auth/utils'
 import { getMonthlyAnalytics } from '@/lib/analytics/server'
-import { FALLBACK_STORE_ID } from '@/lib/analytics/server/common'
+import { requireAnalyticsAccess } from '@/lib/analytics/server/access'
 
 export async function GET(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
+  const { storeId, error } = await requireAnalyticsAccess(request)
+  if (error) return error
 
   try {
     const searchParams = request.nextUrl.searchParams
     const yearParam = searchParams.get('year')
-    const storeId = searchParams.get('storeId') ?? FALLBACK_STORE_ID
-
     if (!yearParam) {
       return NextResponse.json({ message: 'year is required' }, { status: 400 })
     }

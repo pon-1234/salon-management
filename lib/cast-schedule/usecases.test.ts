@@ -6,6 +6,12 @@ import type { Cast } from '../cast/types'
 import { generateId } from '../shared'
 import { startOfWeek } from 'date-fns'
 
+const fallbackFlag = vi.hoisted(() => ({ enabled: false }))
+
+vi.mock('@/lib/config/feature-flags', () => ({
+  shouldUseMockFallbacks: () => fallbackFlag.enabled,
+}))
+
 // Mock CastRepository implementation for testing
 class MockCastRepository implements CastRepository {
   private casts: Map<string, Cast> = new Map()
@@ -64,6 +70,7 @@ describe('CastScheduleUseCases', () => {
   let castRepository: MockCastRepository
 
   beforeEach(() => {
+    fallbackFlag.enabled = false
     scheduleRepository = new CastScheduleRepositoryImpl()
     castRepository = new MockCastRepository()
     useCases = new CastScheduleUseCases(scheduleRepository, castRepository)
@@ -612,16 +619,24 @@ describe('CastScheduleUseCases', () => {
           json: async () => ({ data: mockSchedules }),
         })
 
-      const result = await useCases.getWeeklySchedule({ date: testDate, castFilter: 'all' })
+      const result = await useCases.getWeeklySchedule({
+        date: testDate,
+        castFilter: 'all',
+        storeId: 'store-a',
+      })
 
       // Verify API calls
       expect(fetch).toHaveBeenCalledTimes(2)
       expect(fetch).toHaveBeenCalledWith(
-        '/api/cast',
+        '/api/cast?storeId=store-a',
         expect.objectContaining({ credentials: 'include', cache: 'no-store' })
       )
       expect(fetch).toHaveBeenCalledWith(
         expect.stringContaining('/api/cast-schedule?startDate='),
+        expect.objectContaining({ credentials: 'include', cache: 'no-store' })
+      )
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('storeId=store-a'),
         expect.objectContaining({ credentials: 'include', cache: 'no-store' })
       )
 
@@ -654,17 +669,32 @@ describe('CastScheduleUseCases', () => {
       expect(result.stats.workingCast).toBe(2)
     })
 
-    it('should handle API errors gracefully and fallback to mock data', async () => {
+    it('should surface API errors when production fallbacks are disabled', async () => {
       const testDate = new Date('2024-01-15')
 
       // Mock fetch to fail
       global.fetch = vi.fn().mockRejectedValueOnce(new Error('Network error'))
 
-      const result = await useCases.getWeeklySchedule({ date: testDate, castFilter: 'all' })
+      await expect(
+        useCases.getWeeklySchedule({
+          date: testDate,
+          castFilter: 'all',
+          storeId: 'store-a',
+        })
+      ).rejects.toThrow('Network error')
+    })
 
-      // Should fallback to mock data
-      expect(result).toBeDefined()
-      expect(result.entries).toBeDefined()
+    it('uses mock schedules only when development fallbacks are enabled', async () => {
+      const testDate = new Date('2024-01-15')
+      fallbackFlag.enabled = true
+      global.fetch = vi.fn().mockRejectedValueOnce(new Error('Network error'))
+
+      const result = await useCases.getWeeklySchedule({
+        date: testDate,
+        castFilter: 'all',
+        storeId: 'store-a',
+      })
+
       expect(result.entries.length).toBeGreaterThan(0)
     })
 
@@ -683,7 +713,11 @@ describe('CastScheduleUseCases', () => {
           json: async () => ({ data: [] }),
         })
 
-      const result = await useCases.getWeeklySchedule({ date: testDate, castFilter: 'all' })
+      const result = await useCases.getWeeklySchedule({
+        date: testDate,
+        castFilter: 'all',
+        storeId: 'store-a',
+      })
 
       expect(result.entries).toHaveLength(0)
       expect(result.stats.totalCast).toBe(0)
@@ -748,7 +782,11 @@ describe('CastScheduleUseCases', () => {
           json: async () => ({ data: mockSchedules }),
         })
 
-      const result = await useCases.getWeeklySchedule({ date: testDate, castFilter: 'all' })
+      const result = await useCases.getWeeklySchedule({
+        date: testDate,
+        castFilter: 'all',
+        storeId: 'store-a',
+      })
 
       expect(result.stats.totalCast).toBe(3)
       expect(result.stats.workingCast).toBe(2) // Only Cast 1 and 2 work

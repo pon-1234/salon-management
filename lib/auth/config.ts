@@ -10,6 +10,7 @@ import bcrypt from 'bcryptjs'
 import { checkRateLimit, recordLoginAttempt } from './rate-limit'
 import { env } from '@/lib/config/env'
 import logger from '@/lib/logger'
+import { isBcryptSafePassword } from './password-policy'
 
 // Extend the default session interface
 declare module 'next-auth' {
@@ -22,6 +23,7 @@ declare module 'next-auth' {
       adminRole?: string
       permissions?: string[]
       storeId?: string
+      storeIds?: string[]
       image?: string | null
     }
   }
@@ -34,6 +36,7 @@ declare module 'next-auth' {
     adminRole?: string
     permissions?: string[]
     storeId?: string
+    storeIds?: string[]
     image?: string | null
   }
 }
@@ -45,6 +48,7 @@ declare module 'next-auth/jwt' {
     adminRole?: string
     permissions?: string[]
     storeId?: string
+    storeIds?: string[]
     image?: string | null
   }
 }
@@ -63,8 +67,11 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        const email = credentials.email.trim().toLowerCase()
+        const rateLimitIdentifier = `admin:${email}`
+
         // Check rate limiting
-        const rateLimitResult = checkRateLimit(`admin:${credentials.email}`)
+        const rateLimitResult = checkRateLimit(rateLimitIdentifier)
         if (!rateLimitResult.allowed) {
           throw new Error(
             `Too many login attempts. Please try again in ${rateLimitResult.retryAfter} seconds.`
@@ -73,17 +80,22 @@ export const authOptions: NextAuthOptions = {
 
         try {
           const admin = await db.admin.findUnique({
-            where: { email: credentials.email },
+            where: { email },
+            include: {
+              storeAssignments: {
+                select: { storeId: true },
+                orderBy: { storeId: 'asc' },
+              },
+            },
           })
 
           if (!admin) {
-            recordLoginAttempt(`admin:${credentials.email}`, false)
+            recordLoginAttempt(rateLimitIdentifier, false)
             return null
           }
 
           // Check if account is active
           if (!admin.isActive) {
-            recordLoginAttempt(`admin:${credentials.email}`, false)
             throw new Error('Account is not active. Please contact administrator.')
           }
 
@@ -91,7 +103,7 @@ export const authOptions: NextAuthOptions = {
           const isPasswordValid = await bcrypt.compare(credentials.password, admin.password)
 
           if (!isPasswordValid) {
-            recordLoginAttempt(`admin:${credentials.email}`, false)
+            recordLoginAttempt(rateLimitIdentifier, false)
             return null
           }
 
@@ -112,7 +124,7 @@ export const authOptions: NextAuthOptions = {
           })
 
           // Success - clear rate limit
-          recordLoginAttempt(`admin:${credentials.email}`, true)
+          recordLoginAttempt(rateLimitIdentifier, true)
 
           return {
             id: admin.id,
@@ -121,10 +133,13 @@ export const authOptions: NextAuthOptions = {
             role: 'admin',
             adminRole: admin.role,
             permissions,
+            storeIds: Array.isArray(admin.storeAssignments)
+              ? admin.storeAssignments.map((assignment) => assignment.storeId)
+              : [],
           } as User
         } catch (error) {
           logger.error('Error during admin authentication:', error)
-          recordLoginAttempt(`admin:${credentials.email}`, false)
+          recordLoginAttempt(rateLimitIdentifier, false)
           return null
         }
       },
@@ -141,15 +156,21 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        const normalizedEmail = credentials.email.trim().toLowerCase()
+        const rateLimitIdentifier = `customer:${normalizedEmail}`
+
         // Check rate limiting
-        const rateLimitResult = checkRateLimit(`customer:${credentials.email}`)
+        const rateLimitResult = checkRateLimit(rateLimitIdentifier)
         if (!rateLimitResult.allowed) {
           throw new Error(
             `Too many login attempts. Please try again in ${rateLimitResult.retryAfter} seconds.`
           )
         }
 
-        const normalizedEmail = credentials.email.trim().toLowerCase()
+        if (!isBcryptSafePassword(credentials.password)) {
+          recordLoginAttempt(rateLimitIdentifier, false)
+          return null
+        }
 
         let customer: Awaited<ReturnType<typeof db.customer.findUnique>> | null = null
         try {
@@ -165,12 +186,16 @@ export const authOptions: NextAuthOptions = {
             const isPasswordValid = await bcrypt.compare(credentials.password, customer.password)
 
             if (!isPasswordValid) {
-              recordLoginAttempt(`customer:${credentials.email}`, false)
+              recordLoginAttempt(rateLimitIdentifier, false)
               return null
             }
 
-            recordLoginAttempt(`customer:${credentials.email}`, false)
-            recordLoginAttempt(`customer:${credentials.email}`, true)
+            if (!customer.emailVerified) {
+              recordLoginAttempt(rateLimitIdentifier, false)
+              return null
+            }
+
+            recordLoginAttempt(rateLimitIdentifier, true)
 
             return {
               id: customer.id,
@@ -180,12 +205,12 @@ export const authOptions: NextAuthOptions = {
             } as User
           } catch (error) {
             logger.error('Error during password verification:', error)
-            recordLoginAttempt(`customer:${credentials.email}`, false)
+            recordLoginAttempt(rateLimitIdentifier, false)
             return null
           }
         }
 
-        recordLoginAttempt(`customer:${credentials.email}`, false)
+        recordLoginAttempt(rateLimitIdentifier, false)
         return null
       },
     }),
@@ -266,6 +291,9 @@ export const authOptions: NextAuthOptions = {
         if (user.storeId) {
           token.storeId = user.storeId
         }
+        if (user.storeIds) {
+          token.storeIds = user.storeIds
+        }
       }
       return token
     },
@@ -281,6 +309,9 @@ export const authOptions: NextAuthOptions = {
         }
         if (token.storeId) {
           session.user.storeId = token.storeId
+        }
+        if (token.storeIds) {
+          session.user.storeIds = token.storeIds
         }
       }
       return session

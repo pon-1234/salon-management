@@ -7,7 +7,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { z } from 'zod'
 import { authOptions } from '@/lib/auth/config'
+import { canAdminAccessStore } from '@/lib/auth/store-access'
 import logger from '@/lib/logger'
+import { toPublicReview } from '@/lib/reviews/public'
 import {
   searchReviews,
   getReviewById,
@@ -25,6 +27,9 @@ type AppSession =
         id?: string
         role?: string
         name?: string
+        adminRole?: string
+        permissions?: string[]
+        storeIds?: string[]
       }
     })
   | null
@@ -86,6 +91,27 @@ function resolveActorRole(session: AppSession): 'admin' | 'customer' | 'staff' {
   return 'staff'
 }
 
+function resolveRequiredStoreId(request: NextRequest): string | null {
+  const storeId = request.nextUrl.searchParams.get('storeId')?.trim()
+  return storeId || null
+}
+
+function storeIdRequiredResponse() {
+  return NextResponse.json({ error: 'storeId is required' }, { status: 400 })
+}
+
+function adminStoreAccessResponse(session: AppSession, storeId: string) {
+  if (resolveActorRole(session) !== 'admin') {
+    return null
+  }
+
+  if (!session?.user || !canAdminAccessStore(session.user, storeId)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  return null
+}
+
 function resolveStatusesForAudience(
   requested: ReviewStatus[] | undefined,
   actorRole: 'admin' | 'customer' | 'staff',
@@ -140,7 +166,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
 
     const id = searchParams.get('id')
-    const storeId = searchParams.get('storeId')
+    const storeId = searchParams.get('storeId')?.trim() || null
     const castId = searchParams.get('castId')
     const customerId = searchParams.get('customerId')
     const reservationId = searchParams.get('reservationId')
@@ -148,12 +174,26 @@ export async function GET(request: NextRequest) {
     const statusParam = searchParams.get('status')
     const includeStats = searchParams.get('stats') === 'true'
 
+    if (actorRole === 'admin') {
+      if (!storeId) {
+        return storeIdRequiredResponse()
+      }
+      const accessError = adminStoreAccessResponse(session, storeId)
+      if (accessError) {
+        return accessError
+      }
+    }
+
     if (customerId && actorRole !== 'admin' && session?.user?.id !== customerId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     if (id) {
-      const review = await getReviewById(id)
+      if (!storeId) {
+        return storeIdRequiredResponse()
+      }
+
+      const review = await getReviewById(id, storeId)
       if (!review) {
         return NextResponse.json({ error: 'Review not found' }, { status: 404 })
       }
@@ -164,7 +204,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
 
-      return NextResponse.json(review)
+      return NextResponse.json(isAdmin || isOwner ? review : toPublicReview(review))
     }
 
     const requestedStatuses = parseStatusParam(statusParam)
@@ -186,13 +226,17 @@ export async function GET(request: NextRequest) {
     }
 
     const reviews = await searchReviews(filters)
+    const isOwnerList =
+      actorRole === 'customer' && Boolean(customerId) && session?.user?.id === customerId
+    const responseReviews =
+      actorRole === 'admin' || isOwnerList ? reviews : reviews.map(toPublicReview)
 
     if (includeStats && storeId) {
       const stats = await getReviewStatsForStore(storeId, effectiveStatuses)
-      return NextResponse.json({ reviews, stats })
+      return NextResponse.json({ reviews: responseReviews, stats })
     }
 
-    return NextResponse.json(reviews)
+    return NextResponse.json(responseReviews)
   } catch (error) {
     logger.error({ err: error }, 'Error fetching review data')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -211,6 +255,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    const storeId = resolveRequiredStoreId(request)
+    if (!storeId) {
+      return storeIdRequiredResponse()
+    }
+    const accessError = adminStoreAccessResponse(session, storeId)
+    if (accessError) {
+      return accessError
+    }
+
     const payload = createReviewSchema.safeParse(await request.json())
     if (!payload.success) {
       return NextResponse.json(
@@ -226,6 +279,7 @@ export async function POST(request: NextRequest) {
       }
 
       const review = await createReview({
+        storeId,
         reservationId: payload.data.reservationId,
         rating: payload.data.rating,
         comment: payload.data.comment,
@@ -259,6 +313,15 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    const storeId = resolveRequiredStoreId(request)
+    if (!storeId) {
+      return storeIdRequiredResponse()
+    }
+    const accessError = adminStoreAccessResponse(session, storeId)
+    if (accessError) {
+      return accessError
+    }
+
     const payload = updateReviewSchema.safeParse(await request.json())
     if (!payload.success) {
       return NextResponse.json(
@@ -275,6 +338,7 @@ export async function PUT(request: NextRequest) {
 
       const updated = await updateReview({
         id: payload.data.id,
+        storeId,
         rating: payload.data.rating,
         comment: payload.data.comment,
         status: payload.data.status,
@@ -307,6 +371,15 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    const storeId = resolveRequiredStoreId(request)
+    if (!storeId) {
+      return storeIdRequiredResponse()
+    }
+    const accessError = adminStoreAccessResponse(session, storeId)
+    if (accessError) {
+      return accessError
+    }
+
     const id = request.nextUrl.searchParams.get('id')
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 })
@@ -320,6 +393,7 @@ export async function DELETE(request: NextRequest) {
 
       await removeReview({
         id,
+        storeId,
         actorId,
         actorRole,
       })

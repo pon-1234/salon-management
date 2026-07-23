@@ -1,27 +1,57 @@
+/**
+ * @design_doc   Administrative customer creation boundary
+ * @related_to   requireAdmin, Prisma Customer, admin customer creation form
+ * @known_issues Customer-to-store ownership and required profile fields await migration policy
+ */
+import { randomBytes } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import logger from '@/lib/logger'
 import { requireAdmin } from '@/lib/auth/utils'
-import { normalizePhoneNumber } from '@/lib/customer/utils'
+import { isValidPhoneInput, normalizePhoneNumber, normalizePhoneQuery } from '@/lib/customer/utils'
 
-const payloadSchema = z.object({
-  name: z.string().min(1),
-  phone: z.string().min(1),
-  email: z.string().email().optional(),
-})
+const phoneSchema = z
+  .string()
+  .trim()
+  .refine(isValidPhoneInput)
+  .transform(normalizePhoneQuery)
+  .refine((phone) => phone.length >= 10 && phone.length <= 11)
+
+const payloadSchema = z
+  .object({
+    name: z.string().trim().min(1).max(100),
+    phone: phoneSchema,
+    email: z
+      .string()
+      .trim()
+      .max(254)
+      .email()
+      .transform((email) => email.toLowerCase())
+      .optional(),
+  })
+  .strict()
 
 function buildPlaceholderEmail(phone: string) {
   return `${phone}@phone.local`
 }
 
 function generateTemporaryPassword() {
-  return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
+  return randomBytes(32).toString('base64url')
+}
+
+function databaseErrorCode(error: unknown): string | undefined {
+  return typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    typeof error.code === 'string'
+    ? error.code
+    : undefined
 }
 
 export async function POST(request: NextRequest) {
-  const authError = await requireAdmin()
+  const authError = await requireAdmin({ permissions: 'customer:create' })
   if (authError) return authError
 
   try {
@@ -44,7 +74,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'この電話番号は既に登録されています' }, { status: 409 })
     }
 
-    const email = data.email?.trim().toLowerCase() || buildPlaceholderEmail(normalizedPhone)
+    const email = data.email || buildPlaceholderEmail(normalizedPhone)
     const existingEmail = await db.customer.findUnique({ where: { email } })
     if (existingEmail) {
       return NextResponse.json(
@@ -78,9 +108,16 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json({ customer }, { status: 201 })
-  } catch (error) {
-    logger.error({ err: error }, 'Failed to create admin customer')
-    if ((error as any)?.code === 'P2002') {
+  } catch (error: unknown) {
+    const code = databaseErrorCode(error)
+    logger.error(
+      {
+        ...(code ? { code } : {}),
+        errorType: error instanceof Error ? error.name : 'UnknownError',
+      },
+      'Failed to create admin customer'
+    )
+    if (code === 'P2002') {
       return NextResponse.json({ error: '既に登録済みの情報が含まれています' }, { status: 409 })
     }
     return NextResponse.json({ error: '顧客の作成に失敗しました' }, { status: 500 })

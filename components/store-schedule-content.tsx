@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @design_doc   Public storefront schedule renders bookable slots from anonymous blocked time ranges
+ * @related_to   public-schedule.ts supplies store-scoped schedule availability
+ * @known_issues Slot duration is fixed at thirty minutes
+ */
 import { useCallback, useMemo, useState } from 'react'
 import { format, parseISO, isSameDay } from 'date-fns'
 import { ja } from 'date-fns/locale'
@@ -14,7 +19,6 @@ import { Badge } from '@/components/ui/badge'
 import type { PublicScheduleDay, PublicCastSchedule } from '@/lib/store/public-schedule'
 
 const SLOT_MINUTES = 30
-const BOOKED_STATUSES = new Set(['pending', 'confirmed', 'completed', 'modifiable'])
 
 type TimelineSlot = {
   id: string
@@ -44,9 +48,6 @@ function buildTimelineSlots(entry: PublicCastSchedule): TimelineSlot[] {
     const slotStart = new Date(ts)
     const slotEnd = new Date(Math.min(ts + SLOT_MINUTES * 60 * 1000, end.getTime()))
     const hasReservation = reservations.some((reservation) => {
-      if (!BOOKED_STATUSES.has(reservation.status)) {
-        return false
-      }
       const resStart = new Date(reservation.startTime)
       const resEnd = new Date(reservation.endTime)
       if (Number.isNaN(resStart.getTime()) || Number.isNaN(resEnd.getTime())) {

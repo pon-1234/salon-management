@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Admin reservation timeline and appointment-card interaction contract
+ * @related_to   ReservationPageContent, QuickBookingDialog, Appointment
+ * @known_issues None
+ */
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
@@ -433,56 +438,68 @@ export function Timeline({
                 )}
 
                 {/* 予約ブロック */}
-                {safeMap(member.appointments, (appointment) => (
-                  <div
-                    key={appointment.id}
-                    className={cn(
-                      'absolute top-2 cursor-pointer rounded-lg shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md',
-                      'flex flex-col p-3',
-                      appointment.status === 'provisional'
-                        ? 'border-2 border-orange-300 bg-orange-100'
-                        : 'border-2 border-emerald-400 bg-white'
-                    )}
-                    style={{
-                      ...getTimeBlockStyle(appointment.startTime, appointment.endTime),
-                      height: 'calc(100% - 16px)',
-                    }}
-                    onClick={() => handleAppointmentClick(appointment)}
-                  >
-                    <div className="mb-1 flex items-center justify-between">
-                      <Badge
-                        variant={appointment.status === 'provisional' ? 'secondary' : 'default'}
-                        className={cn(
-                          'px-1.5 py-0 text-xs',
-                          appointment.status === 'provisional'
-                            ? 'bg-orange-500 text-white'
-                            : 'bg-emerald-600 text-white'
-                        )}
+                {safeMap(member.appointments, (appointment) => {
+                  const durationMinutes = Math.round(
+                    (appointment.endTime.getTime() - appointment.startTime.getTime()) / 60000
+                  )
+                  const startLabel = formatInTimeZone(appointment.startTime, JST_TIMEZONE, 'HH:mm')
+                  const endLabel = formatInTimeZone(appointment.endTime, JST_TIMEZONE, 'HH:mm')
+                  const serviceName =
+                    appointment.serviceName ||
+                    (appointment.serviceId ? getCourseById(appointment.serviceId)?.name : '')
+
+                  return (
+                    <button
+                      key={appointment.id}
+                      type="button"
+                      aria-label={`${appointment.customerName} 様 ${startLabel}-${endLabel}`}
+                      className={cn(
+                        'absolute top-2 cursor-pointer overflow-hidden rounded-lg text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md',
+                        'flex flex-col px-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-1',
+                        appointment.status === 'provisional'
+                          ? 'border-2 border-orange-300 bg-orange-100'
+                          : 'border-2 border-emerald-400 bg-white'
+                      )}
+                      style={{
+                        ...getTimeBlockStyle(appointment.startTime, appointment.endTime),
+                        height: 'calc(100% - 16px)',
+                      }}
+                      onClick={() => handleAppointmentClick(appointment)}
+                    >
+                      <div
+                        className="w-full min-w-0 shrink-0 truncate text-sm font-semibold leading-5 text-gray-900"
+                        title={appointment.customerName}
                       >
-                        {appointment.status === 'provisional' ? '仮予約' : '確定'}
-                      </Badge>
-                      <span className="text-xs text-gray-600">
-                        {Math.round(
-                          (appointment.endTime.getTime() - appointment.startTime.getTime()) / 60000
-                        )}
-                        分
-                      </span>
-                    </div>
-                    <div className="mb-1 truncate text-sm font-medium">
-                      {appointment.customerName}
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-gray-600">
-                      <Clock className="h-3 w-3" />
-                      {formatInTimeZone(appointment.startTime, JST_TIMEZONE, 'HH:mm')}-
-                      {formatInTimeZone(appointment.endTime, JST_TIMEZONE, 'HH:mm')}
-                    </div>
-                    {appointment.serviceId && (
-                      <div className="mt-1 truncate text-xs text-gray-500">
-                        {getCourseById(appointment.serviceId)?.name || ''}
+                        {appointment.customerName}
                       </div>
-                    )}
-                  </div>
-                ))}
+                      <div className="mt-0.5 flex w-full shrink-0 items-center justify-between gap-1 leading-4">
+                        <Badge
+                          variant={appointment.status === 'provisional' ? 'secondary' : 'default'}
+                          className={cn(
+                            'shrink-0 px-1.5 py-0 text-xs',
+                            appointment.status === 'provisional'
+                              ? 'bg-orange-500 text-white'
+                              : 'bg-emerald-600 text-white'
+                          )}
+                        >
+                          {appointment.status === 'provisional' ? '仮予約' : '確定'}
+                        </Badge>
+                        <span className="shrink-0 text-xs text-gray-600">{durationMinutes}分</span>
+                      </div>
+                      <div className="mt-0.5 flex w-full min-w-0 shrink-0 items-center gap-1 text-xs leading-4 text-gray-600">
+                        <Clock className="h-3 w-3 shrink-0" />
+                        <span className="shrink-0">
+                          {startLabel}-{endLabel}
+                        </span>
+                        {serviceName && (
+                          <span className="min-w-0 truncate text-gray-500" title={serviceName}>
+                            ・{serviceName}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
 
                 {safeMap(getAvailableSlots(member), (slot, index) => {
                   if (slot.duration < MIN_BOOKING_DURATION_MINUTES) return null

@@ -1,3 +1,8 @@
+/**
+ * @design_doc   docs/LEGACY_DATA_MIGRATION_RUNBOOK.md public booking readiness
+ * @related_to   reservation availability API, StoreBookingContent
+ * @known_issues Legacy customer authentication requires an approved cutover strategy
+ */
 'use client'
 
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
@@ -202,6 +207,11 @@ export function StoreBookingContent({
   const [activeStep, setActiveStep] = useState(() => (hasPrefilledSlot ? 3 : 1))
   const [castSearch, setCastSearch] = useState('')
   const pendingInitialSlotRef = useRef<string | null>(initialSlotIso)
+  const selectedSlotStartRef = useRef(selectedSlotStart)
+
+  useEffect(() => {
+    selectedSlotStartRef.current = selectedSlotStart
+  }, [selectedSlotStart])
 
   useEffect(() => {
     if (hasPrefilledSlot) {
@@ -319,7 +329,7 @@ export function StoreBookingContent({
       return
     }
 
-    const previousSelection = selectedSlotStart
+    const previousSelection = selectedSlotStartRef.current
     let cancelled = false
     const controller = new AbortController()
     const fetchAvailability = async () => {

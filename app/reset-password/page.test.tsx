@@ -1,5 +1,10 @@
+/**
+ * @design_doc   Store-scoped password reset UI and closed return navigation tests
+ * @related_to   reset-password-client.tsx and customer-auth.ts
+ * @known_issues Store existence is validated when recovery links are issued
+ */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
+import { render, screen, waitFor, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import ResetPasswordPage from './page'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -16,6 +21,14 @@ describe('ResetPasswordPage', () => {
   const mockPush = vi.fn()
   const mockGet = vi.fn()
 
+  const setSearchParams = (token: string | null, store: string | null = 'ikebukuro') => {
+    mockGet.mockImplementation((key: string) => {
+      if (key === 'token') return token
+      if (key === 'store') return store
+      return null
+    })
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(useRouter).mockReturnValue({ push: mockPush } as any)
@@ -27,7 +40,7 @@ describe('ResetPasswordPage', () => {
   })
 
   it('should display error when no token is provided', () => {
-    mockGet.mockReturnValue(null)
+    setSearchParams(null)
 
     render(<ResetPasswordPage />)
 
@@ -37,7 +50,7 @@ describe('ResetPasswordPage', () => {
   })
 
   it('should navigate to login when clicking login button (no token)', async () => {
-    mockGet.mockReturnValue(null)
+    setSearchParams(null)
     const user = userEvent.setup()
 
     render(<ResetPasswordPage />)
@@ -45,11 +58,11 @@ describe('ResetPasswordPage', () => {
     const loginButtons = screen.getAllByText('ログインページへ')
     await user.click(loginButtons[0])
 
-    expect(mockPush).toHaveBeenCalledWith('/login')
+    expect(mockPush).toHaveBeenCalledWith('/ikebukuro/login')
   })
 
   it('should display password reset form with valid token', () => {
-    mockGet.mockReturnValue('valid-token-123')
+    setSearchParams('valid-token-123')
 
     render(<ResetPasswordPage />)
 
@@ -61,7 +74,7 @@ describe('ResetPasswordPage', () => {
   })
 
   it('should validate password length', async () => {
-    mockGet.mockReturnValue('valid-token-123')
+    setSearchParams('valid-token-123')
     const user = userEvent.setup()
 
     render(<ResetPasswordPage />)
@@ -78,8 +91,25 @@ describe('ResetPasswordPage', () => {
     })
   })
 
+  it('rejects a password above 72 UTF-8 bytes in the browser', async () => {
+    setSearchParams('valid-token-123')
+    const user = userEvent.setup()
+
+    render(<ResetPasswordPage />)
+    await user.type(screen.getByLabelText('新しいパスワード'), 'あ'.repeat(25))
+    await user.type(screen.getByLabelText('パスワード（確認）'), 'あ'.repeat(25))
+    await user.click(screen.getAllByRole('button', { name: 'パスワードをリセット' })[0])
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('パスワードは改行を含めず72バイト以内で入力してください')
+      ).toBeInTheDocument()
+    })
+    expect(global.fetch).not.toHaveBeenCalled()
+  })
+
   it('should validate password confirmation match', async () => {
-    mockGet.mockReturnValue('valid-token-123')
+    setSearchParams('valid-token-123')
     const user = userEvent.setup()
 
     render(<ResetPasswordPage />)
@@ -99,7 +129,7 @@ describe('ResetPasswordPage', () => {
   })
 
   it('should successfully reset password', async () => {
-    mockGet.mockReturnValue('valid-token-123')
+    setSearchParams('valid-token-123')
     const user = userEvent.setup()
 
     vi.mocked(global.fetch).mockResolvedValueOnce({
@@ -134,7 +164,7 @@ describe('ResetPasswordPage', () => {
   })
 
   it('should navigate to login after successful reset', async () => {
-    mockGet.mockReturnValue('valid-token-123')
+    setSearchParams('valid-token-123')
     const user = userEvent.setup()
 
     vi.mocked(global.fetch).mockResolvedValueOnce({
@@ -161,11 +191,11 @@ describe('ResetPasswordPage', () => {
     const loginButton = loginButtons[0]
     await user.click(loginButton)
 
-    expect(mockPush).toHaveBeenCalledWith('/login')
+    expect(mockPush).toHaveBeenCalledWith('/ikebukuro/login')
   })
 
   it('should display error on API failure', async () => {
-    mockGet.mockReturnValue('valid-token-123')
+    setSearchParams('valid-token-123')
     const user = userEvent.setup()
 
     vi.mocked(global.fetch).mockResolvedValueOnce({
@@ -190,7 +220,7 @@ describe('ResetPasswordPage', () => {
   })
 
   it('should display generic error on network failure', async () => {
-    mockGet.mockReturnValue('valid-token-123')
+    setSearchParams('valid-token-123')
     const user = userEvent.setup()
 
     vi.mocked(global.fetch).mockRejectedValueOnce(new Error('Network error'))
@@ -212,7 +242,7 @@ describe('ResetPasswordPage', () => {
   })
 
   it('should disable form during submission', async () => {
-    mockGet.mockReturnValue('valid-token-123')
+    setSearchParams('valid-token-123')
     const user = userEvent.setup()
 
     vi.mocked(global.fetch).mockImplementationOnce(
@@ -246,4 +276,17 @@ describe('ResetPasswordPage', () => {
       expect(screen.getByText('パスワードリセット完了')).toBeInTheDocument()
     })
   })
+
+  it.each([null, '//evil.example', '../admin'])(
+    'falls back to the store chooser for an unsafe store query: %s',
+    async (store) => {
+      setSearchParams(null, store)
+      const user = userEvent.setup()
+
+      render(<ResetPasswordPage />)
+      await user.click(screen.getAllByText('ログインページへ')[0])
+
+      expect(mockPush).toHaveBeenCalledWith('/')
+    }
+  )
 })

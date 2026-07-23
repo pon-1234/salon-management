@@ -1,80 +1,88 @@
 /**
- * @design_doc   Hotel settings API endpoints
- * @related_to   Hotel settings page
- * @known_issues None currently
+ * @design_doc   docs/HOTEL_DATA_MODEL.md
+ * @related_to   HotelSettings; HotelServiceArea; HotelRate; hotel settings page
+ * @known_issues Service-area and rate mutation is intentionally delegated to dedicated endpoints
  */
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { requireAdmin } from '@/lib/auth/utils'
-import { handleApiError, ErrorResponses } from '@/lib/api/errors'
+import { ErrorResponses, handleApiError } from '@/lib/api/errors'
 import { SuccessResponses } from '@/lib/api/responses'
 import { db } from '@/lib/db'
+import { ensureStoreId, resolveStoreId } from '@/lib/store/server'
 
-// Validation schema
+const nullableText = (maxLength: number) =>
+  z.preprocess(
+    (value) => (typeof value === 'string' && value.trim() === '' ? null : value),
+    z.string().trim().max(maxLength).nullable().optional()
+  )
+
 const hotelSchema = z.object({
-  id: z.string().optional(),
-  hotelName: z.string().min(1),
-  area: z.string().min(1),
-  roomCount: z.number().min(0),
-  hourlyRate: z.number().min(0),
-  address: z.string().min(1),
-  phone: z.string().min(1),
-  checkInTime: z.string(),
-  checkOutTime: z.string(),
-  amenities: z.array(z.string()),
-  notes: z.string().optional(),
+  hotelName: z.string().trim().min(1, 'ホテル名は必須です').max(200),
+  legacyId: nullableText(100),
+  area: nullableText(200),
+  station: nullableText(200),
+  roomCount: z.number().int().min(0).nullable().optional(),
+  hourlyRate: z.number().int().min(0).nullable().optional(),
+  address: nullableText(500),
+  phone: nullableText(50),
+  checkInTime: nullableText(50),
+  checkOutTime: nullableText(50),
+  amenities: z.array(z.string().trim().min(1).max(100)).max(100).optional(),
+  notes: nullableText(2000),
+  rawText: nullableText(4000),
+  displayOrder: z.number().int().min(0).optional(),
+  isActive: z.boolean().optional(),
 })
 
+const activeHotelRelations = {
+  serviceAreas: {
+    where: { isActive: true },
+    include: { area: true },
+    orderBy: { displayOrder: 'asc' as const },
+  },
+  rates: {
+    where: { isActive: true },
+    orderBy: { displayOrder: 'asc' as const },
+  },
+}
+
+function hotelData(storeId: string, validated: z.infer<typeof hotelSchema>) {
+  return {
+    storeId,
+    hotelName: validated.hotelName,
+    legacyId: validated.legacyId ?? null,
+    area: validated.area ?? null,
+    station: validated.station ?? null,
+    roomCount: validated.roomCount ?? null,
+    hourlyRate: validated.hourlyRate ?? null,
+    address: validated.address ?? null,
+    phone: validated.phone ?? null,
+    checkInTime: validated.checkInTime ?? null,
+    checkOutTime: validated.checkOutTime ?? null,
+    amenities: validated.amenities ?? [],
+    notes: validated.notes ?? null,
+    rawText: validated.rawText ?? null,
+    displayOrder: validated.displayOrder ?? 0,
+    isActive: validated.isActive ?? true,
+  }
+}
+
+function badRequestFor(error: z.ZodError) {
+  return ErrorResponses.badRequest(error.errors.map((issue) => issue.message).join('\n'))
+}
+
 export async function GET(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
-    // Get all hotel settings from database
+    const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'settings:read', storeId })
+    if (authError) return authError
+
     const hotels = await db.hotelSettings.findMany({
-      orderBy: { createdAt: 'asc' },
+      where: { storeId, isActive: true },
+      orderBy: [{ displayOrder: 'asc' }, { hotelName: 'asc' }],
+      include: activeHotelRelations,
     })
-
-    // If no hotels exist, create default hotels
-    if (hotels.length === 0) {
-      const defaultHotels = [
-        {
-          hotelName: 'アパホテル池袋',
-          area: '池袋',
-          roomCount: 20,
-          hourlyRate: 3000,
-          address: '東京都豊島区池袋1-1-1',
-          phone: '03-1111-1111',
-          checkInTime: '15:00',
-          checkOutTime: '10:00',
-          amenities: ['無料Wi-Fi', 'アメニティ完備', '24時間フロント'],
-          notes: 'キャスト専用の入口あり',
-        },
-        {
-          hotelName: 'ビジネスホテル新宿',
-          area: '新宿',
-          roomCount: 15,
-          hourlyRate: 3500,
-          address: '東京都新宿区新宿2-2-2',
-          phone: '03-2222-2222',
-          checkInTime: '14:00',
-          checkOutTime: '11:00',
-          amenities: ['無料Wi-Fi', '朝食付き', '駐車場'],
-          notes: '駅近で便利な立地',
-        },
-      ]
-
-      // Create default hotels
-      for (const hotel of defaultHotels) {
-        await db.hotelSettings.create({ data: hotel })
-      }
-
-      // Fetch again after creation
-      const createdHotels = await db.hotelSettings.findMany({
-        orderBy: { createdAt: 'asc' },
-      })
-      return SuccessResponses.ok(createdHotels)
-    }
 
     return SuccessResponses.ok(hotels)
   } catch (error) {
@@ -83,100 +91,78 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
-    const body = await request.json()
+    const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'settings:update', storeId })
+    if (authError) return authError
 
-    // Validate request body
-    const validatedData = hotelSchema.parse(body)
-
-    // Create new hotel in database
-    const newHotel = await db.hotelSettings.create({
-      data: {
-        hotelName: validatedData.hotelName,
-        area: validatedData.area,
-        roomCount: validatedData.roomCount,
-        hourlyRate: validatedData.hourlyRate,
-        address: validatedData.address,
-        phone: validatedData.phone,
-        checkInTime: validatedData.checkInTime,
-        checkOutTime: validatedData.checkOutTime,
-        amenities: validatedData.amenities,
-        notes: validatedData.notes || '',
+    const validated = hotelSchema.parse(await request.json())
+    const hotel = await db.hotelSettings.create({
+      data: hotelData(storeId, validated),
+      include: {
+        serviceAreas: { include: { area: true } },
+        rates: true,
       },
     })
 
-    return SuccessResponses.created(newHotel, 'ホテル情報が追加されました')
+    return SuccessResponses.created(hotel, 'ホテル情報が追加されました')
   } catch (error) {
+    if (error instanceof z.ZodError) return badRequestFor(error)
     return handleApiError(error)
   }
 }
 
 export async function PUT(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
-    const body = await request.json()
-    const { id, ...updateData } = body
+    const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'settings:update', storeId })
+    if (authError) return authError
 
-    if (!id) {
-      return ErrorResponses.badRequest('Hotel ID is required')
+    const body: unknown = await request.json()
+    if (typeof body !== 'object' || body === null || !('id' in body) || !body.id) {
+      return ErrorResponses.badRequest('ホテルIDが必要です')
     }
 
-    // Validate update data
-    const validatedData = hotelSchema.parse({ id, ...updateData })
-
-    // Update hotel in database
-    const updatedHotel = await db.hotelSettings.update({
-      where: { id },
-      data: {
-        hotelName: validatedData.hotelName,
-        area: validatedData.area,
-        roomCount: validatedData.roomCount,
-        hourlyRate: validatedData.hourlyRate,
-        address: validatedData.address,
-        phone: validatedData.phone,
-        checkInTime: validatedData.checkInTime,
-        checkOutTime: validatedData.checkOutTime,
-        amenities: validatedData.amenities,
-        notes: validatedData.notes || '',
-      },
+    const id = String(body.id)
+    const validated = hotelSchema.parse(body)
+    const existing = await db.hotelSettings.findFirst({
+      where: { id, storeId },
+      select: { id: true },
     })
 
-    return SuccessResponses.updated(updatedHotel)
-  } catch (error: any) {
-    if (error?.code === 'P2025') {
-      return ErrorResponses.notFound('ホテル')
-    }
+    if (!existing) return ErrorResponses.notFound('ホテル')
+
+    const hotel = await db.hotelSettings.update({
+      where: { id, storeId },
+      data: hotelData(storeId, validated),
+      include: activeHotelRelations,
+    })
+
+    return SuccessResponses.updated(hotel)
+  } catch (error) {
+    if (error instanceof z.ZodError) return badRequestFor(error)
     return handleApiError(error)
   }
 }
 
 export async function DELETE(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
-    const searchParams = request.nextUrl.searchParams
-    const id = searchParams.get('id')
+    const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'settings:update', storeId })
+    if (authError) return authError
 
-    if (!id) {
-      return ErrorResponses.badRequest('ホテルIDが必要です')
-    }
+    const id = request.nextUrl.searchParams.get('id')
+    if (!id) return ErrorResponses.badRequest('ホテルIDが必要です')
 
-    // Delete hotel from database
-    await db.hotelSettings.delete({
-      where: { id },
+    const result = await db.hotelSettings.updateMany({
+      where: { id, storeId, isActive: true },
+      data: { isActive: false },
     })
 
+    if (result.count === 0) return ErrorResponses.notFound('ホテル')
+
     return SuccessResponses.deleted()
-  } catch (error: any) {
-    if (error?.code === 'P2025') {
-      return ErrorResponses.notFound('ホテル')
-    }
+  } catch (error) {
     return handleApiError(error)
   }
 }

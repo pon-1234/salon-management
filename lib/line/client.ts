@@ -22,9 +22,11 @@ export interface LineMessagingConfig {
 export class LineMessagingClient {
   private readonly fetchImpl: typeof fetch
   private readonly config: LineMessagingConfig
+  private readonly outboundDisabled: boolean
 
   constructor(options?: { fetchImpl?: typeof fetch; config?: LineMessagingConfig }) {
     this.fetchImpl = options?.fetchImpl ?? fetch
+    this.outboundDisabled = env.outbound.deliveryMode === 'disabled'
     const baseConfig = options?.config ?? env.line.messaging
     this.config = {
       enabled: Boolean(baseConfig?.enabled),
@@ -34,7 +36,11 @@ export class LineMessagingClient {
   }
 
   isConfigured(): boolean {
-    return Boolean(this.config.enabled && this.config.channelAccessToken.trim().length > 0)
+    return Boolean(
+      !this.outboundDisabled &&
+        this.config.enabled &&
+        this.config.channelAccessToken.trim().length > 0
+    )
   }
 
   getDefaultUserId(): string | undefined {

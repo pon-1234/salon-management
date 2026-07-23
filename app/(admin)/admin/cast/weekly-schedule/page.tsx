@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @design_doc   Multi-store weekly cast schedule administration
+ * @related_to   CastScheduleUseCases and batch cast-schedule API
+ * @known_issues Filtering controls are placeholders
+ */
 import React, { useState, useEffect } from 'react'
 import { ScheduleGrid } from '@/components/cast-schedule/schedule-grid'
 import { CastScheduleUseCases } from '@/lib/cast-schedule/usecases'
@@ -8,10 +13,13 @@ import { Header } from '@/components/header'
 import { ScheduleInfoBar } from '@/components/cast-schedule/schedule-info-bar'
 import { ScheduleActionButtons } from '@/components/cast-schedule/schedule-action-buttons'
 import { toast } from '@/hooks/use-toast'
+import { useStore } from '@/contexts/store-context'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 
 const castScheduleUseCases = new CastScheduleUseCases()
 
 export default function WeeklySchedulePage() {
+  const { currentStore } = useStore()
   const [date, setDate] = useState(() => new Date())
   const [schedule, setSchedule] = useState<WeeklySchedule | null>(null)
   const [loading, setLoading] = useState(true)
@@ -23,6 +31,7 @@ export default function WeeklySchedulePage() {
         const weeklySchedule = await castScheduleUseCases.getWeeklySchedule({
           date,
           castFilter: 'all',
+          storeId: currentStore.id,
         })
         setSchedule(weeklySchedule)
       } catch (error) {
@@ -38,7 +47,7 @@ export default function WeeklySchedulePage() {
     }
 
     fetchSchedule()
-  }, [date])
+  }, [currentStore.id, date])
 
   if (loading || !schedule) {
     return (
@@ -60,6 +69,7 @@ export default function WeeklySchedulePage() {
       const weeklySchedule = await castScheduleUseCases.getWeeklySchedule({
         date,
         castFilter: 'all',
+        storeId: currentStore.id,
       })
       setSchedule(weeklySchedule)
       toast({
@@ -124,14 +134,17 @@ export default function WeeklySchedulePage() {
       })
 
       // Use batch API for better performance
-      const response = await fetch('/api/cast-schedule/batch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          castId,
-          schedules,
-        }),
-      })
+      const response = await fetch(
+        buildStoreScopedEndpoint('/api/cast-schedule/batch', currentStore.id),
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            castId,
+            schedules,
+          }),
+        }
+      )
 
       if (!response.ok) {
         const errorData = await response.json()

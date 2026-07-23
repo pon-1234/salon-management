@@ -38,13 +38,23 @@ vi.mock('@/lib/logger', () => ({
 import { emailClient } from '@/lib/email/client'
 import { smsClient } from '@/lib/sms/client'
 import { pushClient } from '@/lib/push/client'
+import { env } from '@/lib/config/env'
+import logger from '@/lib/logger'
 
 describe('NotificationService', () => {
   let notificationService: NotificationService
 
   beforeEach(() => {
     vi.clearAllMocks()
+    env.resend.apiKey = 'test-api-key'
+    env.notification.mockEnabled = false
     notificationService = new NotificationService()
+  })
+
+  it('does not advertise notification history or retry support without durable storage', () => {
+    expect('getNotificationHistory' in notificationService).toBe(false)
+    expect('getFailedNotifications' in notificationService).toBe(false)
+    expect('retryFailedNotifications' in notificationService).toBe(false)
   })
 
   describe('sendReservationConfirmation', () => {
@@ -117,6 +127,42 @@ describe('NotificationService', () => {
           type: 'reservation_confirmation',
         },
       })
+    })
+
+    it('records a failed delivery without logging recipient data', async () => {
+      vi.mocked(smsClient.send).mockResolvedValueOnce({
+        success: false,
+        error: 'SMS provider request failed.',
+      })
+
+      await notificationService.sendReservationConfirmation(mockReservation)
+
+      expect(logger.error).toHaveBeenCalledWith(
+        { reservationId: 'reservation1', failed: 1, attempted: 3 },
+        'Reservation confirmation notification delivery failed'
+      )
+      const serializedLogs = JSON.stringify(vi.mocked(logger.error).mock.calls)
+      expect(serializedLogs).not.toContain('+1234567890')
+      expect(serializedLogs).not.toContain('test@example.com')
+    })
+
+    it('HTML-escapes all reservation data included in the email body', async () => {
+      const maliciousReservation = {
+        ...mockReservation,
+        customer: { ...mockReservation.customer, name: '<img src=x onerror="alert(1)">' },
+        cast: { ...mockReservation.cast, name: '<script>cast()</script>' },
+        course: { ...mockReservation.course, name: 'A & B' },
+        locationMemo: '<a href="https://attacker.example">click</a>',
+      }
+
+      await notificationService.sendReservationConfirmation(maliciousReservation)
+
+      const body = vi.mocked(emailClient.send).mock.calls[0][0].body ?? ''
+      expect(body).toContain('&lt;img src=x onerror=&quot;alert(1)&quot;&gt;')
+      expect(body).toContain('&lt;script&gt;cast()&lt;/script&gt;')
+      expect(body).toContain('A &amp; B')
+      expect(body).toContain('&lt;a href=&quot;https://attacker.example&quot;&gt;click&lt;/a&gt;')
+      expect(body).not.toMatch(/<img|<script|<a href="https:\/\/attacker\.example"/i)
     })
 
     it('should skip notifications based on customer preferences', async () => {
@@ -239,6 +285,62 @@ describe('NotificationService', () => {
   })
 
   describe('sendBulkNotifications', () => {
+    it('delegates explicit development mocks to the email client', async () => {
+      env.resend.apiKey = ''
+      env.notification.mockEnabled = true
+      vi.mocked(emailClient.send).mockResolvedValueOnce({
+        success: true,
+        id: 'email-mock-123',
+      })
+
+      const results = await notificationService.sendBulkNotifications([
+        {
+          type: 'email',
+          to: 'test@example.com',
+          data: { to: 'test@example.com', subject: 'Test' },
+        },
+      ])
+
+      expect(results).toEqual([{ success: true, notificationId: 'email-mock-123' }])
+      expect(emailClient.send).toHaveBeenCalledOnce()
+    })
+
+    it('reports an email failure when the provider is not configured', async () => {
+      env.resend.apiKey = ''
+      vi.mocked(emailClient.send).mockResolvedValueOnce({
+        success: false,
+        error: 'Email provider is not configured.',
+      })
+
+      const results = await notificationService.sendBulkNotifications([
+        {
+          type: 'email',
+          to: 'test@example.com',
+          data: { to: 'test@example.com', subject: 'Test' },
+        },
+      ])
+
+      expect(results).toEqual([{ success: false, error: 'Email provider is not configured.' }])
+      expect(emailClient.send).toHaveBeenCalledOnce()
+    })
+
+    it('reports a rejected SMS delivery as a failure', async () => {
+      vi.mocked(smsClient.send).mockResolvedValueOnce({
+        success: false,
+        error: 'SMS provider rejected the request.',
+      })
+
+      const results = await notificationService.sendBulkNotifications([
+        {
+          type: 'sms',
+          to: '+819012345678',
+          data: { to: '+819012345678', message: 'secret code' },
+        },
+      ])
+
+      expect(results).toEqual([{ success: false, error: 'SMS provider rejected the request.' }])
+    })
+
     it('should handle errors gracefully and continue sending', async () => {
       const notifications: BulkNotification[] = [
         { type: 'email' as const, to: 'test1@example.com', data: {} },
@@ -260,82 +362,6 @@ describe('NotificationService', () => {
       expect(results[0].error).toContain('Email failed')
       expect(results[1].success).toBe(true)
       expect(results[2].success).toBe(true)
-    })
-  })
-
-  describe('getNotificationHistory', () => {
-    it('should retrieve notification history for a reservation', async () => {
-      const mockHistory = [
-        {
-          id: 'notif1',
-          reservationId: 'reservation1',
-          type: 'email',
-          status: 'sent',
-          sentAt: new Date('2025-07-10T09:00:00Z'),
-        },
-        {
-          id: 'notif2',
-          reservationId: 'reservation1',
-          type: 'sms',
-          status: 'sent',
-          sentAt: new Date('2025-07-10T09:01:00Z'),
-        },
-      ]
-
-      vi.spyOn(notificationService, 'getNotificationHistory').mockResolvedValueOnce(mockHistory)
-
-      const history = await notificationService.getNotificationHistory('reservation1')
-
-      expect(history).toHaveLength(2)
-      expect(history[0].type).toBe('email')
-      expect(history[1].type).toBe('sms')
-    })
-  })
-
-  describe('retryFailedNotifications', () => {
-    it('should retry failed notifications', async () => {
-      const failedNotifications = [
-        {
-          id: 'notif1',
-          type: 'email',
-          to: 'test@example.com',
-          data: { subject: 'Test' },
-          attempts: 1,
-        },
-      ]
-
-      vi.spyOn(notificationService, 'getFailedNotifications').mockResolvedValueOnce(
-        failedNotifications
-      )
-      vi.mocked(emailClient.send).mockResolvedValueOnce({ success: true })
-
-      const results = await notificationService.retryFailedNotifications()
-
-      expect(results.retried).toBe(1)
-      expect(results.successful).toBe(1)
-      expect(results.failed).toBe(0)
-    })
-
-    it('should mark notifications as permanently failed after max retries', async () => {
-      const failedNotifications = [
-        {
-          id: 'notif1',
-          type: 'email',
-          to: 'test@example.com',
-          data: { subject: 'Test' },
-          attempts: 3, // Max retries reached
-        },
-      ]
-
-      vi.spyOn(notificationService, 'getFailedNotifications').mockResolvedValueOnce(
-        failedNotifications
-      )
-
-      const results = await notificationService.retryFailedNotifications()
-
-      expect(results.retried).toBe(0)
-      expect(results.permanentlyFailed).toBe(1)
-      expect(vi.mocked(emailClient.send)).not.toHaveBeenCalled()
     })
   })
 })

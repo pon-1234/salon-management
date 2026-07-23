@@ -1,6 +1,13 @@
+/**
+ * @design_doc   Review aggregate calculations for private and public review shapes
+ * @related_to   ReviewStats, ReviewsContent, and Review service
+ * @known_issues None currently
+ */
 import type { Review, ReviewStats } from './types'
 
-export function calculateReviewStats(reviews: Review[]): ReviewStats {
+type ReviewStatsInput = Pick<Review, 'rating' | 'tags'>
+
+export function calculateReviewStats(reviews: ReviewStatsInput[]): ReviewStats {
   const distribution = {
     5: 0,
     4: 0,

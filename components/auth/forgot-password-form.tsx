@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @design_doc   Store-scoped customer password recovery request form
+ * @related_to   app/api/auth/forgot-password and store login pages
+ * @known_issues Delivery status remains enumeration-safe and is confirmed only by email receipt
+ */
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -19,10 +24,12 @@ export function ForgotPasswordForm({ store }: ForgotPasswordFormProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
+    setError(null)
 
     const formData = new FormData(e.currentTarget)
     const email = formData.get('email') as string
@@ -31,18 +38,25 @@ export function ForgotPasswordForm({ store }: ForgotPasswordFormProps) {
       const response = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, storeId: store.id }),
       })
 
       if (!response.ok) {
-        throw new Error('パスワードリセットの送信に失敗しました')
+        const payload: unknown = await response.json().catch(() => null)
+        const message =
+          payload &&
+          typeof payload === 'object' &&
+          'message' in payload &&
+          typeof payload.message === 'string'
+            ? payload.message
+            : '現在処理できません。しばらくしてからお試しください'
+        setError(message)
+        return
       }
 
       setSubmitted(true)
-    } catch (error) {
-      // Optionally handle error with toast or alert
-      console.error('Error sending reset email:', error)
-      setSubmitted(true) // Still show success to prevent email enumeration
+    } catch {
+      setError('現在処理できません。しばらくしてからお試しください')
     } finally {
       setLoading(false)
     }
@@ -91,6 +105,11 @@ export function ForgotPasswordForm({ store }: ForgotPasswordFormProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Email */}
           <div className="space-y-2">

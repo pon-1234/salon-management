@@ -1,3 +1,10 @@
+/**
+ * @design_doc   Authenticated phone verification code generation and local delivery throttling
+ * @related_to   app/api/auth/verify-phone/send/route.ts and confirm/route.ts
+ * @known_issues The send limiter is process-local and must be replaced before horizontal scaling
+ */
+import { createHmac, randomInt } from 'node:crypto'
+
 interface VerificationAttempt {
   count: number
   firstAttempt: number
@@ -49,10 +56,18 @@ export function recordSendAttempt(phone: string): void {
 }
 
 export function generateVerificationCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString()
+  return randomInt(100000, 1000000).toString()
 }
 
-setInterval(() => {
+export function hashPhoneVerificationCode(
+  customerId: string,
+  code: string,
+  secret: string
+): string {
+  return createHmac('sha256', secret).update(`${customerId}:${code}`, 'utf8').digest('hex')
+}
+
+const cleanupTimer = setInterval(() => {
   const now = Date.now()
   for (const [key, attempt] of sendAttempts.entries()) {
     if (now - attempt.lastAttempt > SEND_WINDOW_MS) {
@@ -60,3 +75,5 @@ setInterval(() => {
     }
   }
 }, 60 * 1000)
+
+cleanupTimer.unref()

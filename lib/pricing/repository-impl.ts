@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Multi-store pricing API repository
+ * @related_to   PricingRepository, course and option API routes
+ * @known_issues Additional fees and sync status remain in-memory
+ */
 import { PricingRepository } from './repository'
 import { CoursePrice, OptionPrice, AdditionalFee, StorePricing, PricingSyncStatus } from './types'
 import { defaultCourses, defaultOptions, defaultAdditionalFees, defaultPricingNotes } from './data'
@@ -62,14 +67,12 @@ export class PricingRepositoryImpl implements PricingRepository {
   // Course pricing methods
   async getCourses(storeId?: string): Promise<CoursePrice[]> {
     const courses = await this.fetchJson<CoursePrice[]>(this.withStore(COURSE_API_PATH, storeId))
-    return courses
-      .filter((course: any) => course.isActive !== false)
-      .sort((a: any, b: any) => (a.duration || 0) - (b.duration || 0))
+    return courses.sort((a: any, b: any) => (a.duration || 0) - (b.duration || 0))
   }
 
-  async getCourseById(id: string): Promise<CoursePrice | null> {
+  async getCourseById(id: string, storeId?: string): Promise<CoursePrice | null> {
     return this.fetchJson<CoursePrice>(
-      this.withStore(`${COURSE_API_PATH}?id=${id}`, undefined),
+      this.withStore(`${COURSE_API_PATH}?id=${encodeURIComponent(id)}`, storeId),
       undefined,
       {
         allowNotFound: true,
@@ -78,38 +81,44 @@ export class PricingRepositoryImpl implements PricingRepository {
   }
 
   async createCourse(
-    course: Omit<CoursePrice, 'id' | 'createdAt' | 'updatedAt'>
+    course: Omit<CoursePrice, 'id' | 'createdAt' | 'updatedAt'>,
+    storeId: string
   ): Promise<CoursePrice> {
-    return this.fetchJson<CoursePrice>(COURSE_API_PATH, {
+    return this.fetchJson<CoursePrice>(this.withStore(COURSE_API_PATH, storeId), {
       method: 'POST',
       body: JSON.stringify(course),
     })
   }
 
-  async updateCourse(id: string, course: Partial<CoursePrice>): Promise<CoursePrice> {
-    return this.fetchJson<CoursePrice>(COURSE_API_PATH, {
+  async updateCourse(
+    id: string,
+    course: Partial<CoursePrice>,
+    storeId: string
+  ): Promise<CoursePrice> {
+    return this.fetchJson<CoursePrice>(this.withStore(COURSE_API_PATH, storeId), {
       method: 'PUT',
       body: JSON.stringify({ id, ...course }),
     })
   }
 
-  async deleteCourse(id: string): Promise<void> {
-    await this.fetchJson(`${COURSE_API_PATH}?id=${id}`, {
-      method: 'DELETE',
-    })
+  async deleteCourse(id: string, storeId: string): Promise<void> {
+    await this.fetchJson(
+      this.withStore(`${COURSE_API_PATH}?id=${encodeURIComponent(id)}`, storeId),
+      {
+        method: 'DELETE',
+      }
+    )
   }
 
   // Option pricing methods
   async getOptions(storeId?: string): Promise<OptionPrice[]> {
     const options = await this.fetchJson<OptionPrice[]>(this.withStore(OPTION_API_PATH, storeId))
-    return options
-      .filter((option: any) => option.isActive !== false)
-      .sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
+    return options.sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
   }
 
-  async getOptionById(id: string): Promise<OptionPrice | null> {
+  async getOptionById(id: string, storeId?: string): Promise<OptionPrice | null> {
     return this.fetchJson<OptionPrice>(
-      this.withStore(`${OPTION_API_PATH}?id=${id}`, undefined),
+      this.withStore(`${OPTION_API_PATH}?id=${encodeURIComponent(id)}`, storeId),
       undefined,
       {
         allowNotFound: true,
@@ -118,25 +127,33 @@ export class PricingRepositoryImpl implements PricingRepository {
   }
 
   async createOption(
-    option: Omit<OptionPrice, 'id' | 'createdAt' | 'updatedAt'>
+    option: Omit<OptionPrice, 'id' | 'createdAt' | 'updatedAt'>,
+    storeId: string
   ): Promise<OptionPrice> {
-    return this.fetchJson<OptionPrice>(OPTION_API_PATH, {
+    return this.fetchJson<OptionPrice>(this.withStore(OPTION_API_PATH, storeId), {
       method: 'POST',
       body: JSON.stringify(option),
     })
   }
 
-  async updateOption(id: string, option: Partial<OptionPrice>): Promise<OptionPrice> {
-    return this.fetchJson<OptionPrice>(OPTION_API_PATH, {
+  async updateOption(
+    id: string,
+    option: Partial<OptionPrice>,
+    storeId: string
+  ): Promise<OptionPrice> {
+    return this.fetchJson<OptionPrice>(this.withStore(OPTION_API_PATH, storeId), {
       method: 'PUT',
       body: JSON.stringify({ id, ...option }),
     })
   }
 
-  async deleteOption(id: string): Promise<void> {
-    await this.fetchJson(`${OPTION_API_PATH}?id=${id}`, {
-      method: 'DELETE',
-    })
+  async deleteOption(id: string, storeId: string): Promise<void> {
+    await this.fetchJson(
+      this.withStore(`${OPTION_API_PATH}?id=${encodeURIComponent(id)}`, storeId),
+      {
+        method: 'DELETE',
+      }
+    )
   }
 
   // Additional fees methods

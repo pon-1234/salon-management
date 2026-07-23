@@ -1,7 +1,12 @@
 'use client'
 
+/**
+ * @design_doc   Public review card presentation
+ * @related_to   ReviewsContent and PublicReview
+ * @known_issues Helpful votes are client-local only
+ */
 import { useState } from 'react'
-import { Review } from '@/lib/reviews/types'
+import type { PublicReview } from '@/lib/reviews/types'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -10,7 +15,7 @@ import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 
 interface ReviewCardProps {
-  review: Review
+  review: PublicReview
 }
 
 export function ReviewCard({ review }: ReviewCardProps) {

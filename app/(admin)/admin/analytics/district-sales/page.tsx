@@ -1,3 +1,8 @@
+/**
+ * @design_doc   docs/LEGACY_GOLD_ADMIN_MIGRATION_INVENTORY.md district sales analytics
+ * @related_to   DistrictSalesReport, DistrictPerformanceTable
+ * @known_issues Legacy aggregation rules still require production-data reconciliation
+ */
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
@@ -188,7 +193,10 @@ export default function DistrictSalesPage() {
   const chartDistricts = districtReport?.districts ?? []
   const heatmapDistricts = districtReport?.districts ?? []
   const performanceCurrent = districtReport?.districts ?? []
-  const performancePrevious = previousDistrictReport?.districts ?? []
+  const performancePrevious = useMemo(
+    () => previousDistrictReport?.districts ?? [],
+    [previousDistrictReport]
+  )
   const selectedAreaLabel =
     areaOptions.find((option) => option.value === selectedArea)?.label ?? selectedArea
   const haveValues =

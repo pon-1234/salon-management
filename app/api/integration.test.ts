@@ -5,7 +5,7 @@
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { NextRequest } from 'next/server'
-import { POST as CustomerPOST } from './customer/route'
+import { POST as CustomerRegisterPOST } from './auth/register/route'
 import { POST as ReservationPOST, GET as ReservationGET } from './reservation/route'
 import { POST as ReviewPOST, GET as ReviewGET } from './review/route'
 import { GET as CoursePriceGET } from './course/route'
@@ -13,6 +13,7 @@ import { GET as OptionPriceGET } from './option/route'
 import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import bcrypt from 'bcryptjs'
+import { emailClient } from '@/lib/email/client'
 
 // Mock all dependencies
 vi.mock('next-auth', () => ({
@@ -33,6 +34,7 @@ vi.mock('@/lib/db', () => ({
     customer: {
       create: vi.fn(),
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
     },
     reservation: {
       create: vi.fn(),
@@ -42,6 +44,9 @@ vi.mock('@/lib/db', () => ({
       update: vi.fn(),
     },
     cast: {
+      findFirst: vi.fn(),
+    },
+    castSchedule: {
       findFirst: vi.fn(),
     },
     coursePrice: {
@@ -54,6 +59,7 @@ vi.mock('@/lib/db', () => ({
     },
     store: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       upsert: vi.fn(),
     },
     storeSettings: {
@@ -127,6 +133,16 @@ vi.mock('@/lib/notification/service', () => ({
   })),
 }))
 
+vi.mock('@/lib/email/client', () => ({
+  emailClient: {
+    send: vi.fn(),
+  },
+}))
+
+vi.mock('@/lib/security/customer-email-rate-limit', () => ({
+  consumeCustomerEmailRateLimit: vi.fn(() => ({ allowed: true })),
+}))
+
 vi.mock('@/lib/logger', () => ({
   default: {
     error: vi.fn(),
@@ -149,8 +165,9 @@ function bootstrapDbDefaults() {
     slug: 'ikebukuro',
   }
 
-  vi.mocked(db.store.findUnique).mockResolvedValue(null as any)
-  vi.mocked(db.store.upsert).mockResolvedValue(defaultStore as any)
+  vi.mocked(db.store.findUnique).mockResolvedValue(defaultStore as any)
+  vi.mocked(db.store.findFirst).mockResolvedValue({ slug: 'ikebukuro' } as any)
+  vi.mocked(emailClient.send).mockResolvedValue({ success: true })
   vi.mocked(db.storeSettings.findUnique).mockResolvedValue({
     storeId: 'ikebukuro',
     welfareExpenseRate: 10,
@@ -168,7 +185,9 @@ function bootstrapDbDefaults() {
   vi.mocked(db.optionPrice.findMany).mockResolvedValue([] as any)
 
   vi.mocked(db.cast.findFirst).mockResolvedValue(null as any)
+  vi.mocked(db.castSchedule.findFirst).mockResolvedValue({ id: 'schedule-default' } as any)
   vi.mocked(db.customer.findUnique).mockResolvedValue(null as any)
+  vi.mocked(db.customer.findFirst).mockResolvedValue(null as any)
   vi.mocked(db.areaInfo.findFirst).mockResolvedValue(null as any)
   vi.mocked(db.stationInfo.findFirst).mockResolvedValue(null as any)
 
@@ -201,17 +220,20 @@ describe('Customer Journey Integration Tests', () => {
 
     // Step 1: Customer Registration
     const customerData = {
-      name: 'Integration Test Customer',
-      nameKana: 'インテグレーションテストカスタマー',
+      nickname: 'Integration Test Customer',
       phone: '09012345678',
       email: 'integration@test.com',
       password: 'password123',
       birthDate: '1990-01-01',
+      storeId: 'ikebukuro',
     }
 
     const mockCustomer = {
       id: 'customer-integration-1',
-      ...customerData,
+      name: customerData.nickname,
+      nameKana: customerData.nickname,
+      phone: customerData.phone,
+      email: customerData.email,
       password: 'hashed-password',
       phoneVerified: true,
       birthDate: new Date('1990-01-01'),
@@ -223,16 +245,16 @@ describe('Customer Journey Integration Tests', () => {
     vi.mocked(bcrypt.hash).mockResolvedValueOnce('hashed-password' as any)
     vi.mocked(db.customer.create).mockResolvedValueOnce(mockCustomer as any)
 
-    const customerRequest = new NextRequest('http://localhost:3000/api/customer', {
+    const customerRequest = new NextRequest('http://localhost:3000/api/auth/register', {
       method: 'POST',
       body: JSON.stringify(customerData),
     })
 
-    const customerResponse = await CustomerPOST(customerRequest)
+    const customerResponse = await CustomerRegisterPOST(customerRequest)
     const customerResult = await customerResponse.json()
 
     expect(customerResponse.status).toBe(201)
-    expect(customerResult.id).toBe('customer-integration-1')
+    expect(customerResult.customer.id).toBe('customer-integration-1')
 
     // Step 2: Make a Reservation
     const reservationData = {
@@ -261,6 +283,7 @@ describe('Customer Journey Integration Tests', () => {
       id: 'cast1',
       name: 'Test Cast',
       welfareExpenseRate: 12,
+      netReservation: true,
     } as any)
     vi.mocked(db.customer.findUnique).mockResolvedValueOnce(mockCustomer as any)
     vi.mocked(db.coursePrice.findFirst).mockResolvedValueOnce({
@@ -349,7 +372,7 @@ describe('Customer Journey Integration Tests', () => {
 
     mockCreateReview.mockResolvedValueOnce(mockReview as any)
 
-    const reviewRequest = new NextRequest('http://localhost:3000/api/review', {
+    const reviewRequest = new NextRequest('http://localhost:3000/api/review?storeId=ikebukuro', {
       method: 'POST',
       body: JSON.stringify(reviewData),
     })
@@ -363,7 +386,7 @@ describe('Customer Journey Integration Tests', () => {
     expect(reviewResult.customerAlias).toBe('イ***')
 
     // Step 4: Verify the complete customer journey
-    expect(customerResult.email).toBe('integration@test.com')
+    expect(customerResult.customer.email).toBe('integration@test.com')
     expect(reservationResult.cast.name).toBe('Test Cast')
     expect(reviewResult.castName).toBe('Test Cast')
   })
@@ -466,6 +489,7 @@ describe('Customer Journey Integration Tests', () => {
       id: 'cast1',
       name: 'Test Cast',
       welfareExpenseRate: 10,
+      netReservation: true,
     } as any)
     vi.mocked(db.coursePrice.findFirst).mockResolvedValueOnce({
       id: 'course1',
@@ -652,6 +676,8 @@ describe('Cast Performance Analytics Integration', () => {
         role: 'admin',
         email: 'admin@test.com',
         permissions: ['reservation:read'],
+        adminRole: 'manager',
+        storeIds: ['ikebukuro'],
       },
       expires: new Date(Date.now() + 86400000).toISOString(),
     })
@@ -749,9 +775,12 @@ describe('Cast Performance Analytics Integration', () => {
     const reservations = await reservationResponse.json()
 
     // Get cast reviews
-    const reviewRequest = new NextRequest(`http://localhost:3000/api/review?castId=${castId}`, {
-      method: 'GET',
-    })
+    const reviewRequest = new NextRequest(
+      `http://localhost:3000/api/review?castId=${castId}&storeId=ikebukuro`,
+      {
+        method: 'GET',
+      }
+    )
 
     const reviewResponse = await ReviewGET(reviewRequest)
     const reviews = await reviewResponse.json()

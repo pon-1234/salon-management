@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useToast } from '@/hooks/use-toast'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import {
@@ -39,14 +40,16 @@ import {
   UserPlus,
   Loader2,
   Edit,
-  Trash2,
   RefreshCw,
   Mail,
   Users,
   UserCheck,
+  UserX,
 } from 'lucide-react'
 import { formatInTimeZone } from 'date-fns-tz'
 import { cn } from '@/lib/utils'
+import { useStore } from '@/contexts/store-context'
+import { ADMIN_PASSWORD_MIN_LENGTH } from '@/lib/admin/password-policy'
 
 const JST_TIMEZONE = 'Asia/Tokyo'
 
@@ -56,6 +59,7 @@ type AdminRecord = {
   name: string
   role: 'super_admin' | 'manager' | 'staff'
   permissions: string[]
+  storeIds: string[]
   isActive: boolean
   lastLogin: string | null
   createdAt: string
@@ -68,6 +72,7 @@ type AdminFormState = {
   password: string
   role: 'super_admin' | 'manager' | 'staff'
   isActive: boolean
+  storeIds: string[]
 }
 
 const ROLE_LABELS: Record<AdminRecord['role'], string> = {
@@ -84,13 +89,24 @@ const roleOptions: Array<{ value: AdminRecord['role']; label: string }> = [
 
 const ROLE_PERMISSIONS: Record<AdminRecord['role'], string[]> = {
   super_admin: ['*'],
-  manager: ['cast:*', 'customer:read', 'reservation:*', 'analytics:read', 'dashboard:view'],
+  manager: [
+    'cast:*',
+    'customer:read',
+    'customer:create',
+    'customer:update',
+    'reservation:*',
+    'pricing:*',
+    'settings:*',
+    'analytics:read',
+    'dashboard:view',
+  ],
   staff: ['cast:read', 'customer:read', 'reservation:read'],
 }
 
 export default function AdminInfoPage() {
   const { data: session } = useSession()
   const { toast } = useToast()
+  const { currentStore, availableStores } = useStore()
 
   const [admins, setAdmins] = useState<AdminRecord[]>([])
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null)
@@ -104,6 +120,7 @@ export default function AdminInfoPage() {
     password: '',
     role: 'staff',
     isActive: true,
+    storeIds: [currentStore.id],
   })
 
   const isSuperAdmin = session?.user?.adminRole === 'super_admin'
@@ -122,8 +139,7 @@ export default function AdminInfoPage() {
       const list = payload?.admins ?? payload ?? []
       setAdmins(Array.isArray(list) ? list : [])
       setLastSyncedAt(new Date())
-    } catch (error) {
-      console.error('Failed to load admins:', error)
+    } catch {
       toast({
         title: 'エラー',
         description: '管理者情報の取得に失敗しました',
@@ -147,6 +163,7 @@ export default function AdminInfoPage() {
       password: '',
       role: 'staff',
       isActive: true,
+      storeIds: [currentStore.id],
     })
     setDialogOpen(true)
   }
@@ -159,6 +176,7 @@ export default function AdminInfoPage() {
       password: '',
       role: admin.role,
       isActive: admin.isActive,
+      storeIds: admin.storeIds ?? [],
     })
     setDialogOpen(true)
   }
@@ -172,13 +190,23 @@ export default function AdminInfoPage() {
       password: '',
       role: 'staff',
       isActive: true,
+      storeIds: [currentStore.id],
     })
   }
 
-  const handleInputChange = (field: keyof AdminFormState, value: string | boolean) => {
+  const handleInputChange = (field: keyof AdminFormState, value: string | boolean | string[]) => {
     setFormState((prev) => ({
       ...prev,
       [field]: value,
+    }))
+  }
+
+  const toggleStore = (storeId: string, checked: boolean) => {
+    setFormState((previous) => ({
+      ...previous,
+      storeIds: checked
+        ? Array.from(new Set([...previous.storeIds, storeId]))
+        : previous.storeIds.filter((assignedStoreId) => assignedStoreId !== storeId),
     }))
   }
 
@@ -211,6 +239,24 @@ export default function AdminInfoPage() {
       return
     }
 
+    if (formState.password && formState.password.length < ADMIN_PASSWORD_MIN_LENGTH) {
+      toast({
+        title: '入力エラー',
+        description: `パスワードは${ADMIN_PASSWORD_MIN_LENGTH}文字以上で入力してください。`,
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (formState.role !== 'super_admin' && formState.storeIds.length === 0) {
+      toast({
+        title: '入力エラー',
+        description: '対象店舗を1つ以上選択してください。',
+        variant: 'destructive',
+      })
+      return
+    }
+
     try {
       setSaving(true)
       let response: Response
@@ -221,6 +267,12 @@ export default function AdminInfoPage() {
         if (formState.role !== editingAdmin.role) body.role = formState.role
         if (formState.password) body.password = formState.password
         if (formState.isActive !== editingAdmin.isActive) body.isActive = formState.isActive
+        if (
+          [...formState.storeIds].sort().join(',') !==
+          [...(editingAdmin.storeIds ?? [])].sort().join(',')
+        ) {
+          body.storeIds = formState.role === 'super_admin' ? [] : formState.storeIds
+        }
 
         if (Object.keys(body).length === 1) {
           toast({
@@ -249,6 +301,7 @@ export default function AdminInfoPage() {
             password: formState.password,
             role: formState.role,
             isActive: formState.isActive,
+            storeIds: formState.role === 'super_admin' ? [] : formState.storeIds,
           }),
         })
       }
@@ -264,7 +317,6 @@ export default function AdminInfoPage() {
       closeDialog()
       fetchAdmins()
     } catch (error) {
-      console.error('Failed to save admin:', error)
       toast({
         title: 'エラー',
         description: error instanceof Error ? error.message : '管理者情報の保存に失敗しました',
@@ -275,7 +327,7 @@ export default function AdminInfoPage() {
     }
   }
 
-  const handleDelete = async (admin: AdminRecord) => {
+  const handleDeactivate = async (admin: AdminRecord) => {
     if (!isSuperAdmin) return
 
     try {
@@ -286,18 +338,17 @@ export default function AdminInfoPage() {
       })
       const payload = await response.json().catch(() => null)
       if (!response.ok) {
-        throw new Error(payload?.error || '削除に失敗しました')
+        throw new Error(payload?.error || '停止に失敗しました')
       }
       toast({
-        title: '削除しました',
-        description: `${admin.name} を削除しました。`,
+        title: '停止しました',
+        description: `${admin.name} のログインを停止しました。`,
       })
       fetchAdmins()
     } catch (error) {
-      console.error('Failed to delete admin:', error)
       toast({
         title: 'エラー',
-        description: error instanceof Error ? error.message : '管理者の削除に失敗しました',
+        description: error instanceof Error ? error.message : '管理者の停止に失敗しました',
         variant: 'destructive',
       })
     } finally {
@@ -443,6 +494,7 @@ export default function AdminInfoPage() {
                       <TableHead>メールアドレス</TableHead>
                       <TableHead>権限</TableHead>
                       <TableHead>許可範囲</TableHead>
+                      <TableHead>対象店舗</TableHead>
                       <TableHead>最終ログイン</TableHead>
                       <TableHead>ステータス</TableHead>
                       <TableHead className="w-[140px] text-right">操作</TableHead>
@@ -510,6 +562,22 @@ export default function AdminInfoPage() {
                           })()}
                         </TableCell>
                         <TableCell>
+                          {admin.role === 'super_admin' ? (
+                            <Badge variant="secondary">全店舗</Badge>
+                          ) : (admin.storeIds ?? []).length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {(admin.storeIds ?? []).map((storeId) => (
+                                <Badge key={storeId} variant="outline">
+                                  {availableStores.find((store) => store.id === storeId)?.name ??
+                                    storeId}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <Badge variant="destructive">未割当</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           {admin.lastLogin
                             ? formatInTimeZone(
                                 new Date(admin.lastLogin),
@@ -536,19 +604,24 @@ export default function AdminInfoPage() {
                               <Edit className="h-4 w-4" />
                             </Button>
                             <ConfirmDialog
-                              title="管理者を削除しますか？"
-                              description={`「${admin.name}」を削除します。この操作は取り消せません。`}
-                              confirmLabel="削除する"
-                              onConfirm={() => handleDelete(admin)}
+                              title="管理者を停止しますか？"
+                              description={`「${admin.name}」のログインを停止します。発行履歴などの監査データは保持され、編集画面から再有効化できます。`}
+                              confirmLabel="停止する"
+                              onConfirm={() => handleDeactivate(admin)}
                             >
                               <Button
                                 variant="outline"
                                 size="icon"
-                                disabled={!isSuperAdmin || saving}
-                                title="削除"
-                                aria-label={`${admin.name}を削除`}
+                                disabled={
+                                  !isSuperAdmin ||
+                                  saving ||
+                                  !admin.isActive ||
+                                  admin.id === session?.user?.id
+                                }
+                                title="停止"
+                                aria-label={`${admin.name}を停止`}
                               >
-                                <Trash2 className="h-4 w-4 text-red-500" />
+                                <UserX className="h-4 w-4 text-orange-500" />
                               </Button>
                             </ConfirmDialog>
                           </div>
@@ -597,9 +670,19 @@ export default function AdminInfoPage() {
               <Label htmlFor="admin-role">権限</Label>
               <Select
                 value={formState.role}
-                onValueChange={(value) =>
-                  handleInputChange('role', value as AdminFormState['role'])
-                }
+                onValueChange={(value) => {
+                  const role = value as AdminFormState['role']
+                  setFormState((previous) => ({
+                    ...previous,
+                    role,
+                    storeIds:
+                      role === 'super_admin'
+                        ? []
+                        : previous.storeIds.length > 0
+                          ? previous.storeIds
+                          : [currentStore.id],
+                  }))
+                }}
                 disabled={!isSuperAdmin}
               >
                 <SelectTrigger id="admin-role">
@@ -615,6 +698,29 @@ export default function AdminInfoPage() {
               </Select>
             </div>
 
+            {formState.role !== 'super_admin' && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">対象店舗</Label>
+                <div className="grid gap-2 rounded-lg border p-3 sm:grid-cols-2">
+                  {availableStores.map((store) => {
+                    const checked = formState.storeIds.includes(store.id)
+                    return (
+                      <label key={store.id} className="flex items-center gap-2 text-sm">
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(value) => toggleStore(store.id, value === true)}
+                        />
+                        <span>{store.name}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+                <p className="text-xs text-gray-500">
+                  このアカウントが閲覧・操作できる店舗だけを選択します。
+                </p>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="admin-password">
                 {editingAdmin ? '新しいパスワード（任意）' : '初期パスワード'}
@@ -624,7 +730,8 @@ export default function AdminInfoPage() {
                 type="password"
                 value={formState.password}
                 onChange={(event) => handleInputChange('password', event.target.value)}
-                placeholder={editingAdmin ? '変更しない場合は未入力' : '8文字以上'}
+                minLength={ADMIN_PASSWORD_MIN_LENGTH}
+                placeholder={editingAdmin ? '変更しない場合は未入力' : '16文字以上'}
               />
             </div>
 

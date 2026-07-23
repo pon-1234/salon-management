@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @design_doc   Store-scoped password reset completion with closed internal navigation
+ * @related_to   reset-password API, customer-auth.ts, and password-policy.ts
+ * @known_issues Store existence is verified when the reset link is issued
+ */
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
@@ -11,10 +16,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CheckCircle, Loader2, AlertCircle } from 'lucide-react'
+import { buildStoreLoginPath } from '@/lib/auth/customer-auth'
+import { isBcryptSafePassword } from '@/lib/auth/password-policy'
 
 const resetPasswordSchema = z
   .object({
-    password: z.string().min(8, 'パスワードは8文字以上で入力してください'),
+    password: z
+      .string()
+      .min(8, 'パスワードは8文字以上で入力してください')
+      .refine(isBcryptSafePassword, 'パスワードは改行を含めず72バイト以内で入力してください'),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -28,6 +38,7 @@ export function ResetPasswordClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
+  const loginPath = buildStoreLoginPath(searchParams.get('store'))
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -82,7 +93,7 @@ export function ResetPasswordClient() {
             <CardDescription>無効なリセットリンクです</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full" onClick={() => router.push('/login')}>
+            <Button className="w-full" onClick={() => router.push(loginPath)}>
               ログインページへ
             </Button>
           </CardContent>
@@ -105,7 +116,7 @@ export function ResetPasswordClient() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full" onClick={() => router.push('/login')}>
+            <Button className="w-full" onClick={() => router.push(loginPath)}>
               ログインページへ
             </Button>
           </CardContent>

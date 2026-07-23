@@ -1,30 +1,117 @@
 /**
  * @design_doc   Customer API endpoints for CRUD operations
  * @related_to   CustomerRepository, Customer type, Prisma Customer model
- * @known_issues None currently
+ * @known_issues Customers remain global until the cross-store ownership policy is approved
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { z } from 'zod'
 import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import logger from '@/lib/logger'
 import { customers as mockCustomers } from '@/lib/customer/data'
-import { normalizePhoneQuery } from '@/lib/customer/utils'
+import { isValidPhoneInput, normalizePhoneQuery } from '@/lib/customer/utils'
 import { env } from '@/lib/config/env'
+import { hasPermission } from '@/lib/auth/permissions'
+import { isBcryptSafePassword } from '@/lib/auth/password-policy'
+import { sanitizeResponseData } from '@/lib/http/sanitize-response'
+import { sanitizeCustomerSelfResponse } from '@/lib/http/customer-dto'
 
 const SALT_ROUNDS = 10
+const INVALID_REQUEST = { error: 'Invalid request' }
+
+const customerIdSchema = z.string().trim().min(1).max(191)
+const nameSchema = z.string().trim().min(1).max(100)
+const emailSchema = z
+  .string()
+  .trim()
+  .max(254)
+  .email()
+  .transform((email) => email.toLowerCase())
+const phoneSchema = z
+  .string()
+  .trim()
+  .refine(isValidPhoneInput)
+  .transform(normalizePhoneQuery)
+  .refine((phone) => phone.length >= 10 && phone.length <= 11)
+const passwordSchema = z.string().min(8).refine(isBcryptSafePassword)
+const birthDateSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .refine((value) => {
+    const timestamp = Date.parse(value)
+    return Number.isFinite(timestamp) && timestamp <= Date.now()
+  })
+  .transform((value) => new Date(value))
+
+const createCustomerSchema = z
+  .object({
+    name: nameSchema,
+    nameKana: nameSchema,
+    phone: phoneSchema,
+    email: emailSchema,
+    password: passwordSchema,
+    birthDate: birthDateSchema,
+    memberType: z.enum(['regular', 'vip']).default('regular'),
+    smsEnabled: z.boolean().default(false),
+    emailNotificationEnabled: z.boolean().default(true),
+  })
+  .strict()
+
+const adminUpdateCustomerSchema = z
+  .object({
+    id: customerIdSchema,
+    name: nameSchema.optional(),
+    nameKana: nameSchema.optional(),
+    phone: phoneSchema.optional(),
+    email: emailSchema.optional(),
+    password: passwordSchema.optional(),
+    birthDate: birthDateSchema.optional(),
+    memberType: z.enum(['regular', 'vip']).optional(),
+    smsEnabled: z.boolean().optional(),
+    emailNotificationEnabled: z.boolean().optional(),
+  })
+  .strict()
+  .refine(({ id: _id, ...updates }) => Object.values(updates).some((value) => value !== undefined))
+
+const selfUpdateCustomerSchema = z
+  .object({
+    id: customerIdSchema,
+    smsEnabled: z.boolean().optional(),
+    emailNotificationEnabled: z.boolean().optional(),
+  })
+  .strict()
+  .refine(({ id: _id, ...updates }) => Object.values(updates).some((value) => value !== undefined))
+
+const customerUpdateTargetSchema = z.object({ id: customerIdSchema }).passthrough()
+
+function databaseErrorContext(error: unknown): { code?: string; errorType: string } {
+  const code =
+    typeof error === 'object' && error !== null && 'code' in error && typeof error.code === 'string'
+      ? error.code
+      : undefined
+  return {
+    ...(code ? { code } : {}),
+    errorType: error instanceof Error ? error.name : 'UnknownError',
+  }
+}
+
+function hasOwnPassword(value: unknown): boolean {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    Object.prototype.hasOwnProperty.call(value, 'password')
+  )
+}
 
 function sanitizeCustomer(customer: any) {
-  const {
-    password,
-    resetToken,
-    resetTokenExpiry,
-    emailVerificationToken,
-    emailVerificationExpiry,
-    ...safe
-  } = customer
-  return safe
+  return sanitizeResponseData(customer)
+}
+
+function sanitizeCustomerForRole(customer: any, role: string | undefined) {
+  return role === 'customer' ? sanitizeCustomerSelfResponse(customer) : sanitizeCustomer(customer)
 }
 
 export async function GET(request: NextRequest) {
@@ -37,6 +124,10 @@ export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions)
   const isAdmin = session?.user?.role === 'admin'
   const sessionCustomerId = session?.user?.id
+
+  if (isAdmin && !hasPermission(session?.user.permissions ?? [], 'customer:read')) {
+    return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
+  }
 
   try {
     if (id) {
@@ -80,8 +171,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
       }
 
-      const { password, ...customerData } = customer
-      return NextResponse.json(customerData)
+      return NextResponse.json(sanitizeCustomerForRole(customer, session.user.role))
     }
 
     if (phoneQuery) {
@@ -166,7 +256,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
       }
 
-      return NextResponse.json(sanitizeCustomer(fallback))
+      return NextResponse.json(sanitizeCustomerForRole(fallback, session.user.role))
     }
 
     if (phoneQuery) {
@@ -199,29 +289,41 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const data = await request.json()
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+    if (session.user.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+    if (!hasPermission(session.user.permissions ?? [], 'customer:create')) {
+      return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
+    }
 
-    if (!data.password) {
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json(INVALID_REQUEST, { status: 400 })
+    }
+
+    if (!hasOwnPassword(body)) {
       return NextResponse.json({ error: 'Password is required' }, { status: 400 })
     }
 
-    const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS)
+    const parsed = createCustomerSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json(INVALID_REQUEST, { status: 400 })
+    }
+
+    const { password, ...customerData } = parsed.data
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS)
 
     const newCustomer = await db.customer.create({
       data: {
-        name: data.name,
-        nameKana: data.nameKana,
-        phone: data.phone,
-        email: data.email,
+        ...customerData,
         password: hashedPassword,
-        birthDate: new Date(data.birthDate),
-        memberType: data.memberType || 'regular',
-        points: data.points || 0,
-        smsEnabled: Boolean(data.smsEnabled),
-        emailNotificationEnabled:
-          data.emailNotificationEnabled === undefined
-            ? true
-            : Boolean(data.emailNotificationEnabled),
+        points: 0,
       },
       include: {
         ngCasts: {
@@ -243,11 +345,11 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    const { password: _, ...customerData } = newCustomer
-    return NextResponse.json(customerData, { status: 201 })
-  } catch (error: any) {
-    logger.error({ err: error }, 'Error creating customer')
-    if (error?.code === 'P2002') {
+    return NextResponse.json(sanitizeCustomer(newCustomer), { status: 201 })
+  } catch (error: unknown) {
+    const context = databaseErrorContext(error)
+    logger.error(context, 'Error creating customer')
+    if (context.code === 'P2002') {
       return NextResponse.json({ error: 'Email or phone already exists' }, { status: 409 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -257,47 +359,72 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    const data = await request.json()
-    const { id, password, ...updates } = data
-
     const isAdmin = session?.user?.role === 'admin'
     const sessionCustomerId = session?.user?.id
 
-    // Allow admin or the customer themselves
     if (!session) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    if (!isAdmin && id !== sessionCustomerId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (isAdmin && !hasPermission(session.user.permissions ?? [], 'customer:update')) {
+      return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
     }
 
-    if (password) {
-      if (!isAdmin) {
-        return NextResponse.json({ error: 'この操作は許可されていません' }, { status: 403 })
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json(INVALID_REQUEST, { status: 400 })
+    }
+
+    let id: string
+    let normalizedUpdates: Record<string, unknown>
+
+    if (isAdmin) {
+      const parsed = adminUpdateCustomerSchema.safeParse(body)
+      if (!parsed.success) {
+        return NextResponse.json(INVALID_REQUEST, { status: 400 })
       }
-      updates.password = await bcrypt.hash(password, SALT_ROUNDS)
-    }
 
-    const normalizedUpdates: Record<string, unknown> = {
-      ...updates,
-      birthDate: updates.birthDate ? new Date(updates.birthDate) : undefined,
-    }
+      const { id: parsedId, password, ...updates } = parsed.data
+      id = parsedId
+      normalizedUpdates = password
+        ? { ...updates, password: await bcrypt.hash(password, SALT_ROUNDS) }
+        : updates
 
-    if (!isAdmin) {
-      delete normalizedUpdates.name
-      delete normalizedUpdates.nameKana
-      delete normalizedUpdates.email
-      delete normalizedUpdates.phone
-      delete normalizedUpdates.birthDate
-    }
+      if (Object.prototype.hasOwnProperty.call(updates, 'email')) {
+        Object.assign(normalizedUpdates, {
+          emailVerified: false,
+          emailVerificationToken: null,
+          emailVerificationExpiry: null,
+        })
+      }
+      if (Object.prototype.hasOwnProperty.call(updates, 'phone')) {
+        Object.assign(normalizedUpdates, {
+          phoneVerified: false,
+          phoneVerifiedAt: null,
+          phoneVerificationCode: null,
+          phoneVerificationExpiry: null,
+          phoneVerificationAttempts: 0,
+        })
+      }
+    } else {
+      const target = customerUpdateTargetSchema.safeParse(body)
+      if (!target.success) {
+        return NextResponse.json(INVALID_REQUEST, { status: 400 })
+      }
+      if (target.data.id !== sessionCustomerId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
 
-    if (typeof updates.smsEnabled !== 'boolean') {
-      delete normalizedUpdates.smsEnabled
-    }
+      const parsed = selfUpdateCustomerSchema.safeParse(body)
+      if (!parsed.success) {
+        return NextResponse.json(INVALID_REQUEST, { status: 400 })
+      }
 
-    if (typeof updates.emailNotificationEnabled !== 'boolean') {
-      delete normalizedUpdates.emailNotificationEnabled
+      const { id: parsedId, ...updates } = parsed.data
+      id = parsedId
+      normalizedUpdates = updates
     }
 
     const updatedCustomer = await db.customer.update({
@@ -323,12 +450,15 @@ export async function PUT(request: NextRequest) {
       },
     })
 
-    const { password: _, ...customerData } = updatedCustomer
-    return NextResponse.json(customerData)
-  } catch (error: any) {
-    logger.error({ err: error }, 'Error updating customer')
-    if (error?.code === 'P2025') {
+    return NextResponse.json(sanitizeCustomerForRole(updatedCustomer, session.user.role))
+  } catch (error: unknown) {
+    const context = databaseErrorContext(error)
+    logger.error(context, 'Error updating customer')
+    if (context.code === 'P2025') {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
+    }
+    if (context.code === 'P2002') {
+      return NextResponse.json({ error: 'Email or phone already exists' }, { status: 409 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

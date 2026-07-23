@@ -1,27 +1,11 @@
-name: Expire Points Daily
+name: Point Expiration Disabled
 
-on:
-  schedule:
-    - cron: '0 0 * * *'
-  workflow_dispatch:
+on: []
 
 jobs:
-  expire-points:
+  point-expiration-disabled:
+    if: ${{ false }}
     runs-on: ubuntu-latest
     steps:
-      - name: Call point expiration API
-        env:
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          TARGET_URL: ${{ secrets.POINT_EXPIRY_ENDPOINT }}
-        run: |
-          if [ -z "$CRON_SECRET" ]; then
-            echo "CRON_SECRET is not configured"
-            exit 1
-          fi
-          if [ -z "$TARGET_URL" ]; then
-            echo "POINT_EXPIRY_ENDPOINT secret is not configured"
-            exit 1
-          fi
-          curl -X POST "$TARGET_URL" \
-            -H "Authorization: Bearer $CRON_SECRET" \
-            -H "Content-Type: application/json"
+      - name: Explain the production safety gate
+        run: echo "Point expiration is disabled pending FIFO allocation, migration, and reconciliation approval."

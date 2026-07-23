@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Point settings API authorization and tenant-isolation contract
+ * @related_to   StoreSettings point policy fields and point settings page
+ * @known_issues None currently
+ */
 'use server'
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -13,10 +18,10 @@ const pointSettingsSchema = z.object({
 })
 
 export async function GET(request: NextRequest) {
-  const authError = await requireAdmin()
+  const storeId = await ensureStoreId(await resolveStoreId(request))
+  const authError = await requireAdmin({ permissions: 'settings:read', storeId })
   if (authError) return authError
 
-  const storeId = await ensureStoreId(await resolveStoreId(request))
   const settings = await db.storeSettings.findUnique({ where: { storeId } })
   if (!settings) {
     return NextResponse.json({ error: '店舗情報が未設定です' }, { status: 404 })
@@ -30,10 +35,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const authError = await requireAdmin()
+  const storeId = await ensureStoreId(await resolveStoreId(request))
+  const authError = await requireAdmin({ permissions: 'settings:update', storeId })
   if (authError) return authError
 
-  const storeId = await ensureStoreId(await resolveStoreId(request))
   const payload = pointSettingsSchema.parse(await request.json())
   const settings = await db.storeSettings.findUnique({ where: { storeId } })
   if (!settings) {
@@ -41,7 +46,7 @@ export async function PUT(request: NextRequest) {
   }
 
   await db.storeSettings.update({
-    where: { id: settings.id },
+    where: { id: settings.id, storeId },
     data: payload,
   })
 

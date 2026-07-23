@@ -39,6 +39,10 @@ type ChatMessageForNotification = {
   attachments?: ChatAttachment[]
 }
 
+export type CastNotificationDeliveryResult =
+  | { status: 'sent' }
+  | { status: 'skipped'; reason: string }
+
 const STATUS_LABELS: Record<string, string> = {
   confirmed: '確定',
   pending: '仮予約',
@@ -174,20 +178,33 @@ export class CastNotificationService {
     }
   }
 
-  async sendEntryInfoNotification(params: { cast: CastRecipient; message: string }): Promise<void> {
-    if (!this.ensureConfigured()) return
+  async sendEntryInfoNotification(params: {
+    cast: CastRecipient
+    message: string
+  }): Promise<CastNotificationDeliveryResult> {
+    if (!this.ensureConfigured()) {
+      return {
+        status: 'skipped',
+        reason: 'LINE通知機能が無効のため送信していません。',
+      }
+    }
 
-    const recipient = this.resolveRecipient(params.cast)
+    // Entry information is private and must never be sent to a global fallback account.
+    const recipient = params.cast.lineUserId?.trim()
     if (!recipient) {
       logger.info(
         { castId: params.cast.id },
         'Skipping entry info notification because no LINE recipient is configured'
       )
-      return
+      return {
+        status: 'skipped',
+        reason: 'キャストのLINEユーザーIDが登録されていません。',
+      }
     }
 
     try {
       await this.lineClient.pushText(recipient, params.message)
+      return { status: 'sent' }
     } catch (error) {
       logger.error(
         {

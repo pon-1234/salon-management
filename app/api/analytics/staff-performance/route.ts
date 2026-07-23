@@ -5,20 +5,17 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import logger from '@/lib/logger'
-import { requireAdmin } from '@/lib/auth/utils'
 import { getStaffPerformanceReport } from '@/lib/analytics/server'
-import { FALLBACK_STORE_ID } from '@/lib/analytics/server/common'
+import { requireAnalyticsAccess } from '@/lib/analytics/server/access'
 
 export async function GET(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
+  const { storeId, error } = await requireAnalyticsAccess(request)
+  if (error) return error
 
   try {
     const searchParams = request.nextUrl.searchParams
     const yearParam = searchParams.get('year')
     const monthParam = searchParams.get('month')
-    const storeId = searchParams.get('storeId') ?? FALLBACK_STORE_ID
-
     if (!yearParam || !monthParam) {
       return NextResponse.json({ message: 'year and month are required' }, { status: 400 })
     }

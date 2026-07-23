@@ -1,17 +1,33 @@
+/**
+ * @design_doc   Store-scoped, enumeration-safe password recovery with public abuse protection
+ * @related_to   route.ts, customer-email-rate-limit.ts, and reset-password UI
+ * @known_issues Provider reachability is validated in staging rather than unit tests
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { POST } from './route'
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { emailClient } from '@/lib/email/client'
 import { refreshEnv } from '@/lib/config/env'
+import { hashRecoveryToken } from '@/lib/auth/recovery-token'
+import logger from '@/lib/logger'
+import { consumeCustomerEmailRateLimit } from '@/lib/security/customer-email-rate-limit'
 
 vi.mock('@/lib/db', () => ({
   db: {
+    store: {
+      findFirst: vi.fn(),
+    },
     customer: {
       findUnique: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
     },
   },
+}))
+
+vi.mock('@/lib/security/customer-email-rate-limit', () => ({
+  consumeCustomerEmailRateLimit: vi.fn(),
 }))
 
 vi.mock('@/lib/email/client', () => ({
@@ -38,18 +54,23 @@ const customerPhoneVerificationFields = {
   phoneVerificationAttempts: 0,
 }
 
+const GENERIC_RESPONSE =
+  '入力されたメールアドレスに一致するアカウントがある場合、パスワードリセットの手順を送信します'
+
 describe('POST /api/auth/forgot-password', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     process.env.NEXTAUTH_URL = 'http://localhost:3000'
     refreshEnv()
+    vi.mocked(consumeCustomerEmailRateLimit).mockReturnValue({ allowed: true })
+    vi.mocked(db.store.findFirst).mockResolvedValue({ slug: 'ikebukuro' } as never)
   })
 
   it('should send password reset email for valid customer', async () => {
     const mockCustomer = {
       id: '1',
       email: 'test@example.com',
-      name: 'Test User',
+      name: 'Test <User>',
       nameKana: 'テストユーザー',
       phone: '090-1234-5678',
       password: 'hashed-password',
@@ -74,35 +95,57 @@ describe('POST /api/auth/forgot-password', () => {
       resetToken: 'mock-reset-token-1234567890abcdef',
       resetTokenExpiry: new Date(Date.now() + 3600000),
     })
+    vi.mocked(db.customer.updateMany).mockResolvedValue({ count: 1 })
     vi.mocked(emailClient.send).mockResolvedValue({ success: true })
 
     const request = new NextRequest('http://localhost/api/auth/forgot-password', {
       method: 'POST',
-      body: JSON.stringify({ email: 'test@example.com' }),
+      body: JSON.stringify({ email: '  Test@Example.COM  ', storeId: 'store-1' }),
     })
 
     const response = await POST(request)
     const data = await response.json()
 
     expect(response.status).toBe(200)
-    expect(data.data.message).toBe('パスワードリセットの手順をメールで送信しました')
+    expect(data.data.message).toBe(GENERIC_RESPONSE)
 
     expect(db.customer.findUnique).toHaveBeenCalledWith({
       where: { email: 'test@example.com' },
     })
 
-    expect(db.customer.update).toHaveBeenCalledWith({
-      where: { id: '1' },
-      data: {
-        resetToken: expect.any(String),
-        resetTokenExpiry: expect.any(Date),
-      },
+    expect(consumeCustomerEmailRateLimit).toHaveBeenCalledWith(
+      'forgot-password',
+      expect.anything(),
+      'test@example.com'
+    )
+    expect(db.store.findFirst).toHaveBeenCalledWith({
+      where: { id: 'store-1', isActive: true },
+      select: { slug: true },
     })
 
     expect(emailClient.send).toHaveBeenCalledWith({
       to: 'test@example.com',
       subject: 'パスワードリセットのご案内',
-      body: expect.stringContaining('http://localhost:3000/reset-password?token='),
+      body: expect.stringMatching(
+        /http:\/\/localhost:3000\/reset-password\?token=[a-f0-9]+&amp;store=ikebukuro/
+      ),
+    })
+    const deliveredBody = vi.mocked(emailClient.send).mock.calls[0][0].body ?? ''
+    expect(deliveredBody).toContain('Test &lt;User&gt;')
+    expect(deliveredBody).not.toContain('Test <User>')
+
+    const storedTokenHash = vi.mocked(db.customer.update).mock.calls[0][0].data.resetToken
+    const emailBody = vi.mocked(emailClient.send).mock.calls[0][0].body ?? ''
+    const rawToken = emailBody.match(/reset-password\?token=([a-f0-9]+)/)?.[1]
+    expect(rawToken).toBeDefined()
+    expect(storedTokenHash).toBe(hashRecoveryToken(rawToken!))
+    expect(storedTokenHash).not.toBe(rawToken)
+    expect(db.customer.update).toHaveBeenCalledWith({
+      where: { id: '1' },
+      data: {
+        resetToken: storedTokenHash,
+        resetTokenExpiry: expect.any(Date),
+      },
     })
   })
 
@@ -111,14 +154,14 @@ describe('POST /api/auth/forgot-password', () => {
 
     const request = new NextRequest('http://localhost/api/auth/forgot-password', {
       method: 'POST',
-      body: JSON.stringify({ email: 'nonexistent@example.com' }),
+      body: JSON.stringify({ email: 'nonexistent@example.com', storeId: 'store-1' }),
     })
 
     const response = await POST(request)
     const data = await response.json()
 
     expect(response.status).toBe(200)
-    expect(data.data.message).toBe('パスワードリセットの手順をメールで送信しました')
+    expect(data.data.message).toBe(GENERIC_RESPONSE)
 
     expect(db.customer.update).not.toHaveBeenCalled()
     expect(emailClient.send).not.toHaveBeenCalled()
@@ -127,7 +170,7 @@ describe('POST /api/auth/forgot-password', () => {
   it('should return error for missing email', async () => {
     const request = new NextRequest('http://localhost/api/auth/forgot-password', {
       method: 'POST',
-      body: JSON.stringify({}),
+      body: JSON.stringify({ storeId: 'store-1' }),
     })
 
     const response = await POST(request)
@@ -141,7 +184,7 @@ describe('POST /api/auth/forgot-password', () => {
   it('should return error for invalid email format', async () => {
     const request = new NextRequest('http://localhost/api/auth/forgot-password', {
       method: 'POST',
-      body: JSON.stringify({ email: 'invalid-email' }),
+      body: JSON.stringify({ email: 'invalid-email', storeId: 'store-1' }),
     })
 
     const response = await POST(request)
@@ -153,7 +196,7 @@ describe('POST /api/auth/forgot-password', () => {
     expect(data.errors).toBeDefined()
   })
 
-  it('should handle email sending failure', async () => {
+  it('records email rejection, clears only its token, and keeps the enumeration-safe response', async () => {
     const mockCustomer = {
       id: '1',
       email: 'test@example.com',
@@ -182,22 +225,43 @@ describe('POST /api/auth/forgot-password', () => {
       resetToken: 'mock-reset-token-1234567890abcdef',
       resetTokenExpiry: new Date(Date.now() + 3600000),
     })
-    vi.mocked(emailClient.send).mockRejectedValue(new Error('Email service error'))
+    vi.mocked(db.customer.updateMany).mockResolvedValue({ count: 1 })
+    vi.mocked(emailClient.send).mockResolvedValue({
+      success: false,
+      error: 'Email service error with test@example.com and mock-reset-token-1234567890abcdef',
+    })
 
     const request = new NextRequest('http://localhost/api/auth/forgot-password', {
       method: 'POST',
-      body: JSON.stringify({ email: 'test@example.com' }),
+      body: JSON.stringify({ email: 'test@example.com', storeId: 'store-1' }),
     })
 
     const response = await POST(request)
     const data = await response.json()
 
-    expect(response.status).toBe(500)
-    expect(data.error).toBe('Internal Server Error')
-    expect(data.message).toBe('パスワードリセットの処理中にエラーが発生しました')
+    expect(response.status).toBe(200)
+    expect(data.data.message).toBe(GENERIC_RESPONSE)
+    const storedTokenHash = vi.mocked(db.customer.update).mock.calls[0][0].data.resetToken
+    expect(db.customer.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: '1',
+        resetToken: storedTokenHash,
+      },
+      data: {
+        resetToken: null,
+        resetTokenExpiry: null,
+      },
+    })
+    expect(logger.error).toHaveBeenCalledWith(
+      { customerId: '1', failure: 'provider-rejected' },
+      'Password reset email delivery failed'
+    )
+    const serializedLogs = JSON.stringify(vi.mocked(logger.error).mock.calls)
+    expect(serializedLogs).not.toContain('test@example.com')
+    expect(serializedLogs).not.toContain('mock-reset-token-1234567890abcdef')
   })
 
-  it('should handle database update failure', async () => {
+  it('records database failure without revealing that the account exists', async () => {
     const mockCustomer = {
       id: '1',
       email: 'test@example.com',
@@ -225,14 +289,88 @@ describe('POST /api/auth/forgot-password', () => {
 
     const request = new NextRequest('http://localhost/api/auth/forgot-password', {
       method: 'POST',
-      body: JSON.stringify({ email: 'test@example.com' }),
+      body: JSON.stringify({ email: 'test@example.com', storeId: 'store-1' }),
     })
 
     const response = await POST(request)
     const data = await response.json()
 
-    expect(response.status).toBe(500)
-    expect(data.error).toBe('Internal Server Error')
-    expect(data.message).toBe('パスワードリセットの処理中にエラーが発生しました')
+    expect(response.status).toBe(200)
+    expect(data.data.message).toBe(GENERIC_RESPONSE)
+    expect(logger.error).toHaveBeenCalledWith(
+      { failure: 'internal-error', errorType: 'Error' },
+      'Password reset request failed'
+    )
+  })
+
+  it('rejects an inactive store before looking up a customer', async () => {
+    vi.mocked(db.store.findFirst).mockResolvedValue(null)
+
+    const response = await POST(
+      new NextRequest('http://localhost/api/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'test@example.com', storeId: 'inactive-store' }),
+      })
+    )
+
+    expect(response.status).toBe(400)
+    expect(db.customer.findUnique).not.toHaveBeenCalled()
+  })
+
+  it('returns 429 with Retry-After when the caller is rate limited', async () => {
+    vi.mocked(consumeCustomerEmailRateLimit).mockReturnValue({
+      allowed: false,
+      reason: 'rate-limited',
+      retryAfterSeconds: 321,
+    })
+
+    const response = await POST(
+      new NextRequest('http://localhost/api/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'test@example.com', storeId: 'store-1' }),
+      })
+    )
+
+    expect(response.status).toBe(429)
+    expect(response.headers.get('Retry-After')).toBe('321')
+    expect(db.store.findFirst).not.toHaveBeenCalled()
+    expect(db.customer.findUnique).not.toHaveBeenCalled()
+  })
+
+  it('returns 503 when the limiter cannot make a safe decision', async () => {
+    vi.mocked(consumeCustomerEmailRateLimit).mockReturnValue({
+      allowed: false,
+      reason: 'limiter-failure',
+      retryAfterSeconds: 60,
+    })
+
+    const response = await POST(
+      new NextRequest('http://localhost/api/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'test@example.com', storeId: 'store-1' }),
+      })
+    )
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('Retry-After')).toBe('60')
+    expect(db.store.findFirst).not.toHaveBeenCalled()
+    expect(db.customer.findUnique).not.toHaveBeenCalled()
+  })
+
+  it('returns 503 if the limiter unexpectedly throws', async () => {
+    vi.mocked(consumeCustomerEmailRateLimit).mockImplementation(() => {
+      throw new Error('limiter unavailable')
+    })
+
+    const response = await POST(
+      new NextRequest('http://localhost/api/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'test@example.com', storeId: 'store-1' }),
+      })
+    )
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('Retry-After')).toBe('60')
+    expect(db.store.findFirst).not.toHaveBeenCalled()
   })
 })

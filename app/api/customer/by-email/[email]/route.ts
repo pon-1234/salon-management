@@ -1,13 +1,16 @@
 /**
  * @design_doc   Next 15 dynamic route params contract
  * @related_to   customer lookup routes: admin/self customer data lookup
- * @known_issues Returns full customer include shape minus password
+ * @known_issues Administrator results remain global until customer store ownership is approved
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
 import logger from '@/lib/logger'
+import { hasPermission } from '@/lib/auth/permissions'
+import { sanitizeCustomerSelfResponse } from '@/lib/http/customer-dto'
+import { sanitizeResponseData } from '@/lib/http/sanitize-response'
 
 interface RouteParams {
   params: Promise<{
@@ -35,6 +38,10 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     const sessionEmail = session.user?.email || ''
     const isSelfLookup = sessionEmail.toLowerCase() === normalizedEmail
 
+    if (isAdmin && !hasPermission(session.user.permissions ?? [], 'customer:read')) {
+      return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
+    }
+
     if (!isAdmin && !isSelfLookup) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
@@ -42,7 +49,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     const customer = await db.customer.findFirst({
       where: {
         email: {
-          equals: trimmedEmail,
+          equals: normalizedEmail,
           mode: 'insensitive',
         },
       },
@@ -57,10 +64,14 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
     }
 
-    const { password, ...customerData } = customer
-    return NextResponse.json(customerData)
+    return NextResponse.json(
+      isAdmin ? sanitizeResponseData(customer) : sanitizeCustomerSelfResponse(customer)
+    )
   } catch (error) {
-    logger.error({ err: error }, 'Failed to fetch customer by email')
+    logger.error(
+      { errorType: error instanceof Error ? error.name : 'UnknownError' },
+      'Failed to fetch customer by email'
+    )
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

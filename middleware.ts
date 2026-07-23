@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { env } from '@/lib/config/env'
+import { canAdminAccessStore } from '@/lib/auth/store-access'
 
 // Public routes that don't require authentication
 const publicRoutes = ['/', '/_next', '/favicon.ico']
@@ -14,11 +15,74 @@ const publicRoutes = ['/', '/_next', '/favicon.ico']
 // Auth routes that should be accessible without authentication
 const authRoutes = ['/login', '/register', '/admin/login', '/auth', '/api/auth', '/cast/login']
 const storeCastLoginPattern = /^\/[^/]+\/cast\/login$/
-const publicApiRoutes = ['/api/line/webhook']
+const publicApiRoutes = ['/api/health', '/api/line/webhook']
+const publicPostApiRoutes = ['/api/request-attendance']
 const publicReadApiPrefixes = ['/api/course', '/api/option']
+const storeScopedApiPrefixes = [
+  '/api/admin/cast/settlements',
+  '/api/analytics',
+  '/api/cast',
+  '/api/cast-schedule',
+  '/api/course',
+  '/api/customer/insights',
+  '/api/designation-fee',
+  '/api/option',
+  '/api/reservation',
+  '/api/review',
+  '/api/settings',
+  '/api/store-schedule',
+]
+const PREVIEW_ACCESS_GATE_HEADER = 'x-preview-access-gate-token'
+const LEGACY_IKEBUKURO_PREVIEW_PATH = '/uat-ikebukuro'
+const CANONICAL_IKEBUKURO_PATH = '/ikebukuro'
+
+function matchesApiPrefix(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`)
+}
+
+function extractStoreContext(request: NextRequest): string | null {
+  const queryStore =
+    request.nextUrl.searchParams.get('storeId') ?? request.nextUrl.searchParams.get('store')
+  const headerStore =
+    request.headers.get('x-store-id') ??
+    request.headers.get('x-store-code') ??
+    request.headers.get('x-tenant-id')
+  const candidate = queryStore ?? headerStore
+
+  if (!candidate) {
+    return null
+  }
+
+  const normalized = candidate.trim().toLowerCase()
+  return normalized || null
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  if (
+    env.runtimeMode === 'preview' &&
+    pathname !== '/api/health' &&
+    request.headers.get(PREVIEW_ACCESS_GATE_HEADER) !== env.preview.accessGateToken
+  ) {
+    return new NextResponse(null, {
+      status: 404,
+      headers: { 'Cache-Control': 'no-store' },
+    })
+  }
+
+  if (
+    env.runtimeMode === 'preview' &&
+    (pathname === LEGACY_IKEBUKURO_PREVIEW_PATH ||
+      pathname.startsWith(`${LEGACY_IKEBUKURO_PREVIEW_PATH}/`))
+  ) {
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = `${CANONICAL_IKEBUKURO_PATH}${pathname.slice(
+      LEGACY_IKEBUKURO_PREVIEW_PATH.length
+    )}`
+    return NextResponse.redirect(redirectUrl, { status: 307 })
+  }
+
   const isApiRoute = pathname.startsWith('/api')
   const isPublicReadApiRoute =
     isApiRoute &&
@@ -27,7 +91,8 @@ export async function middleware(request: NextRequest) {
   const isPublicApiRoute =
     isApiRoute &&
     (pathname.startsWith('/api/public') ||
-      publicApiRoutes.some((route) => pathname.startsWith(route)) ||
+      publicApiRoutes.some((route) => matchesApiPrefix(pathname, route)) ||
+      (request.method === 'POST' && publicPostApiRoutes.some((route) => pathname === route)) ||
       isPublicReadApiRoute)
 
   if (isPublicApiRoute) {
@@ -80,6 +145,18 @@ export async function middleware(request: NextRequest) {
     }
 
     return NextResponse.next()
+  }
+
+  const isStoreScopedApi =
+    isApiRoute && storeScopedApiPrefixes.some((prefix) => matchesApiPrefix(pathname, prefix))
+  if (isStoreScopedApi && token?.role === 'admin') {
+    const storeId = extractStoreContext(request)
+    if (!storeId) {
+      return NextResponse.json({ error: '店舗を明示してください' }, { status: 400 })
+    }
+    if (!canAdminAccessStore(token, storeId)) {
+      return NextResponse.json({ error: 'この店舗を操作する権限がありません' }, { status: 403 })
+    }
   }
 
   // Handle admin routes

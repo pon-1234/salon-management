@@ -45,7 +45,7 @@ describe('GET /api/customer/points/balance', () => {
 
   it('returns balance for admin viewing another customer', async () => {
     vi.mocked(getServerSession).mockResolvedValueOnce({
-      user: { id: 'admin', role: 'admin' },
+      user: { id: 'admin', role: 'admin', permissions: ['customer:read'] },
     } as any)
     vi.mocked(db.customer.findUnique).mockResolvedValueOnce({ points: 5000 } as any)
     const expiringDate = new Date('2024-12-31T00:00:00Z')
@@ -64,6 +64,19 @@ describe('GET /api/customer/points/balance', () => {
     expect(data.balance).toBe(5000)
     expect(data.expiringPoints.amount).toBe(1000)
     expect(getExpiringPoints).toHaveBeenCalled()
+  })
+
+  it('rejects an admin without customer:read permission', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'admin', role: 'admin', permissions: [] },
+    } as any)
+
+    const response = await GET(
+      new NextRequest('http://localhost:3000/api/customer/points/balance?customerId=cust-1')
+    )
+
+    expect(response.status).toBe(403)
+    expect(db.customer.findUnique).not.toHaveBeenCalled()
   })
 
   it('returns 403 when customer requests other balance', async () => {

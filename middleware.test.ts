@@ -107,6 +107,29 @@ describe('Middleware Authentication', () => {
   })
 
   describe('Public Routes', () => {
+    it('allows the public request-attendance submission without authentication', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValue(null)
+
+      const request = new NextRequest('http://localhost:3000/api/request-attendance', {
+        method: 'POST',
+      })
+      const response = await middleware(request)
+
+      expect(response?.status).toBe(200)
+      expect(getToken).not.toHaveBeenCalled()
+    })
+
+    it('allows the container health check without authentication', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValue(null)
+
+      const request = new NextRequest(new URL('http://localhost:3000/api/health'))
+      const response = await middleware(request)
+
+      expect(response?.status).toBe(200)
+    })
+
     it('should allow access to public routes without authentication', async () => {
       const { getToken } = await import('next-auth/jwt')
       vi.mocked(getToken).mockResolvedValue(null)
@@ -177,6 +200,82 @@ describe('Middleware Authentication', () => {
       const response = await middleware(request)
 
       expect(response?.status).toBe(200) // NextResponse.next() returns status 200
+    })
+
+    it('allows an admin to access an assigned store-scoped API', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValueOnce({
+        id: 'manager-1',
+        role: 'admin',
+        adminRole: 'manager',
+        permissions: ['reservation:*'],
+        storeIds: ['ginza'],
+      } as any)
+      const request = new NextRequest(
+        new URL('http://localhost:3000/api/reservation?storeId=ginza')
+      )
+
+      const response = await middleware(request)
+
+      expect(response?.status).toBe(200)
+    })
+
+    it('denies an admin access to an unassigned store-scoped API', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValueOnce({
+        id: 'manager-1',
+        role: 'admin',
+        adminRole: 'manager',
+        permissions: ['reservation:*'],
+        storeIds: ['ginza'],
+      } as any)
+      const request = new NextRequest(
+        new URL('http://localhost:3000/api/reservation?storeId=shinjuku')
+      )
+
+      const response = await middleware(request)
+
+      expect(response?.status).toBe(403)
+      await expect(response?.json()).resolves.toEqual({
+        error: 'この店舗を操作する権限がありません',
+      })
+    })
+
+    it('requires explicit store context for an admin store-scoped API', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValueOnce({
+        id: 'super-1',
+        role: 'admin',
+        adminRole: 'super_admin',
+        permissions: ['*'],
+        storeIds: [],
+      } as any)
+      const request = new NextRequest(new URL('http://localhost:3000/api/reservation'))
+
+      const response = await middleware(request)
+
+      expect(response?.status).toBe(400)
+      await expect(response?.json()).resolves.toEqual({
+        error: '店舗を明示してください',
+      })
+    })
+
+    it('allows a super administrator to access any explicit store', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValueOnce({
+        id: 'super-1',
+        role: 'admin',
+        adminRole: 'super_admin',
+        permissions: ['*'],
+        storeIds: [],
+      } as any)
+      const request = new NextRequest(
+        new URL('http://localhost:3000/api/reservation?storeId=shinjuku')
+      )
+
+      const response = await middleware(request)
+
+      expect(response?.status).toBe(200)
     })
   })
 

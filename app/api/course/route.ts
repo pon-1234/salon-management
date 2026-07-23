@@ -5,13 +5,24 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import type { Session } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
+import { hasPermission } from '@/lib/auth/permissions'
+import { canAdminAccessStore } from '@/lib/auth/store-access'
 import { db } from '@/lib/db'
 import { Prisma } from '@prisma/client'
 import logger from '@/lib/logger'
 import { defaultCourses } from '@/lib/pricing/data'
 import { env } from '@/lib/config/env'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
+import { sanitizeResponseData } from '@/lib/http/sanitize-response'
+import { toPublicCourse } from '@/lib/pricing/public'
+
+const PRICING_PRIVATE_CAST_FIELDS = ['loginEmail', 'lineUserId', 'welfareExpenseRate']
+
+function sanitizePricingResponse<T>(value: T): T {
+  return sanitizeResponseData(value, PRICING_PRIVATE_CAST_FIELDS)
+}
 
 function normalizeNumber(value: any, fallback: number = 0) {
   const parsed = Number(value)
@@ -91,18 +102,30 @@ async function requireSession() {
   return session
 }
 
+function canManagePricing(session: Session, storeId: string, permission: string): boolean {
+  return (
+    session.user.role === 'admin' &&
+    hasPermission(session.user.permissions, permission) &&
+    canAdminAccessStore(session.user, storeId)
+  )
+}
+
+function forbiddenResponse() {
+  return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+}
+
 function buildFallbackCourseResponse(id: string | null, isAdmin: boolean) {
   if (id) {
     const fallback = defaultCourses.find((course) => course.id === id)
     if (!fallback) {
       return NextResponse.json({ error: 'Course not found' }, { status: 404 })
     }
-    const payload = isAdmin ? { ...fallback, reservations: [] } : fallback
+    const payload = isAdmin ? { ...fallback, reservations: [] } : toPublicCourse(fallback)
     return NextResponse.json(payload)
   }
 
   const payload = defaultCourses.map((course) =>
-    isAdmin ? { ...course, reservations: [] } : course
+    isAdmin ? { ...course, reservations: [] } : toPublicCourse(course)
   )
   return NextResponse.json(payload)
 }
@@ -116,12 +139,19 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (session?.user?.role === 'admin') {
+      if (!canManagePricing(session, storeId, 'pricing:read')) {
+        return forbiddenResponse()
+      }
       isAdmin = true
     }
 
     if (id) {
       const course = await db.coursePrice.findFirst({
-        where: { id, storeId },
+        where: {
+          id,
+          storeId,
+          ...(isAdmin ? {} : { isActive: true, archivedAt: null, enableWebBooking: true }),
+        },
         include: {
           reservations: {
             include: {
@@ -137,19 +167,16 @@ export async function GET(request: NextRequest) {
       }
 
       if (isAdmin) {
-        return NextResponse.json(course)
+        return NextResponse.json(sanitizePricingResponse(course))
       }
 
-      const { reservations, ...courseData } = course as typeof course & {
-        reservations?: unknown
-      }
-
-      return NextResponse.json(courseData)
+      return NextResponse.json(toPublicCourse(course))
     }
 
     const courses = await db.coursePrice.findMany({
       where: {
         isActive: true,
+        ...(isAdmin ? {} : { archivedAt: null, enableWebBooking: true }),
         storeId,
       },
       include: {
@@ -166,17 +193,10 @@ export async function GET(request: NextRequest) {
     })
 
     if (isAdmin) {
-      return NextResponse.json(courses)
+      return NextResponse.json(sanitizePricingResponse(courses))
     }
 
-    const sanitizedCourses = courses.map((course) => {
-      const { reservations, ...courseData } = course as typeof course & {
-        reservations?: unknown
-      }
-      return courseData
-    })
-
-    return NextResponse.json(sanitizedCourses)
+    return NextResponse.json(courses.map(toPublicCourse))
   } catch (error) {
     logger.error({ err: error }, 'Error fetching course data')
     if (!env.featureFlags.useMockFallbacks) {
@@ -193,12 +213,12 @@ export async function POST(request: NextRequest) {
       return session
     }
 
-    if (session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const storeId = await ensureStoreId(await resolveStoreId(request))
+    if (!canManagePricing(session, storeId, 'pricing:create')) {
+      return forbiddenResponse()
     }
 
     const data = await request.json()
-    const storeId = await ensureStoreId(await resolveStoreId(request))
 
     let payload
     try {
@@ -259,7 +279,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(newCourse, { status: 201 })
+    return NextResponse.json(sanitizePricingResponse(newCourse), { status: 201 })
   } catch (error) {
     logger.error({ err: error }, 'Error creating course')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -273,12 +293,12 @@ export async function PUT(request: NextRequest) {
       return session
     }
 
-    if (session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const storeId = await ensureStoreId(await resolveStoreId(request))
+    if (!canManagePricing(session, storeId, 'pricing:update')) {
+      return forbiddenResponse()
     }
 
     const data = await request.json()
-    const storeId = await ensureStoreId(await resolveStoreId(request))
     const { id, ...updates } = data
 
     if (!id) {
@@ -355,7 +375,7 @@ export async function PUT(request: NextRequest) {
     }
 
     if (Object.keys(sanitizedPayload).length === 0) {
-      return NextResponse.json(existingCourse)
+      return NextResponse.json(sanitizePricingResponse(existingCourse))
     }
 
     const updatedCourse = await db.$transaction(async (tx) => {
@@ -396,7 +416,7 @@ export async function PUT(request: NextRequest) {
       })
     })
 
-    return NextResponse.json(updatedCourse)
+    return NextResponse.json(sanitizePricingResponse(updatedCourse))
   } catch (error: any) {
     logger.error({ err: error }, 'Error updating course')
     if (error?.code === 'P2025') {
@@ -413,13 +433,12 @@ export async function DELETE(request: NextRequest) {
       return session
     }
 
-    if (session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
     const searchParams = request.nextUrl.searchParams
     const id = searchParams.get('id')
     const storeId = await ensureStoreId(await resolveStoreId(request))
+    if (!canManagePricing(session, storeId, 'pricing:delete')) {
+      return forbiddenResponse()
+    }
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 })

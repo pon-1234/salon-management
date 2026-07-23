@@ -1,3 +1,8 @@
+/**
+ * @design_doc   docs/specs/IMAGE_UPLOAD_PERSISTENCE_SPEC.md
+ * @related_to   LocalStorageService - Validates and persists authenticated bitmap uploads
+ * @known_issues Upload purpose/store ownership is not recorded in a database asset table
+ */
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
@@ -49,7 +54,7 @@ export async function POST(request: NextRequest) {
       }
       if (uploadError.message.includes('ファイル形式')) {
         return NextResponse.json(
-          { error: '対応していないファイル形式です（JPEG, PNG, WebPのみ）' },
+          { error: '対応していないファイル形式です（JPEG, PNG, WebP, GIFのみ）' },
           { status: 400 }
         )
       }

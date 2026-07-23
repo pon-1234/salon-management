@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @design_doc   Admin reservation timeline/list orchestration and persistence boundary
+ * @related_to   ReservationDialog, ReservationRepositoryImpl, Timeline
+ * @known_issues None
+ */
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -13,7 +18,12 @@ import { FilterDialog, FilterOptions } from '@/components/reservation/filter-dia
 import { Cast, Appointment } from '@/lib/cast/types'
 import { getAllReservations } from '@/lib/reservation/data'
 import { ReservationTable } from '@/components/reservation/reservation-table'
-import { Reservation, ReservationData, ReservationUpdatePayload } from '@/lib/types/reservation'
+import {
+  Reservation,
+  ReservationApiUpdatePayload,
+  ReservationData,
+  ReservationSavePayload,
+} from '@/lib/types/reservation'
 import { customers as fallbackCustomers } from '@/lib/customer/data'
 import { Customer } from '@/lib/customer/types'
 import { ReservationDialog } from '@/components/reservation/reservation-dialog'
@@ -338,10 +348,7 @@ export function ReservationPageContent() {
     fetchData()
   }
 
-  const handleReservationSave = async (
-    reservationId: string,
-    payload: ReservationUpdatePayload
-  ) => {
+  const handleReservationSave = async (reservationId: string, payload: ReservationSavePayload) => {
     const targetReservation = rawReservations.find(
       (reservation) => reservation.id === reservationId
     )
@@ -355,62 +362,7 @@ export function ReservationPageContent() {
     }
 
     try {
-      const updatePayload: Partial<Reservation> & { castId?: string; options?: string[] } = {
-        castId: payload.castId,
-        startTime: payload.startTime,
-        endTime: payload.endTime,
-      }
-
-      if (payload.status) {
-        updatePayload.status = payload.status as Reservation['status']
-      }
-
-      if (payload.courseId) {
-        updatePayload.courseId = payload.courseId
-      }
-
-      if (payload.notes !== undefined) {
-        updatePayload.notes = payload.notes
-      }
-
-      if (payload.storeMemo !== undefined) {
-        ;(updatePayload as any).storeMemo = payload.storeMemo
-      }
-
-      if (payload.designationType !== undefined) {
-        updatePayload.designationType = payload.designationType
-      }
-      if (payload.designationFee !== undefined) {
-        updatePayload.designationFee = payload.designationFee
-      }
-      if (payload.transportationFee !== undefined) {
-        updatePayload.transportationFee = payload.transportationFee
-      }
-      if (payload.additionalFee !== undefined) {
-        updatePayload.additionalFee = payload.additionalFee
-      }
-      if (payload.paymentMethod !== undefined) {
-        updatePayload.paymentMethod = payload.paymentMethod
-      }
-      if (payload.marketingChannel !== undefined) {
-        updatePayload.marketingChannel = payload.marketingChannel
-      }
-      if (payload.areaId !== undefined) {
-        updatePayload.areaId = payload.areaId
-      }
-      if (payload.stationId !== undefined) {
-        updatePayload.stationId = payload.stationId
-      }
-      if (payload.locationMemo !== undefined) {
-        updatePayload.locationMemo = payload.locationMemo
-      }
-      if (payload.price !== undefined) {
-        updatePayload.price = payload.price
-      }
-
-      if (payload.options !== undefined) {
-        updatePayload.options = payload.options
-      }
+      const updatePayload: ReservationApiUpdatePayload = { ...payload }
 
       await reservationRepository.update(reservationId, updatePayload)
 

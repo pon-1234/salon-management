@@ -96,6 +96,27 @@ describe('PricingUseCases', () => {
         expect(result).toBeNull()
       })
     })
+
+    it('should pass the selected store through course mutations', async () => {
+      const input = {
+        name: 'Store course',
+        duration: 60,
+        price: 10000,
+        isActive: true,
+        enableWebBooking: true,
+      }
+      const created = {
+        id: 'course-1',
+        ...input,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+      vi.mocked(mockRepository.createCourse).mockResolvedValue(created)
+
+      await useCases.createCourse(input, 'store-1')
+
+      expect(mockRepository.createCourse).toHaveBeenCalledWith(input, 'store-1')
+    })
   })
 
   describe('Option management', () => {
@@ -145,17 +166,21 @@ describe('PricingUseCases', () => {
         vi.mocked(mockRepository.getOptionById).mockResolvedValue(mockOption)
         vi.mocked(mockRepository.updateOption).mockResolvedValue(updatedOption)
 
-        const result = await useCases.toggleOptionStatus('option-1')
+        const result = await useCases.toggleOptionStatus('option-1', 'store-1')
 
-        expect(mockRepository.getOptionById).toHaveBeenCalledWith('option-1')
-        expect(mockRepository.updateOption).toHaveBeenCalledWith('option-1', { isActive: true })
+        expect(mockRepository.getOptionById).toHaveBeenCalledWith('option-1', 'store-1')
+        expect(mockRepository.updateOption).toHaveBeenCalledWith(
+          'option-1',
+          { isActive: true },
+          'store-1'
+        )
         expect(result).toEqual(updatedOption)
       })
 
       it('should throw error when option not found', async () => {
         vi.mocked(mockRepository.getOptionById).mockResolvedValue(null)
 
-        await expect(useCases.toggleOptionStatus('non-existent')).rejects.toThrow(
+        await expect(useCases.toggleOptionStatus('non-existent', 'store-1')).rejects.toThrow(
           'Option with id non-existent not found'
         )
       })

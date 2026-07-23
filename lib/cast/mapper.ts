@@ -1,5 +1,11 @@
+/**
+ * @design_doc   Cast API records are normalized before reaching rendering components
+ * @related_to   repository-impl.ts and public-profile.ts
+ * @known_issues Legacy option identifiers still depend on the shared option catalog adapter
+ */
 import { Cast, Appointment } from './types'
 import { resolveOptionId } from '@/lib/options/data'
+import { normalizePublicProfile } from './public-profile'
 
 const toDate = (value: unknown): Date | undefined => {
   if (!value) return undefined
@@ -175,7 +181,7 @@ export const normalizeCast = (raw: any): Cast => {
     appointments,
     availableOptions,
     availableOptionSettings,
-    publicProfile: raw.publicProfile,
+    publicProfile: normalizePublicProfile(raw.publicProfile) ?? undefined,
     createdAt: toDate(raw.createdAt) ?? new Date(),
     updatedAt: toDate(raw.updatedAt) ?? new Date(),
   }

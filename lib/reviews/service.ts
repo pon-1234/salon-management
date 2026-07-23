@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Review business rules and multi-store data isolation
+ * @related_to   Review API, Reservation, Cast, and Customer models
+ * @known_issues Review replies and helpful votes are not persisted yet
+ */
 import { Prisma, ReviewStatus as PrismaReviewStatus } from '@prisma/client'
 import { db } from '@/lib/db'
 import { RESERVATION_STATUS } from '@/lib/constants'
@@ -154,16 +159,26 @@ export interface ReviewQueryFilters {
   limit?: number
 }
 
+function buildReviewStoreWhere(storeId: string): Prisma.ReviewWhereInput {
+  return {
+    cast: { storeId },
+    OR: [{ reservationId: null }, { reservation: { is: { storeId } } }],
+  }
+}
+
+function buildReviewStoreUniqueWhere(id: string, storeId: string): Prisma.ReviewWhereUniqueInput {
+  return {
+    ...buildReviewStoreWhere(storeId),
+    id,
+  }
+}
+
 export async function searchReviews(filters: ReviewQueryFilters): Promise<Review[]> {
   const statusFilter = ensureValidStatuses(filters.statuses)
 
-  const where: Prisma.ReviewWhereInput = {
-    cast: filters.storeId
-      ? {
-          storeId: filters.storeId,
-        }
-      : undefined,
-  }
+  const where: Prisma.ReviewWhereInput = filters.storeId
+    ? buildReviewStoreWhere(filters.storeId)
+    : {}
 
   if (statusFilter) {
     where.status = { in: statusFilter }
@@ -200,9 +215,9 @@ export async function getStoreReviews(
   return searchReviews({ ...options, storeId })
 }
 
-export async function getReviewById(id: string): Promise<Review | null> {
-  const review = await db.review.findUnique({
-    where: { id },
+export async function getReviewById(id: string, storeId: string): Promise<Review | null> {
+  const review = await db.review.findFirst({
+    where: buildReviewStoreUniqueWhere(id, storeId),
     include: reviewDefaultInclude,
   })
 
@@ -222,6 +237,7 @@ export async function getReviewStatsForStore(
 }
 
 export interface CreateReviewParams {
+  storeId: string
   reservationId: string
   rating: number
   comment: string
@@ -231,8 +247,12 @@ export interface CreateReviewParams {
 }
 
 export async function createReview(params: CreateReviewParams): Promise<Review> {
-  const reservation = await db.reservation.findUnique({
-    where: { id: params.reservationId },
+  const reservation = await db.reservation.findFirst({
+    where: {
+      id: params.reservationId,
+      storeId: params.storeId,
+      cast: { storeId: params.storeId },
+    },
     include: {
       cast: {
         select: {
@@ -289,6 +309,7 @@ export async function createReview(params: CreateReviewParams): Promise<Review> 
 
 export interface UpdateReviewParams {
   id: string
+  storeId: string
   actorId: string
   actorRole: 'admin' | 'customer' | 'staff'
   rating?: number
@@ -297,8 +318,9 @@ export interface UpdateReviewParams {
 }
 
 export async function updateReview(params: UpdateReviewParams): Promise<Review> {
-  const existing = await db.review.findUnique({
-    where: { id: params.id },
+  const storeWhere = buildReviewStoreUniqueWhere(params.id, params.storeId)
+  const existing = await db.review.findFirst({
+    where: storeWhere,
     include: reviewDefaultInclude,
   })
 
@@ -335,7 +357,7 @@ export async function updateReview(params: UpdateReviewParams): Promise<Review> 
   }
 
   const updated = await db.review.update({
-    where: { id: params.id },
+    where: storeWhere,
     data,
     include: reviewDefaultInclude,
   })
@@ -345,13 +367,15 @@ export async function updateReview(params: UpdateReviewParams): Promise<Review> 
 
 export interface DeleteReviewParams {
   id: string
+  storeId: string
   actorId: string
   actorRole: 'admin' | 'customer' | 'staff'
 }
 
 export async function deleteReview(params: DeleteReviewParams): Promise<void> {
-  const existing = await db.review.findUnique({
-    where: { id: params.id },
+  const storeWhere = buildReviewStoreUniqueWhere(params.id, params.storeId)
+  const existing = await db.review.findFirst({
+    where: storeWhere,
   })
 
   if (!existing) {
@@ -364,7 +388,7 @@ export async function deleteReview(params: DeleteReviewParams): Promise<void> {
   }
 
   await db.review.delete({
-    where: { id: params.id },
+    where: storeWhere,
   })
 }
 
@@ -380,20 +404,18 @@ export interface EligibleReservation {
 
 export async function getEligibleReservationsForCustomer(
   customerId: string,
-  storeId?: string
+  storeId: string
 ): Promise<EligibleReservation[]> {
   const where: Prisma.ReservationWhereInput = {
     customerId,
+    storeId,
+    cast: { storeId },
     status: RESERVATION_STATUS.COMPLETED,
     reviews: {
       none: {
         customerId,
       },
     },
-  }
-
-  if (storeId) {
-    where.storeId = storeId
   }
 
   const reservations = await db.reservation.findMany({

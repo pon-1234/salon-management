@@ -14,7 +14,7 @@ import { PrismaClient } from '@prisma/client'
 import { hasPermission } from '@/lib/auth/permissions'
 import { format } from 'date-fns'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
-import { PAYMENT_METHODS, type PaymentMethod } from '@/lib/constants'
+import { DEFAULT_VALUES, PAYMENT_METHODS, type PaymentMethod } from '@/lib/constants'
 import { calculateReservationRevenue } from '@/lib/reservation/revenue'
 import {
   addPointTransaction,
@@ -27,6 +27,15 @@ import {
   formatChatAmount,
   resolveReservationTotalAmount,
 } from '@/lib/reservation/confirmation-chat'
+import { sanitizeReservationCreationInput } from '@/lib/reservation/creation-policy'
+import {
+  ReservationLocationError,
+  resolveReservationLocation,
+} from '@/lib/reservation/location-integrity'
+import { ReservationHotelError, resolveReservationHotel } from '@/lib/reservation/hotel-integrity'
+import { canAdminAccessStore } from '@/lib/auth/store-access'
+import { sanitizeResponseData } from '@/lib/http/sanitize-response'
+import { sanitizeCustomerReservationResponse } from '@/lib/http/customer-dto'
 
 // Types
 interface AvailabilityCheck {
@@ -61,6 +70,51 @@ const DESIGNATION_LABEL_MAP: Record<string, string> = {
 const ALLOWED_PAYMENT_METHODS = new Set<PaymentMethod>(
   Object.values(PAYMENT_METHODS) as PaymentMethod[]
 )
+const RESERVATION_PRIVATE_CAST_FIELDS = ['loginEmail', 'lineUserId', 'welfareExpenseRate']
+const NON_NEGATIVE_FINANCIAL_UPDATE_FIELDS = [
+  'price',
+  'designationFee',
+  'transportationFee',
+  'additionalFee',
+  'discountAmount',
+  'storeRevenue',
+  'staffRevenue',
+  'welfareExpense',
+] as const
+// The customer UI directs every post-booking change to the store; cancellation uses DELETE.
+// Keep this deny-by-default allowlist explicit so future customer-editable fields require review.
+const CUSTOMER_RESERVATION_UPDATE_FIELDS = new Set<string>()
+
+class InvalidOptionSelectionError extends Error {
+  constructor(readonly missingOptions: string[]) {
+    super('Invalid option selection')
+    this.name = 'InvalidOptionSelectionError'
+  }
+}
+
+function invalidOptionSelectionResponse(error: InvalidOptionSelectionError) {
+  return NextResponse.json(
+    {
+      error: '選択されたオプションが存在しません。',
+      missingOptions: error.missingOptions,
+    },
+    { status: 400 }
+  )
+}
+
+function sanitizeReservationResponse<T>(value: T): T {
+  return sanitizeResponseData(value, RESERVATION_PRIVATE_CAST_FIELDS)
+}
+
+function sanitizeReservationResponseForRole<T>(value: T, role: string | undefined): T {
+  return role === 'customer'
+    ? sanitizeCustomerReservationResponse(value)
+    : sanitizeReservationResponse(value)
+}
+
+function isValidHotelExpense(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
+}
 
 function formatCurrency(value: number | null | undefined): string {
   if (value === null || value === undefined) {
@@ -295,6 +349,10 @@ export async function GET(request: NextRequest) {
     const isAdmin = session?.user?.role === 'admin'
     const sessionCustomerId = session?.user?.id
 
+    if (isAdmin && !canAdminAccessStore(session.user, storeId)) {
+      return NextResponse.json({ error: 'この店舗を操作する権限がありません' }, { status: 403 })
+    }
+
     const searchParams = request.nextUrl.searchParams
     const id = searchParams.get('id')
 
@@ -332,7 +390,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
 
-      return NextResponse.json(reservation)
+      return NextResponse.json(sanitizeReservationResponseForRole(reservation, session.user.role))
     }
 
     // 管理者は全予約を、顧客は自分の予約のみを取得
@@ -392,7 +450,7 @@ export async function GET(request: NextRequest) {
       skip,
     })
 
-    return NextResponse.json(reservations)
+    return NextResponse.json(sanitizeReservationResponseForRole(reservations, session?.user?.role))
   } catch (error) {
     logger.error({ err: error }, 'Error fetching reservation data')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -406,6 +464,19 @@ export async function POST(request: NextRequest) {
     const isAdmin = session?.user?.role === 'admin'
     const sessionCustomerId = session?.user?.id
 
+    if (!session) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+    if (session.user.role !== 'admin' && session.user.role !== 'customer') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+    if (isAdmin && !hasPermission(session.user.permissions ?? [], 'reservation:create')) {
+      return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
+    }
+    if (isAdmin && !canAdminAccessStore(session.user, storeId)) {
+      return NextResponse.json({ error: 'この店舗を操作する権限がありません' }, { status: 403 })
+    }
+
     const data = await request.json()
 
     // 管理者は顧客IDを指定可能、顧客は自分のIDのみ
@@ -418,7 +489,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const { customerId, ...reservationData } = data
+    const { customerId, ...rawReservationData } = data
+    const reservationData = sanitizeReservationCreationInput(
+      rawReservationData,
+      isAdmin
+    ) as typeof rawReservationData
+
+    if (
+      isAdmin &&
+      Object.prototype.hasOwnProperty.call(reservationData, 'hotelExpense') &&
+      !isValidHotelExpense(reservationData.hotelExpense)
+    ) {
+      return NextResponse.json(
+        { error: 'ホテル経費は0以上の整数で指定してください。' },
+        { status: 400 }
+      )
+    }
 
     if (
       !reservationData.castId ||
@@ -454,26 +540,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Cannot create reservations in the past' }, { status: 400 })
     }
 
-    const [castRecord, customerRecord, courseRecord, areaRecord, stationRecord, storeSettings] =
-      await Promise.all([
-        db.cast.findFirst({ where: { id: reservationData.castId, storeId } }),
-        db.customer.findUnique({
-          where: { id: targetCustomerId },
-          include: {
-            ngCasts: {
-              select: { castId: true, assignedBy: true },
-            },
+    const [castRecord, customerRecord, courseRecord, storeSettings] = await Promise.all([
+      db.cast.findFirst({ where: { id: reservationData.castId, storeId } }),
+      db.customer.findUnique({
+        where: { id: targetCustomerId },
+        include: {
+          ngCasts: {
+            select: { castId: true, assignedBy: true },
           },
-        }),
-        db.coursePrice.findFirst({ where: { id: reservationData.courseId, storeId } }),
-        reservationData.areaId
-          ? db.areaInfo.findFirst({ where: { id: reservationData.areaId, storeId } })
-          : Promise.resolve(null),
-        reservationData.stationId
-          ? db.stationInfo.findFirst({ where: { id: reservationData.stationId, storeId } })
-          : Promise.resolve(null),
-        db.storeSettings.findUnique({ where: { storeId } }),
-      ])
+        },
+      }),
+      db.coursePrice.findFirst({ where: { id: reservationData.courseId, storeId } }),
+      db.storeSettings.findUnique({ where: { storeId } }),
+    ])
 
     if (!customerRecord) {
       return NextResponse.json(
@@ -498,6 +577,74 @@ export async function POST(request: NextRequest) {
         { error: '指定されたコースが存在しません。コースを管理画面で登録してください。' },
         { status: 400 }
       )
+    }
+
+    let resolvedLocation
+    try {
+      resolvedLocation = await resolveReservationLocation(db, {
+        storeId,
+        areaSpecified: Object.prototype.hasOwnProperty.call(reservationData, 'areaId'),
+        stationSpecified: Object.prototype.hasOwnProperty.call(reservationData, 'stationId'),
+        requestedAreaId: reservationData.areaId,
+        requestedStationId: reservationData.stationId,
+        currentAreaId: null,
+        currentStationId: null,
+      })
+    } catch (error) {
+      if (error instanceof ReservationLocationError) {
+        return NextResponse.json({ error: error.message, code: error.code }, { status: 400 })
+      }
+      throw error
+    }
+
+    let resolvedHotel
+    try {
+      resolvedHotel = await resolveReservationHotel(db, {
+        storeId,
+        hotelIdSpecified: Object.prototype.hasOwnProperty.call(reservationData, 'hotelId'),
+        hotelNameSpecified: Object.prototype.hasOwnProperty.call(reservationData, 'hotelName'),
+        requestedHotelId: reservationData.hotelId,
+        requestedHotelName: reservationData.hotelName,
+        currentHotelId: null,
+        currentHotelName: null,
+      })
+    } catch (error) {
+      if (error instanceof ReservationHotelError) {
+        return NextResponse.json({ error: error.message, code: error.code }, { status: 400 })
+      }
+      throw error
+    }
+
+    if (!isAdmin) {
+      if (!castRecord.netReservation) {
+        return NextResponse.json(
+          {
+            error: 'このキャストは現在ネット予約を受け付けていません。',
+            code: 'WEB_RESERVATION_DISABLED',
+          },
+          { status: 409 }
+        )
+      }
+
+      const workingSchedule = await db.castSchedule.findFirst({
+        where: {
+          castId: reservationData.castId,
+          isAvailable: true,
+          startTime: { lte: startTime },
+          endTime: { gte: endTime },
+        },
+        select: { id: true },
+      })
+
+      if (!workingSchedule) {
+        return NextResponse.json(
+          {
+            error: '指定された時間はキャストの出勤時間外です。',
+            code: 'CAST_NOT_SCHEDULED',
+          },
+          { status: 409 }
+        )
+      }
     }
 
     const ngRelation = customerRecord.ngCasts?.find(
@@ -529,9 +676,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const resolvedAreaId = reservationData.areaId && areaRecord ? reservationData.areaId : null
-    const resolvedStationId =
-      reservationData.stationId && stationRecord ? reservationData.stationId : null
+    const { areaId: resolvedAreaId, stationId: resolvedStationId } = resolvedLocation
 
     const rawWelfareRate = castRecord?.welfareExpenseRate ?? storeSettings?.welfareExpenseRate ?? 10
     const normalizedWelfareRate =
@@ -587,10 +732,12 @@ export async function POST(request: NextRequest) {
         }
 
         const optionIds: string[] = Array.isArray(reservationData.options)
-          ? reservationData.options.filter(
-              (optionId: unknown): optionId is string =>
-                typeof optionId === 'string' && optionId.trim().length > 0
-            )
+          ? reservationData.options
+              .filter(
+                (optionId: unknown): optionId is string =>
+                  typeof optionId === 'string' && optionId.trim().length > 0
+              )
+              .map((optionId: string) => optionId.trim())
           : []
 
         let optionsToCreate: Array<{
@@ -604,7 +751,13 @@ export async function POST(request: NextRequest) {
         if (optionIds.length) {
           const uniqueOptionIds = Array.from(new Set(optionIds))
           const optionRecords = await tx.optionPrice.findMany({
-            where: { id: { in: uniqueOptionIds }, storeId },
+            where: {
+              id: { in: uniqueOptionIds },
+              storeId,
+              isActive: true,
+              archivedAt: null,
+              ...(isAdmin ? {} : { visibility: 'public' }),
+            },
             select: {
               id: true,
               name: true,
@@ -620,13 +773,10 @@ export async function POST(request: NextRequest) {
           )
 
           if (missingOptionIds.length) {
-            logger.warn(
-              { missingOptionIds },
-              'Some option IDs could not be resolved and will be skipped'
-            )
+            throw new InvalidOptionSelectionError(missingOptionIds)
           }
 
-          optionsToCreate = optionIds
+          optionsToCreate = uniqueOptionIds
             .map((optionId) => optionRecordMap.get(optionId))
             .filter((option): option is (typeof optionRecords)[number] => Boolean(option))
             .map((option) => ({
@@ -638,9 +788,18 @@ export async function POST(request: NextRequest) {
             }))
         }
 
-        const designationAmount = Number.isFinite(Number(reservationData.designationFee))
+        const requestedDesignationAmount = Number.isFinite(Number(reservationData.designationFee))
           ? Number(reservationData.designationFee)
           : 0
+        const castDesignationAmount =
+          reservationData.designationType === 'regular'
+            ? castRecord.regularDesignationFee
+            : reservationData.designationType === 'special'
+              ? castRecord.specialDesignationFee
+              : 0
+        const designationAmount = isAdmin
+          ? requestedDesignationAmount
+          : Math.max(Number(castDesignationAmount ?? 0), 0)
 
         let designationShare: { storeShare: number | null; castShare: number | null } | null = null
         if (designationAmount > 0 && reservationData.designationType) {
@@ -728,7 +887,7 @@ export async function POST(request: NextRequest) {
             status: reservationData.status ?? 'pending',
             price: reservationData.price ?? revenue.total,
             designationType: reservationData.designationType ?? null,
-            designationFee: reservationData.designationFee ?? 0,
+            designationFee: designationAmount,
             transportationFee: reservationData.transportationFee ?? 0,
             additionalFee: reservationData.additionalFee ?? 0,
             discountAmount: manualDiscountAmount,
@@ -737,7 +896,12 @@ export async function POST(request: NextRequest) {
             marketingChannel: reservationData.marketingChannel ?? null,
             areaId: resolvedAreaId,
             stationId: resolvedStationId,
-            hotelName: reservationData.hotelName ?? null,
+            hotelId: resolvedHotel.hotelId,
+            hotelName: resolvedHotel.hotelName,
+            hotelExpense:
+              isAdmin && isValidHotelExpense(reservationData.hotelExpense)
+                ? reservationData.hotelExpense
+                : 0,
             roomNumber: reservationData.roomNumber ?? null,
             locationMemo: reservationData.locationMemo ?? null,
             notes: reservationData.notes ?? null,
@@ -802,7 +966,10 @@ export async function POST(request: NextRequest) {
         logger.error({ err: notificationError }, 'Failed to send notification')
       }
 
-      return NextResponse.json(newReservation, { status: 201 })
+      return NextResponse.json(
+        sanitizeReservationResponseForRole(newReservation, session.user.role),
+        { status: 201 }
+      )
     } catch (error: any) {
       if (error.message === 'Time slot is not available') {
         return NextResponse.json(
@@ -813,16 +980,8 @@ export async function POST(request: NextRequest) {
           { status: 409 }
         )
       }
-      if (error.message?.startsWith('Invalid option selection')) {
-        return NextResponse.json(
-          {
-            error: '選択されたオプションが存在しません。',
-            missingOptions: Array.isArray((error as any)?.missingOptions)
-              ? (error as any).missingOptions
-              : [],
-          },
-          { status: 400 }
-        )
+      if (error instanceof InvalidOptionSelectionError) {
+        return invalidOptionSelectionResponse(error)
       }
       const message =
         error instanceof Error && error.message ? error.message : 'Internal server error'
@@ -855,6 +1014,34 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
+    if (session.user.role !== 'admin' && session.user.role !== 'customer') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+    if (isAdmin && !hasPermission(session.user.permissions ?? [], 'reservation:update')) {
+      return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
+    }
+
+    const hasInvalidFinancialValue = NON_NEGATIVE_FINANCIAL_UPDATE_FIELDS.some((field) => {
+      const value = updates[field]
+      return typeof value === 'number' && (!Number.isFinite(value) || value < 0)
+    })
+    if (isAdmin && hasInvalidFinancialValue) {
+      return NextResponse.json(
+        { error: '料金は0以上の有限な数値で指定してください。' },
+        { status: 400 }
+      )
+    }
+    if (
+      isAdmin &&
+      Object.prototype.hasOwnProperty.call(updates, 'hotelExpense') &&
+      !isValidHotelExpense(updates.hotelExpense)
+    ) {
+      return NextResponse.json(
+        { error: 'ホテル経費は0以上の整数で指定してください。' },
+        { status: 400 }
+      )
+    }
+
     const existingReservation = await db.reservation.findUnique({
       where: { id },
       include: {
@@ -884,6 +1071,9 @@ export async function PUT(request: NextRequest) {
     }
 
     const storeId = existingReservation.storeId
+    if (isAdmin && !canAdminAccessStore(session.user, storeId)) {
+      return NextResponse.json({ error: 'この店舗を操作する権限がありません' }, { status: 403 })
+    }
     const normalizedStoreId = storeId?.trim().toLowerCase()
     const storeIdParam = request.nextUrl.searchParams.get('storeId')
     if (
@@ -903,6 +1093,18 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    const requestedUpdateFields = Object.keys(updates)
+    if (
+      !isAdmin &&
+      (requestedUpdateFields.length === 0 ||
+        requestedUpdateFields.some((field) => !CUSTOMER_RESERVATION_UPDATE_FIELDS.has(field)))
+    ) {
+      return NextResponse.json(
+        { error: '予約内容の変更は店舗へお問い合わせください' },
+        { status: 403 }
+      )
+    }
+
     const previousPaymentNormalized =
       normalizePaymentMethodInput(existingReservation.paymentMethod) ?? PAYMENT_METHODS.CASH
 
@@ -918,33 +1120,57 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const nextCastId = updates.castId || existingReservation.castId
-    const ngEntry = await findNgEntry(existingReservation.customerId, nextCastId)
-    if (ngEntry) {
-      const source = (ngEntry.assignedBy ?? 'customer') as 'customer' | 'cast' | 'staff'
-      return NextResponse.json(
-        { error: NG_REASON_MESSAGES[source], reason: source },
-        { status: 400 }
-      )
+    const hasRequestedStartTime = Boolean(updates.startTime)
+    const hasRequestedEndTime = Boolean(updates.endTime)
+    const requestedStartTime = hasRequestedStartTime ? new Date(updates.startTime) : null
+    const requestedEndTime = hasRequestedEndTime ? new Date(updates.endTime) : null
+
+    if (
+      (requestedStartTime && Number.isNaN(requestedStartTime.getTime())) ||
+      (requestedEndTime && Number.isNaN(requestedEndTime.getTime()))
+    ) {
+      return NextResponse.json({ error: 'Invalid date format' }, { status: 400 })
     }
 
-    if (updates.startTime || updates.endTime) {
-      // 日付文字列を直接Dateオブジェクトに変換（タイムゾーン処理を簡略化）
-      const startTime = updates.startTime
-        ? new Date(updates.startTime)
-        : existingReservation.startTime
-      const endTime = updates.endTime ? new Date(updates.endTime) : existingReservation.endTime
+    const nextStartTime = requestedStartTime ?? existingReservation.startTime
+    const nextEndTime = requestedEndTime ?? existingReservation.endTime
+    if (nextEndTime <= nextStartTime) {
+      return NextResponse.json({ error: 'End time must be after start time' }, { status: 400 })
+    }
 
-      if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
-        return NextResponse.json({ error: 'Invalid date format' }, { status: 400 })
+    const castChanged =
+      typeof updates.castId === 'string' &&
+      updates.castId.length > 0 &&
+      updates.castId !== existingReservation.castId
+    const startTimeChanged =
+      requestedStartTime !== null &&
+      requestedStartTime.getTime() !== existingReservation.startTime.getTime()
+    const endTimeChanged =
+      requestedEndTime !== null &&
+      requestedEndTime.getTime() !== existingReservation.endTime.getTime()
+    const changesTime = startTimeChanged || endTimeChanged
+    const changesAssignmentOrTime = castChanged || changesTime
+    const nextCastId = castChanged ? updates.castId : existingReservation.castId
+
+    if (changesAssignmentOrTime) {
+      const ngEntry = await findNgEntry(existingReservation.customerId, nextCastId)
+      if (ngEntry) {
+        const source = (ngEntry.assignedBy ?? 'customer') as 'customer' | 'cast' | 'staff'
+        return NextResponse.json(
+          { error: NG_REASON_MESSAGES[source], reason: source },
+          { status: 400 }
+        )
       }
+    }
 
-      if (endTime <= startTime) {
-        return NextResponse.json({ error: 'End time must be after start time' }, { status: 400 })
-      }
-
-      const castId = nextCastId
-      const availability = await checkCastAvailability(storeId, castId, startTime, endTime, db)
+    if (changesAssignmentOrTime) {
+      const availability = await checkCastAvailability(
+        storeId,
+        nextCastId,
+        nextStartTime,
+        nextEndTime,
+        db
+      )
       const filteredConflicts = availability.conflicts.filter((c) => c.id !== id)
 
       if (filteredConflicts.length > 0) {
@@ -963,6 +1189,53 @@ export async function PUT(request: NextRequest) {
     const actorIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null
     const actorAgent = request.headers.get('user-agent') ?? null
     const previousReservation = existingReservation
+    const courseChanged =
+      typeof updates.courseId === 'string' &&
+      updates.courseId.length > 0 &&
+      updates.courseId !== existingReservation.courseId
+    const designationTypeChanged =
+      Object.prototype.hasOwnProperty.call(updates, 'designationType') &&
+      (updates.designationType ?? null) !== (existingReservation.designationType ?? null)
+    const numericFieldChanged = (requestedValue: unknown, currentValue: unknown) =>
+      typeof requestedValue === 'number' &&
+      Number.isFinite(requestedValue) &&
+      requestedValue !== Number(currentValue ?? 0)
+    const requestedOptionIds: string[] | null = Array.isArray(updates.options)
+      ? Array.from(
+          new Set(
+            (updates.options as unknown[])
+              .filter(
+                (optionId: unknown): optionId is string =>
+                  typeof optionId === 'string' && optionId.trim().length > 0
+              )
+              .map((optionId: string) => optionId.trim())
+          )
+        )
+      : null
+    const existingOptionIds = (existingReservation.options ?? [])
+      .map((entry: any) => entry.optionId ?? entry.option?.id)
+      .filter((optionId: unknown): optionId is string => typeof optionId === 'string')
+    const sortedRequestedOptionIds = requestedOptionIds ? [...requestedOptionIds].sort() : null
+    const sortedExistingOptionIds = Array.from(new Set(existingOptionIds)).sort()
+    const optionsChanged =
+      sortedRequestedOptionIds !== null &&
+      (sortedRequestedOptionIds.length !== sortedExistingOptionIds.length ||
+        sortedRequestedOptionIds.some(
+          (optionId, index) => optionId !== sortedExistingOptionIds[index]
+        ))
+    const shouldRecalculateRevenue =
+      castChanged ||
+      courseChanged ||
+      optionsChanged ||
+      designationTypeChanged ||
+      numericFieldChanged(updates.price, existingReservation.price) ||
+      numericFieldChanged(updates.designationFee, existingReservation.designationFee) ||
+      numericFieldChanged(updates.transportationFee, existingReservation.transportationFee) ||
+      numericFieldChanged(updates.additionalFee, existingReservation.additionalFee) ||
+      numericFieldChanged(updates.discountAmount, existingReservation.discountAmount) ||
+      numericFieldChanged(updates.storeRevenue, existingReservation.storeRevenue) ||
+      numericFieldChanged(updates.staffRevenue, existingReservation.staffRevenue) ||
+      numericFieldChanged(updates.welfareExpense, existingReservation.welfareExpense)
 
     // トランザクション内で予約更新とオプション更新を実行
     const updatedReservation = await db.$transaction(async (tx) => {
@@ -975,15 +1248,11 @@ export async function PUT(request: NextRequest) {
         castShare: number | null
       }
 
-      const rawOptionIds: string[] | null = Array.isArray(updates.options) ? updates.options : null
+      const rawOptionIds: string[] | null = optionsChanged ? requestedOptionIds : null
       let normalizedOptionIds: string[] | null = null
       let optionRecordMap: Map<string, OptionRecord> | null = null
 
       if (rawOptionIds) {
-        await tx.reservationOption.deleteMany({
-          where: { reservationId: id },
-        })
-
         const candidateOptionIds = rawOptionIds.filter(
           (optionId): optionId is string =>
             typeof optionId === 'string' && optionId.trim().length > 0
@@ -997,6 +1266,8 @@ export async function PUT(request: NextRequest) {
                 in: uniqueOptionIds,
               },
               storeId,
+              isActive: true,
+              archivedAt: null,
             },
             select: {
               id: true,
@@ -1020,13 +1291,8 @@ export async function PUT(request: NextRequest) {
           )
           const validOptionIds = new Set(optionRecords.map((option) => option.id))
           if (validOptionIds.size !== uniqueOptionIds.length) {
-            logger.warn(
-              {
-                reservationId: id,
-                requestedOptionIds: candidateOptionIds,
-                validOptionIds: Array.from(validOptionIds),
-              },
-              'Some provided reservation option IDs were invalid for this store'
+            throw new InvalidOptionSelectionError(
+              uniqueOptionIds.filter((optionId) => !validOptionIds.has(optionId))
             )
           }
           normalizedOptionIds = candidateOptionIds.filter((optionId) =>
@@ -1035,6 +1301,10 @@ export async function PUT(request: NextRequest) {
         } else {
           normalizedOptionIds = []
         }
+
+        await tx.reservationOption.deleteMany({
+          where: { reservationId: id },
+        })
       }
 
       let effectiveCast = previousReservation.cast ?? null
@@ -1044,9 +1314,15 @@ export async function PUT(request: NextRequest) {
       // 予約を更新
       const updateData: Record<string, unknown> = {}
 
-      if (updates.castId) updateData.castId = updates.castId
-      if (updates.courseId) updateData.courseId = updates.courseId
-      if (updates.status) updateData.status = updates.status
+      if (castChanged) updateData.castId = updates.castId
+      if (courseChanged) updateData.courseId = updates.courseId
+      if (updates.status) {
+        updateData.status = updates.status
+        updateData.modifiableUntil =
+          updates.status === 'modifiable'
+            ? new Date(Date.now() + DEFAULT_VALUES.MODIFICATION_TIMEOUT_MINUTES * 60 * 1000)
+            : null
+      }
       if ('cancellationSource' in updates) {
         updateData.cancellationSource =
           updates.status === 'cancelled' ? (updates.cancellationSource ?? null) : null
@@ -1064,12 +1340,28 @@ export async function PUT(request: NextRequest) {
       if (typeof updates.discountAmount === 'number')
         updateData.discountAmount = updates.discountAmount
       if (updates.marketingChannel) updateData.marketingChannel = updates.marketingChannel
-      if ('areaId' in updates) updateData.areaId = updates.areaId ?? null
-      if ('stationId' in updates) updateData.stationId = updates.stationId ?? null
-      if ('hotelName' in updates) updateData.hotelName = updates.hotelName ?? null
+      const hotelIdSpecified = Object.prototype.hasOwnProperty.call(updates, 'hotelId')
+      const hotelNameSpecified = Object.prototype.hasOwnProperty.call(updates, 'hotelName')
+      if (hotelIdSpecified || hotelNameSpecified) {
+        const resolvedHotel = await resolveReservationHotel(tx, {
+          storeId,
+          hotelIdSpecified,
+          hotelNameSpecified,
+          requestedHotelId: updates.hotelId,
+          requestedHotelName: updates.hotelName,
+          currentHotelId: previousReservation.hotelId ?? null,
+          currentHotelName: previousReservation.hotelName ?? null,
+        })
+        updateData.hotelId = resolvedHotel.hotelId
+        updateData.hotelName = resolvedHotel.hotelName
+      }
+      if ('hotelExpense' in updates && isValidHotelExpense(updates.hotelExpense)) {
+        updateData.hotelExpense = updates.hotelExpense
+      }
       if ('roomNumber' in updates) updateData.roomNumber = updates.roomNumber ?? null
       if ('locationMemo' in updates) updateData.locationMemo = updates.locationMemo ?? null
       if ('notes' in updates) updateData.notes = updates.notes ?? null
+      if ('storeMemo' in updates) updateData.storeMemo = updates.storeMemo ?? null
       if ('storeRevenue' in updates && typeof updates.storeRevenue === 'number') {
         updateData.storeRevenue = updates.storeRevenue
       }
@@ -1077,11 +1369,11 @@ export async function PUT(request: NextRequest) {
         updateData.staffRevenue = updates.staffRevenue
       }
 
-      if (updates.startTime) {
-        updateData.startTime = new Date(updates.startTime)
+      if (startTimeChanged) {
+        updateData.startTime = nextStartTime
       }
-      if (updates.endTime) {
-        updateData.endTime = new Date(updates.endTime)
+      if (endTimeChanged) {
+        updateData.endTime = nextEndTime
       }
 
       if (updateData.castId) {
@@ -1104,164 +1396,162 @@ export async function PUT(request: NextRequest) {
         effectiveCourse = courseExists
       }
 
-      if (updateData.areaId) {
-        const areaExists = await tx.areaInfo.findFirst({
-          where: { id: updateData.areaId as string, storeId },
+      const areaSpecified = Object.prototype.hasOwnProperty.call(updates, 'areaId')
+      const stationSpecified = Object.prototype.hasOwnProperty.call(updates, 'stationId')
+      if (areaSpecified || stationSpecified) {
+        const resolvedLocation = await resolveReservationLocation(tx, {
+          storeId,
+          areaSpecified,
+          stationSpecified,
+          requestedAreaId: updates.areaId,
+          requestedStationId: updates.stationId,
+          currentAreaId: previousReservation.areaId ?? null,
+          currentStationId: previousReservation.stationId ?? null,
         })
-        if (!areaExists) {
-          throw new Error('指定されたエリアが存在しません。')
-        }
+        updateData.areaId = resolvedLocation.areaId
+        updateData.stationId = resolvedLocation.stationId
       }
 
-      if (updateData.stationId) {
-        const stationExists = await tx.stationInfo.findFirst({
-          where: { id: updateData.stationId as string, storeId },
-        })
-        if (!stationExists) {
-          throw new Error('指定された駅が存在しません。')
-        }
-      }
-
-      if (
-        updates.paymentMethod !== undefined ||
-        nextPaymentMethod !== previousReservation.paymentMethod
-      ) {
+      if (updates.paymentMethod !== undefined) {
         updateData.paymentMethod = nextPaymentMethod
       }
 
-      const transportFee =
-        typeof updates.transportationFee === 'number'
-          ? updates.transportationFee
-          : (previousReservation.transportationFee ?? 0)
-      const additionalFee =
-        typeof updates.additionalFee === 'number'
-          ? updates.additionalFee
-          : (previousReservation.additionalFee ?? 0)
-      const discountAmount =
-        typeof updates.discountAmount === 'number'
-          ? updates.discountAmount
-          : (previousReservation.discountAmount ?? 0)
+      if (shouldRecalculateRevenue) {
+        const transportFee =
+          typeof updates.transportationFee === 'number'
+            ? updates.transportationFee
+            : (previousReservation.transportationFee ?? 0)
+        const additionalFee =
+          typeof updates.additionalFee === 'number'
+            ? updates.additionalFee
+            : (previousReservation.additionalFee ?? 0)
+        const discountAmount =
+          typeof updates.discountAmount === 'number'
+            ? updates.discountAmount
+            : (previousReservation.discountAmount ?? 0)
 
-      const existingPointsUsed = previousReservation.pointsUsed ?? 0
+        const existingPointsUsed = previousReservation.pointsUsed ?? 0
 
-      const currentOptionShares =
-        normalizedOptionIds === null
-          ? (previousReservation.options ?? []).map((option: any) => ({
-              price: Number(option?.option?.price ?? option?.optionPrice ?? 0),
-              storeShare: option?.storeShare ?? option?.option?.storeShare ?? null,
-              castShare: option?.castShare ?? option?.option?.castShare ?? null,
-            }))
-          : (normalizedOptionIds ?? []).map((optionId) => {
-              const record = optionRecordMap?.get(optionId)
-              if (record) {
-                return {
-                  price: record.price,
-                  storeShare: record.storeShare,
-                  castShare: record.castShare,
+        const currentOptionShares =
+          normalizedOptionIds === null
+            ? (previousReservation.options ?? []).map((option: any) => ({
+                price: Number(option?.option?.price ?? option?.optionPrice ?? 0),
+                storeShare: option?.storeShare ?? option?.option?.storeShare ?? null,
+                castShare: option?.castShare ?? option?.option?.castShare ?? null,
+              }))
+            : (normalizedOptionIds ?? []).map((optionId) => {
+                const record = optionRecordMap?.get(optionId)
+                if (record) {
+                  return {
+                    price: record.price,
+                    storeShare: record.storeShare,
+                    castShare: record.castShare,
+                  }
                 }
-              }
-              const fallback = previousReservation.options?.find(
-                (entry: any) =>
-                  entry.optionId === optionId ||
-                  entry.option?.id === optionId ||
-                  entry.option?.name === optionId
-              )
-              return {
-                price: Number(fallback?.option?.price ?? fallback?.optionPrice ?? 0),
-                storeShare: fallback?.storeShare ?? fallback?.option?.storeShare ?? null,
-                castShare: fallback?.castShare ?? fallback?.option?.castShare ?? null,
-              }
-            })
+                const fallback = previousReservation.options?.find(
+                  (entry: any) =>
+                    entry.optionId === optionId ||
+                    entry.option?.id === optionId ||
+                    entry.option?.name === optionId
+                )
+                return {
+                  price: Number(fallback?.option?.price ?? fallback?.optionPrice ?? 0),
+                  storeShare: fallback?.storeShare ?? fallback?.option?.storeShare ?? null,
+                  castShare: fallback?.castShare ?? fallback?.option?.castShare ?? null,
+                }
+              })
 
-      const nextDesignationType =
-        'designationType' in updates
-          ? (updates.designationType ?? null)
-          : previousReservation.designationType
-      const designationAmount =
-        typeof updates.designationFee === 'number'
-          ? updates.designationFee
-          : (previousReservation.designationFee ?? 0)
+        const nextDesignationType =
+          'designationType' in updates
+            ? (updates.designationType ?? null)
+            : previousReservation.designationType
+        const designationAmount =
+          typeof updates.designationFee === 'number'
+            ? updates.designationFee
+            : (previousReservation.designationFee ?? 0)
 
-      let designationShare: { storeShare: number | null; castShare: number | null } | null = null
-      if (designationAmount > 0 && nextDesignationType) {
-        designationShare = await tx.designationFee.findFirst({
-          where: { storeId, name: nextDesignationType },
-          select: { storeShare: true, castShare: true },
-        })
+        let designationShare: { storeShare: number | null; castShare: number | null } | null = null
+        if (designationAmount > 0 && nextDesignationType) {
+          designationShare = await tx.designationFee.findFirst({
+            where: { storeId, name: nextDesignationType },
+            select: { storeShare: true, castShare: true },
+          })
+        }
+
+        const rawWelfareRate =
+          effectiveCast?.welfareExpenseRate ?? storeSettings?.welfareExpenseRate ?? 10
+        const normalizedWelfareRate =
+          typeof rawWelfareRate === 'number' && Number.isFinite(Number(rawWelfareRate))
+            ? Number(rawWelfareRate)
+            : 10
+
+        const baseCoursePrice = Number(
+          effectiveCourse?.price ??
+            previousReservation.course?.price ??
+            previousReservation.price ??
+            0
+        )
+
+        const revenueInputBase = {
+          basePrice: baseCoursePrice,
+          options: currentOptionShares,
+          designation:
+            designationAmount > 0
+              ? {
+                  amount: designationAmount,
+                  storeShare: designationShare?.storeShare ?? 0,
+                  castShare: designationShare?.castShare ?? designationAmount,
+                }
+              : null,
+          transportationFee: transportFee,
+          additionalFee,
+          discountAmount,
+          welfareRate: normalizedWelfareRate,
+        }
+
+        const revenue =
+          existingPointsUsed > 0
+            ? calculateReservationRevenue({
+                ...revenueInputBase,
+                discountAmount: discountAmount + existingPointsUsed,
+              })
+            : calculateReservationRevenue(revenueInputBase)
+
+        const providedStoreRevenue =
+          typeof updates.storeRevenue === 'number' && Number.isFinite(updates.storeRevenue)
+            ? updates.storeRevenue
+            : null
+
+        let storeRevenue =
+          providedStoreRevenue !== null
+            ? Math.max(providedStoreRevenue, revenue.storeRevenue)
+            : revenue.storeRevenue
+
+        if (storeRevenue > revenue.total) {
+          storeRevenue = revenue.total
+        }
+
+        const providedStaffRevenue =
+          typeof updates.staffRevenue === 'number' && Number.isFinite(updates.staffRevenue)
+            ? updates.staffRevenue
+            : null
+        let staffRevenue =
+          providedStaffRevenue !== null ? providedStaffRevenue : revenue.staffRevenue
+
+        if (providedStoreRevenue !== null && providedStoreRevenue < revenue.storeRevenue) {
+          staffRevenue = Math.max(revenue.total - storeRevenue, 0)
+        } else if (!Number.isFinite(staffRevenue) || staffRevenue < 0) {
+          staffRevenue = Math.max(revenue.total - storeRevenue, 0)
+        }
+
+        if (typeof updates.price !== 'number') {
+          updateData.price = revenue.total
+        }
+
+        updateData.storeRevenue = storeRevenue
+        updateData.staffRevenue = staffRevenue
+        updateData.welfareExpense = revenue.welfareExpense
       }
-
-      const rawWelfareRate =
-        effectiveCast?.welfareExpenseRate ?? storeSettings?.welfareExpenseRate ?? 10
-      const normalizedWelfareRate =
-        typeof rawWelfareRate === 'number' && Number.isFinite(Number(rawWelfareRate))
-          ? Number(rawWelfareRate)
-          : 10
-
-      const baseCoursePrice = Number(
-        effectiveCourse?.price ??
-          previousReservation.course?.price ??
-          previousReservation.price ??
-          0
-      )
-
-      const revenueInputBase = {
-        basePrice: baseCoursePrice,
-        options: currentOptionShares,
-        designation:
-          designationAmount > 0
-            ? {
-                amount: designationAmount,
-                storeShare: designationShare?.storeShare ?? 0,
-                castShare: designationShare?.castShare ?? designationAmount,
-              }
-            : null,
-        transportationFee: transportFee,
-        additionalFee,
-        discountAmount,
-        welfareRate: normalizedWelfareRate,
-      }
-
-      const revenue =
-        existingPointsUsed > 0
-          ? calculateReservationRevenue({
-              ...revenueInputBase,
-              discountAmount: discountAmount + existingPointsUsed,
-            })
-          : calculateReservationRevenue(revenueInputBase)
-
-      const providedStoreRevenue =
-        typeof updates.storeRevenue === 'number' && Number.isFinite(updates.storeRevenue)
-          ? updates.storeRevenue
-          : null
-
-      let storeRevenue =
-        providedStoreRevenue !== null
-          ? Math.max(providedStoreRevenue, revenue.storeRevenue)
-          : revenue.storeRevenue
-
-      if (storeRevenue > revenue.total) {
-        storeRevenue = revenue.total
-      }
-
-      const providedStaffRevenue =
-        typeof updates.staffRevenue === 'number' && Number.isFinite(updates.staffRevenue)
-          ? updates.staffRevenue
-          : null
-      let staffRevenue = providedStaffRevenue !== null ? providedStaffRevenue : revenue.staffRevenue
-
-      if (providedStoreRevenue !== null && providedStoreRevenue < revenue.storeRevenue) {
-        staffRevenue = Math.max(revenue.total - storeRevenue, 0)
-      } else if (!Number.isFinite(staffRevenue) || staffRevenue < 0) {
-        staffRevenue = Math.max(revenue.total - storeRevenue, 0)
-      }
-
-      if (typeof updates.price !== 'number') {
-        updateData.price = revenue.total
-      }
-
-      updateData.storeRevenue = storeRevenue
-      updateData.staffRevenue = staffRevenue
-      updateData.welfareExpense = revenue.welfareExpense
 
       const updated = await tx.reservation.update({
         where: { id },
@@ -1547,7 +1837,9 @@ export async function PUT(request: NextRequest) {
 
       if (previousReservation.status !== 'completed' && updated.status === 'completed') {
         const earnedPoints = calculateEarnedPoints(
-          typeof updated.price === 'number' ? updated.price : revenue.total,
+          typeof updated.price === 'number'
+            ? updated.price
+            : Number(previousReservation.price ?? 0),
           pointConfig
         )
         if (earnedPoints > 0) {
@@ -1579,7 +1871,7 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    if (updates.startTime || updates.endTime) {
+    if (changesTime) {
       try {
         await notificationService.sendReservationModification(updatedReservation, {
           startTime: existingReservation.startTime,
@@ -1590,8 +1882,19 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(updatedReservation)
+    return NextResponse.json(
+      sanitizeReservationResponseForRole(updatedReservation, session.user.role)
+    )
   } catch (error) {
+    if (error instanceof ReservationLocationError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: 400 })
+    }
+    if (error instanceof InvalidOptionSelectionError) {
+      return invalidOptionSelectionResponse(error)
+    }
+    if (error instanceof ReservationHotelError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: 400 })
+    }
     logger.error({ err: error }, 'Error updating reservation')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -1613,6 +1916,16 @@ export async function DELETE(request: NextRequest) {
 
     if (!session) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    if (session.user.role !== 'admin' && session.user.role !== 'customer') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+    if (isAdmin && !hasPermission(session.user.permissions ?? [], 'reservation:delete')) {
+      return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
+    }
+    if (isAdmin && !canAdminAccessStore(session.user, storeId)) {
+      return NextResponse.json({ error: 'この店舗を操作する権限がありません' }, { status: 403 })
     }
 
     const existingReservation = await db.reservation.findFirst({
@@ -1660,7 +1973,9 @@ export async function DELETE(request: NextRequest) {
       logger.error({ err: notificationError }, 'Failed to send notification')
     }
 
-    return NextResponse.json(cancelledReservation)
+    return NextResponse.json(
+      sanitizeReservationResponseForRole(cancelledReservation, session.user.role)
+    )
   } catch (error) {
     logger.error({ err: error }, 'Error deleting reservation')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

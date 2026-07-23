@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Review domain and public response contracts
+ * @related_to   Review service, Review API, and public review UI
+ * @known_issues None currently
+ */
 import { BaseEntity } from '../shared'
 
 export type ReviewStatus = 'pending' | 'published' | 'hidden'
@@ -43,3 +48,22 @@ export interface ReviewStats {
     count: number
   }>
 }
+
+export type PublicReview = Pick<
+  Review,
+  | 'id'
+  | 'createdAt'
+  | 'castName'
+  | 'customerAlias'
+  | 'customerArea'
+  | 'rating'
+  | 'comment'
+  | 'visitDate'
+  | 'courseName'
+  | 'options'
+  | 'isVerified'
+  | 'helpful'
+  | 'tags'
+  | 'response'
+  | 'status'
+>

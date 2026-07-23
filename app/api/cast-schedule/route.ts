@@ -11,13 +11,20 @@ import { handleApiError, ErrorResponses } from '@/lib/api/errors'
 import { SuccessResponses } from '@/lib/api/responses'
 import { Prisma } from '@prisma/client'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
+import { sanitizeResponseData } from '@/lib/http/sanitize-response'
+
+const SCHEDULE_PRIVATE_CAST_FIELDS = ['loginEmail', 'lineUserId', 'welfareExpenseRate']
+
+function sanitizeScheduleResponse<T>(value: T): T {
+  return sanitizeResponseData(value, SCHEDULE_PRIVATE_CAST_FIELDS)
+}
 
 export async function GET(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
     const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'cast:read', storeId })
+    if (authError) return authError
+
     const searchParams = request.nextUrl.searchParams
     const id = searchParams.get('id')
     const castId = searchParams.get('castId')
@@ -42,7 +49,7 @@ export async function GET(request: NextRequest) {
         return ErrorResponses.notFound('スケジュール')
       }
 
-      return SuccessResponses.ok(schedule)
+      return SuccessResponses.ok(sanitizeScheduleResponse(schedule))
     }
 
     // Build filters for querying schedules
@@ -70,7 +77,7 @@ export async function GET(request: NextRequest) {
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     })
 
-    return SuccessResponses.ok(schedules)
+    return SuccessResponses.ok(sanitizeScheduleResponse(schedules))
   } catch (error) {
     logger.error({ err: error }, 'Error fetching cast schedule data')
     return handleApiError(error)
@@ -78,11 +85,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
     const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'cast:create', storeId })
+    if (authError) return authError
+
     const data = await request.json()
 
     const cast = await db.cast.findFirst({
@@ -106,7 +113,10 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return SuccessResponses.created(newSchedule, 'スケジュールが作成されました')
+    return SuccessResponses.created(
+      sanitizeScheduleResponse(newSchedule),
+      'スケジュールが作成されました'
+    )
   } catch (error) {
     logger.error({ err: error }, 'Error creating cast schedule')
     return handleApiError(error)
@@ -114,11 +124,11 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
     const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'cast:update', storeId })
+    if (authError) return authError
+
     const data = await request.json()
     const { id, ...updates } = data
 
@@ -162,7 +172,7 @@ export async function PUT(request: NextRequest) {
       },
     })
 
-    return SuccessResponses.updated(updatedSchedule)
+    return SuccessResponses.updated(sanitizeScheduleResponse(updatedSchedule))
   } catch (error) {
     logger.error({ err: error }, 'Error updating cast schedule')
     return handleApiError(error)
@@ -170,11 +180,11 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
     const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'cast:delete', storeId })
+    if (authError) return authError
+
     const searchParams = request.nextUrl.searchParams
     const id = searchParams.get('id')
 

@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @design_doc   Booking timeline renders availability from anonymous blocked time ranges
+ * @related_to   public-schedule.ts and the public store schedule endpoint
+ * @known_issues Slot duration is fixed at thirty minutes
+ */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { addDays, format, isSameDay, parseISO } from 'date-fns'
 import { ja } from 'date-fns/locale'
@@ -16,9 +21,9 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import type { PublicCastSchedule, PublicScheduleDay } from '@/lib/store/public-schedule'
 import { cn } from '@/lib/utils'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 
 const SLOT_MINUTES = 30
-const BOOKED_STATUSES = new Set(['pending', 'confirmed', 'completed', 'modifiable'])
 
 type TimelineSlot = {
   id: string
@@ -34,6 +39,7 @@ interface CastTimelineModalProps {
   initialDate: Date
   selectedCastId?: string | null
   selectedSlotIso?: string | null
+  storeId: string
   onClose: () => void
   onSelectSlot: (castId: string, slotIso: string) => void
 }
@@ -58,9 +64,6 @@ function buildTimelineSlots(entry: PublicCastSchedule): TimelineSlot[] {
     const slotStart = new Date(ts)
     const slotEnd = new Date(Math.min(ts + SLOT_MINUTES * 60 * 1000, end.getTime()))
     const hasReservation = reservations.some((reservation) => {
-      if (!BOOKED_STATUSES.has(reservation.status)) {
-        return false
-      }
       const resStart = new Date(reservation.startTime)
       const resEnd = new Date(reservation.endTime)
       if (Number.isNaN(resStart.getTime()) || Number.isNaN(resEnd.getTime())) {
@@ -87,6 +90,7 @@ export function CastTimelineModal({
   initialDate,
   selectedCastId,
   selectedSlotIso,
+  storeId,
   onClose,
   onSelectSlot,
 }: CastTimelineModalProps) {
@@ -111,7 +115,10 @@ export function CastTimelineModal({
     setError(null)
     try {
       const response = await fetch(
-        `/api/store-schedule?date=${encodeURIComponent(activeDateKey)}&days=1&_=${refreshKey}`,
+        buildStoreScopedEndpoint(
+          `/api/store-schedule?date=${encodeURIComponent(activeDateKey)}&days=1&_=${refreshKey}`,
+          storeId
+        ),
         {
           cache: 'no-store',
           credentials: 'include',
@@ -129,7 +136,7 @@ export function CastTimelineModal({
     } finally {
       setLoading(false)
     }
-  }, [activeDateKey, open, refreshKey])
+  }, [activeDateKey, open, refreshKey, storeId])
 
   useEffect(() => {
     fetchSchedule()
@@ -224,13 +231,10 @@ export function CastTimelineModal({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent
-        className="max-h-[90vh] w-full max-w-5xl overflow-hidden"
-        aria-describedby="cast-timeline-description"
-      >
+      <DialogContent className="max-h-[90vh] w-full max-w-5xl overflow-hidden">
         <DialogHeader>
           <DialogTitle>タイムラインで空き状況を確認</DialogTitle>
-          <DialogDescription id="cast-timeline-description" className="sr-only">
+          <DialogDescription className="sr-only">
             選択した日のキャスト別空き時間を確認し、予約枠を選択できます。
           </DialogDescription>
         </DialogHeader>

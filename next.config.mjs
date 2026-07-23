@@ -1,21 +1,17 @@
+/**
+ * @design_doc   docs/VPS_DEPLOYMENT.md
+ * @related_to   deploy/xserver-vps/Dockerfile - Packages the standalone Next.js output
+ * @known_issues docs/VPS_DEPLOYMENT.md
+ */
 import path from 'node:path'
 
-if (!process.env.NEXTAUTH_URL?.trim()) {
-  process.env.NEXTAUTH_URL = 'http://localhost:3000'
-}
-
-if (!process.env.NEXTAUTH_URL_INTERNAL?.trim()) {
+if (!process.env.NEXTAUTH_URL_INTERNAL?.trim() && process.env.NEXTAUTH_URL?.trim()) {
   process.env.NEXTAUTH_URL_INTERNAL = process.env.NEXTAUTH_URL
 }
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  output: 'standalone',
   transpilePackages: ['date-fns-tz'],
   images: {
     unoptimized: true,

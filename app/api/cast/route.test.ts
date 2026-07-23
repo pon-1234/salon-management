@@ -5,10 +5,11 @@
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { GET, POST, PUT, DELETE } from './route'
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 // Import the mocked db
 import { db } from '@/lib/db'
+import { requireAdmin } from '@/lib/auth/utils'
 
 // Mock auth utils
 vi.mock('@/lib/auth/utils', () => ({
@@ -31,6 +32,7 @@ describe('Cast API endpoints', () => {
   beforeEach(() => {
     // Reset all mocks before each test
     vi.clearAllMocks()
+    vi.mocked(requireAdmin).mockResolvedValue(null)
   })
 
   describe('GET /api/cast', () => {
@@ -40,7 +42,16 @@ describe('Cast API endpoints', () => {
           id: '1',
           name: 'Test Cast 1',
           schedules: [],
-          reservations: [],
+          passwordHash: 'cast-list-secret',
+          reservations: [
+            {
+              customer: {
+                id: 'customer-1',
+                password: 'customer-list-secret',
+                emailVerificationToken: 'verification-secret',
+              },
+            },
+          ],
           age: 25,
           height: 170,
           bust: 'B',
@@ -107,6 +118,9 @@ describe('Cast API endpoints', () => {
         availableOptions: [],
         appointments: [],
       })
+      expect(JSON.stringify(data)).not.toMatch(
+        /cast-list-secret|customer-list-secret|verification-secret/
+      )
       expect(mockedDb.cast.findMany).toHaveBeenCalledWith({
         where: { storeId: 'ikebukuro' },
         include: {
@@ -120,12 +134,34 @@ describe('Cast API endpoints', () => {
           },
         },
       })
+      expect(requireAdmin).toHaveBeenCalledWith({
+        permissions: 'cast:read',
+        storeId: 'ikebukuro',
+      })
+    })
+
+    it('should reject a user without cast read access before querying data', async () => {
+      vi.mocked(requireAdmin).mockResolvedValueOnce(
+        NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      )
+
+      const response = await GET(new NextRequest('http://localhost:3000/api/cast'))
+
+      expect(response.status).toBe(403)
+      expect(mockedDb.cast.findMany).not.toHaveBeenCalled()
     })
 
     it('should return a cast member by id', async () => {
       const mockCast = {
         id: 'test-id',
         name: 'Test Cast',
+        nameKana: 'てすと きゃすと',
+        passwordHash: 'single-cast-secret',
+        publicProfile: {
+          legacyGirlNo: 56229,
+          bustCup: 3,
+          snapshotCutoff: '2026-07-20T04:00:00.000Z',
+        },
         schedules: [],
         reservations: [],
       }
@@ -138,6 +174,11 @@ describe('Cast API endpoints', () => {
 
       expect(response.status).toBe(200)
       expect(data).toHaveProperty('id', 'test-id')
+      expect(data).toHaveProperty('nameKana', 'てすと きゃすと')
+      expect(data).toHaveProperty('publicProfile', null)
+      expect(JSON.stringify(data)).not.toContain('single-cast-secret')
+      expect(JSON.stringify(data)).not.toContain('legacyGirlNo')
+      expect(JSON.stringify(data)).not.toContain('snapshotCutoff')
       expect(mockedDb.cast.findFirst).toHaveBeenCalledWith({
         where: { id: 'test-id', storeId: 'ikebukuro' },
         include: {
@@ -171,9 +212,34 @@ describe('Cast API endpoints', () => {
   })
 
   describe('POST /api/cast', () => {
+    it('rejects direct LINE user ID assignment', async () => {
+      const response = await POST(
+        new NextRequest('http://localhost:3000/api/cast', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: 'Test Cast',
+            age: 25,
+            height: 165,
+            bust: 'B',
+            waist: 58,
+            hip: 85,
+            type: 'カワイイ系',
+            image: 'https://example.com/test-cast.jpg',
+            lineUserId: 'attacker-controlled-line-id',
+          }),
+        })
+      )
+      const data = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(data).toEqual({ error: 'LINE user ID is managed by the secure linking flow' })
+      expect(mockedDb.cast.create).not.toHaveBeenCalled()
+    })
+
     it('should create a new cast member', async () => {
       const castData = {
         name: 'Test Cast',
+        nameKana: 'てすと きゃすと',
         age: 25,
         height: 165,
         bust: 'B',
@@ -202,6 +268,7 @@ describe('Cast API endpoints', () => {
         reservations: [],
       }
 
+      mockedDb.optionPrice.findMany.mockResolvedValueOnce([{ id: '6' }, { id: '10' }])
       mockedDb.cast.create.mockResolvedValue(mockCreatedCast)
 
       const request = new NextRequest('http://localhost:3000/api/cast', {
@@ -222,19 +289,76 @@ describe('Cast API endpoints', () => {
       expect(data).toHaveProperty('updatedAt')
       expect(mockedDb.cast.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
+          nameKana: 'てすと きゃすと',
           availableOptions: ['6', '10'],
           storeId: 'ikebukuro',
         }),
         include: { castOptionSettings: true },
       })
+      expect(requireAdmin).toHaveBeenCalledWith({
+        permissions: 'cast:create',
+        storeId: 'ikebukuro',
+      })
+    })
+
+    it('rejects option IDs that do not belong to the target store before creating a cast', async () => {
+      mockedDb.optionPrice.findMany.mockResolvedValueOnce([{ id: 'option-in-store' }])
+
+      const response = await POST(
+        new NextRequest('http://localhost:3000/api/cast?storeId=store-a', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: 'Test Cast',
+            age: 25,
+            height: 165,
+            bust: 'B',
+            waist: 58,
+            hip: 85,
+            type: 'カワイイ系',
+            image: 'https://example.com/test-cast.jpg',
+            availableOptions: ['option-in-store', 'option-from-store-b'],
+          }),
+        })
+      )
+      const data = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(data).toEqual({ error: 'One or more options are unavailable for this store' })
+      expect(mockedDb.optionPrice.findMany).toHaveBeenCalledWith({
+        where: {
+          id: { in: ['option-in-store', 'option-from-store-b'] },
+          storeId: 'store-a',
+        },
+        select: { id: true },
+      })
+      expect(mockedDb.cast.create).not.toHaveBeenCalled()
     })
   })
 
   describe('PUT /api/cast', () => {
+    it('rejects direct LINE user ID changes', async () => {
+      const response = await PUT(
+        new NextRequest('http://localhost:3000/api/cast', {
+          method: 'PUT',
+          body: JSON.stringify({
+            id: 'test-id',
+            lineUserId: 'attacker-controlled-line-id',
+          }),
+        })
+      )
+      const data = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(data).toEqual({ error: 'LINE user ID is managed by the secure linking flow' })
+      expect(mockedDb.cast.findFirst).not.toHaveBeenCalled()
+      expect(mockedDb.cast.update).not.toHaveBeenCalled()
+    })
+
     it('should update an existing cast member', async () => {
       const updateData = {
         id: 'test-id',
         name: 'Updated Cast',
+        nameKana: 'あっぷでーと きゃすと',
         age: 26,
         availableOptions: ['healing-knee', '1'],
       }
@@ -247,6 +371,7 @@ describe('Cast API endpoints', () => {
         reservations: [],
       }
 
+      mockedDb.optionPrice.findMany.mockResolvedValueOnce([{ id: '1' }])
       // Mock findFirst to return existing cast
       mockedDb.cast.findFirst.mockResolvedValue({ id: 'test-id', name: 'Old Cast' })
       mockedDb.cast.update.mockResolvedValue(mockUpdatedCast)
@@ -272,11 +397,48 @@ describe('Cast API endpoints', () => {
         where: { id: 'test-id' },
         data: expect.objectContaining({
           name: 'Updated Cast',
+          nameKana: 'あっぷでーと きゃすと',
           age: 26,
           availableOptions: ['1'],
         }),
         include: { castOptionSettings: true },
       })
+      expect(requireAdmin).toHaveBeenCalledWith({
+        permissions: 'cast:update',
+        storeId: 'ikebukuro',
+      })
+    })
+
+    it('rejects option settings from another store before updating assignments', async () => {
+      mockedDb.cast.findFirst.mockResolvedValue({ id: 'test-id', storeId: 'store-a' })
+      mockedDb.optionPrice.findMany.mockResolvedValueOnce([{ id: 'option-in-store' }])
+
+      const response = await PUT(
+        new NextRequest('http://localhost:3000/api/cast?storeId=store-a', {
+          method: 'PUT',
+          body: JSON.stringify({
+            id: 'test-id',
+            availableOptionSettings: [
+              { optionId: 'option-in-store', visibility: 'public' },
+              { optionId: 'option-from-store-b', visibility: 'internal' },
+            ],
+          }),
+        })
+      )
+      const data = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(data).toEqual({ error: 'One or more options are unavailable for this store' })
+      expect(mockedDb.optionPrice.findMany).toHaveBeenCalledWith({
+        where: {
+          id: { in: ['option-in-store', 'option-from-store-b'] },
+          storeId: 'store-a',
+        },
+        select: { id: true },
+      })
+      expect(mockedDb.cast.update).not.toHaveBeenCalled()
+      expect(mockedDb.castOptionSetting.deleteMany).not.toHaveBeenCalled()
+      expect(mockedDb.castOptionSetting.createMany).not.toHaveBeenCalled()
     })
 
     it('should return 404 for non-existent cast member', async () => {
@@ -435,6 +597,10 @@ describe('Cast API endpoints', () => {
       expect(response.status).toBe(200)
       expect(mockedDb.cast.delete).toHaveBeenCalledWith({
         where: { id: 'test-id' },
+      })
+      expect(requireAdmin).toHaveBeenCalledWith({
+        permissions: 'cast:delete',
+        storeId: 'ikebukuro',
       })
     })
 

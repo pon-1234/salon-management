@@ -58,7 +58,6 @@ const adminNavigationLinks = [
   { href: '/admin/cast/weekly-schedule', label: '出勤表', icon: Clock },
   { href: '/admin/customers', label: '顧客管理', icon: Search },
   { href: '/admin/reviews', label: '口コミ', icon: Star },
-  { href: '/admin/search', label: '検索', icon: Search },
   { href: '/admin/settings', label: '設定', icon: Settings },
 ]
 
@@ -139,7 +138,7 @@ export function Header() {
       <div className="fixed left-0 right-0 top-0 z-50 flex items-center gap-4 border-b bg-white p-4 shadow-sm">
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="md:hidden" aria-label="メニューを開く">
+            <Button variant="outline" size="icon" className="xl:hidden" aria-label="メニューを開く">
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
@@ -171,7 +170,7 @@ export function Header() {
           </SheetContent>
         </Sheet>
 
-        <Link href="/admin/dashboard" className="hidden md:block">
+        <Link href="/admin/dashboard" className="hidden xl:block">
           <Button
             variant="ghost"
             className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
@@ -187,7 +186,7 @@ export function Header() {
         <Button
           type="button"
           variant="ghost"
-          className="hidden h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2 md:flex"
+          className="hidden h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2 xl:flex"
           onClick={() => setShowCustomerSelection(true)}
         >
           <Calendar className="h-5 w-5" />
@@ -197,14 +196,14 @@ export function Header() {
         <Button
           type="button"
           variant="ghost"
-          className="hidden h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2 md:flex"
+          className="hidden h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2 xl:flex"
           onClick={() => setShowCustomerLookup(true)}
         >
           <Search className="h-5 w-5" />
           <span className="text-xs text-gray-600">顧客検索</span>
         </Button>
 
-        <Link href="/admin/reservation-list" className="hidden md:block">
+        <Link href="/admin/reservation-list" className="hidden xl:block">
           <Button
             variant="ghost"
             className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
@@ -214,7 +213,7 @@ export function Header() {
           </Button>
         </Link>
 
-        <Link href="/admin/chat" className="hidden md:block">
+        <Link href="/admin/chat" className="hidden xl:block">
           <Button
             variant="ghost"
             className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
@@ -224,7 +223,7 @@ export function Header() {
           </Button>
         </Link>
 
-        <Link href="/admin/cast/list" className="hidden md:block">
+        <Link href="/admin/cast/list" className="hidden xl:block">
           <Button
             variant="ghost"
             className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
@@ -234,7 +233,7 @@ export function Header() {
           </Button>
         </Link>
 
-        <Link href="/admin/cast/weekly-schedule" className="hidden md:block">
+        <Link href="/admin/cast/weekly-schedule" className="hidden xl:block">
           <Button
             variant="ghost"
             className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
@@ -244,7 +243,7 @@ export function Header() {
           </Button>
         </Link>
 
-        <div className="hidden md:block">
+        <div className="hidden xl:block">
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -292,7 +291,7 @@ export function Header() {
         </div>
 
         {canViewAnalytics && (
-          <Link href="/admin/analytics/daily-sales" className="hidden md:block">
+          <Link href="/admin/analytics/daily-sales" className="hidden xl:block">
             <Button
               variant="ghost"
               className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
@@ -303,7 +302,7 @@ export function Header() {
           </Link>
         )}
 
-        <Link href="/admin/reviews" className="hidden md:block">
+        <Link href="/admin/reviews" className="hidden xl:block">
           <Button
             variant="ghost"
             className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
@@ -313,17 +312,7 @@ export function Header() {
           </Button>
         </Link>
 
-        <Link href="/admin/search" className="hidden md:block">
-          <Button
-            variant="ghost"
-            className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
-          >
-            <Search className="h-5 w-5" />
-            <span className="text-xs text-gray-600">検索</span>
-          </Button>
-        </Link>
-
-        <Link href="/admin/settings" className="hidden md:block">
+        <Link href="/admin/settings" className="hidden xl:block">
           <Button
             variant="ghost"
             className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"

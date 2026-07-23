@@ -1,7 +1,7 @@
 /**
  * @design_doc   Issue #5 - Payment System Integration
  * @related_to   PaymentProvider (provider abstraction), PaymentTransaction (data models)
- * @known_issues None identified
+ * @known_issues Online provider reconciliation remains disabled until a provider is approved
  */
 
 import { PaymentProvider } from './providers/base'
@@ -17,7 +17,11 @@ import {
 import { db } from '@/lib/db'
 import logger from '@/lib/logger'
 import { validatePaymentRequest, sanitizeMetadata } from './validators'
-import { PaymentProviderNotFoundError } from './errors'
+import {
+  ActivePaymentConflictError,
+  isActivePaymentConflictError,
+  PaymentProviderNotFoundError,
+} from './errors'
 
 export class PaymentService {
   private providers: Record<string, PaymentProvider>
@@ -294,6 +298,10 @@ export class PaymentService {
         'Transaction saved to database'
       )
     } catch (error) {
+      if (isActivePaymentConflictError(error)) {
+        throw new ActivePaymentConflictError()
+      }
+
       logger.error(
         {
           action: 'save_transaction_error',

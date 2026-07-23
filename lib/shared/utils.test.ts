@@ -1,3 +1,8 @@
+/**
+ * @design_doc   refactor-instructions.md Phase 4 shared timezone utilities
+ * @related_to   utils.ts - shared presentation formatters
+ * @known_issues None currently
+ */
 import { describe, it, expect } from 'vitest'
 import {
   generateId,
@@ -66,12 +71,7 @@ describe('Shared Utilities', () => {
     })
 
     it('should format a date to show only time', () => {
-      // Adjust for timezone differences in test environment
-      const timeString = new Date('2024-07-27T19:20:30+09:00').toLocaleTimeString('ja-JP', {
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-      expect(formatDate(testDate, 'time')).toBe(timeString)
+      expect(formatDate(testDate, 'time')).toBe('19:20')
     })
 
     it('should handle string input', () => {
@@ -92,6 +92,10 @@ describe('Shared Utilities', () => {
       const expectedDate = '2024/7/27'
       const expectedTime = '19:20'
       expect(formatDateTime(testDateString)).toBe(`${expectedDate} ${expectedTime}`)
+    })
+
+    it('should format the JST date across the UTC-to-JST date boundary', () => {
+      expect(formatDateTime('2024-07-27T15:20:30.000Z')).toBe('2024/7/28 00:20')
     })
   })
 

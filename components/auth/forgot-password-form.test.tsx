@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Store-scoped password recovery form behavior
+ * @related_to   ForgotPasswordForm and forgot-password API
+ * @known_issues Delivery receipt is outside browser unit-test scope
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -96,15 +101,16 @@ describe('ForgotPasswordForm', () => {
     expect(global.fetch).toHaveBeenCalledWith('/api/auth/forgot-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'test@example.com' }),
+      body: JSON.stringify({ email: 'test@example.com', storeId: '1' }),
     })
   })
 
-  it('should show success message even on API error (security)', async () => {
+  it('shows an honest retry message on a rate-limit response', async () => {
     const user = userEvent.setup()
     vi.mocked(global.fetch).mockResolvedValueOnce({
       ok: false,
-      json: async () => ({ error: 'User not found' }),
+      status: 429,
+      json: async () => ({ message: '現在処理できません。しばらくしてからお試しください' }),
     } as Response)
 
     render(<ForgotPasswordForm store={mockStore} />)
@@ -117,14 +123,14 @@ describe('ForgotPasswordForm', () => {
     await user.click(submitButton)
 
     await waitFor(() => {
-      const successTitles = screen.getAllByText('送信完了')
-      expect(successTitles[0]).toBeInTheDocument()
-      const successMessages = screen.getAllByText('パスワードリセットの手順をメールで送信しました')
-      expect(successMessages[0]).toBeInTheDocument()
+      expect(
+        screen.getByText('現在処理できません。しばらくしてからお試しください')
+      ).toBeInTheDocument()
     })
+    expect(screen.queryByText('送信完了')).not.toBeInTheDocument()
   })
 
-  it('should show success message even on network error (security)', async () => {
+  it('shows a retry message on network error', async () => {
     const user = userEvent.setup()
     vi.mocked(global.fetch).mockRejectedValueOnce(new Error('Network error'))
 
@@ -138,9 +144,11 @@ describe('ForgotPasswordForm', () => {
     await user.click(submitButton)
 
     await waitFor(() => {
-      const successTitles = screen.getAllByText('送信完了')
-      expect(successTitles[0]).toBeInTheDocument()
+      expect(
+        screen.getByText('現在処理できません。しばらくしてからお試しください')
+      ).toBeInTheDocument()
     })
+    expect(screen.queryByText('送信完了')).not.toBeInTheDocument()
   })
 
   it('should disable form during submission', async () => {

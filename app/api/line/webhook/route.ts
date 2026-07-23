@@ -12,7 +12,7 @@ import { lineMessagingClient } from '@/lib/line/client'
 import { LineCastRegistrationService } from '@/lib/line/cast-registration-service'
 
 const castRegistrationService = new LineCastRegistrationService({
-  castRepository: db.cast,
+  database: db,
   messagingClient: lineMessagingClient,
 })
 

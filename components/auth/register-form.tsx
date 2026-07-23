@@ -1,9 +1,9 @@
 'use client'
 
 /**
- * @design_doc   Customer registration form component with NextAuth.js integration
- * @related_to   NextAuth.js configuration, customer authentication
- * @known_issues None currently
+ * @design_doc   Verified customer registration with recoverable store-scoped email delivery
+ * @related_to   Registration API, email verification resend API, and customer authentication
+ * @known_issues Provider delivery is confirmed asynchronously by receipt of email
  */
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/select'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { CalendarIcon, User, Mail, Phone, Lock, Gift, AlertCircle, Loader2 } from 'lucide-react'
+import { CalendarIcon, User, Mail, Phone, Lock, AlertCircle, Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
@@ -38,12 +38,16 @@ import {
   formatPhoneNumber,
   isValidPhoneInput,
 } from '@/lib/customer/utils'
+import { normalizeCustomerEmail } from '@/lib/auth/customer-auth'
+import { isBcryptSafePassword } from '@/lib/auth/password-policy'
 
 const registerSchema = z
   .object({
     nickname: z.string().min(1, 'ニックネームを入力してください'),
     email: z
       .string()
+      .trim()
+      .toLowerCase()
       .email('正しいメールアドレスを入力してください')
       .min(1, 'メールアドレスを入力してください'),
     phone: z
@@ -54,7 +58,10 @@ const registerSchema = z
         const digits = normalizePhoneQuery(value)
         return digits.length >= 10 && digits.length <= 11
       }, '電話番号は10〜11桁の数字で入力してください'),
-    password: z.string().min(8, 'パスワードは8文字以上で入力してください'),
+    password: z
+      .string()
+      .min(8, 'パスワードは8文字以上で入力してください')
+      .refine(isBcryptSafePassword, 'パスワードは改行を含めず72バイト以内で入力してください'),
     confirmPassword: z.string().min(8, 'パスワードを再入力してください'),
     birthDate: z.date().optional(),
     smsNotifications: z.boolean().optional(),
@@ -78,7 +85,8 @@ export function RegisterForm({ store }: RegisterFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [birthDate, setBirthDate] = useState<Date>()
-  const [phoneClaim, setPhoneClaim] = useState<string | null>(null)
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(null)
+  const [resendLoading, setResendLoading] = useState(false)
 
   const {
     register,
@@ -95,6 +103,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
   })
 
   const agreed = watch('agreed')
+  const smsNotifications = watch('smsNotifications')
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.role === 'customer') {
@@ -110,9 +119,10 @@ export function RegisterForm({ store }: RegisterFormProps) {
     setLoading(true)
     setError(null)
     setSuccess(null)
-    setPhoneClaim(null)
+    setVerificationEmail(null)
 
     try {
+      const normalizedEmail = normalizeCustomerEmail(data.email)
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
@@ -120,7 +130,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
         },
         body: JSON.stringify({
           nickname: data.nickname,
-          email: data.email,
+          email: normalizedEmail,
           phone: normalizePhoneNumber(data.phone),
           password: data.password,
           birthDate: data.birthDate,
@@ -132,14 +142,23 @@ export function RegisterForm({ store }: RegisterFormProps) {
       const result = await response.json()
 
       if (!response.ok) {
+        if (result?.code === 'VERIFICATION_DELIVERY_FAILED' && result?.accountCreated === true) {
+          setVerificationEmail(normalizedEmail)
+          setError(
+            result.error ||
+              '会員登録は完了しましたが、確認メールを送信できませんでした。再送してください。'
+          )
+          return
+        }
         if (result?.code === 'PHONE_EXISTS') {
-          setPhoneClaim(normalizePhoneNumber(data.phone))
-          throw new Error('この電話番号は登録済みです。SMS認証で引き継ぎできます。')
+          throw new Error(
+            'この電話番号は登録済みです。ログインまたはパスワード再設定をお試しください。旧会員データの引継ぎは店舗へお問い合わせください。'
+          )
         }
         throw new Error(result.error || '登録に失敗しました')
       }
 
-      setSuccess('会員登録が完了しました！ログインページに移動します。')
+      setSuccess('会員登録が完了しました。確認メールをご確認ください。')
       setTimeout(() => {
         router.push(`/${store.slug}/login`)
       }, 2000)
@@ -150,6 +169,41 @@ export function RegisterForm({ store }: RegisterFormProps) {
     }
   }
 
+  const resendVerificationEmail = async () => {
+    if (!verificationEmail) {
+      return
+    }
+
+    setResendLoading(true)
+    setError(null)
+    setSuccess(null)
+    try {
+      const response = await fetch('/api/auth/verify-email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: verificationEmail, storeId: store.id }),
+      })
+
+      if (!response.ok) {
+        throw new Error(
+          '確認メールの再送を受け付けられませんでした。しばらくしてからお試しください。'
+        )
+      }
+
+      setSuccess(
+        '入力されたメールアドレスに一致する未確認アカウントがある場合、確認メールを送信します。'
+      )
+    } catch (resendError) {
+      setError(
+        resendError instanceof Error
+          ? resendError.message
+          : '確認メールの再送中にエラーが発生しました'
+      )
+    } finally {
+      setResendLoading(false)
+    }
+  }
+
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 80 }, (_, i) => currentYear - 18 - i)
 
@@ -157,44 +211,15 @@ export function RegisterForm({ store }: RegisterFormProps) {
     <Card className="luxury-panel w-full">
       <CardHeader>
         <CardTitle className="text-center text-2xl text-[#f5e6c4]">会員登録</CardTitle>
-        <CardDescription className="text-center">会員登録で特典がいっぱい！</CardDescription>
+        <CardDescription className="text-center">
+          必要事項を入力し、メール認証を完了してください
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        {/* Benefits */}
-        <div className="mb-6 rounded-lg border border-[#3b2e1f] bg-[#121212] p-4">
-          <h3 className="mb-2 flex items-center gap-2 font-semibold text-[#f5e6c4]">
-            <Gift className="h-5 w-5 text-[#f3d08a]" />
-            会員特典
-          </h3>
-          <ul className="space-y-1 text-sm text-[#d7c39c]">
-            <li>• 初回登録で1000ポイントプレゼント</li>
-            <li>• 会員限定の特別割引</li>
-            <li>• 誕生日月に特別クーポン</li>
-            <li>• 予約履歴の確認</li>
-            <li>• お気に入りキャストの登録</li>
-          </ul>
-        </div>
-
         {error && (
           <Alert variant="destructive" className="mb-6">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {phoneClaim && (
-          <Alert className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              既存アカウントの引き継ぎは
-              <Link
-                href={`/${store.slug}/verify-phone?mode=claim&phone=${encodeURIComponent(phoneClaim)}`}
-                className="ml-1 text-[#f3d08a] hover:underline"
-              >
-                SMS認証ページ
-              </Link>
-              から行ってください。
-            </AlertDescription>
           </Alert>
         )}
 
@@ -203,6 +228,21 @@ export function RegisterForm({ store }: RegisterFormProps) {
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{success}</AlertDescription>
           </Alert>
+        )}
+
+        {verificationEmail && (
+          <div className="mb-6">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              disabled={resendLoading}
+              onClick={resendVerificationEmail}
+            >
+              {resendLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {resendLoading ? '再送中...' : '確認メールを再送'}
+            </Button>
+          </div>
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -350,7 +390,14 @@ export function RegisterForm({ store }: RegisterFormProps) {
 
           {/* SMS Notifications */}
           <div className="flex items-center space-x-2">
-            <Checkbox id="sms" {...register('smsNotifications')} disabled={loading} />
+            <Checkbox
+              id="sms"
+              checked={Boolean(smsNotifications)}
+              onCheckedChange={(checked) =>
+                setValue('smsNotifications', checked === true, { shouldValidate: true })
+              }
+              disabled={loading}
+            />
             <Label htmlFor="sms" className="cursor-pointer text-sm font-normal">
               お得な情報をSMSで受け取る
             </Label>
@@ -358,7 +405,14 @@ export function RegisterForm({ store }: RegisterFormProps) {
 
           {/* Terms Agreement */}
           <div className="flex items-start space-x-2">
-            <Checkbox id="terms" {...register('agreed')} disabled={loading} />
+            <Checkbox
+              id="terms"
+              checked={Boolean(agreed)}
+              onCheckedChange={(checked) =>
+                setValue('agreed', checked === true, { shouldValidate: true })
+              }
+              disabled={loading}
+            />
             <Label htmlFor="terms" className="cursor-pointer text-sm font-normal">
               <Link href="/terms" className="text-blue-600 hover:underline">
                 利用規約

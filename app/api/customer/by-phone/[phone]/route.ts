@@ -8,6 +8,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
 import logger from '@/lib/logger'
+import { hasPermission } from '@/lib/auth/permissions'
+import { sanitizeResponseData } from '@/lib/http/sanitize-response'
 
 interface RouteParams {
   params: Promise<{
@@ -37,6 +39,9 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     if (!isAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
+    if (!hasPermission(session.user.permissions ?? [], 'customer:read')) {
+      return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
+    }
 
     const customer = await db.customer.findFirst({
       where: {
@@ -53,10 +58,12 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
     }
 
-    const { password, ...customerData } = customer
-    return NextResponse.json(customerData)
+    return NextResponse.json(sanitizeResponseData(customer))
   } catch (error) {
-    logger.error({ err: error }, 'Failed to fetch customer by phone')
+    logger.error(
+      { errorType: error instanceof Error ? error.name : 'UnknownError' },
+      'Failed to fetch customer by phone'
+    )
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

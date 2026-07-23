@@ -107,5 +107,61 @@ describe('Auth Utils', () => {
       const result = await requireAdmin({ permissions: 'analytics:read' })
       expect(result).toBeNull()
     })
+
+    it('accepts a non-super-admin only for an assigned store', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: {
+          id: '6',
+          name: 'Ginza Manager',
+          email: 'ginza@example.com',
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:*'],
+          storeIds: ['ginza'],
+        },
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      })
+
+      await expect(
+        requireAdmin({ permissions: 'reservation:update', storeId: 'ginza' })
+      ).resolves.toBeNull()
+    })
+
+    it('denies a non-super-admin access to an unassigned store', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: {
+          id: '7',
+          name: 'Ginza Manager',
+          email: 'ginza@example.com',
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:*'],
+          storeIds: ['ginza'],
+        },
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      })
+
+      const result = await requireAdmin({ permissions: 'reservation:update', storeId: 'shinjuku' })
+
+      expect(result?.status).toBe(403)
+      expect(result?.body).toEqual({ error: 'この店舗を操作する権限がありません' })
+    })
+
+    it('allows a super administrator to access any store', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: {
+          id: '8',
+          name: 'Super Admin',
+          email: 'super@example.com',
+          role: 'admin',
+          adminRole: 'super_admin',
+          permissions: ['*'],
+          storeIds: [],
+        },
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      })
+
+      await expect(requireAdmin({ storeId: 'shinjuku' })).resolves.toBeNull()
+    })
   })
 })

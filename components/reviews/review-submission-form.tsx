@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @design_doc   docs/LEGACY_DATA_MIGRATION_RUNBOOK.md store isolation requirement
+ * @related_to   Review API and eligible reservation lookup
+ * @known_issues None
+ */
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
@@ -19,7 +24,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, MessageCircle, Star, Lock } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import type { Review } from '@/lib/reviews/types'
+import type { PublicReview, Review } from '@/lib/reviews/types'
+import { toPublicReview } from '@/lib/reviews/public'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 
 interface EligibleReservation {
   id: string
@@ -33,7 +40,7 @@ interface EligibleReservation {
 interface ReviewSubmissionFormProps {
   storeId: string
   storeSlug: string
-  onReviewCreated: (review: Review) => void
+  onReviewCreated: (review: PublicReview) => void
 }
 
 const ratingOptions = [5, 4, 3, 2, 1]
@@ -66,7 +73,7 @@ export function ReviewSubmissionForm({
     async function fetchEligibleReservations() {
       setLoadingReservations(true)
       try {
-        const response = await fetch(`/api/review/eligible?storeId=${encodeURIComponent(storeId)}`)
+        const response = await fetch(buildStoreScopedEndpoint('/api/review/eligible', storeId))
         if (!response.ok) {
           const payload = await response.json().catch(() => ({}))
           throw new Error(payload.error ?? '出勤履歴の取得に失敗しました')
@@ -121,7 +128,7 @@ export function ReviewSubmissionForm({
 
     setSubmitting(true)
     try {
-      const response = await fetch('/api/review', {
+      const response = await fetch(buildStoreScopedEndpoint('/api/review', storeId), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -139,13 +146,13 @@ export function ReviewSubmissionForm({
         throw new Error(payload.error ?? '口コミの投稿に失敗しました')
       }
 
-      onReviewCreated(payload as Review)
+      onReviewCreated(toPublicReview(payload as Review))
       setSuccess('口コミを送信しました。審査完了後に掲載されます。')
       setComment('')
       setRating(5)
       setSelectedReservationId('')
       setEligibleReservations((prev) =>
-        prev.filter((reservation) => reservation.id !== payload.reservationId)
+        prev.filter((reservation) => reservation.id !== selectedReservationId)
       )
     } catch (err) {
       setError(err instanceof Error ? err.message : '口コミの投稿に失敗しました')

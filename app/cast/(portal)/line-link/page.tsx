@@ -10,5 +10,5 @@ export default async function CastLineLinkPage() {
     redirect('/cast/login')
   }
 
-  return <CastLineLinkGuide castId={session.user.id} />
+  return <CastLineLinkGuide />
 }

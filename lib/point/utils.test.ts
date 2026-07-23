@@ -3,8 +3,85 @@
  * @related_to   lib/point/utils.ts
  * @known_issues None currently
  */
-import { describe, it, expect } from 'vitest'
-import { calculateEarnedPoints, calculateExpiryDate, resolvePointConfig } from './utils'
+import { describe, it, expect, vi } from 'vitest'
+import {
+  addPointTransaction,
+  calculateEarnedPoints,
+  calculateExpiryDate,
+  resolvePointConfig,
+} from './utils'
+
+describe('addPointTransaction', () => {
+  it('deducts points with a conditional atomic update before recording the resulting balance', async () => {
+    const tx = {
+      customer: {
+        findUnique: vi.fn().mockResolvedValue({ points: 300 }),
+        update: vi.fn(),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      customerPointHistory: {
+        create: vi.fn().mockResolvedValue({}),
+      },
+    }
+
+    await addPointTransaction(
+      {
+        customerId: 'customer-1',
+        type: 'used',
+        amount: -200,
+        description: '予約でポイントを利用',
+        reservationId: 'reservation-1',
+      },
+      tx as any
+    )
+
+    expect(tx.customer.updateMany).toHaveBeenCalledWith({
+      where: { id: 'customer-1', points: { gte: 200 } },
+      data: { points: { increment: -200 } },
+    })
+    expect(tx.customer.findUnique).toHaveBeenCalledWith({
+      where: { id: 'customer-1' },
+      select: { points: true },
+    })
+    expect(tx.customerPointHistory.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        customerId: 'customer-1',
+        amount: -200,
+        balance: 300,
+        reservationId: 'reservation-1',
+      }),
+    })
+    expect(tx.customer.update).not.toHaveBeenCalled()
+  })
+
+  it('fails without writing history when the conditional deduction cannot reserve the balance', async () => {
+    const tx = {
+      customer: {
+        findUnique: vi.fn().mockResolvedValue({ points: 100 }),
+        update: vi.fn(),
+        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
+      customerPointHistory: {
+        create: vi.fn(),
+      },
+    }
+
+    await expect(
+      addPointTransaction(
+        {
+          customerId: 'customer-1',
+          type: 'used',
+          amount: -200,
+          description: '予約でポイントを利用',
+        },
+        tx as any
+      )
+    ).rejects.toThrow('Insufficient points')
+
+    expect(tx.customerPointHistory.create).not.toHaveBeenCalled()
+    expect(tx.customer.update).not.toHaveBeenCalled()
+  })
+})
 
 describe('point utils', () => {
   describe('calculateEarnedPoints', () => {

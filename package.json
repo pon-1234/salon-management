@@ -14,8 +14,12 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "setup:admin": "tsx scripts/setup-admin.ts",
+    "setup:preview-uat": "tsx scripts/setup-preview-uat.ts",
+    "preview:import-ikebukuro": "tsx scripts/import-gold-master-ikebukuro-preview.ts",
     "seed:full": "tsx prisma/seed-full.ts",
-    "migrate:images": "tsx scripts/migrate-images-to-supabase.ts",
+    "migration:legacy:dry-run": "tsx scripts/legacy-migration-dry-run.ts",
+    "migration:legacy:verify-snapshot": "tsx scripts/legacy-snapshot-package-verify.ts",
+    "migration:legacy:import-preview": "tsx scripts/legacy-preview-import.ts",
     "postinstall": "npx prisma generate",
     "prune": "ts-prune",
     "chat:prune-attachments": "tsx scripts/prune-chat-attachments.ts"

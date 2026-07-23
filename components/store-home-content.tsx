@@ -128,7 +128,7 @@ export function StoreHomeContent({ store, data }: StoreHomeContentProps) {
           <div className="relative z-10 mx-auto max-w-6xl px-4 py-20 sm:py-28">
             <div className="inline-flex items-center gap-2 rounded-full border border-luxury-gold/60 bg-black/50 px-4 py-2 text-xs uppercase tracking-[0.4em] text-luxury-gold">
               <Crown className="h-4 w-4" />
-              Tokyo Premium
+              Premium Salon
             </div>
 
             <div className="mt-6 space-y-6">

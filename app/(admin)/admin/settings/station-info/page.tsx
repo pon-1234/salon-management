@@ -1,9 +1,9 @@
 'use client'
 
 /**
- * @design_doc   ui-improvement-instructions.md U-4 destructive confirmation dialogs
- * @related_to   ConfirmDialog: replaces native confirm for station deletion
- * @known_issues Existing station form behavior is unchanged
+ * @design_doc   docs/PREVIEW_UAT_CHECKLIST.md reversible location-setting operations
+ * @related_to   ConfirmDialog: confirms reversible station deactivation
+ * @known_issues None
  */
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { PageHeader } from '@/components/admin/page-header'
@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { ArrowLeft, Train, Plus, Edit, Trash2, RefreshCw, MapPin, Route } from 'lucide-react'
+import { ArrowLeft, Train, Plus, Edit, CircleStop, RefreshCw, MapPin, Route } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useStore } from '@/contexts/store-context'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
@@ -252,7 +252,7 @@ export default function StationInfoPage() {
     }
   }
 
-  const handleDelete = async (station: StationSettings) => {
+  const handleDeactivate = async (station: StationSettings) => {
     try {
       const params = new URLSearchParams({ id: station.id })
       if (currentStore?.id) {
@@ -270,14 +270,14 @@ export default function StationInfoPage() {
         throw new Error(await response.text())
       }
       toast({
-        title: '削除しました',
-        description: `${station.name}を削除しました`,
+        title: '停止しました',
+        description: `${station.name}を停止しました`,
       })
       await fetchStations(selectedAreaId !== 'all' ? selectedAreaId : undefined)
     } catch (error) {
       console.error(error)
       toast({
-        title: '削除に失敗しました',
+        title: '停止に失敗しました',
         description: '再度お試しください',
         variant: 'destructive',
       })
@@ -527,18 +527,18 @@ export default function StationInfoPage() {
                               <Edit className="h-4 w-4" />
                             </Button>
                             <ConfirmDialog
-                              title="駅情報を削除しますか？"
-                              description={`「${station.name}」を削除します。この操作は取り消せません。`}
-                              confirmLabel="削除する"
-                              onConfirm={() => handleDelete(station)}
+                              title="駅情報を停止しますか？"
+                              description={`「${station.name}」を停止します。予約履歴は保持され、スイッチから再有効化できます。`}
+                              confirmLabel="停止する"
+                              onConfirm={() => handleDeactivate(station)}
                             >
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 className="text-red-600 hover:text-red-700"
-                                aria-label={`${station.name}を削除`}
+                                aria-label={`${station.name}を停止`}
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <CircleStop className="h-4 w-4" />
                               </Button>
                             </ConfirmDialog>
                           </div>

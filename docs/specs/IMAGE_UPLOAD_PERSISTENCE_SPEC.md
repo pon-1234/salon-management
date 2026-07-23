@@ -12,7 +12,8 @@
 - **エンドポイント**: `/api/upload`
 - **ファイル制限**:
   - 最大サイズ: 5MB
-  - 対応形式: JPEG, JPG, PNG, WebP
+  - 対応形式: JPEG, PNG, WebP, GIF
+  - 検証方式: クライアント申告MIMEと実データのシグネチャが一致する場合のみ許可し、検出形式のcanonical拡張子で保存
 - **ファイル名**: `{timestamp}-{randomString}.{extension}`
 - **使用箇所**: キャストプロフィール画像（最大10枚）
 

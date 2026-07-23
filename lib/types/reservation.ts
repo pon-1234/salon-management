@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Reservation domain and admin mutation payload contracts
+ * @related_to   ReservationDialog, ReservationRepository, reservation API
+ * @known_issues None
+ */
 import { BaseEntity } from '../shared'
 import { ReservationStatus } from '../constants'
 
@@ -14,12 +19,13 @@ export interface Reservation extends BaseEntity {
   price: number
   storeId: string
   notes?: string
+  storeMemo?: string
   modifiableUntil?: Date
   lastModified?: Date
   customerName?: string
   staffName?: string
   serviceName?: string
-  designationType?: string
+  designationType?: string | null
   designationFee?: number
   transportationFee?: number
   additionalFee?: number
@@ -36,8 +42,10 @@ export interface Reservation extends BaseEntity {
   stationId?: string | null
   stationName?: string
   stationTravelTime?: number
-  hotelName?: string
-  roomNumber?: string
+  hotelId?: string | null
+  hotelName?: string | null
+  hotelExpense?: number
+  roomNumber?: string | null
   entryMemo?: string
   entryReceivedAt?: Date
   entryReceivedBy?: string
@@ -45,8 +53,8 @@ export interface Reservation extends BaseEntity {
   entryConfirmedAt?: Date
   entryReminderSentAt?: Date
   locationMemo?: string
-  castCheckedInAt?: Date
-  castCheckedOutAt?: Date
+  castCheckedInAt?: Date | null
+  castCheckedOutAt?: Date | null
   cancellationSource?: 'customer' | 'store' | null
   options?: Array<{
     id?: string
@@ -93,6 +101,7 @@ export interface ReservationData {
   serviceId?: string
   freeExtension: string
   designation: string
+  designationType?: string | null
   designationFee: string
   options: Record<string, boolean>
   transportationFee: number
@@ -117,7 +126,9 @@ export interface ReservationData {
   stationId?: string | null
   stationName?: string
   stationTravelTime?: number
+  hotelId?: string | null
   hotelName?: string
+  hotelExpense?: number
   roomNumber?: string
   entryMemo?: string
   entryReceivedAt?: Date | null
@@ -141,7 +152,7 @@ export interface ReservationUpdatePayload {
   notes?: string
   storeMemo?: string
   price?: number
-  designationType?: string
+  designationType?: string | null
   designationFee?: number
   transportationFee?: number
   additionalFee?: number
@@ -153,12 +164,28 @@ export interface ReservationUpdatePayload {
   marketingChannel?: string
   areaId?: string | null
   stationId?: string | null
+  hotelId?: string | null
   hotelName?: string | null
+  hotelExpense?: number
   roomNumber?: string | null
   locationMemo?: string
   options?: string[]
   castCheckedInAt?: Date | null
   castCheckedOutAt?: Date | null
+}
+
+export interface ReservationStatusUpdatePayload {
+  status: ReservationStatus
+  cancellationSource?: 'customer' | 'store' | null
+}
+
+export type ReservationSavePayload = ReservationUpdatePayload | ReservationStatusUpdatePayload
+
+export type ReservationApiUpdatePayload = Omit<
+  Partial<Reservation>,
+  'id' | 'createdAt' | 'updatedAt' | 'options'
+> & {
+  options?: string[]
 }
 
 export interface Service extends BaseEntity {

@@ -1,4 +1,10 @@
+/**
+ * @design_doc   Reservation history client adapter with explicit store scoping
+ * @related_to   app/api/reservation/history/route.ts, ReservationDialog
+ * @known_issues Modification alerts are not implemented
+ */
 import { ModificationHistory, ModificationAlert } from '@/lib/types/modification-history'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 
 const HISTORY_ENDPOINT = '/api/reservation/history'
 
@@ -20,19 +26,21 @@ function normalizeHistoryEntry(entry: any): ModificationHistory {
 }
 
 export async function getModificationHistory(
-  reservationId: string
+  reservationId: string,
+  storeId: string
 ): Promise<ModificationHistory[]> {
   if (!reservationId) {
     return []
   }
 
-  const response = await fetch(
+  const endpoint = buildStoreScopedEndpoint(
     `${HISTORY_ENDPOINT}?reservationId=${encodeURIComponent(reservationId)}`,
-    {
-      cache: 'no-store',
-      credentials: 'include',
-    }
+    storeId
   )
+  const response = await fetch(endpoint, {
+    cache: 'no-store',
+    credentials: 'include',
+  })
 
   if (!response.ok) {
     throw new Error(`Failed to load reservation history (${response.status})`)

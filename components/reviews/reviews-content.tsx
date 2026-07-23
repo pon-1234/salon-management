@@ -1,9 +1,14 @@
 'use client'
 
+/**
+ * @design_doc   Public store review listing and filtering UI
+ * @related_to   ReviewCard, ReviewSubmissionForm, and PublicReview
+ * @known_issues Helpful votes are client-local only
+ */
 import { useCallback, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Store } from '@/lib/store/types'
-import type { Review, ReviewStats as ReviewStatsType } from '@/lib/reviews/types'
+import type { PublicReview, ReviewStats as ReviewStatsType } from '@/lib/reviews/types'
 import { calculateReviewStats } from '@/lib/reviews/utils'
 import { ReviewCard } from './review-card'
 import { ReviewStats } from './review-stats'
@@ -17,7 +22,7 @@ import { ReviewSubmissionForm } from './review-submission-form'
 
 interface ReviewsContentProps {
   store: Store
-  initialReviews: Review[]
+  initialReviews: PublicReview[]
   initialStats: ReviewStatsType
   castFilter?: { id: string; name: string }
 }
@@ -28,7 +33,7 @@ export function ReviewsContent({
   initialStats,
   castFilter,
 }: ReviewsContentProps) {
-  const [reviews, setReviews] = useState<Review[]>(initialReviews)
+  const [reviews, setReviews] = useState<PublicReview[]>(initialReviews)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedRating, setSelectedRating] = useState<number | null>(null)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
@@ -89,7 +94,7 @@ export function ReviewsContent({
       })
   }, [reviews, searchTerm, selectedRating, selectedTags, sortBy])
 
-  const handleReviewCreated = useCallback((review: Review) => {
+  const handleReviewCreated = useCallback((review: PublicReview) => {
     setReviews((prev) => [review, ...prev])
   }, [])
 

@@ -8,9 +8,11 @@ import { getServerSession } from 'next-auth'
 import type { Session } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { hasAllPermissions, type Permission } from '@/lib/auth/permissions'
+import { canAdminAccessStore } from '@/lib/auth/store-access'
 
 interface RequireAdminOptions {
   permissions?: Permission | Permission[]
+  storeId?: string
 }
 
 /**
@@ -30,6 +32,10 @@ export async function requireAdmin(options?: RequireAdminOptions) {
     if (!hasAllPermissions(granted, requiredPermissions)) {
       return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
     }
+  }
+
+  if (options?.storeId && !canAdminAccessStore(session.user, options.storeId)) {
+    return NextResponse.json({ error: 'この店舗を操作する権限がありません' }, { status: 403 })
   }
 
   return null
