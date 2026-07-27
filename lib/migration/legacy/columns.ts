@@ -1,0 +1,116 @@
+/**
+ * @design_doc   docs/LEGACY_DATA_MIGRATION_RUNBOOK.md canonical export column allowlist
+ * @related_to   dry-run.ts validates JSON input; transform.ts rejects non-canonical row fields
+ * @known_issues Credential aliases are accepted only so their values can be explicitly omitted
+ */
+
+import type { LegacyEntityName, LegacyRow } from './types'
+
+const LEGACY_ENTITY_COLUMNS: Readonly<Record<LegacyEntityName, ReadonlySet<string>>> = {
+  stores: new Set([
+    'source_table',
+    'id',
+    'name',
+    'display_name',
+    'phone',
+    'email',
+    'address',
+    'is_active',
+    'created_at',
+  ]),
+  courses: new Set([
+    'source_table',
+    'id',
+    'store_id',
+    'name',
+    'duration',
+    'price',
+    'store_share',
+    'cast_share',
+    'description',
+    'is_active',
+    'enable_web_booking',
+    'archived_at',
+  ]),
+  casts: new Set([
+    'source_table',
+    'id',
+    'store_id',
+    'name',
+    'age',
+    'height',
+    'bust',
+    'waist',
+    'hip',
+    'type',
+    'image',
+    'images',
+    'description',
+    'panel_designation_rank',
+    'regular_designation_rank',
+    'net_reservation',
+    'work_status',
+    'created_at',
+  ]),
+  customers: new Set([
+    'source_table',
+    'id',
+    'name',
+    'name_kana',
+    'phone',
+    'email',
+    'birth_date',
+    'member_type',
+    'points',
+    'sms_enabled',
+    'email_notification_enabled',
+    'created_at',
+    'password',
+    'passwd',
+    'pwd',
+    'password_hash',
+  ]),
+  reservations: new Set([
+    'source_table',
+    'id',
+    'store_id',
+    'customer_id',
+    'cast_id',
+    'course_id',
+    'start_time',
+    'end_time',
+    'status',
+    'price',
+    'points_used',
+    'notes',
+    'created_at',
+  ]),
+  castSchedules: new Set([
+    'source_table',
+    'id',
+    'cast_id',
+    'date',
+    'start_time',
+    'end_time',
+    'is_available',
+  ]),
+  pointHistories: new Set([
+    'source_table',
+    'id',
+    'customer_id',
+    'reservation_id',
+    'type',
+    'amount',
+    'description',
+    'balance',
+    'source_order',
+    'expires_at',
+    'is_expired',
+    'created_at',
+  ]),
+}
+
+export function findUnsupportedLegacyColumns(entity: LegacyEntityName, row: LegacyRow): string[] {
+  const supportedColumns = LEGACY_ENTITY_COLUMNS[entity]
+  return Object.keys(row).filter((column) => !supportedColumns.has(column))
+}

@@ -1,9 +1,9 @@
 'use client'
 
 /**
- * @design_doc   ui-improvement-instructions.md U-4 destructive confirmation dialogs
- * @related_to   ConfirmDialog: replaces native confirm for option deletion
- * @known_issues Existing option form behavior is unchanged
+ * @design_doc   docs/PREVIEW_UAT_CHECKLIST.md management settings write-operation checks
+ * @related_to   ConfirmDialog: confirms option deletion; DialogContent: keeps the form reachable
+ * @known_issues None
  */
 import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '@/components/admin/page-header'
@@ -35,6 +35,7 @@ import {
 import { getPricingUseCases, OptionPrice } from '@/lib/pricing'
 import { useToast } from '@/hooks/use-toast'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
+import { useStore } from '@/contexts/store-context'
 
 const DEFAULT_STORE_RATIO = 0.6
 
@@ -65,6 +66,7 @@ function normalizeRevenueSplit(
 }
 
 export default function OptionInfoPage() {
+  const { currentStore } = useStore()
   const [options, setOptions] = useState<OptionPrice[]>([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
@@ -91,7 +93,7 @@ export default function OptionInfoPage() {
   const loadOptions = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await pricingUseCases.getOptions()
+      const data = await pricingUseCases.getOptions(currentStore.id)
       setOptions(data)
     } catch (error) {
       toast({
@@ -102,7 +104,7 @@ export default function OptionInfoPage() {
     } finally {
       setLoading(false)
     }
-  }, [pricingUseCases, toast])
+  }, [currentStore.id, pricingUseCases, toast])
 
   useEffect(() => {
     loadOptions()
@@ -112,7 +114,7 @@ export default function OptionInfoPage() {
     try {
       setSyncing(true)
       // In a real app, this would sync with all stores
-      await pricingUseCases.syncPricing('1') // Default store ID
+      await pricingUseCases.syncPricing(currentStore.id)
       toast({
         title: '同期完了',
         description: '料金情報が全店舗に同期されました',
@@ -187,7 +189,11 @@ export default function OptionInfoPage() {
 
       if (editingOption) {
         // Update existing option
-        const updated = await pricingUseCases.updateOption(editingOption.id, dataToSave)
+        const updated = await pricingUseCases.updateOption(
+          editingOption.id,
+          dataToSave,
+          currentStore.id
+        )
         setOptions((prev) => [...prev.filter((option) => option.id !== editingOption.id), updated])
         toast({
           title: '更新完了',
@@ -195,7 +201,7 @@ export default function OptionInfoPage() {
         })
       } else {
         // Create new option
-        const newOption = await pricingUseCases.createOption(dataToSave)
+        const newOption = await pricingUseCases.createOption(dataToSave, currentStore.id)
         setOptions((prev) => [...prev, newOption])
         toast({
           title: '追加完了',
@@ -214,7 +220,7 @@ export default function OptionInfoPage() {
 
   const handleDeleteOption = async (id: string) => {
     try {
-      await pricingUseCases.deleteOption(id)
+      await pricingUseCases.deleteOption(id, currentStore.id)
       setOptions((prev) => prev.filter((option) => option.id !== id))
       toast({
         title: '削除完了',
@@ -231,7 +237,7 @@ export default function OptionInfoPage() {
 
   const handleToggleActive = async (id: string) => {
     try {
-      const updated = await pricingUseCases.toggleOptionStatus(id)
+      const updated = await pricingUseCases.toggleOptionStatus(id, currentStore.id)
       setOptions((prev) => prev.map((option) => (option.id === id ? updated : option)))
     } catch (error) {
       toast({
@@ -455,7 +461,7 @@ export default function OptionInfoPage() {
 
           {/* Option Add/Edit Dialog */}
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-md overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingOption ? 'オプション編集' : '新規オプション追加'}</DialogTitle>
               </DialogHeader>

@@ -3,7 +3,7 @@
  * @related_to   NextAuth.js configuration, custom auth hooks
  * @known_issues None currently
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAuth, useAdminAuth, useCustomerAuth } from './use-auth'
 
@@ -22,6 +22,8 @@ vi.mock('next/navigation', () => ({
   }),
 }))
 
+const originalLocationDescriptor = Object.getOwnPropertyDescriptor(window, 'location')
+
 describe('useAuth hook', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -29,7 +31,14 @@ describe('useAuth hook', () => {
     Object.defineProperty(window, 'location', {
       value: { pathname: '/test' },
       writable: true,
+      configurable: true,
     })
+  })
+
+  afterEach(() => {
+    if (originalLocationDescriptor) {
+      Object.defineProperty(window, 'location', originalLocationDescriptor)
+    }
   })
 
   it('should be defined', () => {

@@ -1,9 +1,17 @@
 name: Prune Chat Attachments
 
 on:
-  schedule:
-    - cron: '30 15 * * *' # 毎日00:30 JST
   workflow_dispatch:
+    inputs:
+      retention_days:
+        description: 'Keep chat attachments for at least this many days (minimum: 30)'
+        required: true
+        default: '180'
+        type: string
+      production_acknowledgement:
+        description: 'Type I_UNDERSTAND_THIS_MODIFIES_PRODUCTION_DATA to run'
+        required: true
+        type: string
 
 jobs:
   prune-chat-attachments:
@@ -29,7 +37,6 @@ jobs:
       - name: Prune chat attachments
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          CHAT_ATTACHMENT_RETENTION_DAYS: ${{ secrets.CHAT_ATTACHMENT_RETENTION_DAYS }}
+          CHAT_ATTACHMENT_RETENTION_DAYS: ${{ inputs.retention_days }}
+          CHAT_ATTACHMENT_PRUNE_ACKNOWLEDGEMENT: ${{ inputs.production_acknowledgement }}
         run: pnpm chat:prune-attachments

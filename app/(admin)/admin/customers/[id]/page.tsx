@@ -1,3 +1,8 @@
+/**
+ * @design_doc   docs/LEGACY_GOLD_ADMIN_MIGRATION_INVENTORY.md customer management
+ * @related_to   Customer, CustomerInsights, customer API routes
+ * @known_issues Usage/reservation panels need approved persisted APIs; identity migration is tracked in the runbook
+ */
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
@@ -8,10 +13,10 @@ import * as z from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Badge } from '@/components/ui/badge'
+import { SafeImage } from '@/components/ui/safe-image'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -68,10 +73,14 @@ import { ReservationData } from '@/lib/types/reservation'
 import { CustomerUseCases } from '@/lib/customer/usecases'
 import { CustomerRepositoryImpl } from '@/lib/customer/repository-impl'
 import { isVipMember } from '@/lib/utils'
-import { calculateAge, deserializeCustomer } from '@/lib/customer/utils'
+import { calculateAge, deserializeCustomer, normalizePhoneQuery } from '@/lib/customer/utils'
 import { toast } from '@/hooks/use-toast'
 import { mapReservationToReservationData } from '@/lib/reservation/transformers'
 import { PointAdjustmentDialog } from '@/components/admin/point-adjustment-dialog'
+import { useStore } from '@/contexts/store-context'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
+import { normalizeCustomerEmail } from '@/lib/auth/customer-auth'
+import { isBcryptSafePassword } from '@/lib/auth/password-policy'
 
 const formSchema = z.object({
   name: z.string().min(1, '名前は必須です'),
@@ -79,14 +88,16 @@ const formSchema = z.object({
   email: z.string().email('有効なメールアドレスを入力してください'),
   password: z
     .string()
-    .min(8, 'パスワードは8文字以上で入力してください')
-    .max(32, 'パスワードは32文字以下で入力してください'),
+    .refine(
+      (password) =>
+        password.length === 0 || (password.length >= 8 && isBcryptSafePassword(password)),
+      '変更する場合は8文字以上、改行なし・72バイト以内で入力してください'
+    ),
   birthDate: z.date({
     required_error: '生年月日を選択してください',
   }),
   memberType: z.enum(['regular', 'vip']),
   smsEnabled: z.boolean(),
-  notes: z.string().max(1000, '特徴や好みは1000文字以内で入力してください').optional(),
   points: z.number().min(0),
   pointsToAdd: z.number().min(0).optional(),
   pointsAmount: z.number().min(0).optional(),
@@ -106,7 +117,10 @@ const NG_ASSIGNMENT_LABELS: Record<'customer' | 'cast' | 'staff', string> = {
   staff: '店舗NG',
 }
 
+const formatYen = (amount: number) => `¥${amount.toLocaleString('ja-JP')}`
+
 export default function CustomerProfile() {
+  const { currentStore } = useStore()
   const router = useRouter()
   const params = useParams<{ id: string }>()
   const idParam = params?.id
@@ -124,7 +138,6 @@ export default function CustomerProfile() {
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
   const [insights, setInsights] = useState<CustomerInsights | null>(null)
   const [insightsLoading, setInsightsLoading] = useState(false)
-  const formatYen = (amount: number) => `¥${amount.toLocaleString('ja-JP')}`
   const fetchPointHistory = useCallback(async () => {
     if (!id) return
     try {
@@ -172,7 +185,6 @@ export default function CustomerProfile() {
       password: '',
       memberType: 'regular',
       smsEnabled: false,
-      notes: '',
       points: 0,
       pointsToAdd: 0,
       pointsAmount: 0,
@@ -208,20 +220,18 @@ export default function CustomerProfile() {
         name: normalizedCustomer.name,
         phone: normalizedCustomer.phone,
         email: normalizedCustomer.email,
-        password: normalizedCustomer.password,
+        password: '',
         birthDate: normalizedCustomer.birthDate,
         memberType: normalizedCustomer.memberType as 'regular' | 'vip',
         smsEnabled: normalizedCustomer.smsEnabled || false,
-        notes: normalizedCustomer.notes || '',
         points: normalizedCustomer.points,
       })
 
-      // TODO: Implement and call APIs for these sections
       setUsageHistory([])
       setReservations([])
 
       try {
-        const response = await fetch('/api/cast', {
+        const response = await fetch(buildStoreScopedEndpoint('/api/cast', currentStore.id), {
           cache: 'no-store',
           credentials: 'include',
         })
@@ -236,7 +246,7 @@ export default function CustomerProfile() {
     }
 
     fetchCustomerData()
-  }, [id, form, router])
+  }, [currentStore.id, id, form, router])
 
   useEffect(() => {
     fetchPointHistory()
@@ -300,23 +310,34 @@ export default function CustomerProfile() {
   }
 
   const handleSave = async (data: FormData) => {
-    console.log('Updating customer with:', { ...data, age })
+    if (!customer) return
 
     const customerRepository = new CustomerRepositoryImpl()
     const customerUseCases = new CustomerUseCases(customerRepository)
 
     try {
-      const updatedCustomer = await customerUseCases.update(id, {
-        name: data.name,
-        nameKana: (data as any).nameKana, // Assuming nameKana is part of the form, though not in schema
-        phone: data.phone,
-        email: data.email,
-        password: data.password, // Password should ideally be handled differently
-        birthDate: data.birthDate,
-        memberType: data.memberType,
-        points: data.points,
-        // notes and smsEnabled are missing from schema, should be added
-      })
+      const updates: Partial<Customer> = {
+        ...(data.name !== customer.name ? { name: data.name } : {}),
+        ...(normalizePhoneQuery(data.phone) !== normalizePhoneQuery(customer.phone)
+          ? { phone: data.phone }
+          : {}),
+        ...(normalizeCustomerEmail(data.email) !== normalizeCustomerEmail(customer.email)
+          ? { email: data.email }
+          : {}),
+        ...(data.birthDate.getTime() !== customer.birthDate.getTime()
+          ? { birthDate: data.birthDate }
+          : {}),
+        ...(data.memberType !== customer.memberType ? { memberType: data.memberType } : {}),
+        ...(data.smsEnabled !== customer.smsEnabled ? { smsEnabled: data.smsEnabled } : {}),
+        ...(data.password ? { password: data.password } : {}),
+      }
+
+      if (Object.keys(updates).length === 0) {
+        setIsEditing(false)
+        return
+      }
+
+      const updatedCustomer = await customerUseCases.update(id, updates)
 
       if (updatedCustomer) {
         const normalizedCustomer = deserializeCustomer(updatedCustomer)
@@ -325,21 +346,26 @@ export default function CustomerProfile() {
           name: normalizedCustomer.name,
           phone: normalizedCustomer.phone,
           email: normalizedCustomer.email,
-          password: normalizedCustomer.password,
+          password: '',
           birthDate: normalizedCustomer.birthDate,
           memberType: normalizedCustomer.memberType as 'regular' | 'vip',
           smsEnabled: normalizedCustomer.smsEnabled || false,
-          notes: normalizedCustomer.notes || '',
           points: normalizedCustomer.points,
+        })
+        toast({
+          title: '更新完了',
+          description: '顧客情報を更新しました。',
         })
       }
 
       setIsEditing(false)
-      console.log('Customer updated successfully')
-      // Optionally, show a success toast message
     } catch (error) {
       console.error('Failed to update customer:', error)
-      // Optionally, show an error toast message
+      toast({
+        title: '更新に失敗しました',
+        description: '入力内容を確認し、もう一度お試しください。',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -351,11 +377,10 @@ export default function CustomerProfile() {
         name: customer.name,
         phone: customer.phone,
         email: customer.email,
-        password: customer.password,
+        password: '',
         birthDate: customer.birthDate,
         memberType: customer.memberType,
         smsEnabled: customer.smsEnabled,
-        notes: customer.notes || '',
         points: customer.points,
         pointsToAdd: 0,
         pointsAmount: 0,
@@ -558,7 +583,7 @@ export default function CustomerProfile() {
         value: `${insights.chatCountTotal}回`,
       },
     ]
-  }, [formatYen, insights])
+  }, [insights])
 
   if (!customer) {
     return <div className="flex h-64 items-center justify-center">Loading...</div>
@@ -719,7 +744,7 @@ export default function CustomerProfile() {
                     >
                       <div className="shrink-0">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
+                        <SafeImage
                           src={FALLBACK_IMAGE}
                           alt="Staff"
                           className="h-12 w-12 rounded-full object-cover"
@@ -1110,33 +1135,6 @@ export default function CustomerProfile() {
                   />
                 </CardContent>
               </Card>
-
-              {/* 特徴や好み */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold">特徴や好み</CardTitle>
-                  <CardDescription>顧客の特徴、好み、注意事項など（1000文字以内）</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <FormField
-                    control={form.control}
-                    name="notes"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <Textarea
-                            placeholder="顧客の特徴、好み、注意事項など"
-                            className="min-h-[120px] resize-none"
-                            disabled={!isEditing}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
             </form>
           </Form>
         </TabsContent>
@@ -1176,7 +1174,7 @@ export default function CustomerProfile() {
                         <div className="flex items-start justify-between">
                           <div className="flex flex-1 items-start gap-3">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
+                            <SafeImage
                               src={cast.image?.trim() ? cast.image : FALLBACK_IMAGE}
                               alt={cast.name}
                               className="aspect-[7/10] w-10 shrink-0 rounded object-cover"
@@ -1259,7 +1257,7 @@ export default function CustomerProfile() {
                   >
                     <div className="shrink-0">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                      <SafeImage
                         src={FALLBACK_IMAGE}
                         alt="Staff"
                         className="h-16 w-16 rounded-full object-cover"

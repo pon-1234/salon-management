@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Public schedule endpoint returns anonymous availability and fails closed on data errors
+ * @related_to   getStoreScheduleDays resolves store-scoped schedule and blocked time ranges
+ * @known_issues Exact blocked start/end times are intentionally public for availability rendering
+ */
 import { NextRequest, NextResponse } from 'next/server'
 import logger from '@/lib/logger'
 import { ensureStoreId, resolveStoreId } from '@/lib/store/server'

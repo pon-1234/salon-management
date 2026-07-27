@@ -1,3 +1,8 @@
+/**
+ * @design_doc   docs/LEGACY_DATA_MIGRATION_RUNBOOK.md public booking readiness
+ * @related_to   reservation availability API, StoreBookingContent
+ * @known_issues Legacy customer authentication requires an approved cutover strategy
+ */
 'use client'
 
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
@@ -36,6 +41,7 @@ import { Calendar } from '@/components/ui/calendar'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import { SafeImage } from '@/components/ui/safe-image'
 import {
   Select,
   SelectContent,
@@ -202,6 +208,11 @@ export function StoreBookingContent({
   const [activeStep, setActiveStep] = useState(() => (hasPrefilledSlot ? 3 : 1))
   const [castSearch, setCastSearch] = useState('')
   const pendingInitialSlotRef = useRef<string | null>(initialSlotIso)
+  const selectedSlotStartRef = useRef(selectedSlotStart)
+
+  useEffect(() => {
+    selectedSlotStartRef.current = selectedSlotStart
+  }, [selectedSlotStart])
 
   useEffect(() => {
     if (hasPrefilledSlot) {
@@ -319,7 +330,7 @@ export function StoreBookingContent({
       return
     }
 
-    const previousSelection = selectedSlotStart
+    const previousSelection = selectedSlotStartRef.current
     let cancelled = false
     const controller = new AbortController()
     const fetchAvailability = async () => {
@@ -714,7 +725,7 @@ export function StoreBookingContent({
                           <div className="space-y-4">
                             <div className="flex flex-col gap-4 lg:flex-row">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
+                              <SafeImage
                                 src={selectedCast.image ?? '/images/non-photo.svg'}
                                 alt={selectedCast.name}
                                 className="h-32 w-32 rounded-lg object-cover"

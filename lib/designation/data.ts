@@ -1,4 +1,10 @@
+/**
+ * @design_doc   Store-scoped designation-fee API client
+ * @related_to   designation-fee route and reservation forms
+ * @known_issues Mutation store IDs remain optional for legacy callers
+ */
 import { resolveApiUrl } from '@/lib/http/base-url'
+import { shouldUseMockFallbacks } from '@/lib/config/feature-flags'
 import { DEFAULT_DESIGNATION_FEES } from './fees'
 import type { DesignationFee, DesignationFeeInput } from './types'
 
@@ -57,6 +63,9 @@ export async function getDesignationFees(options: FetchOptions = {}): Promise<De
       ? result.map(mapDesignationFee).sort((a, b) => a.sortOrder - b.sortOrder)
       : []
   } catch (error) {
+    if (!shouldUseMockFallbacks()) {
+      return []
+    }
     if (process.env.NODE_ENV !== 'production') {
       console.warn('Failed to fetch designation fees, using defaults', error)
     }

@@ -67,7 +67,9 @@
 
 ## API / Webhook
 
-- `POST /api/line/webhook` - LINE公式アカウントのWebhook受信。`reg <キャストID>` コマンドでキャストのLINEユーザーIDを自動登録し、Followイベントでは案内メッセージを返す。
+- `POST /api/cast/line-registration-token?storeId=<店舗ID>` - `cast:update`権限と対象店舗への割り当てを持つ管理者だけが、対象店舗の未連携キャスト向けに15分有効・一度限りのLINE招待トークンを発行する。平文トークンはこのレスポンスだけに含まれ、DBにはSHA-256ハッシュのみ保存する。
+- `DELETE /api/cast/line-registration-token?storeId=<店舗ID>` - 同じ管理者権限・店舗境界でLINE連携を解除し、対象キャストの発行済み招待トークンも同一トランザクションで失効する。発行と解除は管理画面のキャスト詳細から行い、通常のキャスト編集APIでは`lineUserId`を変更できない。
+- `POST /api/line/webhook` - LINE公式アカウントのWebhook受信。`reg <招待トークン>`だけを登録コマンドとして受け付け、トークン消費とキャスト連携を単一トランザクションで確定する。旧`reg <キャストID>`と登録postbackは拒否する。
 
 ## 今後の検討事項
 

@@ -5,6 +5,7 @@
 import { X, ImageIcon, AlertCircle } from 'lucide-react'
 import { AttachmentDraft } from '@/hooks/use-chat-attachments'
 import { Button } from '@/components/ui/button'
+import { SafeImage } from '@/components/ui/safe-image'
 import { cn } from '@/lib/utils'
 
 interface ChatAttachmentPreviewListProps {
@@ -36,7 +37,7 @@ export function ChatAttachmentPreviewList({
             )}
           >
             {attachment.url && attachment.status !== 'error' ? (
-              <img
+              <SafeImage
                 src={attachment.url}
                 alt={attachment.name}
                 className="h-full w-full object-cover"

@@ -1,15 +1,22 @@
 'use client'
 
+/**
+ * @design_doc   Store-scoped email verification completion with closed internal navigation
+ * @related_to   verify-email confirm API and customer-auth.ts
+ * @known_issues Store existence is verified when the verification link is issued
+ */
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react'
+import { buildStoreLoginPath } from '@/lib/auth/customer-auth'
 
 export function VerifyEmailClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
+  const loginPath = buildStoreLoginPath(searchParams.get('store'))
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
 
@@ -69,7 +76,7 @@ export function VerifyEmailClient() {
           {status !== 'loading' && (
             <Button
               className="w-full"
-              onClick={() => router.push('/login')}
+              onClick={() => router.push(loginPath)}
               variant={status === 'success' ? 'default' : 'outline'}
             >
               ログインページへ

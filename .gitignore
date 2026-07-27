@@ -40,5 +40,9 @@ next-env.d.ts
 # image migration
 image-migration-mapping.json
 
+# legacy migration snapshots and generated reports
+/migration-data/
+/migration-reports/
+
 # misc
 .DS_Store

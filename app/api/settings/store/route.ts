@@ -11,6 +11,7 @@ import { SuccessResponses } from '@/lib/api/responses'
 
 import { db } from '@/lib/db'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
+import { shouldUseMockFallbacks } from '@/lib/config/feature-flags'
 // Validation schema
 const storeSettingsSchema = z.object({
   storeName: z.string().min(1),
@@ -37,16 +38,16 @@ const storeSettingsSchema = z.object({
 const DEFAULT_MARKETING_CHANNELS = ['店リピート', '電話', '紹介', 'SNS', 'WEB', 'Heaven']
 
 export async function GET(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
     const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'settings:read', storeId })
+    if (authError) return authError
+
     // Get store settings from database
     let settings = await db.storeSettings.findUnique({ where: { storeId } })
 
     // If no settings exist, create default settings
-    if (!settings) {
+    if (!settings && shouldUseMockFallbacks()) {
       settings = await db.storeSettings.create({
         data: {
           storeId,
@@ -73,6 +74,10 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    if (!settings) {
+      return NextResponse.json({ error: '店舗設定が登録されていません' }, { status: 404 })
+    }
+
     return SuccessResponses.ok({
       ...settings,
       welfareExpenseRate: Number(settings.welfareExpenseRate ?? 10),
@@ -90,11 +95,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
     const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'settings:update', storeId })
+    if (authError) return authError
+
     const body = await request.json()
 
     // Validate request body
@@ -114,7 +119,7 @@ export async function PUT(request: NextRequest) {
     if (existingSettings) {
       // Update existing settings
       updatedSettings = await db.storeSettings.update({
-        where: { id: existingSettings.id },
+        where: { id: existingSettings.id, storeId },
         data: {
           ...validatedData,
           website: validatedData.website || '',

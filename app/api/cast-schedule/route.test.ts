@@ -7,6 +7,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import { GET, POST, PUT, DELETE } from './route'
 import { db } from '@/lib/db'
+import { requireAdmin } from '@/lib/auth/utils'
 
 // Import Prisma for error mocking
 import { Prisma } from '@prisma/client'
@@ -57,7 +58,12 @@ describe('GET /api/cast-schedule', () => {
       startTime: new Date('2025-07-15T09:00:00Z'),
       endTime: new Date('2025-07-15T18:00:00Z'),
       isAvailable: true,
-      cast: { id: 'cast1', name: 'Test Cast' },
+      cast: {
+        id: 'cast1',
+        name: 'Test Cast',
+        passwordHash: 'schedule-cast-secret',
+        loginEmail: 'cast@example.com',
+      },
     }
 
     vi.mocked(db.castSchedule.findFirst).mockResolvedValueOnce(mockSchedule as any)
@@ -71,6 +77,11 @@ describe('GET /api/cast-schedule', () => {
 
     expect(response.status).toBe(200)
     expect(data.data.id).toBe('schedule1')
+    expect(JSON.stringify(data)).not.toMatch(/schedule-cast-secret|cast@example\.com/)
+    expect(requireAdmin).toHaveBeenCalledWith({
+      permissions: 'cast:read',
+      storeId: 'ikebukuro',
+    })
     expect(vi.mocked(db.castSchedule.findFirst)).toHaveBeenCalledWith({
       where: { id: 'schedule1', cast: { storeId: 'ikebukuro' } },
       include: { cast: true },
@@ -247,6 +258,10 @@ describe('POST /api/cast-schedule', () => {
       },
       include: { cast: true },
     })
+    expect(requireAdmin).toHaveBeenCalledWith({
+      permissions: 'cast:create',
+      storeId: 'ikebukuro',
+    })
   })
 
   it('should default isAvailable to true if not provided', async () => {
@@ -349,6 +364,10 @@ describe('PUT /api/cast-schedule', () => {
       },
       include: { cast: true },
     })
+    expect(requireAdmin).toHaveBeenCalledWith({
+      permissions: 'cast:update',
+      storeId: 'ikebukuro',
+    })
   })
 
   it('should handle non-existent schedule', async () => {
@@ -405,6 +424,10 @@ describe('DELETE /api/cast-schedule', () => {
     expect(response.status).toBe(204)
     expect(vi.mocked(db.castSchedule.delete)).toHaveBeenCalledWith({
       where: { id: 'schedule1' },
+    })
+    expect(requireAdmin).toHaveBeenCalledWith({
+      permissions: 'cast:delete',
+      storeId: 'ikebukuro',
     })
   })
 

@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "sourceKey": "replace-with-approved-source-key",
+      "utcOffsetMinutes": 540,
+      "storeMappings": [
+        {
+          "legacyStoreId": "origin_alias.shops:replace-with-legacy-store-id",
+          "targetStoreId": "replace-with-approved-new-store-id",
+          "targetStoreSlug": "replace-with-approved-canonical-store-slug",
+          "targetStoreTimezone": "Asia/Tokyo"
+        }
+      ]
+    }
+  ]
+}

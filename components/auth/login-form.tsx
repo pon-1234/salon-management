@@ -112,6 +112,8 @@ export function LoginForm({ store }: LoginFormProps) {
               <Input
                 id="email"
                 type="email"
+                autoComplete="email"
+                required
                 placeholder="example@email.com"
                 className="pl-10"
                 {...register('email')}
@@ -129,6 +131,8 @@ export function LoginForm({ store }: LoginFormProps) {
               <Input
                 id="password"
                 type="password"
+                autoComplete="current-password"
+                required
                 placeholder="パスワード"
                 className="pl-10"
                 {...register('password')}

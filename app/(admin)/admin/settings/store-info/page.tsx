@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '@/components/admin/page-header'
 import { Header } from '@/components/header'
+import { useStore } from '@/contexts/store-context'
 import { toast } from '@/hooks/use-toast'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -16,12 +17,14 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { MARKETING_CHANNELS } from '@/lib/constants'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import { ArrowLeft, Store, MapPin, Phone, Mail, Clock, Globe } from 'lucide-react'
 import Link from 'next/link'
 
 const DEFAULT_MARKETING_CHANNEL_INPUT = MARKETING_CHANNELS.join('\n')
 
 export default function StoreInfoPage() {
+  const { currentStore } = useStore()
   const [formData, setFormData] = useState({
     storeName: '',
     address: '',
@@ -45,7 +48,7 @@ export default function StoreInfoPage() {
 
   const fetchStoreSettings = useCallback(async () => {
     try {
-      const response = await fetch('/api/settings/store')
+      const response = await fetch(buildStoreScopedEndpoint('/api/settings/store', currentStore.id))
       if (!response.ok) throw new Error('Failed to fetch store settings')
 
       const payload = await response.json()
@@ -72,7 +75,7 @@ export default function StoreInfoPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [currentStore.id])
 
   useEffect(() => {
     fetchStoreSettings()
@@ -97,13 +100,16 @@ export default function StoreInfoPage() {
         marketingChannels:
           marketingChannels.length > 0 ? marketingChannels : [...MARKETING_CHANNELS],
       }
-      const response = await fetch('/api/settings/store', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      })
+      const response = await fetch(
+        buildStoreScopedEndpoint('/api/settings/store', currentStore.id),
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        }
+      )
 
       if (!response.ok) throw new Error('Failed to save store settings')
 

@@ -33,6 +33,7 @@ import { SalesManagementTab } from '@/components/cast/sales-management-tab'
 import { PaymentHistoryTab } from '@/components/cast/payment-history-tab'
 import { SettlementStatusTab } from '@/components/cast/settlement-status-tab'
 import { WorkPerformanceTab } from '@/components/cast/work-performance-tab'
+import { CastLineRegistrationPanel } from '@/components/cast/cast-line-registration-panel'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useStore } from '@/contexts/store-context'
 
@@ -217,6 +218,7 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
         <div className="mx-auto max-w-7xl">
           {isNewCast ? (
             <CastForm
+              storeId={currentStore.id}
               cast={null}
               onSubmit={handleSubmit}
               onCancel={() => router.back()}
@@ -259,6 +261,11 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
                       setCast((prev) => (prev ? { ...prev, ...data } : prev))
                     }}
                   />
+                  <CastLineRegistrationPanel
+                    castId={cast.id}
+                    storeId={currentStore.id}
+                    isLinked={Boolean(cast.lineUserId)}
+                  />
                   <CastProfile cast={cast} />
                 </TabsContent>
 
@@ -271,6 +278,7 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
                       </p>
                     </div>
                     <CastForm
+                      storeId={currentStore.id}
                       cast={cast}
                       onSubmit={handleSubmit}
                       onCancel={() => router.back()}
@@ -305,7 +313,11 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
                 </TabsContent>
 
                 <TabsContent value="settlement" className="space-y-6">
-                  <SettlementStatusTab castId={cast.id} castName={cast.name} />
+                  <SettlementStatusTab
+                    castId={cast.id}
+                    castName={cast.name}
+                    storeId={currentStore.id}
+                  />
                 </TabsContent>
 
                 <TabsContent value="performance" className="space-y-6">

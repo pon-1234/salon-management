@@ -240,6 +240,48 @@ describe('PaymentService', () => {
         PaymentProviderNotFoundError
       )
     })
+
+    it('maps the active-payment unique race to a domain conflict', async () => {
+      vi.mocked(mockDb.paymentTransaction.create).mockRejectedValueOnce({
+        code: 'P2002',
+        meta: { target: 'PaymentTransaction_one_active_payment_per_reservation' },
+      })
+
+      await expect(
+        service.processPayment({
+          reservationId: 'res_123',
+          customerId: 'cust_123',
+          amount: 10000,
+          currency: 'jpy',
+          paymentMethod: 'cash',
+          provider: 'manual',
+        })
+      ).rejects.toMatchObject({
+        name: 'ActivePaymentConflictError',
+        code: 'ACTIVE_PAYMENT_EXISTS',
+      })
+    })
+
+    it('maps the PostgreSQL active-payment constraint error to the same domain conflict', async () => {
+      vi.mocked(mockDb.paymentTransaction.create).mockRejectedValueOnce({
+        code: '23505',
+        constraint: 'PaymentTransaction_one_active_payment_per_reservation',
+      })
+
+      await expect(
+        service.processPayment({
+          reservationId: 'res_123',
+          customerId: 'cust_123',
+          amount: 10000,
+          currency: 'jpy',
+          paymentMethod: 'cash',
+          provider: 'manual',
+        })
+      ).rejects.toMatchObject({
+        name: 'ActivePaymentConflictError',
+        code: 'ACTIVE_PAYMENT_EXISTS',
+      })
+    })
   })
 
   describe('createPaymentIntent', () => {

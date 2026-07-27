@@ -1,105 +1,112 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Customer {
-  id           String        @id @default(cuid())
-  name         String
-  nameKana     String
-  phone        String        @unique
-  email        String        @unique
-  password     String
-  birthDate    DateTime
-  memberType   String        @default("regular")
-  points       Int           @default(0)
-  smsEnabled   Boolean       @default(false)
-  emailNotificationEnabled Boolean @default(true)
-  createdAt    DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  resetToken           String?
-  resetTokenExpiry     DateTime?
-  emailVerified        Boolean       @default(false)
-  emailVerificationToken String?
-  emailVerificationExpiry DateTime?
-  phoneVerified        Boolean       @default(false)
-  phoneVerifiedAt      DateTime?
-  phoneVerificationCode String?
-  phoneVerificationExpiry DateTime?
-  phoneVerificationAttempts Int @default(0)
-  ngCasts      NgCastEntry[]
-  pointHistory CustomerPointHistory[]
-  reservations Reservation[]
-  reviews      Review[]
-  messages     Message[]
+  id                        String                 @id @default(cuid())
+  name                      String
+  nameKana                  String
+  phone                     String                 @unique
+  email                     String                 @unique
+  password                  String
+  birthDate                 DateTime
+  memberType                String                 @default("regular")
+  points                    Int                    @default(0)
+  smsEnabled                Boolean                @default(false)
+  emailNotificationEnabled  Boolean                @default(true)
+  createdAt                 DateTime               @default(now())
+  updatedAt                 DateTime               @updatedAt
+  resetToken                String?
+  resetTokenExpiry          DateTime?
+  emailVerified             Boolean                @default(false)
+  emailVerificationToken    String?
+  emailVerificationExpiry   DateTime?
+  phoneVerified             Boolean                @default(false)
+  phoneVerifiedAt           DateTime?
+  phoneVerificationCode     String?
+  phoneVerificationExpiry   DateTime?
+  phoneVerificationAttempts Int                    @default(0)
+  ngCasts                   NgCastEntry[]
+  pointHistory              CustomerPointHistory[]
+  reservations              Reservation[]
+  reviews                   Review[]
+  messages                  Message[]
+  paymentTransactions       PaymentTransaction[]
 }
 
 model Store {
-  id           String              @id
-  name         String
-  displayName  String
-  slug         String              @unique
-  phone        String?
-  email        String?
-  timezone     String              @default("Asia/Tokyo")
-  address      String?
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-  isActive     Boolean             @default(true)
-  reservations Reservation[]
-  casts        Cast[]
-  coursePrices CoursePrice[]
-  optionPrices OptionPrice[]
-  areaInfos    AreaInfo[]
-  stationInfos StationInfo[]
-  designationFees DesignationFee[]
-  storeSettings StoreSettings?
-  eventBanners StoreEventBanner[]
-  settlementPayments SettlementPayment[]
+  id                     String                      @id
+  name                   String
+  displayName            String
+  slug                   String                      @unique
+  phone                  String?
+  email                  String?
+  timezone               String                      @default("Asia/Tokyo")
+  address                String?
+  createdAt              DateTime                    @default(now())
+  updatedAt              DateTime                    @updatedAt
+  isActive               Boolean                     @default(true)
+  reservations           Reservation[]
+  casts                  Cast[]
+  coursePrices           CoursePrice[]
+  optionPrices           OptionPrice[]
+  areaInfos              AreaInfo[]
+  stationInfos           StationInfo[]
+  designationFees        DesignationFee[]
+  storeSettings          StoreSettings?
+  eventBanners           StoreEventBanner[]
+  settlementPayments     SettlementPayment[]
+  adminAssignments       AdminStoreAssignment[]
+  lineRegistrationTokens CastLineRegistrationToken[]
+  hotelSettings          HotelSettings[]
 }
 
 model Cast {
-  id                     String         @id @default(cuid())
-  name                   String
-  age                    Int
-  height                 Int
-  bust                   String
-  waist                  Int
-  hip                    Int
-  type                   String
-  image                  String
-  images                 String[]
-  description            String
-  publicProfile          Json?
-  netReservation         Boolean
-  requestAttendanceEnabled Boolean     @default(false)
-  specialDesignationFee  Int?
-  regularDesignationFee  Int?
-  panelDesignationRank   Int
-  regularDesignationRank Int
-  workStatus             String
-  availableOptions       String[]      @default([])
-  castOptionSettings     CastOptionSetting[]
-  lineUserId             String?
-  welfareExpenseRate     Decimal?
-  loginEmail             String?       @unique
-  passwordHash           String?
-  storeId                String
-  createdAt              DateTime       @default(now())
-  updatedAt              DateTime       @updatedAt
-  schedules              CastSchedule[]
-  ngByCustomers          NgCastEntry[]
-  reservations           Reservation[]
-  reviews                Review[]
-  messages               Message[]
-  lineLogs               ReservationLineLog[]
-  attendanceRequests     ReservationAttendanceRequest[]
-  settlementPayments     SettlementPayment[]
-  store                  Store          @relation(fields: [storeId], references: [id])
+  id                       String                         @id @default(cuid())
+  name                     String
+  nameKana                 String?
+  age                      Int
+  height                   Int
+  bust                     String
+  waist                    Int
+  hip                      Int
+  type                     String
+  image                    String
+  images                   String[]
+  description              String
+  publicProfile            Json?
+  netReservation           Boolean
+  requestAttendanceEnabled Boolean                        @default(false)
+  specialDesignationFee    Int?
+  regularDesignationFee    Int?
+  panelDesignationRank     Int
+  regularDesignationRank   Int
+  workStatus               String
+  availableOptions         String[]                       @default([])
+  castOptionSettings       CastOptionSetting[]
+  lineUserId               String?                        @unique
+  welfareExpenseRate       Decimal?
+  loginEmail               String?                        @unique
+  passwordHash             String?
+  storeId                  String
+  createdAt                DateTime                       @default(now())
+  updatedAt                DateTime                       @updatedAt
+  schedules                CastSchedule[]
+  ngByCustomers            NgCastEntry[]
+  reservations             Reservation[]
+  reviews                  Review[]
+  messages                 Message[]
+  lineLogs                 ReservationLineLog[]
+  attendanceRequests       ReservationAttendanceRequest[]
+  settlementPayments       SettlementPayment[]
+  lineRegistrationToken    CastLineRegistrationToken?
+  store                    Store                          @relation(fields: [storeId], references: [id])
 
   @@index([storeId])
 }
@@ -113,11 +120,11 @@ enum NgAssignmentSource {
 model NgCastEntry {
   customerId String
   castId     String
-  assignedAt DateTime @default(now())
+  assignedAt DateTime           @default(now())
   notes      String?
   assignedBy NgAssignmentSource @default(customer)
-  cast       Cast     @relation(fields: [castId], references: [id])
-  customer   Customer @relation(fields: [customerId], references: [id])
+  cast       Cast               @relation(fields: [castId], references: [id])
+  customer   Customer           @relation(fields: [customerId], references: [id])
 
   @@id([customerId, castId])
 }
@@ -128,74 +135,81 @@ enum CancellationSource {
 }
 
 model Reservation {
-  id         String              @id @default(cuid())
-  customerId String
-  castId     String
-  courseId   String
-  startTime  DateTime
-  endTime    DateTime
-  status     String
-  settlementStatus String        @default("pending")
-  price      Int                 @default(0)
-  storeId    String
-  designationType   String?
-  designationFee    Int          @default(0)
-  transportationFee Int          @default(0)
-  additionalFee     Int          @default(0)
-  discountAmount    Int          @default(0)
-  welfareExpense    Int          @default(0)
-  paymentMethod     String?      @default("現金")
-  marketingChannel  String?
-  storeRevenue      Int?
-  staffRevenue      Int?
-  areaId            String?
-  stationId         String?
-  hotelName         String?
-  roomNumber        String?
-  entryMemo         String?
-  entryReceivedAt   DateTime?
-  entryReceivedBy   String?
-  entryNotifiedAt   DateTime?
-  entryConfirmedAt  DateTime?
+  id                  String                         @id @default(cuid())
+  customerId          String
+  castId              String
+  courseId            String
+  startTime           DateTime
+  endTime             DateTime
+  status              String
+  settlementStatus    String                         @default("pending")
+  price               Int                            @default(0)
+  storeId             String
+  designationType     String?
+  designationFee      Int                            @default(0)
+  transportationFee   Int                            @default(0)
+  additionalFee       Int                            @default(0)
+  discountAmount      Int                            @default(0)
+  welfareExpense      Int                            @default(0)
+  paymentMethod       String?                        @default("現金")
+  marketingChannel    String?
+  storeRevenue        Int?
+  staffRevenue        Int?
+  areaId              String?
+  stationId           String?
+  hotelId             String?
+  hotelName           String?
+  hotelExpense        Int                            @default(0)
+  roomNumber          String?
+  entryMemo           String?
+  entryReceivedAt     DateTime?
+  entryReceivedBy     String?
+  entryNotifiedAt     DateTime?
+  entryConfirmedAt    DateTime?
   entryReminderSentAt DateTime?
-  locationMemo      String?
-  notes             String?
-  castCheckedInAt   DateTime?
-  castCheckedOutAt  DateTime?
-  pointsUsed        Int          @default(0)
-  cancellationSource CancellationSource?
-  createdAt  DateTime            @default(now())
-  updatedAt  DateTime            @updatedAt
-  cast       Cast                @relation(fields: [castId], references: [id])
-  course     CoursePrice         @relation(fields: [courseId], references: [id])
-  customer   Customer            @relation(fields: [customerId], references: [id])
-  area       AreaInfo?           @relation(fields: [areaId], references: [id])
-  station    StationInfo?        @relation(fields: [stationId], references: [id])
-  options    ReservationOption[]
-  histories  ReservationHistory[]
-  reviews    Review[]
-  store      Store               @relation(fields: [storeId], references: [id])
-  lineLogs   ReservationLineLog[]
-  attendanceRequests ReservationAttendanceRequest[]
-  pointHistory CustomerPointHistory[]
-  settlementPayments SettlementPaymentReservation[]
+  locationMemo        String?
+  notes               String?
+  storeMemo           String?
+  modifiableUntil     DateTime?
+  castCheckedInAt     DateTime?
+  castCheckedOutAt    DateTime?
+  pointsUsed          Int                            @default(0)
+  cancellationSource  CancellationSource?
+  createdAt           DateTime                       @default(now())
+  updatedAt           DateTime                       @updatedAt
+  cast                Cast                           @relation(fields: [castId], references: [id])
+  course              CoursePrice                    @relation(fields: [courseId], references: [id])
+  customer            Customer                       @relation(fields: [customerId], references: [id])
+  area                AreaInfo?                      @relation(fields: [areaId], references: [id])
+  station             StationInfo?                   @relation(fields: [stationId], references: [id])
+  hotel               HotelSettings?                 @relation(fields: [hotelId, storeId], references: [id, storeId], onDelete: Restrict)
+  options             ReservationOption[]
+  histories           ReservationHistory[]
+  reviews             Review[]
+  store               Store                          @relation(fields: [storeId], references: [id])
+  lineLogs            ReservationLineLog[]
+  attendanceRequests  ReservationAttendanceRequest[]
+  pointHistory        CustomerPointHistory[]
+  settlementPayments  SettlementPaymentReservation[]
+  paymentTransactions PaymentTransaction[]
 
   @@index([storeId])
+  @@index([hotelId, storeId])
 }
 
 model SettlementPayment {
-  id        String   @id @default(cuid())
-  castId    String
-  storeId   String
-  amount    Int
-  method    String   @default("現金精算")
-  handledBy String
-  paidAt    DateTime @default(now())
-  notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  cast      Cast     @relation(fields: [castId], references: [id])
-  store     Store    @relation(fields: [storeId], references: [id])
+  id           String                         @id @default(cuid())
+  castId       String
+  storeId      String
+  amount       Int
+  method       String                         @default("現金精算")
+  handledBy    String
+  paidAt       DateTime                       @default(now())
+  notes        String?
+  createdAt    DateTime                       @default(now())
+  updatedAt    DateTime                       @updatedAt
+  cast         Cast                           @relation(fields: [castId], references: [id])
+  store        Store                          @relation(fields: [storeId], references: [id])
   reservations SettlementPaymentReservation[]
 
   @@index([storeId])
@@ -212,42 +226,42 @@ model SettlementPaymentReservation {
 }
 
 model CoursePrice {
-  id              String        @id @default(cuid())
-  name            String
-  duration        Int
-  price           Int
-  storeShare      Int?
-  castShare       Int?
-  description     String
-  isActive        Boolean       @default(true)
+  id               String        @id @default(cuid())
+  name             String
+  duration         Int
+  price            Int
+  storeShare       Int?
+  castShare        Int?
+  description      String
+  isActive         Boolean       @default(true)
   enableWebBooking Boolean       @default(true)
-  archivedAt      DateTime?
-  storeId         String
-  reservations    Reservation[]
-  store           Store         @relation(fields: [storeId], references: [id])
+  archivedAt       DateTime?
+  storeId          String
+  reservations     Reservation[]
+  store            Store         @relation(fields: [storeId], references: [id])
 
   @@index([storeId])
 }
 
 model OptionPrice {
-  id           String              @id @default(cuid())
-  name         String
-  description  String?
-  price        Int
-  duration     Int?
-  category     String              @default("special")
-  displayOrder Int                  @default(0)
-  isActive     Boolean              @default(true)
-  visibility   String              @default("public")
-  note         String?
-  storeShare   Int?
-  castShare    Int?
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @default(now()) @updatedAt
-  archivedAt   DateTime?
-  storeId      String
-  reservations ReservationOption[]
-  store        Store               @relation(fields: [storeId], references: [id])
+  id                 String              @id @default(cuid())
+  name               String
+  description        String?
+  price              Int
+  duration           Int?
+  category           String              @default("special")
+  displayOrder       Int                 @default(0)
+  isActive           Boolean             @default(true)
+  visibility         String              @default("public")
+  note               String?
+  storeShare         Int?
+  castShare          Int?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @default(now()) @updatedAt
+  archivedAt         DateTime?
+  storeId            String
+  reservations       ReservationOption[]
+  store              Store               @relation(fields: [storeId], references: [id])
   castOptionSettings CastOptionSetting[]
 
   @@index([storeId])
@@ -257,7 +271,7 @@ model CastOptionSetting {
   id         String      @id @default(cuid())
   castId     String
   optionId   String
-  visibility String     @default("public")
+  visibility String      @default("public")
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
   cast       Cast        @relation(fields: [castId], references: [id])
@@ -269,60 +283,62 @@ model CastOptionSetting {
 }
 
 model AreaInfo {
-  id           String         @id @default(cuid())
-  name         String
-  prefecture   String?
-  city         String?
-  description  String?
-  displayOrder Int            @default(0)
-  isActive     Boolean        @default(true)
-  storeId      String
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  stations     StationInfo[]
-  reservations Reservation[]
-  store        Store          @relation(fields: [storeId], references: [id])
+  id                String             @id @default(cuid())
+  name              String
+  prefecture        String?
+  city              String?
+  description       String?
+  displayOrder      Int                @default(0)
+  isActive          Boolean            @default(true)
+  storeId           String
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  stations          StationInfo[]
+  reservations      Reservation[]
+  hotelServiceAreas HotelServiceArea[]
+  store             Store              @relation(fields: [storeId], references: [id])
 
+  @@unique([id, storeId])
   @@index([storeId])
 }
 
 model StationInfo {
-  id               String    @id @default(cuid())
-  name             String
-  line             String?
-  areaId           String?
-  transportationFee Int?     @default(0)
-  travelTime       Int?      @default(0) // minutes
-  description      String?
-  isActive         Boolean   @default(true)
-  displayOrder     Int       @default(0)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  area             AreaInfo? @relation(fields: [areaId], references: [id])
-  reservations     Reservation[]
-  storeId          String
-  store            Store     @relation(fields: [storeId], references: [id])
+  id                String        @id @default(cuid())
+  name              String
+  line              String?
+  areaId            String?
+  transportationFee Int?          @default(0)
+  travelTime        Int?          @default(0) // minutes
+  description       String?
+  isActive          Boolean       @default(true)
+  displayOrder      Int           @default(0)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  area              AreaInfo?     @relation(fields: [areaId], references: [id])
+  reservations      Reservation[]
+  storeId           String
+  store             Store         @relation(fields: [storeId], references: [id])
 
   @@index([areaId])
   @@index([storeId])
 }
 
 model ReservationOption {
-  id            String        @id @default(cuid())
+  id            String      @id @default(cuid())
   reservationId String
   optionId      String
-  option        OptionPrice   @relation(fields: [optionId], references: [id])
+  option        OptionPrice @relation(fields: [optionId], references: [id])
   optionName    String
   optionPrice   Int
   storeShare    Int?
   castShare     Int?
-  reservation   Reservation  @relation(fields: [reservationId], references: [id])
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
 
   @@unique([reservationId, optionId])
 }
 
 model ReservationHistory {
-  id               String       @id @default(cuid())
+  id               String   @id @default(cuid())
   reservationId    String
   fieldName        String
   fieldDisplayName String
@@ -333,7 +349,7 @@ model ReservationHistory {
   actorName        String?
   actorIp          String?
   actorAgent       String?
-  createdAt        DateTime     @default(now())
+  createdAt        DateTime @default(now())
 
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
@@ -364,19 +380,19 @@ enum ReviewStatus {
 }
 
 model Review {
-  id            String        @id @default(cuid())
+  id            String       @id @default(cuid())
   customerId    String
   castId        String
   reservationId String?
   rating        Int
   comment       String
-  status        ReviewStatus  @default(pending)
+  status        ReviewStatus @default(pending)
   publishedAt   DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @default(now()) @updatedAt
-  cast          Cast          @relation(fields: [castId], references: [id])
-  customer      Customer      @relation(fields: [customerId], references: [id])
-  reservation   Reservation?  @relation(fields: [reservationId], references: [id])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @default(now()) @updatedAt
+  cast          Cast         @relation(fields: [castId], references: [id])
+  customer      Customer     @relation(fields: [customerId], references: [id])
+  reservation   Reservation? @relation(fields: [reservationId], references: [id])
 
   @@index([status])
   @@index([reservationId])
@@ -395,23 +411,54 @@ model CastSchedule {
 }
 
 model Admin {
-  id          String    @id @default(cuid())
-  email       String    @unique
-  password    String
-  name        String
-  role        String    @default("staff")
-  permissions Json?
-  isActive    Boolean   @default(true)
-  lastLogin   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                     String                      @id @default(cuid())
+  email                  String                      @unique
+  password               String
+  name                   String
+  role                   String                      @default("staff")
+  permissions            Json?
+  isActive               Boolean                     @default(true)
+  lastLogin              DateTime?
+  createdAt              DateTime                    @default(now())
+  updatedAt              DateTime                    @updatedAt
+  storeAssignments       AdminStoreAssignment[]
+  lineRegistrationTokens CastLineRegistrationToken[]
+}
+
+model CastLineRegistrationToken {
+  id               String    @id @default(cuid())
+  castId           String    @unique
+  storeId          String
+  tokenHash        String    @unique
+  expiresAt        DateTime
+  usedAt           DateTime?
+  createdByAdminId String
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  cast             Cast      @relation(fields: [castId], references: [id], onDelete: Cascade)
+  store            Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  createdByAdmin   Admin     @relation(fields: [createdByAdminId], references: [id], onDelete: Restrict)
+
+  @@index([storeId])
+  @@index([expiresAt])
+}
+
+model AdminStoreAssignment {
+  adminId   String
+  storeId   String
+  createdAt DateTime @default(now())
+  admin     Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@id([adminId, storeId])
+  @@index([storeId])
 }
 
 model Message {
   id                String    @id @default(cuid())
   customerId        String?
   castId            String?
-  sender            String    // 'customer', 'staff', or 'cast'
+  sender            String // 'customer', 'staff', or 'cast'
   content           String
   timestamp         DateTime
   readStatus        String    @default("未読") // '未読' or '既読'
@@ -428,19 +475,19 @@ model Message {
 }
 
 model PaymentIntent {
-  id                  String              @id @default(cuid())
-  stripeIntentId      String              @unique
+  id                  String               @id @default(cuid())
+  stripeIntentId      String               @unique
   amount              Int
-  currency            String              @default("jpy")
-  status              String              // e.g., 'requires_payment_method', 'succeeded', 'canceled'
+  currency            String               @default("jpy")
+  status              String // e.g., 'requires_payment_method', 'succeeded', 'canceled'
   customerId          String?
   metadata            Json?
-  providerId          String?             // Provider-specific ID
-  provider            String?             // Payment provider name
-  paymentMethod       String?             // Payment method type
-  errorMessage        String?             // Error message if failed
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
+  providerId          String? // Provider-specific ID
+  provider            String? // Payment provider name
+  paymentMethod       String? // Payment method type
+  errorMessage        String? // Error message if failed
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
   paymentTransactions PaymentTransaction[]
 }
 
@@ -449,10 +496,10 @@ model PaymentTransaction {
   paymentIntentId String?
   amount          Int
   currency        String         @default("jpy")
-  status          String         // e.g., 'pending', 'completed', 'failed', 'refunded'
-  type            String         // e.g., 'payment', 'refund'
-  provider        String         // e.g., 'stripe', 'cash'
-  paymentMethod   String         // e.g., 'card', 'cash'
+  status          String // e.g., 'pending', 'completed', 'failed', 'refunded'
+  type            String // e.g., 'payment', 'refund'
+  provider        String // e.g., 'stripe', 'cash'
+  paymentMethod   String // e.g., 'card', 'cash'
   customerId      String?
   reservationId   String?
   stripePaymentId String?
@@ -464,39 +511,44 @@ model PaymentTransaction {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   paymentIntent   PaymentIntent? @relation(fields: [paymentIntentId], references: [id])
+  customer        Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  reservation     Reservation?   @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+
+  @@index([customerId])
+  @@index([reservationId])
 }
 
 model StoreSettings {
-  id            String   @id @default(cuid())
-  storeId       String   @unique
-  storeName     String
-  address       String
-  phone         String
-  email         String
-  website       String?
-  businessHours String
-  description   String
-  zipCode       String
-  prefecture    String
-  city          String
-  building      String?
-  businessDays  String
-  lastOrder     String
-  parkingInfo   String?
-  welfareExpenseRate Decimal @default(10)
-  marketingChannels   String[] @default(["店リピート", "電話", "紹介", "SNS", "WEB", "Heaven"])
-  pointEarnRate        Decimal @default(1.0)
-  pointExpirationMonths Int    @default(12)
-  pointMinUsage        Int     @default(100)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  store         Store    @relation(fields: [storeId], references: [id])
+  id                    String   @id @default(cuid())
+  storeId               String   @unique
+  storeName             String
+  address               String
+  phone                 String
+  email                 String
+  website               String?
+  businessHours         String
+  description           String
+  zipCode               String
+  prefecture            String
+  city                  String
+  building              String?
+  businessDays          String
+  lastOrder             String
+  parkingInfo           String?
+  welfareExpenseRate    Decimal  @default(10)
+  marketingChannels     String[] @default(["店リピート", "電話", "紹介", "SNS", "WEB", "Heaven"])
+  pointEarnRate         Decimal  @default(1.0)
+  pointExpirationMonths Int      @default(12)
+  pointMinUsage         Int      @default(100)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  store                 Store    @relation(fields: [storeId], references: [id])
 
   @@index([storeId])
 }
 
 model CustomerPointHistory {
-  id              String     @id @default(cuid())
+  id              String    @id @default(cuid())
   customerId      String
   type            String
   amount          Int
@@ -505,35 +557,36 @@ model CustomerPointHistory {
   reservationId   String?
   balance         Int
   expiresAt       DateTime?
-  isExpired       Boolean    @default(false)
+  isExpired       Boolean   @default(false)
   sourceHistoryId String?
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  customer        Customer   @relation(fields: [customerId], references: [id])
-  reservation     Reservation? @relation(fields: [reservationId], references: [id])
+  customer    Customer     @relation(fields: [customerId], references: [id])
+  reservation Reservation? @relation(fields: [reservationId], references: [id])
 
+  @@unique([sourceHistoryId], map: "unique_source_history")
+  @@unique([reservationId, type], map: "unique_reservation_point_event")
   @@index([customerId])
   @@index([reservationId])
   @@index([type, expiresAt, isExpired], map: "idx_point_history_expiration")
-  @@unique([sourceHistoryId], map: "unique_source_history")
 }
 
 model StoreEventBanner {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   storeId        String
   title          String
   description    String?
   imageUrl       String
   mobileImageUrl String?
   link           String?
-  startDate     DateTime?
-  endDate       DateTime?
-  displayOrder   Int      @default(0)
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  store          Store    @relation(fields: [storeId], references: [id])
+  startDate      DateTime?
+  endDate        DateTime?
+  displayOrder   Int       @default(0)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  store          Store     @relation(fields: [storeId], references: [id])
 
   @@index([storeId])
 }
@@ -574,17 +627,100 @@ model ReservationAttendanceRequest {
 }
 
 model HotelSettings {
-  id           String   @id @default(cuid())
+  id           String             @id @default(cuid())
+  storeId      String
+  legacyId     String?
   hotelName    String
-  area         String
-  roomCount    Int
-  hourlyRate   Int
-  address      String
-  phone        String
-  checkInTime  String
-  checkOutTime String
-  amenities    String[]
+  area         String?
+  station      String?
+  roomCount    Int?
+  hourlyRate   Int?
+  address      String?
+  phone        String?
+  checkInTime  String?
+  checkOutTime String?
+  amenities    String[]           @default([])
   notes        String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  rawText      String?
+  isActive     Boolean            @default(true)
+  displayOrder Int                @default(0)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  store        Store              @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  serviceAreas HotelServiceArea[]
+  rates        HotelRate[]
+  reservations Reservation[]
+
+  @@unique([id, storeId])
+  @@unique([storeId, legacyId])
+  @@index([storeId, isActive, displayOrder])
+}
+
+model HotelServiceArea {
+  id           String        @id @default(cuid())
+  storeId      String
+  hotelId      String
+  areaId       String
+  isActive     Boolean       @default(true)
+  displayOrder Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  hotel        HotelSettings @relation(fields: [hotelId, storeId], references: [id, storeId], onDelete: Cascade)
+  area         AreaInfo      @relation(fields: [areaId, storeId], references: [id, storeId], onDelete: Restrict)
+
+  @@unique([hotelId, areaId])
+  @@index([hotelId, isActive, displayOrder])
+  @@index([areaId, storeId])
+}
+
+model HotelRate {
+  id              String        @id @default(cuid())
+  hotelId         String
+  label           String?
+  durationMinutes Int?
+  amount          Int?
+  rawText         String?
+  isActive        Boolean       @default(true)
+  displayOrder    Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  hotel           HotelSettings @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  @@index([hotelId, isActive, displayOrder])
+}
+
+/// Auditable, idempotent mapping from an offline legacy source row to its target record.
+model LegacyMigrationMapping {
+  id               String             @id @default(cuid())
+  sourceKey        String
+  legacyEntity     String
+  legacyId         String
+  targetId         String
+  sourceHash       String
+  migrationVersion Int                @default(1)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  run              LegacyMigrationRun @relation(fields: [sourceKey], references: [sourceKey], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([sourceKey, legacyEntity, legacyId])
+  @@index([legacyEntity, targetId])
+}
+
+/// Immutable provenance for the accepted preview import associated with one legacy source.
+model LegacyMigrationRun {
+  id                          String                   @id @default(cuid())
+  sourceKey                   String                   @unique
+  targetId                    String
+  cutoffAt                    DateTime
+  migrationManifestSha256     String
+  canonicalExportSha256       String
+  snapshotManifestSha256      String
+  extractorVersion            String
+  transformationPolicyVersion String
+  canonicalDigest             String
+  migrationVersion            Int                      @default(1)
+  createdAt                   DateTime                 @default(now())
+  mappings                    LegacyMigrationMapping[]
+
+  @@index([targetId])
 }

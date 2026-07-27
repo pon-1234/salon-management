@@ -1,13 +1,20 @@
+/**
+ * @design_doc   Email verification consumes hashed bearer tokens atomically and once
+ * @related_to   route.ts, send/route.ts, lib/auth/recovery-token.ts
+ * @known_issues Existing plaintext verification tokens are invalid after deployment
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { POST } from './route'
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
+import { hashBearerToken } from '@/lib/auth/recovery-token'
 
 vi.mock('@/lib/db', () => ({
   db: {
     customer: {
       findFirst: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
     },
   },
 }))
@@ -53,12 +60,7 @@ describe('POST /api/auth/verify-email/confirm', () => {
     })
 
     vi.mocked(db.customer.findFirst).mockResolvedValue(mockCustomer)
-    vi.mocked(db.customer.update).mockResolvedValue({
-      ...mockCustomer,
-      emailVerified: true,
-      emailVerificationToken: null,
-      emailVerificationExpiry: null,
-    })
+    vi.mocked(db.customer.updateMany).mockResolvedValue({ count: 1 })
 
     const request = new NextRequest('http://localhost/api/auth/verify-email/confirm', {
       method: 'POST',
@@ -75,15 +77,22 @@ describe('POST /api/auth/verify-email/confirm', () => {
 
     expect(db.customer.findFirst).toHaveBeenCalledWith({
       where: {
-        emailVerificationToken: 'valid-verification-token',
+        emailVerificationToken: hashBearerToken('valid-verification-token'),
         emailVerificationExpiry: {
           gt: expect.any(Date),
         },
+        emailVerified: false,
       },
+      select: { id: true },
     })
 
-    expect(db.customer.update).toHaveBeenCalledWith({
-      where: { id: '1' },
+    expect(db.customer.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: '1',
+        emailVerificationToken: hashBearerToken('valid-verification-token'),
+        emailVerificationExpiry: { gt: expect.any(Date) },
+        emailVerified: false,
+      },
       data: {
         emailVerified: true,
         emailVerificationToken: null,
@@ -92,14 +101,8 @@ describe('POST /api/auth/verify-email/confirm', () => {
     })
   })
 
-  it('should return success for already verified email', async () => {
-    const mockCustomer = createMockCustomer({
-      emailVerified: true,
-      emailVerificationToken: 'valid-verification-token',
-      emailVerificationExpiry: new Date(Date.now() + 86400000),
-    })
-
-    vi.mocked(db.customer.findFirst).mockResolvedValue(mockCustomer)
+  it('does not accept a token for an already verified email', async () => {
+    vi.mocked(db.customer.findFirst).mockResolvedValue(null)
 
     const request = new NextRequest('http://localhost/api/auth/verify-email/confirm', {
       method: 'POST',
@@ -111,10 +114,10 @@ describe('POST /api/auth/verify-email/confirm', () => {
     const response = await POST(request)
     const data = await response.json()
 
-    expect(response.status).toBe(200)
-    expect(data.data.message).toBe('メールアドレスは既に確認済みです')
+    expect(response.status).toBe(400)
+    expect(data.message).toBe('無効または期限切れのトークンです')
 
-    expect(db.customer.update).not.toHaveBeenCalled()
+    expect(db.customer.updateMany).not.toHaveBeenCalled()
   })
 
   it('should return error for invalid token', async () => {
@@ -134,7 +137,7 @@ describe('POST /api/auth/verify-email/confirm', () => {
     expect(data.error).toBe('Bad Request')
     expect(data.message).toBe('無効または期限切れのトークンです')
 
-    expect(db.customer.update).not.toHaveBeenCalled()
+    expect(db.customer.updateMany).not.toHaveBeenCalled()
   })
 
   it('should return error for expired token', async () => {
@@ -191,7 +194,7 @@ describe('POST /api/auth/verify-email/confirm', () => {
     })
 
     vi.mocked(db.customer.findFirst).mockResolvedValue(mockCustomer)
-    vi.mocked(db.customer.update).mockRejectedValue(new Error('Database error'))
+    vi.mocked(db.customer.updateMany).mockRejectedValue(new Error('Database error'))
 
     const request = new NextRequest('http://localhost/api/auth/verify-email/confirm', {
       method: 'POST',
@@ -206,6 +209,22 @@ describe('POST /api/auth/verify-email/confirm', () => {
     expect(response.status).toBe(500)
     expect(data.error).toBe('Internal Server Error')
     expect(data.message).toBe('メール確認の処理中にエラーが発生しました')
+  })
+
+  it('rejects a verification token consumed concurrently', async () => {
+    vi.mocked(db.customer.findFirst).mockResolvedValue({ id: '1' } as any)
+    vi.mocked(db.customer.updateMany).mockResolvedValue({ count: 0 })
+
+    const request = new NextRequest('http://localhost/api/auth/verify-email/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ token: 'valid-verification-token' }),
+    })
+
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(data.message).toBe('無効または期限切れのトークンです')
   })
 
   it('should handle database find failure', async () => {

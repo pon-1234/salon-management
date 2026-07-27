@@ -1,13 +1,14 @@
 /**
- * @design_doc   Issue #5 - Payment System Integration
- * @related_to   Payment Intent API endpoints, PaymentService (business logic)
- * @known_issues None identified
+ * @design_doc   Issue #5 - Payment-intent fail-closed boundary tests
+ * @related_to   app/api/payments/intents/route.ts, Reservation, PaymentService
+ * @known_issues Online provider and signed webhook confirmation are not implemented
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { db } from '@/lib/db'
 
-// Create mock payment service instance using vi.hoisted
 const { mockPaymentService } = vi.hoisted(() => ({
   mockPaymentService: {
     createPaymentIntent: vi.fn(),
@@ -15,179 +16,181 @@ const { mockPaymentService } = vi.hoisted(() => ({
   },
 }))
 
-// Mock PaymentService
-vi.mock('@/lib/payment/service', () => ({
-  PaymentService: vi.fn().mockImplementation(() => mockPaymentService),
+vi.mock('next-auth', () => ({
+  getServerSession: vi.fn(),
 }))
 
-// Import route after mocks are set up
-import { POST, PATCH } from '../route'
+vi.mock('@/lib/auth/config', () => ({ authOptions: {} }))
+
+vi.mock('@/lib/db', () => ({
+  db: {
+    reservation: {
+      findUnique: vi.fn(),
+    },
+  },
+}))
+
+vi.mock('@/lib/payment/providers/registry', () => ({
+  getPaymentService: vi.fn(() => mockPaymentService),
+}))
+
+vi.mock('@/lib/logger', () => ({
+  default: {
+    error: vi.fn(),
+  },
+}))
+
+import { PATCH, POST } from '../route'
+
+const reservation = {
+  id: 'res_123',
+  customerId: 'cust_123',
+  storeId: 'ginza',
+  price: 12_000,
+  paymentMethod: 'クレジットカード',
+  status: 'confirmed',
+}
+
+const ownerCustomer = {
+  user: { id: 'cust_123', role: 'customer' },
+}
+
+const assignedAdmin = {
+  user: {
+    id: 'admin_123',
+    role: 'admin',
+    permissions: ['reservation:update'],
+    storeIds: ['ginza'],
+  },
+}
+
+function intentRequest(body: Record<string, unknown>) {
+  return new NextRequest('http://localhost:3000/api/payments/intents', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
 
 describe('/api/payments/intents', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getServerSession).mockResolvedValue(ownerCustomer as never)
+    vi.mocked(db.reservation.findUnique).mockResolvedValue(reservation as never)
   })
 
-  describe('POST /api/payments/intents', () => {
-    it('should create payment intent successfully', async () => {
-      const intentData = {
-        reservationId: 'res_123',
-        customerId: 'cust_123',
-        amount: 10000,
-        currency: 'jpy',
-        paymentMethod: 'card',
-        provider: 'manual',
-      }
+  describe('POST', () => {
+    it('rejects unauthenticated callers before reading a reservation', async () => {
+      vi.mocked(getServerSession).mockResolvedValue(null)
 
-      const createdAt = new Date()
-      const updatedAt = new Date()
+      const response = await POST(intentRequest({ reservationId: reservation.id }))
 
-      const mockIntent = {
-        id: 'pi_123',
-        providerId: 'manual_intent_123',
-        provider: 'manual',
-        amount: 10000,
-        currency: 'jpy',
-        status: 'pending',
-        paymentMethod: 'card',
-        clientSecret: 'pi_123_secret',
-        createdAt: createdAt.toISOString(),
-        updatedAt: updatedAt.toISOString(),
-      }
-
-      mockPaymentService.createPaymentIntent.mockResolvedValue(mockIntent)
-
-      const request = new NextRequest('http://localhost:3000/api/payments/intents', {
-        method: 'POST',
-        body: JSON.stringify(intentData),
-      })
-
-      const response = await POST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(200)
-      expect(data.intent).toEqual(mockIntent)
-      expect(mockPaymentService.createPaymentIntent).toHaveBeenCalledWith(intentData)
+      expect(response.status).toBe(401)
+      expect(db.reservation.findUnique).not.toHaveBeenCalled()
+      expect(mockPaymentService.createPaymentIntent).not.toHaveBeenCalled()
     })
 
-    it('should return 400 for invalid intent data', async () => {
-      const invalidData = {
-        reservationId: 'res_123',
-        // missing required fields
-      }
+    it('rejects a customer starting an intent for another customer reservation', async () => {
+      vi.mocked(db.reservation.findUnique).mockResolvedValue({
+        ...reservation,
+        customerId: 'cust_other',
+      } as never)
 
-      const request = new NextRequest('http://localhost:3000/api/payments/intents', {
-        method: 'POST',
-        body: JSON.stringify(invalidData),
-      })
+      const response = await POST(intentRequest({ reservationId: reservation.id }))
 
-      const response = await POST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(400)
-      expect(data.error).toBeDefined()
+      expect(response.status).toBe(403)
+      expect(mockPaymentService.createPaymentIntent).not.toHaveBeenCalled()
     })
 
-    it('should handle intent creation failure', async () => {
-      const intentData = {
-        reservationId: 'res_123',
-        customerId: 'cust_123',
-        amount: 10000,
-        currency: 'jpy',
-        paymentMethod: 'card',
-        provider: 'manual',
-      }
+    it('rejects an administrator not assigned to the reservation store', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        ...assignedAdmin,
+        user: { ...assignedAdmin.user, storeIds: ['shinjuku'] },
+      } as never)
 
-      mockPaymentService.createPaymentIntent.mockRejectedValue(new Error('Provider error'))
+      const response = await POST(intentRequest({ reservationId: reservation.id }))
 
-      const request = new NextRequest('http://localhost:3000/api/payments/intents', {
-        method: 'POST',
-        body: JSON.stringify(intentData),
-      })
-
-      const response = await POST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(500)
-      expect(data.error).toBe('Provider error')
+      expect(response.status).toBe(403)
+      expect(mockPaymentService.createPaymentIntent).not.toHaveBeenCalled()
     })
-  })
 
-  describe('PATCH /api/payments/intents', () => {
-    it('should confirm payment intent successfully', async () => {
-      const confirmData = {
-        intentId: 'pi_123',
+    it('validates caller-supplied identity and amount against the reservation', async () => {
+      const response = await POST(
+        intentRequest({ reservationId: reservation.id, customerId: 'cust_other', amount: 1 })
+      )
+
+      expect(response.status).toBe(409)
+      expect(mockPaymentService.createPaymentIntent).not.toHaveBeenCalled()
+    })
+
+    it.each([ownerCustomer, assignedAdmin])(
+      'fails closed for authorized callers until an online provider and signed callback exist',
+      async (session) => {
+        vi.mocked(getServerSession).mockResolvedValue(session as never)
+
+        const response = await POST(intentRequest({ reservationId: reservation.id }))
+
+        expect(response.status).toBe(503)
+        await expect(response.json()).resolves.toEqual({
+          error: 'Online payment intents are not configured',
+        })
+        expect(mockPaymentService.createPaymentIntent).not.toHaveBeenCalled()
       }
+    )
 
-      const createdAt = new Date()
-      const updatedAt = new Date()
-
-      const mockResult = {
-        success: true,
-        transaction: {
-          id: 'txn_123',
-          reservationId: 'res_123',
-          customerId: 'cust_123',
-          amount: 10000,
-          currency: 'jpy',
-          provider: 'manual',
-          paymentMethod: 'card',
+    it('rejects caller-controlled intent status and metadata', async () => {
+      const response = await POST(
+        intentRequest({
+          reservationId: reservation.id,
           status: 'completed',
-          createdAt: createdAt.toISOString(),
-          updatedAt: updatedAt.toISOString(),
-        },
-      }
-
-      mockPaymentService.confirmPaymentIntent.mockResolvedValue(mockResult)
-
-      const request = new NextRequest('http://localhost:3000/api/payments/intents', {
-        method: 'PATCH',
-        body: JSON.stringify(confirmData),
-      })
-
-      const response = await PATCH(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(200)
-      expect(data.success).toBe(true)
-      expect(data.transaction).toBeDefined()
-      expect(mockPaymentService.confirmPaymentIntent).toHaveBeenCalledWith('pi_123')
-    })
-
-    it('should return 400 for missing intentId', async () => {
-      const request = new NextRequest('http://localhost:3000/api/payments/intents', {
-        method: 'PATCH',
-        body: JSON.stringify({}),
-      })
-
-      const response = await PATCH(request)
-      const data = await response.json()
+          metadata: { status: 'completed' },
+        })
+      )
 
       expect(response.status).toBe(400)
-      expect(data.error).toBe('intentId is required')
+      expect(mockPaymentService.createPaymentIntent).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('PATCH', () => {
+    it('rejects unauthenticated confirmation attempts', async () => {
+      vi.mocked(getServerSession).mockResolvedValue(null)
+
+      const response = await PATCH(
+        new NextRequest('http://localhost:3000/api/payments/intents', {
+          method: 'PATCH',
+          body: JSON.stringify({ intentId: 'pi_123' }),
+        })
+      )
+
+      expect(response.status).toBe(401)
+      expect(mockPaymentService.confirmPaymentIntent).not.toHaveBeenCalled()
     })
 
-    it('should handle confirmation failure', async () => {
-      const confirmData = {
-        intentId: 'pi_123',
-      }
-
-      mockPaymentService.confirmPaymentIntent.mockResolvedValue({
-        success: false,
-        error: 'Payment failed',
-      })
-
-      const request = new NextRequest('http://localhost:3000/api/payments/intents', {
-        method: 'PATCH',
-        body: JSON.stringify(confirmData),
-      })
-
-      const response = await PATCH(request)
-      const data = await response.json()
+    it('does not let a caller forge a completed intent', async () => {
+      const response = await PATCH(
+        new NextRequest('http://localhost:3000/api/payments/intents', {
+          method: 'PATCH',
+          body: JSON.stringify({ intentId: 'pi_123', status: 'completed' }),
+        })
+      )
 
       expect(response.status).toBe(400)
-      expect(data.success).toBe(false)
-      expect(data.error).toBe('Payment failed')
+      expect(mockPaymentService.confirmPaymentIntent).not.toHaveBeenCalled()
+    })
+
+    it('fails closed because intent ownership and signed provider confirmation are unavailable', async () => {
+      const response = await PATCH(
+        new NextRequest('http://localhost:3000/api/payments/intents', {
+          method: 'PATCH',
+          body: JSON.stringify({ intentId: 'pi_123' }),
+        })
+      )
+
+      expect(response.status).toBe(503)
+      await expect(response.json()).resolves.toEqual({
+        error: 'Payment intent confirmation requires a signed provider callback',
+      })
+      expect(mockPaymentService.confirmPaymentIntent).not.toHaveBeenCalled()
     })
   })
 })

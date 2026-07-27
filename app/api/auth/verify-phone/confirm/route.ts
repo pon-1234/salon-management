@@ -1,45 +1,44 @@
+/**
+ * @design_doc   Authenticated atomic consumption of customer phone verification codes
+ * @related_to   send/route.ts and lib/auth/phone-verification.ts
+ * @known_issues Anonymous legacy account claiming is disabled pending an approved identity policy
+ */
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
-import bcrypt from 'bcryptjs'
 import logger from '@/lib/logger'
-import { normalizePhoneNumber } from '@/lib/customer/utils'
+import { hashPhoneVerificationCode } from '@/lib/auth/phone-verification'
+import { env } from '@/lib/config/env'
 
 const MAX_VERIFY_ATTEMPTS = 5
-
-function isPlaceholderEmail(email: string): boolean {
-  return email.endsWith('@phone.local') || email.endsWith('@placeholder.local')
-}
 
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
-    const body = await request.json().catch(() => ({}))
-    const rawPhone = typeof body.phone === 'string' ? body.phone : ''
-    const code = typeof body.code === 'string' ? body.code.trim() : ''
-    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
-    const password = typeof body.password === 'string' ? body.password : ''
-    const nickname = typeof body.nickname === 'string' ? body.nickname.trim() : ''
-
-    let customer = null
-
-    if (session?.user?.role === 'customer') {
-      customer = await db.customer.findUnique({ where: { id: session.user.id } })
-    } else {
-      const phone = normalizePhoneNumber(rawPhone)
-      if (!phone) {
-        return NextResponse.json({ error: '電話番号を入力してください。' }, { status: 400 })
-      }
-      customer = await db.customer.findFirst({ where: { phone } })
+    if (session?.user?.role !== 'customer' || !session.user.id) {
+      return NextResponse.json({ error: 'ログインが必要です。' }, { status: 401 })
     }
+
+    const body = await request.json().catch(() => ({}))
+    const code = typeof body.code === 'string' ? body.code.trim() : ''
+
+    if (!/^\d{6}$/.test(code)) {
+      return NextResponse.json({ error: '6桁の認証コードを入力してください。' }, { status: 400 })
+    }
+
+    const customer = await db.customer.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        phoneVerificationCode: true,
+        phoneVerificationExpiry: true,
+        phoneVerificationAttempts: true,
+      },
+    })
 
     if (!customer) {
       return NextResponse.json({ error: '顧客情報が見つかりません。' }, { status: 404 })
-    }
-
-    if (!code) {
-      return NextResponse.json({ error: '認証コードを入力してください。' }, { status: 400 })
     }
 
     if (!customer.phoneVerificationCode || !customer.phoneVerificationExpiry) {
@@ -47,8 +46,12 @@ export async function POST(request: Request) {
     }
 
     if (customer.phoneVerificationExpiry.getTime() < Date.now()) {
-      await db.customer.update({
-        where: { id: customer.id },
+      await db.customer.updateMany({
+        where: {
+          id: customer.id,
+          phoneVerificationCode: customer.phoneVerificationCode,
+          phoneVerificationExpiry: { lte: new Date() },
+        },
         data: {
           phoneVerificationCode: null,
           phoneVerificationExpiry: null,
@@ -58,63 +61,54 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '認証コードの有効期限が切れています。' }, { status: 400 })
     }
 
-    if (customer.phoneVerificationCode !== code) {
-      const attempts = (customer.phoneVerificationAttempts ?? 0) + 1
-      await db.customer.update({
-        where: { id: customer.id },
-        data: {
-          phoneVerificationAttempts: attempts,
-          ...(attempts >= MAX_VERIFY_ATTEMPTS
-            ? {
-                phoneVerificationCode: null,
-                phoneVerificationExpiry: null,
-                phoneVerificationAttempts: 0,
-              }
-            : {}),
-        },
-      })
+    if (customer.phoneVerificationAttempts >= MAX_VERIFY_ATTEMPTS) {
+      return NextResponse.json(
+        { error: '試行回数の上限に達しました。認証コードを再送してください。' },
+        { status: 429 }
+      )
+    }
 
+    const now = new Date()
+    const codeHash = hashPhoneVerificationCode(customer.id, code, env.nextAuth.secret)
+    if (customer.phoneVerificationCode !== codeHash) {
+      await db.customer.updateMany({
+        where: {
+          id: customer.id,
+          phoneVerificationCode: customer.phoneVerificationCode,
+          phoneVerificationExpiry: { gt: now },
+          phoneVerificationAttempts: { lt: MAX_VERIFY_ATTEMPTS },
+        },
+        data: { phoneVerificationAttempts: { increment: 1 } },
+      })
       return NextResponse.json({ error: '認証コードが正しくありません。' }, { status: 400 })
     }
 
-    const updateData: Record<string, unknown> = {
-      phoneVerified: true,
-      phoneVerifiedAt: new Date(),
-      phoneVerificationCode: null,
-      phoneVerificationExpiry: null,
-      phoneVerificationAttempts: 0,
+    const consumed = await db.customer.updateMany({
+      where: {
+        id: customer.id,
+        phoneVerificationCode: codeHash,
+        phoneVerificationExpiry: { gt: now },
+        phoneVerificationAttempts: { lt: MAX_VERIFY_ATTEMPTS },
+      },
+      data: {
+        phoneVerified: true,
+        phoneVerifiedAt: now,
+        phoneVerificationCode: null,
+        phoneVerificationExpiry: null,
+        phoneVerificationAttempts: 0,
+      },
+    })
+
+    if (consumed.count !== 1) {
+      return NextResponse.json({ error: '認証コードが無効です。' }, { status: 400 })
     }
-
-    if (!session && email && password) {
-      const emailOwner = await db.customer.findUnique({ where: { email } })
-      if (emailOwner && emailOwner.id !== customer.id) {
-        return NextResponse.json(
-          { error: 'このメールアドレスは既に登録されています。' },
-          { status: 409 }
-        )
-      }
-
-      if (customer.email && !isPlaceholderEmail(customer.email) && customer.email !== email) {
-        return NextResponse.json(
-          { error: '既にメールアドレスが登録されています。ログインしてください。' },
-          { status: 409 }
-        )
-      }
-
-      updateData.email = email
-      updateData.password = await bcrypt.hash(password, 10)
-
-      if (nickname) {
-        updateData.name = nickname
-        updateData.nameKana = nickname
-      }
-    }
-
-    await db.customer.update({ where: { id: customer.id }, data: updateData })
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    logger.error({ err: error }, 'Failed to confirm phone verification code')
+    logger.error(
+      { errorType: error instanceof Error ? error.name : 'UnknownError' },
+      'Failed to confirm phone verification code'
+    )
     return NextResponse.json({ error: '認証に失敗しました。' }, { status: 500 })
   }
 }

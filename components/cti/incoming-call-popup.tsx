@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Phone, PhoneOff, User, Calendar, Star, AlertCircle } from 'lucide-react'
 import { Customer } from '@/lib/customer/types'
 import { isVipMember } from '@/lib/utils'
+import { SafeImage } from '@/components/ui/safe-image'
 
 interface IncomingCallPopupProps {
   isOpen: boolean
@@ -49,7 +50,7 @@ export function IncomingCallPopup({
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <SafeImage
                     src="/images/non-photo.svg"
                     alt={customer.name}
                     className="h-16 w-16 rounded-full object-cover"

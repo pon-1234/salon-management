@@ -4,7 +4,9 @@
  * @known_issues None
  */
 import { PrismaClient } from '@prisma/client'
+import { assertDevelopmentDatabaseMutation } from '../scripts/database-mutation-guard.js'
 
+assertDevelopmentDatabaseMutation('chat message demo seed')
 const prisma = new PrismaClient()
 
 async function main() {

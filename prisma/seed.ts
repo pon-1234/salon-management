@@ -1,14 +1,44 @@
-// @ts-nocheck
+/**
+ * @design_doc   docs/VPS_DEPLOYMENT.md
+ * @related_to   Prisma schema provisions store-scoped development data
+ * @known_issues None
+ */
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { env } from '../lib/config/env'
 import { DEFAULT_DESIGNATION_FEES } from '../lib/designation/fees'
+import { assertDevelopmentDatabaseMutation } from '../scripts/database-mutation-guard.js'
 
+assertDevelopmentDatabaseMutation('standard seed')
 const prisma = new PrismaClient()
 const SALT_ROUNDS = 10
+const DEFAULT_STORE_ID = 'ikebukuro'
 
 async function main() {
+  if (env.isProduction) {
+    throw new Error('Development seed is disabled in production')
+  }
+
   console.log('Start seeding...')
+
+  await prisma.store.upsert({
+    where: { id: DEFAULT_STORE_ID },
+    update: {
+      name: '池袋店',
+      displayName: 'サロン池袋店',
+      slug: DEFAULT_STORE_ID,
+      timezone: 'Asia/Tokyo',
+      isActive: true,
+    },
+    create: {
+      id: DEFAULT_STORE_ID,
+      name: '池袋店',
+      displayName: 'サロン池袋店',
+      slug: DEFAULT_STORE_ID,
+      timezone: 'Asia/Tokyo',
+      isActive: true,
+    },
+  })
 
   // 1. Create initial admin user
   const adminPassword = await bcrypt.hash(env.seed.initialAdminPassword || 'admin123', SALT_ROUNDS)
@@ -41,6 +71,7 @@ async function main() {
       memberType: 'regular',
       points: 1000,
       email: customerEmail,
+      emailVerified: true,
     },
     create: {
       id: customerId,
@@ -52,6 +83,7 @@ async function main() {
       birthDate: new Date('1990-01-01T00:00:00Z'),
       memberType: 'regular',
       points: 1000,
+      emailVerified: true,
     },
   })
   console.log(`Created/Updated customer: ${customer.name} (ID: ${customer.id})`)
@@ -74,6 +106,7 @@ async function main() {
       workStatus: '出勤',
       panelDesignationRank: 1,
       regularDesignationRank: 1,
+      storeId: DEFAULT_STORE_ID,
     },
     create: {
       id: 'seed-cast-001',
@@ -91,6 +124,7 @@ async function main() {
       workStatus: '出勤',
       panelDesignationRank: 1,
       regularDesignationRank: 1,
+      storeId: DEFAULT_STORE_ID,
     },
   })
   console.log(`Created/Updated cast: ${cast.name} (ID: ${cast.id})`)
@@ -108,7 +142,11 @@ async function main() {
       permissions: JSON.stringify([
         'cast:*',
         'customer:read',
+        'customer:create',
+        'customer:update',
         'reservation:*',
+        'pricing:*',
+        'settings:*',
         'analytics:read',
         'dashboard:view',
       ]),
@@ -131,6 +169,25 @@ async function main() {
     },
   })
   console.log(`Created/Updated staff: ${staff.email}`)
+
+  await Promise.all(
+    [manager.id, staff.id].map((adminId) =>
+      prisma.adminStoreAssignment.upsert({
+        where: {
+          adminId_storeId: {
+            adminId,
+            storeId: DEFAULT_STORE_ID,
+          },
+        },
+        update: {},
+        create: {
+          adminId,
+          storeId: DEFAULT_STORE_ID,
+        },
+      })
+    )
+  )
+  console.log('Created default store assignments for manager and staff')
 
   const courseSeeds = [
     {
@@ -305,6 +362,7 @@ async function main() {
           isActive: course.show,
           enableWebBooking: course.web,
           archivedAt: null,
+          storeId: DEFAULT_STORE_ID,
         },
         create: {
           id: course.id,
@@ -317,6 +375,7 @@ async function main() {
           isActive: course.show,
           enableWebBooking: course.web,
           archivedAt: null,
+          storeId: DEFAULT_STORE_ID,
         },
       })
     )
@@ -454,6 +513,7 @@ async function main() {
           storeShare,
           castShare: option.castShare,
           archivedAt: null,
+          storeId: DEFAULT_STORE_ID,
         },
         create: {
           id: option.id,
@@ -468,6 +528,7 @@ async function main() {
           storeShare,
           castShare: option.castShare,
           archivedAt: null,
+          storeId: DEFAULT_STORE_ID,
         },
       })
     })
@@ -487,6 +548,7 @@ async function main() {
           description: fee.description ?? null,
           sortOrder: fee.sortOrder ?? index + 1,
           isActive: fee.isActive,
+          storeId: DEFAULT_STORE_ID,
         },
         create: {
           id: fee.id,
@@ -497,6 +559,7 @@ async function main() {
           description: fee.description ?? null,
           sortOrder: fee.sortOrder ?? index + 1,
           isActive: fee.isActive,
+          storeId: DEFAULT_STORE_ID,
         },
       })
     )
@@ -505,7 +568,10 @@ async function main() {
   console.log(`Upserted ${designationRecords.length} designation fee records`)
 
   // 4. Create a reservation
-  const defaultCourse = courseRecords.find((record) => record.id === 'course-1') ?? courseRecords[0]
+  const defaultCourse = courseRecords.find((record) => record.id === 'course-1')
+  if (!defaultCourse) {
+    throw new Error('Default course was not created')
+  }
 
   const startTime = new Date()
   startTime.setHours(startTime.getHours() + 1, 0, 0, 0) // Start in 1 hour
@@ -521,6 +587,7 @@ async function main() {
       endTime,
       status: 'confirmed',
       price: defaultCourse.price,
+      storeId: DEFAULT_STORE_ID,
     },
     create: {
       id: 'seed-reservation-001',
@@ -531,6 +598,7 @@ async function main() {
       endTime,
       status: 'confirmed',
       price: defaultCourse.price,
+      storeId: DEFAULT_STORE_ID,
     },
   })
   console.log(`Created/Updated reservation for ${customer.name} with ${cast.name}`)

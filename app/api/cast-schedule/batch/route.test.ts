@@ -7,6 +7,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { POST } from './route'
 import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { db } from '@/lib/db'
 
 // Mock dependencies
 vi.mock('next-auth', () => ({
@@ -16,6 +17,12 @@ vi.mock('next-auth', () => ({
 vi.mock('@/lib/db', () => ({
   db: {
     $transaction: vi.fn(),
+    store: {
+      findUnique: vi.fn().mockResolvedValue({ id: 'store-a' }),
+    },
+    cast: {
+      findFirst: vi.fn().mockResolvedValue({ id: 'cast-1', storeId: 'store-a' }),
+    },
     castSchedule: {
       findUnique: vi.fn(),
       create: vi.fn(),
@@ -35,15 +42,16 @@ vi.mock('@/lib/logger', () => ({
 describe('POST /api/cast-schedule/batch', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(db.store.findUnique).mockResolvedValue({ id: 'store-a' } as any)
+    vi.mocked(db.cast.findFirst).mockResolvedValue({ id: 'cast-1', storeId: 'store-a' } as any)
   })
 
   it('should create and update schedules in batch', async () => {
     const mockSession = {
-      user: { id: 'admin-1', role: 'admin' },
+      user: { id: 'admin-1', role: 'admin', permissions: ['*'] },
     }
     vi.mocked(getServerSession).mockResolvedValue(mockSession as any)
 
-    const { db } = await import('@/lib/db')
     const mockTransaction = vi.fn(async (callback) => {
       const tx = {
         castSchedule: {
@@ -87,10 +95,13 @@ describe('POST /api/cast-schedule/batch', () => {
       ],
     }
 
-    const request = new NextRequest('http://localhost:3000/api/cast-schedule/batch', {
-      method: 'POST',
-      body: JSON.stringify(requestBody),
-    })
+    const request = new NextRequest(
+      'http://localhost:3000/api/cast-schedule/batch?storeId=store-a',
+      {
+        method: 'POST',
+        body: JSON.stringify(requestBody),
+      }
+    )
 
     const response = await POST(request)
     const data = await response.json()
@@ -103,10 +114,13 @@ describe('POST /api/cast-schedule/batch', () => {
   it('should require admin authentication', async () => {
     vi.mocked(getServerSession).mockResolvedValue(null)
 
-    const request = new NextRequest('http://localhost:3000/api/cast-schedule/batch', {
-      method: 'POST',
-      body: JSON.stringify({}),
-    })
+    const request = new NextRequest(
+      'http://localhost:3000/api/cast-schedule/batch?storeId=store-a',
+      {
+        method: 'POST',
+        body: JSON.stringify({}),
+      }
+    )
 
     const response = await POST(request)
     expect(response.status).toBe(401)
@@ -114,7 +128,7 @@ describe('POST /api/cast-schedule/batch', () => {
 
   it('should validate request body', async () => {
     const mockSession = {
-      user: { id: 'admin-1', role: 'admin' },
+      user: { id: 'admin-1', role: 'admin', permissions: ['*'] },
     }
     vi.mocked(getServerSession).mockResolvedValue(mockSession as any)
 
@@ -128,10 +142,13 @@ describe('POST /api/cast-schedule/batch', () => {
       ],
     }
 
-    const request = new NextRequest('http://localhost:3000/api/cast-schedule/batch', {
-      method: 'POST',
-      body: JSON.stringify(invalidBody),
-    })
+    const request = new NextRequest(
+      'http://localhost:3000/api/cast-schedule/batch?storeId=store-a',
+      {
+        method: 'POST',
+        body: JSON.stringify(invalidBody),
+      }
+    )
 
     const response = await POST(request)
     const data = await response.json()
@@ -142,27 +159,49 @@ describe('POST /api/cast-schedule/batch', () => {
 
   it('should handle transaction errors', async () => {
     const mockSession = {
-      user: { id: 'admin-1', role: 'admin' },
+      user: { id: 'admin-1', role: 'admin', permissions: ['*'] },
     }
     vi.mocked(getServerSession).mockResolvedValue(mockSession as any)
 
-    const { db } = await import('@/lib/db')
     vi.mocked(db.$transaction).mockRejectedValue(new Error('Database error'))
 
-    const request = new NextRequest('http://localhost:3000/api/cast-schedule/batch', {
-      method: 'POST',
-      body: JSON.stringify({
-        castId: 'cast-1',
-        schedules: [
-          { date: '2024-01-15', status: 'working', startTime: '10:00', endTime: '18:00' },
-        ],
-      }),
-    })
+    const request = new NextRequest(
+      'http://localhost:3000/api/cast-schedule/batch?storeId=store-a',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          castId: 'cast-1',
+          schedules: [
+            { date: '2024-01-15', status: 'working', startTime: '10:00', endTime: '18:00' },
+          ],
+        }),
+      }
+    )
 
     const response = await POST(request)
     const data = await response.json()
 
     expect(response.status).toBe(500)
     expect(data.error).toBeDefined()
+  })
+
+  it('rejects a cast that does not belong to the authorized store before mutation', async () => {
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { id: 'admin-1', role: 'admin', permissions: ['*'] },
+    } as any)
+    vi.mocked(db.cast.findFirst).mockResolvedValueOnce(null)
+
+    const response = await POST(
+      new NextRequest('http://localhost:3000/api/cast-schedule/batch?storeId=store-a', {
+        method: 'POST',
+        body: JSON.stringify({
+          castId: 'cast-from-store-b',
+          schedules: [{ date: '2024-01-15', status: 'holiday' }],
+        }),
+      })
+    )
+
+    expect(response.status).toBe(404)
+    expect(db.$transaction).not.toHaveBeenCalled()
   })
 })

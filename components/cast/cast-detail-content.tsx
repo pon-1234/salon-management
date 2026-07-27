@@ -1,9 +1,14 @@
 'use client'
 
+/**
+ * @design_doc   Public cast profile and request-attendance interaction
+ * @related_to   app/api/request-attendance/route.ts, PublicCastDetail
+ * @known_issues Request attendance depends on the store notification provider being ready
+ */
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Cast } from '@/lib/cast/types'
+import type { PublicCastDetail } from '@/lib/store/public-casts'
 import { Store } from '@/lib/store/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -51,7 +56,7 @@ import { getOptionById } from '@/lib/options/data'
 import type { Option } from '@/lib/types/course-option'
 
 interface CastDetailContentProps {
-  cast: Cast
+  cast: PublicCastDetail
   store: Store
 }
 
@@ -553,7 +558,7 @@ function RequestAttendanceForm({
   store,
   onSubmitted,
 }: {
-  cast: Cast
+  cast: PublicCastDetail
   store: Store
   onSubmitted: () => void
 }) {
@@ -604,9 +609,7 @@ function RequestAttendanceForm({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           storeId: store.id,
-          storeName: store.displayName ?? store.name,
           castId: cast.id,
-          castName: cast.name,
           name: formData.name.trim(),
           age: formData.age.trim(),
           email: formData.email.trim(),

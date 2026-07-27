@@ -1,25 +1,67 @@
-// @ts-nocheck
+/**
+ * @design_doc   docs/VPS_DEPLOYMENT.md
+ * @related_to   Prisma schema provisions a complete development-only demo dataset
+ * @known_issues This legacy demo seed is intentionally unavailable outside development and test
+ */
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import { randomBytes } from 'crypto'
+import { assertDevelopmentDatabaseMutation } from '../scripts/database-mutation-guard.js'
 
+assertDevelopmentDatabaseMutation('full demo seed')
 const prisma = new PrismaClient()
 const SALT_ROUNDS = 10
+const DEFAULT_STORE_ID = 'ikebukuro'
+
+function createDevelopmentPassword(configuredPassword: string | undefined): string {
+  const trimmedPassword = configuredPassword?.trim()
+
+  if (trimmedPassword) {
+    if (trimmedPassword.length < 16) {
+      throw new Error('SEED_FULL_ADMIN_PASSWORD must be at least 16 characters')
+    }
+
+    return trimmedPassword
+  }
+
+  return randomBytes(24).toString('base64url')
+}
 
 async function main() {
   console.log('🌱 開始: フルデモデータのシード...')
 
   // 1. 管理者ユーザー
   console.log('\n👥 管理者ユーザーを作成中...')
-  const adminPassword = await bcrypt.hash('admin123', SALT_ROUNDS)
+  const adminSeedPassword = createDevelopmentPassword(process.env.SEED_FULL_ADMIN_PASSWORD)
+  const adminPassword = await bcrypt.hash(adminSeedPassword, SALT_ROUNDS)
   await prisma.admin.upsert({
     where: { email: 'admin@example.com' },
-    update: {},
+    update: { password: adminPassword },
     create: {
       email: 'admin@example.com',
       password: adminPassword,
       name: '初期管理者',
       role: 'super_admin',
       permissions: JSON.stringify(['*']),
+      isActive: true,
+    },
+  })
+
+  await prisma.store.upsert({
+    where: { id: DEFAULT_STORE_ID },
+    update: {
+      name: '池袋店',
+      displayName: 'サロン池袋店',
+      slug: DEFAULT_STORE_ID,
+      timezone: 'Asia/Tokyo',
+      isActive: true,
+    },
+    create: {
+      id: DEFAULT_STORE_ID,
+      name: '池袋店',
+      displayName: 'サロン池袋店',
+      slug: DEFAULT_STORE_ID,
+      timezone: 'Asia/Tokyo',
       isActive: true,
     },
   })
@@ -35,7 +77,8 @@ async function main() {
         storeShare: 3000,
         castShare: 2000,
         description: 'お急ぎの方向けの短時間コース',
-      } as any,
+        storeId: DEFAULT_STORE_ID,
+      },
     }),
     prisma.coursePrice.create({
       data: {
@@ -45,7 +88,8 @@ async function main() {
         storeShare: 6000,
         castShare: 4000,
         description: '一番人気の標準コース',
-      } as any,
+        storeId: DEFAULT_STORE_ID,
+      },
     }),
     prisma.coursePrice.create({
       data: {
@@ -55,7 +99,8 @@ async function main() {
         storeShare: 9000,
         castShare: 6000,
         description: 'ゆったりとした時間を過ごしたい方向け',
-      } as any,
+        storeId: DEFAULT_STORE_ID,
+      },
     }),
     prisma.coursePrice.create({
       data: {
@@ -65,7 +110,8 @@ async function main() {
         storeShare: 15000,
         castShare: 10000,
         description: '特別な時間をお過ごしいただける最高級コース',
-      } as any,
+        storeId: DEFAULT_STORE_ID,
+      },
     }),
   ])
 
@@ -78,7 +124,8 @@ async function main() {
         price: 2000,
         storeShare: 1200,
         castShare: 800,
-      } as any,
+        storeId: DEFAULT_STORE_ID,
+      },
     }),
     prisma.optionPrice.create({
       data: {
@@ -86,7 +133,8 @@ async function main() {
         price: 5000,
         storeShare: 3000,
         castShare: 2000,
-      } as any,
+        storeId: DEFAULT_STORE_ID,
+      },
     }),
     prisma.optionPrice.create({
       data: {
@@ -94,7 +142,8 @@ async function main() {
         price: 1000,
         storeShare: 600,
         castShare: 400,
-      } as any,
+        storeId: DEFAULT_STORE_ID,
+      },
     }),
     prisma.optionPrice.create({
       data: {
@@ -102,7 +151,8 @@ async function main() {
         price: 3000,
         storeShare: 1800,
         castShare: 1200,
-      } as any,
+        storeId: DEFAULT_STORE_ID,
+      },
     }),
   ])
 
@@ -187,12 +237,15 @@ async function main() {
   ]
 
   const casts = await Promise.all(
-    castData.map((data) => prisma.cast.create({ data: { ...data, images: [] } }))
+    castData.map((data) =>
+      prisma.cast.create({ data: { ...data, images: [], storeId: DEFAULT_STORE_ID } })
+    )
   )
 
   // 5. 顧客
   console.log('\n👤 顧客を作成中...')
-  const customerPassword = await bcrypt.hash('password123', SALT_ROUNDS)
+  const customerSeedPassword = randomBytes(24).toString('base64url')
+  const customerPassword = await bcrypt.hash(customerSeedPassword, SALT_ROUNDS)
   const customers = await Promise.all([
     prisma.customer.create({
       data: {
@@ -204,6 +257,7 @@ async function main() {
         birthDate: new Date('1990-01-01'),
         memberType: 'vip',
         points: 1500,
+        emailVerified: true,
       },
     }),
     prisma.customer.create({
@@ -216,6 +270,7 @@ async function main() {
         birthDate: new Date('1985-05-15'),
         memberType: 'regular',
         points: 500,
+        emailVerified: true,
       },
     }),
     prisma.customer.create({
@@ -228,6 +283,7 @@ async function main() {
         birthDate: new Date('1992-08-20'),
         memberType: 'regular',
         points: 300,
+        emailVerified: true,
       },
     }),
   ])
@@ -254,12 +310,17 @@ async function main() {
         startTime,
         endTime,
         status: 'completed',
+        storeId: DEFAULT_STORE_ID,
         options: {
           create:
             i % 2 === 0
               ? [
                   {
                     optionId: options[0].id, // 指名料
+                    optionName: options[0].name,
+                    optionPrice: options[0].price,
+                    storeShare: options[0].storeShare,
+                    castShare: options[0].castShare,
                   },
                 ]
               : undefined,
@@ -286,6 +347,7 @@ async function main() {
         startTime,
         endTime,
         status: 'confirmed',
+        storeId: DEFAULT_STORE_ID,
       },
     })
   }
@@ -346,8 +408,8 @@ async function main() {
   console.log(`- レビュー: 5件`)
 
   console.log('\n🔑 ログイン情報:')
-  console.log('管理者: admin@example.com / admin123')
-  console.log('顧客: tanaka@example.com / password123')
+  console.log(`管理者: admin@example.com / ${adminSeedPassword}`)
+  console.log(`顧客: tanaka@example.com / ${customerSeedPassword}`)
 }
 
 main()

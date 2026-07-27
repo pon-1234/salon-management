@@ -10,6 +10,7 @@ import { SuccessResponses } from '@/lib/api/responses'
 import { ErrorResponses, handleApiError } from '@/lib/api/errors'
 import { db } from '@/lib/db'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
+import { shouldUseMockFallbacks } from '@/lib/config/feature-flags'
 
 const areaSchema = z.object({
   id: z.string().optional(),
@@ -22,11 +23,11 @@ const areaSchema = z.object({
 })
 
 export async function GET(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
     const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'settings:read', storeId })
+    if (authError) return authError
+
     const areas = await db.areaInfo.findMany({
       where: { storeId },
       orderBy: { displayOrder: 'asc' },
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    if (areas.length === 0) {
+    if (areas.length === 0 && shouldUseMockFallbacks()) {
       const defaults = [
         {
           name: '渋谷エリア',
@@ -88,11 +89,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
     const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'settings:update', storeId })
+    if (authError) return authError
+
     const body = await request.json()
     const validated = areaSchema.parse(body)
 
@@ -118,11 +119,11 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
     const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'settings:update', storeId })
+    if (authError) return authError
+
     const body = await request.json()
     const { id, ...rest } = body
 
@@ -141,7 +142,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const area = await db.areaInfo.update({
-      where: { id },
+      where: { id, storeId },
       data: {
         name: validated.name,
         prefecture: validated.prefecture ?? null,
@@ -171,22 +172,23 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
     const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'settings:update', storeId })
+    if (authError) return authError
+
     const id = request.nextUrl.searchParams.get('id')
 
     if (!id) {
       return ErrorResponses.badRequest('エリアIDが必要です')
     }
 
-    const deleted = await db.areaInfo.deleteMany({
+    const deactivated = await db.areaInfo.updateMany({
       where: { id, storeId },
+      data: { isActive: false },
     })
 
-    if (deleted.count === 0) {
+    if (deactivated.count === 0) {
       return ErrorResponses.notFound('エリア')
     }
 

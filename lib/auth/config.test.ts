@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Credentials authentication security and session propagation tests
+ * @related_to   config.ts, rate-limit.ts, and password-policy.ts
+ * @known_issues External identity providers are not configured
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import bcrypt from 'bcryptjs'
 import { authOptions } from './config'
@@ -96,6 +101,23 @@ describe('Auth Config', () => {
       expect(recordLoginAttempt).toHaveBeenCalledWith('admin:notfound@example.com', false)
     })
 
+    it('normalizes admin email before rate limiting and lookup', async () => {
+      const { db } = await import('@/lib/db')
+      vi.mocked(db.admin.findUnique).mockResolvedValueOnce(null)
+
+      const result = await authorize({
+        email: '  Admin@Example.COM  ',
+        password: 'password',
+      })
+
+      expect(result).toBeNull()
+      expect(checkRateLimit).toHaveBeenCalledWith('admin:admin@example.com')
+      expect(db.admin.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { email: 'admin@example.com' } })
+      )
+      expect(recordLoginAttempt).toHaveBeenCalledWith('admin:admin@example.com', false)
+    })
+
     it('should handle inactive admin', async () => {
       const { db } = await import('@/lib/db')
 
@@ -117,6 +139,7 @@ describe('Auth Config', () => {
 
       expect(result).toBeNull()
       expect(recordLoginAttempt).toHaveBeenCalledWith('admin:admin@example.com', false)
+      expect(recordLoginAttempt).toHaveBeenCalledTimes(1)
       expect(logger.error).toHaveBeenCalledWith(
         'Error during admin authentication:',
         expect.any(Error)
@@ -159,6 +182,7 @@ describe('Auth Config', () => {
         role: 'super_admin',
         isActive: true,
         permissions: JSON.stringify(['manage_users', 'manage_settings']),
+        storeAssignments: [],
         createdAt: new Date(),
         updatedAt: new Date(),
 
@@ -181,6 +205,7 @@ describe('Auth Config', () => {
         role: 'admin',
         adminRole: 'super_admin',
         permissions: ['manage_users', 'manage_settings'],
+        storeIds: [],
       })
 
       expect(db.admin.update).toHaveBeenCalledWith({
@@ -188,6 +213,39 @@ describe('Auth Config', () => {
         data: { lastLogin: expect.any(Date) },
       })
       expect(recordLoginAttempt).toHaveBeenCalledWith('admin:admin@example.com', true)
+    })
+
+    it('includes assigned store IDs for a non-super administrator', async () => {
+      const { db } = await import('@/lib/db')
+      const mockAdmin = {
+        id: 'manager-1',
+        email: 'manager@example.com',
+        name: 'Manager',
+        password: 'hashedpassword',
+        role: 'manager',
+        isActive: true,
+        permissions: JSON.stringify(['reservation:*']),
+        storeAssignments: [{ storeId: 'ginza' }, { storeId: 'shinjuku' }],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLogin: null,
+      }
+
+      vi.mocked(db.admin.findUnique).mockResolvedValueOnce(mockAdmin as any)
+      vi.mocked(bcrypt.compare).mockResolvedValueOnce(true as never)
+      vi.mocked(db.admin.update).mockResolvedValueOnce({
+        ...mockAdmin,
+        lastLogin: new Date(),
+      } as any)
+
+      const result = await authorize({ email: 'manager@example.com', password: 'password' })
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          adminRole: 'manager',
+          storeIds: ['ginza', 'shinjuku'],
+        })
+      )
     })
 
     it('should handle invalid permissions JSON gracefully', async () => {
@@ -266,6 +324,23 @@ describe('Auth Config', () => {
       expect(recordLoginAttempt).toHaveBeenCalledWith('customer:notfound@example.com', false)
     })
 
+    it('normalizes customer email before rate limiting', async () => {
+      const { db } = await import('@/lib/db')
+      vi.mocked(db.customer.findUnique).mockResolvedValueOnce(null)
+
+      const result = await authorize({
+        email: '  Customer@Example.COM  ',
+        password: 'password',
+      })
+
+      expect(result).toBeNull()
+      expect(checkRateLimit).toHaveBeenCalledWith('customer:customer@example.com')
+      expect(db.customer.findUnique).toHaveBeenCalledWith({
+        where: { email: 'customer@example.com' },
+      })
+      expect(recordLoginAttempt).toHaveBeenCalledWith('customer:customer@example.com', false)
+    })
+
     it('should not authenticate the removed demo customer fallback', async () => {
       const { db } = await import('@/lib/db')
       vi.mocked(db.customer.findUnique).mockResolvedValueOnce(null)
@@ -301,7 +376,7 @@ describe('Auth Config', () => {
         updatedAt: new Date(),
         resetToken: null,
         resetTokenExpiry: null,
-        emailVerified: false,
+        emailVerified: true,
         emailVerificationToken: null,
         emailVerificationExpiry: null,
         phoneVerified: false,
@@ -348,7 +423,7 @@ describe('Auth Config', () => {
         updatedAt: new Date(),
         resetToken: null,
         resetTokenExpiry: null,
-        emailVerified: false,
+        emailVerified: true,
         emailVerificationToken: null,
         emailVerificationExpiry: null,
         phoneVerified: false,
@@ -366,6 +441,39 @@ describe('Auth Config', () => {
 
       expect(result?.name).toBe('Customer')
     })
+
+    it('rejects an unverified customer even when the password is correct', async () => {
+      const { db } = await import('@/lib/db')
+      vi.mocked(db.customer.findUnique).mockResolvedValueOnce({
+        id: 'unverified-1',
+        email: 'customer@example.com',
+        name: 'Customer',
+        password: 'hashedpassword',
+        emailVerified: false,
+      } as never)
+      vi.mocked(bcrypt.compare).mockResolvedValueOnce(true as never)
+
+      const result = await authorize({
+        email: 'customer@example.com',
+        password: 'correctpassword',
+      })
+
+      expect(result).toBeNull()
+      expect(recordLoginAttempt).toHaveBeenCalledWith('customer:customer@example.com', false)
+    })
+
+    it.each(['a'.repeat(73), 'あ'.repeat(25), 'password\n123'])(
+      'rejects a password bcrypt cannot represent exactly: %j',
+      async (password) => {
+        const { db } = await import('@/lib/db')
+
+        const result = await authorize({ email: 'customer@example.com', password })
+
+        expect(result).toBeNull()
+        expect(db.customer.findUnique).not.toHaveBeenCalled()
+        expect(bcrypt.compare).not.toHaveBeenCalled()
+      }
+    )
   })
 
   describe('Callbacks', () => {
@@ -378,6 +486,7 @@ describe('Auth Config', () => {
         role: 'admin' as const,
         adminRole: 'super_admin',
         permissions: ['manage_users'],
+        storeIds: ['ginza'],
       }
 
       const result = await authOptions.callbacks!.jwt!({
@@ -392,6 +501,7 @@ describe('Auth Config', () => {
         role: 'admin',
         adminRole: 'super_admin',
         permissions: ['manage_users'],
+        storeIds: ['ginza'],
       })
     })
 
@@ -423,6 +533,7 @@ describe('Auth Config', () => {
         role: 'admin' as const,
         adminRole: 'super_admin',
         permissions: ['manage_users'],
+        storeIds: ['ginza'],
       }
 
       const result = await authOptions.callbacks!.session!({
@@ -440,6 +551,7 @@ describe('Auth Config', () => {
         role: 'admin',
         adminRole: 'super_admin',
         permissions: ['manage_users'],
+        storeIds: ['ginza'],
       })
     })
   })

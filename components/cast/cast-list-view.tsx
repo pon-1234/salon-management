@@ -3,6 +3,7 @@ import { FALLBACK_IMAGE } from '@/lib/cast/mapper'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { SafeImage } from '@/components/ui/safe-image'
 import { Phone, Mail } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
@@ -24,7 +25,7 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
               <CardContent className="p-0">
                 <div className="relative">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <SafeImage
                     src={memberImage}
                     alt={member.name}
                     className="aspect-[7/10] w-full object-cover"
@@ -68,7 +69,7 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
           <div key={member.id} className="flex items-start gap-4 rounded-lg bg-white p-4 shadow">
             <Link href={`/admin/cast/manage/${member.id}`} className="shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <SafeImage
                 src={memberImage}
                 alt={member.name}
                 className="aspect-[7/10] w-20 rounded object-cover"

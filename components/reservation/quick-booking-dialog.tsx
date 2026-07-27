@@ -64,6 +64,7 @@ import type { DesignationFee } from '@/lib/designation/types'
 import { BusinessHoursRange, formatMinutesAsLabel } from '@/lib/settings/business-hours'
 import { useStore } from '@/contexts/store-context'
 import { calculateReservationRevenue } from '@/lib/reservation/revenue'
+import { buildStoreCastEndpoint, buildStoreReservationEndpoint } from '@/lib/reservation/endpoints'
 import { MARKETING_CHANNELS, PAYMENT_METHODS } from '@/lib/constants'
 
 type DesignationType = 'none' | 'regular' | 'special'
@@ -336,7 +337,7 @@ export function QuickBookingDialog({
 
     ;(async () => {
       try {
-        const response = await fetch(`/api/cast?id=${selectedStaff.id}`, {
+        const response = await fetch(buildStoreCastEndpoint(currentStore.id, selectedStaff.id), {
           credentials: 'include',
           cache: 'no-store',
           signal: controller.signal,
@@ -365,7 +366,7 @@ export function QuickBookingDialog({
       ignore = true
       controller.abort()
     }
-  }, [selectedStaff])
+  }, [currentStore.id, selectedStaff])
 
   const currentStaff = useMemo(
     () => staffDetails ?? selectedStaff ?? null,
@@ -932,7 +933,7 @@ export function QuickBookingDialog({
         .filter(([, selected]) => Boolean(selected))
         .map(([optionId]) => optionId)
 
-      const response = await fetch('/api/reservation', {
+      const response = await fetch(buildStoreReservationEndpoint(currentStore.id), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

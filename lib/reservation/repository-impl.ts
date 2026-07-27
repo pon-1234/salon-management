@@ -5,7 +5,7 @@
  */
 import { formatInTimeZone } from 'date-fns-tz'
 import { ReservationRepository } from './repository'
-import { Reservation, Service } from '../types/reservation'
+import { Reservation, ReservationApiUpdatePayload, Service } from '../types/reservation'
 import { ApiClient, ApiError, defaultApiClient } from '@/lib/http/api-client'
 
 const RESERVATION_ENDPOINT = '/api/reservation'
@@ -71,7 +71,10 @@ export class ReservationRepositoryImpl implements ReservationRepository {
     }
   }
 
-  async update(id: string, data: Partial<Reservation>): Promise<Reservation> {
+  async update(
+    id: string,
+    data: Partial<Reservation> | ReservationApiUpdatePayload
+  ): Promise<Reservation> {
     try {
       return await this.client.put<Reservation>(this.withStore(RESERVATION_ENDPOINT), {
         id,

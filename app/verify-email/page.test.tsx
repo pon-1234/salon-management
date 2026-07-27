@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Store-scoped email verification UI and closed return navigation tests
+ * @related_to   verify-email-client.tsx and customer-auth.ts
+ * @known_issues Store existence is validated when verification links are issued
+ */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -15,6 +20,14 @@ global.fetch = vi.fn()
 describe('VerifyEmailPage', () => {
   const mockPush = vi.fn()
 
+  const useParams = (token: string | null, store: string | null = 'ikebukuro') => ({
+    get: vi.fn((key: string) => {
+      if (key === 'token') return token
+      if (key === 'store') return store
+      return null
+    }),
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(useRouter).mockReturnValue({ push: mockPush } as any)
@@ -26,7 +39,7 @@ describe('VerifyEmailPage', () => {
 
   it('should show error when no token is provided', () => {
     vi.mocked(useSearchParams).mockReturnValue({
-      get: vi.fn().mockReturnValue(null),
+      ...useParams(null),
     } as any)
 
     render(<VerifyEmailPage />)
@@ -40,7 +53,7 @@ describe('VerifyEmailPage', () => {
 
   it('should successfully verify email with valid token', async () => {
     vi.mocked(useSearchParams).mockReturnValue({
-      get: vi.fn().mockReturnValue('valid-token'),
+      ...useParams('valid-token'),
     } as any)
 
     vi.mocked(global.fetch).mockResolvedValueOnce({
@@ -72,7 +85,7 @@ describe('VerifyEmailPage', () => {
 
   it('should show error for invalid token', async () => {
     vi.mocked(useSearchParams).mockReturnValue({
-      get: vi.fn().mockReturnValue('invalid-token'),
+      ...useParams('invalid-token'),
     } as any)
 
     vi.mocked(global.fetch).mockResolvedValueOnce({
@@ -95,7 +108,7 @@ describe('VerifyEmailPage', () => {
 
   it('should show custom success message from API response', async () => {
     vi.mocked(useSearchParams).mockReturnValue({
-      get: vi.fn().mockReturnValue('valid-token'),
+      ...useParams('valid-token'),
     } as any)
 
     vi.mocked(global.fetch).mockResolvedValueOnce({
@@ -113,7 +126,7 @@ describe('VerifyEmailPage', () => {
 
   it('should handle network errors', async () => {
     vi.mocked(useSearchParams).mockReturnValue({
-      get: vi.fn().mockReturnValue('valid-token'),
+      ...useParams('valid-token'),
     } as any)
 
     vi.mocked(global.fetch).mockRejectedValueOnce(new Error('Network error'))
@@ -129,7 +142,7 @@ describe('VerifyEmailPage', () => {
 
   it('should handle API response without error field', async () => {
     vi.mocked(useSearchParams).mockReturnValue({
-      get: vi.fn().mockReturnValue('invalid-token'),
+      ...useParams('invalid-token'),
     } as any)
 
     vi.mocked(global.fetch).mockResolvedValueOnce({
@@ -149,7 +162,7 @@ describe('VerifyEmailPage', () => {
   it('should navigate to login page when button is clicked', async () => {
     const user = userEvent.setup()
     vi.mocked(useSearchParams).mockReturnValue({
-      get: vi.fn().mockReturnValue('valid-token'),
+      ...useParams('valid-token'),
     } as any)
 
     vi.mocked(global.fetch).mockResolvedValueOnce({
@@ -168,12 +181,12 @@ describe('VerifyEmailPage', () => {
     const loginButton = loginButtons[0]
     await user.click(loginButton)
 
-    expect(mockPush).toHaveBeenCalledWith('/login')
+    expect(mockPush).toHaveBeenCalledWith('/ikebukuro/login')
   })
 
   it('should not show button during loading state', () => {
     vi.mocked(useSearchParams).mockReturnValue({
-      get: vi.fn().mockReturnValue('valid-token'),
+      ...useParams('valid-token'),
     } as any)
 
     vi.mocked(global.fetch).mockImplementationOnce(
@@ -191,7 +204,7 @@ describe('VerifyEmailPage', () => {
 
   it('should use different button variant for error state', async () => {
     vi.mocked(useSearchParams).mockReturnValue({
-      get: vi.fn().mockReturnValue('invalid-token'),
+      ...useParams('invalid-token'),
     } as any)
 
     vi.mocked(global.fetch).mockResolvedValueOnce({
@@ -208,4 +221,17 @@ describe('VerifyEmailPage', () => {
       expect(button).toHaveClass('bg-background')
     })
   })
+
+  it.each([null, '//evil.example', '../admin'])(
+    'falls back to the store chooser for an unsafe store query: %s',
+    async (store) => {
+      const user = userEvent.setup()
+      vi.mocked(useSearchParams).mockReturnValue(useParams(null, store) as never)
+
+      render(<VerifyEmailPage />)
+      await user.click(screen.getAllByRole('button', { name: 'ログインページへ' })[0])
+
+      expect(mockPush).toHaveBeenCalledWith('/')
+    }
+  )
 })

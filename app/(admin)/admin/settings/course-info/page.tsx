@@ -28,6 +28,7 @@ import { useToast } from '@/hooks/use-toast'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { getPricingUseCases } from '@/lib/pricing'
 import type { CoursePrice } from '@/lib/pricing/types'
+import { useStore } from '@/contexts/store-context'
 import { ArrowLeft, BookOpen, Clock, DollarSign, Edit, Plus, RefreshCw, Trash2 } from 'lucide-react'
 
 const DEFAULT_STORE_RATIO = 0.6
@@ -84,6 +85,7 @@ function normalizeCourse(course: CoursePrice) {
 }
 
 export default function CourseInfoPage() {
+  const { currentStore } = useStore()
   const [courses, setCourses] = useState<CoursePrice[]>([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
@@ -106,7 +108,7 @@ export default function CourseInfoPage() {
   const loadCourses = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await pricingUseCases.getCourses()
+      const data = await pricingUseCases.getCourses(currentStore.id)
       setCourses(data.map(normalizeCourse))
     } catch (error) {
       toast({
@@ -117,7 +119,7 @@ export default function CourseInfoPage() {
     } finally {
       setLoading(false)
     }
-  }, [pricingUseCases, toast])
+  }, [currentStore.id, pricingUseCases, toast])
 
   useEffect(() => {
     loadCourses()
@@ -126,7 +128,7 @@ export default function CourseInfoPage() {
   const handleSync = async () => {
     try {
       setSyncing(true)
-      await pricingUseCases.syncPricing('1')
+      await pricingUseCases.syncPricing(currentStore.id)
       toast({
         title: '同期完了',
         description: '料金情報が全店舗に同期されました',
@@ -211,7 +213,11 @@ export default function CourseInfoPage() {
 
     try {
       if (editingCourse) {
-        const updated = await pricingUseCases.updateCourse(editingCourse.id, payload)
+        const updated = await pricingUseCases.updateCourse(
+          editingCourse.id,
+          payload,
+          currentStore.id
+        )
         setCourses((prev) => {
           const normalized = normalizeCourse(updated)
           return [...prev.filter((course) => course.id !== editingCourse.id), normalized]
@@ -221,7 +227,7 @@ export default function CourseInfoPage() {
           description: 'コース情報が更新されました',
         })
       } else {
-        const created = await pricingUseCases.createCourse(payload)
+        const created = await pricingUseCases.createCourse(payload, currentStore.id)
         setCourses((prev) => [...prev, normalizeCourse(created)])
         toast({
           title: '追加完了',
@@ -240,7 +246,7 @@ export default function CourseInfoPage() {
 
   const handleDeleteCourse = async (id: string) => {
     try {
-      await pricingUseCases.deleteCourse(id)
+      await pricingUseCases.deleteCourse(id, currentStore.id)
       setCourses((prev) => prev.filter((course) => course.id !== id))
       toast({
         title: '削除完了',

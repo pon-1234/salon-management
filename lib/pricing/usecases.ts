@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Multi-store pricing application use cases
+ * @related_to   PricingRepository and admin pricing settings
+ * @known_issues Legacy migration helper supports only pricing records
+ */
 import { PricingRepository } from './repository'
 import { getPricingRepository } from './repository-impl'
 import { CoursePrice, OptionPrice, AdditionalFee, StorePricing, PricingSyncStatus } from './types'
@@ -10,22 +15,29 @@ export class PricingUseCases {
     return this.repository.getCourses(storeId)
   }
 
-  async getCourseById(id: string): Promise<CoursePrice | null> {
-    return this.repository.getCourseById(id)
+  async getCourseById(id: string, storeId?: string): Promise<CoursePrice | null> {
+    return storeId === undefined
+      ? this.repository.getCourseById(id)
+      : this.repository.getCourseById(id, storeId)
   }
 
   async createCourse(
-    course: Omit<CoursePrice, 'id' | 'createdAt' | 'updatedAt'>
+    course: Omit<CoursePrice, 'id' | 'createdAt' | 'updatedAt'>,
+    storeId: string
   ): Promise<CoursePrice> {
-    return this.repository.createCourse(course)
+    return this.repository.createCourse(course, storeId)
   }
 
-  async updateCourse(id: string, course: Partial<CoursePrice>): Promise<CoursePrice> {
-    return this.repository.updateCourse(id, course)
+  async updateCourse(
+    id: string,
+    course: Partial<CoursePrice>,
+    storeId: string
+  ): Promise<CoursePrice> {
+    return this.repository.updateCourse(id, course, storeId)
   }
 
-  async deleteCourse(id: string): Promise<void> {
-    return this.repository.deleteCourse(id)
+  async deleteCourse(id: string, storeId: string): Promise<void> {
+    return this.repository.deleteCourse(id, storeId)
   }
 
   // Option management
@@ -33,30 +45,37 @@ export class PricingUseCases {
     return this.repository.getOptions(storeId)
   }
 
-  async getOptionById(id: string): Promise<OptionPrice | null> {
-    return this.repository.getOptionById(id)
+  async getOptionById(id: string, storeId?: string): Promise<OptionPrice | null> {
+    return storeId === undefined
+      ? this.repository.getOptionById(id)
+      : this.repository.getOptionById(id, storeId)
   }
 
   async createOption(
-    option: Omit<OptionPrice, 'id' | 'createdAt' | 'updatedAt'>
+    option: Omit<OptionPrice, 'id' | 'createdAt' | 'updatedAt'>,
+    storeId: string
   ): Promise<OptionPrice> {
-    return this.repository.createOption(option)
+    return this.repository.createOption(option, storeId)
   }
 
-  async updateOption(id: string, option: Partial<OptionPrice>): Promise<OptionPrice> {
-    return this.repository.updateOption(id, option)
+  async updateOption(
+    id: string,
+    option: Partial<OptionPrice>,
+    storeId: string
+  ): Promise<OptionPrice> {
+    return this.repository.updateOption(id, option, storeId)
   }
 
-  async deleteOption(id: string): Promise<void> {
-    return this.repository.deleteOption(id)
+  async deleteOption(id: string, storeId: string): Promise<void> {
+    return this.repository.deleteOption(id, storeId)
   }
 
-  async toggleOptionStatus(id: string): Promise<OptionPrice> {
-    const option = await this.repository.getOptionById(id)
+  async toggleOptionStatus(id: string, storeId: string): Promise<OptionPrice> {
+    const option = await this.repository.getOptionById(id, storeId)
     if (!option) {
       throw new Error(`Option with id ${id} not found`)
     }
-    return this.repository.updateOption(id, { isActive: !option.isActive })
+    return this.repository.updateOption(id, { isActive: !option.isActive }, storeId)
   }
 
   // Additional fees management
@@ -160,32 +179,38 @@ export class PricingUseCases {
             ]
 
       for (const entry of durationEntries) {
-        await this.createCourse({
-          name: durationEntries.length > 1 ? `${oldCourse.name} ${entry.time}分` : oldCourse.name,
-          description: oldCourse.description || '',
-          duration: entry.time,
-          price: entry.price,
-          storeShare: entry.storeShare,
-          castShare: entry.castShare,
-          isActive: oldCourse.isActive ?? true,
-          enableWebBooking: oldCourse.enableWebBooking ?? true,
-        })
+        await this.createCourse(
+          {
+            name: durationEntries.length > 1 ? `${oldCourse.name} ${entry.time}分` : oldCourse.name,
+            description: oldCourse.description || '',
+            duration: entry.time,
+            price: entry.price,
+            storeShare: entry.storeShare,
+            castShare: entry.castShare,
+            isActive: oldCourse.isActive ?? true,
+            enableWebBooking: oldCourse.enableWebBooking ?? true,
+          },
+          storeId
+        )
       }
     }
 
     // Migrate options
     for (const oldOption of oldOptions) {
-      await this.createOption({
-        name: oldOption.name,
-        description: oldOption.description,
-        price: oldOption.price,
-        duration: oldOption.duration,
-        category: this.determineOptionCategory(oldOption.name),
-        displayOrder: oldOption.displayOrder || 999,
-        isActive: oldOption.isActive ?? true,
-        visibility: oldOption.visibility ?? 'public',
-        note: oldOption.note,
-      })
+      await this.createOption(
+        {
+          name: oldOption.name,
+          description: oldOption.description,
+          price: oldOption.price,
+          duration: oldOption.duration,
+          category: this.determineOptionCategory(oldOption.name),
+          displayOrder: oldOption.displayOrder || 999,
+          isActive: oldOption.isActive ?? true,
+          visibility: oldOption.visibility ?? 'public',
+          note: oldOption.note,
+        },
+        storeId
+      )
     }
   }
   private determineOptionCategory(

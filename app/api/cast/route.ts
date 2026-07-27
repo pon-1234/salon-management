@@ -14,6 +14,8 @@ import { env } from '@/lib/config/env'
 import { Prisma } from '@prisma/client'
 import { resolveOptionId } from '@/lib/options/data'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
+import { sanitizeResponseData } from '@/lib/http/sanitize-response'
+import { normalizePublicProfile } from '@/lib/cast/public-profile'
 
 // Validation schema for cast data
 const imageUrlSchema = z
@@ -30,7 +32,7 @@ const imageUrlSchema = z
 
 const castSchema = z.object({
   name: z.string().min(1),
-  nameKana: z.string().min(1).optional(), // Optional for now since DB doesn't have this field
+  nameKana: z.string().min(1).optional(),
   age: z.coerce.number().int().min(18).max(100),
   height: z.coerce.number().int().min(100).max(250),
   bust: z.string(),
@@ -56,7 +58,6 @@ const castSchema = z.object({
       })
     )
     .optional(),
-  lineUserId: z.union([z.string().trim().min(1), z.null()]).optional(),
   welfareExpenseRate: z.union([z.coerce.number().min(0).max(100), z.null()]).optional(),
   loginEmail: z
     .preprocess((value) => {
@@ -155,6 +156,47 @@ function normalizeAvailableOptionSettings(
   })
 }
 
+async function optionsBelongToStore(optionIds: string[], storeId: string): Promise<boolean> {
+  const uniqueOptionIds = Array.from(new Set(optionIds))
+  if (uniqueOptionIds.length === 0) {
+    return true
+  }
+
+  const options = await db.optionPrice.findMany({
+    where: {
+      id: { in: uniqueOptionIds },
+      storeId,
+    },
+    select: { id: true },
+  })
+  const availableOptionIds = new Set(options.map((option) => option.id))
+
+  return uniqueOptionIds.every((optionId) => availableOptionIds.has(optionId))
+}
+
+function invalidStoreOptionResponse() {
+  return NextResponse.json(
+    { error: 'One or more options are unavailable for this store' },
+    { status: 400 }
+  )
+}
+
+function containsManagedLineUserId(value: unknown): boolean {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.prototype.hasOwnProperty.call(value, 'lineUserId')
+  )
+}
+
+function managedLineUserIdResponse() {
+  return NextResponse.json(
+    { error: 'LINE user ID is managed by the secure linking flow' },
+    { status: 400 }
+  )
+}
+
 function transformCast(cast: any) {
   const { passwordHash, ...safeCast } = cast ?? {}
   const base = safeCast ?? {}
@@ -177,6 +219,7 @@ function transformCast(cast: any) {
         ? availableOptionSettings.map((entry) => entry.optionId)
         : normalizeAvailableOptions(base.availableOptions),
     availableOptionSettings,
+    publicProfile: normalizePublicProfile(base.publicProfile),
     appointments: base.appointments ?? [],
   }
 }
@@ -248,6 +291,8 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const id = searchParams.get('id')
   const storeId = await ensureStoreId(await resolveStoreId(request))
+  const authError = await requireAdmin({ permissions: 'cast:read', storeId })
+  if (authError) return authError
 
   try {
     if (id) {
@@ -257,20 +302,9 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Cast not found' }, { status: 404 })
       }
 
-      // Transform database result to match frontend expectations
-      const transformedCast = {
-        ...cast,
-        nameKana: cast.name, // Temporary: use name as nameKana
-        images: typeof cast.images === 'string' ? JSON.parse(cast.images) : cast.images,
-        publicProfile: cast.publicProfile || null,
-        availableOptions: normalizeAvailableOptions(cast.availableOptions),
-        availableOptionSettings: normalizeAvailableOptionSettings(
-          (cast as any).castOptionSettings ?? (cast as any).availableOptionSettings
-        ),
-        appointments: [],
-      }
+      const transformedCast = transformCast(cast)
 
-      return NextResponse.json(transformedCast)
+      return NextResponse.json(sanitizeResponseData(transformedCast))
     }
 
     const casts = await fetchCastListWithRelations(storeId)
@@ -278,7 +312,7 @@ export async function GET(request: NextRequest) {
     // Transform database results to match frontend expectations
     const transformedCasts = casts.map(transformCast)
 
-    return NextResponse.json(transformedCasts)
+    return NextResponse.json(sanitizeResponseData(transformedCasts))
   } catch (error) {
     logger.error({ err: error }, 'Error fetching cast data')
     if (!env.featureFlags.useMockFallbacks) {
@@ -289,27 +323,29 @@ export async function GET(request: NextRequest) {
       if (!fallbackCast) {
         return NextResponse.json({ error: 'Cast not found' }, { status: 404 })
       }
-      return NextResponse.json(transformCast(fallbackCast))
+      return NextResponse.json(sanitizeResponseData(transformCast(fallbackCast)))
     }
 
-    return NextResponse.json(castMembers.map(transformCast))
+    return NextResponse.json(sanitizeResponseData(castMembers.map(transformCast)))
   }
 }
 
 export async function POST(request: NextRequest) {
-  // Check admin permissions
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
     const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'cast:create', storeId })
+    if (authError) return authError
+
     const body = await request.json()
+
+    if (containsManagedLineUserId(body)) {
+      return managedLineUserIdResponse()
+    }
 
     // Validate request body
     const validatedData = castSchema.parse(body)
 
     const {
-      nameKana, // currently unused
       availableOptions,
       availableOptionSettings,
       welfareExpenseRate,
@@ -328,6 +364,16 @@ export async function POST(request: NextRequest) {
       normalizedSettings.length > 0
         ? normalizedSettings
         : normalizedOptions.map((optionId) => ({ optionId, visibility: 'public' as const }))
+
+    if (
+      !(await optionsBelongToStore(
+        optionSettingsToCreate.map((entry) => entry.optionId),
+        storeId
+      ))
+    ) {
+      return invalidStoreOptionResponse()
+    }
+
     const images = Array.isArray(imageList) ? imageList : []
     const normalizedWelfare =
       welfareExpenseRate === null || welfareExpenseRate === undefined
@@ -363,7 +409,7 @@ export async function POST(request: NextRequest) {
 
     logger.info({ castId: cast.id }, 'Cast created successfully')
 
-    return NextResponse.json(transformCast(cast), { status: 201 })
+    return NextResponse.json(sanitizeResponseData(transformCast(cast)), { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -378,13 +424,17 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  // Check admin permissions
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
     const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'cast:update', storeId })
+    if (authError) return authError
+
     const body = await request.json()
+
+    if (containsManagedLineUserId(body)) {
+      return managedLineUserIdResponse()
+    }
+
     const { id, ...updateData } = body
 
     if (!id) {
@@ -404,7 +454,6 @@ export async function PUT(request: NextRequest) {
     }
 
     const {
-      nameKana, // unused field
       availableOptions,
       availableOptionSettings,
       welfareExpenseRate,
@@ -437,6 +486,15 @@ export async function PUT(request: NextRequest) {
           : null
 
     if (normalizedOptionSettings !== null) {
+      if (
+        !(await optionsBelongToStore(
+          normalizedOptionSettings.map((entry) => entry.optionId),
+          storeId
+        ))
+      ) {
+        return invalidStoreOptionResponse()
+      }
+
       updatePayload.availableOptions = normalizedOptionSettings.map((entry) => entry.optionId)
     }
 
@@ -485,7 +543,7 @@ export async function PUT(request: NextRequest) {
           })
         : cast
 
-    return NextResponse.json(transformCast(refreshedCast ?? cast))
+    return NextResponse.json(sanitizeResponseData(transformCast(refreshedCast ?? cast)))
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -500,12 +558,11 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  // Check admin permissions
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
     const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'cast:delete', storeId })
+    if (authError) return authError
+
     const searchParams = request.nextUrl.searchParams
     const id = searchParams.get('id')
 

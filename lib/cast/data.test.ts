@@ -1,4 +1,10 @@
+/**
+ * @design_doc   refactor-instructions.md Phase 4 shared timezone utilities
+ * @related_to   data.ts - mock cast data and schedule generation
+ * @known_issues None currently
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { formatInJst } from '@/lib/shared/timezone'
 import { castMembers, createDate, getAllCasts, getCastById, generateCastSchedule } from './data'
 
 describe('Cast Data', () => {
@@ -69,26 +75,29 @@ describe('Cast Data', () => {
   describe('createDate', () => {
     it('should create a date with specified hours', () => {
       const date = createDate(10)
-      expect(date.getHours()).toBe(10)
-      expect(date.getMinutes()).toBe(0)
-      expect(date.getSeconds()).toBe(0)
-      expect(date.getMilliseconds()).toBe(0)
+      expect(formatInJst(date, 'HH:mm:ss.SSS')).toBe('10:00:00.000')
     })
 
     it('should create a date with specified hours and minutes', () => {
       const date = createDate(14, 30)
-      expect(date.getHours()).toBe(14)
-      expect(date.getMinutes()).toBe(30)
-      expect(date.getSeconds()).toBe(0)
-      expect(date.getMilliseconds()).toBe(0)
+      expect(formatInJst(date, 'HH:mm:ss.SSS')).toBe('14:30:00.000')
     })
 
-    it('should use today as the base date', () => {
+    it('should use the current JST date as the base date', () => {
       const date = createDate(12)
       const today = new Date()
-      expect(date.getFullYear()).toBe(today.getFullYear())
-      expect(date.getMonth()).toBe(today.getMonth())
-      expect(date.getDate()).toBe(today.getDate())
+      expect(formatInJst(date, 'yyyy-MM-dd')).toBe(formatInJst(today, 'yyyy-MM-dd'))
+    })
+
+    it('should keep the current JST date across the UTC-to-JST date boundary', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2024-01-14T15:30:00.000Z'))
+
+      try {
+        expect(createDate(10).toISOString()).toBe('2024-01-15T01:00:00.000Z')
+      } finally {
+        vi.useRealTimers()
+      }
     })
   })
 

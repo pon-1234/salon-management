@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Customer point-balance access boundary
+ * @related_to   Customer point ledger and customer:read permission
+ * @known_issues Expiring balance requires FIFO point-lot allocation before cutover
+ */
 'use server'
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -7,6 +12,7 @@ import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
 import { getExpiringPoints } from '@/lib/point/utils'
 import logger from '@/lib/logger'
+import { hasPermission } from '@/lib/auth/permissions'
 
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -21,6 +27,9 @@ export async function GET(request: NextRequest) {
 
   const isAdmin = session.user.role === 'admin'
   const isSelf = session.user.id === customerId
+  if (isAdmin && !hasPermission(session.user.permissions ?? [], 'customer:read')) {
+    return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
+  }
   if (!isAdmin && !isSelf) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }

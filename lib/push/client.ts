@@ -4,6 +4,7 @@
  * @known_issues Mock implementation - replace with actual push service (FCM, APNs, etc.)
  */
 import logger from '@/lib/logger'
+import { env } from '@/lib/config/env'
 
 export const pushClient = {
   async send(data: {
@@ -11,7 +12,12 @@ export const pushClient = {
     title: string
     body: string
     data?: any
-  }): Promise<{ success: boolean; id?: string }> {
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    if (env.outbound.deliveryMode === 'disabled') {
+      logger.info('Push delivery skipped because outbound is disabled')
+      return { success: false, error: 'Outbound delivery is disabled.' }
+    }
+
     // Mock implementation
     logger.info('Sending push notification:', {
       userId: data.userId,

@@ -41,7 +41,7 @@ describe('GET /api/customer/points', () => {
 
   it('allows admin users to view any customer history', async () => {
     vi.mocked(getServerSession).mockResolvedValueOnce({
-      user: { id: 'admin', role: 'admin' },
+      user: { id: 'admin', role: 'admin', permissions: ['customer:read'] },
     } as any)
 
     const mockHistory = [
@@ -72,6 +72,19 @@ describe('GET /api/customer/points', () => {
     expect(Array.isArray(data.data)).toBe(true)
     expect(data.pagination.total).toBe(1)
     expect(db.customerPointHistory.findMany).toHaveBeenCalled()
+  })
+
+  it('rejects an admin without customer:read permission', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'admin', role: 'admin', permissions: [] },
+    } as any)
+
+    const response = await GET(
+      new NextRequest('http://localhost:3000/api/customer/points?customerId=cust-1')
+    )
+
+    expect(response.status).toBe(403)
+    expect(db.customerPointHistory.findMany).not.toHaveBeenCalled()
   })
 
   it('allows customers to view their own history', async () => {

@@ -1,14 +1,21 @@
 'use client'
 
+/**
+ * @design_doc   Administrator cast profiles validate legacy JSON again at the rendering boundary
+ * @related_to   lib/cast/public-profile.ts and app/api/cast/route.ts
+ * @known_issues None
+ */
 import { Badge } from '@/components/ui/badge'
 import { Cast } from '@/lib/cast/types'
 import { FALLBACK_IMAGE } from '@/lib/cast/mapper'
+import { normalizePublicProfile } from '@/lib/cast/public-profile'
 import { calculateAge } from '@/lib/customer/utils'
 import { Separator } from '@/components/ui/separator'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { SafeImage } from '@/components/ui/safe-image'
 
 interface CastProfileProps {
   cast: Cast
@@ -16,6 +23,7 @@ interface CastProfileProps {
 
 export function CastProfile({ cast }: CastProfileProps) {
   const age = cast.age
+  const publicProfile = normalizePublicProfile(cast.publicProfile)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const sanitizedImages = Array.isArray(cast.images)
     ? cast.images.filter((image) => typeof image === 'string' && image.trim().length > 0)
@@ -41,7 +49,7 @@ export function CastProfile({ cast }: CastProfileProps) {
         <CardContent className="space-y-4">
           <div className="relative mx-auto max-w-sm">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <SafeImage
               src={images[currentImageIndex]}
               alt={`${cast.name}の写真 ${currentImageIndex + 1}`}
               className="aspect-[7/10] w-full rounded-lg object-cover"
@@ -93,7 +101,7 @@ export function CastProfile({ cast }: CastProfileProps) {
                   }`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <SafeImage
                     src={image}
                     alt={`${cast.name} 画像 ${index + 1}`}
                     className="h-20 w-16 rounded border object-cover"
@@ -112,7 +120,7 @@ export function CastProfile({ cast }: CastProfileProps) {
               <div>
                 <dt className="text-gray-600">スリーサイズ：</dt>
                 <dd>
-                  {cast.bust}/{cast.waist}/{cast.hip} ({cast.publicProfile?.bustCup || ''}カップ)
+                  {cast.bust}/{cast.waist}/{cast.hip} ({publicProfile?.bustCup || ''}カップ)
                 </dd>
               </div>
               <div>
@@ -159,7 +167,7 @@ export function CastProfile({ cast }: CastProfileProps) {
       </Card>
 
       {/* 公開プロフィール情報 */}
-      {cast.publicProfile && (
+      {publicProfile && (
         <>
           {/* スタイル・個性 */}
           <Card>
@@ -167,11 +175,11 @@ export function CastProfile({ cast }: CastProfileProps) {
               <CardTitle>スタイル・個性</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {cast.publicProfile.bodyType.length > 0 && (
+              {publicProfile.bodyType.length > 0 && (
                 <div>
                   <dt className="font-medium text-gray-600">体型</dt>
                   <dd className="mt-1 flex gap-2">
-                    {cast.publicProfile.bodyType.map((type) => (
+                    {publicProfile.bodyType.map((type) => (
                       <Badge key={type} variant="outline">
                         {type}
                       </Badge>
@@ -179,11 +187,11 @@ export function CastProfile({ cast }: CastProfileProps) {
                   </dd>
                 </div>
               )}
-              {cast.publicProfile.personality.length > 0 && (
+              {publicProfile.personality.length > 0 && (
                 <div>
                   <dt className="font-medium text-gray-600">個性</dt>
                   <dd className="mt-1 flex flex-wrap gap-2">
-                    {cast.publicProfile.personality.map((personality) => (
+                    {publicProfile.personality.map((personality) => (
                       <Badge key={personality} variant="secondary">
                         {personality}
                       </Badge>
@@ -195,14 +203,14 @@ export function CastProfile({ cast }: CastProfileProps) {
           </Card>
 
           {/* 可能プレイ */}
-          {cast.publicProfile.availableServices.length > 0 && (
+          {publicProfile.availableServices.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>可能プレイ</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-2">
-                  {cast.publicProfile.availableServices.map((service) => (
+                  {publicProfile.availableServices.map((service) => (
                     <Badge key={service} variant="outline" className="justify-center py-2">
                       {service}
                     </Badge>
@@ -221,72 +229,72 @@ export function CastProfile({ cast }: CastProfileProps) {
               <dl className="grid grid-cols-2 gap-4">
                 <div>
                   <dt className="text-gray-600">タバコ</dt>
-                  <dd>{cast.publicProfile.smoking}</dd>
+                  <dd>{publicProfile.smoking}</dd>
                 </div>
                 <div>
                   <dt className="text-gray-600">血液型</dt>
-                  <dd>{cast.publicProfile.bloodType}</dd>
+                  <dd>{publicProfile.bloodType}</dd>
                 </div>
                 <div>
                   <dt className="text-gray-600">出身地</dt>
-                  <dd>{cast.publicProfile.birthplace}</dd>
+                  <dd>{publicProfile.birthplace}</dd>
                 </div>
                 <div>
                   <dt className="text-gray-600">自宅派遣</dt>
-                  <dd>{cast.publicProfile.homeVisit}</dd>
+                  <dd>{publicProfile.homeVisit}</dd>
                 </div>
                 <div>
                   <dt className="text-gray-600">タトゥー</dt>
-                  <dd>{cast.publicProfile.tattoo}</dd>
+                  <dd>{publicProfile.tattoo}</dd>
                 </div>
                 <div>
                   <dt className="text-gray-600">外国人</dt>
-                  <dd>{cast.publicProfile.foreignerOk}</dd>
+                  <dd>{publicProfile.foreignerOk}</dd>
                 </div>
-                {cast.publicProfile.hobbies && (
+                {publicProfile.hobbies && (
                   <div>
                     <dt className="text-gray-600">趣味・特技</dt>
-                    <dd>{cast.publicProfile.hobbies}</dd>
+                    <dd>{publicProfile.hobbies}</dd>
                   </div>
                 )}
-                {cast.publicProfile.charmPoint && (
+                {publicProfile.charmPoint && (
                   <div>
                     <dt className="text-gray-600">チャームポイント</dt>
-                    <dd>{cast.publicProfile.charmPoint}</dd>
+                    <dd>{publicProfile.charmPoint}</dd>
                   </div>
                 )}
-                {cast.publicProfile.personalityOneWord && (
+                {publicProfile.personalityOneWord && (
                   <div>
                     <dt className="text-gray-600">性格を一言で</dt>
-                    <dd>{cast.publicProfile.personalityOneWord}</dd>
+                    <dd>{publicProfile.personalityOneWord}</dd>
                   </div>
                 )}
-                {cast.publicProfile.favoriteType && (
+                {publicProfile.favoriteType && (
                   <div>
                     <dt className="text-gray-600">好きな男性タイプ</dt>
-                    <dd>{cast.publicProfile.favoriteType}</dd>
+                    <dd>{publicProfile.favoriteType}</dd>
                   </div>
                 )}
-                {cast.publicProfile.favoriteFood && (
+                {publicProfile.favoriteFood && (
                   <div>
                     <dt className="text-gray-600">好きな食べ物</dt>
-                    <dd>{cast.publicProfile.favoriteFood}</dd>
+                    <dd>{publicProfile.favoriteFood}</dd>
                   </div>
                 )}
-                {cast.publicProfile.specialTechnique && (
+                {publicProfile.specialTechnique && (
                   <div>
                     <dt className="text-gray-600">私の奥義（金の技）</dt>
-                    <dd>{cast.publicProfile.specialTechnique}</dd>
+                    <dd>{publicProfile.specialTechnique}</dd>
                   </div>
                 )}
               </dl>
 
-              {cast.publicProfile.massageQualification &&
-                cast.publicProfile.qualificationDetails.length > 0 && (
+              {publicProfile.massageQualification &&
+                publicProfile.qualificationDetails.length > 0 && (
                   <div>
                     <dt className="font-medium text-gray-600">エステ・マッサージ資格</dt>
                     <dd className="mt-2">
-                      {cast.publicProfile.qualificationDetails.map((detail, index) => (
+                      {publicProfile.qualificationDetails.map((detail, index) => (
                         <Badge key={index} variant="outline" className="mb-2 mr-2">
                           {detail}
                         </Badge>
@@ -298,25 +306,25 @@ export function CastProfile({ cast }: CastProfileProps) {
           </Card>
 
           {/* お店からの一言 */}
-          {cast.publicProfile.shopMessage && (
+          {publicProfile.shopMessage && (
             <Card>
               <CardHeader>
                 <CardTitle>お店からの一言</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="whitespace-pre-wrap">{cast.publicProfile.shopMessage}</p>
+                <p className="whitespace-pre-wrap">{publicProfile.shopMessage}</p>
               </CardContent>
             </Card>
           )}
 
           {/* お客様へのメッセージ */}
-          {cast.publicProfile.customerMessage && (
+          {publicProfile.customerMessage && (
             <Card>
               <CardHeader>
                 <CardTitle>お客様へのメッセージ</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="whitespace-pre-wrap">{cast.publicProfile.customerMessage}</p>
+                <p className="whitespace-pre-wrap">{publicProfile.customerMessage}</p>
               </CardContent>
             </Card>
           )}

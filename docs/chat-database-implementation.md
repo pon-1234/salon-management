@@ -88,8 +88,12 @@ pnpm prisma generate
 pnpm prisma migrate dev --name add-message-model
 
 # Optional: Seed sample messages
-pnpm tsx prisma/seed-chat-messages.ts
+NODE_ENV=development pnpm tsx prisma/seed-chat-messages.ts
 ```
+
+The sample-message seed deletes existing chat messages before inserting demo records. A shared
+database mutation guard prevents it from starting in production-like environments; do not point
+this development command at a production database.
 
 ## Testing
 

@@ -14,6 +14,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { SafeImage } from '@/components/ui/safe-image'
 
 interface ChatAttachmentGalleryProps {
   attachments?: ChatAttachment[]
@@ -63,7 +64,7 @@ export function ChatAttachmentGallery({ attachments, align = 'left' }: ChatAttac
             )}
             onClick={() => setActiveIndex(index)}
           >
-            <img
+            <SafeImage
               src={attachment.url}
               alt={attachment.name ?? 'チャット画像'}
               className="h-32 w-full object-cover"
@@ -90,7 +91,7 @@ export function ChatAttachmentGallery({ attachments, align = 'left' }: ChatAttac
                 <X className="h-5 w-5" />
               </button>
               <div className="flex flex-1 items-center justify-center px-4 pb-10 pt-4">
-                <img
+                <SafeImage
                   src={current.url}
                   alt={current.name ?? 'チャット画像'}
                   className="max-h-full max-w-full object-contain"

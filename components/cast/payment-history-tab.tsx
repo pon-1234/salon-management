@@ -1,6 +1,11 @@
+/**
+ * @design_doc   docs/LEGACY_GOLD_ADMIN_MIGRATION_INVENTORY.md cast settlement management
+ * @related_to   SettlementPaymentDto, CastSettlementsData
+ * @known_issues Legacy settlement totals require production-data reconciliation
+ */
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -35,6 +40,7 @@ import {
   CastSettlementsData,
   SettlementPaymentDto,
 } from '@/lib/cast-portal/types'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 
@@ -51,7 +57,7 @@ export function PaymentHistoryTab({ castId, storeId }: PaymentHistoryTabProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchPayments = async () => {
+  const fetchPayments = useCallback(async () => {
     try {
       setError(null)
       const params = new URLSearchParams({ castId, storeId })
@@ -66,13 +72,17 @@ export function PaymentHistoryTab({ castId, storeId }: PaymentHistoryTabProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [castId, storeId])
 
-  const fetchPendingReservations = async () => {
+  const fetchPendingReservations = useCallback(async () => {
     try {
-      const res = await fetch(`/api/admin/cast/settlements?castId=${encodeURIComponent(castId)}`, {
-        cache: 'no-store',
-      })
+      const res = await fetch(
+        buildStoreScopedEndpoint(
+          `/api/admin/cast/settlements?castId=${encodeURIComponent(castId)}`,
+          storeId
+        ),
+        { cache: 'no-store' }
+      )
       if (!res.ok) throw new Error('精算情報の取得に失敗しました')
       const data = (await res.json()) as CastSettlementsData
       const pending = data.days.flatMap((d) =>
@@ -82,16 +92,16 @@ export function PaymentHistoryTab({ castId, storeId }: PaymentHistoryTabProps) {
     } catch (e) {
       setError(e instanceof Error ? e.message : '精算情報の取得に失敗しました')
     }
-  }
+  }, [castId, storeId])
 
   useEffect(() => {
     fetchPayments()
     fetchPendingReservations()
-  }, [])
+  }, [fetchPayments, fetchPendingReservations])
 
   const handleAddPayment = async (payload: PaymentRecordSubmitData) => {
     try {
-      const res = await fetch('/api/admin/cast/settlements', {
+      const res = await fetch(buildStoreScopedEndpoint('/api/admin/cast/settlements', storeId), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

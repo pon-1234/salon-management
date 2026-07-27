@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Reservation history client adapter tests
+ * @related_to   lib/modification-history/data.ts, reservation history API
+ * @known_issues Modification alerts are not implemented
+ */
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { getModificationHistory, getModificationAlerts, recordModification } from './data'
 
@@ -33,7 +38,7 @@ describe('Modification History Data', () => {
         })
       )
 
-      const history = await getModificationHistory('res-1')
+      const history = await getModificationHistory('res-1', 'ginza')
 
       expect(history).toHaveLength(1)
       expect(history[0]).toMatchObject({
@@ -48,6 +53,13 @@ describe('Modification History Data', () => {
         actorName: '管理者',
       })
       expect(history[0].timestamp).toBeInstanceOf(Date)
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/reservation/history?reservationId=res-1&storeId=ginza',
+        {
+          cache: 'no-store',
+          credentials: 'include',
+        }
+      )
     })
 
     it('returns empty array when API fails', async () => {
@@ -59,7 +71,7 @@ describe('Modification History Data', () => {
         })
       )
 
-      await expect(getModificationHistory('res-1')).rejects.toThrow()
+      await expect(getModificationHistory('res-1', 'ginza')).rejects.toThrow()
     })
   })
 

@@ -1,57 +1,67 @@
+/**
+ * @design_doc   docs/VPS_DEPLOYMENT.md
+ * @related_to   pruneMessageAttachments - Preserves metadata unless every storage deletion succeeds; Prisma Message - Stores attachment metadata
+ * @known_issues docs/VPS_DEPLOYMENT.md
+ */
 import { Prisma, PrismaClient } from '@prisma/client'
 import { getStorageService } from '@/lib/storage'
-import { normalizeChatAttachments } from '@/lib/chat/attachments'
-
-const RETENTION_DAYS = Number(process.env.CHAT_ATTACHMENT_RETENTION_DAYS ?? 180)
+import {
+  assertChatAttachmentPruneAcknowledged,
+  parseChatAttachmentRetentionDays,
+  pruneMessageAttachments,
+} from '@/lib/chat/attachment-pruning'
 
 async function main() {
+  assertChatAttachmentPruneAcknowledged(process.env.CHAT_ATTACHMENT_PRUNE_ACKNOWLEDGEMENT)
+  const retentionDays = parseChatAttachmentRetentionDays(process.env.CHAT_ATTACHMENT_RETENTION_DAYS)
   const prisma = new PrismaClient()
   const storage = getStorageService()
-  const cutoff = new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000)
+  const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000)
 
-  console.log(
-    `Pruning chat attachments older than ${RETENTION_DAYS} days (before ${cutoff.toISOString()})`
-  )
+  try {
+    console.log(
+      `Pruning chat attachments older than ${retentionDays} days (before ${cutoff.toISOString()})`
+    )
 
-  const messages = await prisma.message.findMany({
-    where: {
-      timestamp: { lt: cutoff },
-      attachments: { not: Prisma.JsonNull },
-    },
-    select: {
-      id: true,
-      attachments: true,
-    },
-  })
-
-  let filesRemoved = 0
-  for (const message of messages) {
-    const attachments = normalizeChatAttachments(message.attachments as Prisma.JsonValue | null)
-    if (attachments.length === 0) {
-      continue
-    }
-
-    for (const attachment of attachments) {
-      if (!attachment.path) {
-        continue
-      }
-      const result = await storage.delete(attachment.path)
-      if (result.success) {
-        filesRemoved += 1
-        console.log(`Deleted ${attachment.path}`)
-      } else {
-        console.warn(`Failed to delete ${attachment.path}: ${result.error}`)
-      }
-    }
-
-    await prisma.message.update({
-      where: { id: message.id },
-      data: { attachments: Prisma.JsonNull },
+    const messages = await prisma.message.findMany({
+      where: {
+        timestamp: { lt: cutoff },
+        attachments: { not: Prisma.JsonNull },
+      },
+      select: {
+        id: true,
+        attachments: true,
+      },
     })
-  }
 
-  console.log(`Pruned ${messages.length} messages and removed ${filesRemoved} files.`)
-  await prisma.$disconnect()
+    let filesRemoved = 0
+    let messagesCleared = 0
+    for (const message of messages) {
+      const result = await pruneMessageAttachments(message, {
+        deleteFile: (path) => storage.delete(path),
+        clearAttachments: async (messageId) => {
+          await prisma.message.update({
+            where: { id: messageId },
+            data: { attachments: Prisma.JsonNull },
+          })
+        },
+      })
+
+      filesRemoved += result.filesRemoved
+      if (result.cleared) {
+        messagesCleared += 1
+        console.log(`Cleared attachment metadata for message ${message.id}`)
+      } else if (result.error) {
+        console.warn(`Kept attachment metadata for message ${message.id}: ${result.error}`)
+      }
+    }
+
+    console.log(
+      `Cleared ${messagesCleared} of ${messages.length} messages and removed ${filesRemoved} files.`
+    )
+  } finally {
+    await prisma.$disconnect()
+  }
 }
 
 main().catch((error) => {

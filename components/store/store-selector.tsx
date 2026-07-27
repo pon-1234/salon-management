@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @design_doc   Responsive admin header store selection without vertical wrapping
+ * @related_to   Header, StoreContext
+ * @known_issues None
+ */
 import { useState } from 'react'
 import { useStore } from '@/contexts/store-context'
 import { Button } from '@/components/ui/button'
@@ -25,7 +30,7 @@ export function StoreSelector() {
 
   if (!isSuperAdmin || availableStores.length <= 1) {
     return (
-      <div className="flex items-center gap-2 text-sm">
+      <div className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm">
         <Building2 className="h-4 w-4" />
         <span className="font-medium">{currentStore.displayName}</span>
       </div>
@@ -35,7 +40,10 @@ export function StoreSelector() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" className="flex h-auto items-center gap-2 px-3 py-2">
+        <Button
+          variant="ghost"
+          className="flex h-auto shrink-0 items-center gap-2 whitespace-nowrap px-3 py-2"
+        >
           <Building2 className="h-4 w-4" />
           <span className="text-sm font-medium">{currentStore.displayName}</span>
           <ChevronDown className="h-3 w-3" />

@@ -1,14 +1,21 @@
+/**
+ * @design_doc   refactor-instructions.md Phase 4 shared timezone utilities
+ * @related_to   CastSchedule - mock cast working hours and generated schedules
+ * @known_issues Mock data only; persistence is handled by the cast repository
+ */
 import { Cast, type CastSchedule, Appointment } from './types'
-import { addDays, format } from 'date-fns'
-import { toUtcFromJst } from '@/lib/shared/timezone'
+import { formatInJst, toUtcFromJst } from '@/lib/shared/timezone'
+
+const MINUTES_PER_DAY = 24 * 60
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
 
 export const createDate = (hours: number, minutes = 0) => {
   const now = new Date()
   const totalMinutes = hours * 60 + minutes
-  const dayOffset = Math.floor(totalMinutes / (24 * 60))
-  const normalizedMinutes = ((totalMinutes % (24 * 60)) + 24 * 60) % (24 * 60)
-  const targetDate = addDays(now, dayOffset)
-  const datePart = format(targetDate, 'yyyy-MM-dd')
+  const dayOffset = Math.floor(totalMinutes / MINUTES_PER_DAY)
+  const normalizedMinutes = ((totalMinutes % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY
+  const targetDate = new Date(now.getTime() + dayOffset * MILLISECONDS_PER_DAY)
+  const datePart = formatInJst(targetDate, 'yyyy-MM-dd')
   const hourPart = Math.floor(normalizedMinutes / 60)
   const minutePart = normalizedMinutes % 60
   const isoLocal = `${datePart}T${String(hourPart).padStart(2, '0')}:${String(minutePart).padStart(2, '0')}:00`

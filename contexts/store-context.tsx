@@ -1,8 +1,15 @@
+/**
+ * @design_doc   Multi-store administrator navigation authorization
+ * @related_to   app/api/admin/stores/route.ts and lib/store/admin-stores.ts enforce administrator scope
+ * @known_issues Public non-admin routes retain the static compatibility catalogue in this outer context
+ */
 'use client'
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { Store, StoreConfig } from '@/lib/store/types'
-import { getStoreBySlug, getActiveStores } from '@/lib/store/data'
+import { getActiveStores } from '@/lib/store/data'
+import { useSession } from 'next-auth/react'
+import { filterAdminStores } from '@/lib/store/admin-stores'
 
 interface StoreContextType extends StoreConfig {
   switchStore: (storeCode: string) => void
@@ -11,12 +18,56 @@ interface StoreContextType extends StoreConfig {
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined)
 
+type SerializedStore = Omit<Store, 'createdAt' | 'updatedAt'> & {
+  createdAt: string
+  updatedAt: string
+}
+
+function parseCatalogStores(payload: unknown): Store[] {
+  if (!payload || typeof payload !== 'object' || !('stores' in payload)) {
+    return []
+  }
+
+  const records = (payload as { stores?: unknown }).stores
+  if (!Array.isArray(records)) {
+    return []
+  }
+
+  return records.flatMap((record) => {
+    if (
+      !record ||
+      typeof record !== 'object' ||
+      !('id' in record) ||
+      !('slug' in record) ||
+      !('createdAt' in record) ||
+      !('updatedAt' in record)
+    ) {
+      return []
+    }
+
+    const serialized = record as SerializedStore
+    if (typeof serialized.id !== 'string' || typeof serialized.slug !== 'string') {
+      return []
+    }
+    const createdAt = new Date(serialized.createdAt)
+    const updatedAt = new Date(serialized.updatedAt)
+    if (Number.isNaN(createdAt.getTime()) || Number.isNaN(updatedAt.getTime())) {
+      return []
+    }
+
+    return [{ ...serialized, createdAt, updatedAt }]
+  })
+}
+
 export function StoreProvider({ children }: { children: React.ReactNode }) {
+  const { data: session, status: sessionStatus } = useSession()
   const [config, setConfig] = useState<StoreConfig | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const initializeStore = () => {
+    let active = true
+
+    const initializeStore = async () => {
       // 本番環境では window.location.hostname からサブドメインを取得
       // 開発環境では localStorage またはクエリパラメータから店舗を決定
       let storeCode = 'ikebukuro' // デフォルト店舗
@@ -43,14 +94,48 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      const currentStore = getStoreBySlug(storeCode)
-      const availableStores = getActiveStores()
+      const isAdmin = session?.user?.role === 'admin'
+      let allActiveStores: Store[]
+      if (isAdmin) {
+        try {
+          const response = await fetch('/api/admin/stores', {
+            cache: 'no-store',
+            credentials: 'include',
+          })
+          if (!response.ok) {
+            throw new Error('ADMIN_STORE_CATALOG_REJECTED')
+          }
+          allActiveStores = parseCatalogStores(await response.json()).filter(
+            (store) => store.isActive
+          )
+        } catch {
+          if (active) {
+            setConfig(null)
+            setIsLoading(false)
+          }
+          return
+        }
+      } else {
+        allActiveStores = getActiveStores()
+      }
+
+      const availableStores = isAdmin
+        ? filterAdminStores(allActiveStores, session.user)
+        : allActiveStores
+      const currentStore = availableStores.find(
+        (store) => store.id === storeCode || store.slug === storeCode
+      )
+      const isSuperAdmin =
+        session?.user?.adminRole === 'super_admin' ||
+        Boolean(session?.user?.permissions?.includes('*'))
+
+      if (!active) return
 
       if (currentStore) {
         setConfig({
           currentStore,
           availableStores,
-          isSuperAdmin: true, // 実際の実装では認証情報から判定
+          isSuperAdmin,
         })
       } else {
         // フォールバック: 最初の店舗を使用
@@ -59,19 +144,30 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           setConfig({
             currentStore: fallbackStore,
             availableStores,
-            isSuperAdmin: true,
+            isSuperAdmin,
           })
+        } else {
+          setConfig(null)
         }
       }
 
       setIsLoading(false)
     }
 
-    initializeStore()
-  }, [])
+    if (sessionStatus !== 'loading') {
+      setIsLoading(true)
+      void initializeStore()
+    }
+
+    return () => {
+      active = false
+    }
+  }, [session, sessionStatus])
 
   const switchStore = (storeCode: string) => {
-    const newStore = getStoreBySlug(storeCode)
+    const newStore = config?.availableStores.find(
+      (store) => store.id === storeCode || store.slug === storeCode
+    )
     if (newStore && config) {
       setConfig({
         ...config,
@@ -85,8 +181,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  if (isLoading || !config) {
+  if (isLoading) {
     return <div>店舗情報を読み込み中...</div>
+  }
+
+  if (!config) {
+    return <div>このアカウントに利用可能な店舗が割り当てられていません。</div>
   }
 
   return (

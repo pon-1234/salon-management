@@ -5,6 +5,7 @@ import { StoreFooter } from '@/components/store-footer'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { SafeImage } from '@/components/ui/safe-image'
 import { Sparkles, Calendar, Heart, Gift, Crown, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
@@ -116,7 +117,7 @@ export default async function RecruitmentPage({ params }: { params: Promise<{ st
                       <div className="md:flex">
                         <div className="relative md:w-1/3 lg:w-1/4">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
+                          <SafeImage
                             src={cast.image ?? '/images/non-photo.svg'}
                             alt={cast.name}
                             className="h-full w-full object-cover"
@@ -233,7 +234,7 @@ export default async function RecruitmentPage({ params }: { params: Promise<{ st
                       <CardContent className="space-y-2 p-4">
                         <div className="mx-auto mb-3 aspect-square w-20 overflow-hidden rounded-full border border-[#4a3b28] bg-[#0f0f0f]">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
+                          <SafeImage
                             src={cast.image ?? '/images/non-photo.svg'}
                             alt={cast.name}
                             className="h-full w-full object-cover"

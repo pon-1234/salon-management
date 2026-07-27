@@ -60,6 +60,7 @@ describe('POST /api/customer/points/adjust', () => {
       expect.anything()
     )
     expect(db.$transaction).toHaveBeenCalled()
+    expect(requireAdmin).toHaveBeenCalledWith({ permissions: 'customer:update' })
   })
 
   it('returns validation error when payload invalid', async () => {

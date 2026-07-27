@@ -1,3 +1,10 @@
+/**
+ * @design_doc   refactor-instructions.md Phase 4 shared timezone utilities
+ * @related_to   timezone.ts - canonical JST timezone helpers
+ * @known_issues None currently
+ */
+import { JST_TIMEZONE } from './timezone'
+
 export function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`
 }
@@ -28,14 +35,16 @@ export function formatDate(
         month: 'long',
         day: 'numeric',
         weekday: 'long',
+        timeZone: JST_TIMEZONE,
       })
     case 'time':
       return d.toLocaleTimeString('ja-JP', {
         hour: '2-digit',
         minute: '2-digit',
+        timeZone: JST_TIMEZONE,
       })
     default:
-      return d.toLocaleDateString('ja-JP')
+      return d.toLocaleDateString('ja-JP', { timeZone: JST_TIMEZONE })
   }
 }
 

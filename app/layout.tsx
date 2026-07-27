@@ -34,9 +34,20 @@ const luxuryDisplayFont = Cinzel({
   variable: '--font-luxury-display',
 })
 
+// Preserve the current runtime-rendered shell while preview access remains gateway-controlled.
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: '金の玉クラブ | GOLD ESTHE GROUP',
   description: '密着度の高い性感睾丸マッサージ専門店「金の玉クラブ」公式サイト',
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
+  },
 }
 
 export const viewport: Viewport = {

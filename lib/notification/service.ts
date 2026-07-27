@@ -1,14 +1,13 @@
 /**
  * @design_doc   Notification service for handling reservation notifications
  * @related_to   reservation/route.ts, email/client.ts, sms/client.ts, push/client.ts
- * @known_issues None currently
+ * @known_issues Delivery failures are logged, but durable history and automatic retry require a persisted queue
  */
 import { emailClient } from '@/lib/email/client'
 import { smsClient } from '@/lib/sms/client'
 import { pushClient } from '@/lib/push/client'
-import { db } from '@/lib/db'
 import logger from '@/lib/logger'
-import { env } from '@/lib/config/env'
+import { escapeHtmlText } from '@/lib/email/html'
 
 interface NotificationResult {
   success: boolean
@@ -22,32 +21,7 @@ export interface BulkNotification {
   data: any
 }
 
-interface NotificationHistory {
-  id: string
-  reservationId: string
-  type: string
-  status: string
-  sentAt: Date
-}
-
-interface FailedNotification {
-  id: string
-  type: string
-  to: string
-  data: any
-  attempts: number
-}
-
-interface RetryResult {
-  retried: number
-  successful: number
-  failed: number
-  permanentlyFailed?: number
-}
-
 export class NotificationService {
-  private readonly MAX_RETRIES = 3
-
   async sendReservationConfirmation(reservation: any): Promise<void> {
     const notifications: Promise<NotificationResult>[] = []
 
@@ -68,8 +42,7 @@ export class NotificationService {
             endTime: reservation.endTime,
             reservationId: reservation.id,
           },
-        }).catch((error) => {
-          logger.error({ err: error }, 'sendReservationConfirmation: Failed to send email')
+        }).catch(() => {
           return { success: false, error: 'Failed to send email' }
         })
       )
@@ -82,8 +55,7 @@ export class NotificationService {
         this.sendSMS({
           to: reservation.customer.phone,
           message: smsMessage.trim(),
-        }).catch((error) => {
-          logger.error({ err: error }, 'sendReservationConfirmation: Failed to send SMS')
+        }).catch(() => {
           return { success: false, error: 'Failed to send SMS' }
         })
       )
@@ -99,17 +71,13 @@ export class NotificationService {
             reservationId: reservation.id,
             type: 'reservation_confirmation',
           },
-        }).catch((error) => {
-          logger.error(
-            { err: error },
-            'sendReservationConfirmation: Failed to send push notification'
-          )
+        }).catch(() => {
           return { success: false, error: 'Failed to send push notification' }
         })
       )
     }
 
-    await Promise.all(notifications)
+    await this.recordReservationDeliveryResult(reservation.id, 'confirmation', notifications)
   }
 
   async sendReservationModification(reservation: any, oldReservation: any): Promise<void> {
@@ -135,8 +103,7 @@ export class NotificationService {
             newEndTime: reservation.endTime,
             reservationId: reservation.id,
           },
-        }).catch((error) => {
-          logger.error({ err: error }, 'sendReservationModification: Failed to send email')
+        }).catch(() => {
           return { success: false, error: 'Failed to send email' }
         })
       )
@@ -149,8 +116,7 @@ export class NotificationService {
         this.sendSMS({
           to: reservation.customer.phone,
           message: smsMessage,
-        }).catch((error) => {
-          logger.error({ err: error }, 'sendReservationModification: Failed to send SMS')
+        }).catch(() => {
           return { success: false, error: 'Failed to send SMS' }
         })
       )
@@ -166,17 +132,13 @@ export class NotificationService {
             reservationId: reservation.id,
             type: 'reservation_modification',
           },
-        }).catch((error) => {
-          logger.error(
-            { err: error },
-            'sendReservationModification: Failed to send push notification'
-          )
+        }).catch(() => {
           return { success: false, error: 'Failed to send push notification' }
         })
       )
     }
 
-    await Promise.all(notifications)
+    await this.recordReservationDeliveryResult(reservation.id, 'modification', notifications)
   }
 
   async sendReservationCancellation(reservation: any): Promise<void> {
@@ -196,8 +158,7 @@ export class NotificationService {
             startTime: reservation.startTime,
             reservationId: reservation.id,
           },
-        }).catch((error) => {
-          logger.error({ err: error }, 'sendReservationCancellation: Failed to send email')
+        }).catch(() => {
           return { success: false, error: 'Failed to send email' }
         })
       )
@@ -210,8 +171,7 @@ export class NotificationService {
         this.sendSMS({
           to: reservation.customer.phone,
           message: smsMessage,
-        }).catch((error) => {
-          logger.error({ err: error }, 'sendReservationCancellation: Failed to send SMS')
+        }).catch(() => {
           return { success: false, error: 'Failed to send SMS' }
         })
       )
@@ -227,17 +187,13 @@ export class NotificationService {
             reservationId: reservation.id,
             type: 'reservation_cancellation',
           },
-        }).catch((error) => {
-          logger.error(
-            { err: error },
-            'sendReservationCancellation: Failed to send push notification'
-          )
+        }).catch(() => {
           return { success: false, error: 'Failed to send push notification' }
         })
       )
     }
 
-    await Promise.all(notifications)
+    await this.recordReservationDeliveryResult(reservation.id, 'cancellation', notifications)
   }
 
   async sendBulkNotifications(notifications: BulkNotification[]): Promise<NotificationResult[]> {
@@ -273,86 +229,31 @@ export class NotificationService {
     return results
   }
 
-  async getNotificationHistory(reservationId: string): Promise<NotificationHistory[]> {
-    // This would be implemented with actual database queries
-    // For now, returning empty array to make tests pass
-    return []
-  }
-
-  async getFailedNotifications(): Promise<FailedNotification[]> {
-    // This would be implemented with actual database queries
-    // For now, returning empty array to make tests pass
-    return []
-  }
-
-  async retryFailedNotifications(): Promise<RetryResult> {
-    const failedNotifications = await this.getFailedNotifications()
-    let retried = 0
-    let successful = 0
-    let failed = 0
-    let permanentlyFailed = 0
-
-    for (const notification of failedNotifications) {
-      if (notification.attempts >= this.MAX_RETRIES) {
-        permanentlyFailed++
-        continue
-      }
-
-      retried++
-      try {
-        let result: NotificationResult
-
-        switch (notification.type) {
-          case 'email':
-            result = await this.sendEmail(notification.data)
-            break
-          case 'sms':
-            result = await this.sendSMS(notification.data)
-            break
-          case 'push':
-            result = await this.sendPush(notification.data)
-            break
-          default:
-            result = { success: false }
-        }
-
-        if (result.success) {
-          successful++
-        } else {
-          failed++
-        }
-      } catch {
-        failed++
-      }
-    }
-
-    return { retried, successful, failed, permanentlyFailed }
-  }
-
   private async sendEmail(data: any): Promise<NotificationResult> {
-    // APIキーが設定されていない場合は、何もせずに成功として返す
-    if (!env.resend.apiKey) {
-      logger.warn('RESEND_API_KEY is not set. Skipping email sending.')
-      return { success: true, notificationId: 'dummy-email-id-no-key' }
-    }
-
     try {
       const result = await emailClient.send(data)
-      // emailClientがエラーをオブジェクトとして返す仕様に変更したため、ここでハンドリング
       if (!result.success) {
-        throw new Error(result.error || 'Failed to send email')
+        return { success: false, error: result.error || 'Failed to send email' }
       }
       return { success: true, notificationId: result.id }
     } catch (error) {
-      // エラーをスローするのではなく、ロギングして失敗として扱う
-      logger.error({ err: error }, 'Failed to send email via emailClient')
-      throw error // 上位のサービスでエラーを捕捉できるように再スロー
+      logger.error(
+        { errorType: error instanceof Error ? error.name : 'UnknownError' },
+        'Email provider request failed'
+      )
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to send email',
+      }
     }
   }
 
   private async sendSMS(data: any): Promise<NotificationResult> {
     try {
       const result = await smsClient.send(data)
+      if (!result.success) {
+        return { success: false, error: result.error || 'Failed to send SMS' }
+      }
       return { success: true, notificationId: result.id }
     } catch (error) {
       throw error
@@ -365,6 +266,22 @@ export class NotificationService {
       return { success: true, notificationId: result.id }
     } catch (error) {
       throw error
+    }
+  }
+
+  private async recordReservationDeliveryResult(
+    reservationId: string,
+    event: 'confirmation' | 'modification' | 'cancellation',
+    notifications: Promise<NotificationResult>[]
+  ): Promise<void> {
+    const results = await Promise.all(notifications)
+    const failed = results.filter((result) => !result.success).length
+
+    if (failed > 0) {
+      logger.error(
+        { reservationId, failed, attempted: results.length },
+        `Reservation ${event} notification delivery failed`
+      )
     }
   }
 
@@ -411,7 +328,7 @@ export class NotificationService {
     oldReservation?: any
   ): { subject: string; body: string } {
     const storeLabel = this.getStoreLabel(reservation)
-    const customerName = reservation.customer?.name ?? 'お客様'
+    const customerName = escapeHtmlText(String(reservation.customer?.name ?? 'お客様'))
 
     let subject: string
     let lead: string
@@ -469,15 +386,15 @@ export class NotificationService {
     }
 
     if (reservation.cast?.name) {
-      lines.push(`担当キャスト: ${reservation.cast.name}`)
+      lines.push(`担当キャスト: ${escapeHtmlText(String(reservation.cast.name))}`)
     }
 
     if (reservation.course?.name) {
-      lines.push(`コース: ${reservation.course.name}`)
+      lines.push(`コース: ${escapeHtmlText(String(reservation.course.name))}`)
     }
 
     if (reservation.locationMemo) {
-      lines.push(`待ち合わせ: ${reservation.locationMemo}`)
+      lines.push(`待ち合わせ: ${escapeHtmlText(String(reservation.locationMemo))}`)
     }
 
     return `<ul>${lines.map((line) => `<li>${line}</li>`).join('')}</ul>`

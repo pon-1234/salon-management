@@ -33,4 +33,5 @@ export interface WeeklySchedule {
 export interface ScheduleFilters {
   date: Date
   castFilter: string
+  storeId: string
 }

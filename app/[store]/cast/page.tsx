@@ -11,6 +11,7 @@ import { StoreFooter } from '@/components/store-footer'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { SafeImage } from '@/components/ui/safe-image'
 import { Star, Heart, Crown } from 'lucide-react'
 import Link from 'next/link'
 import { getPublicCastProfiles, type PublicCastProfile } from '@/lib/store/public-casts'
@@ -147,7 +148,7 @@ export default async function CastListPage({
                         <div className="relative">
                           <div className="mb-3 aspect-[3/4] overflow-hidden rounded-lg border border-[#4a3b28] bg-[#0f0f0f]">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
+                            <SafeImage
                               src={cast.image ?? '/images/non-photo.svg'}
                               alt={cast.name}
                               className="h-full w-full object-cover"

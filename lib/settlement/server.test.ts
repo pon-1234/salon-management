@@ -51,6 +51,7 @@ describe('upsertSettlementPayment', () => {
         createMany: vi.fn().mockResolvedValue({ count: 2 }),
       },
       reservation: {
+        count: vi.fn().mockResolvedValue(2),
         updateMany: vi.fn().mockResolvedValue({ count: 2 }),
       },
     }
@@ -122,6 +123,7 @@ describe('upsertSettlementPayment', () => {
     }
     const tx = {
       settlementPayment: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'payment-1' }),
         update: vi.fn().mockResolvedValue(paymentRecord),
       },
       settlementPaymentReservation: {
@@ -129,6 +131,7 @@ describe('upsertSettlementPayment', () => {
         createMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
       reservation: {
+        count: vi.fn().mockResolvedValue(1),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     }
@@ -164,6 +167,91 @@ describe('upsertSettlementPayment', () => {
     expect(tx.settlementPaymentReservation.createMany).toHaveBeenCalledWith({
       data: [{ paymentId: 'payment-1', reservationId: 'reservation-3' }],
     })
+  })
+
+  it('rejects updating a payment that does not belong to the requested cast and store', async () => {
+    const tx = {
+      settlementPayment: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        update: vi.fn(),
+      },
+      settlementPaymentReservation: {
+        deleteMany: vi.fn(),
+        createMany: vi.fn(),
+      },
+      reservation: {
+        count: vi.fn(),
+        updateMany: vi.fn(),
+      },
+    }
+
+    mockedDb.$transaction.mockImplementation(
+      async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)
+    )
+
+    await expect(
+      upsertSettlementPayment({
+        id: 'payment-from-another-store',
+        castId: 'cast-1',
+        storeId: 'store-1',
+        amount: 15000,
+        method: 'bank',
+        handledBy: 'admin-2',
+        paidAt: '2026-07-05T03:00:00.000Z',
+        reservationIds: ['reservation-3'],
+      })
+    ).rejects.toThrow('Settlement payment not found')
+
+    expect(tx.settlementPayment.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'payment-from-another-store',
+        castId: 'cast-1',
+        storeId: 'store-1',
+      },
+      select: { id: true },
+    })
+    expect(tx.settlementPayment.update).not.toHaveBeenCalled()
+    expect(tx.settlementPaymentReservation.deleteMany).not.toHaveBeenCalled()
+  })
+
+  it('rejects linking reservations outside the requested cast and store', async () => {
+    const tx = {
+      settlementPayment: {
+        create: vi.fn(),
+      },
+      settlementPaymentReservation: {
+        createMany: vi.fn(),
+      },
+      reservation: {
+        count: vi.fn().mockResolvedValue(0),
+        updateMany: vi.fn(),
+      },
+    }
+
+    mockedDb.$transaction.mockImplementation(
+      async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)
+    )
+
+    await expect(
+      upsertSettlementPayment({
+        castId: 'cast-1',
+        storeId: 'store-1',
+        amount: 15000,
+        method: 'bank',
+        handledBy: 'admin-2',
+        reservationIds: ['reservation-from-another-store'],
+      })
+    ).rejects.toThrow('Settlement reservation not found')
+
+    expect(tx.reservation.count).toHaveBeenCalledWith({
+      where: {
+        id: { in: ['reservation-from-another-store'] },
+        castId: 'cast-1',
+        storeId: 'store-1',
+      },
+    })
+    expect(tx.settlementPayment.create).not.toHaveBeenCalled()
+    expect(tx.settlementPaymentReservation.createMany).not.toHaveBeenCalled()
   })
 })
 

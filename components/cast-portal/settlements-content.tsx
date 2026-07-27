@@ -1,3 +1,8 @@
+/**
+ * @design_doc   docs/LEGACY_GOLD_ADMIN_MIGRATION_INVENTORY.md cast portal settlements
+ * @related_to   CastSettlementsData, SettlementPayment
+ * @known_issues Legacy settlement totals require production-data reconciliation
+ */
 'use client'
 
 import { useCallback, useMemo, useState, useTransition } from 'react'
@@ -177,7 +182,7 @@ function DayRow({
       inProgressAmount: netSum(inProgress),
       settledAmount: netSum(settled),
     }
-  }, [day.records])
+  }, [day])
   const courseSummary = useMemo(() => {
     const map = new Map<
       string,

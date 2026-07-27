@@ -13,9 +13,12 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/hooks/use-toast'
 import { PointExpirationPanel } from '@/components/admin/point-expiration-panel'
+import { useStore } from '@/contexts/store-context'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import { ArrowLeft, Coins } from 'lucide-react'
 
 export default function PointSettingsPage() {
+  const { currentStore } = useStore()
   const [form, setForm] = useState({
     pointEarnRate: 1,
     pointExpirationMonths: 12,
@@ -27,9 +30,12 @@ export default function PointSettingsPage() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await fetch('/api/settings/points', {
-          credentials: 'include',
-        })
+        const response = await fetch(
+          buildStoreScopedEndpoint('/api/settings/points', currentStore.id),
+          {
+            credentials: 'include',
+          }
+        )
         if (!response.ok) {
           throw new Error('設定の取得に失敗しました')
         }
@@ -51,7 +57,7 @@ export default function PointSettingsPage() {
     }
 
     fetchSettings()
-  }, [])
+  }, [currentStore.id])
 
   const handleChange = (field: keyof typeof form) => (event: ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({
@@ -64,14 +70,17 @@ export default function PointSettingsPage() {
     event.preventDefault()
     setSaving(true)
     try {
-      const response = await fetch('/api/settings/points', {
-        method: 'PUT',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(form),
-      })
+      const response = await fetch(
+        buildStoreScopedEndpoint('/api/settings/points', currentStore.id),
+        {
+          method: 'PUT',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(form),
+        }
+      )
 
       if (!response.ok) {
         throw new Error('設定の保存に失敗しました')

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { X, Upload, Loader2 } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
+import { SafeImage } from '@/components/ui/safe-image'
 
 interface ImageUploadProps {
   value: string
@@ -91,7 +92,7 @@ export function ImageUpload({ value, onChange, onRemove, index, disabled }: Imag
         {value ? (
           <div className="flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <SafeImage
               src={value}
               alt={`プレビュー ${index + 1}`}
               className="h-16 w-16 rounded border object-cover"

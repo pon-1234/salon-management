@@ -1,0 +1,426 @@
+<?php
+
+/**
+ * @design_doc   docs/LEGACY_DATA_MIGRATION_RUNBOOK.md read-only Ikebukuro field-preview extraction
+ * @related_to   scripts/legacy-preview-import.ts consumes separately transformed preview artifacts
+ * @known_issues The legacy source cannot provide a cross-table snapshot, so reconciliation is reported
+ */
+
+const LEGACY_CONFIG_PATH = '/home/nzuadtjn/gold-esthe.com_inc_master/jukunen_db_2016.inc';
+const EXPECTED_DATABASE = 'nzuadtjn_gold_master';
+const SHOP_NO = 5600;
+
+try {
+    runExtractor();
+} catch (Throwable $error) {
+    file_put_contents('php://stderr', "Legacy preview extraction failed.\n");
+    exit(1);
+}
+
+function runExtractor()
+{
+    date_default_timezone_set('Asia/Tokyo');
+
+    $scheduleFrom = readIsoDateEnvironment('LEGACY_PREVIEW_SCHEDULE_FROM');
+    $scheduleTo = readIsoDateEnvironment('LEGACY_PREVIEW_SCHEDULE_TO');
+    $reservationFrom = readIsoDateEnvironment('LEGACY_PREVIEW_RESERVATION_FROM');
+
+    if ($scheduleFrom > $scheduleTo) {
+        throw new RuntimeException('Invalid schedule range.');
+    }
+
+    $connection = parseJukunenConnectionConfig(LEGACY_CONFIG_PATH);
+    if ($connection['database'] !== EXPECTED_DATABASE) {
+        throw new RuntimeException('Unexpected legacy database.');
+    }
+
+    $pdo = new PDO(
+        'mysql:host=' . $connection['host'] . ';dbname=' . $connection['database'] . ';charset=utf8mb4',
+        $connection['username'],
+        $connection['password'],
+        array(
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+        )
+    );
+    $pdo->exec('SET SESSION TRANSACTION READ ONLY');
+
+    $readOnlyMode = $pdo->query('SELECT @@session.tx_read_only AS read_only_mode')->fetchColumn();
+    $selectedDatabase = $pdo->query('SELECT DATABASE() AS database_name')->fetchColumn();
+    if ((int) $readOnlyMode !== 1 || $selectedDatabase !== EXPECTED_DATABASE) {
+        throw new RuntimeException('Legacy source safety gate failed.');
+    }
+
+    $queries = buildDatasetQueries($scheduleFrom, $scheduleTo, $reservationFrom);
+    $beforeCounts = collectCounts($pdo, $queries);
+    $rows = collectRows($pdo, $queries);
+    $afterCounts = collectCounts($pdo, $queries);
+
+    $capturedAt = (new DateTimeImmutable('now', new DateTimeZone('Asia/Tokyo')))->format(DATE_ATOM);
+    $snapshot = array(
+        'version' => 3,
+        'scope' => array(
+            'sourceDatabase' => EXPECTED_DATABASE,
+            'shopNo' => SHOP_NO,
+            'cutoffAt' => $capturedAt,
+            'scheduleFrom' => $scheduleFrom,
+            'scheduleTo' => $scheduleTo,
+            'reservationFrom' => $reservationFrom,
+            'consistency' => 'best-effort-read-only',
+        ),
+        'beforeCounts' => canonicalizeDatasets($beforeCounts),
+        'afterCounts' => canonicalizeDatasets($afterCounts),
+        'rows' => canonicalizeDatasets($rows),
+    );
+
+    $json = json_encode(
+        $snapshot,
+        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
+    );
+    if (!is_string($json)) {
+        throw new RuntimeException('Snapshot encoding failed.');
+    }
+
+    echo $json . "\n";
+}
+
+function readIsoDateEnvironment($name)
+{
+    $value = getenv($name);
+    if (!is_string($value) || !preg_match('/^\d{4}-\d{2}-\d{2}$/D', $value)) {
+        throw new RuntimeException('Invalid extraction cutoff.');
+    }
+
+    $date = DateTimeImmutable::createFromFormat('!Y-m-d', $value, new DateTimeZone('Asia/Tokyo'));
+    $errors = DateTimeImmutable::getLastErrors();
+    if (
+        $date === false ||
+        ($errors !== false && ($errors['warning_count'] !== 0 || $errors['error_count'] !== 0)) ||
+        $date->format('Y-m-d') !== $value
+    ) {
+        throw new RuntimeException('Invalid extraction cutoff.');
+    }
+
+    return $value;
+}
+
+function parseJukunenConnectionConfig($path)
+{
+    if (!is_readable($path)) {
+        throw new RuntimeException('Legacy configuration is unavailable.');
+    }
+
+    $source = file_get_contents($path);
+    if (!is_string($source)) {
+        throw new RuntimeException('Legacy configuration is unavailable.');
+    }
+
+    $tokens = token_get_all($source);
+    $functionStart = findNamedFunctionBody($tokens, 'DB_jukunen');
+    $arguments = findLiteralCallArguments($tokens, $functionStart, 'connectDB');
+    if (count($arguments) < 4) {
+        throw new RuntimeException('Legacy connection configuration is invalid.');
+    }
+
+    $connection = array(
+        'host' => decodePhpStringLiteral($arguments[0]),
+        'database' => decodePhpStringLiteral($arguments[1]),
+        'username' => decodePhpStringLiteral($arguments[2]),
+        'password' => decodePhpStringLiteral($arguments[3]),
+    );
+    foreach ($connection as $value) {
+        if (!is_string($value) || $value === '') {
+            throw new RuntimeException('Legacy connection configuration is invalid.');
+        }
+    }
+
+    return $connection;
+}
+
+function findNamedFunctionBody($tokens, $functionName)
+{
+    $tokenCount = count($tokens);
+    for ($index = 0; $index < $tokenCount; $index++) {
+        $token = $tokens[$index];
+        if (!is_array($token) || $token[0] !== T_FUNCTION) {
+            continue;
+        }
+
+        $nameIndex = nextSignificantTokenIndex($tokens, $index + 1);
+        if ($nameIndex === null) {
+            break;
+        }
+        $nameToken = $tokens[$nameIndex];
+        if (!is_array($nameToken) || $nameToken[0] !== T_STRING || $nameToken[1] !== $functionName) {
+            continue;
+        }
+
+        for ($bodyIndex = $nameIndex + 1; $bodyIndex < $tokenCount; $bodyIndex++) {
+            if ($tokens[$bodyIndex] === '{') {
+                return $bodyIndex;
+            }
+        }
+    }
+
+    throw new RuntimeException('Legacy connection function is unavailable.');
+}
+
+function findLiteralCallArguments($tokens, $functionBodyStart, $callName)
+{
+    $tokenCount = count($tokens);
+    $bodyDepth = 1;
+    for ($index = $functionBodyStart + 1; $index < $tokenCount; $index++) {
+        $token = $tokens[$index];
+        if ($token === '{') {
+            $bodyDepth++;
+            continue;
+        }
+        if ($token === '}') {
+            $bodyDepth--;
+            if ($bodyDepth === 0) {
+                break;
+            }
+            continue;
+        }
+        if (!is_array($token) || $token[0] !== T_STRING || $token[1] !== $callName) {
+            continue;
+        }
+
+        $openIndex = nextSignificantTokenIndex($tokens, $index + 1);
+        if ($openIndex === null || $tokens[$openIndex] !== '(') {
+            continue;
+        }
+
+        return parseLiteralArguments($tokens, $openIndex);
+    }
+
+    throw new RuntimeException('Legacy connection call is unavailable.');
+}
+
+function parseLiteralArguments($tokens, $openIndex)
+{
+    $arguments = array();
+    $current = array();
+    $depth = 1;
+    $tokenCount = count($tokens);
+
+    for ($index = $openIndex + 1; $index < $tokenCount; $index++) {
+        $token = $tokens[$index];
+        if ($token === '(') {
+            $depth++;
+            $current[] = $token;
+            continue;
+        }
+        if ($token === ')') {
+            $depth--;
+            if ($depth === 0) {
+                $arguments[] = requireSingleLiteralArgument($current);
+                return $arguments;
+            }
+            $current[] = $token;
+            continue;
+        }
+        if ($token === ',' && $depth === 1) {
+            $arguments[] = requireSingleLiteralArgument($current);
+            $current = array();
+            continue;
+        }
+        $current[] = $token;
+    }
+
+    throw new RuntimeException('Legacy connection call is incomplete.');
+}
+
+function requireSingleLiteralArgument($argumentTokens)
+{
+    $significant = array();
+    foreach ($argumentTokens as $token) {
+        if (is_array($token) && in_array($token[0], array(T_WHITESPACE, T_COMMENT, T_DOC_COMMENT), true)) {
+            continue;
+        }
+        $significant[] = $token;
+    }
+
+    if (count($significant) === 1 && is_array($significant[0]) && $significant[0][0] === T_CONSTANT_ENCAPSED_STRING) {
+        return $significant[0][1];
+    }
+
+    return '';
+}
+
+function decodePhpStringLiteral($literal)
+{
+    if (!is_string($literal) || strlen($literal) < 2) {
+        throw new RuntimeException('Legacy connection literal is invalid.');
+    }
+
+    $quote = $literal[0];
+    if ($literal[strlen($literal) - 1] !== $quote || ($quote !== "'" && $quote !== '"')) {
+        throw new RuntimeException('Legacy connection literal is invalid.');
+    }
+
+    $body = substr($literal, 1, -1);
+    if ($quote === "'") {
+        return str_replace(array('\\\\', "\\'"), array('\\', "'"), $body);
+    }
+
+    return stripcslashes($body);
+}
+
+function nextSignificantTokenIndex($tokens, $start)
+{
+    $tokenCount = count($tokens);
+    for ($index = $start; $index < $tokenCount; $index++) {
+        $token = $tokens[$index];
+        if (is_array($token) && in_array($token[0], array(T_WHITESPACE, T_COMMENT, T_DOC_COMMENT), true)) {
+            continue;
+        }
+        return $index;
+    }
+
+    return null;
+}
+
+function buildDatasetQueries($scheduleFrom, $scheduleTo, $reservationFrom)
+{
+    $shopParameters = array(':shopNo' => SHOP_NO);
+    $activeCastParameters = array(':shopNo' => SHOP_NO);
+    $scheduleParameters = array(
+        ':shopNo' => SHOP_NO,
+        ':activeShopNo' => SHOP_NO,
+        ':scheduleFrom' => $scheduleFrom,
+        ':scheduleTo' => $scheduleTo,
+    );
+    $reservationParameters = array(
+        ':shopNo' => SHOP_NO,
+        ':activeShopNo' => SHOP_NO,
+        ':reservationFrom' => $reservationFrom,
+    );
+    $reviewParameters = array(':shopNo' => SHOP_NO, ':activeShopNo' => SHOP_NO);
+    $areaParameters = array(
+        ':stationShopNo' => SHOP_NO,
+        ':orderShopNo' => SHOP_NO,
+        ':activeShopNo' => SHOP_NO,
+        ':reservationFrom' => $reservationFrom,
+        ':hotelCityShopNo' => SHOP_NO,
+        ':hotelCity2ShopNo' => SHOP_NO,
+    );
+    $referencedLocationParameters = array(
+        ':shopNo' => SHOP_NO,
+        ':orderShopNo' => SHOP_NO,
+        ':activeShopNo' => SHOP_NO,
+        ':reservationFrom' => $reservationFrom,
+    );
+
+    return array(
+        'shopList' => array(
+            'count' => 'SELECT COUNT(*) AS row_count FROM shop_list WHERE shop_no = :shopNo',
+            'rows' => '/* dataset:shopList */ SELECT shop_no, shop_name, tel, adress, eigyo, mail_ad, lev FROM shop_list WHERE shop_no = :shopNo ORDER BY shop_no',
+            'params' => $shopParameters,
+        ),
+        'chargeInfo' => array(
+            'count' => 'SELECT COUNT(*) AS row_count FROM charge_info WHERE flg_show = 1',
+            'rows' => '/* dataset:chargeInfo */ SELECT id, sort, charge_name, charge_name_admin, charge_kin, charge_ara, charge_min, flg_show, flg_web FROM charge_info WHERE flg_show = 1 ORDER BY sort, id',
+            'params' => array(),
+        ),
+        'options' => array(
+            'count' => 'SELECT COUNT(*) AS row_count FROM options',
+            'rows' => '/* dataset:options */ SELECT serial, sort, option_name, kin, girl_pay, lev, lev_admin FROM options ORDER BY sort, serial',
+            'params' => array(),
+        ),
+        'optionsFree' => array(
+            'count' => 'SELECT COUNT(*) AS row_count FROM options_free',
+            'rows' => '/* dataset:optionsFree */ SELECT serial, sort, option_name, kin, lev, lev_admin FROM options_free ORDER BY sort, serial',
+            'params' => array(),
+        ),
+        'cityList' => array(
+            'count' => 'SELECT COUNT(*) AS row_count FROM city_list c WHERE c.serial IN (SELECT DISTINCT s.city_no FROM station_list_2018 s WHERE s.shop_no = :stationShopNo AND s.lev = 1) OR c.serial IN (SELECT DISTINCT o.city_no FROM orders o WHERE o.shop_no = :orderShopNo AND o.deli_date >= :reservationFrom AND o.lev BETWEEN -2 AND 3 AND o.course IN (SELECT id FROM charge_info WHERE flg_show = 1) AND o.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1)) OR c.serial IN (SELECT DISTINCT h.city_no FROM hotel_list h WHERE h.shop_no = :hotelCityShopNo AND h.city_no > 0) OR c.serial IN (SELECT DISTINCT h.city_no2 FROM hotel_list h WHERE h.shop_no = :hotelCity2ShopNo AND h.city_no2 > 0)',
+            'rows' => '/* dataset:cityList */ SELECT c.serial, c.pref_no, c.city_name, c.sort, c.group_no, c.lev FROM city_list c WHERE c.serial IN (SELECT DISTINCT s.city_no FROM station_list_2018 s WHERE s.shop_no = :stationShopNo AND s.lev = 1) OR c.serial IN (SELECT DISTINCT o.city_no FROM orders o WHERE o.shop_no = :orderShopNo AND o.deli_date >= :reservationFrom AND o.lev BETWEEN -2 AND 3 AND o.course IN (SELECT id FROM charge_info WHERE flg_show = 1) AND o.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1)) OR c.serial IN (SELECT DISTINCT h.city_no FROM hotel_list h WHERE h.shop_no = :hotelCityShopNo AND h.city_no > 0) OR c.serial IN (SELECT DISTINCT h.city_no2 FROM hotel_list h WHERE h.shop_no = :hotelCity2ShopNo AND h.city_no2 > 0) ORDER BY c.sort, c.serial',
+            'params' => $areaParameters,
+        ),
+        'stationList' => array(
+            'count' => 'SELECT COUNT(*) AS row_count FROM station_list_2018 s WHERE s.shop_no = :shopNo AND (s.lev = 1 OR s.serial IN (SELECT DISTINCT o.station_no FROM orders o WHERE o.shop_no = :orderShopNo AND o.deli_date >= :reservationFrom AND o.lev BETWEEN -2 AND 3 AND o.course IN (SELECT id FROM charge_info WHERE flg_show = 1) AND o.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1)))',
+            'rows' => '/* dataset:stationList */ SELECT s.serial, s.shop_no, s.pref_no, s.city_no, s.station_name, s.kana, s.sort, s.traffic_kin, s.lev, s.hp_flg FROM station_list_2018 s WHERE s.shop_no = :shopNo AND (s.lev = 1 OR s.serial IN (SELECT DISTINCT o.station_no FROM orders o WHERE o.shop_no = :orderShopNo AND o.deli_date >= :reservationFrom AND o.lev BETWEEN -2 AND 3 AND o.course IN (SELECT id FROM charge_info WHERE flg_show = 1) AND o.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1))) ORDER BY s.sort, s.serial',
+            'params' => $referencedLocationParameters,
+        ),
+        'hotelGroup' => array(
+            'count' => 'SELECT COUNT(*) AS row_count FROM hotel_area ha WHERE ha.shop_no = :shopNo',
+            'rows' => '/* dataset:hotelGroup */ SELECT ha.serial, ha.shop_no, ha.pref_no, ha.area_name, ha.lev FROM hotel_area ha WHERE ha.shop_no = :shopNo ORDER BY ha.serial',
+            'params' => $shopParameters,
+        ),
+        'hotelList' => array(
+            'count' => 'SELECT COUNT(*) AS row_count FROM hotel_list h WHERE h.shop_no = :shopNo AND (h.lev = 1 OR h.serial IN (SELECT DISTINCT o.place_h_no FROM orders o WHERE o.shop_no = :orderShopNo AND o.deli_date >= :reservationFrom AND o.lev BETWEEN -2 AND 3 AND o.course IN (SELECT id FROM charge_info WHERE flg_show = 1) AND o.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1)))',
+            'rows' => '/* dataset:hotelList */ SELECT h.serial, h.area_no, h.shop_no, h.pref_no, h.city_no, h.city_no2, h.hotel_name, h.station, h.address, h.tel, h.price1, h.price2, h.price3, h.price4, h.cm, h.lev FROM hotel_list h WHERE h.shop_no = :shopNo AND (h.lev = 1 OR h.serial IN (SELECT DISTINCT o.place_h_no FROM orders o WHERE o.shop_no = :orderShopNo AND o.deli_date >= :reservationFrom AND o.lev BETWEEN -2 AND 3 AND o.course IN (SELECT id FROM charge_info WHERE flg_show = 1) AND o.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1))) ORDER BY h.serial',
+            'params' => $referencedLocationParameters,
+        ),
+        'girls' => array(
+            'count' => 'SELECT COUNT(*) AS row_count FROM girls g WHERE g.shop_no = :shopNo AND g.lev = 2 AND g.lev_admin != 1',
+            'rows' => '/* dataset:girls */ SELECT g.girl_no, g.shop_no, g.name, g.age, g.regist_date, g.p_height, g.p_bust, g.p_bust_cup, g.p_waist, g.p_hip, g.p_type, g.profile_catch, g.profile_cm, g.profile_new_1, g.profile_new_2, g.profile_new_3, g.profile_new_4, g.profile_new_5, g.profile_new_6, g.photo_1, g.photo_2, g.photo_3, g.photo_4, g.photo_5, g.photo_6, g.photo_7, g.photo_8, g.photo_9, g.photo_10, g.photo_11, g.photo_12, g.photo_13, g.photo_14, g.photo_15, g.access_count, g.options, g.options_free FROM girls g WHERE g.shop_no = :shopNo AND g.lev = 2 AND g.lev_admin != 1 ORDER BY g.girl_no',
+            'params' => $activeCastParameters,
+        ),
+        'yotei' => array(
+            'count' => 'SELECT COUNT(*) AS row_count FROM yotei y WHERE y.shop_no = :shopNo AND y.syu_date BETWEEN :scheduleFrom AND :scheduleTo AND y.work >= 3 AND y.work NOT IN (6, 9) AND y.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1)',
+            'rows' => '/* dataset:yotei */ SELECT y.serial, y.syu_date, y.shop_no, y.girl_no, y.work, y.work1, y.work2, y.work3, y.work4, y.flg_work FROM yotei y WHERE y.shop_no = :shopNo AND y.syu_date BETWEEN :scheduleFrom AND :scheduleTo AND y.work >= 3 AND y.work NOT IN (6, 9) AND y.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1) ORDER BY y.syu_date, y.girl_no, y.serial',
+            'params' => $scheduleParameters,
+        ),
+        'orders' => array(
+            'count' => 'SELECT COUNT(*) AS row_count FROM orders o WHERE o.shop_no = :shopNo AND o.deli_date >= :reservationFrom AND o.lev BETWEEN -2 AND 3 AND o.course IN (SELECT id FROM charge_info WHERE flg_show = 1) AND o.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1)',
+            'rows' => '/* dataset:orders */ SELECT o.serial, o.shop_no, o.girl_no, o.deli_date, o.mem_id, o.time_h, o.time_m, o.course, o.course_time, o.course_kin, o.course2_kin, o.course3_kin, o.simei_kind, o.simei_kin, o.koutu, o.hotel_kin, o.nebiki_kin, o.nebiki_kin_point, o.total, o.ara, o.girl_pay, o.lev, o.nyu_date, o.pay_kind, o.media, o.options, o.options_free, o.pref_no, o.city_no, o.station_no, o.place_h_no FROM orders o WHERE o.shop_no = :shopNo AND o.deli_date >= :reservationFrom AND o.lev BETWEEN -2 AND 3 AND o.course IN (SELECT id FROM charge_info WHERE flg_show = 1) AND o.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1) ORDER BY o.deli_date, o.time_h, o.time_m, o.serial',
+            'params' => $reservationParameters,
+        ),
+        'userVoice' => array(
+            'count' => 'SELECT COUNT(*) AS row_count FROM user_voice v WHERE v.shop_no = :shopNo AND v.lev = 1 AND v.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1)',
+            'rows' => '/* dataset:userVoice */ SELECT v.serial, v.shop_no, v.mem_id, v.girl_no, v.order_no, v.add_date, v.h_lev, v.cm, v.lev FROM user_voice v WHERE v.shop_no = :shopNo AND v.lev = 1 AND v.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1) ORDER BY v.add_date, v.serial',
+            'params' => $reviewParameters,
+        ),
+    );
+}
+
+function canonicalizeDatasets($datasets)
+{
+    return array(
+        'stores' => $datasets['shopList'],
+        'courses' => $datasets['chargeInfo'],
+        'paidOptions' => $datasets['options'],
+        'freeOptions' => $datasets['optionsFree'],
+        'areas' => $datasets['cityList'],
+        'stations' => $datasets['stationList'],
+        'hotelGroups' => $datasets['hotelGroup'],
+        'hotels' => $datasets['hotelList'],
+        'casts' => $datasets['girls'],
+        'schedules' => $datasets['yotei'],
+        'reservations' => $datasets['orders'],
+        'reviews' => $datasets['userVoice'],
+    );
+}
+
+function collectCounts($pdo, $queries)
+{
+    $counts = array();
+    foreach ($queries as $dataset => $query) {
+        $statement = prepareAndExecute($pdo, $query['count'], $query['params']);
+        $counts[$dataset] = (int) $statement->fetchColumn();
+    }
+    return $counts;
+}
+
+function collectRows($pdo, $queries)
+{
+    $rows = array();
+    foreach ($queries as $dataset => $query) {
+        $statement = prepareAndExecute($pdo, $query['rows'], $query['params']);
+        $rows[$dataset] = $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+    return $rows;
+}
+
+function prepareAndExecute($pdo, $sql, $parameters)
+{
+    $statement = $pdo->prepare($sql);
+    foreach ($parameters as $name => $value) {
+        $statement->bindValue($name, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
+    }
+    $statement->execute();
+    return $statement;
+}

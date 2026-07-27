@@ -21,6 +21,7 @@ import { formatInTimeZone, utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz'
 import { isTimeOverlapping } from './utils'
 import { UnauthorizedScheduleOperationError } from './errors'
 import { schedulePermissions } from './permissions'
+import { shouldUseMockFallbacks } from '@/lib/config/feature-flags'
 
 const DEFAULT_TIME_ZONE = 'Asia/Tokyo'
 
@@ -59,7 +60,10 @@ export class CastScheduleUseCases {
       }
 
       // Fetch cast data
-      const castResponse = await fetch('/api/cast', requestOptions)
+      const castResponse = await fetch(
+        `/api/cast?storeId=${encodeURIComponent(filters.storeId)}`,
+        requestOptions
+      )
       if (!castResponse.ok) {
         throw new Error('Failed to fetch cast data')
       }
@@ -67,8 +71,13 @@ export class CastScheduleUseCases {
       const casts = Array.isArray(castPayload?.data) ? castPayload.data : castPayload
 
       // Fetch schedule data for the week
+      const scheduleParams = new URLSearchParams({
+        startDate: weekStartUtc.toISOString(),
+        endDate: weekEndUtc.toISOString(),
+        storeId: filters.storeId,
+      })
       const scheduleResponse = await fetch(
-        `/api/cast-schedule?startDate=${weekStartUtc.toISOString()}&endDate=${weekEndUtc.toISOString()}`,
+        `/api/cast-schedule?${scheduleParams.toString()}`,
         requestOptions
       )
       if (!scheduleResponse.ok) {
@@ -93,7 +102,9 @@ export class CastScheduleUseCases {
       }
     } catch (error) {
       console.error('Error fetching weekly schedule:', error)
-      // Fallback to mock data in case of error
+      if (!shouldUseMockFallbacks()) {
+        throw error
+      }
       return generateMockWeeklySchedule(weekStartLocal)
     }
   }

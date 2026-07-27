@@ -123,7 +123,7 @@ describe('POST /api/upload', () => {
     const data = await response.json()
 
     expect(response.status).toBe(400)
-    expect(data.error).toBe('対応していないファイル形式です（JPEG, PNG, WebPのみ）')
+    expect(data.error).toBe('対応していないファイル形式です（JPEG, PNG, WebP, GIFのみ）')
   })
 
   it('正常にファイルをアップロードできる', async () => {

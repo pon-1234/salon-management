@@ -1,7 +1,7 @@
 /**
  * @design_doc   Designation fee CRUD API
  * @related_to   Designation settings, reservation UI
- * @known_issues Relies on authenticated session for mutations
+ * @known_issues Development fallback data is still supported for reads
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
@@ -11,6 +11,9 @@ import { Prisma } from '@prisma/client'
 import logger from '@/lib/logger'
 import { DEFAULT_DESIGNATION_FEES, normalizeDesignationShares } from '@/lib/designation/fees'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
+import { requireAdmin } from '@/lib/auth/utils'
+import { env } from '@/lib/config/env'
+import { toPublicDesignationFee } from '@/lib/pricing/public'
 
 function normalizeNumber(value: unknown, fallback: number | null = null): number | null {
   if (value === null || value === undefined || value === '') return fallback
@@ -85,7 +88,7 @@ async function requireSession() {
   return session
 }
 
-function buildFallbackResponse(id: string | null, includeInactive: boolean) {
+function buildFallbackResponse(id: string | null, includeInactive: boolean, isAdmin: boolean) {
   const items = includeInactive
     ? DEFAULT_DESIGNATION_FEES
     : DEFAULT_DESIGNATION_FEES.filter((fee) => fee.isActive)
@@ -95,33 +98,40 @@ function buildFallbackResponse(id: string | null, includeInactive: boolean) {
     if (!fee) {
       return NextResponse.json({ error: 'Designation fee not found' }, { status: 404 })
     }
-    return NextResponse.json(fee)
+    return NextResponse.json(isAdmin ? fee : toPublicDesignationFee(fee))
   }
 
-  return NextResponse.json(items.sort((a, b) => a.sortOrder - b.sortOrder))
+  const sorted = items.sort((a, b) => a.sortOrder - b.sortOrder)
+  return NextResponse.json(isAdmin ? sorted : sorted.map(toPublicDesignationFee))
 }
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const id = searchParams.get('id')
   const storeId = await ensureStoreId(await resolveStoreId(request))
-  const includeInactive = searchParams.get('includeInactive') === 'true'
+  const requestedIncludeInactive = searchParams.get('includeInactive') === 'true'
 
   try {
     const session = await requireSession()
     if (session instanceof NextResponse) {
       return session
     }
+    const isAdmin = session.user.role === 'admin'
+    if (isAdmin) {
+      const authError = await requireAdmin({ permissions: 'pricing:read', storeId })
+      if (authError) return authError
+    }
+    const includeInactive = isAdmin && requestedIncludeInactive
 
     if (id) {
       const fee = await db.designationFee.findFirst({
-        where: { id, storeId },
+        where: { id, storeId, ...(isAdmin ? {} : { isActive: true }) },
       })
 
       if (!fee || (!includeInactive && !fee.isActive)) {
         return NextResponse.json({ error: 'Designation fee not found' }, { status: 404 })
       }
-      return NextResponse.json(fee)
+      return NextResponse.json(isAdmin ? fee : toPublicDesignationFee(fee))
     }
 
     const fees = await db.designationFee.findMany({
@@ -132,26 +142,27 @@ export async function GET(request: NextRequest) {
       orderBy: [{ sortOrder: 'asc' }, { price: 'asc' }, { name: 'asc' }],
     })
 
-    if (!fees.length) {
-      return buildFallbackResponse(null, includeInactive)
+    if (!fees.length && env.featureFlags.useMockFallbacks) {
+      return buildFallbackResponse(null, includeInactive, isAdmin)
     }
 
-    return NextResponse.json(fees)
+    return NextResponse.json(isAdmin ? fees : fees.map(toPublicDesignationFee))
   } catch (error) {
     logger.error({ err: error }, 'Failed to fetch designation fees')
-    return buildFallbackResponse(id, includeInactive)
+    if (!env.featureFlags.useMockFallbacks) {
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
+    return buildFallbackResponse(id, false, false)
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await requireSession()
-    if (session instanceof NextResponse) {
-      return session
-    }
+    const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'pricing:create', storeId })
+    if (authError) return authError
 
     const body = await request.json()
-    const storeId = await ensureStoreId(await resolveStoreId(request))
     const payload = buildDesignationPayload(body, 'create')
 
     const result = await db.designationFee.create({
@@ -174,13 +185,11 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const session = await requireSession()
-    if (session instanceof NextResponse) {
-      return session
-    }
+    const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'pricing:update', storeId })
+    if (authError) return authError
 
     const body = await request.json()
-    const storeId = await ensureStoreId(await resolveStoreId(request))
     const { id, ...rest } = body ?? {}
     if (!id || typeof id !== 'string') {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 })
@@ -218,10 +227,8 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-    const session = await requireSession()
-    if (session instanceof NextResponse) {
-      return session
-    }
+    const authError = await requireAdmin({ permissions: 'pricing:delete', storeId })
+    if (authError) return authError
 
     const existingFee = await db.designationFee.findFirst({
       where: { id, storeId },

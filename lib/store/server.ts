@@ -1,3 +1,8 @@
+/**
+ * @design_doc   docs/LEGACY_DATA_MIGRATION_RUNBOOK.md store isolation requirement
+ * @related_to   Store-scoped API routes use resolveStoreId and ensureStoreId
+ * @known_issues The default store remains a compatibility path only when no store is requested
+ */
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 
@@ -18,9 +23,12 @@ async function storeExists(storeId: string): Promise<boolean> {
     select: { id: true },
   })
 
-  const exists = Boolean(store)
-  storeCache.set(storeId, exists)
-  return exists
+  if (store) {
+    storeCache.set(storeId, true)
+    return true
+  }
+
+  return false
 }
 
 function extractStoreCandidate(request: NextRequest): string | null {
@@ -62,23 +70,17 @@ export async function resolveStoreId(request: NextRequest): Promise<string | nul
 
 export async function ensureStoreId(storeId?: string | null): Promise<string> {
   const normalized = storeId?.trim().toLowerCase()
-  if (normalized && (await storeExists(normalized))) {
-    return normalized
+  if (normalized) {
+    if (await storeExists(normalized)) {
+      return normalized
+    }
+
+    throw new Error(`Unknown store: ${normalized}`)
   }
 
-  if (!(await storeExists(DEFAULT_STORE_ID))) {
-    await db.store.upsert({
-      where: { id: DEFAULT_STORE_ID },
-      update: {},
-      create: {
-        id: DEFAULT_STORE_ID,
-        name: '池袋店',
-        displayName: 'サロン池袋店',
-        slug: DEFAULT_STORE_ID,
-      },
-    })
-    storeCache.set(DEFAULT_STORE_ID, true)
+  if (await storeExists(DEFAULT_STORE_ID)) {
+    return DEFAULT_STORE_ID
   }
 
-  return DEFAULT_STORE_ID
+  throw new Error('Default store is not configured')
 }

@@ -10,6 +10,7 @@ import { SuccessResponses } from '@/lib/api/responses'
 import { ErrorResponses, handleApiError } from '@/lib/api/errors'
 import { db } from '@/lib/db'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
+import { shouldUseMockFallbacks } from '@/lib/config/feature-flags'
 
 const stationSchema = z.object({
   id: z.string().optional(),
@@ -24,11 +25,11 @@ const stationSchema = z.object({
 })
 
 export async function GET(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
     const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'settings:read', storeId })
+    if (authError) return authError
+
     const areaId = request.nextUrl.searchParams.get('areaId') ?? undefined
 
     const stations = await db.stationInfo.findMany({
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    if (stations.length === 0) {
+    if (stations.length === 0 && shouldUseMockFallbacks()) {
       const defaultStations = [
         {
           name: '渋谷駅',
@@ -87,17 +88,17 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
     const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'settings:update', storeId })
+    if (authError) return authError
+
     const body = await request.json()
     const validated = stationSchema.parse(body)
 
     if (validated.areaId) {
       const areaExists = await db.areaInfo.findFirst({
-        where: { id: validated.areaId, storeId },
+        where: { id: validated.areaId, storeId, isActive: true },
         select: { id: true },
       })
       if (!areaExists) {
@@ -130,11 +131,11 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
     const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'settings:update', storeId })
+    if (authError) return authError
+
     const body = await request.json()
     const { id, ...rest } = body
 
@@ -154,7 +155,7 @@ export async function PUT(request: NextRequest) {
 
     if (validated.areaId) {
       const areaExists = await db.areaInfo.findFirst({
-        where: { id: validated.areaId, storeId },
+        where: { id: validated.areaId, storeId, isActive: true },
         select: { id: true },
       })
       if (!areaExists) {
@@ -163,7 +164,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const station = await db.stationInfo.update({
-      where: { id },
+      where: { id, storeId },
       data: {
         name: validated.name,
         line: validated.line ?? null,
@@ -190,22 +191,23 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
     const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'settings:update', storeId })
+    if (authError) return authError
+
     const id = request.nextUrl.searchParams.get('id')
 
     if (!id) {
       return ErrorResponses.badRequest('駅IDが必要です')
     }
 
-    const deleted = await db.stationInfo.deleteMany({
+    const deactivated = await db.stationInfo.updateMany({
       where: { id, storeId },
+      data: { isActive: false },
     })
 
-    if (deleted.count === 0) {
+    if (deactivated.count === 0) {
       return ErrorResponses.notFound('駅')
     }
 

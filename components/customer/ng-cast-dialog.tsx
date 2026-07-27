@@ -35,6 +35,7 @@ import {
 import { Cast } from '@/lib/cast/types'
 import { NgCastEntry } from '@/lib/customer/types'
 import { FALLBACK_IMAGE } from '@/lib/cast/mapper'
+import { SafeImage } from '@/components/ui/safe-image'
 
 const ngCastSchema = z.object({
   castId: z.string().min(1, 'キャストを選択してください'),
@@ -149,7 +150,7 @@ export function NgCastDialog({
                         <SelectItem key={cast.id} value={cast.id}>
                           <div className="flex items-center gap-3">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
+                            <SafeImage
                               src={cast.image?.trim() ? cast.image : FALLBACK_IMAGE}
                               alt={cast.name}
                               className="aspect-[7/10] w-8 rounded object-cover"

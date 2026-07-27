@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Daily reservation table and its explicit quick-status action contract
+ * @related_to   ReservationListPage, ReservationDialog
+ * @known_issues None
+ */
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,7 +24,8 @@ interface ReservationListProps {
   limit?: number
   showViewMore?: boolean
   onOpenReservation?: (reservation: ReservationData) => void
-  onMakeModifiable?: (reservationId: string) => void
+  onMakeModifiable?: (reservationId: string) => Promise<void> | void
+  updatingReservationId?: string | null
 }
 
 export function ReservationList({
@@ -28,6 +34,7 @@ export function ReservationList({
   showViewMore = false,
   onOpenReservation,
   onMakeModifiable,
+  updatingReservationId,
 }: ReservationListProps) {
   const displayReservations = limit ? reservations.slice(0, limit) : reservations
 
@@ -157,17 +164,18 @@ export function ReservationList({
                 <TableCell>
                   <div className="flex flex-wrap items-center gap-2">
                     {renderStatusBadge(reservation.status, reservation.bookingStatus)}
-                    {reservation.status === 'confirmed' && (
+                    {reservation.status === 'confirmed' && onMakeModifiable && (
                       <Button
                         size="sm"
                         variant="outline"
                         className="h-6 whitespace-nowrap px-2 text-xs"
                         onClick={(e) => {
                           e.stopPropagation()
-                          onMakeModifiable?.(reservation.id)
+                          void onMakeModifiable(reservation.id)
                         }}
+                        disabled={Boolean(updatingReservationId)}
                       >
-                        修正可能にする
+                        {updatingReservationId === reservation.id ? '変更中…' : '修正可能にする'}
                       </Button>
                     )}
                   </div>

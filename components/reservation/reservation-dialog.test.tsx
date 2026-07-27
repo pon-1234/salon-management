@@ -3,8 +3,8 @@
  * @related_to   ReservationDialog component, reservation editing features
  * @known_issues None currently
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { ReservationDialog } from './reservation-dialog'
 import { ReservationData } from '@/lib/types/reservation'
 
@@ -64,6 +64,69 @@ vi.mock('next-auth/react', () => ({
   }),
 }))
 
+vi.mock('@/hooks/use-pricing', () => {
+  const pricing = {
+    coursePrices: [
+      {
+        id: 'course-1',
+        name: 'スタンダードコース',
+        duration: 120,
+        price: 13000,
+        isActive: true,
+        enableWebBooking: true,
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
+      },
+    ],
+    optionPrices: [
+      {
+        id: 'option-neck',
+        name: 'ネックトリートメント',
+        price: 1500,
+        duration: 10,
+        category: 'relaxation',
+        displayOrder: 1,
+        isActive: true,
+        visibility: 'public',
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
+      },
+      {
+        id: 'option-stone',
+        name: 'ホットストーン',
+        price: 1500,
+        duration: 10,
+        category: 'body-care',
+        displayOrder: 2,
+        isActive: true,
+        visibility: 'public',
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
+      },
+    ],
+    additionalFees: [],
+    courses: [],
+    options: [],
+    loading: false,
+    error: null,
+    refresh: vi.fn(),
+  }
+
+  return { usePricing: () => pricing }
+})
+
+vi.mock('@/hooks/use-locations', () => {
+  const locations = {
+    areas: [{ id: 'area-1', name: '渋谷エリア' }],
+    stations: [{ id: 'station-1', name: '渋谷駅', areaId: 'area-1' }],
+    loading: false,
+    error: null,
+    refresh: vi.fn(),
+  }
+
+  return { useLocations: () => locations }
+})
+
 describe('ReservationDialog Edit Mode', () => {
   const mockReservation: ReservationData = {
     id: '1',
@@ -74,6 +137,7 @@ describe('ReservationDialog Edit Mode', () => {
     email: 'tanaka@example.com',
     points: 100,
     bookingStatus: 'confirmed',
+    status: 'confirmed',
     staffConfirmation: '確認済み',
     customerConfirmation: '確認済み',
     prefecture: '東京都',
@@ -112,12 +176,49 @@ describe('ReservationDialog Edit Mode', () => {
     vi.clearAllMocks()
   })
 
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  it('connects the dialog description without a Radix accessibility warning', async () => {
+    const warningSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+    try {
+      render(
+        <ReservationDialog
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          reservation={mockReservation}
+          onSave={mockOnSave}
+        />
+      )
+
+      await act(async () => undefined)
+
+      const dialog = screen.getByRole('dialog')
+      const descriptionId = dialog.getAttribute('aria-describedby')
+      expect(descriptionId).toBeTruthy()
+      expect(document.getElementById(descriptionId!)).toHaveTextContent(
+        '予約の詳細情報を表示し、必要に応じて編集できます。'
+      )
+      expect(
+        warningSpy.mock.calls.some(([message]) =>
+          String(message).includes('Missing `Description` or `aria-describedby={undefined}`')
+        )
+      ).toBe(false)
+    } finally {
+      warningSpy.mockRestore()
+    }
+  })
+
   it('should toggle edit mode when edit button is clicked', () => {
     render(
       <ReservationDialog
         open={true}
         onOpenChange={mockOnOpenChange}
         reservation={mockReservation}
+        onSave={mockOnSave}
       />
     )
 
@@ -135,12 +236,13 @@ describe('ReservationDialog Edit Mode', () => {
     expect(cancelButtons.length).toBeGreaterThan(0)
   })
 
-  it.skip('should display editable fields in edit mode', () => {
+  it('should display editable fields in edit mode', async () => {
     render(
       <ReservationDialog
         open={true}
         onOpenChange={mockOnOpenChange}
         reservation={mockReservation}
+        onSave={mockOnSave}
       />
     )
 
@@ -148,37 +250,40 @@ describe('ReservationDialog Edit Mode', () => {
     fireEvent.click(screen.getByRole('button', { name: /編集/i }))
 
     // Check for editable date/time inputs in overview tab
-    expect(screen.getByLabelText(/予約日/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/^日付$/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/開始時間/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/終了時間/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/終了時間/i)).toHaveAttribute('readonly')
 
-    // Check for editable select fields
+    // Check the current cast and visit-location fields
     expect(screen.getByLabelText(/キャスト/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/^場所$/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/ホテル名/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/訪問先メモ/i)).toBeInTheDocument()
 
     // Switch to details tab to check other fields
-    fireEvent.click(screen.getByRole('tab', { name: /詳細/i }))
+    fireEvent.mouseDown(screen.getByRole('tab', { name: /詳細/i }), {
+      button: 0,
+      ctrlKey: false,
+    })
+    expect(await screen.findByText('予約詳細')).toBeInTheDocument()
 
     // Check for editable options checkboxes
     expect(screen.getByLabelText(/ネックトリートメント/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/ホットストーン/i)).toBeInTheDocument()
 
     // Check for editable memo textarea
-    const memoTextarea = screen.getByPlaceholderText(/メモを入力/i)
+    const memoTextarea = screen.getByPlaceholderText(/予約に関する詳細メモを入力/i)
     expect(memoTextarea).not.toBeDisabled()
   })
 
-  it('should show status change buttons in edit mode', async () => {
+  it('should show status change buttons in view mode', async () => {
     render(
       <ReservationDialog
         open={true}
         onOpenChange={mockOnOpenChange}
         reservation={mockReservation}
+        onSave={mockOnSave}
       />
     )
-
-    // Enter edit mode
-    fireEvent.click(screen.getByRole('button', { name: /編集/i }))
 
     const statusTrigger = screen.getByRole('button', { name: /ステータス変更/i })
     fireEvent.pointerDown(statusTrigger, { button: 0 })
@@ -203,9 +308,6 @@ describe('ReservationDialog Edit Mode', () => {
       />
     )
 
-    // Enter edit mode
-    fireEvent.click(screen.getByRole('button', { name: /編集/i }))
-
     const statusTrigger = screen.getByRole('button', { name: /ステータス変更/i })
     fireEvent.pointerDown(statusTrigger, { button: 0 })
     fireEvent.keyDown(statusTrigger, { key: 'Enter' })
@@ -225,37 +327,14 @@ describe('ReservationDialog Edit Mode', () => {
 
     // onSave should be called with updated status
     await waitFor(() => {
-      expect(mockOnSave).toHaveBeenCalledWith(
-        mockReservation.id,
-        expect.objectContaining({ status: 'cancelled', cancellationSource: 'customer' })
-      )
+      expect(mockOnSave).toHaveBeenCalledWith(mockReservation.id, {
+        status: 'cancelled',
+        cancellationSource: 'customer',
+      })
     })
   })
 
-  it.skip('should show modifiable button for confirmed reservations', async () => {
-    render(
-      <ReservationDialog
-        open={true}
-        onOpenChange={mockOnOpenChange}
-        reservation={mockReservation}
-      />
-    )
-
-    // Switch to details tab
-    const detailsTab = screen.getByRole('tab', { name: /詳細/i })
-    fireEvent.click(detailsTab)
-
-    // Wait for tab content to change and button to appear
-    await waitFor(
-      () => {
-        const modifyButton = screen.getByRole('button', { name: /予約修正/i })
-        expect(modifyButton).toBeInTheDocument()
-      },
-      { timeout: 3000 }
-    )
-  })
-
-  it.skip('should change status to modifiable when modify button is clicked', async () => {
+  it('should offer the modifiable status for confirmed reservations', async () => {
     render(
       <ReservationDialog
         open={true}
@@ -265,41 +344,68 @@ describe('ReservationDialog Edit Mode', () => {
       />
     )
 
-    // Switch to details tab
-    fireEvent.click(screen.getByRole('tab', { name: /詳細/i }))
+    const statusTrigger = screen.getByRole('button', { name: /ステータス変更/i })
+    fireEvent.pointerDown(statusTrigger, { button: 0 })
+    fireEvent.keyDown(statusTrigger, { key: 'Enter' })
 
-    // Wait for tab content to render and click modify button
-    await waitFor(
-      () => {
-        const modifyButton = screen.getByRole('button', { name: /予約修正/i })
-        fireEvent.click(modifyButton)
-      },
-      { timeout: 3000 }
+    expect(await screen.findByRole('menuitem', { name: /修正待ち/i })).toBeInTheDocument()
+  })
+
+  it('changes only the status when the modifiable option is selected', async () => {
+    render(
+      <ReservationDialog
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        reservation={mockReservation}
+        onSave={mockOnSave}
+      />
     )
 
-    // Check for confirmation dialog
-    await waitFor(() => {
-      expect(screen.getByText(/予約を修正可能状態にしますか？/i)).toBeInTheDocument()
-    })
+    const statusTrigger = screen.getByRole('button', { name: /ステータス変更/i })
+    fireEvent.pointerDown(statusTrigger, { button: 0 })
+    fireEvent.keyDown(statusTrigger, { key: 'Enter' })
+    fireEvent.click(await screen.findByRole('menuitem', { name: /修正待ち/i }))
 
-    // Confirm the change
-    fireEvent.click(screen.getByRole('button', { name: /修正可能にする/i }))
-
-    // Should call onSave with modifiable status
     await waitFor(() => {
-      expect(mockOnSave).toHaveBeenCalledWith(
-        expect.objectContaining({
-          bookingStatus: 'modifiable',
-          modifiableUntil: expect.any(Date),
-        })
-      )
+      expect(mockOnSave).toHaveBeenCalledWith(mockReservation.id, {
+        status: 'modifiable',
+      })
     })
   })
 
-  it.skip('should show time limit warning when reservation is modifiable', () => {
+  it('disables status changes while reservation edits are unsaved', async () => {
+    render(
+      <ReservationDialog
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        reservation={mockReservation}
+        onSave={mockOnSave}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /編集/i }))
+
+    expect(screen.getByRole('button', { name: /ステータス変更/i })).toBeDisabled()
+  })
+
+  it('disables editing and status changes without a persistence callback', () => {
+    render(
+      <ReservationDialog
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        reservation={mockReservation}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: /編集/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /ステータス変更/i })).toBeDisabled()
+  })
+
+  it('should show time limit warning when reservation is modifiable', () => {
     const modifiableReservation = {
       ...mockReservation,
       bookingStatus: 'modifiable',
+      status: 'modifiable',
       modifiableUntil: new Date(Date.now() + 25 * 60 * 1000), // 25 minutes from now
     }
 
@@ -311,16 +417,17 @@ describe('ReservationDialog Edit Mode', () => {
       />
     )
 
-    // Check for modifiable status warning
-    expect(screen.getByText(/修正可能状態/i)).toBeInTheDocument()
-    expect(screen.getByText(/修正可能/i)).toBeInTheDocument()
-    expect(screen.getByText(/残り時間/i)).toBeInTheDocument()
+    expect(screen.getByText('修正可能')).toBeInTheDocument()
+    expect(screen.getByText(/修正可能残り時間:/i)).toBeInTheDocument()
   })
 
-  it.skip('should automatically revert to confirmed status when time expires', async () => {
+  it('should remove the time limit warning when the deadline expires', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2030-01-20T14:00:00'))
     const modifiableReservation = {
       ...mockReservation,
       bookingStatus: 'modifiable',
+      status: 'modifiable',
       modifiableUntil: new Date(Date.now() + 1000), // 1 second from now
     }
 
@@ -329,27 +436,19 @@ describe('ReservationDialog Edit Mode', () => {
         open={true}
         onOpenChange={mockOnOpenChange}
         reservation={modifiableReservation}
-        onSave={mockOnSave}
       />
     )
 
-    // Initially should show modifiable status
-    expect(screen.getByText(/修正可能状態/i)).toBeInTheDocument()
+    expect(screen.getByText(/修正可能残り時間:/i)).toBeInTheDocument()
 
-    // Wait for timer to expire
-    await waitFor(
-      () => {
-        expect(mockOnSave).toHaveBeenCalledWith(
-          expect.objectContaining({
-            bookingStatus: 'confirmed',
-          })
-        )
-      },
-      { timeout: 2000 }
-    )
+    act(() => {
+      vi.advanceTimersByTime(1000)
+    })
+
+    expect(screen.queryByText(/修正可能残り時間:/i)).not.toBeInTheDocument()
   })
 
-  it.skip('should validate form inputs before saving', async () => {
+  it('should validate form inputs before saving', async () => {
     render(
       <ReservationDialog
         open={true}
@@ -362,28 +461,330 @@ describe('ReservationDialog Edit Mode', () => {
     // Enter edit mode
     fireEvent.click(screen.getByRole('button', { name: /編集/i }))
 
-    // Clear required field (e.g., end time)
-    const endTimeInput = screen.getByLabelText(/終了時間/i)
-    fireEvent.change(endTimeInput, { target: { value: '' } })
+    // Clear a required editable field. End time is derived from the selected course duration.
+    const dateInput = screen.getByLabelText(/^日付$/i)
+    fireEvent.change(dateInput, { target: { value: '' } })
 
     // Try to save
     fireEvent.click(screen.getByRole('button', { name: /保存/i }))
 
     // Should show validation error
     await waitFor(() => {
-      expect(screen.getByText(/終了時間は必須です/i)).toBeInTheDocument()
+      expect(screen.getByText(/予約日と開始時間を入力してください/i)).toBeInTheDocument()
     })
 
     // onSave should not be called
     expect(mockOnSave).not.toHaveBeenCalled()
   })
 
-  it.skip('should exit edit mode when cancel is clicked', () => {
+  it('shows redeemed points in the total without sending client-derived revenue fields', async () => {
+    const pointsReservation: ReservationData = {
+      ...mockReservation,
+      serviceId: 'course-1',
+      designation: 'なし',
+      designationFee: '0',
+      options: {},
+      price: 12_000,
+      totalPayment: 12_000,
+      pointsUsed: 1_000,
+    }
+
+    render(
+      <ReservationDialog
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        reservation={pointsReservation}
+        onSave={mockOnSave}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /編集/i }))
+    expect(screen.getByLabelText('総額')).toHaveValue(12_000)
+    fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalled()
+    })
+    const savedPayload = mockOnSave.mock.calls[0]?.[1]
+    expect(savedPayload).not.toHaveProperty('price')
+    expect(savedPayload).not.toHaveProperty('storeRevenue')
+    expect(savedPayload).not.toHaveProperty('staffRevenue')
+    expect(savedPayload).not.toHaveProperty('welfareExpense')
+  })
+
+  it('sends an explicit null designation when no designation is selected', async () => {
+    const undesignatedReservation: ReservationData = {
+      ...mockReservation,
+      serviceId: 'course-1',
+      designation: 'なし',
+      designationFee: '0円',
+      options: {},
+      price: 13_000,
+      totalPayment: 13_000,
+    }
+
+    render(
+      <ReservationDialog
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        reservation={undesignatedReservation}
+        onSave={mockOnSave}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /編集/i }))
+    fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalledWith(
+        undesignatedReservation.id,
+        expect.objectContaining({ designationType: null })
+      )
+    })
+  })
+
+  it('preserves an existing dynamic designation when it is not changed', async () => {
+    const legacyDesignationReservation: ReservationData = {
+      ...mockReservation,
+      serviceId: 'course-1',
+      designation: 'panel',
+      designationType: 'panel',
+      designationFee: '0円',
+      options: {},
+      price: 13_000,
+      totalPayment: 13_000,
+    }
+
+    render(
+      <ReservationDialog
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        reservation={legacyDesignationReservation}
+        onSave={mockOnSave}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /編集/i }))
+    fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalledWith(
+        legacyDesignationReservation.id,
+        expect.objectContaining({ designationType: 'panel' })
+      )
+    })
+  })
+
+  it.each([
+    {
+      label: 'legacy regular type',
+      designationType: 'regular',
+      designation: '本指名',
+      designationFee: '0円',
+    },
+    {
+      label: 'legacy none type',
+      designationType: 'none',
+      designation: 'フリー',
+      designationFee: '0円',
+    },
+    {
+      label: 'historical designation fee',
+      designationType: '本指名',
+      designation: '本指名',
+      designationFee: '1,000円',
+    },
+  ])(
+    'does not rewrite an unchanged $label from the current designation master',
+    async ({ designationType, designation, designationFee }) => {
+      const existingDesignationReservation: ReservationData = {
+        ...mockReservation,
+        serviceId: 'course-1',
+        designationType,
+        designation,
+        designationFee,
+        options: {},
+      }
+
+      render(
+        <ReservationDialog
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          reservation={existingDesignationReservation}
+          onSave={mockOnSave}
+        />
+      )
+
+      fireEvent.click(screen.getByRole('button', { name: /編集/i }))
+      fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+
+      await waitFor(() => expect(mockOnSave).toHaveBeenCalled())
+      const savedPayload = mockOnSave.mock.calls[0]?.[1]
+      expect(savedPayload).toEqual(
+        expect.objectContaining({
+          designationType,
+          designationFee: Number(designationFee.replace(/[^0-9.-]/g, '')),
+        })
+      )
+    }
+  )
+
+  it('preserves a legacy course and its original end time when unrelated fields are saved', async () => {
+    const legacyCourseReservation: ReservationData = {
+      ...mockReservation,
+      serviceId: 'legacy-course-10',
+      course: '旧イベント90分',
+      options: {},
+      paymentMethod: 'cash',
+      startTime: new Date('2024-01-20T14:00:00'),
+      endTime: new Date('2024-01-20T15:30:00'),
+    }
+
+    render(
+      <ReservationDialog
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        reservation={legacyCourseReservation}
+        onSave={mockOnSave}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /編集/i }))
+    fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+
+    await waitFor(() => expect(mockOnSave).toHaveBeenCalled())
+    const savedPayload = mockOnSave.mock.calls[0]?.[1]
+    expect(savedPayload).not.toHaveProperty('courseId')
+    expect(savedPayload).not.toHaveProperty('paymentMethod')
+    expect(savedPayload.endTime).toEqual(legacyCourseReservation.endTime)
+  })
+
+  it('preserves an existing station and transportation fee when it is absent from current options', async () => {
+    const legacyStationReservation: ReservationData = {
+      ...mockReservation,
+      serviceId: 'course-1',
+      options: {},
+      areaId: 'legacy-area',
+      stationId: 'legacy-station',
+      stationName: '旧登録駅',
+      transportationFee: 2_000,
+    }
+
+    render(
+      <ReservationDialog
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        reservation={legacyStationReservation}
+        onSave={mockOnSave}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /編集/i }))
+    fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+
+    await waitFor(() => expect(mockOnSave).toHaveBeenCalled())
+    expect(mockOnSave).toHaveBeenCalledWith(
+      legacyStationReservation.id,
+      expect.objectContaining({ stationId: 'legacy-station', transportationFee: 2_000 })
+    )
+  })
+
+  it('clamps a negative additional fee before saving', async () => {
+    render(
+      <ReservationDialog
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        reservation={{ ...mockReservation, serviceId: 'course-1', options: {} }}
+        onSave={mockOnSave}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /編集/i }))
+    const additionalFeeInput = screen.getByLabelText('追加料金')
+    fireEvent.change(additionalFeeInput, { target: { value: '-5000' } })
+
+    expect(additionalFeeInput).toHaveValue(0)
+    fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+    await waitFor(() => expect(mockOnSave).toHaveBeenCalled())
+    expect(mockOnSave.mock.calls[0]?.[1]).toEqual(expect.objectContaining({ additionalFee: 0 }))
+  })
+
+  it('does not send an overdue entry reminder until the operator clicks the button', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: vi.fn().mockResolvedValue({ data: [] }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const overdueReservation: ReservationData = {
+      ...mockReservation,
+      entryNotifiedAt: new Date(Date.now() - 11 * 60 * 1000),
+      entryConfirmedAt: null,
+      entryReminderSentAt: null,
+    }
+
+    render(
+      <ReservationDialog
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        reservation={overdueReservation}
+        onSave={mockOnSave}
+      />
+    )
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled())
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(
+      fetchMock.mock.calls.some(([, init]) => (init as RequestInit | undefined)?.method === 'POST')
+    ).toBe(false)
+  })
+
+  it('resets a manually edited LINE message when a different reservation is opened', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: vi.fn().mockResolvedValue({ data: [] }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const { rerender } = render(
+      <ReservationDialog
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        reservation={mockReservation}
+        onSave={mockOnSave}
+      />
+    )
+
+    const lineMessageInput = await screen.findByLabelText('メッセージ本文')
+    await waitFor(() =>
+      expect((lineMessageInput as HTMLTextAreaElement).value).toContain('田中太郎')
+    )
+    fireEvent.change(lineMessageInput, { target: { value: '前の予約だけの個人情報' } })
+
+    rerender(
+      <ReservationDialog
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        reservation={{ ...mockReservation, id: '2', customerName: '佐藤次郎' }}
+        onSave={mockOnSave}
+      />
+    )
+
+    await waitFor(() =>
+      expect((lineMessageInput as HTMLTextAreaElement).value).toContain('佐藤次郎')
+    )
+    expect((lineMessageInput as HTMLTextAreaElement).value).not.toContain('前の予約だけの個人情報')
+  })
+
+  it('should exit edit mode when cancel is clicked', () => {
     render(
       <ReservationDialog
         open={true}
         onOpenChange={mockOnOpenChange}
         reservation={mockReservation}
+        onSave={mockOnSave}
       />
     )
 

@@ -48,7 +48,7 @@ describe('GET /api/course', () => {
     vi.clearAllMocks()
     vi.mocked(db.$transaction).mockImplementation(async (cb: any) => cb(db as any))
     vi.mocked(getServerSession).mockResolvedValue({
-      user: { id: 'admin1', role: 'admin' },
+      user: { id: 'admin1', role: 'admin', permissions: ['*'] },
     } as any)
   })
 
@@ -59,7 +59,12 @@ describe('GET /api/course', () => {
       duration: 60,
       price: 10000,
       description: 'Standard 60-minute session',
-      reservations: [],
+      reservations: [
+        {
+          customer: { id: 'customer-1', password: 'course-customer-secret' },
+          cast: { id: 'cast-1', passwordHash: 'course-cast-secret' },
+        },
+      ],
     }
 
     vi.mocked(db.coursePrice.findFirst).mockResolvedValueOnce(mockCourse as any)
@@ -74,6 +79,7 @@ describe('GET /api/course', () => {
     expect(response.status).toBe(200)
     expect(data.id).toBe('course1')
     expect(data.name).toBe('60-minute Course')
+    expect(JSON.stringify(data)).not.toMatch(/course-customer-secret|course-cast-secret/)
     expect(vi.mocked(db.coursePrice.findFirst)).toHaveBeenCalledWith({
       where: { id: 'course1', storeId: 'ikebukuro' },
       include: {
@@ -91,7 +97,7 @@ describe('GET /api/course', () => {
     vi.mocked(db.coursePrice.findFirst).mockResolvedValueOnce(null)
 
     vi.mocked(getServerSession).mockResolvedValueOnce({
-      user: { id: 'admin1', role: 'admin' },
+      user: { id: 'admin1', role: 'admin', permissions: ['*'] },
     } as any)
 
     const request = new NextRequest('http://localhost:3000/api/course?id=non-existent', {
@@ -103,6 +109,24 @@ describe('GET /api/course', () => {
 
     expect(response.status).toBe(404)
     expect(data.error).toBe('Course not found')
+  })
+
+  it('should reject an admin who is not assigned to the requested store', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: {
+        id: 'admin1',
+        role: 'admin',
+        permissions: ['pricing:read'],
+        storeIds: ['other-store'],
+      },
+    } as any)
+
+    const response = await GET(
+      new NextRequest('http://localhost:3000/api/course?storeId=ikebukuro')
+    )
+
+    expect(response.status).toBe(403)
+    expect(db.coursePrice.findMany).not.toHaveBeenCalled()
   })
 
   it('should get all courses sorted by duration', async () => {
@@ -162,6 +186,8 @@ describe('GET /api/course', () => {
       duration: 60,
       price: 10000,
       description: 'desc',
+      storeShare: 6000,
+      castShare: 4000,
       reservations: [
         {
           customer: { id: 'cust1' },
@@ -184,7 +210,64 @@ describe('GET /api/course', () => {
 
     expect(response.status).toBe(200)
     expect(data.reservations).toBeUndefined()
+    expect(data.storeShare).toBeUndefined()
+    expect(data.castShare).toBeUndefined()
     expect(data.id).toBe('course1')
+    expect(db.coursePrice.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'course1',
+          storeId: 'ikebukuro',
+          isActive: true,
+          archivedAt: null,
+          enableWebBooking: true,
+        },
+      })
+    )
+  })
+
+  it('returns only public course fields to unauthenticated callers', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce(null as any)
+    vi.mocked(db.coursePrice.findMany).mockResolvedValueOnce([
+      {
+        id: 'course1',
+        storeId: 'ikebukuro',
+        name: 'Course',
+        duration: 60,
+        price: 10000,
+        description: 'desc',
+        enableWebBooking: true,
+        isActive: true,
+        archivedAt: null,
+        storeShare: 6000,
+        castShare: 4000,
+        reservations: [],
+      },
+    ] as any)
+
+    const response = await GET(new NextRequest('http://localhost:3000/api/course'))
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data).toEqual([
+      {
+        id: 'course1',
+        name: 'Course',
+        duration: 60,
+        price: 10000,
+        description: 'desc',
+      },
+    ])
+    expect(db.coursePrice.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          isActive: true,
+          archivedAt: null,
+          enableWebBooking: true,
+          storeId: 'ikebukuro',
+        },
+      })
+    )
   })
 
   it('should allow unauthenticated public course listing', async () => {
@@ -208,7 +291,7 @@ describe('POST /api/course', () => {
     vi.clearAllMocks()
     vi.mocked(db.$transaction).mockImplementation(async (cb: any) => cb(db as any))
     vi.mocked(getServerSession).mockResolvedValue({
-      user: { id: 'admin1', role: 'admin' },
+      user: { id: 'admin1', role: 'admin', permissions: ['*'] },
     } as any)
   })
 
@@ -334,6 +417,27 @@ describe('POST /api/course', () => {
     expect(data.error).toBe('Forbidden')
   })
 
+  it('should reject an admin without course creation permission', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: {
+        id: 'admin1',
+        role: 'admin',
+        permissions: ['pricing:read'],
+        storeIds: ['ikebukuro'],
+      },
+    } as any)
+
+    const response = await POST(
+      new NextRequest('http://localhost:3000/api/course?storeId=ikebukuro', {
+        method: 'POST',
+        body: JSON.stringify({ name: 'Course', duration: 60, price: 10000 }),
+      })
+    )
+
+    expect(response.status).toBe(403)
+    expect(db.coursePrice.create).not.toHaveBeenCalled()
+  })
+
   it('should require authentication', async () => {
     vi.mocked(getServerSession).mockResolvedValueOnce(null as any)
 
@@ -359,7 +463,7 @@ describe('PUT /api/course', () => {
     vi.clearAllMocks()
     vi.mocked(db.$transaction).mockImplementation(async (cb: any) => cb(db as any))
     vi.mocked(getServerSession).mockResolvedValue({
-      user: { id: 'admin1', role: 'admin' },
+      user: { id: 'admin1', role: 'admin', permissions: ['*'] },
     } as any)
   })
 
@@ -501,7 +605,7 @@ describe('DELETE /api/course', () => {
     vi.clearAllMocks()
     vi.mocked(db.$transaction).mockImplementation(async (cb: any) => cb(db as any))
     vi.mocked(getServerSession).mockResolvedValue({
-      user: { id: 'admin1', role: 'admin' },
+      user: { id: 'admin1', role: 'admin', permissions: ['*'] },
     } as any)
   })
 
@@ -541,7 +645,7 @@ describe('DELETE /api/course', () => {
     vi.mocked(db.coursePrice.findFirst).mockResolvedValueOnce(null)
 
     vi.mocked(getServerSession).mockResolvedValueOnce({
-      user: { id: 'admin1', role: 'admin' },
+      user: { id: 'admin1', role: 'admin', permissions: ['*'] },
     } as any)
 
     const request = new NextRequest('http://localhost:3000/api/course?id=non-existent', {

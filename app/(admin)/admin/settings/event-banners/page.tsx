@@ -16,13 +16,16 @@ import {
 } from 'react'
 import { PageHeader } from '@/components/admin/page-header'
 import { Header } from '@/components/header'
+import { useStore } from '@/contexts/store-context'
 import { toast } from '@/hooks/use-toast'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { SafeImage } from '@/components/ui/safe-image'
 import {
   ArrowLeft,
   ArrowUp,
@@ -86,6 +89,7 @@ function mapBanner(payload: any, index: number): BannerFormState {
 }
 
 export default function EventBannersPage() {
+  const { currentStore } = useStore()
   const [banners, setBanners] = useState<BannerFormState[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -97,7 +101,9 @@ export default function EventBannersPage() {
   useEffect(() => {
     const fetchBanners = async () => {
       try {
-        const response = await fetch('/api/settings/event-banners')
+        const response = await fetch(
+          buildStoreScopedEndpoint('/api/settings/event-banners', currentStore.id)
+        )
         if (!response.ok) {
           throw new Error('バナー情報の取得に失敗しました')
         }
@@ -117,7 +123,7 @@ export default function EventBannersPage() {
     }
 
     fetchBanners()
-  }, [])
+  }, [currentStore.id])
 
   const updateBanner = (index: number, changes: Partial<BannerFormState>) => {
     setBanners((prev) =>
@@ -244,11 +250,14 @@ export default function EventBannersPage() {
         })),
       }
 
-      const response = await fetch('/api/settings/event-banners', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
+      const response = await fetch(
+        buildStoreScopedEndpoint('/api/settings/event-banners', currentStore.id),
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }
+      )
 
       if (!response.ok) {
         const errorPayload = await response.json().catch(() => null)
@@ -591,7 +600,11 @@ function ImageField({
         <div className="flex flex-col items-center justify-center rounded-md border border-dashed bg-gray-50 p-3">
           {value ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={value} alt={label} className="max-h-32 w-full rounded-md object-cover" />
+            <SafeImage
+              src={value}
+              alt={label}
+              className="max-h-32 w-full rounded-md object-cover"
+            />
           ) : (
             <div className="flex flex-col items-center gap-2 text-xs text-gray-400">
               <ImageIcon className="h-6 w-6" />

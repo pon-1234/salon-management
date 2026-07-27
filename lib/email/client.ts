@@ -1,7 +1,7 @@
 /**
  * @design_doc   Email client for sending notifications
  * @related_to   notification/service.ts
- * @known_issues Mock implementation - replace with actual email service
+ * @known_issues Provider health is configuration based and does not make a live Resend request
  */
 import { Resend } from 'resend'
 import { env } from '@/lib/config/env'
@@ -22,9 +22,20 @@ export const emailClient = {
     data?: any // 同上
     body?: string
   }): Promise<{ success: boolean; id?: string; error?: string }> {
+    if (env.outbound.deliveryMode === 'disabled') {
+      logger.info('Email delivery skipped because outbound is disabled')
+      return { success: false, error: 'Outbound delivery is disabled.' }
+    }
+
     if (!resendClient || !env.resend.apiKey) {
-      logger.error('RESEND_API_KEY is not set. Skipping email sending.')
-      // 開発環境でキーがない場合でもアプリケーション全体が停止しないようにする
+      if (env.notification.mockEnabled) {
+        logger.info('Email mock delivery completed')
+        return {
+          success: true,
+          id: `email-mock-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+        }
+      }
+      logger.error('Email provider is not configured.')
       return { success: false, error: 'RESEND_API_KEY is not configured.' }
     }
 
@@ -39,8 +50,8 @@ export const emailClient = {
       })
 
       if (response.error) {
-        logger.error('Failed to send email:', response.error)
-        return { success: false, error: response.error.message }
+        logger.error({ provider: 'resend' }, 'Email provider rejected the request')
+        return { success: false, error: 'Email provider rejected the request.' }
       }
 
       return {
@@ -48,9 +59,11 @@ export const emailClient = {
         id: response.data?.id,
       }
     } catch (error) {
-      logger.error('An exception occurred while sending email:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      return { success: false, error: errorMessage }
+      logger.error(
+        { provider: 'resend', errorType: error instanceof Error ? error.name : 'UnknownError' },
+        'Email provider request failed'
+      )
+      return { success: false, error: 'Email provider request failed.' }
     }
   },
 }

@@ -1,13 +1,16 @@
+/**
+ * @design_doc   Public schedule availability exposes only anonymous blocked time ranges
+ * @related_to   StoreScheduleContent and CastTimelineModal consume these public availability DTOs
+ * @known_issues Exact blocked start/end times remain public because slot availability requires them
+ */
 import { addDays, startOfDay } from 'date-fns'
 import { format as formatDateFns, formatISO } from 'date-fns'
 import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz'
 import { db } from '@/lib/db'
 
 export interface PublicReservationBlock {
-  id: string
   startTime: string
   endTime: string
-  status: string
 }
 
 export interface PublicCastSchedule {
@@ -119,107 +122,98 @@ async function fetchStoreScheduleDays(
   storeId: string,
   { startDate, days = 7 }: StoreScheduleOptions
 ): Promise<PublicScheduleDay[]> {
-  try {
-    const referenceDate = startDate ? parseDateInput(startDate) : new Date()
-    const normalizedDays = Math.max(1, Math.floor(days))
-    const start = startOfDayInTimeZone(referenceDate, DEFAULT_TIME_ZONE)
-    const rangeEndSource = addDays(referenceDate, normalizedDays)
-    const end = startOfDayInTimeZone(rangeEndSource, DEFAULT_TIME_ZONE)
+  const referenceDate = startDate ? parseDateInput(startDate) : new Date()
+  const normalizedDays = Math.max(1, Math.floor(days))
+  const start = startOfDayInTimeZone(referenceDate, DEFAULT_TIME_ZONE)
+  const rangeEndSource = addDays(referenceDate, normalizedDays)
+  const end = startOfDayInTimeZone(rangeEndSource, DEFAULT_TIME_ZONE)
 
-    const schedules = await db.castSchedule.findMany({
-      where: {
-        cast: { storeId },
-        date: {
-          gte: start,
-          lt: end,
-        },
-        isAvailable: true,
+  const schedules = await db.castSchedule.findMany({
+    where: {
+      cast: { storeId },
+      date: {
+        gte: start,
+        lt: end,
       },
-      include: {
-        cast: true,
+      isAvailable: true,
+    },
+    include: {
+      cast: true,
+    },
+    orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
+  })
+
+  const reservations = await db.reservation.findMany({
+    where: {
+      storeId,
+      status: {
+        notIn: ['cancelled'],
       },
-      orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
-    })
-
-    const reservations = await db.reservation.findMany({
-      where: {
-        storeId,
-        status: {
-          notIn: ['cancelled'],
-        },
-        startTime: {
-          gte: start,
-          lt: end,
-        },
+      startTime: {
+        gte: start,
+        lt: end,
       },
-      select: {
-        id: true,
-        castId: true,
-        startTime: true,
-        endTime: true,
-        status: true,
-      },
-      orderBy: [{ startTime: 'asc' }],
-    })
+    },
+    select: {
+      castId: true,
+      startTime: true,
+      endTime: true,
+    },
+    orderBy: [{ startTime: 'asc' }],
+  })
 
-    const reservationMap = new Map<string, PublicReservationBlock[]>()
-    reservations.forEach((reservation) => {
-      if (!reservation.castId) {
-        return
-      }
-      const dateLocal = utcToZonedTime(reservation.startTime, DEFAULT_TIME_ZONE)
-      const dateKey = formatDateFns(dateLocal, 'yyyy-MM-dd')
-      const key = `${reservation.castId}_${dateKey}`
-      const block: PublicReservationBlock = {
-        id: reservation.id,
-        startTime: reservation.startTime.toISOString(),
-        endTime: reservation.endTime.toISOString(),
-        status: reservation.status,
-      }
-      if (!reservationMap.has(key)) {
-        reservationMap.set(key, [block])
-      } else {
-        reservationMap.get(key)!.push(block)
-      }
-    })
+  const reservationMap = new Map<string, PublicReservationBlock[]>()
+  reservations.forEach((reservation) => {
+    if (!reservation.castId) {
+      return
+    }
+    const dateLocal = utcToZonedTime(reservation.startTime, DEFAULT_TIME_ZONE)
+    const dateKey = formatDateFns(dateLocal, 'yyyy-MM-dd')
+    const key = `${reservation.castId}_${dateKey}`
+    const block: PublicReservationBlock = {
+      startTime: reservation.startTime.toISOString(),
+      endTime: reservation.endTime.toISOString(),
+    }
+    if (!reservationMap.has(key)) {
+      reservationMap.set(key, [block])
+    } else {
+      reservationMap.get(key)!.push(block)
+    }
+  })
 
-    const normalized = schedules.map((entry) => normalizeSchedule(entry, reservationMap))
-    const grouped = new Map<string, PublicScheduleDay>()
+  const normalized = schedules.map((entry) => normalizeSchedule(entry, reservationMap))
+  const grouped = new Map<string, PublicScheduleDay>()
 
-    normalized.forEach((entry) => {
-      const dayKey = formatDateFns(
-        utcToZonedTime(new Date(entry.date), DEFAULT_TIME_ZONE),
-        'yyyy-MM-dd'
-      )
-      if (!grouped.has(dayKey)) {
-        grouped.set(dayKey, { date: entry.date, entries: [] })
-      }
-      grouped.get(dayKey)?.entries.push(entry)
-    })
+  normalized.forEach((entry) => {
+    const dayKey = formatDateFns(
+      utcToZonedTime(new Date(entry.date), DEFAULT_TIME_ZONE),
+      'yyyy-MM-dd'
+    )
+    if (!grouped.has(dayKey)) {
+      grouped.set(dayKey, { date: entry.date, entries: [] })
+    }
+    grouped.get(dayKey)?.entries.push(entry)
+  })
 
-    const daysResult: PublicScheduleDay[] = Array.from(grouped.values())
+  const daysResult: PublicScheduleDay[] = Array.from(grouped.values())
 
-    if (daysResult.length < normalizedDays) {
-      const totalDays = normalizedDays
-      for (let i = 0; i < totalDays; i++) {
-        const current = addDays(start, i)
-        const dateKey = formatDateFns(utcToZonedTime(current, DEFAULT_TIME_ZONE), 'yyyy-MM-dd')
-        if (!grouped.has(dateKey)) {
-          daysResult.push({
-            date: formatISO(utcToZonedTime(current, DEFAULT_TIME_ZONE)),
-            entries: [],
-          })
-        }
+  if (daysResult.length < normalizedDays) {
+    const totalDays = normalizedDays
+    for (let i = 0; i < totalDays; i++) {
+      const current = addDays(start, i)
+      const dateKey = formatDateFns(utcToZonedTime(current, DEFAULT_TIME_ZONE), 'yyyy-MM-dd')
+      if (!grouped.has(dateKey)) {
+        daysResult.push({
+          date: formatISO(utcToZonedTime(current, DEFAULT_TIME_ZONE)),
+          entries: [],
+        })
       }
     }
-
-    return daysResult
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .slice(0, normalizedDays)
-  } catch (error) {
-    console.error('Failed to fetch store schedule:', error)
-    return []
   }
+
+  return daysResult
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(0, normalizedDays)
 }
 
 export async function getStoreScheduleDays(

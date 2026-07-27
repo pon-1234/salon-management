@@ -1,10 +1,5 @@
 # Salon Management
 
-_Automatically synced with your [v0.dev](https://v0.dev) deployments_
-
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/pons-projects-2da64dc3/v0-salon-management-jigb52crstx)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/JiGB52cRsTX)
-
 ## Overview
 
 A comprehensive salon management application built with Next.js 15, featuring customer management, reservation system, and admin dashboard.
@@ -18,21 +13,25 @@ A comprehensive salon management application built with Next.js 15, featuring cu
 
 ## Deployment
 
-Your project is live at:
+The production target is the XServer VPS stack managed by the
+`platinum-management` repository. Legacy-data cutover is currently **No-Go**;
+passing local CI alone does not authorize deployment or traffic switching. See
+[docs/VPS_DEPLOYMENT.md](./docs/VPS_DEPLOYMENT.md) and the
+[legacy migration runbook](./docs/LEGACY_DATA_MIGRATION_RUNBOOK.md).
 
-**[https://vercel.com/pons-projects-2da64dc3/v0-salon-management-jigb52crstx](https://vercel.com/pons-projects-2da64dc3/v0-salon-management-jigb52crstx)**
-
-## Build your app
-
-Continue building your app on:
-
-**[https://v0.dev/chat/projects/JiGB52cRsTX](https://v0.dev/chat/projects/JiGB52cRsTX)**
+The repository includes fail-closed tooling for verifying an offline legacy snapshot, copying its
+declared public images, and loading canonical rows into a separately marked disposable preview
+database. No current production snapshot has been copied or imported; the legacy extractor,
+coordinated multi-database cutoff evidence, approved business mappings, isolated preview
+infrastructure, and field UAT are still required.
+The required raw-to-canonical completeness proof is specified in
+[docs/LEGACY_EXTRACTOR_CONTRACT.md](./docs/LEGACY_EXTRACTOR_CONTRACT.md).
 
 ## Local Login
 
 Create local users with the setup or seed scripts before signing in:
 
-- **Admin URL**: `/admin/login` after running `npm run setup:admin`
+- **Admin URL**: `/admin/login` after running the explicit `pnpm setup:admin` bootstrap
 - **Customer URL**: `/[store]/login` (for example, `/store1/login`) after registration or seeding
 
 ## Recent Updates
@@ -44,21 +43,22 @@ Create local users with the setup or seed scripts before signing in:
   - `lib/customer/data.ts`
   - `lib/reservation/data.ts`
   - `lib/store/data.ts`
-- 📈 The enforced coverage threshold is 30% in `vitest.config.ts`
+- ⚠️ The repository currently enforces only a 30% coverage threshold; this remains below the
+  production quality gate and must not be treated as cutover approval
 - 🔍 Identified and documented unused code patterns with `@no-test-required` annotations
 - 🛠 Fixed `createDate` export in cast module
 
 ## Quick Start
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 If you pull changes that modify `prisma/schema.prisma`, regenerate the Prisma Client before starting the dev server:
 
 ```bash
-npx prisma generate
+pnpm prisma generate
 ```
 
 ## Environment Setup
@@ -66,7 +66,7 @@ npx prisma generate
 1. Copy the environment variables:
 
 ```bash
-cp env.example .env.local
+cp .env.example .env.local
 ```
 
 2. Configure the required variables:
@@ -76,44 +76,65 @@ cp env.example .env.local
   - (Optional) If you run PgBouncer or want a dedicated non-pooled connection, also set `DIRECT_URL`.  
     Prisma CLI will fall back to `DATABASE_URL` when `DIRECT_URL` is omitted.
 - **NextAuth**: Generate a secret with `openssl rand -base64 32`
-- **Supabase**: Set your Supabase URL and anon key
+- **Public URL**: Production requires an explicit HTTPS `NEXTAUTH_URL`; recovery and verification
+  links are generated from it
+- **Storage**: Set `STORAGE_ROOT` and `STORAGE_PUBLIC_BASE_URL` when testing VPS-style local storage
 
 ### Image Upload Feature
 
-This application uses Supabase Storage for persistent image storage:
+The production target uses a persistent VPS volume for image storage:
 
-- **Automatic**: Images are uploaded directly to cloud storage
-- **CDN**: Global distribution for fast loading
+- **Local**: Images remain on the encrypted-backup VPS storage volume
+- **HTTP serving**: Caddy serves the volume read-only under `/salon-uploads/`
 - **Persistent**: Images remain available across deployments
-- **Integrated**: Works seamlessly with your existing Supabase database
+- **Independent**: No Vercel or hosted Supabase account is required
+- **Validated**: The server verifies JPEG, PNG, WebP, and GIF signatures against the declared MIME type and saves each file with the detected format's canonical extension
 
 To enable image uploads:
 
-1. Create a storage bucket named "images" in your Supabase dashboard
-2. Add the following to your environment variables:
-   - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anon key
-3. Deploy or run locally
+1. Set `STORAGE_ROOT` to a writable directory.
+2. Set `STORAGE_PUBLIC_BASE_URL` to the public `/salon-uploads` URL.
+3. Mount the same volume read-only in Caddy when deploying.
 
 ### Database Seeding
 
-Initialize your database with demo data:
+Initialize a development database with demo data. Development seed commands fail closed when
+`NODE_ENV` is any production-like value and must never be used against production:
 
 ```bash
-# Create an admin user interactively
-npm run setup:admin
+# Create an administrator from explicit inputs (password must be 16+ characters)
+export ADMIN_BOOTSTRAP_EMAIL=owner@example.com
+export ADMIN_BOOTSTRAP_NAME='Local Owner'
+read -r -s ADMIN_BOOTSTRAP_PASSWORD && export ADMIN_BOOTSTRAP_PASSWORD
+export ADMIN_BOOTSTRAP_ROLE=super_admin
+pnpm setup:admin
+unset ADMIN_BOOTSTRAP_PASSWORD
 
 # Create full demo data (casts, customers, reservations)
-npm run seed:full
+NODE_ENV=development pnpm seed:full
 ```
+
+The full seed generates random login passwords and prints them once. Set a development-only
+`SEED_FULL_ADMIN_PASSWORD` of at least 16 characters when a stable local admin password is needed.
+Production schema changes use `prisma migrate deploy`; `prisma db push` and demo seeds are not
+production deployment paths.
+
+The bootstrap supports only `super_admin` or store-limited `manager` accounts. Production usage,
+manager permission/store inputs, idempotent reruns, and the explicit existing-account update
+acknowledgement are documented in
+[docs/VPS_DEPLOYMENT.md](./docs/VPS_DEPLOYMENT.md#initial-administrator-bootstrap).
 
 Customer login in development should use customers created by the seed scripts or by normal registration; hardcoded demo customer login is not supported.
 
 ## Payments
 
-- The built-in payment endpoints now rely on an internal **manual provider**. No external Stripe keys are required.
-- `/api/payments` and `/api/payments/intents` accept requests without a `provider` value (they default to `manual`).
-- Historical Stripe webhook support has been removed; refunds and payment history are tracked purely in your database.
+- `/api/payments` records an offline/manual payment only after an assigned administrator with
+  `reservation:update` permission confirms the reservation. Amount, customer, store, currency,
+  and payment method are derived from that reservation rather than accepted from the caller.
+- Online payment intent creation and confirmation remain disabled with `503` until a production
+  payment provider and signed webhook are implemented and verified.
+- Historical Stripe webhook support has been removed; refunds and payment history are tracked in
+  the application database.
 
 ## Development
 
@@ -126,9 +147,14 @@ For detailed development information, see [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_G
 - **Type Safety**: Verified all type definitions are actively used (100% type utilization)
 - **API Optimization**: Confirmed 83% of API endpoints are actively used, with 2 reserved for future features
 
-## How It Works
+## Production Operations
 
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+The target Platinum VPS Compose stack builds this repository from
+`/opt/salon-management` and applies Prisma migrations before starting Next.js.
+Cron jobs and encrypted database/image backups are controlled by the external
+`platinum-management` stack and require staging execution and restore evidence
+before cutover; their presence in documentation is not proof that they work.
+
+Legacy production data must not be copied directly into PostgreSQL. Follow the
+[legacy data migration runbook](./docs/LEGACY_DATA_MIGRATION_RUNBOOK.md) for the
+read-only snapshot, staging reconciliation, cutover, and rollback gates.

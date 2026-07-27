@@ -1,9 +1,9 @@
 'use client'
 
 /**
- * @design_doc   ui-improvement-instructions.md U-4 destructive confirmation dialogs
- * @related_to   ConfirmDialog: replaces native confirm for hotel deletion
- * @known_issues Existing hotel form behavior is unchanged
+ * @design_doc   docs/HOTEL_DATA_MODEL.md
+ * @related_to   ConfirmDialog; /api/settings/hotel; HotelSettings
+ * @known_issues Service-area and structured-rate editing will use dedicated controls
  */
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
@@ -18,22 +18,29 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { ArrowLeft, Building, MapPin, Phone, Trash2, Plus } from 'lucide-react'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
+import { useStore } from '@/contexts/store-context'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 
 interface Hotel {
   id: string
   hotelName: string
-  area: string
-  roomCount: number
-  hourlyRate: number
-  address: string
-  phone: string
-  checkInTime: string
-  checkOutTime: string
+  area: string | null
+  roomCount: number | null
+  hourlyRate: number | null
+  address: string | null
+  phone: string | null
+  checkInTime: string | null
+  checkOutTime: string | null
   amenities: string[]
-  notes?: string
+  notes: string | null
+}
+
+interface ApiResponse<T> {
+  data: T
 }
 
 export default function HotelInfoPage() {
+  const { currentStore } = useStore()
   const [hotels, setHotels] = useState<Hotel[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -41,12 +48,12 @@ export default function HotelInfoPage() {
   const [newHotel, setNewHotel] = useState<Partial<Hotel>>({
     hotelName: '',
     area: '',
-    roomCount: 0,
-    hourlyRate: 0,
+    roomCount: null,
+    hourlyRate: null,
     address: '',
     phone: '',
-    checkInTime: '15:00',
-    checkOutTime: '10:00',
+    checkInTime: null,
+    checkOutTime: null,
     amenities: [],
     notes: '',
   })
@@ -56,11 +63,15 @@ export default function HotelInfoPage() {
 
   const fetchHotels = useCallback(async () => {
     try {
-      const response = await fetch('/api/settings/hotel')
+      const response = await fetch(
+        buildStoreScopedEndpoint('/api/settings/hotel', currentStore.id),
+        { credentials: 'include' }
+      )
       if (!response.ok) throw new Error('Failed to fetch hotels')
 
-      const data = await response.json()
-      setHotels(data)
+      const responseBody = (await response.json()) as ApiResponse<Hotel[]>
+      if (!Array.isArray(responseBody.data)) throw new Error('Invalid hotel response')
+      setHotels(responseBody.data)
     } catch (error) {
       console.error('Error fetching hotels:', error)
       toast({
@@ -71,44 +82,42 @@ export default function HotelInfoPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [currentStore.id])
 
   useEffect(() => {
     fetchHotels()
   }, [fetchHotels])
 
   const handleAddHotel = async () => {
-    if (
-      newHotel.hotelName &&
-      newHotel.area &&
-      newHotel.address &&
-      newHotel.roomCount &&
-      newHotel.hourlyRate
-    ) {
+    if (newHotel.hotelName?.trim()) {
       setSaving(true)
       try {
-        const response = await fetch('/api/settings/hotel', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(newHotel),
-        })
+        const response = await fetch(
+          buildStoreScopedEndpoint('/api/settings/hotel', currentStore.id),
+          {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(newHotel),
+          }
+        )
 
         if (!response.ok) throw new Error('Failed to add hotel')
 
-        const addedHotel = await response.json()
-        setHotels([...hotels, addedHotel])
+        const responseBody = (await response.json()) as ApiResponse<Hotel>
+        setHotels((current) => [...current, responseBody.data])
 
         setNewHotel({
           hotelName: '',
           area: '',
-          roomCount: 0,
-          hourlyRate: 0,
+          roomCount: null,
+          hourlyRate: null,
           address: '',
           phone: '',
-          checkInTime: '15:00',
-          checkOutTime: '10:00',
+          checkInTime: null,
+          checkOutTime: null,
           amenities: [],
           notes: '',
         })
@@ -139,9 +148,16 @@ export default function HotelInfoPage() {
 
   const handleDeleteHotel = async (id: string) => {
     try {
-      const response = await fetch(`/api/settings/hotel?id=${id}`, {
-        method: 'DELETE',
-      })
+      const response = await fetch(
+        buildStoreScopedEndpoint(
+          `/api/settings/hotel?id=${encodeURIComponent(id)}`,
+          currentStore.id
+        ),
+        {
+          method: 'DELETE',
+          credentials: 'include',
+        }
+      )
 
       if (!response.ok) throw new Error('Failed to delete hotel')
 
@@ -234,27 +250,35 @@ export default function HotelInfoPage() {
                         <div className="flex-1">
                           <div className="mb-2 flex items-center gap-3">
                             <h3 className="text-lg font-semibold">{hotel.hotelName}</h3>
-                            <Badge variant="outline">{hotel.area}</Badge>
-                            <Badge variant="secondary">{hotel.roomCount}室</Badge>
-                            <Badge className="bg-emerald-100 text-emerald-800">
-                              ¥{hotel.hourlyRate.toLocaleString()}/時間
-                            </Badge>
+                            {hotel.area && <Badge variant="outline">{hotel.area}</Badge>}
+                            {hotel.roomCount !== null && (
+                              <Badge variant="secondary">{hotel.roomCount}室</Badge>
+                            )}
+                            {hotel.hourlyRate !== null && (
+                              <Badge className="bg-emerald-100 text-emerald-800">
+                                ¥{hotel.hourlyRate.toLocaleString()}/時間
+                              </Badge>
+                            )}
                           </div>
                           <div className="space-y-1 text-sm text-gray-600">
-                            <div className="flex items-center gap-2">
-                              <MapPin className="h-4 w-4" />
-                              {hotel.address}
-                            </div>
+                            {hotel.address && (
+                              <div className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4" />
+                                {hotel.address}
+                              </div>
+                            )}
                             {hotel.phone && (
                               <div className="flex items-center gap-2">
                                 <Phone className="h-4 w-4" />
                                 {hotel.phone}
                               </div>
                             )}
-                            <div className="text-sm">
-                              チェックイン: {hotel.checkInTime} / チェックアウト:{' '}
-                              {hotel.checkOutTime}
-                            </div>
+                            {(hotel.checkInTime || hotel.checkOutTime) && (
+                              <div className="text-sm">
+                                チェックイン: {hotel.checkInTime ?? '未設定'} / チェックアウト:{' '}
+                                {hotel.checkOutTime ?? '未設定'}
+                              </div>
+                            )}
                             {hotel.amenities && hotel.amenities.length > 0 && (
                               <div className="mt-2 flex flex-wrap gap-1">
                                 {hotel.amenities.map((amenity, idx) => (
@@ -271,15 +295,16 @@ export default function HotelInfoPage() {
                         </div>
                         <div className="flex items-center gap-2">
                           <ConfirmDialog
-                            title="ホテル情報を削除しますか？"
-                            description={`「${hotel.hotelName}」を削除します。この操作は取り消せません。`}
-                            confirmLabel="削除する"
+                            title="ホテル情報を非表示にしますか？"
+                            description={`「${hotel.hotelName}」を一覧から非表示にします。予約履歴は保持されます。`}
+                            confirmLabel="非表示にする"
                             onConfirm={() => handleDeleteHotel(hotel.id)}
                           >
                             <Button
                               variant="outline"
                               size="sm"
                               className="text-red-600 hover:text-red-700"
+                              aria-label={`${hotel.hotelName}を非表示`}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -313,7 +338,7 @@ export default function HotelInfoPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="area">エリア *</Label>
+                      <Label htmlFor="area">エリア（旧データ表示用）</Label>
                       <Input
                         id="area"
                         value={newHotel.area || ''}
@@ -322,33 +347,41 @@ export default function HotelInfoPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="roomCount">客室数 *</Label>
+                      <Label htmlFor="roomCount">客室数</Label>
                       <Input
                         id="roomCount"
                         type="number"
-                        value={newHotel.roomCount || 0}
-                        onChange={(e) =>
-                          setNewHotel({ ...newHotel, roomCount: parseInt(e.target.value) || 0 })
-                        }
+                        value={newHotel.roomCount ?? ''}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          setNewHotel({
+                            ...newHotel,
+                            roomCount: value === '' ? null : Number(value),
+                          })
+                        }}
                         placeholder="20"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="hourlyRate">時間料金 *</Label>
+                      <Label htmlFor="hourlyRate">参考時間料金</Label>
                       <Input
                         id="hourlyRate"
                         type="number"
-                        value={newHotel.hourlyRate || 0}
-                        onChange={(e) =>
-                          setNewHotel({ ...newHotel, hourlyRate: parseInt(e.target.value) || 0 })
-                        }
+                        value={newHotel.hourlyRate ?? ''}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          setNewHotel({
+                            ...newHotel,
+                            hourlyRate: value === '' ? null : Number(value),
+                          })
+                        }}
                         placeholder="3000"
                       />
                     </div>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="phone">電話番号 *</Label>
+                      <Label htmlFor="phone">電話番号</Label>
                       <Input
                         id="phone"
                         value={newHotel.phone || ''}
@@ -361,7 +394,7 @@ export default function HotelInfoPage() {
                         <Label htmlFor="checkInTime">チェックイン</Label>
                         <Input
                           id="checkInTime"
-                          value={newHotel.checkInTime || '15:00'}
+                          value={newHotel.checkInTime || ''}
                           onChange={(e) =>
                             setNewHotel({ ...newHotel, checkInTime: e.target.value })
                           }
@@ -372,7 +405,7 @@ export default function HotelInfoPage() {
                         <Label htmlFor="checkOutTime">チェックアウト</Label>
                         <Input
                           id="checkOutTime"
-                          value={newHotel.checkOutTime || '10:00'}
+                          value={newHotel.checkOutTime || ''}
                           onChange={(e) =>
                             setNewHotel({ ...newHotel, checkOutTime: e.target.value })
                           }
@@ -382,7 +415,7 @@ export default function HotelInfoPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="address">住所 *</Label>
+                    <Label htmlFor="address">住所</Label>
                     <Textarea
                       id="address"
                       value={newHotel.address || ''}
@@ -403,7 +436,7 @@ export default function HotelInfoPage() {
                         }
                       />
                       <Button type="button" onClick={handleAddAmenity} variant="outline">
-                        追加
+                        アメニティを追加
                       </Button>
                     </div>
                     {newHotel.amenities && newHotel.amenities.length > 0 && (
@@ -440,7 +473,7 @@ export default function HotelInfoPage() {
                       className="bg-emerald-600 hover:bg-emerald-700"
                       disabled={saving}
                     >
-                      {saving ? '追加中...' : '追加'}
+                      {saving ? '追加中...' : 'ホテルを追加'}
                     </Button>
                   </div>
                 </CardContent>

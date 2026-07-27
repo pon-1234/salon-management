@@ -10,6 +10,7 @@ import { requireAdmin } from '@/lib/auth/utils'
 import { handleApiError, ErrorResponses } from '@/lib/api/errors'
 import { SuccessResponses } from '@/lib/api/responses'
 import { z } from 'zod'
+import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
 
 // Validation schema for batch schedule update
 const batchScheduleSchema = z.object({
@@ -25,12 +26,17 @@ const batchScheduleSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
-  const authError = await requireAdmin()
-  if (authError) return authError
-
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'cast:update', storeId })
+    if (authError) return authError
+
     const body = await request.json()
     const { castId, schedules } = batchScheduleSchema.parse(body)
+    const cast = await db.cast.findFirst({ where: { id: castId, storeId } })
+    if (!cast) {
+      return ErrorResponses.notFound('キャスト')
+    }
 
     // Use transaction for atomicity
     const result = await db.$transaction(async (tx) => {

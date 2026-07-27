@@ -10,6 +10,7 @@ import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { useStore } from '@/contexts/store-context'
 import type { Review } from '@/lib/reviews/types'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -58,7 +59,7 @@ export default function AdminReviewsPage() {
     setIsLoading(true)
     try {
       const response = await fetch(
-        `/api/review?storeId=${encodeURIComponent(currentStore.id)}&status=all`
+        buildStoreScopedEndpoint('/api/review?status=all', currentStore.id)
       )
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}))
@@ -103,7 +104,7 @@ export default function AdminReviewsPage() {
 
   const handleUpdateStatus = async (reviewId: string, nextStatus: Review['status']) => {
     try {
-      const response = await fetch('/api/review', {
+      const response = await fetch(buildStoreScopedEndpoint('/api/review', currentStore.id), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -132,9 +133,10 @@ export default function AdminReviewsPage() {
 
   const handleDelete = async (reviewId: string) => {
     try {
-      const response = await fetch(`/api/review?id=${encodeURIComponent(reviewId)}`, {
-        method: 'DELETE',
-      })
+      const response = await fetch(
+        buildStoreScopedEndpoint(`/api/review?id=${encodeURIComponent(reviewId)}`, currentStore.id),
+        { method: 'DELETE' }
+      )
 
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}))

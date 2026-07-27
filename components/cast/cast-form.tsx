@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @design_doc   Cast profile editing and secure account-boundary form
+ * @related_to   CastManagePage; CastLineRegistrationPanel owns LINE account linking
+ * @known_issues Additional private profile fields require an explicit persistence design
+ */
 import React, { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -18,6 +23,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Plus, Loader2, Eye, EyeOff } from 'lucide-react'
 import { ImageUpload } from '@/components/ui/image-upload'
+import { SafeImage } from '@/components/ui/safe-image'
 import { FormSection } from '@/components/cast/form-section'
 import { cn } from '@/lib/utils'
 import { usePricing } from '@/hooks/use-pricing'
@@ -79,6 +85,7 @@ export function validateCastFormInput(input: CastFormValidationValues) {
 }
 
 interface CastFormProps {
+  storeId: string
   cast?: Cast | null
   onSubmit: (data: Partial<Cast> & { loginPassword?: string | null }) => Promise<void> | void
   onCancel?: () => void
@@ -117,7 +124,6 @@ const buildInitialFormState = (cast?: Cast | null) => ({
     }
     return visibilityMap
   })(),
-  lineUserId: cast?.lineUserId || '',
   welfareExpenseRate:
     cast?.welfareExpenseRate !== undefined && cast?.welfareExpenseRate !== null
       ? String(cast.welfareExpenseRate)
@@ -125,13 +131,6 @@ const buildInitialFormState = (cast?: Cast | null) => ({
   loginEmail: cast?.loginEmail || '',
   loginPassword: '',
   loginPasswordConfirm: '',
-  phone: '',
-  email: '',
-  password: '',
-  birthDate: '',
-  registrationDate: new Date().toISOString().split('T')[0],
-  blogId: '',
-  twitterId: '',
 })
 
 const PROFILE_TYPES = [
@@ -232,7 +231,13 @@ function calculateRevenueSplit(
   return { storeShare: store, castShare: cast }
 }
 
-export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: CastFormProps) {
+export function CastForm({
+  storeId,
+  cast,
+  onSubmit,
+  onCancel,
+  isSubmitting = false,
+}: CastFormProps) {
   const [formData, setFormData] = useState(() => buildInitialFormState(cast))
   const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [showLoginPasswordConfirm, setShowLoginPasswordConfirm] = useState(false)
@@ -242,7 +247,7 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
     formState: { errors },
   } = useForm<CastFormValidationValues>()
   const fieldId = (suffix: string) => `cast-${suffix}`
-  const { optionPrices, options: legacyOptions, loading: optionsLoading } = usePricing()
+  const { optionPrices, options: legacyOptions, loading: optionsLoading } = usePricing(storeId)
 
   const optionCatalog: OptionChoice[] = useMemo(() => {
     if (optionPrices.length > 0) {
@@ -380,9 +385,6 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
       availableOptions: formData.availableOptions,
       availableOptionSettings: normalizedOptionSettings,
     }
-
-    const lineUserId = formData.lineUserId?.trim()
-    payload.lineUserId = lineUserId ? lineUserId : null
 
     payload.loginEmail = loginEmail ? loginEmail : null
 
@@ -664,20 +666,6 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor={fieldId('lineUserId')}>LINEユーザーID</Label>
-            <Input
-              id={fieldId('lineUserId')}
-              name="lineUserId"
-              value={formData.lineUserId}
-              onChange={handleInputChange}
-              placeholder="例：Ua1b2c3d4e5f6g7h8i9j0"
-              autoComplete="off"
-            />
-            <p className="text-xs text-muted-foreground">
-              キャストのLINE公式アカウント連携で取得できるユーザーIDを入力してください。通知送付先として利用します。
-            </p>
-          </div>
         </div>
         <div className="space-y-2">
           <Label htmlFor={fieldId('description')}>紹介文</Label>
@@ -917,7 +905,7 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
           {formData.image ? (
             <div className="flex items-center gap-4 rounded-lg border bg-muted/40 p-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <SafeImage
                 src={formData.image}
                 alt="メイン画像プレビュー"
                 className="h-20 w-16 flex-shrink-0 rounded object-cover"
@@ -951,89 +939,6 @@ export function CastForm({ cast, onSubmit, onCancel, isSubmitting = false }: Cas
             画像を追加 ({formData.images.length}/10)
           </Button>
         )}
-      </FormSection>
-
-      <FormSection
-        title="連絡先・管理メモ"
-        description="社内共有用の情報としてご活用ください（任意入力）。"
-      >
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor={fieldId('phone')}>TEL</Label>
-            <Input
-              id={fieldId('phone')}
-              name="phone"
-              type="tel"
-              value={formData.phone}
-              onChange={handleInputChange}
-              placeholder="090-1234-5678"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor={fieldId('email')}>メール</Label>
-            <Input
-              id={fieldId('email')}
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              placeholder="staff@example.com"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor={fieldId('twitterId')}>Twitter / X</Label>
-            <Input
-              id={fieldId('twitterId')}
-              name="twitterId"
-              value={formData.twitterId}
-              onChange={handleInputChange}
-              placeholder="@example"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor={fieldId('blogId')}>ブログウィジェット</Label>
-            <Input
-              id={fieldId('blogId')}
-              name="blogId"
-              value={formData.blogId}
-              onChange={handleInputChange}
-              placeholder="ブログ埋め込みコードなど"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor={fieldId('password')}>パスワード</Label>
-            <Input
-              id={fieldId('password')}
-              name="password"
-              type="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              placeholder="管理用パスワード"
-              autoComplete="new-password"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor={fieldId('birthDate')}>生年月日</Label>
-            <Input
-              id={fieldId('birthDate')}
-              name="birthDate"
-              type="date"
-              value={formData.birthDate}
-              onChange={handleInputChange}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor={fieldId('registrationDate')}>登録日</Label>
-            <Input
-              id={fieldId('registrationDate')}
-              name="registrationDate"
-              type="date"
-              value={formData.registrationDate}
-              onChange={handleInputChange}
-              disabled
-            />
-          </div>
-        </div>
       </FormSection>
 
       <FormSection

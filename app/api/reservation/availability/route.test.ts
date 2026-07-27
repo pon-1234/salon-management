@@ -16,9 +16,14 @@ vi.mock('@/lib/db', () => ({
     },
     cast: {
       findUnique: vi.fn(),
+      findMany: vi.fn(),
+    },
+    castSchedule: {
+      findFirst: vi.fn(),
     },
     storeSettings: {
       findFirst: vi.fn(),
+      findUnique: vi.fn(),
     },
   },
 }))
@@ -33,8 +38,20 @@ vi.mock('@/lib/logger', () => ({
 describe('GET /api/reservation/availability', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(db.cast.findMany).mockImplementation((({ where }: any) =>
+      Promise.resolve(where.id.in.map((id: string) => ({ id })))) as any)
     vi.mocked(db.storeSettings.findFirst).mockResolvedValue({
       businessHours: '09:00 - 23:00',
+    } as any)
+    vi.mocked(db.storeSettings.findUnique).mockResolvedValue({
+      businessHours: '09:00 - 23:00',
+    } as any)
+    vi.mocked(db.castSchedule.findFirst).mockResolvedValue({
+      id: 'schedule-1',
+      castId: 'cast1',
+      startTime: new Date('2025-07-10T00:00:00.000Z'),
+      endTime: new Date('2025-07-10T14:00:00.000Z'),
+      isAvailable: true,
     } as any)
   })
 
@@ -59,13 +76,15 @@ describe('GET /api/reservation/availability', () => {
     const mockCast = {
       id: 'cast1',
       name: 'Test Cast',
+      storeId: 'store-1',
+      netReservation: true,
     }
 
     vi.mocked(db.cast.findUnique).mockResolvedValue(mockCast as any)
     vi.mocked(db.reservation.findMany).mockResolvedValue(mockReservations as any)
 
     const request = new NextRequest(
-      'http://localhost:3000/api/reservation/availability?castId=cast1&date=2025-07-10&duration=60'
+      'http://localhost:3000/api/reservation/availability?storeId=store-1&castId=cast1&date=2025-07-10&duration=60'
     )
     // Mock the pathname for this test
     Object.defineProperty(request.nextUrl, 'pathname', {
@@ -90,6 +109,70 @@ describe('GET /api/reservation/availability', () => {
       startTime: '2025-07-10T11:00:00.000Z',
       endTime: '2025-07-10T14:00:00.000Z',
     })
+    expect(db.storeSettings.findUnique).toHaveBeenCalledWith({
+      where: { storeId: 'store-1' },
+      select: { businessHours: true },
+    })
+    expect(db.castSchedule.findFirst).toHaveBeenCalled()
+  })
+
+  it('returns no slots when the cast has disabled web reservations', async () => {
+    vi.mocked(db.cast.findUnique).mockResolvedValue({
+      id: 'cast1',
+      name: 'Test Cast',
+      storeId: 'store-1',
+      netReservation: false,
+    } as any)
+    vi.mocked(db.reservation.findMany).mockResolvedValue([])
+
+    const request = new NextRequest(
+      'http://localhost:3000/api/reservation/availability?storeId=store-1&castId=cast1&date=2025-07-10&duration=60'
+    )
+
+    const response = await GET(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data).toEqual({
+      castId: 'cast1',
+      date: '2025-07-10',
+      duration: 60,
+      availableSlots: [],
+    })
+    expect(db.castSchedule.findFirst).not.toHaveBeenCalled()
+    expect(db.reservation.findMany).not.toHaveBeenCalled()
+  })
+
+  it('limits available slots to the cast working schedule', async () => {
+    vi.mocked(db.cast.findUnique).mockResolvedValue({
+      id: 'cast1',
+      name: 'Test Cast',
+      storeId: 'store-1',
+      netReservation: true,
+    } as any)
+    vi.mocked(db.castSchedule.findFirst).mockResolvedValue({
+      id: 'schedule-1',
+      castId: 'cast1',
+      startTime: new Date('2025-07-10T03:00:00.000Z'),
+      endTime: new Date('2025-07-10T09:00:00.000Z'),
+      isAvailable: true,
+    } as any)
+    vi.mocked(db.reservation.findMany).mockResolvedValue([])
+
+    const request = new NextRequest(
+      'http://localhost:3000/api/reservation/availability?storeId=store-1&castId=cast1&date=2025-07-10&duration=60'
+    )
+
+    const response = await GET(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.availableSlots).toEqual([
+      {
+        startTime: '2025-07-10T03:00:00.000Z',
+        endTime: '2025-07-10T09:00:00.000Z',
+      },
+    ])
   })
 
   it('should check for conflicts when a specific time range is provided', async () => {
@@ -106,7 +189,7 @@ describe('GET /api/reservation/availability', () => {
     vi.mocked(db.reservation.findMany).mockResolvedValue(mockReservations as any)
 
     const request = new NextRequest(
-      'http://localhost:3000/api/reservation/availability?mode=check&castId=cast1&startTime=2025-07-10T10:30:00&endTime=2025-07-10T11:30:00'
+      'http://localhost:3000/api/reservation/availability?mode=check&storeId=store-1&castId=cast1&startTime=2025-07-10T10:30:00&endTime=2025-07-10T11:30:00'
     )
     Object.defineProperty(request.nextUrl, 'pathname', {
       value: '/api/reservation/availability',
@@ -127,13 +210,18 @@ describe('GET /api/reservation/availability', () => {
         },
       ],
     })
+    expect(db.reservation.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ storeId: 'store-1', castId: 'cast1' }),
+      })
+    )
   })
 
   it('should return true when no conflicts exist', async () => {
     vi.mocked(db.reservation.findMany).mockResolvedValue([])
 
     const request = new NextRequest(
-      'http://localhost:3000/api/reservation/availability?mode=check&castId=cast1&startTime=2025-07-10T10:00:00&endTime=2025-07-10T11:00:00'
+      'http://localhost:3000/api/reservation/availability?mode=check&storeId=store-1&castId=cast1&startTime=2025-07-10T10:00:00&endTime=2025-07-10T11:00:00'
     )
     Object.defineProperty(request.nextUrl, 'pathname', {
       value: '/api/reservation/availability',
@@ -171,7 +259,7 @@ describe('GET /api/reservation/availability', () => {
     vi.mocked(db.reservation.findMany).mockResolvedValue(mockReservations as any)
 
     const request = new NextRequest(
-      'http://localhost:3000/api/reservation/availability?mode=check&castIds=cast1,cast2&startTime=2025-07-10T09:30:00&endTime=2025-07-10T10:30:00'
+      'http://localhost:3000/api/reservation/availability?mode=check&storeId=store-1&castIds=cast1,cast2&startTime=2025-07-10T09:30:00&endTime=2025-07-10T10:30:00'
     )
     Object.defineProperty(request.nextUrl, 'pathname', {
       value: '/api/reservation/availability',
@@ -202,7 +290,7 @@ describe('GET /api/reservation/availability', () => {
     vi.mocked(db.reservation.findMany).mockResolvedValue([])
 
     const request = new NextRequest(
-      'http://localhost:3000/api/reservation/availability?mode=check&castId=cast1&startTime=2025-07-10T10:00:00&endTime=2025-07-10T11:00:00'
+      'http://localhost:3000/api/reservation/availability?mode=check&storeId=store-1&castId=cast1&startTime=2025-07-10T10:00:00&endTime=2025-07-10T11:00:00'
     )
     Object.defineProperty(request.nextUrl, 'pathname', {
       value: '/api/reservation/availability',
@@ -221,7 +309,7 @@ describe('GET /api/reservation/availability', () => {
 
   it('should validate required parameters', async () => {
     const request = new NextRequest(
-      'http://localhost:3000/api/reservation/availability?mode=check&startTime=2025-07-10T10:00:00'
+      'http://localhost:3000/api/reservation/availability?mode=check&storeId=store-1&startTime=2025-07-10T10:00:00'
     )
     Object.defineProperty(request.nextUrl, 'pathname', {
       value: '/api/reservation/availability',
@@ -239,7 +327,7 @@ describe('GET /api/reservation/availability', () => {
 
   it('should handle invalid date formats', async () => {
     const request = new NextRequest(
-      'http://localhost:3000/api/reservation/availability?mode=check&castId=cast1&startTime=invalid-date&endTime=2025-07-10T11:00:00'
+      'http://localhost:3000/api/reservation/availability?mode=check&storeId=store-1&castId=cast1&startTime=invalid-date&endTime=2025-07-10T11:00:00'
     )
     Object.defineProperty(request.nextUrl, 'pathname', {
       value: '/api/reservation/availability',
@@ -260,7 +348,7 @@ describe('GET /api/reservation/availability', () => {
     vi.mocked(db.reservation.findMany).mockRejectedValueOnce(dbError)
 
     const request = new NextRequest(
-      'http://localhost:3000/api/reservation/availability?mode=check&castId=cast1&startTime=2025-07-10T10:00:00&endTime=2025-07-10T11:00:00'
+      'http://localhost:3000/api/reservation/availability?mode=check&storeId=store-1&castId=cast1&startTime=2025-07-10T10:00:00&endTime=2025-07-10T11:00:00'
     )
     Object.defineProperty(request.nextUrl, 'pathname', {
       value: '/api/reservation/availability',
@@ -274,5 +362,42 @@ describe('GET /api/reservation/availability', () => {
     expect(data).toEqual({
       error: 'Internal server error',
     })
+  })
+
+  it('requires an explicit store for conflict checks', async () => {
+    const request = new NextRequest(
+      'http://localhost:3000/api/reservation/availability?mode=check&castId=cast1&startTime=2025-07-10T10:00:00&endTime=2025-07-10T11:00:00'
+    )
+
+    const response = await GET(request)
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({ error: 'Missing required parameter: storeId' })
+    expect(db.reservation.findMany).not.toHaveBeenCalled()
+  })
+
+  it('requires an explicit store when listing available slots', async () => {
+    const request = new NextRequest(
+      'http://localhost:3000/api/reservation/availability?castId=cast1&date=2025-07-10&duration=60'
+    )
+
+    const response = await GET(request)
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({ error: 'Missing required parameter: storeId' })
+    expect(db.cast.findUnique).not.toHaveBeenCalled()
+  })
+
+  it('does not expose conflicts for a cast outside the requested store', async () => {
+    vi.mocked(db.cast.findMany).mockResolvedValue([])
+    const request = new NextRequest(
+      'http://localhost:3000/api/reservation/availability?mode=check&storeId=store-1&castId=cast-from-store-2&startTime=2025-07-10T10:00:00&endTime=2025-07-10T11:00:00'
+    )
+
+    const response = await GET(request)
+
+    expect(response.status).toBe(404)
+    await expect(response.json()).resolves.toEqual({ error: 'Cast not found' })
+    expect(db.reservation.findMany).not.toHaveBeenCalled()
   })
 })

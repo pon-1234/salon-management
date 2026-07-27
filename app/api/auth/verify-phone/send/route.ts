@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Authenticated-only SMS verification delivery with fail-closed persistence
+ * @related_to   lib/auth/phone-verification.ts, lib/sms/client.ts, confirm/route.ts
+ * @known_issues The process-local limiter must become persistent before horizontal scaling
+ */
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
@@ -9,36 +14,31 @@ import {
   checkSendRateLimit,
   recordSendAttempt,
   generateVerificationCode,
+  hashPhoneVerificationCode,
 } from '@/lib/auth/phone-verification'
+import { env } from '@/lib/config/env'
 
 const EXPIRY_MINUTES = 10
 
-export async function POST(request: Request) {
+export async function POST(_request: Request) {
   try {
     const session = await getServerSession(authOptions)
-    const body = await request.json().catch(() => ({}))
-    const rawPhone = typeof body.phone === 'string' ? body.phone : ''
+    if (session?.user?.role !== 'customer' || !session.user.id) {
+      return NextResponse.json({ error: 'ログインが必要です。' }, { status: 401 })
+    }
 
-    let customerId: string | null = null
-    let phone = ''
+    const customerId = session.user.id
+    const customer = await db.customer.findUnique({
+      where: { id: customerId },
+      select: { id: true, phone: true },
+    })
+    if (!customer) {
+      return NextResponse.json({ error: '顧客情報が見つかりません。' }, { status: 404 })
+    }
 
-    if (session?.user?.role === 'customer') {
-      customerId = session.user.id
-      const customer = await db.customer.findUnique({ where: { id: customerId } })
-      if (!customer) {
-        return NextResponse.json({ error: '顧客情報が見つかりません。' }, { status: 404 })
-      }
-      phone = customer.phone
-    } else {
-      phone = normalizePhoneNumber(rawPhone)
-      if (!phone) {
-        return NextResponse.json({ error: '電話番号を入力してください。' }, { status: 400 })
-      }
-      const customer = await db.customer.findFirst({ where: { phone } })
-      if (!customer) {
-        return NextResponse.json({ error: 'この電話番号は登録されていません。' }, { status: 404 })
-      }
-      customerId = customer.id
+    const phone = normalizePhoneNumber(customer.phone)
+    if (phone.length < 10 || phone.length > 11) {
+      return NextResponse.json({ error: '登録電話番号を確認できません。' }, { status: 400 })
     }
 
     const rateLimit = checkSendRateLimit(phone)
@@ -48,31 +48,34 @@ export async function POST(request: Request) {
         { status: 429 }
       )
     }
+    recordSendAttempt(phone)
 
     const code = generateVerificationCode()
+    const codeHash = hashPhoneVerificationCode(customerId, code, env.nextAuth.secret)
     const expiry = new Date(Date.now() + EXPIRY_MINUTES * 60 * 1000)
-
-    await db.customer.update({
-      where: { id: customerId! },
-      data: {
-        phoneVerificationCode: code,
-        phoneVerificationExpiry: expiry,
-        phoneVerificationAttempts: 0,
-      },
-    })
-
-    recordSendAttempt(phone)
 
     const smsMessage = `認証コード: ${code}\n${EXPIRY_MINUTES}分以内に入力してください。`
     const result = await smsClient.send({ to: phone, message: smsMessage })
 
     if (!result.success) {
-      return NextResponse.json({ error: 'SMSの送信に失敗しました。' }, { status: 500 })
+      return NextResponse.json({ error: 'SMSの送信に失敗しました。' }, { status: 502 })
     }
+
+    await db.customer.update({
+      where: { id: customerId },
+      data: {
+        phoneVerificationCode: codeHash,
+        phoneVerificationExpiry: expiry,
+        phoneVerificationAttempts: 0,
+      },
+    })
 
     return NextResponse.json({ success: true, expiresAt: expiry.toISOString() })
   } catch (error) {
-    logger.error({ err: error }, 'Failed to send phone verification code')
+    logger.error(
+      { errorType: error instanceof Error ? error.name : 'UnknownError' },
+      'Failed to send phone verification code'
+    )
     return NextResponse.json({ error: 'SMS送信に失敗しました。' }, { status: 500 })
   }
 }

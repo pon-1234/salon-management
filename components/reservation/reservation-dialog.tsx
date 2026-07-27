@@ -61,7 +61,11 @@ import { differenceInMinutes, addMinutes, format, parseISO } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { ModificationHistoryTable } from '@/components/reservation/modification-history-table'
 import { getModificationHistory, getModificationAlerts } from '@/lib/modification-history/data'
-import { ReservationData, ReservationUpdatePayload } from '@/lib/types/reservation'
+import {
+  ReservationData,
+  ReservationSavePayload,
+  ReservationUpdatePayload,
+} from '@/lib/types/reservation'
 import { ModificationAlert, ModificationHistory } from '@/lib/types/modification-history'
 import { cn } from '@/lib/utils'
 import { Cast } from '@/lib/cast/types'
@@ -229,13 +233,25 @@ function formatRemainingTime(totalSeconds: number) {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
+function parseEntryMeta(payload: any) {
+  return {
+    entryReceivedAt: payload?.entryReceivedAt ? new Date(payload.entryReceivedAt) : null,
+    entryReceivedBy: payload?.entryReceivedBy ?? null,
+    entryNotifiedAt: payload?.entryNotifiedAt ? new Date(payload.entryNotifiedAt) : null,
+    entryConfirmedAt: payload?.entryConfirmedAt ? new Date(payload.entryConfirmedAt) : null,
+    entryReminderSentAt: payload?.entryReminderSentAt
+      ? new Date(payload.entryReminderSentAt)
+      : null,
+  }
+}
+
 const DEFAULT_MARKETING_CHANNELS = [...MARKETING_CHANNELS]
 
 interface ReservationDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   reservation: ReservationData | null | undefined
-  onSave?: (reservationId: string, payload: ReservationUpdatePayload) => Promise<void> | void
+  onSave?: (reservationId: string, payload: ReservationSavePayload) => Promise<void> | void
   casts?: Cast[]
 }
 
@@ -330,6 +346,7 @@ export function ReservationDialog({
   const [entrySendSuccess, setEntrySendSuccess] = useState<string | null>(null)
   const [entryReminderSending, setEntryReminderSending] = useState(false)
   const lastDefaultLineMessageRef = useRef<string>('')
+  const lineMessageReservationIdRef = useRef<string | null>(null)
   const [customerNgEntries, setCustomerNgEntries] = useState<
     Array<{ castId: string; assignedBy?: 'customer' | 'cast' | 'staff'; notes?: string }>
   >([])
@@ -459,10 +476,38 @@ export function ReservationDialog({
 
   const reservationDesignation = useMemo(() => {
     if (!reservation) return undefined
-    return (
-      findDesignationFeeByName(reservation.designation, designationOptions) ||
-      findDesignationFeeByPrice(reservation.designationFee, designationOptions)
-    )
+
+    const rawDesignation = (reservation.designationType ?? reservation.designation)?.trim()
+    if (!rawDesignation || ['なし', '指名なし', 'none'].includes(rawDesignation.toLowerCase())) {
+      return undefined
+    }
+
+    const configuredDesignation =
+      findDesignationFeeByName(rawDesignation, designationOptions) ||
+      findDesignationFeeByName(reservation.designation, designationOptions)
+    if (configuredDesignation) {
+      return configuredDesignation
+    }
+
+    const designationAmount = toNumber(reservation.designationFee, 0)
+    const configuredByPrice =
+      designationAmount > 0
+        ? findDesignationFeeByPrice(designationAmount, designationOptions)
+        : undefined
+    if (configuredByPrice) {
+      return configuredByPrice
+    }
+
+    return {
+      id: `existing-designation-${reservation.id}`,
+      name: rawDesignation,
+      price: designationAmount,
+      storeShare: 0,
+      castShare: designationAmount,
+      description: '既存予約の指名設定',
+      sortOrder: Number.MAX_SAFE_INTEGER,
+      isActive: false,
+    }
   }, [reservation, designationOptions])
 
   const selectableDesignationOptions = useMemo(() => {
@@ -520,48 +565,12 @@ export function ReservationDialog({
     [optionChoices, formState.optionIds]
   )
 
-  useEffect(() => {
-    if (courseOptions.length === 0) {
-      return
-    }
-
-    setFormState((prev) => {
-      const currentCourseId = prev.courseId || reservation?.serviceId || ''
-      if (currentCourseId && courseOptions.some((course) => course.id === currentCourseId)) {
-        return prev
-      }
-
-      const fallbackCourseId = courseOptions[0]?.id ?? ''
-      if (!fallbackCourseId || fallbackCourseId === prev.courseId) {
-        return prev
-      }
-
-      return {
-        ...prev,
-        courseId: fallbackCourseId,
-      }
-    })
-  }, [courseOptions, reservation?.serviceId])
-
   const filteredStations = useMemo(() => {
     if (!formState.areaId) {
       return stations
     }
     return stations.filter((station) => station.areaId === formState.areaId)
   }, [stations, formState.areaId])
-
-  useEffect(() => {
-    if (!formState.stationId) {
-      return
-    }
-    if (filteredStations.some((station) => station.id === formState.stationId)) {
-      return
-    }
-    setFormState((prev) => ({
-      ...prev,
-      stationId: null,
-    }))
-  }, [filteredStations, formState.stationId])
 
   useEffect(() => {
     if (reservation?.status) {
@@ -583,7 +592,7 @@ export function ReservationDialog({
       setIsHistoryLoading(true)
       try {
         const [history, alerts] = await Promise.all([
-          getModificationHistory(reservationId),
+          getModificationHistory(reservationId, currentStore.id),
           getModificationAlerts(reservationId),
         ])
         if (!ignore) {
@@ -610,7 +619,7 @@ export function ReservationDialog({
     return () => {
       ignore = true
     }
-  }, [reservation?.id, historyReloadToken])
+  }, [currentStore.id, reservation?.id, historyReloadToken])
 
   const performStatusUpdate = useCallback(
     async (
@@ -625,26 +634,15 @@ export function ReservationDialog({
         return
       }
 
-      const effectiveCastId =
-        formState.castId || reservation.staffId || (reservation as any).castId || ''
-      if (!effectiveCastId) {
-        toast({
-          title: '担当キャスト未設定',
-          description: 'ステータスを変更する前に担当キャストを選択してください。',
-          variant: 'destructive',
-        })
-        return
-      }
-
       setStatusUpdating(true)
       try {
-        await onSave(reservation.id, {
-          castId: effectiveCastId,
-          startTime: reservation.startTime,
-          endTime: reservation.endTime,
+        const statusPayload = {
           status: nextStatus as ReservationStatus,
-          cancellationSource: options?.cancellationSource ?? undefined,
-        })
+          ...(options?.cancellationSource
+            ? { cancellationSource: options.cancellationSource }
+            : {}),
+        }
+        await onSave(reservation.id, statusPayload)
         setStatus(nextStatus)
         setHistoryReloadToken((prev) => prev + 1)
         toast({
@@ -662,7 +660,7 @@ export function ReservationDialog({
         setStatusUpdating(false)
       }
     },
-    [formState.castId, onSave, reservation, status]
+    [onSave, reservation, status]
   )
 
   const handleStatusChange = useCallback(
@@ -937,21 +935,22 @@ export function ReservationDialog({
     [reservation?.price, reservation?.totalPayment]
   )
 
-  const rawDesignationId = formState.designationId || reservationDesignation?.id || ''
+  const rawDesignationId = formState.designationId
 
   const selectedDesignation = useMemo(() => {
     if (!rawDesignationId || rawDesignationId.length === 0) {
       return undefined
     }
-    return designationOptions.find((fee) => fee.id === rawDesignationId)
-  }, [rawDesignationId, designationOptions])
+    return selectableDesignationOptions.find((fee) => fee.id === rawDesignationId)
+  }, [rawDesignationId, selectableDesignationOptions])
 
-  const designationForDisplay = selectedDesignation || reservationDesignation
+  const designationForDisplay = isEditMode ? selectedDesignation : reservationDesignation
+  const reservationCastWelfareExpenseRate = (reservation as any)?.cast?.welfareExpenseRate
 
   const welfareRate = useMemo(() => {
     const candidateRates: Array<number | undefined | null> = [
       selectedCast?.welfareExpenseRate,
-      (reservation as any)?.cast?.welfareExpenseRate,
+      reservationCastWelfareExpenseRate,
       currentStore?.welfareExpenseRate,
     ]
 
@@ -971,7 +970,7 @@ export function ReservationDialog({
     return 10
   }, [
     selectedCast?.welfareExpenseRate,
-    (reservation as any)?.cast?.welfareExpenseRate,
+    reservationCastWelfareExpenseRate,
     currentStore?.welfareExpenseRate,
     reservation?.welfareExpense,
     reservation?.price,
@@ -1102,6 +1101,16 @@ export function ReservationDialog({
   useEffect(() => {
     if (!reservation) return
     const nextDefault = buildDefaultLineMessage()
+    const reservationChanged = lineMessageReservationIdRef.current !== reservation.id
+    if (reservationChanged) {
+      lineMessageReservationIdRef.current = reservation.id
+      lastDefaultLineMessageRef.current = nextDefault
+      setLineMessage(nextDefault)
+      setLineSendError(null)
+      setLineSendSuccess(null)
+      setLineConfirmOpen(false)
+      return
+    }
     setLineMessage((prev) => {
       if (!prev || prev === lastDefaultLineMessageRef.current) {
         lastDefaultLineMessageRef.current = nextDefault
@@ -1109,7 +1118,7 @@ export function ReservationDialog({
       }
       return prev
     })
-  }, [buildDefaultLineMessage, reservation?.id])
+  }, [buildDefaultLineMessage, reservation])
 
   useEffect(() => {
     if (!open) {
@@ -1226,6 +1235,7 @@ export function ReservationDialog({
     const transportation = toNumber(formState.transportationFee, 0)
     const additional = toNumber(formState.additionalFee, 0)
     const discount = Math.max(toNumber(formState.discountAmount, 0), 0)
+    const pointsUsed = Math.max(toNumber(reservation?.pointsUsed, 0), 0)
     const designationAmount = Math.max(toNumber(formState.designationFee, 0), 0)
 
     const effectiveDesignation = selectedDesignation || reservationDesignation
@@ -1247,7 +1257,7 @@ export function ReservationDialog({
           : null,
       transportationFee: transportation,
       additionalFee: additional,
-      discountAmount: discount,
+      discountAmount: discount + pointsUsed,
       welfareRate,
     })
 
@@ -1258,6 +1268,7 @@ export function ReservationDialog({
       additional: revenue.additionalFee,
       designation: designationAmount,
       discount,
+      pointsUsed,
       total: revenue.total,
       storeRevenue: revenue.storeRevenue,
       staffRevenue: revenue.staffRevenue,
@@ -1272,6 +1283,7 @@ export function ReservationDialog({
     formState.additionalFee,
     formState.discountAmount,
     formState.designationFee,
+    reservation?.pointsUsed,
     selectedDesignation,
     reservationDesignation,
     welfareRate,
@@ -1298,7 +1310,7 @@ export function ReservationDialog({
         transportationFee: reservation.transportationFee ?? 0,
         additionalFee: reservation.additionalFee ?? 0,
         discountAmount: reservation.discountAmount ?? 0,
-        designationFee: Number(reservation.designationFee ?? 0),
+        designationFee: toNumber(reservation.designationFee, 0),
         price: Number(reservation.totalPayment ?? reservation.price ?? 0),
         areaId: reservation.areaId ?? null,
         stationId: reservation.stationId ?? null,
@@ -1336,16 +1348,6 @@ export function ReservationDialog({
     })
   }, [isEditMode, priceBreakdown.total])
 
-  const parseEntryMeta = (payload: any) => ({
-    entryReceivedAt: payload?.entryReceivedAt ? new Date(payload.entryReceivedAt) : null,
-    entryReceivedBy: payload?.entryReceivedBy ?? null,
-    entryNotifiedAt: payload?.entryNotifiedAt ? new Date(payload.entryNotifiedAt) : null,
-    entryConfirmedAt: payload?.entryConfirmedAt ? new Date(payload.entryConfirmedAt) : null,
-    entryReminderSentAt: payload?.entryReminderSentAt
-      ? new Date(payload.entryReminderSentAt)
-      : null,
-  })
-
   const handleSendEntryReminder = useCallback(async () => {
     if (!reservation) return
     if (entryReminderSending) return
@@ -1368,39 +1370,20 @@ export function ReservationDialog({
 
       const payload = await response.json().catch(() => ({}))
       setEntryMeta(parseEntryMeta(payload))
-      setEntrySendSuccess('再通知を送信しました。')
+      if (payload.notificationStatus !== 'sent') {
+        setEntrySendError(
+          payload.notificationError ||
+            '再通知のLINE送信は完了しませんでした。時間を置いて再度お試しください。'
+        )
+      } else {
+        setEntrySendSuccess('再通知を送信しました。')
+      }
     } catch (error) {
       setEntrySendError(error instanceof Error ? error.message : '再通知の送信に失敗しました。')
     } finally {
       setEntryReminderSending(false)
     }
-  }, [currentStore?.id, entryReminderSending, parseEntryMeta, reservation])
-
-  useEffect(() => {
-    if (!open) return
-    if (!entryMeta.entryNotifiedAt) return
-    if (entryMeta.entryConfirmedAt) return
-    if (entryMeta.entryReminderSentAt) return
-
-    const reminderAt = entryMeta.entryNotifiedAt.getTime() + 10 * 60 * 1000
-    const delay = reminderAt - Date.now()
-    if (delay <= 0) {
-      void handleSendEntryReminder()
-      return
-    }
-
-    const timer = setTimeout(() => {
-      void handleSendEntryReminder()
-    }, delay)
-
-    return () => clearTimeout(timer)
-  }, [
-    entryMeta.entryConfirmedAt,
-    entryMeta.entryNotifiedAt,
-    entryMeta.entryReminderSentAt,
-    handleSendEntryReminder,
-    open,
-  ])
+  }, [currentStore?.id, entryReminderSending, reservation])
 
   const statusMeta = STATUS_META[status] ?? {
     label: statusTextMap[status] ?? status,
@@ -1442,7 +1425,7 @@ export function ReservationDialog({
       transportationFee: reservation.transportationFee ?? 0,
       additionalFee: reservation.additionalFee ?? 0,
       discountAmount: reservation.discountAmount ?? 0,
-      designationFee: Number(reservation.designationFee ?? 0),
+      designationFee: toNumber(reservation.designationFee, 0),
       price: Number(reservation.totalPayment ?? reservation.price ?? 0),
       areaId: reservation.areaId ?? null,
       stationId: reservation.stationId ?? null,
@@ -1521,7 +1504,20 @@ export function ReservationDialog({
 
       const payload = await response.json().catch(() => ({}))
       setEntryMeta(parseEntryMeta(payload))
-      setEntrySendSuccess('入室情報を送信しました。')
+      setEntryForm({
+        hotelName: payload.hotelName ?? '',
+        roomNumber: payload.roomNumber ?? '',
+        entryMemo: payload.entryMemo ?? '',
+      })
+      if (payload.notificationStatus !== 'sent') {
+        setEntrySendError(
+          `入室情報は保存しましたが、LINE通知は完了しませんでした。${
+            payload.notificationError ? ` ${payload.notificationError}` : ''
+          }`
+        )
+      } else {
+        setEntrySendSuccess('入室情報を保存し、LINE通知を送信しました。')
+      }
     } catch (error) {
       setEntrySendError(error instanceof Error ? error.message : '入室情報の送信に失敗しました。')
     } finally {
@@ -1531,7 +1527,6 @@ export function ReservationDialog({
 
   const handleSaveChanges = async () => {
     if (!reservation || !onSave) {
-      setIsEditMode(false)
       return
     }
 
@@ -1540,8 +1535,8 @@ export function ReservationDialog({
       return
     }
 
-    const start = new Date(`${formState.date}T${formState.startTime}:00`)
-    if (Number.isNaN(start.getTime())) {
+    const enteredStart = new Date(`${formState.date}T${formState.startTime}:00`)
+    if (Number.isNaN(enteredStart.getTime())) {
       setValidationError('日時の形式が正しくありません。')
       return
     }
@@ -1552,15 +1547,41 @@ export function ReservationDialog({
       return
     }
 
+    const courseIdToSave = formState.courseId ?? reservation.serviceId ?? ''
+    const originalCourseId = reservation.serviceId ?? ''
+    const courseChanged = courseIdToSave !== originalCourseId
+    const originalOptionIds = [...normalizedInitialOptionIds].sort()
+    const selectedOptionIds = Array.from(new Set(formState.optionIds)).sort()
+    const optionsChanged =
+      originalOptionIds.length !== selectedOptionIds.length ||
+      originalOptionIds.some((optionId, index) => optionId !== selectedOptionIds[index])
+    const startInputChanged =
+      formState.date !== format(reservation.startTime, 'yyyy-MM-dd') ||
+      formState.startTime !== format(reservation.startTime, 'HH:mm')
+    const start = startInputChanged ? enteredStart : new Date(reservation.startTime)
     const durationMinutes =
       effectiveDurationMinutes > 0 ? effectiveDurationMinutes : reservationDurationMinutes
-    const end = addMinutes(start, durationMinutes)
+    const end =
+      startInputChanged || courseChanged || optionsChanged
+        ? addMinutes(start, durationMinutes)
+        : new Date(reservation.endTime)
 
-    const designationIdToSave = formState.designationId || reservationDesignation?.id || ''
+    const designationIdToSave = formState.designationId
     const designationForSave =
       designationIdToSave && designationIdToSave.length > 0
-        ? designationOptions.find((fee) => fee.id === designationIdToSave)
+        ? selectableDesignationOptions.find((fee) => fee.id === designationIdToSave)
         : undefined
+    const designationChanged = designationIdToSave !== (reservationDesignation?.id ?? '')
+    const designationTypeToSave = designationChanged
+      ? (designationForSave?.name ?? null)
+      : reservation.designationType !== undefined
+        ? reservation.designationType
+        : (reservationDesignation?.name ?? null)
+    const designationFeeToSave = designationChanged
+      ? (designationForSave?.price ?? formState.designationFee)
+      : toNumber(reservation.designationFee, 0)
+    const paymentMethodChanged =
+      formState.paymentMethod !== normalizePaymentMethodValue(reservation.paymentMethod)
 
     if (selectedCast?.workStart && selectedCast?.workEnd) {
       const workStart = new Date(start)
@@ -1583,34 +1604,33 @@ export function ReservationDialog({
     setIsSaving(true)
 
     try {
-      const courseIdToSave = formState.courseId ?? reservation.serviceId ?? ''
       const updatePayload: ReservationUpdatePayload = {
         startTime: start,
         endTime: end,
         castId,
         storeMemo: formState.storeMemo,
         notes: formState.notes,
-        designationType: designationForSave?.name,
-        designationFee: designationForSave?.price ?? formState.designationFee,
+        designationType: designationTypeToSave,
+        designationFee: designationFeeToSave,
         transportationFee: formState.transportationFee,
         additionalFee: formState.additionalFee,
         discountAmount: formState.discountAmount,
-        paymentMethod: formState.paymentMethod,
         marketingChannel: formState.marketingChannel,
         areaId: formState.areaId ?? null,
         stationId: formState.stationId ?? null,
         hotelName: formState.hotelName || null,
         roomNumber: formState.roomNumber || null,
         locationMemo: formState.locationMemo,
-        price: priceBreakdown.total,
-        welfareExpense: priceBreakdown.welfareExpense,
-        storeRevenue: priceBreakdown.storeRevenue,
-        staffRevenue: priceBreakdown.staffRevenue,
-        options: formState.optionIds,
       }
 
-      if (courseIdToSave) {
+      if (courseChanged && courseIdToSave) {
         updatePayload.courseId = courseIdToSave
+      }
+      if (paymentMethodChanged) {
+        updatePayload.paymentMethod = formState.paymentMethod
+      }
+      if (optionsChanged) {
+        updatePayload.options = formState.optionIds
       }
 
       await onSave(reservation.id, updatePayload)
@@ -1630,12 +1650,9 @@ export function ReservationDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={requestDialogOpenChange}>
-        <DialogContent
-          className="flex max-h-[90vh] max-w-6xl flex-col overflow-hidden p-0"
-          aria-describedby="reservation-dialog-description"
-        >
+        <DialogContent className="flex max-h-[90vh] max-w-6xl flex-col overflow-hidden p-0">
           <DialogTitle className="sr-only">{reservation.customerName} 様の予約詳細</DialogTitle>
-          <DialogDescription id="reservation-dialog-description" className="sr-only">
+          <DialogDescription className="sr-only">
             予約の詳細情報を表示し、必要に応じて編集できます。
           </DialogDescription>
 
@@ -1670,7 +1687,7 @@ export function ReservationDialog({
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={statusUpdating || !onSave}
+                      disabled={statusUpdating || !onSave || isEditMode || status === 'cancelled'}
                       className="flex items-center gap-2"
                     >
                       ステータス変更
@@ -1726,7 +1743,12 @@ export function ReservationDialog({
                   </>
                 ) : (
                   <>
-                    <Button variant="outline" size="sm" onClick={handleEnterEditMode}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleEnterEditMode}
+                      disabled={!onSave || status === 'cancelled'}
+                    >
                       <Edit className="mr-2 h-4 w-4" />
                       編集
                     </Button>
@@ -1845,11 +1867,16 @@ export function ReservationDialog({
                             <Select
                               value={formState.areaId ?? UNASSIGNED_VALUE}
                               onValueChange={(value) =>
-                                setFormState((prev) => ({
-                                  ...prev,
-                                  areaId: value === UNASSIGNED_VALUE ? null : value,
-                                  stationId: value === UNASSIGNED_VALUE ? null : prev.stationId,
-                                }))
+                                setFormState((prev) => {
+                                  const nextAreaId = value === UNASSIGNED_VALUE ? null : value
+                                  const areaChanged = nextAreaId !== prev.areaId
+                                  return {
+                                    ...prev,
+                                    areaId: nextAreaId,
+                                    stationId: areaChanged ? null : prev.stationId,
+                                    transportationFee: areaChanged ? 0 : prev.transportationFee,
+                                  }
+                                })
                               }
                             >
                               <SelectTrigger id="reservation-area" disabled={locationsLoading}>
@@ -1871,12 +1898,19 @@ export function ReservationDialog({
                             <Label htmlFor="reservation-station">最寄り駅</Label>
                             <Select
                               value={formState.stationId ?? UNASSIGNED_VALUE}
-                              onValueChange={(value) =>
+                              onValueChange={(value) => {
+                                const selectedStation = filteredStations.find(
+                                  (station) => station.id === value
+                                )
                                 setFormState((prev) => ({
                                   ...prev,
                                   stationId: value === UNASSIGNED_VALUE ? null : value,
+                                  transportationFee:
+                                    value === UNASSIGNED_VALUE
+                                      ? 0
+                                      : (selectedStation?.transportationFee ?? 0),
                                 }))
-                              }
+                              }}
                               disabled={filteredStations.length === 0}
                             >
                               <SelectTrigger id="reservation-station">
@@ -2024,13 +2058,10 @@ export function ReservationDialog({
                             <Input
                               id="reservation-total"
                               type="number"
-                              value={formState.price}
-                              onChange={(event) =>
-                                setFormState((prev) => ({
-                                  ...prev,
-                                  price: Number(event.target.value || 0),
-                                }))
-                              }
+                              value={priceBreakdown.total}
+                              readOnly
+                              disabled
+                              className="bg-gray-100"
                             />
                           </div>
                           <div className="grid gap-3 sm:grid-cols-3">
@@ -2057,7 +2088,7 @@ export function ReservationDialog({
                                 onChange={(event) =>
                                   setFormState((prev) => ({
                                     ...prev,
-                                    additionalFee: Number(event.target.value || 0),
+                                    additionalFee: Math.max(Number(event.target.value || 0), 0),
                                   }))
                                 }
                               />
@@ -2408,7 +2439,10 @@ export function ReservationDialog({
                       </p>
                       <AlertDialog open={lineConfirmOpen} onOpenChange={setLineConfirmOpen}>
                         <AlertDialogTrigger asChild>
-                          <Button type="button" disabled={lineSending || !canSendLineMessage}>
+                          <Button
+                            type="button"
+                            disabled={lineSending || !canSendLineMessage || isEditMode || !onSave}
+                          >
                             LINE送信
                           </Button>
                         </AlertDialogTrigger>
@@ -2524,7 +2558,6 @@ export function ReservationDialog({
                             />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value={UNASSIGNED_VALUE}>未設定</SelectItem>
                             {courseOptions.length === 0 ? (
                               <SelectItem value="__empty" disabled>
                                 コースが登録されていません
@@ -2727,7 +2760,11 @@ export function ReservationDialog({
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                      <Button size="sm" onClick={handleSaveEntryInfo} disabled={entrySending}>
+                      <Button
+                        size="sm"
+                        onClick={handleSaveEntryInfo}
+                        disabled={entrySending || isEditMode || !onSave}
+                      >
                         {entrySending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                         保存して通知
                       </Button>
@@ -2736,7 +2773,7 @@ export function ReservationDialog({
                           size="sm"
                           variant={entryOverdue ? 'destructive' : 'outline'}
                           onClick={handleSendEntryReminder}
-                          disabled={entryReminderSending}
+                          disabled={entryReminderSending || isEditMode || !onSave}
                         >
                           {entryReminderSending ? (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -2844,6 +2881,12 @@ export function ReservationDialog({
                             <div className="flex items-center justify-between text-red-600">
                               <dt>割引</dt>
                               <dd>-{formatCurrency(priceBreakdown.discount)}</dd>
+                            </div>
+                          )}
+                          {priceBreakdown.pointsUsed > 0 && (
+                            <div className="flex items-center justify-between text-red-600">
+                              <dt>ポイント利用</dt>
+                              <dd>-{formatCurrency(priceBreakdown.pointsUsed)}</dd>
                             </div>
                           )}
                           {priceBreakdown.welfareExpense > 0 && (
@@ -3073,6 +3116,7 @@ export function ReservationDialog({
       <CastTimelineModal
         open={isCastTimelineOpen}
         initialDate={timelineInitialDate}
+        storeId={currentStore.id}
         selectedCastId={activeCastId || null}
         selectedSlotIso={selectedSlotIso}
         onClose={() => setIsCastTimelineOpen(false)}

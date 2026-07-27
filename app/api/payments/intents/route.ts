@@ -1,105 +1,128 @@
 /**
- * @design_doc   Issue #5 - Payment System Integration
- * @related_to   PaymentService (business logic), Payment Intent API
- * @known_issues None identified
+ * @design_doc   Issue #5 - Fail-closed online payment intent boundary
+ * @related_to   Reservation, PaymentService, future signed provider webhook
+ * @known_issues No online provider or signed webhook exists, so creation and confirmation are disabled
  */
 
+import { getServerSession } from 'next-auth'
 import { NextRequest, NextResponse } from 'next/server'
-import type { PaymentMethod, PaymentProviderType } from '@/lib/payment/types'
-import { ProcessPaymentRequest } from '@/lib/payment/types'
+import { authOptions } from '@/lib/auth/config'
+import logger from '@/lib/logger'
 import {
-  getPaymentProviderDisabledReason,
-  getPaymentService,
-  isPaymentProviderEnabled,
-} from '@/lib/payment/providers/registry'
-import { PaymentProviderNotFoundError } from '@/lib/payment/errors'
+  authorizePaymentReservation,
+  containsServerManagedPaymentFields,
+  findPaymentReservation,
+  resolveReservationPaymentMethod,
+  validateReservationClaims,
+} from '@/lib/payment/api-boundary'
 
-const paymentService = getPaymentService()
+function authenticationRequired() {
+  return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+}
 
-function ensureProvider(provider: string) {
-  if (!isPaymentProviderEnabled(provider)) {
-    const reason = getPaymentProviderDisabledReason(provider)
-    return NextResponse.json(
-      {
-        error: reason || `Payment provider ${provider} is not available`,
-      },
-      { status: 503 }
-    )
+async function parseObjectBody(request: NextRequest): Promise<Record<string, unknown> | null> {
+  try {
+    const value: unknown = await request.json()
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return null
+    }
+    return value as Record<string, unknown>
+  } catch {
+    return null
   }
-  return null
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-
-    // Validate required fields
-    const { reservationId, customerId, amount, currency, paymentMethod } = body
-    const provider: PaymentProviderType =
-      typeof body.provider === 'string' &&
-      ['manual', 'bank_transfer', 'cash'].includes(body.provider)
-        ? body.provider
-        : 'manual'
-
-    if (
-      typeof reservationId !== 'string' ||
-      typeof customerId !== 'string' ||
-      typeof amount !== 'number' ||
-      typeof currency !== 'string' ||
-      typeof paymentMethod !== 'string'
-    ) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return authenticationRequired()
+    }
+    if (session.user.role !== 'customer' && session.user.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const paymentRequest: ProcessPaymentRequest = {
-      reservationId,
-      customerId,
-      amount,
-      currency,
-      paymentMethod: paymentMethod as PaymentMethod,
-      provider,
-      metadata: body.metadata,
+    const body = await parseObjectBody(request)
+    if (!body) {
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+    }
+    if (containsServerManagedPaymentFields(body)) {
+      return NextResponse.json(
+        { error: 'Server-managed payment fields are not accepted' },
+        { status: 400 }
+      )
     }
 
-    const providerErrorResponse = ensureProvider(provider)
-    if (providerErrorResponse) {
-      return providerErrorResponse
+    const reservationId = body.reservationId
+    if (typeof reservationId !== 'string' || reservationId.trim().length === 0) {
+      return NextResponse.json({ error: 'reservationId is required' }, { status: 400 })
     }
 
-    const intent = await paymentService.createPaymentIntent(paymentRequest)
+    const reservation = await findPaymentReservation(reservationId)
+    if (!reservation) {
+      return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
+    }
 
-    return NextResponse.json({ intent })
-  } catch (error) {
+    const accessError = authorizePaymentReservation(session, reservation, 'reservation:update')
+    if (accessError) {
+      return accessError
+    }
+
+    const paymentMethod = resolveReservationPaymentMethod(reservation.paymentMethod)
+    if (!paymentMethod || !Number.isInteger(reservation.price) || reservation.price <= 0) {
+      return NextResponse.json(
+        { error: 'Reservation payment details are not payable' },
+        { status: 409 }
+      )
+    }
+
+    const claimsError = validateReservationClaims(body, reservation, paymentMethod)
+    if (claimsError) {
+      return claimsError
+    }
+
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
+      { error: 'Online payment intents are not configured' },
+      { status: 503 }
     )
+  } catch (error) {
+    logger.error({ err: error }, 'Failed to validate payment intent creation')
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
 export async function PATCH(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { intentId } = body
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return authenticationRequired()
+    }
+    if (session.user.role !== 'customer' && session.user.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
-    if (!intentId) {
+    const body = await parseObjectBody(request)
+    if (!body) {
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+    }
+    if (containsServerManagedPaymentFields(body)) {
+      return NextResponse.json(
+        { error: 'Server-managed payment fields are not accepted' },
+        { status: 400 }
+      )
+    }
+    if (typeof body.intentId !== 'string' || body.intentId.trim().length === 0) {
       return NextResponse.json({ error: 'intentId is required' }, { status: 400 })
     }
 
-    const result = await paymentService.confirmPaymentIntent(intentId)
-
-    if (result.success) {
-      return NextResponse.json(result)
-    } else {
-      return NextResponse.json(result, { status: 400 })
-    }
-  } catch (error) {
-    if (error instanceof PaymentProviderNotFoundError) {
-      return NextResponse.json({ error: error.message }, { status: 503 })
-    }
+    // PaymentIntent has no trusted reservation relation and there is no signed provider webhook.
+    // Confirmation therefore cannot be authorized safely and must remain disabled.
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
+      { error: 'Payment intent confirmation requires a signed provider callback' },
+      { status: 503 }
     )
+  } catch (error) {
+    logger.error({ err: error }, 'Failed to validate payment intent confirmation')
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

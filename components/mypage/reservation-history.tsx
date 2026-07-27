@@ -1,217 +1,297 @@
+/**
+ * @design_doc   Customer MyPage reservation history backed by the authenticated reservation API
+ * @related_to   app/api/reservation/route.ts; lib/http/customer-dto.ts; MyPageContent
+ * @known_issues Review submission and rebooking actions are outside this read-only history view
+ */
 'use client'
 
-import { Store } from '@/lib/store/types'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Calendar, Clock, MapPin, User, MessageSquare } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
+import { Calendar, Clock, MapPin, User } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { buildStoreReservationEndpoint } from '@/lib/reservation/endpoints'
+import type { Store } from '@/lib/store/types'
 
 interface ReservationHistoryProps {
   store: Store
 }
 
-export function ReservationHistory({ store }: ReservationHistoryProps) {
-  // Mock reservation data
-  const reservations = [
-    {
-      id: '1',
-      date: new Date('2024-06-10'),
-      castName: 'すずか',
-      course: '120分オススメコース',
-      options: ['オールヌード', '回春増し増し'],
-      status: 'completed' as const,
-      price: 34000,
-      location: '池袋（北口・西口）',
-      hasReview: true,
-    },
-    {
-      id: '2',
-      date: new Date('2024-05-28'),
-      castName: 'みるく',
-      course: '90分コース',
-      options: ['密着洗髪スパ'],
-      status: 'completed' as const,
-      price: 19000,
-      location: '池袋（東口）',
-      hasReview: false,
-    },
-    {
-      id: '3',
-      date: new Date('2024-06-20'),
-      castName: 'ののか',
-      course: '130分人気No.1コース',
-      options: ['オールヌード'],
-      status: 'confirmed' as const,
-      price: 33000,
-      location: '池袋（北口・西口）',
-      hasReview: false,
-    },
-    {
-      id: '4',
-      date: new Date('2024-04-15'),
-      castName: 'さくら',
-      course: '70分お試しフリー限定',
-      options: [],
-      status: 'cancelled' as const,
-      price: 13000,
-      location: '池袋（南口）',
-      hasReview: false,
-    },
-  ]
+interface CustomerReservation {
+  id: string
+  startTime: Date
+  endTime: Date
+  status: string
+  price: number
+  castName: string
+  courseName: string
+  optionNames: string[]
+  location: string
+}
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'confirmed':
-        return <Badge className="bg-green-500">予約確定</Badge>
-      case 'completed':
-        return <Badge variant="secondary">利用済み</Badge>
-      case 'cancelled':
-        return <Badge variant="destructive">キャンセル</Badge>
-      default:
-        return null
-    }
+type UnknownRecord = Record<string, unknown>
+
+const UPCOMING_STATUSES = new Set(['confirmed', 'pending', 'modifiable'])
+
+function asRecord(value: unknown): UnknownRecord | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null
+  }
+  return value as UnknownRecord
+}
+
+function readString(source: UnknownRecord | null, key: string): string | null {
+  const value = source?.[key]
+  return typeof value === 'string' && value.trim().length > 0 ? value : null
+}
+
+function readRelationName(source: UnknownRecord, relation: string): string | null {
+  return readString(asRecord(source[relation]), 'name')
+}
+
+function readOptionNames(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return []
   }
 
-  const upcomingReservations = reservations.filter((r) => r.status === 'confirmed')
-  const pastReservations = reservations.filter((r) => r.status !== 'confirmed')
+  return value.flatMap((entry) => {
+    const option = asRecord(entry)
+    const name = readString(option, 'optionName') ?? readRelationName(option ?? {}, 'option')
+    return name ? [name] : []
+  })
+}
+
+function normalizeReservation(value: unknown, store: Store): CustomerReservation | null {
+  const source = asRecord(value)
+  const id = readString(source, 'id')
+  const storeId = readString(source, 'storeId')
+  const startTimeValue = readString(source, 'startTime')
+  const endTimeValue = readString(source, 'endTime')
+  const status = readString(source, 'status')
+
+  if (!source || !id || storeId !== store.id || !startTimeValue || !endTimeValue || !status) {
+    return null
+  }
+
+  const startTime = new Date(startTimeValue)
+  const endTime = new Date(endTimeValue)
+  if (Number.isNaN(startTime.getTime()) || Number.isNaN(endTime.getTime())) {
+    return null
+  }
+
+  const rawPrice = source.price
+  const price = typeof rawPrice === 'number' && Number.isFinite(rawPrice) ? rawPrice : 0
+  const location =
+    readString(source, 'locationMemo') ??
+    readString(source, 'hotelName') ??
+    readRelationName(source, 'station') ??
+    readRelationName(source, 'area') ??
+    store.displayName
+
+  return {
+    id,
+    startTime,
+    endTime,
+    status,
+    price,
+    castName: readRelationName(source, 'cast') ?? 'キャスト未定',
+    courseName: readRelationName(source, 'course') ?? 'コース情報なし',
+    optionNames: readOptionNames(source.options),
+    location,
+  }
+}
+
+function getStatusBadge(status: string) {
+  switch (status) {
+    case 'confirmed':
+      return <Badge className="bg-green-500">予約確定</Badge>
+    case 'pending':
+      return <Badge className="bg-amber-500">予約受付中</Badge>
+    case 'modifiable':
+      return <Badge className="bg-blue-500">店舗確認中</Badge>
+    case 'completed':
+      return <Badge variant="secondary">利用済み</Badge>
+    case 'cancelled':
+      return <Badge variant="destructive">キャンセル</Badge>
+    default:
+      return <Badge variant="outline">{status}</Badge>
+  }
+}
+
+function ReservationCard({ reservation }: { reservation: CustomerReservation }) {
+  return (
+    <Card role="article" aria-label={`予約 ${reservation.id}`}>
+      <CardContent className="p-6">
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-2">
+            {getStatusBadge(reservation.status)}
+            <span className="text-sm text-gray-500">予約番号: {reservation.id}</span>
+          </div>
+          <span className="whitespace-nowrap text-lg font-bold">
+            ¥{reservation.price.toLocaleString('ja-JP')}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+          <div className="flex items-center gap-2 text-sm">
+            <Calendar className="h-4 w-4 text-gray-400" aria-hidden="true" />
+            <span>{format(reservation.startTime, 'yyyy年MM月dd日（E）', { locale: ja })}</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <Clock className="h-4 w-4 text-gray-400" aria-hidden="true" />
+            <span>
+              {format(reservation.startTime, 'HH:mm')}〜{format(reservation.endTime, 'HH:mm')}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <User className="h-4 w-4 text-gray-400" aria-hidden="true" />
+            <span>{reservation.castName}</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <MapPin className="h-4 w-4 text-gray-400" aria-hidden="true" />
+            <span>{reservation.location}</span>
+          </div>
+        </div>
+
+        <p className="mt-3 text-sm font-medium">{reservation.courseName}</p>
+        {reservation.optionNames.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {reservation.optionNames.map((optionName) => (
+              <Badge key={optionName} variant="outline">
+                {optionName}
+              </Badge>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+export function ReservationHistory({ store }: ReservationHistoryProps) {
+  const [reservations, setReservations] = useState<CustomerReservation[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+    const loadReservations = async () => {
+      setLoading(true)
+      setError(null)
+      setReservations([])
+
+      try {
+        const endpoint = `${buildStoreReservationEndpoint(store.id)}&sortBy=startTime&sortOrder=desc`
+        const response = await fetch(endpoint, {
+          credentials: 'include',
+          cache: 'no-store',
+        })
+
+        if (!response.ok) {
+          throw new Error('予約履歴の取得に失敗しました')
+        }
+
+        const payload: unknown = await response.json()
+        if (!Array.isArray(payload)) {
+          throw new Error('予約履歴の取得に失敗しました')
+        }
+
+        const normalized = payload
+          .map((entry) => normalizeReservation(entry, store))
+          .filter((entry): entry is CustomerReservation => entry !== null)
+          .sort((left, right) => right.startTime.getTime() - left.startTime.getTime())
+
+        if (active) {
+          setReservations(normalized)
+        }
+      } catch (loadError) {
+        if (active) {
+          setError(loadError instanceof Error ? loadError.message : '予約履歴の取得に失敗しました')
+        }
+      } finally {
+        if (active) {
+          setLoading(false)
+        }
+      }
+    }
+
+    void loadReservations()
+    return () => {
+      active = false
+    }
+  }, [store])
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent role="status" className="py-12 text-center text-gray-500">
+          予約履歴を読み込んでいます
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent role="alert" className="py-12 text-center text-red-600">
+          {error}
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (reservations.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <p className="mb-4 text-gray-500">まだ予約履歴がありません</p>
+          <Button asChild>
+            <a href={`/${store.slug}/cast`}>キャストを見る</a>
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const upcomingReservations = reservations.filter((reservation) =>
+    UPCOMING_STATUSES.has(reservation.status)
+  )
+  const pastReservations = reservations.filter(
+    (reservation) => !UPCOMING_STATUSES.has(reservation.status)
+  )
 
   return (
     <div className="space-y-6">
-      {/* Upcoming Reservations */}
       {upcomingReservations.length > 0 && (
-        <div>
-          <h3 className="mb-4 text-lg font-semibold">予約中</h3>
+        <section aria-labelledby="upcoming-reservations-heading">
+          <h3 id="upcoming-reservations-heading" className="mb-4 text-lg font-semibold">
+            予約中
+          </h3>
           <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
             予約内容の変更・キャンセルはマイページからはできません。店舗までお電話でご連絡ください。
           </div>
           <div className="space-y-4">
             {upcomingReservations.map((reservation) => (
-              <Card key={reservation.id}>
-                <CardContent className="p-6">
-                  <div className="mb-4 flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      {getStatusBadge(reservation.status)}
-                      <span className="text-sm text-gray-500">予約番号: {reservation.id}</span>
-                    </div>
-                    <span className="text-lg font-bold">¥{reservation.price.toLocaleString()}</span>
-                  </div>
-
-                  <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="h-4 w-4 text-gray-400" />
-                        <span>
-                          {format(reservation.date, 'yyyy年MM月dd日（E）', { locale: ja })}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Clock className="h-4 w-4 text-gray-400" />
-                        <span>{reservation.course}</span>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <User className="h-4 w-4 text-gray-400" />
-                        <span>{reservation.castName}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="h-4 w-4 text-gray-400" />
-                        <span>{reservation.location}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {reservation.options.length > 0 && (
-                    <div className="mb-4 flex flex-wrap gap-2">
-                      {reservation.options.map((option) => (
-                        <Badge key={option} variant="outline">
-                          {option}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="text-sm text-muted-foreground">
-                    変更・キャンセルは店舗までご連絡ください。
-                  </div>
-                </CardContent>
-              </Card>
+              <ReservationCard key={reservation.id} reservation={reservation} />
             ))}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Past Reservations */}
-      <div>
-        <h3 className="mb-4 text-lg font-semibold">利用履歴</h3>
-        <div className="space-y-4">
-          {pastReservations.map((reservation) => (
-            <Card key={reservation.id} className="overflow-hidden">
-              <CardContent className="p-6">
-                <div className="mb-4 flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    {getStatusBadge(reservation.status)}
-                    <span className="text-sm text-gray-500">
-                      {format(reservation.date, 'yyyy年MM月dd日', { locale: ja })}
-                    </span>
-                  </div>
-                  <span className="text-lg font-bold">¥{reservation.price.toLocaleString()}</span>
-                </div>
-
-                <div className="mb-4 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-gray-400" />
-                    <span className="font-medium">{reservation.castName}</span>
-                    <span className="text-gray-500">•</span>
-                    <span className="text-gray-600">{reservation.course}</span>
-                  </div>
-                  {reservation.options.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {reservation.options.map((option) => (
-                        <Badge key={option} variant="outline" className="text-xs">
-                          {option}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {reservation.status === 'completed' && (
-                  <div className="flex gap-2">
-                    {!reservation.hasReview ? (
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <MessageSquare className="mr-2 h-4 w-4" />
-                        口コミを書く
-                      </Button>
-                    ) : (
-                      <Button variant="outline" size="sm" disabled className="flex-1">
-                        <MessageSquare className="mr-2 h-4 w-4" />
-                        口コミ投稿済み
-                      </Button>
-                    )}
-                    <Button variant="outline" size="sm" className="flex-1">
-                      再予約
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      {/* Empty State */}
-      {reservations.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="mb-4 text-gray-500">まだ予約履歴がありません</p>
-            <Button asChild>
-              <a href={`/${store.slug}/cast`}>キャストを見る</a>
-            </Button>
-          </CardContent>
-        </Card>
+      {pastReservations.length > 0 && (
+        <section aria-labelledby="past-reservations-heading">
+          <h3 id="past-reservations-heading" className="mb-4 text-lg font-semibold">
+            利用履歴
+          </h3>
+          <div className="space-y-4">
+            {pastReservations.map((reservation) => (
+              <ReservationCard key={reservation.id} reservation={reservation} />
+            ))}
+          </div>
+        </section>
       )}
     </div>
   )

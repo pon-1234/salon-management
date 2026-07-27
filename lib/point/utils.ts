@@ -11,13 +11,34 @@ import { DEFAULT_POINT_CONFIG, PointConfig, PointTransaction } from './types'
 export type PrismaPointClient = PrismaClient | Prisma.TransactionClient
 
 /**
- * ポイント加算/減算処理。必ずトランザクションコンテキストで呼び出すこと。
- * @no-test-required reason: Covered by higher level integration tests once APIs/reservations use it.
+ * ポイント加算/減算処理。残高の確保と履歴作成を同じトランザクション内で行う。
  */
 export async function addPointTransaction(
   transaction: PointTransaction,
-  tx: PrismaPointClient = db
+  tx: Prisma.TransactionClient
 ): Promise<void> {
+  const amountToReserve = transaction.amount < 0 ? -transaction.amount : 0
+  const result = await tx.customer.updateMany({
+    where: {
+      id: transaction.customerId,
+      ...(amountToReserve > 0 ? { points: { gte: amountToReserve } } : {}),
+    },
+    data: { points: { increment: transaction.amount } },
+  })
+
+  if (result.count === 0) {
+    const customer = await tx.customer.findUnique({
+      where: { id: transaction.customerId },
+      select: { id: true },
+    })
+
+    if (!customer) {
+      throw new Error('Customer not found')
+    }
+
+    throw new Error('Insufficient points')
+  }
+
   const customer = await tx.customer.findUnique({
     where: { id: transaction.customerId },
     select: { points: true },
@@ -25,11 +46,6 @@ export async function addPointTransaction(
 
   if (!customer) {
     throw new Error('Customer not found')
-  }
-
-  const newBalance = customer.points + transaction.amount
-  if (newBalance < 0) {
-    throw new Error('Insufficient points')
   }
 
   await tx.customerPointHistory.create({
@@ -40,15 +56,10 @@ export async function addPointTransaction(
       description: transaction.description,
       relatedService: transaction.relatedService,
       reservationId: transaction.reservationId,
-      balance: newBalance,
+      balance: customer.points,
       expiresAt: transaction.expiresAt,
       sourceHistoryId: transaction.sourceHistoryId,
     },
-  })
-
-  await tx.customer.update({
-    where: { id: transaction.customerId },
-    data: { points: newBalance },
   })
 }
 

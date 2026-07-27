@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Reservation entry-info authorization and store isolation boundary
+ * @related_to   Reservation detail, LINE notification, and requireAdmin
+ * @known_issues Chat messages remain storeless until the chat tenancy policy is approved
+ */
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { format } from 'date-fns'
@@ -5,10 +10,14 @@ import { getServerSession } from 'next-auth'
 import { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { authOptions } from '@/lib/auth/config'
+import { requireAdmin } from '@/lib/auth/utils'
 import { castNotificationService } from '@/lib/notification/cast-service'
+import { ReservationHotelError, resolveReservationHotel } from '@/lib/reservation/hotel-integrity'
+import { ensureStoreId, resolveStoreId } from '@/lib/store/server'
 import logger from '@/lib/logger'
 
 const entryInfoSchema = z.object({
+  hotelId: z.string().trim().max(200).optional().nullable(),
   hotelName: z.string().trim().max(100).optional().nullable(),
   roomNumber: z.string().trim().max(50).optional().nullable(),
   entryMemo: z.string().trim().max(500).optional().nullable(),
@@ -62,24 +71,22 @@ function buildEntryInfoMessage(params: {
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: reservationId } = await params
-  const session = await getServerSession(authOptions)
-  if (!session || session.user.role !== 'admin') {
-    return NextResponse.json({ error: '認証が必要です' }, { status: 401 })
-  }
-
   if (!reservationId) {
     return NextResponse.json({ error: 'reservationId is required' }, { status: 400 })
   }
 
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'reservation:update', storeId })
+    if (authError) return authError
+
+    const session = await getServerSession(authOptions)
     const body = await request.json()
     const payload = entryInfoSchema.parse(body)
     const action = payload.action ?? 'save'
 
-    const storeId = request.nextUrl.searchParams.get('storeId')
-
-    const reservation = await db.reservation.findUnique({
-      where: { id: reservationId },
+    const reservation = await db.reservation.findFirst({
+      where: { id: reservationId, storeId },
       include: {
         cast: {
           select: {
@@ -96,7 +103,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       },
     })
 
-    if (!reservation || (storeId && reservation.storeId !== storeId)) {
+    if (!reservation) {
       return NextResponse.json({ error: '予約が見つかりません。' }, { status: 404 })
     }
 
@@ -106,14 +113,29 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     const now = new Date()
-    const staffName = session.user.name || session.user.email || 'スタッフ'
+    const staffName = session?.user.name || session?.user.email || 'スタッフ'
 
     let entryInfo: EntryInfo
 
     if (action === 'save') {
-      const hotelName = normalizeText(payload.hotelName) ?? reservation.hotelName ?? null
-      const roomNumber = normalizeText(payload.roomNumber) ?? reservation.roomNumber ?? null
-      const entryMemo = normalizeText(payload.entryMemo) ?? reservation.entryMemo ?? null
+      const resolvedHotel = await resolveReservationHotel(db, {
+        storeId,
+        hotelIdSpecified: Object.prototype.hasOwnProperty.call(body, 'hotelId'),
+        hotelNameSpecified: Object.prototype.hasOwnProperty.call(body, 'hotelName'),
+        requestedHotelId: payload.hotelId,
+        requestedHotelName: payload.hotelName,
+        currentHotelId: reservation.hotelId ?? null,
+        currentHotelName: reservation.hotelName ?? null,
+      })
+      const hotelName = resolvedHotel.hotelName
+      const roomNumber =
+        payload.roomNumber === undefined
+          ? (reservation.roomNumber ?? null)
+          : normalizeText(payload.roomNumber)
+      const entryMemo =
+        payload.entryMemo === undefined
+          ? (reservation.entryMemo ?? null)
+          : normalizeText(payload.entryMemo)
 
       entryInfo = {
         hotelName,
@@ -126,12 +148,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       await db.reservation.update({
         where: { id: reservationId },
         data: {
+          hotelId: resolvedHotel.hotelId,
           hotelName,
           roomNumber,
           entryMemo,
           entryReceivedAt: entryInfo.entryReceivedAt,
           entryReceivedBy: entryInfo.entryReceivedBy,
-          entryNotifiedAt: now,
+          entryNotifiedAt: null,
           entryConfirmedAt: null,
           entryReminderSentAt: null,
         },
@@ -144,14 +167,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         entryReceivedAt: reservation.entryReceivedAt ?? now,
         entryReceivedBy: reservation.entryReceivedBy ?? staffName,
       }
-
-      await db.reservation.update({
-        where: { id: reservationId },
-        data: {
-          entryReminderSentAt: now,
-          entryNotifiedAt: reservation.entryNotifiedAt ?? now,
-        },
-      })
     }
 
     const message = buildEntryInfoMessage({
@@ -163,10 +178,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       entry: entryInfo,
     })
 
-    let lineStatus: 'sent' | 'failed' = 'sent'
+    let lineStatus: 'sent' | 'skipped' | 'failed'
     let lineErrorMessage: string | null = null
     try {
-      await castNotificationService.sendEntryInfoNotification({
+      const delivery = await castNotificationService.sendEntryInfoNotification({
         cast: {
           id: cast.id,
           name: cast.name ?? '未設定',
@@ -174,6 +189,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         },
         message,
       })
+      lineStatus = delivery.status
+      lineErrorMessage = delivery.status === 'skipped' ? delivery.reason : null
+
+      if (delivery.status === 'sent') {
+        await db.reservation.update({
+          where: { id: reservationId },
+          data: action === 'save' ? { entryNotifiedAt: now } : { entryReminderSentAt: now },
+        })
+      }
     } catch (error) {
       lineStatus = 'failed'
       lineErrorMessage = error instanceof Error ? error.message : 'LINE通知の送信に失敗しました。'
@@ -202,8 +226,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       },
     })
 
-    const updatedReservation = await db.reservation.findUnique({
-      where: { id: reservationId },
+    const updatedReservation = await db.reservation.findFirst({
+      where: { id: reservationId, storeId },
       select: {
         hotelName: true,
         roomNumber: true,
@@ -218,6 +242,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     return NextResponse.json({
       ...updatedReservation,
+      notificationStatus: lineStatus,
+      notificationError: lineErrorMessage,
       entryReceivedAt: updatedReservation?.entryReceivedAt?.toISOString() ?? null,
       entryNotifiedAt: updatedReservation?.entryNotifiedAt?.toISOString() ?? null,
       entryConfirmedAt: updatedReservation?.entryConfirmedAt?.toISOString() ?? null,
@@ -225,6 +251,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     })
   } catch (error) {
     logger.error({ err: error, reservationId }, 'Failed to update entry info')
+    if (error instanceof ReservationHotelError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: 400 })
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: error.issues[0]?.message ?? '入力が不正です。' },
