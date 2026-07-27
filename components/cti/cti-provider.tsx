@@ -10,7 +10,7 @@ interface CTIProviderProps {
 }
 
 export function CTIProvider({ children }: CTIProviderProps) {
-  const { incomingCall, answerCall, rejectCall, showIncomingCall } = useCTI()
+  const { incomingCall, closeIncomingCall, showIncomingCall } = useCTI()
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -41,10 +41,8 @@ export function CTIProvider({ children }: CTIProviderProps) {
         isOpen={!!incomingCall}
         phoneNumber={incomingCall?.phoneNumber || ''}
         customer={incomingCall?.customer}
-        onAnswer={answerCall}
-        onReject={rejectCall}
         onViewDetails={handleViewDetails}
-        onClose={rejectCall}
+        onClose={closeIncomingCall}
       />
     </>
   )

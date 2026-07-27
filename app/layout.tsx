@@ -38,8 +38,11 @@ const luxuryDisplayFont = Cinzel({
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: '金の玉クラブ | GOLD ESTHE GROUP',
-  description: '密着度の高い性感睾丸マッサージ専門店「金の玉クラブ」公式サイト',
+  title: {
+    default: 'GOLD ESTHE GROUP',
+    template: '%s | GOLD ESTHE GROUP',
+  },
+  description: '店舗・予約管理システム',
   robots: {
     index: false,
     follow: false,

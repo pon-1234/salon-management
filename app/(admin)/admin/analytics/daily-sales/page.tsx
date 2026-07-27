@@ -12,7 +12,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
   RefreshCw,
-  Download,
   TrendingUp,
   TrendingDown,
   Users,
@@ -157,11 +156,6 @@ export default function DailySalesPage() {
     fetchDailySales(selectedDate)
   }
 
-  const handleExport = () => {
-    // エクスポート機能の実装
-    console.log('Exporting data...')
-  }
-
   // 仮の前日比データ
   const kpiData = salesData
     ? {
@@ -211,10 +205,6 @@ export default function DailySalesPage() {
             aria-label="売上日報を再読み込み"
           >
             <RefreshCw className="h-4 w-4" />
-          </Button>
-          <Button onClick={handleExport} variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            エクスポート
           </Button>
         </div>
       </div>

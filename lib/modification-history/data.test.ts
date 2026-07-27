@@ -4,7 +4,7 @@
  * @known_issues Modification alerts are not implemented
  */
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { getModificationHistory, getModificationAlerts, recordModification } from './data'
+import { buildModificationAlerts, getModificationHistory } from './data'
 
 describe('Modification History Data', () => {
   afterEach(() => {
@@ -75,16 +75,32 @@ describe('Modification History Data', () => {
     })
   })
 
-  describe('getModificationAlerts', () => {
-    it('returns empty array (not implemented)', async () => {
-      const alerts = await getModificationAlerts('res-1')
-      expect(alerts).toEqual([])
-    })
-  })
+  describe('buildModificationAlerts', () => {
+    it('turns persisted changes into visible alerts', () => {
+      const alerts = buildModificationAlerts([
+        {
+          id: 'history-1',
+          reservationId: 'res-1',
+          fieldName: 'status',
+          fieldDisplayName: 'ステータス',
+          oldValue: 'confirmed',
+          newValue: 'cancelled',
+          reason: 'customer request',
+          actorId: 'admin-1',
+          actorName: '管理者',
+          timestamp: new Date('2026-07-27T00:00:00.000Z'),
+        },
+      ])
 
-  describe('recordModification', () => {
-    it('resolves without error (handled server-side)', async () => {
-      await expect(recordModification()).resolves.toBeUndefined()
+      expect(alerts).toEqual([
+        expect.objectContaining({
+          id: 'alert-history-1',
+          reservationId: 'res-1',
+          type: 'warning',
+          message: 'ステータスが「confirmed」から「cancelled」に変更されました。',
+          isRead: false,
+        }),
+      ])
     })
   })
 })

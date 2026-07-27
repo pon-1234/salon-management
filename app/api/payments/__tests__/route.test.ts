@@ -31,6 +31,7 @@ vi.mock('@/lib/db', () => ({
     },
     paymentTransaction: {
       findFirst: vi.fn(),
+      findMany: vi.fn(),
     },
   },
 }))
@@ -62,7 +63,7 @@ const assignedAdmin = {
   user: {
     id: 'admin_123',
     role: 'admin',
-    permissions: ['reservation:read', 'reservation:update'],
+    permissions: ['reservation:read', 'reservation:update', 'analytics:read'],
     storeIds: ['ginza'],
   },
 }
@@ -268,6 +269,44 @@ describe('/api/payments', () => {
   })
 
   describe('GET', () => {
+    it('returns a bounded persisted payment list to an assigned administrator', async () => {
+      vi.mocked(db.paymentTransaction.findMany).mockResolvedValueOnce([
+        {
+          id: 'txn_list',
+          reservationId: reservation.id,
+          customerId: reservation.customerId,
+          amount: 12_000,
+          currency: 'jpy',
+          provider: 'manual',
+          paymentMethod: 'cash',
+          status: 'completed',
+          processedAt: new Date('2026-07-20T00:00:00.000Z'),
+          createdAt: new Date('2026-07-20T00:00:00.000Z'),
+          updatedAt: new Date('2026-07-20T00:00:00.000Z'),
+        },
+      ] as never)
+
+      const response = await GET(
+        new NextRequest(
+          'http://localhost:3000/api/payments?storeId=ginza&limit=26&offset=25&status=completed'
+        )
+      )
+      const payload = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(payload.transactions).toHaveLength(1)
+      expect(db.paymentTransaction.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            reservation: { storeId: 'ginza' },
+            status: 'completed',
+          }),
+          take: 26,
+          skip: 25,
+        })
+      )
+    })
+
     it('rejects unauthenticated callers before validating filters', async () => {
       vi.mocked(getServerSession).mockResolvedValue(null)
 

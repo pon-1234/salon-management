@@ -5,7 +5,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { Phone, PhoneOff, User, Calendar, Star, AlertCircle } from 'lucide-react'
+import { Phone, User, Calendar, Star, AlertCircle } from 'lucide-react'
 import { Customer } from '@/lib/customer/types'
 import { isVipMember } from '@/lib/utils'
 import { SafeImage } from '@/components/ui/safe-image'
@@ -14,8 +14,6 @@ interface IncomingCallPopupProps {
   isOpen: boolean
   phoneNumber: string
   customer?: Customer | null
-  onAnswer: () => void
-  onReject: () => void
   onViewDetails: () => void
   onClose: () => void
 }
@@ -24,8 +22,6 @@ export function IncomingCallPopup({
   isOpen,
   phoneNumber,
   customer,
-  onAnswer,
-  onReject,
   onViewDetails,
   onClose,
 }: IncomingCallPopupProps) {
@@ -109,21 +105,9 @@ export function IncomingCallPopup({
             </Card>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex gap-3">
-            <Button
-              onClick={onAnswer}
-              className="flex-1 bg-emerald-600 text-white hover:bg-emerald-700"
-              size="lg"
-            >
-              <Phone className="mr-2 h-5 w-5" />
-              応答
-            </Button>
-            <Button onClick={onReject} variant="destructive" className="flex-1" size="lg">
-              <PhoneOff className="mr-2 h-5 w-5" />
-              拒否
-            </Button>
-          </div>
+          <Button onClick={onClose} variant="outline" className="w-full" size="lg">
+            閉じる
+          </Button>
 
           {customer && (
             <Button onClick={onViewDetails} variant="outline" className="w-full">

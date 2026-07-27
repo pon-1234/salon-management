@@ -1,7 +1,7 @@
 /**
  * @design_doc   Reservation history client adapter with explicit store scoping
  * @related_to   app/api/reservation/history/route.ts, ReservationDialog
- * @known_issues Modification alerts are not implemented
+ * @known_issues Alerts are derived from persisted history and are not independently acknowledged
  */
 import { ModificationHistory, ModificationAlert } from '@/lib/types/modification-history'
 import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
@@ -54,22 +54,15 @@ export async function getModificationHistory(
   return payload.map(normalizeHistoryEntry)
 }
 
-export async function getModificationAlerts(_reservationId: string): Promise<ModificationAlert[]> {
-  return []
-}
-
-export async function recordModification(
-  _reservationId?: string,
-  _actorId?: string,
-  _actorName?: string,
-  _fieldName?: string,
-  _fieldDisplayName?: string,
-  _oldValue?: string,
-  _newValue?: string,
-  _reason?: string,
-  _actorIp?: string,
-  _actorAgent?: string,
-  _sessionId?: string
-): Promise<void> {
-  // サーバー側で自動的に履歴を記録するため、クライアントからの手動記録は不要
+export function buildModificationAlerts(
+  history: readonly ModificationHistory[]
+): ModificationAlert[] {
+  return history.slice(0, 10).map((entry) => ({
+    id: `alert-${entry.id}`,
+    reservationId: entry.reservationId,
+    type: entry.fieldName === 'status' ? 'warning' : 'info',
+    message: `${entry.fieldDisplayName}が「${entry.oldValue ?? '未設定'}」から「${entry.newValue ?? '未設定'}」に変更されました。`,
+    timestamp: entry.timestamp,
+    isRead: false,
+  }))
 }
