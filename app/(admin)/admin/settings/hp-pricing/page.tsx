@@ -6,7 +6,6 @@
  * @known_issues This page remains a prepared UI shell
  */
 import { PageHeader } from '@/components/admin/page-header'
-import { Header } from '@/components/header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -15,7 +14,6 @@ import { ArrowLeft, CreditCard, Edit, PlusCircle } from 'lucide-react'
 export default function HpPricingPage() {
   return (
     <div className="flex min-h-screen flex-col">
-      <Header />
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 pb-12 pt-8">
         <PageHeader
           title="HP料金情報"

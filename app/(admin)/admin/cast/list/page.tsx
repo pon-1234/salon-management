@@ -6,7 +6,6 @@
  * @known_issues Filters apply to the current page
  */
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Header } from '@/components/header'
 import { CastListView } from '@/components/cast/cast-list-view'
 import { Cast } from '@/lib/cast/types'
 import { CastRepositoryImpl } from '@/lib/cast/repository-impl'
@@ -16,6 +15,7 @@ import { CastListViewToggle } from '@/components/cast/cast-list-view-toggle'
 import { CastListInfoBar } from '@/components/cast/cast-list-info-bar'
 import { useStore } from '@/contexts/store-context'
 import { Button } from '@/components/ui/button'
+import { TableSkeleton } from '@/components/ui/page-loading'
 
 const PAGE_SIZE = 25
 
@@ -129,7 +129,6 @@ export default function CastListPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header />
       <CastListInfoBar />
       <CastListViewToggle view={view} onViewChange={setView} />
       <CastListActionButtons
@@ -144,9 +143,7 @@ export default function CastListPage() {
 
       <main className="p-4">
         {loading ? (
-          <div className="flex min-h-[400px] items-center justify-center">
-            <div className="text-gray-500">読み込み中...</div>
-          </div>
+          <TableSkeleton rows={6} columns={4} label="キャスト一覧を読み込んでいます" />
         ) : (
           <>
             <CastListView casts={filteredCasts} view={view} />

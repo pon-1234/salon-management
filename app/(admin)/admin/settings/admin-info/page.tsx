@@ -8,7 +8,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { PageHeader } from '@/components/admin/page-header'
-import { Header } from '@/components/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -388,7 +387,6 @@ export default function AdminInfoPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <main className="p-8">
         <div className="mx-auto max-w-6xl space-y-6">
           <PageHeader

@@ -50,13 +50,13 @@ export function StoreNavigation() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden items-center gap-5 lg:flex">
+          <nav className="hidden items-center gap-3 xl:flex 2xl:gap-5">
             {navigationItems.map((item) => (
               <Link
                 key={item.href}
                 href={`/${store.slug}${item.href}`}
                 className={cn(
-                  'text-xs font-semibold tracking-[0.2em] text-luxury-gold-soft transition-colors hover:text-luxury-gold-bright',
+                  'whitespace-nowrap text-xs font-semibold tracking-[0.12em] text-luxury-gold-soft transition-colors hover:text-luxury-gold-bright 2xl:tracking-[0.2em]',
                   pathname === `/${store.slug}${item.href}`
                     ? 'text-luxury-gold-bright'
                     : 'text-luxury-gold-muted'
@@ -122,7 +122,15 @@ export function StoreNavigation() {
             </>
           )}
 
-          <div className="hidden flex-col items-end text-xs text-luxury-gold-muted sm:flex">
+          <a
+            href={`tel:${store.phone}`}
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-md border border-luxury-gold-border/50 text-luxury-gold sm:hidden"
+            aria-label={`電話で問い合わせ ${store.phone}`}
+          >
+            <Phone className="h-5 w-5" />
+          </a>
+
+          <div className="hidden flex-col items-end text-xs text-luxury-gold-muted md:flex">
             <a
               href={`tel:${store.phone}`}
               className="flex items-center gap-2 text-base font-semibold text-luxury-gold transition-colors hover:text-[#f8e2b5]"
@@ -138,12 +146,12 @@ export function StoreNavigation() {
 
           {/* Mobile Menu */}
           <Sheet>
-            <SheetTrigger asChild className="lg:hidden">
+            <SheetTrigger asChild className="xl:hidden">
               <Button
                 variant="ghost"
                 size="icon"
                 aria-label="店舗メニューを開く"
-                className="border border-luxury-gold-border/50 text-luxury-gold hover:bg-luxury-brown-muted"
+                className="h-11 w-11 border border-luxury-gold-border/50 text-luxury-gold hover:bg-luxury-brown-muted"
               >
                 <Menu className="h-5 w-5" />
               </Button>
@@ -161,7 +169,7 @@ export function StoreNavigation() {
                     key={item.href}
                     href={`/${store.slug}${item.href}`}
                     className={cn(
-                      'py-2 text-sm font-medium text-luxury-gold-menu transition-colors hover:text-luxury-gold-bright',
+                      'flex min-h-11 items-center py-2 text-sm font-medium text-luxury-gold-menu transition-colors hover:text-luxury-gold-bright',
                       pathname === `/${store.slug}${item.href}`
                         ? 'text-luxury-gold-bright'
                         : 'text-luxury-gold-muted'
@@ -173,7 +181,7 @@ export function StoreNavigation() {
                 <div className="rounded-md border border-luxury-gold-border/35 bg-[#1b1510] p-4">
                   <a
                     href={`tel:${store.phone}`}
-                    className="flex items-center gap-2 text-base font-semibold text-luxury-gold transition-colors hover:text-[#f8e2b5]"
+                    className="flex min-h-11 items-center gap-2 text-base font-semibold text-luxury-gold transition-colors hover:text-[#f8e2b5]"
                     aria-label={`電話で問い合わせ ${store.phone}`}
                   >
                     <Phone className="h-4 w-4" />

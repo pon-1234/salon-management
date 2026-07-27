@@ -4,12 +4,17 @@
  * @known_issues Service content remains static until service settings are modeled
  */
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 import { fetchStoreBySlug } from '@/lib/store/public-api'
 import { StoreNavigation } from '@/components/store-navigation'
 import { StoreFooter } from '@/components/store-footer'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Sparkles, Heart, Star, Shield } from 'lucide-react'
+
+export const metadata: Metadata = {
+  title: 'プレイ内容',
+}
 
 export default async function ServicesPage({ params }: { params: Promise<{ store: string }> }) {
   const { store: storeSlug } = await params

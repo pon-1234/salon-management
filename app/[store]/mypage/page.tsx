@@ -4,6 +4,7 @@
  * @known_issues None currently
  */
 import { redirect } from 'next/navigation'
+import type { Metadata } from 'next'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { notFound } from 'next/navigation'
@@ -11,6 +12,10 @@ import { fetchStoreBySlug } from '@/lib/store/public-api'
 import { MyPageContent } from '@/components/mypage/mypage-content'
 import { StoreNavigation } from '@/components/store-navigation'
 import { StoreFooter } from '@/components/store-footer'
+
+export const metadata: Metadata = {
+  title: 'マイページ',
+}
 
 export default async function MyPage({ params }: { params: Promise<{ store: string }> }) {
   const { store: storeSlug } = await params

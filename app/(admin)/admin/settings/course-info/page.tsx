@@ -7,7 +7,6 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { PageHeader } from '@/components/admin/page-header'
-import { Header } from '@/components/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -286,7 +285,6 @@ export default function CourseInfoPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <main className="p-8">
         <div className="mx-auto max-w-6xl space-y-6">
           <PageHeader

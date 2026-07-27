@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { useNotification } from '@/contexts/notification-context'
 import { CTIProvider } from '@/components/cti/cti-provider'
 import { NotificationProvider } from '@/contexts/notification-context'
+import { PageLoading } from '@/components/ui/page-loading'
 
 function AdminLayoutContent({ children }: { children: ReactNode }) {
   const { hasNewNotifications } = useNotification()
@@ -13,7 +14,7 @@ function AdminLayoutContent({ children }: { children: ReactNode }) {
   return (
     <>
       <Header />
-      <div className="min-h-screen w-full pt-[83px]">
+      <div className="min-h-screen w-full">
         <main>
           <div className={cn('w-full', hasNewNotifications && 'has-notifications')}>{children}</div>
         </main>
@@ -25,7 +26,7 @@ function AdminLayoutContent({ children }: { children: ReactNode }) {
 export function AdminLayoutClient({ children }: { children: ReactNode }) {
   return (
     <NotificationProvider>
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={<PageLoading label="管理画面を読み込んでいます" />}>
         <CTIProvider>
           <AdminLayoutContent>{children}</AdminLayoutContent>
         </CTIProvider>

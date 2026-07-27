@@ -7,6 +7,7 @@
 
 import { ReactNode } from 'react'
 import { useSession } from 'next-auth/react'
+import { PageLoading } from '@/components/ui/page-loading'
 
 interface RoleGuardProps {
   children: ReactNode
@@ -25,7 +26,7 @@ export function RoleGuard({
 
   // Show loading state
   if (status === 'loading') {
-    return <div className="animate-pulse">Loading...</div>
+    return <PageLoading compact label="認証情報を確認しています" />
   }
 
   // Check authentication requirement

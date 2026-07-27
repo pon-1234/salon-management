@@ -42,7 +42,10 @@ export function StoreFooter({ store }: StoreFooterProps) {
           {/* Phone Number */}
           <div className="flex items-center justify-center gap-2 text-2xl font-bold md:text-3xl">
             <Phone className="h-6 w-6 text-[#f3d08a] md:h-8 md:w-8" />
-            <a href={`tel:${store.phone}`} className="transition-colors hover:text-[#f6d48a]">
+            <a
+              href={`tel:${store.phone}`}
+              className="flex min-h-11 items-center transition-colors hover:text-[#f6d48a]"
+            >
               ({store.phone})
             </a>
           </div>
@@ -59,7 +62,7 @@ export function StoreFooter({ store }: StoreFooterProps) {
               <a
                 key={social.name}
                 href={social.href}
-                className="text-[#cbb88f] transition-colors hover:text-[#f6d48a]"
+                className="flex h-11 w-11 items-center justify-center text-[#cbb88f] transition-colors hover:text-[#f6d48a]"
                 aria-label={social.name}
               >
                 <social.icon className="h-8 w-8" />

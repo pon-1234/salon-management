@@ -15,7 +15,6 @@ import {
   type ReactNode,
 } from 'react'
 import { PageHeader } from '@/components/admin/page-header'
-import { Header } from '@/components/header'
 import { useStore } from '@/contexts/store-context'
 import { toast } from '@/hooks/use-toast'
 import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
@@ -281,7 +280,6 @@ export default function EventBannersPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
         <main className="p-8">
           <div className="mx-auto max-w-5xl">
             <div className="flex h-64 items-center justify-center">
@@ -298,7 +296,6 @@ export default function EventBannersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <main className="p-8">
         <div className="mx-auto max-w-5xl space-y-6">
           <PageHeader

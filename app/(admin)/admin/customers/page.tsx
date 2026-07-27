@@ -7,7 +7,6 @@
  */
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Header } from '@/components/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -21,6 +20,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Customer } from '@/lib/customer/types'
 import { toast } from '@/hooks/use-toast'
+import { TableSkeleton } from '@/components/ui/page-loading'
 
 const PAGE_SIZE = 25
 
@@ -64,7 +64,6 @@ export default function CustomerListPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <main className="mx-auto max-w-6xl p-6">
         <div className="mb-6 flex items-center justify-between">
           <div>
@@ -82,9 +81,7 @@ export default function CustomerListPage() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-                読み込み中...
-              </div>
+              <TableSkeleton rows={5} columns={6} label="顧客一覧を読み込んでいます" />
             ) : customers.length === 0 ? (
               <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
                 顧客が登録されていません。

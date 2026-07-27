@@ -8,6 +8,7 @@ import { format } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { RefreshCw } from 'lucide-react'
 import { useStore } from '@/contexts/store-context'
+import { PageLoading } from '@/components/ui/page-loading'
 
 export function DailyReportPageClient() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
@@ -61,11 +62,11 @@ export function DailyReportPageClient() {
         </Button>
       </div>
       {isLoading ? (
-        <p>Loading...</p>
+        <PageLoading compact label="日報を読み込んでいます" />
       ) : report ? (
         <DailyReportTable report={report} />
       ) : (
-        <p>No data available</p>
+        <p className="text-sm text-muted-foreground">表示できる日報がありません。</p>
       )}
     </div>
   )

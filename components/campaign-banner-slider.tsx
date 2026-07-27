@@ -133,14 +133,14 @@ export function CampaignBannerSlider({
             <>
               <button
                 onClick={goToPrevious}
-                className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full border border-luxury-gold-border/60 bg-black/60 p-2 text-luxury-gold backdrop-blur-sm transition-colors hover:bg-black/80"
+                className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-luxury-gold-border/60 bg-black/60 text-luxury-gold backdrop-blur-sm transition-colors hover:bg-black/80"
                 aria-label="前のバナーへ"
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
               <button
                 onClick={goToNext}
-                className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full border border-luxury-gold-border/60 bg-black/60 p-2 text-luxury-gold backdrop-blur-sm transition-colors hover:bg-black/80"
+                className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-luxury-gold-border/60 bg-black/60 text-luxury-gold backdrop-blur-sm transition-colors hover:bg-black/80"
                 aria-label="次のバナーへ"
               >
                 <ChevronRight className="h-5 w-5" />
@@ -156,10 +156,10 @@ export function CampaignBannerSlider({
               <button
                 key={index}
                 onClick={() => goToSlide(index)}
-                className={`h-3 w-3 rounded-full transition-all ${
+                className={`flex h-11 w-11 items-center justify-center rounded-full transition-all after:h-3 after:rounded-full after:content-[''] ${
                   index === currentIndex
-                    ? 'w-9 bg-luxury-gold'
-                    : 'bg-luxury-gold/40 hover:bg-luxury-gold/70'
+                    ? 'after:w-9 after:bg-luxury-gold'
+                    : 'after:w-3 after:bg-luxury-gold/40 hover:after:bg-luxury-gold/70'
                 }`}
                 aria-label={`${index + 1}枚目のバナーへ`}
               />

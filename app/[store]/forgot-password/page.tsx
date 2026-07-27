@@ -1,8 +1,18 @@
+/**
+ * @design_doc   docs/SYSTEM_AUDIT_2026-07-26.md J-12 store title consistency
+ * @related_to   ForgotPasswordForm: requests a customer recovery email
+ * @known_issues Delivery confirmation remains enumeration-safe
+ */
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 import { fetchStoreBySlug } from '@/lib/store/public-api'
 import { ForgotPasswordForm } from '@/components/auth/forgot-password-form'
 import { StoreNavigation } from '@/components/store-navigation'
 import { StoreFooter } from '@/components/store-footer'
+
+export const metadata: Metadata = {
+  title: 'パスワード再設定',
+}
 
 export default async function ForgotPasswordPage({
   params,

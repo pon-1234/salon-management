@@ -40,8 +40,7 @@ describe('CastLineRegistrationPanel', () => {
   })
 
   it('revokes pending tokens while unlinking an existing account', async () => {
-    const user = userEvent.setup()
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
     vi.mocked(fetch).mockResolvedValueOnce(
       new Response(JSON.stringify({ success: true }), {
         status: 200,
@@ -53,6 +52,8 @@ describe('CastLineRegistrationPanel', () => {
 
     expect(screen.getByText('LINE連携済み')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'LINE連携を解除' }))
+    expect(fetch).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: '連携を解除' }))
 
     expect(fetch).toHaveBeenCalledWith('/api/cast/line-registration-token?storeId=store-a', {
       method: 'DELETE',

@@ -7,7 +7,6 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { PageHeader } from '@/components/admin/page-header'
-import { Header } from '@/components/header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -223,7 +222,6 @@ export default function DesignationFeesPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Header />
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 pb-12 pt-8">
         <PageHeader
           title="指名料設定"

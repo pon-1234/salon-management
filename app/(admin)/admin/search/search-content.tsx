@@ -10,7 +10,6 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Header } from '@/components/header'
 
 interface CustomerSearchResult {
   id: string
@@ -65,7 +64,6 @@ export function SearchContent() {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <Header />
       <h1 className="mb-4 mt-6 text-2xl font-bold">検索結果: {query}</h1>
       {isLoading ? (
         <p>検索中...</p>
