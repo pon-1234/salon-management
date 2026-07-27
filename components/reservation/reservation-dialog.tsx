@@ -61,11 +61,7 @@ import { differenceInMinutes, addMinutes, format, parseISO } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { ModificationHistoryTable } from '@/components/reservation/modification-history-table'
 import { buildModificationAlerts, getModificationHistory } from '@/lib/modification-history/data'
-import {
-  ReservationData,
-  ReservationSavePayload,
-  ReservationUpdatePayload,
-} from '@/lib/types/reservation'
+import { ReservationUpdatePayload } from '@/lib/types/reservation'
 import { ModificationAlert, ModificationHistory } from '@/lib/types/modification-history'
 import { cn } from '@/lib/utils'
 import { Cast } from '@/lib/cast/types'
@@ -113,147 +109,22 @@ import {
   toNullableNumber,
   toNumber,
 } from '@/components/reservation/reservation-dialog.utils'
-
-type EditFormState = {
-  date: string
-  startTime: string
-  castId: string
-  courseId: string | null
-  designationId: string
-  storeMemo: string
-  notes: string
-  paymentMethod: PaymentMethod
-  marketingChannel: string
-  transportationFee: number
-  additionalFee: number
-  discountAmount: number
-  designationFee: number
-  price: number
-  areaId: string | null
-  stationId: string | null
-  optionIds: string[]
-  hotelName: string
-  roomNumber: string
-  locationMemo: string
-}
-
-type LineLogEntry = {
-  id: string
-  message: string
-  status: 'sent' | 'failed' | string
-  errorMessage: string | null
-  createdAt: Date
-  castName: string | null
-}
+import {
+  formatRemainingTime,
+  getReservationStatusLabel,
+  NG_REASON_LABELS,
+  parseEntryMeta,
+  STATUS_META,
+  STATUS_OPTIONS,
+  StatusBadge,
+  type EditFormState,
+  type LineLogEntry,
+  type ReservationDialogProps,
+} from '@/components/reservation/reservation-dialog.shared'
 
 const MAX_LINE_MESSAGE_LENGTH = 1000
 
-const statusColorMap: Record<string, string> = {
-  confirmed: 'bg-emerald-600',
-  modifiable: 'bg-orange-500',
-  pending: 'bg-amber-500',
-  tentative: 'bg-amber-500',
-  cancelled: 'bg-red-500',
-  completed: 'bg-blue-500',
-}
-
-const statusTextMap: Record<string, string> = {
-  confirmed: '確定済',
-  pending: '仮予約',
-  tentative: '仮予約',
-  cancelled: 'キャンセル',
-  modifiable: '修正可能',
-  completed: '完了',
-}
-
-const STATUS_OPTIONS: Array<{
-  value: ReservationStatus
-  label: string
-  description: string
-}> = [
-  {
-    value: 'pending',
-    label: '仮予約',
-    description: '顧客からの問い合わせ段階。スケジュールを押さえておきたい場合に使用します。',
-  },
-  {
-    value: 'confirmed',
-    label: '確定',
-    description: '顧客・スタッフ双方の確認が取れた状態です。',
-  },
-  {
-    value: 'modifiable',
-    label: '修正待ち',
-    description: '詳細調整が残っている予約に設定してください。完了後に再度ステータスを更新します。',
-  },
-  {
-    value: 'cancelled',
-    label: 'キャンセル',
-    description: '顧客キャンセル・トラブル等で予約を取り消す場合に使用します。',
-  },
-  {
-    value: 'completed',
-    label: '対応済み',
-    description: '施術が完了しレポート作成などのフォローのみ残っている際に使用します。',
-  },
-]
-
-const STATUS_META = STATUS_OPTIONS.reduce<Record<string, { label: string; description: string }>>(
-  (acc, item) => {
-    acc[item.value] = { label: item.label, description: item.description }
-    return acc
-  },
-  {}
-)
-
-const NG_REASON_LABELS: Record<'customer' | 'cast' | 'staff', string> = {
-  customer: '顧客NG',
-  cast: 'キャストNG',
-  staff: '店舗NG',
-}
-
-function StatusBadge({ status }: { status: ReservationStatus | 'completed' }) {
-  const color = statusColorMap[status] ?? 'bg-gray-500'
-  const label = statusTextMap[status] ?? status
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold text-white shadow-sm',
-        color
-      )}
-    >
-      {label}
-    </span>
-  )
-}
-
-function formatRemainingTime(totalSeconds: number) {
-  const minutes = Math.floor(totalSeconds / 60)
-  const seconds = totalSeconds % 60
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`
-}
-
-function parseEntryMeta(payload: any) {
-  return {
-    entryReceivedAt: payload?.entryReceivedAt ? new Date(payload.entryReceivedAt) : null,
-    entryReceivedBy: payload?.entryReceivedBy ?? null,
-    entryNotifiedAt: payload?.entryNotifiedAt ? new Date(payload.entryNotifiedAt) : null,
-    entryConfirmedAt: payload?.entryConfirmedAt ? new Date(payload.entryConfirmedAt) : null,
-    entryReminderSentAt: payload?.entryReminderSentAt
-      ? new Date(payload.entryReminderSentAt)
-      : null,
-  }
-}
-
 const DEFAULT_MARKETING_CHANNELS = [...MARKETING_CHANNELS]
-
-interface ReservationDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  reservation: ReservationData | null | undefined
-  onSave?: (reservationId: string, payload: ReservationSavePayload) => Promise<void> | void
-  casts?: Cast[]
-}
 
 export function ReservationDialog({
   open,
@@ -1384,7 +1255,7 @@ export function ReservationDialog({
   }, [currentStore?.id, entryReminderSending, reservation])
 
   const statusMeta = STATUS_META[status] ?? {
-    label: statusTextMap[status] ?? status,
+    label: getReservationStatusLabel(status),
     description: '',
   }
 

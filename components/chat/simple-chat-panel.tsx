@@ -12,6 +12,7 @@ import type { Message } from '@/lib/types/chat'
 import { ChatAttachmentGallery } from '@/components/chat/chat-attachment-gallery'
 import { ChatAttachmentPreviewList } from '@/components/chat/chat-attachment-previews'
 import { useChatAttachments } from '@/hooks/use-chat-attachments'
+import { useRealtimeRevision } from '@/contexts/realtime-context'
 
 interface SimpleChatPanelProps {
   endpoint: string
@@ -39,6 +40,7 @@ export function SimpleChatPanel({
   maxAttachments = 5,
 }: SimpleChatPanelProps) {
   const { toast } = useToast()
+  const realtimeRevision = useRealtimeRevision()
   const [messages, setMessages] = useState<Message[]>([])
   const [draft, setDraft] = useState('')
   const [isLoading, setIsLoading] = useState(true)
@@ -83,7 +85,7 @@ export function SimpleChatPanel({
 
   useEffect(() => {
     void loadMessages()
-  }, [loadMessages])
+  }, [loadMessages, realtimeRevision])
 
   useEffect(() => {
     if (scrollContainerRef.current) {

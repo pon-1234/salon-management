@@ -11,6 +11,7 @@ import { toast } from '@/hooks/use-toast'
 import { useChatAttachments } from '@/hooks/use-chat-attachments'
 import { ChatAttachmentPreviewList } from '@/components/chat/chat-attachment-previews'
 import { ChatAttachmentGallery } from '@/components/chat/chat-attachment-gallery'
+import { useRealtimeRevision } from '@/contexts/realtime-context'
 
 interface ChatWindowProps {
   participantType: 'customer' | 'cast'
@@ -18,6 +19,7 @@ interface ChatWindowProps {
 }
 
 export function ChatWindow({ participantType, participantId }: ChatWindowProps) {
+  const realtimeRevision = useRealtimeRevision()
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -140,13 +142,19 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
 
   useEffect(() => {
     if (participantId) {
-      fetchMessages()
-      fetchParticipant()
+      void fetchMessages()
     } else {
       setMessages([])
+    }
+  }, [participantId, fetchMessages, realtimeRevision])
+
+  useEffect(() => {
+    if (participantId) {
+      void fetchParticipant()
+    } else {
       setParticipant(null)
     }
-  }, [participantId, fetchMessages, fetchParticipant])
+  }, [participantId, fetchParticipant])
 
   useEffect(() => {
     if (scrollAreaRef.current) {

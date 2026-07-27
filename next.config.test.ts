@@ -18,4 +18,30 @@ describe('Next.js production quality gates', () => {
   it('does not manufacture a localhost authentication origin', () => {
     expect(config).not.toContain("process.env.NEXTAUTH_URL = 'http://localhost:3000'")
   })
+
+  it('sets the browser security headers required by the production edge', async () => {
+    for (const header of [
+      'Content-Security-Policy',
+      'Strict-Transport-Security',
+      'X-Frame-Options',
+      'X-Content-Type-Options',
+      'Referrer-Policy',
+      'Permissions-Policy',
+    ]) {
+      expect(config).toContain(header)
+    }
+    const { default: nextConfig } = await import('./next.config.mjs')
+    const configuredHeaders = await nextConfig.headers?.()
+    const contentSecurityPolicy = configuredHeaders?.[0]?.headers.find(
+      (header) => header.key === 'Content-Security-Policy'
+    )?.value
+
+    expect(contentSecurityPolicy).toContain("script-src 'self'")
+    expect(contentSecurityPolicy).not.toContain("'unsafe-eval'")
+  })
+
+  it('keeps Next.js image optimization enabled', () => {
+    expect(config).not.toContain('unoptimized: true')
+    expect(config).toContain('remotePatterns')
+  })
 })

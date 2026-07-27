@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'jsdom',
+    exclude: [...configDefaults.exclude, 'e2e/**'],
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
     // ワーカー数を制限してメモリ使用量を削減
@@ -36,10 +37,10 @@ export default defineConfig({
         'lib/utils.ts', // utility functions
       ],
       thresholds: {
-        branches: 30,
-        functions: 30,
-        lines: 30,
-        statements: 30,
+        branches: 55,
+        functions: 55,
+        lines: 55,
+        statements: 55,
       },
     },
   },

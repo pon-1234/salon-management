@@ -1,6 +1,6 @@
 /**
  * @design_doc   ui-improvement-instructions.md U-1 toast wiring
- * @related_to   Toaster, AuthProvider, StoreProvider: global app shell providers
+ * @related_to   Toaster, AuthProvider, RealtimeProvider, StoreProvider: global app shell providers
  * @known_issues Route-specific client pages still rely on nearest layout metadata
  */
 import type { Metadata, Viewport } from 'next'
@@ -8,6 +8,7 @@ import { Cinzel, Noto_Sans_JP, Noto_Serif_JP, Playfair_Display } from 'next/font
 import '../styles/globals.css'
 import { StoreProvider } from '@/contexts/store-context'
 import { AuthProvider } from '@/contexts/auth-context'
+import { RealtimeProvider } from '@/contexts/realtime-context'
 import { Toaster } from '@/components/ui/toaster'
 
 const bodyFont = Noto_Sans_JP({
@@ -64,10 +65,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className={`${bodyFont.variable} ${displayFont.variable} ${luxurySerifFont.variable} ${luxuryDisplayFont.variable} antialiased`}
       >
         <AuthProvider>
-          <StoreProvider>
-            {children}
-            <Toaster />
-          </StoreProvider>
+          <RealtimeProvider>
+            <StoreProvider>
+              {children}
+              <Toaster />
+            </StoreProvider>
+          </RealtimeProvider>
         </AuthProvider>
       </body>
     </html>

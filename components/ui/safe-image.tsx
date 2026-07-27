@@ -1,21 +1,28 @@
 /**
  * @design_doc   docs/SYSTEM_AUDIT_2026-07-26.md J-4 broken-image recovery
  * @related_to   StoreHomeContent and all image-rendering surfaces
- * @known_issues Next.js image optimization is handled separately in phase 4
+ * @known_issues Remote image hosts are permitted by next.config.mjs and should be narrowed per deployment
  */
 'use client'
 
-import { forwardRef, type ImgHTMLAttributes, type SyntheticEvent } from 'react'
+import Image, { type ImageProps } from 'next/image'
+import { forwardRef, type SyntheticEvent } from 'react'
 
 export const DEFAULT_IMAGE_FALLBACK = '/images/non-photo.svg'
 
-export interface SafeImageProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, 'alt'> {
+export interface SafeImageProps extends Omit<ImageProps, 'alt' | 'height' | 'onError' | 'width'> {
   alt: string
   fallbackSrc?: string
+  height?: number
+  onError?: (event: SyntheticEvent<HTMLImageElement>) => void
+  width?: number
 }
 
 export const SafeImage = forwardRef<HTMLImageElement, SafeImageProps>(
-  ({ alt, fallbackSrc = DEFAULT_IMAGE_FALLBACK, onError, ...props }, ref) => {
+  (
+    { alt, fallbackSrc = DEFAULT_IMAGE_FALLBACK, height = 800, onError, width = 1200, ...props },
+    ref
+  ) => {
     const handleError = (event: SyntheticEvent<HTMLImageElement>) => {
       onError?.(event)
       const image = event.currentTarget
@@ -29,8 +36,9 @@ export const SafeImage = forwardRef<HTMLImageElement, SafeImageProps>(
       image.removeAttribute('srcset')
     }
 
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img ref={ref} {...props} alt={alt} onError={handleError} />
+    return (
+      <Image ref={ref} {...props} alt={alt} height={height} width={width} onError={handleError} />
+    )
   }
 )
 

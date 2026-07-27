@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getCastAvailableOptions } from './quick-booking-dialog'
+import { getCastAvailableOptions } from './quick-booking.utils'
 import type { Cast } from '@/lib/cast/types'
 
 const baseCast: Cast = {

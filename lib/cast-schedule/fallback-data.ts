@@ -1,3 +1,8 @@
+/**
+ * @design_doc   docs/SYSTEM_AUDIT_2026-07-26.md D-2 legacy module cleanup
+ * @related_to   CastScheduleUseCases uses this opt-in development fallback
+ * @known_issues Fallback entries are illustrative and never used when mock fallbacks are disabled
+ */
 import { CastScheduleEntry, WeeklySchedule } from './old-types'
 import { format, addDays } from 'date-fns'
 

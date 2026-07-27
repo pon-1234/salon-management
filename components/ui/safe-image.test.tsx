@@ -4,6 +4,8 @@
  * @known_issues None
  */
 import { fireEvent, render, screen } from '@testing-library/react'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { SafeImage } from './safe-image'
 
@@ -27,5 +29,12 @@ describe('SafeImage', () => {
     fireEvent.error(image)
 
     expect(image).toHaveAttribute('src', '/images/non-photo.svg')
+  })
+
+  it('renders through the Next.js image optimizer', () => {
+    const source = readFileSync(join(process.cwd(), 'components/ui/safe-image.tsx'), 'utf8')
+
+    expect(source).toContain("from 'next/image'")
+    expect(source).not.toContain('<img')
   })
 })

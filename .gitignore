@@ -6,6 +6,8 @@
 # testing
 /coverage
 coverage.json
+/playwright-report/
+/test-results/
 
 # next.js
 /.next/

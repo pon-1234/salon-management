@@ -15,12 +15,10 @@ import {
   isAgeVerificationPath,
 } from '@/lib/age-verification'
 
-// Public routes that don't require authentication
-const publicRoutes = ['/', '/_next', '/favicon.ico']
-
 // Auth routes that should be accessible without authentication
 const authRoutes = ['/login', '/register', '/admin/login', '/auth', '/api/auth', '/cast/login']
 const storeCastLoginPattern = /^\/[^/]+\/cast\/login$/
+const storeCustomerAuthPattern = /^\/[^/]+\/(?:login|register)(?:\/|$)/
 const publicApiRoutes = ['/api/age-verification', '/api/health', '/api/line/webhook']
 const publicPostApiRoutes = ['/api/request-attendance']
 const publicReadApiPrefixes = ['/api/course', '/api/option']
@@ -44,6 +42,10 @@ const CANONICAL_IKEBUKURO_PATH = '/ikebukuro'
 
 function matchesApiPrefix(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`)
+}
+
+function isExactOrChild(pathname: string, route: string): boolean {
+  return pathname === route || pathname.startsWith(`${route}/`)
 }
 
 function extractStoreContext(request: NextRequest): string | null {
@@ -109,10 +111,10 @@ export async function middleware(request: NextRequest) {
   const isPublicReadApiRoute =
     isApiRoute &&
     request.method === 'GET' &&
-    publicReadApiPrefixes.some((route) => pathname.startsWith(route))
+    publicReadApiPrefixes.some((route) => matchesApiPrefix(pathname, route))
   const isPublicApiRoute =
     isApiRoute &&
-    (pathname.startsWith('/api/public') ||
+    (matchesApiPrefix(pathname, '/api/public') ||
       publicApiRoutes.some((route) => matchesApiPrefix(pathname, route)) ||
       (request.method === 'POST' && publicPostApiRoutes.some((route) => pathname === route)) ||
       isPublicReadApiRoute)
@@ -121,15 +123,21 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Check if route is public
   const isStoreCastAuthRoute = storeCastLoginPattern.test(pathname)
+  const isStoreCustomerAuthRoute = storeCustomerAuthPattern.test(pathname)
+  const isAuthRoute =
+    authRoutes.some((route) => isExactOrChild(pathname, route)) ||
+    isStoreCastAuthRoute ||
+    isStoreCustomerAuthRoute
+  const isAdminRoute = isExactOrChild(pathname, '/admin')
+  const isCastPortalRoute = isExactOrChild(pathname, '/cast')
+  const isCustomerMypageRoute = pathname.split('/').includes('mypage')
+  const requiresSessionInspection =
+    isApiRoute || isAuthRoute || isAdminRoute || isCastPortalRoute || isCustomerMypageRoute
 
-  const isPublicRoute =
-    !isApiRoute &&
-    (publicRoutes.some((route) => pathname.startsWith(route)) ||
-      authRoutes.some((route) => pathname.startsWith(route)) ||
-      isStoreCastAuthRoute ||
-      pathname.match(/^\/((?!admin|mypage|cast).)*$/)) // All non-admin, non-mypage, non-cast routes
+  if (!requiresSessionInspection) {
+    return NextResponse.next()
+  }
 
   // Get session token
   const token = await getToken({
@@ -137,16 +145,14 @@ export async function middleware(request: NextRequest) {
     secret: env.nextAuth.secret,
   })
 
-  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route)) || isStoreCastAuthRoute
-
   // Handle authentication routes
   if (isAuthRoute) {
-    if (pathname.startsWith('/api/auth')) {
+    if (isExactOrChild(pathname, '/api/auth')) {
       return NextResponse.next()
     }
 
     if (token) {
-      if (token.role === 'admin' && pathname.startsWith('/admin')) {
+      if (token.role === 'admin' && isAdminRoute) {
         return NextResponse.redirect(new URL('/admin/dashboard', request.url))
       }
 
@@ -182,7 +188,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Handle admin routes
-  if (pathname.startsWith('/admin')) {
+  if (isAdminRoute) {
     if (!token) {
       // Redirect to admin login if not authenticated
       const url = new URL('/admin/login', request.url)
@@ -205,9 +211,9 @@ export async function middleware(request: NextRequest) {
   }
 
   // Handle cast portal routes
-  if (pathname.startsWith('/cast')) {
+  if (isCastPortalRoute) {
     // Allow unauthenticated access to cast login
-    if (pathname.startsWith('/cast/login')) {
+    if (isExactOrChild(pathname, '/cast/login')) {
       return NextResponse.next()
     }
 
@@ -231,7 +237,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Handle protected customer routes (e.g., mypage)
-  if (pathname.includes('/mypage')) {
+  if (isCustomerMypageRoute) {
     if (!token) {
       // Extract store from URL and redirect to store-specific login
       const pathParts = pathname.split('/')
@@ -257,24 +263,16 @@ export async function middleware(request: NextRequest) {
     }
 
     // For admin-only API routes
-    if (pathname.startsWith('/api/admin') && token.role !== 'admin') {
+    if (isExactOrChild(pathname, '/api/admin') && token.role !== 'admin') {
       return NextResponse.json({ error: 'Access denied. Admin role required.' }, { status: 403 })
     }
 
     return NextResponse.next()
   }
 
-  // Allow all other public routes
-  if (isPublicRoute) {
-    return NextResponse.next()
-  }
-
-  // Default: require authentication
-  if (!token) {
-    const url = new URL('/login', request.url)
-    url.searchParams.set('callbackUrl', pathname)
-    return NextResponse.redirect(url, { status: 307 })
-  }
-
   return NextResponse.next()
+}
+
+export const config = {
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|robots.txt|images/|videos/).*)'],
 }

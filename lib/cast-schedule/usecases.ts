@@ -15,7 +15,7 @@ import type {
   ScheduleUser,
 } from './types'
 import type { WeeklySchedule, ScheduleFilters, CastScheduleEntry } from './old-types'
-import { generateMockWeeklySchedule } from './old-data'
+import { generateMockWeeklySchedule } from './fallback-data'
 import { addDays, startOfWeek, endOfWeek } from 'date-fns'
 import { formatInTimeZone, utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz'
 import { isTimeOverlapping } from './utils'
