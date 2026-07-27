@@ -43,6 +43,7 @@ image-migration-mapping.json
 # legacy migration snapshots and generated reports
 /migration-data/
 /migration-reports/
+/output/
 
 # misc
 .DS_Store

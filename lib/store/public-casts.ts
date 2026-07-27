@@ -8,6 +8,7 @@ import { db } from '@/lib/db'
 import type { PublicCastSummary } from '@/lib/store/public-types'
 import type { PublicProfile } from '@/lib/cast/types'
 import { normalizePublicProfile } from '@/lib/cast/public-profile'
+import logger from '@/lib/logger'
 
 interface CastRecord {
   id: string
@@ -59,28 +60,34 @@ export interface PublicCastProfile extends PublicCastSummary {
 }
 
 export async function getPublicCastProfiles(storeId: string): Promise<PublicCastProfile[]> {
-  const castRecords: CastRecord[] = await db.cast.findMany({
-    where: { storeId },
-    select: {
-      id: true,
-      name: true,
-      age: true,
-      height: true,
-      bust: true,
-      waist: true,
-      hip: true,
-      type: true,
-      image: true,
-      images: true,
-      netReservation: true,
-      panelDesignationRank: true,
-      regularDesignationRank: true,
-      workStatus: true,
-      createdAt: true,
-      publicProfile: true,
-    },
-    orderBy: { createdAt: 'desc' },
-  })
+  let castRecords: CastRecord[]
+  try {
+    castRecords = await db.cast.findMany({
+      where: { storeId },
+      select: {
+        id: true,
+        name: true,
+        age: true,
+        height: true,
+        bust: true,
+        waist: true,
+        hip: true,
+        type: true,
+        image: true,
+        images: true,
+        netReservation: true,
+        panelDesignationRank: true,
+        regularDesignationRank: true,
+        workStatus: true,
+        createdAt: true,
+        publicProfile: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+  } catch (error) {
+    logger.error({ err: error, storeId }, 'Failed to load public cast profiles')
+    return []
+  }
 
   return castRecords.map((record) => {
     const { primary, all } = normalizeImages(record)
@@ -155,18 +162,26 @@ export async function getPublicRankingData(storeId: string): Promise<PublicRanki
 
   const profileMap = new Map(profiles.map((profile) => [profile.id, profile]))
 
-  const reviewStats = await db.review.groupBy({
-    by: ['castId'],
-    where: { cast: { storeId } },
-    _avg: { rating: true },
-    _count: { _all: true },
-  })
-
-  const reservationStats = await db.reservation.groupBy({
-    by: ['castId'],
-    where: { storeId },
-    _count: { _all: true },
-  })
+  let reviewStats
+  let reservationStats
+  try {
+    ;[reviewStats, reservationStats] = await Promise.all([
+      db.review.groupBy({
+        by: ['castId'],
+        where: { cast: { storeId } },
+        _avg: { rating: true },
+        _count: { _all: true },
+      }),
+      db.reservation.groupBy({
+        by: ['castId'],
+        where: { storeId },
+        _count: { _all: true },
+      }),
+    ])
+  } catch (error) {
+    logger.error({ err: error, storeId }, 'Failed to load public ranking aggregates')
+    return { overall: [], newcomers: [], reviews: [], repeaters: [] }
+  }
 
   const reservationsMap = new Map(reservationStats.map((stat) => [stat.castId, stat._count._all]))
 

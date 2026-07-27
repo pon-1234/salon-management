@@ -3,13 +3,15 @@
 /**
  * @design_doc   ui-improvement-instructions.md U-6 admin page header
  * @related_to   PageHeader: shared admin title area; Header: global admin navigation
- * @known_issues Coming-soon settings still use the existing toast/alert flow
+ * @known_issues None
  */
 import { useState } from 'react'
+import NextLink from 'next/link'
 import { PageHeader } from '@/components/admin/page-header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { toast } from '@/hooks/use-toast'
 import {
   Store,
   HelpCircle,
@@ -20,7 +22,7 @@ import {
   Megaphone,
   Shield,
   CreditCard,
-  Link,
+  Link as LinkIcon,
   Building,
   FileText,
   Mail,
@@ -39,6 +41,7 @@ interface SettingItem {
   icon: React.ReactNode
   status: 'available' | 'coming-soon'
   category: string
+  href?: string
 }
 
 export default function SettingsPage() {
@@ -52,6 +55,7 @@ export default function SettingsPage() {
       icon: <Store className="h-5 w-5" />,
       status: 'available',
       category: '基本設定',
+      href: '/admin/settings/store-info',
     },
     {
       id: 'business-qa',
@@ -66,7 +70,7 @@ export default function SettingsPage() {
       title: 'よくある質問',
       description: '顧客向けのよくある質問を管理',
       icon: <MessageSquare className="h-5 w-5" />,
-      status: 'available',
+      status: 'coming-soon',
       category: '顧客対応',
     },
     {
@@ -76,6 +80,7 @@ export default function SettingsPage() {
       icon: <Shield className="h-5 w-5" />,
       status: 'available',
       category: '顧客対応',
+      href: '/admin/reviews',
     },
     {
       id: 'event-banners',
@@ -84,6 +89,7 @@ export default function SettingsPage() {
       icon: <Calendar className="h-5 w-5" />,
       status: 'available',
       category: 'コンテンツ管理',
+      href: '/admin/settings/event-banners',
     },
     {
       id: 'area-info',
@@ -92,6 +98,7 @@ export default function SettingsPage() {
       icon: <MapPin className="h-5 w-5" />,
       status: 'available',
       category: '地域設定',
+      href: '/admin/settings/area-info',
     },
     {
       id: 'station-info',
@@ -100,13 +107,14 @@ export default function SettingsPage() {
       icon: <Train className="h-5 w-5" />,
       status: 'available',
       category: '地域設定',
+      href: '/admin/settings/station-info',
     },
     {
       id: 'media-info',
       title: '媒体情報',
       description: '広告媒体や集客チャネルの情報を管理',
       icon: <Megaphone className="h-5 w-5" />,
-      status: 'available',
+      status: 'coming-soon',
       category: 'マーケティング',
     },
     {
@@ -116,6 +124,7 @@ export default function SettingsPage() {
       icon: <Shield className="h-5 w-5" />,
       status: 'available',
       category: 'セキュリティ',
+      href: '/admin/settings/admin-info',
     },
     {
       id: 'hp-pricing',
@@ -124,14 +133,16 @@ export default function SettingsPage() {
       icon: <CreditCard className="h-5 w-5" />,
       status: 'available',
       category: 'コンテンツ管理',
+      href: '/admin/settings/hp-pricing',
     },
     {
       id: 'mutual-links',
       title: '相互リンク',
       description: '相互リンクの管理',
-      icon: <Link className="h-5 w-5" />,
+      icon: <LinkIcon className="h-5 w-5" />,
       status: 'available',
       category: 'コンテンツ管理',
+      href: '/admin/settings/mutual-links',
     },
     {
       id: 'hotel-info',
@@ -140,6 +151,7 @@ export default function SettingsPage() {
       icon: <Building className="h-5 w-5" />,
       status: 'available',
       category: '地域設定',
+      href: '/admin/settings/hotel-info',
     },
     {
       id: 'templates',
@@ -148,13 +160,14 @@ export default function SettingsPage() {
       icon: <FileText className="h-5 w-5" />,
       status: 'available',
       category: '顧客対応',
+      href: '/admin/settings/templates',
     },
     {
       id: 'newsletter',
       title: 'メルマガ送信',
       description: 'メルマガの作成と送信管理',
       icon: <Mail className="h-5 w-5" />,
-      status: 'available',
+      status: 'coming-soon',
       category: 'マーケティング',
     },
     {
@@ -164,6 +177,7 @@ export default function SettingsPage() {
       icon: <Coins className="h-5 w-5" />,
       status: 'available',
       category: '顧客対応',
+      href: '/admin/settings/points',
     },
     {
       id: 'option-info',
@@ -172,6 +186,7 @@ export default function SettingsPage() {
       icon: <Package className="h-5 w-5" />,
       status: 'available',
       category: 'サービス管理',
+      href: '/admin/settings/option-info',
     },
     {
       id: 'course-info',
@@ -180,6 +195,7 @@ export default function SettingsPage() {
       icon: <BookOpen className="h-5 w-5" />,
       status: 'available',
       category: 'サービス管理',
+      href: '/admin/settings/course-info',
     },
     {
       id: 'designation-fees',
@@ -188,6 +204,7 @@ export default function SettingsPage() {
       icon: <Receipt className="h-5 w-5" />,
       status: 'available',
       category: 'サービス管理',
+      href: '/admin/settings/designation-fees',
     },
   ]
 
@@ -225,108 +242,71 @@ export default function SettingsPage() {
 
         {/* 設定項目グリッド */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredItems.map((item) => (
-            <Card
-              key={item.id}
-              className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
-                item.status === 'coming-soon'
-                  ? 'cursor-not-allowed opacity-60'
-                  : 'hover:-translate-y-1 hover:shadow-lg'
-              }`}
-              onClick={() => {
-                if (item.status === 'available') {
-                  // 利用可能な設定項目のナビゲーション
-                  switch (item.id) {
-                    case 'store-info':
-                      window.location.href = '/admin/settings/store-info'
-                      break
-                    case 'option-info':
-                      window.location.href = '/admin/settings/option-info'
-                      break
-                    case 'course-info':
-                      window.location.href = '/admin/settings/course-info'
-                      break
-                    case 'area-info':
-                      window.location.href = '/admin/settings/area-info'
-                      break
-                    case 'station-info':
-                      window.location.href = '/admin/settings/station-info'
-                      break
-                    case 'hp-pricing':
-                      window.location.href = '/admin/settings/hp-pricing'
-                      break
-                    case 'mutual-links':
-                      window.location.href = '/admin/settings/mutual-links'
-                      break
-                    case 'hotel-info':
-                      window.location.href = '/admin/settings/hotel-info'
-                      break
-                    case 'admin-info':
-                      window.location.href = '/admin/settings/admin-info'
-                      break
-                    case 'templates':
-                      window.location.href = '/admin/settings/templates'
-                      break
-                    case 'designation-fees':
-                      window.location.href = '/admin/settings/designation-fees'
-                      break
-                    case 'event-banners':
-                      window.location.href = '/admin/settings/event-banners'
-                      break
-                    case 'reviews':
-                      window.location.href = '/admin/reviews'
-                      break
-                    case 'points':
-                      window.location.href = '/admin/settings/points'
-                      break
-                    default:
-                      console.log(`${item.title}の設定ページは準備中です`)
-                      alert(`${item.title}の設定ページは準備中です`)
-                  }
+          {filteredItems.map((item) => {
+            const card = (
+              <Card
+                className={`h-full transition-all duration-200 hover:shadow-md ${
+                  item.status === 'coming-soon'
+                    ? 'cursor-not-allowed opacity-60'
+                    : 'hover:-translate-y-1 hover:shadow-lg'
+                }`}
+                aria-disabled={item.status === 'coming-soon'}
+                onClick={
+                  item.status === 'coming-soon'
+                    ? () => toast({ description: `${item.title}の設定ページは準備中です` })
+                    : undefined
                 }
-              }}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div
-                    className={`rounded-lg p-3 ${
-                      item.status === 'available' ? 'bg-emerald-100' : 'bg-gray-100'
-                    }`}
-                  >
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
                     <div
-                      className={`${
-                        item.status === 'available' ? 'text-emerald-600' : 'text-gray-400'
+                      className={`rounded-lg p-3 ${
+                        item.status === 'available' ? 'bg-emerald-100' : 'bg-gray-100'
                       }`}
                     >
-                      {item.icon}
+                      <div
+                        className={`${
+                          item.status === 'available' ? 'text-emerald-600' : 'text-gray-400'
+                        }`}
+                      >
+                        {item.icon}
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      {item.status === 'coming-soon' && (
+                        <Badge variant="secondary" className="text-xs">
+                          準備中
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className="text-xs">
+                        {item.category}
+                      </Badge>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-1">
-                    {item.status === 'coming-soon' && (
-                      <Badge variant="secondary" className="text-xs">
-                        準備中
-                      </Badge>
+                  <CardTitle className="text-lg font-semibold">{item.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="mb-4 text-sm text-gray-600">
+                    {item.description}
+                  </CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1" />
+                    {item.status === 'available' && (
+                      <ChevronRight className="h-4 w-4 text-gray-400" />
                     )}
-                    <Badge variant="outline" className="text-xs">
-                      {item.category}
-                    </Badge>
                   </div>
-                </div>
-                <CardTitle className="text-lg font-semibold">{item.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="mb-4 text-sm text-gray-600">
-                  {item.description}
-                </CardDescription>
-                <div className="flex items-center justify-between">
-                  <div className="flex-1" />
-                  {item.status === 'available' && (
-                    <ChevronRight className="h-4 w-4 text-gray-400" />
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            )
+
+            return item.href ? (
+              <NextLink key={item.id} href={item.href} className="block">
+                {card}
+              </NextLink>
+            ) : (
+              <div key={item.id}>{card}</div>
+            )
+          })}
         </div>
 
         {/* 統計情報 */}

@@ -157,6 +157,24 @@ describe('Reservation API - Modifiable Status', () => {
     return { ...base, ...overrides }
   }
 
+  it.each([
+    ['sortBy', 'password'],
+    ['sortOrder', 'sideways'],
+    ['limit', '0'],
+    ['offset', '-1'],
+  ])('rejects invalid list query %s=%s before querying Prisma', async (key, value) => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'admin-1', role: 'admin', permissions: ['*'] },
+    } as any)
+
+    const response = await GET(
+      new NextRequest(`http://localhost:3000/api/reservation?storeId=store-123&${key}=${value}`)
+    )
+
+    expect(response.status).toBe(400)
+    expect(db.reservation.findMany).not.toHaveBeenCalled()
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(db.store.findUnique).mockResolvedValue({ id: 'store-123' } as any)

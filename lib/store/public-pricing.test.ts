@@ -59,10 +59,15 @@ describe('getPublicStorePricing', () => {
     )
   })
 
-  it('propagates database failures when mock fallbacks are disabled', async () => {
+  it('returns no bookable services when the database is unavailable in production mode', async () => {
     mocks.courseFindMany.mockRejectedValue(new Error('database unavailable'))
 
-    await expect(getPublicStorePricing('ginza')).rejects.toThrow('database unavailable')
+    const pricing = await getPublicStorePricing('ginza')
+
+    expect(pricing.courses).toEqual([])
+    expect(pricing.options).toEqual([])
+    expect(pricing.additionalFees).toEqual([])
+    expect(pricing.notes).toEqual([])
   })
 
   it('uses development fixtures only when the mock fallback flag is enabled', async () => {

@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @design_doc   docs/SYSTEM_AUDIT_2026-07-26.md K-2, K-3
+ * @related_to   CastRepositoryImpl: bounded lightweight cast list requests
+ * @known_issues Filters apply to the current page
+ */
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Header } from '@/components/header'
 import { CastListView } from '@/components/cast/cast-list-view'
@@ -10,6 +15,9 @@ import { CastListActionButtons } from '@/components/cast/cast-list-action-button
 import { CastListViewToggle } from '@/components/cast/cast-list-view-toggle'
 import { CastListInfoBar } from '@/components/cast/cast-list-info-bar'
 import { useStore } from '@/contexts/store-context'
+import { Button } from '@/components/ui/button'
+
+const PAGE_SIZE = 25
 
 export default function CastListPage() {
   const { currentStore } = useStore()
@@ -19,6 +27,8 @@ export default function CastListPage() {
   const [workStatus, setWorkStatus] = useState('就業中(公開)')
   const [nameSearch, setNameSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
   const castRepository = useMemo(
     () => new CastRepositoryImpl(undefined, currentStore.id),
     [currentStore.id]
@@ -32,9 +42,12 @@ export default function CastListPage() {
   const fetchCasts = useCallback(async () => {
     setLoading(true)
     try {
-      const casts = await castRepository.getAll()
-      setAllCasts(casts)
-      setCastList(casts)
+      const offset = page * PAGE_SIZE
+      const casts = await castRepository.getAll({ limit: PAGE_SIZE + 1, offset })
+      setHasMore(casts.length > PAGE_SIZE)
+      const pageCasts = casts.slice(0, PAGE_SIZE)
+      setAllCasts(pageCasts)
+      setCastList(pageCasts)
     } catch (error) {
       console.error('Error fetching casts:', error)
       toast({
@@ -45,7 +58,7 @@ export default function CastListPage() {
     } finally {
       setLoading(false)
     }
-  }, [castRepository])
+  }, [castRepository, page])
 
   useEffect(() => {
     fetchCasts()
@@ -135,7 +148,18 @@ export default function CastListPage() {
             <div className="text-gray-500">読み込み中...</div>
           </div>
         ) : (
-          <CastListView casts={filteredCasts} view={view} />
+          <>
+            <CastListView casts={filteredCasts} view={view} />
+            <div className="mt-4 flex items-center justify-end gap-3">
+              <Button variant="outline" disabled={page === 0} onClick={() => setPage(page - 1)}>
+                前へ
+              </Button>
+              <span className="text-sm text-muted-foreground">{page + 1}ページ</span>
+              <Button variant="outline" disabled={!hasMore} onClick={() => setPage(page + 1)}>
+                次へ
+              </Button>
+            </div>
+          </>
         )}
       </main>
     </div>

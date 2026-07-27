@@ -77,6 +77,14 @@ describe('CastRepositoryImpl', () => {
   }
 
   describe('getAll', () => {
+    it('adds bounded pagination parameters when requested', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(mockResponse({ body: [] }))
+
+      await repository.getAll({ limit: 26, offset: 50 })
+
+      expect(vi.mocked(fetch).mock.calls[0][0]).toBe('/api/cast?limit=26&offset=50')
+    })
+
     it('should fetch all casts successfully', async () => {
       const mockCasts = [mockCast]
       vi.mocked(fetch).mockResolvedValueOnce(mockResponse({ body: mockCasts }))

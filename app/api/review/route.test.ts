@@ -184,12 +184,27 @@ describe('Review API', () => {
         customerId: undefined,
         reservationId: undefined,
         statuses: ['published'],
-        limit: undefined,
+        limit: 25,
+        offset: 0,
       })
       expect(data[0].customerAlias).toBe('山***')
       expect(data[0]).not.toHaveProperty('customerId')
       expect(data[0]).not.toHaveProperty('customerName')
       expect(data[0]).not.toHaveProperty('reservationId')
+    })
+
+    it('passes validated pagination to the review service', async () => {
+      mockSearchReviews.mockResolvedValueOnce([])
+      vi.mocked(getServerSession).mockResolvedValueOnce(null)
+
+      const response = await GET(
+        new NextRequest('http://localhost:3000/api/review?storeId=store-1&limit=26&offset=25')
+      )
+
+      expect(response.status).toBe(200)
+      expect(mockSearchReviews).toHaveBeenCalledWith(
+        expect.objectContaining({ limit: 26, offset: 25 })
+      )
     })
 
     it('returns reviews and stats when stats=true', async () => {

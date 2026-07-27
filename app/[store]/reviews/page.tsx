@@ -7,8 +7,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { fetchStoreBySlug } from '@/lib/store/public-api'
 import { ReviewsContent } from '@/components/reviews/reviews-content'
-import { getStoreReviews, getReviewStatsForStore } from '@/lib/reviews/service'
-import { toPublicReview } from '@/lib/reviews/public'
+import { getPublicReviewPageData } from '@/lib/reviews/public'
 import { getPublicCastDetail } from '@/lib/store/public-casts'
 
 export const metadata: Metadata = {
@@ -36,15 +35,15 @@ export default async function ReviewsPage({ params, searchParams }: ReviewsPageP
 
   const cast = castId ? await getPublicCastDetail(store.id, castId).catch(() => null) : null
 
-  const [reviews, stats] = await Promise.all([
-    getStoreReviews(store.id, { statuses: ['published'], castId: cast?.id ?? castId ?? undefined }),
-    getReviewStatsForStore(store.id, ['published']),
-  ])
+  const { reviews, stats } = await getPublicReviewPageData(
+    store.id,
+    cast?.id ?? castId ?? undefined
+  )
 
   return (
     <ReviewsContent
       store={store}
-      initialReviews={reviews.map(toPublicReview)}
+      initialReviews={reviews}
       initialStats={stats}
       castFilter={
         cast ? { id: cast.id, name: cast.name } : castId ? { id: castId, name: '' } : undefined

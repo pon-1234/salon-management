@@ -119,7 +119,9 @@ export async function GET(request: NextRequest) {
   const id = searchParams.get('id')
   const phoneQuery = searchParams.get('phone')
   const limitParam = searchParams.get('limit')
+  const offsetParam = searchParams.get('offset')
   const take = limitParam ? Math.min(Math.max(parseInt(limitParam, 10) || 10, 1), 50) : 10
+  const skip = offsetParam ? Math.max(parseInt(offsetParam, 10) || 0, 0) : 0
 
   const session = await getServerSession(authOptions)
   const isAdmin = session?.user?.role === 'admin'
@@ -197,6 +199,7 @@ export async function GET(request: NextRequest) {
           createdAt: 'desc',
         },
         take,
+        skip,
         select: {
           id: true,
           name: true,
@@ -225,18 +228,27 @@ export async function GET(request: NextRequest) {
 
     const customers = await db.customer.findMany({
       orderBy: { createdAt: 'desc' },
+      take: take + 1,
+      skip,
       select: {
         id: true,
         name: true,
         nameKana: true,
         phone: true,
         email: true,
+        birthDate: true,
+        memberType: true,
+        points: true,
         createdAt: true,
         updatedAt: true,
       },
     })
 
-    return NextResponse.json(customers)
+    return NextResponse.json({
+      items: customers.slice(0, take).map(sanitizeCustomer),
+      limit: take,
+      hasMore: customers.length > take,
+    })
   } catch (error) {
     logger.error({ err: error }, 'Error fetching customer data')
     if (!env.featureFlags.useMockFallbacks) {

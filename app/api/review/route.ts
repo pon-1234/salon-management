@@ -171,6 +171,7 @@ export async function GET(request: NextRequest) {
     const customerId = searchParams.get('customerId')
     const reservationId = searchParams.get('reservationId')
     const limitParam = searchParams.get('limit')
+    const offsetParam = searchParams.get('offset')
     const statusParam = searchParams.get('status')
     const includeStats = searchParams.get('stats') === 'true'
 
@@ -214,7 +215,17 @@ export async function GET(request: NextRequest) {
       session,
       customerId
     )
-    const limit = limitParam ? Math.max(1, Math.min(100, Number(limitParam))) : undefined
+    const limit = limitParam ? Number(limitParam) : 25
+    const offset = offsetParam ? Number(offsetParam) : 0
+    if (
+      !Number.isInteger(limit) ||
+      limit < 1 ||
+      limit > 100 ||
+      !Number.isInteger(offset) ||
+      offset < 0
+    ) {
+      return NextResponse.json({ error: 'Invalid pagination query' }, { status: 400 })
+    }
 
     const filters = {
       storeId: storeId ?? undefined,
@@ -223,6 +234,7 @@ export async function GET(request: NextRequest) {
       reservationId: reservationId ?? undefined,
       statuses: effectiveStatuses,
       limit,
+      offset,
     }
 
     const reviews = await searchReviews(filters)
