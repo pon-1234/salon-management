@@ -78,6 +78,7 @@ import { toast } from '@/hooks/use-toast'
 import { mapReservationToReservationData } from '@/lib/reservation/transformers'
 import { PointAdjustmentDialog } from '@/components/admin/point-adjustment-dialog'
 import { useStore } from '@/contexts/store-context'
+import { PageLoading } from '@/components/ui/page-loading'
 import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import { normalizeCustomerEmail } from '@/lib/auth/customer-auth'
 import { isBcryptSafePassword } from '@/lib/auth/password-policy'
@@ -586,7 +587,7 @@ export default function CustomerProfile() {
   }, [insights])
 
   if (!customer) {
-    return <div className="flex h-64 items-center justify-center">Loading...</div>
+    return <PageLoading compact label="顧客情報を読み込んでいます" />
   }
 
   return (

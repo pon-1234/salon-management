@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import { Check, Copy, KeyRound, Unlink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 interface CastLineRegistrationPanelProps {
   castId: string
@@ -81,10 +82,6 @@ export function CastLineRegistrationPanel({
   }
 
   const unlinkAccount = async () => {
-    if (!window.confirm('LINE連携を解除します。発行済みの招待コマンドも無効になります。')) {
-      return
-    }
-
     setIsUnlinking(true)
     setError(null)
     try {
@@ -122,10 +119,17 @@ export function CastLineRegistrationPanel({
         {linked ? (
           <div className="flex flex-col items-start gap-3">
             <p className="text-sm font-medium text-emerald-700">LINE連携済み</p>
-            <Button type="button" variant="outline" onClick={unlinkAccount} disabled={isUnlinking}>
-              <Unlink className="mr-2 h-4 w-4" />
-              {isUnlinking ? '解除中...' : 'LINE連携を解除'}
-            </Button>
+            <ConfirmDialog
+              title="LINE連携を解除しますか？"
+              description="発行済みの招待コマンドも無効になります。この操作は元に戻せません。"
+              confirmLabel="連携を解除"
+              onConfirm={unlinkAccount}
+            >
+              <Button type="button" variant="outline" disabled={isUnlinking}>
+                <Unlink className="mr-2 h-4 w-4" />
+                {isUnlinking ? '解除中...' : 'LINE連携を解除'}
+              </Button>
+            </ConfirmDialog>
           </div>
         ) : (
           <Button type="button" onClick={issueCommand} disabled={isIssuing}>

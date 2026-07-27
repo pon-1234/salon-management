@@ -4,15 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import {
-  Printer,
-  TrendingUp,
-  TrendingDown,
-  MapPin,
-  DollarSign,
-  Users,
-  Activity,
-} from 'lucide-react'
+import { TrendingUp, TrendingDown, MapPin, DollarSign, Users, Activity } from 'lucide-react'
+import { PrintButton } from '@/components/analytics/print-button'
 import {
   Select,
   SelectContent,
@@ -192,13 +185,7 @@ export default function AreaSalesPage() {
             </SelectContent>
           </Select>
         </div>
-        <Button
-          onClick={handlePrint}
-          className="bg-emerald-600 text-white hover:bg-emerald-700 print:hidden"
-        >
-          <Printer className="mr-2 h-4 w-4" />
-          印刷する
-        </Button>
+        <PrintButton onClick={handlePrint} />
       </div>
 
       {error && (

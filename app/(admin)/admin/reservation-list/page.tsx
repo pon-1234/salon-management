@@ -32,6 +32,7 @@ import { ja } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { useStore } from '@/contexts/store-context'
 import { hasPermission } from '@/lib/auth/permissions'
+import { TableSkeleton } from '@/components/ui/page-loading'
 
 const ADJUSTING_STATUSES = new Set(['pending', 'tentative', 'modifiable'])
 const PAGE_SIZE = 25
@@ -319,9 +320,7 @@ export default function ReservationListPage() {
         </div>
 
         {loading ? (
-          <div className="flex min-h-[400px] items-center justify-center">
-            <div className="text-gray-500">読み込み中...</div>
-          </div>
+          <TableSkeleton rows={8} columns={6} label="予約一覧を読み込んでいます" />
         ) : (
           <>
             <ReservationList

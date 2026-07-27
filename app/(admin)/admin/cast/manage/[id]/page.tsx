@@ -10,7 +10,6 @@ import { useRouter } from 'next/navigation'
 import { CastForm } from '@/components/cast/cast-form'
 import { CastDashboard } from '@/components/cast/cast-dashboard'
 import { Cast } from '@/lib/cast/types'
-import { Header } from '@/components/header'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -160,7 +159,6 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
   if (!isNewCast && !loading && !cast) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
         <main className="flex flex-1 items-center justify-center px-6 py-16">
           <Card className="max-w-xl text-center">
             <CardHeader>
@@ -186,7 +184,6 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <main className="p-8">
         <div className="mb-6 flex items-center justify-between">
           <div>

@@ -9,7 +9,6 @@ import React, { useState, useEffect } from 'react'
 import { ScheduleGrid } from '@/components/cast-schedule/schedule-grid'
 import { CastScheduleUseCases } from '@/lib/cast-schedule/usecases'
 import { WeeklySchedule } from '@/lib/cast-schedule/old-types'
-import { Header } from '@/components/header'
 import { ScheduleInfoBar } from '@/components/cast-schedule/schedule-info-bar'
 import { ScheduleActionButtons } from '@/components/cast-schedule/schedule-action-buttons'
 import { toast } from '@/hooks/use-toast'
@@ -52,7 +51,6 @@ export default function WeeklySchedulePage() {
   if (loading || !schedule) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
         <div className="flex h-64 items-center justify-center">
           <div className="text-center">
             <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-emerald-600"></div>
@@ -176,7 +174,6 @@ export default function WeeklySchedulePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <ScheduleInfoBar
         totalCast={schedule.stats.totalCast}
         workingCast={schedule.stats.workingCast}

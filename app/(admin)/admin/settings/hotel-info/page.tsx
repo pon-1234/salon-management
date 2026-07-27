@@ -8,7 +8,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { PageHeader } from '@/components/admin/page-header'
-import { Header } from '@/components/header'
 import { toast } from '@/hooks/use-toast'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -197,7 +196,6 @@ export default function HotelInfoPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
         <main className="p-8">
           <div className="mx-auto max-w-6xl">
             <div className="flex h-64 items-center justify-center">
@@ -214,7 +212,6 @@ export default function HotelInfoPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <main className="p-8">
         <div className="mx-auto max-w-6xl">
           <PageHeader

@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { Printer, TrendingUp, TrendingDown, Package, DollarSign, Users } from 'lucide-react'
+import { TrendingUp, TrendingDown, Package, DollarSign, Users } from 'lucide-react'
+import { PrintButton } from '@/components/analytics/print-button'
 import { MonthSelector } from '@/components/analytics/month-selector'
 import { CourseSalesChart } from '@/components/analytics/course-sales-chart'
 import { CourseSalesTable } from '@/components/analytics/course-sales-table'
@@ -160,13 +161,7 @@ export default function CourseSalesPage() {
             onMonthChange={setSelectedMonth}
           />
         </div>
-        <Button
-          onClick={handlePrint}
-          className="bg-emerald-600 text-white hover:bg-emerald-700 print:hidden"
-        >
-          <Printer className="mr-2 h-4 w-4" />
-          印刷する
-        </Button>
+        <PrintButton onClick={handlePrint} />
       </div>
 
       {error && (

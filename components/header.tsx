@@ -138,7 +138,7 @@ export function Header() {
 
   return (
     <>
-      <div className="fixed left-0 right-0 top-0 z-50 flex items-center gap-4 border-b bg-white p-4 shadow-sm">
+      <div className="print-hidden sticky top-0 z-50 flex items-center gap-4 border-b bg-background p-4 shadow-sm">
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="outline" size="icon" className="xl:hidden" aria-label="メニューを開く">
@@ -150,6 +150,26 @@ export function Header() {
               <SheetTitle>管理メニュー</SheetTitle>
             </SheetHeader>
             <nav className="mt-6 grid gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                className="min-h-11 justify-start"
+                onClick={() => setShowCustomerSelection(true)}
+                aria-label="モバイル予約作成"
+              >
+                <Calendar className="mr-3 h-4 w-4" />
+                予約作成
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                className="min-h-11 justify-start"
+                onClick={() => setShowCustomerLookup(true)}
+                aria-label="モバイル顧客検索"
+              >
+                <Search className="mr-3 h-4 w-4" />
+                顧客検索
+              </Button>
               {adminNavigationLinks.map((item) => (
                 <Link
                   key={item.href}

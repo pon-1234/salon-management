@@ -124,9 +124,9 @@ const FALLBACK_NEWCOMERS = [
     sizeLabel: 'T157 B84(E) W57 H83',
   }),
   createCastSummary({
-    name: 'ことね',
-    age: 27,
-    sizeLabel: 'T158 B95(G) W63 H97',
+    name: 'あかり',
+    age: 25,
+    sizeLabel: 'T159 B86(E) W59 H87',
   }),
 ]
 
@@ -151,9 +151,9 @@ const FALLBACK_SCHEDULE = [
   ),
   createScheduleSummary(
     createCastSummary({
-      name: 'すずか',
-      age: 29,
-      sizeLabel: 'T155 B93(F) W58 H90',
+      name: 'かな',
+      age: 26,
+      sizeLabel: 'T158 B88(F) W60 H89',
     }),
     '2024-06-08T14:00:00+09:00',
     '2024-06-08T22:00:00+09:00'
@@ -172,9 +172,9 @@ const FALLBACK_SCHEDULE = [
 const FALLBACK_REVIEWS: PublicReviewSummary[] = [
   {
     id: 'fallback-review-1',
-    castId: 'suzuka',
-    castName: 'すずか',
-    rating: 5,
+    castId: 'nonoka',
+    castName: 'ののか',
+    rating: 4,
     comment:
       '容姿もとても綺麗でスタイルも抜群でした！密着も素晴らしかったですし、マッサージもすごくよかったです！',
     createdAt: '2024-06-08T21:12:00+09:00',

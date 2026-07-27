@@ -1,4 +1,10 @@
+/**
+ * @design_doc   docs/SYSTEM_AUDIT_2026-07-26.md J-12 store title consistency
+ * @related_to   StoreLayout: applies the store-specific title template
+ * @known_issues Recruitment content depends on persisted public cast data
+ */
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 import { fetchStoreBySlug } from '@/lib/store/public-api'
 import { StoreNavigation } from '@/components/store-navigation'
 import { StoreFooter } from '@/components/store-footer'
@@ -11,6 +17,10 @@ import Link from 'next/link'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { getPublicRecruitmentData } from '@/lib/store/public-casts'
+
+export const metadata: Metadata = {
+  title: '入店情報',
+}
 
 function buildMeasurementLabel(cast: {
   height: number | null

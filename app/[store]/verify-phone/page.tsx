@@ -4,9 +4,14 @@
  * @known_issues Missing store falls back to inline text instead of notFound
  */
 import { VerifyPhoneForm } from '@/components/auth/verify-phone-form'
+import type { Metadata } from 'next'
 import { fetchStoreBySlug } from '@/lib/store/public-api'
 import { StoreNavigation } from '@/components/store-navigation'
 import { StoreFooter } from '@/components/store-footer'
+
+export const metadata: Metadata = {
+  title: '電話番号認証',
+}
 
 export default async function VerifyPhonePage({ params }: { params: Promise<{ store: string }> }) {
   const { store: storeSlug } = await params

@@ -1,13 +1,12 @@
-'use client'
-
 /**
- * @design_doc   ui-improvement-instructions.md U-3 portal link label correction
- * @related_to   app/[store]/recruitment/page.tsx: destination is newcomer information
- * @known_issues Real recruitment page remains a product proposal, not implemented here
+ * @design_doc   docs/SYSTEM_AUDIT_2026-07-26.md J-1 and C-13 age-safe group landing
+ * @related_to   AgeVerificationClient: persists first-party age consent
+ * @known_issues Verification is self-attested and does not independently prove identity
  */
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { AgeVerification } from '@/components/age-verification'
+import { cookies } from 'next/headers'
+import { AgeVerificationClient } from '@/components/age-verification-client'
+import { AGE_VERIFICATION_COOKIE, AGE_VERIFICATION_COOKIE_VALUE } from '@/lib/age-verification'
 
 const navigation = [
   { label: 'GOLD ESTHE GROUP 総合TOP', href: '/' },
@@ -15,33 +14,10 @@ const navigation = [
   { label: '新人情報 金の玉クラブ 池袋店', href: '/ikebukuro/recruitment' },
 ]
 
-export default function HomePage() {
-  const [isVerified, setIsVerified] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    const verified = localStorage.getItem('ageVerified')
-    if (verified === 'true') {
-      setIsVerified(true)
-    }
-    setIsLoading(false)
-  }, [])
-
-  const handleVerification = (isAdult: boolean) => {
-    if (isAdult) {
-      localStorage.setItem('ageVerified', 'true')
-      setIsVerified(true)
-    } else {
-      window.location.href = 'https://www.google.com'
-    }
-  }
-
-  if (isLoading) {
-    return null
-  }
-
-  if (!isVerified) {
-    return <AgeVerification onVerify={handleVerification} />
+export default async function HomePage() {
+  const cookieStore = await cookies()
+  if (cookieStore.get(AGE_VERIFICATION_COOKIE)?.value !== AGE_VERIFICATION_COOKIE_VALUE) {
+    return <AgeVerificationClient callbackUrl="/" />
   }
 
   return (

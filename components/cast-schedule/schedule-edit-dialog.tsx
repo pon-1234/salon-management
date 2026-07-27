@@ -26,6 +26,8 @@ import {
   type BusinessHoursRange,
   formatMinutesAsLabel,
 } from '@/lib/settings/business-hours'
+import { toast } from '@/hooks/use-toast'
+import { findScheduleValidationError } from '@/lib/cast-schedule/validation'
 
 export interface DaySchedule {
   date: string // yyyy-mm-dd format
@@ -152,31 +154,20 @@ export function ScheduleEditDialog({
   }
 
   const handleSave = () => {
-    // Validate schedule before saving
-    const validatedSchedule: WeeklyScheduleEdit = {}
-
-    for (const [dateKey, daySchedule] of Object.entries(schedule)) {
-      if (daySchedule.status === '出勤予定') {
-        if (!daySchedule.startTime || !daySchedule.endTime) {
-          const dateInJst = zonedTimeToUtc(`${dateKey}T00:00:00`, timeZone)
-          alert(
-            `${formatInTimeZone(dateInJst, timeZone, 'M月d日(E)', { locale: ja })} の時間を入力してください`
-          )
-          return
-        }
-
-        if (daySchedule.startTime >= daySchedule.endTime) {
-          const dateInJst = zonedTimeToUtc(`${dateKey}T00:00:00`, timeZone)
-          alert(
-            `${formatInTimeZone(dateInJst, timeZone, 'M月d日(E)', { locale: ja })} の終了時間は開始時間より後にしてください`
-          )
-          return
-        }
-      }
-
-      validatedSchedule[dateKey] = daySchedule
+    const validationError = findScheduleValidationError(schedule, ['出勤予定'], (dateKey) => {
+      const dateInJst = zonedTimeToUtc(`${dateKey}T00:00:00`, timeZone)
+      return formatInTimeZone(dateInJst, timeZone, 'M月d日(E)', { locale: ja })
+    })
+    if (validationError) {
+      toast({
+        title: '入力内容を確認してください',
+        description: validationError,
+        variant: 'destructive',
+      })
+      return
     }
 
+    const validatedSchedule: WeeklyScheduleEdit = { ...schedule }
     onSave(castId, validatedSchedule)
     onOpenChange(false)
   }

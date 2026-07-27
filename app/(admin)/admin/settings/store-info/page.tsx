@@ -7,7 +7,6 @@
  */
 import { useState, useEffect, useCallback } from 'react'
 import { PageHeader } from '@/components/admin/page-header'
-import { Header } from '@/components/header'
 import { useStore } from '@/contexts/store-context'
 import { toast } from '@/hooks/use-toast'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -149,7 +148,6 @@ export default function StoreInfoPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
         <main className="p-8">
           <div className="mx-auto max-w-4xl">
             <div className="flex h-64 items-center justify-center">
@@ -166,7 +164,6 @@ export default function StoreInfoPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <main className="p-8">
         <div className="mx-auto max-w-4xl">
           <PageHeader

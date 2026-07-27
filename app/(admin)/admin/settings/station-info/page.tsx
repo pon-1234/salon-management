@@ -7,7 +7,6 @@
  */
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { PageHeader } from '@/components/admin/page-header'
-import { Header } from '@/components/header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -356,7 +355,6 @@ export default function StationInfoPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
         <main className="p-8">
           <div className="mx-auto max-w-6xl">
             <div className="flex h-64 items-center justify-center">
@@ -373,7 +371,6 @@ export default function StationInfoPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <main className="p-8">
         <div className="mx-auto max-w-6xl space-y-6">
           <PageHeader

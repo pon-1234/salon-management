@@ -31,6 +31,8 @@ import {
   type BusinessHoursRange,
   formatMinutesAsLabel,
 } from '@/lib/settings/business-hours'
+import { toast } from '@/hooks/use-toast'
+import { findScheduleValidationError } from '@/lib/cast-schedule/validation'
 
 export type WorkStatus = '休日' | '出勤予定' | '未入力' | '出勤中' | '早退' | '遅刻'
 
@@ -156,29 +158,21 @@ export function ScheduleEditDialog({
   }
 
   const handleSave = () => {
-    // Validate schedule before saving
-    const validatedSchedule: WeeklySchedule = {}
-
-    for (const [dateKey, daySchedule] of Object.entries(schedule)) {
-      if (daySchedule.status === '出勤予定' || daySchedule.status === '出勤中') {
-        if (!daySchedule.startTime || !daySchedule.endTime) {
-          alert(
-            `${format(new Date(dateKey), 'M月d日(E)', { locale: ja })} の時間を入力してください`
-          )
-          return
-        }
-
-        if (daySchedule.startTime >= daySchedule.endTime) {
-          alert(
-            `${format(new Date(dateKey), 'M月d日(E)', { locale: ja })} の終了時間は開始時間より後にしてください`
-          )
-          return
-        }
-      }
-
-      validatedSchedule[dateKey] = daySchedule
+    const validationError = findScheduleValidationError(
+      schedule,
+      ['出勤予定', '出勤中'],
+      (dateKey) => format(new Date(dateKey), 'M月d日(E)', { locale: ja })
+    )
+    if (validationError) {
+      toast({
+        title: '入力内容を確認してください',
+        description: validationError,
+        variant: 'destructive',
+      })
+      return
     }
 
+    const validatedSchedule: WeeklySchedule = { ...schedule }
     const result = onSave(validatedSchedule)
     setSchedule(validatedSchedule)
 

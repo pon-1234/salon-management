@@ -131,7 +131,7 @@ export function CastPerformanceTable({
       : 0
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-auto">
       {/* サマリーカード */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <Card>

@@ -28,6 +28,7 @@ import { FormSection } from '@/components/cast/form-section'
 import { cn } from '@/lib/utils'
 import { usePricing } from '@/hooks/use-pricing'
 import { resolveOptionId } from '@/lib/options/data'
+import { useUnsavedChangesWarning } from '@/hooks/use-unsaved-changes-warning'
 
 type OptionChoice = {
   id: string
@@ -239,6 +240,7 @@ export function CastForm({
   isSubmitting = false,
 }: CastFormProps) {
   const [formData, setFormData] = useState(() => buildInitialFormState(cast))
+  const initialFormData = useMemo(() => buildInitialFormState(cast), [cast])
   const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [showLoginPasswordConfirm, setShowLoginPasswordConfirm] = useState(false)
   const {
@@ -248,6 +250,11 @@ export function CastForm({
   } = useForm<CastFormValidationValues>()
   const fieldId = (suffix: string) => `cast-${suffix}`
   const { optionPrices, options: legacyOptions, loading: optionsLoading } = usePricing(storeId)
+  const isDirty = useMemo(
+    () => JSON.stringify(formData) !== JSON.stringify(initialFormData),
+    [formData, initialFormData]
+  )
+  useUnsavedChangesWarning(isDirty && !isSubmitting)
 
   const optionCatalog: OptionChoice[] = useMemo(() => {
     if (optionPrices.length > 0) {
@@ -550,6 +557,7 @@ export function CastForm({
               value={formData.name}
               onChange={handleInputChange}
               placeholder="例：高橋 えみり"
+              autoFocus
               required
               aria-required="true"
               aria-invalid={Boolean(errors.name)}

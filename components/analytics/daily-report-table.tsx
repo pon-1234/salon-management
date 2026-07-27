@@ -25,11 +25,13 @@ export function DailyReportTable({ report }: DailyReportTableProps) {
   )
 
   return (
-    <DataTable
-      title={`日報: ${report.date}`}
-      summary={summary}
-      data={report.staffReports}
-      columns={columns}
-    />
+    <div className="overflow-x-auto">
+      <DataTable
+        title={`日報: ${report.date}`}
+        summary={summary}
+        data={report.staffReports}
+        columns={columns}
+      />
+    </div>
   )
 }

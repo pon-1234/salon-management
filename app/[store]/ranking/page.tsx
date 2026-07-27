@@ -1,4 +1,10 @@
+/**
+ * @design_doc   docs/SYSTEM_AUDIT_2026-07-26.md J-12 store title consistency
+ * @related_to   StoreLayout: applies the store-specific title template
+ * @known_issues Ranking content depends on persisted public cast data
+ */
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 import { fetchStoreBySlug } from '@/lib/store/public-api'
 import { StoreNavigation } from '@/components/store-navigation'
 import { StoreFooter } from '@/components/store-footer'
@@ -12,6 +18,10 @@ import Link from 'next/link'
 import { getPublicRankingData } from '@/lib/store/public-casts'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
+
+export const metadata: Metadata = {
+  title: 'ランキング',
+}
 
 function buildMeasurementLabel(cast: {
   height: number | null

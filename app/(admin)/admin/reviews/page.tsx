@@ -33,6 +33,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { Loader2, RefreshCw, ShieldCheck, Filter, Eye, EyeOff, Trash2, Star } from 'lucide-react'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
+import { TableSkeleton } from '@/components/ui/page-loading'
 
 type StatusFilter = 'all' | 'published' | 'pending' | 'hidden'
 const PAGE_SIZE = 25
@@ -223,108 +224,114 @@ export default function AdminReviewsPage() {
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-lg border bg-white">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[180px]">口コミ</TableHead>
-                  <TableHead className="w-[120px]">キャスト</TableHead>
-                  <TableHead className="w-[100px]">評価</TableHead>
-                  <TableHead className="w-[110px]">状態</TableHead>
-                  <TableHead className="w-[160px]">投稿日</TableHead>
-                  <TableHead className="w-[200px] text-right">操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredReviews.map((review) => {
-                  const badgeInfo = statusLabels[review.status]
-                  const createdAt =
-                    review.createdAt instanceof Date ? review.createdAt : new Date(review.createdAt)
-                  return (
-                    <TableRow key={review.id}>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <p className="line-clamp-3 text-sm text-gray-700">{review.comment}</p>
-                          <p className="text-xs text-gray-500">
-                            投稿者: {review.customerAlias}
-                            {review.customerArea ? ` / ${review.customerArea}` : ''}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm font-medium">{review.castName}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1 text-sm">
-                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                          {review.rating.toFixed(1)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={badgeInfo.variant} className={badgeInfo.className}>
-                          {badgeInfo.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm text-gray-600">
-                          {format(createdAt, 'yyyy年MM月dd日 HH:mm', { locale: ja })}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex flex-wrap justify-end gap-2">
-                          {review.status !== 'published' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleUpdateStatus(review.id, 'published')}
+          {isLoading ? (
+            <TableSkeleton rows={6} columns={6} label="口コミ一覧を読み込んでいます" />
+          ) : (
+            <div className="overflow-hidden rounded-lg border bg-white">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[180px]">口コミ</TableHead>
+                    <TableHead className="w-[120px]">キャスト</TableHead>
+                    <TableHead className="w-[100px]">評価</TableHead>
+                    <TableHead className="w-[110px]">状態</TableHead>
+                    <TableHead className="w-[160px]">投稿日</TableHead>
+                    <TableHead className="w-[200px] text-right">操作</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredReviews.map((review) => {
+                    const badgeInfo = statusLabels[review.status]
+                    const createdAt =
+                      review.createdAt instanceof Date
+                        ? review.createdAt
+                        : new Date(review.createdAt)
+                    return (
+                      <TableRow key={review.id}>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <p className="line-clamp-3 text-sm text-gray-700">{review.comment}</p>
+                            <p className="text-xs text-gray-500">
+                              投稿者: {review.customerAlias}
+                              {review.customerArea ? ` / ${review.customerArea}` : ''}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm font-medium">{review.castName}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1 text-sm">
+                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                            {review.rating.toFixed(1)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={badgeInfo.variant} className={badgeInfo.className}>
+                            {badgeInfo.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm text-gray-600">
+                            {format(createdAt, 'yyyy年MM月dd日 HH:mm', { locale: ja })}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex flex-wrap justify-end gap-2">
+                            {review.status !== 'published' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleUpdateStatus(review.id, 'published')}
+                              >
+                                <Eye className="mr-1 h-3.5 w-3.5" /> 公開する
+                              </Button>
+                            )}
+                            {review.status !== 'hidden' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleUpdateStatus(review.id, 'hidden')}
+                              >
+                                <EyeOff className="mr-1 h-3.5 w-3.5" /> 非公開
+                              </Button>
+                            )}
+                            {review.status !== 'pending' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleUpdateStatus(review.id, 'pending')}
+                              >
+                                <Filter className="mr-1 h-3.5 w-3.5" /> 審査中に戻す
+                              </Button>
+                            )}
+                            <ConfirmDialog
+                              title="口コミを削除しますか？"
+                              description="この操作は取り消せません。"
+                              confirmLabel="削除する"
+                              onConfirm={() => handleDelete(review.id)}
                             >
-                              <Eye className="mr-1 h-3.5 w-3.5" /> 公開する
-                            </Button>
-                          )}
-                          {review.status !== 'hidden' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleUpdateStatus(review.id, 'hidden')}
-                            >
-                              <EyeOff className="mr-1 h-3.5 w-3.5" /> 非公開
-                            </Button>
-                          )}
-                          {review.status !== 'pending' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleUpdateStatus(review.id, 'pending')}
-                            >
-                              <Filter className="mr-1 h-3.5 w-3.5" /> 審査中に戻す
-                            </Button>
-                          )}
-                          <ConfirmDialog
-                            title="口コミを削除しますか？"
-                            description="この操作は取り消せません。"
-                            confirmLabel="削除する"
-                            onConfirm={() => handleDelete(review.id)}
-                          >
-                            <Button size="sm" variant="destructive">
-                              <Trash2 className="mr-1 h-3.5 w-3.5" /> 削除
-                            </Button>
-                          </ConfirmDialog>
-                        </div>
+                              <Button size="sm" variant="destructive">
+                                <Trash2 className="mr-1 h-3.5 w-3.5" /> 削除
+                              </Button>
+                            </ConfirmDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+
+                  {filteredReviews.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="py-10 text-center text-sm text-gray-500">
+                        口コミが見つかりませんでした。
                       </TableCell>
                     </TableRow>
-                  )
-                })}
-
-                {filteredReviews.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="py-10 text-center text-sm text-gray-500">
-                      口コミが見つかりませんでした。
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
           <div className="flex items-center justify-end gap-3">
             <Button
               variant="outline"

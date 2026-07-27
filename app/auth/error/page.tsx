@@ -47,12 +47,10 @@ export default function AuthErrorPage() {
   const errorInfo = errorMessages[error || 'Default'] || errorMessages.Default
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 dark:bg-gray-900 sm:px-6 lg:px-8">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-red-600 dark:text-red-400">
-            認証エラー
-          </CardTitle>
+          <CardTitle className="text-2xl font-bold text-red-600">認証エラー</CardTitle>
           <CardDescription>ログイン処理中に問題が発生しました</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -72,8 +70,8 @@ export default function AuthErrorPage() {
           </div>
 
           {error && (
-            <div className="mt-4 rounded-md bg-gray-100 p-3 dark:bg-gray-800">
-              <p className="text-xs text-gray-600 dark:text-gray-400">エラーコード: {error}</p>
+            <div className="mt-4 rounded-md bg-gray-100 p-3">
+              <p className="text-xs text-gray-600">エラーコード: {error}</p>
             </div>
           )}
         </CardContent>

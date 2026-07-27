@@ -4,6 +4,11 @@
  * @known_issues Verification is self-attested and does not independently prove identity
  */
 import { AgeVerificationClient } from '@/components/age-verification-client'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: '年齢確認',
+}
 
 function sanitizeCallbackUrl(value: string | string[] | undefined, storeSlug: string): string {
   const candidate = Array.isArray(value) ? value[0] : value

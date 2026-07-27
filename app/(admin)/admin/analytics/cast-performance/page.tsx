@@ -7,7 +7,8 @@
  */
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Printer, RotateCcw } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
+import { PrintButton } from '@/components/analytics/print-button'
 import {
   Select,
   SelectContent,
@@ -141,10 +142,7 @@ export default function CastPerformancePage() {
               条件をリセット
             </Button>
           )}
-          <Button onClick={handlePrint} className="bg-emerald-600 text-white hover:bg-emerald-700">
-            <Printer className="mr-2 h-4 w-4" />
-            印刷する
-          </Button>
+          <PrintButton onClick={handlePrint} />
         </div>
       </div>
 

@@ -66,7 +66,7 @@ export function StaffAttendanceTable({ year, month, data }: StaffAttendanceTable
     .slice(0, 3)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-auto">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card>
           <CardContent className="p-4">

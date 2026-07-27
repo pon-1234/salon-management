@@ -8,7 +8,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { Header } from '@/components/header'
 import { DateNavigation } from '@/components/reservation/date-navigation'
 import { ActionButtons } from '@/components/reservation/action-buttons'
 import { Timeline } from '@/components/reservation/timeline'
@@ -496,7 +495,6 @@ export function ReservationPageContent() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header />
       <InfoBar selectedCustomer={selectedCustomer} />
       <DateNavigation selectedDate={selectedDate} onSelectDate={setSelectedDate} />
       <ViewToggle view={view} onViewChange={setView} />
