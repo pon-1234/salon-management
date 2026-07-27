@@ -10,7 +10,6 @@ describe('resolveApiUrl', () => {
     process.env = { ...ORIGINAL_ENV }
     delete process.env.NEXT_PUBLIC_SITE_URL
     delete process.env.NEXTAUTH_URL
-    delete process.env.VERCEL_URL
     refreshEnv()
     ;(globalThis as any).window = undefined
   })
@@ -38,13 +37,6 @@ describe('resolveApiUrl', () => {
     refreshEnv()
     const url = resolveApiUrl('api/sample')
     expect(url).toBe('https://auth.example.com/api/sample')
-  })
-
-  it('uses VERCEL_URL when others missing', () => {
-    process.env.VERCEL_URL = 'my-app.vercel.app'
-    refreshEnv()
-    const url = resolveApiUrl('/api/health')
-    expect(url).toBe('https://my-app.vercel.app/api/health')
   })
 
   it('falls back to localhost when no env provided', () => {

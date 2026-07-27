@@ -26,7 +26,7 @@ describe('XServer VPS deployment artifacts', () => {
     ).toBeLessThan(dependencyStage.indexOf('pnpm install --frozen-lockfile'))
   })
 
-  it('builds a standalone Next.js production image without Vercel', () => {
+  it('builds a standalone Next.js production image for the VPS', () => {
     const dockerfile = readFileSync(join(deploymentDirectory, 'Dockerfile'), 'utf8')
 
     expect(dockerfile).toContain('pnpm install --frozen-lockfile')

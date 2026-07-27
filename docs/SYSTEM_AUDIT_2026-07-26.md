@@ -354,7 +354,7 @@ x-robots-tag: noindex, nofollow, noarchive
 残る課題は 2 点:
 
 1. **CSP が実質 XSS を防いでいない** — `default-src` / `script-src` / `style-src` が無く、`base-uri` `frame-ancestors` `object-src` のみ。スクリプト実行の制限がかかっていない
-2. **多層防御になっていない** — `next.config.mjs` の `headers()` が空のため、このプロキシを経由しない経路（Vercel プレビュー、コンテナ直叩き、将来の別ホスティング）ではヘッダーが一切付かない
+2. **多層防御になっていない** — `next.config.mjs` の `headers()` が空のため、このプロキシを経由しない経路（コンテナ直叩き、将来の別ホスティング）ではヘッダーが一切付かない
 
 **依頼内容**: `next.config.mjs` に `headers()` を追加してアプリ自体でも同等のヘッダーを返す（プロキシ側と二重でも害はない）。併せて `script-src` を含む CSP への強化を検討。
 

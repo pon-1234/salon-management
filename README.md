@@ -96,7 +96,7 @@ The production target uses a persistent VPS volume for image storage:
 - **Local**: Images remain on the encrypted-backup VPS storage volume
 - **HTTP serving**: Caddy serves the volume read-only under `/salon-uploads/`
 - **Persistent**: Images remain available across deployments
-- **Independent**: No Vercel or hosted Supabase account is required
+- **Self-hosted**: No external hosting-platform account is required
 - **Validated**: The server verifies JPEG, PNG, WebP, and GIF signatures against the declared MIME type and saves each file with the detected format's canonical extension
 
 To enable image uploads:

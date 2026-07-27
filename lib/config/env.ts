@@ -102,7 +102,6 @@ function createEnv() {
     NEXTAUTH_URL: z.string().optional(),
     NEXTAUTH_SECRET: z.string().optional(),
     NEXT_PUBLIC_SITE_URL: z.string().optional(),
-    VERCEL_URL: z.string().optional(),
     NEXT_PUBLIC_SUPABASE_URL: z.string().optional(),
     SUPABASE_URL: z.string().optional(),
     NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
@@ -141,7 +140,6 @@ function createEnv() {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
-    VERCEL_URL: process.env.VERCEL_URL,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     SUPABASE_URL: process.env.SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -351,10 +349,7 @@ function createEnv() {
     )
   }
 
-  const siteUrl =
-    rawEnv.NEXT_PUBLIC_SITE_URL ??
-    nextAuthUrl ??
-    (rawEnv.VERCEL_URL ? `https://${rawEnv.VERCEL_URL}` : '')
+  const siteUrl = rawEnv.NEXT_PUBLIC_SITE_URL ?? nextAuthUrl
 
   return {
     nodeEnv,
