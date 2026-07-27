@@ -121,11 +121,6 @@ export function parseReservationDate(raw: string): Date {
     throw new Error('Invalid date format')
   }
 
-  const direct = new Date(trimmed)
-  if (!Number.isNaN(direct.getTime())) {
-    return direct
-  }
-
   const normalized = trimmed.replace(/\s+/g, 'T')
   const hasTimePortion = normalized.includes('T')
   let isoCandidate = normalized
@@ -140,9 +135,9 @@ export function parseReservationDate(raw: string): Date {
     isoCandidate = `${isoCandidate}+09:00`
   }
 
-  const fallback = new Date(isoCandidate)
-  if (!Number.isNaN(fallback.getTime())) {
-    return fallback
+  const parsed = new Date(isoCandidate)
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed
   }
 
   throw new Error('Invalid date format')
