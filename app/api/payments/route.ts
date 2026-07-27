@@ -30,8 +30,18 @@ import {
   validateReservationClaims,
 } from '@/lib/payment/api-boundary'
 import { canAdminAccessStore } from '@/lib/auth/store-access'
+import type { PaymentProviderType, PaymentStatus, PaymentTransaction } from '@/lib/payment/types'
 
 const paymentService = getPaymentService()
+const PAYMENT_STATUSES = new Set<PaymentStatus>([
+  'pending',
+  'processing',
+  'completed',
+  'failed',
+  'cancelled',
+  'refunded',
+])
+const PAYMENT_PROVIDERS = new Set<PaymentProviderType>(['manual', 'bank_transfer', 'cash'])
 
 function authenticationRequired() {
   return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
@@ -189,6 +199,71 @@ export async function GET(request: NextRequest) {
 
     const customerId = request.nextUrl.searchParams.get('customerId')
     const reservationId = request.nextUrl.searchParams.get('reservationId')
+    const storeId = request.nextUrl.searchParams.get('storeId')?.trim()
+
+    if (session.user.role === 'admin' && storeId && !customerId && !reservationId) {
+      if (!hasPermission(session.user.permissions ?? [], 'analytics:read')) {
+        return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
+      }
+      if (!canAdminAccessStore(session.user, storeId)) {
+        return NextResponse.json({ error: 'この店舗を操作する権限がありません' }, { status: 403 })
+      }
+
+      const searchParams = request.nextUrl.searchParams
+      const limit = Number(searchParams.get('limit') ?? '25')
+      const offset = Number(searchParams.get('offset') ?? '0')
+      const status = searchParams.get('status')
+      const provider = searchParams.get('provider')
+      const startDate = searchParams.get('startDate')
+      const endDate = searchParams.get('endDate')
+
+      if (
+        !Number.isInteger(limit) ||
+        limit < 1 ||
+        limit > 100 ||
+        !Number.isInteger(offset) ||
+        offset < 0 ||
+        (status && !PAYMENT_STATUSES.has(status as PaymentStatus)) ||
+        (provider && !PAYMENT_PROVIDERS.has(provider as PaymentProviderType))
+      ) {
+        return NextResponse.json({ error: 'Invalid payment list query' }, { status: 400 })
+      }
+
+      const createdAt =
+        startDate && endDate
+          ? {
+              gte: new Date(startDate),
+              lte: new Date(endDate),
+            }
+          : undefined
+      if (
+        createdAt &&
+        (Number.isNaN(createdAt.gte.getTime()) || Number.isNaN(createdAt.lte.getTime()))
+      ) {
+        return NextResponse.json({ error: 'Invalid payment date range' }, { status: 400 })
+      }
+
+      const transactions = await db.paymentTransaction.findMany({
+        where: {
+          reservation: { storeId },
+          reservationId: { not: null },
+          customerId: { not: null },
+          ...(status ? { status } : {}),
+          ...(provider ? { provider } : {}),
+          ...(createdAt ? { createdAt } : {}),
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset,
+      })
+
+      return NextResponse.json({
+        transactions: transactions.map((transaction) =>
+          toPublicPaymentTransaction(transaction as PaymentTransaction)
+        ),
+      })
+    }
+
     if ((!customerId && !reservationId) || (customerId && reservationId)) {
       return NextResponse.json(
         { error: 'Exactly one of customerId or reservationId is required' },

@@ -21,112 +21,54 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CalendarIcon, CreditCardIcon, TrendingUpIcon } from 'lucide-react'
 import { addDays, format } from 'date-fns'
+import { useStore } from '@/contexts/store-context'
+import { toast } from '@/hooks/use-toast'
+
+const PAGE_SIZE = 25
 
 export default function PaymentStatusPage() {
+  const { currentStore } = useStore()
   const [payments, setPayments] = useState<PaymentTransaction[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [providerFilter, setProviderFilter] = useState<string>('all')
   const [startDate, setStartDate] = useState<Date>(addDays(new Date(), -30))
   const [endDate, setEndDate] = useState<Date>(new Date())
+  const [page, setPage] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
 
   const fetchPaymentData = useCallback(async () => {
     setLoading(true)
     try {
-      // Mock data for demonstration - in real implementation, this would fetch from API
-      const mockPayments: PaymentTransaction[] = [
-        {
-          id: 'txn_001',
-          reservationId: 'res_001',
-          customerId: 'cust_001',
-          amount: 15000,
-          currency: 'jpy',
-          provider: 'manual',
-          paymentMethod: 'card',
-          status: 'completed',
-          processedAt: new Date('2024-01-15T10:30:00'),
-          createdAt: new Date('2024-01-15T10:25:00'),
-          updatedAt: new Date('2024-01-15T10:30:00'),
-        },
-        {
-          id: 'txn_002',
-          reservationId: 'res_002',
-          customerId: 'cust_002',
-          amount: 25000,
-          currency: 'jpy',
-          provider: 'manual',
-          paymentMethod: 'card',
-          status: 'pending',
-          createdAt: new Date('2024-01-15T11:00:00'),
-          updatedAt: new Date('2024-01-15T11:00:00'),
-        },
-        {
-          id: 'txn_003',
-          reservationId: 'res_003',
-          customerId: 'cust_003',
-          amount: 18000,
-          currency: 'jpy',
-          provider: 'bank_transfer',
-          paymentMethod: 'card',
-          status: 'failed',
-          errorMessage: 'Card declined',
-          createdAt: new Date('2024-01-15T12:00:00'),
-          updatedAt: new Date('2024-01-15T12:01:00'),
-        },
-        {
-          id: 'txn_004',
-          reservationId: 'res_004',
-          customerId: 'cust_004',
-          amount: 30000,
-          currency: 'jpy',
-          provider: 'manual',
-          paymentMethod: 'card',
-          status: 'refunded',
-          refundAmount: 15000,
-          processedAt: new Date('2024-01-14T14:00:00'),
-          refundedAt: new Date('2024-01-15T09:00:00'),
-          createdAt: new Date('2024-01-14T14:00:00'),
-          updatedAt: new Date('2024-01-15T09:00:00'),
-        },
-        {
-          id: 'txn_005',
-          reservationId: 'res_005',
-          customerId: 'cust_005',
-          amount: 12000,
-          currency: 'jpy',
-          provider: 'cash',
-          paymentMethod: 'card',
-          status: 'processing',
-          createdAt: new Date('2024-01-15T13:30:00'),
-          updatedAt: new Date('2024-01-15T13:30:00'),
-        },
-      ]
+      const params = new URLSearchParams({
+        storeId: currentStore.id,
+        limit: String(PAGE_SIZE + 1),
+        offset: String(page * PAGE_SIZE),
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+      })
+      if (statusFilter !== 'all') params.set('status', statusFilter)
+      if (providerFilter !== 'all') params.set('provider', providerFilter)
 
-      // Apply filters
-      let filteredPayments = mockPayments
-
-      if (statusFilter !== 'all') {
-        filteredPayments = filteredPayments.filter((p) => p.status === statusFilter)
+      const response = await fetch(`/api/payments?${params.toString()}`, {
+        credentials: 'include',
+        cache: 'no-store',
+      })
+      if (!response.ok) {
+        throw new Error(`Payment list failed: ${response.status}`)
       }
-
-      if (providerFilter !== 'all') {
-        filteredPayments = filteredPayments.filter((p) => p.provider === providerFilter)
-      }
-
-      if (startDate && endDate) {
-        filteredPayments = filteredPayments.filter((p) => {
-          const paymentDate = new Date(p.createdAt)
-          return paymentDate >= startDate && paymentDate <= endDate
-        })
-      }
-
-      setPayments(filteredPayments)
+      const payload = (await response.json()) as { transactions: PaymentTransaction[] }
+      setHasMore(payload.transactions.length > PAGE_SIZE)
+      setPayments(payload.transactions.slice(0, PAGE_SIZE))
     } catch (error) {
       console.error('Failed to fetch payment data:', error)
+      setPayments([])
+      setHasMore(false)
+      toast({ variant: 'destructive', description: '決済データの取得に失敗しました。' })
     } finally {
       setLoading(false)
     }
-  }, [startDate, endDate, statusFilter, providerFilter])
+  }, [currentStore.id, endDate, page, providerFilter, startDate, statusFilter])
 
   useEffect(() => {
     fetchPaymentData()
@@ -227,7 +169,18 @@ export default function PaymentStatusPage() {
               <div className="text-gray-500">データを読み込み中...</div>
             </div>
           ) : (
-            <PaymentStatusTable payments={payments} />
+            <>
+              <PaymentStatusTable payments={payments} />
+              <div className="mt-4 flex items-center justify-end gap-3">
+                <Button variant="outline" disabled={page === 0} onClick={() => setPage(page - 1)}>
+                  前へ
+                </Button>
+                <span className="text-sm text-muted-foreground">{page + 1}ページ</span>
+                <Button variant="outline" disabled={!hasMore} onClick={() => setPage(page + 1)}>
+                  次へ
+                </Button>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

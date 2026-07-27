@@ -11,8 +11,7 @@ import { ReservationData } from '@/lib/types/reservation'
 // Mock the modification history data
 vi.mock('@/lib/modification-history/data', () => ({
   getModificationHistory: vi.fn(() => []),
-  getModificationAlerts: vi.fn(() => []),
-  recordModification: vi.fn(),
+  buildModificationAlerts: vi.fn(() => []),
 }))
 
 vi.mock('@/contexts/store-context', () => {

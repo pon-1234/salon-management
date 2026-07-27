@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { hasPermission } from '@/lib/auth/permissions'
 import { Loader2 } from 'lucide-react'
+import { AnalyticsCsvExport } from '@/components/analytics/analytics-csv-export'
 
 export default function AnalyticsRootLayout({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession()
@@ -41,7 +42,12 @@ export default function AnalyticsRootLayout({ children }: { children: ReactNode 
     <div className="flex">
       <AnalyticsLayout />
       <div className="min-w-0 flex-1 overflow-x-hidden p-6 lg:p-8">
-        <div className="mx-auto w-full max-w-screen-xl">{children}</div>
+        <div className="mx-auto mb-4 flex w-full max-w-screen-xl justify-end">
+          <AnalyticsCsvExport />
+        </div>
+        <div id="analytics-export-root" className="mx-auto w-full max-w-screen-xl">
+          {children}
+        </div>
       </div>
     </div>
   )

@@ -50,7 +50,6 @@ import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { ReservationDialog } from '@/components/reservation/reservation-dialog'
 import { ReservationData } from '@/lib/types/reservation'
-import { recordModification } from '@/lib/modification-history/data'
 import { CustomerSelectionDialog } from '@/components/customer/customer-selection-dialog'
 import { useStore } from '@/contexts/store-context'
 import { mapReservationToReservationData } from '@/lib/reservation/transformers'
@@ -73,6 +72,7 @@ import {
 import { useSession } from 'next-auth/react'
 import { hasPermission } from '@/lib/auth/permissions'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { toast } from '@/hooks/use-toast'
 
 // カラーパレット
 const colors = {
@@ -308,24 +308,23 @@ export default function DashboardPage() {
     return mapReservationToReservationData(reservation)
   }
 
-  const handleMakeModifiable = (reservationId: string) => {
+  const handleMakeModifiable = async (reservationId: string) => {
     const reservation = reservations.find((r) => r.id === reservationId)
     if (!reservation) return
 
-    // 修正履歴を記録
-    recordModification(
-      reservationId,
-      'user_current', // 実際のアプリではログインユーザーIDを使用
-      '現在のユーザー', // 実際のアプリではログインユーザー名を使用
-      'status',
-      'ステータス',
-      reservation.status,
-      'modifiable',
-      '確定済み予約を修正可能状態に変更',
-      '192.168.1.100', // 実際のアプリでは実際のIPを取得
-      navigator.userAgent,
-      'current_session'
+    const response = await fetch(
+      `/api/reservation?storeId=${encodeURIComponent(currentStore.id)}`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ id: reservationId, status: 'modifiable' }),
+      }
     )
+    if (!response.ok) {
+      toast({ variant: 'destructive', description: '予約を修正可能にできませんでした。' })
+      return
+    }
 
     setReservations((prev) =>
       prev.map((reservation) =>

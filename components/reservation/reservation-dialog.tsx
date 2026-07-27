@@ -60,7 +60,7 @@ import type { LucideIcon } from 'lucide-react'
 import { differenceInMinutes, addMinutes, format, parseISO } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { ModificationHistoryTable } from '@/components/reservation/modification-history-table'
-import { getModificationHistory, getModificationAlerts } from '@/lib/modification-history/data'
+import { buildModificationAlerts, getModificationHistory } from '@/lib/modification-history/data'
 import {
   ReservationData,
   ReservationSavePayload,
@@ -591,10 +591,8 @@ export function ReservationDialog({
     const loadHistory = async () => {
       setIsHistoryLoading(true)
       try {
-        const [history, alerts] = await Promise.all([
-          getModificationHistory(reservationId, currentStore.id),
-          getModificationAlerts(reservationId),
-        ])
+        const history = await getModificationHistory(reservationId, currentStore.id)
+        const alerts = buildModificationAlerts(history)
         if (!ignore) {
           setModificationHistory(history)
           setModificationAlerts(alerts)

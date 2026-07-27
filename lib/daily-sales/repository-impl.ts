@@ -29,6 +29,6 @@ export class DailySalesRepositoryImpl implements DailySalesRepository {
   }
 
   async updateDailySales(): Promise<void> {
-    console.info('Daily sales manual update is not implemented yet.')
+    throw new Error('Daily sales reports are derived from reservations and cannot be edited.')
   }
 }

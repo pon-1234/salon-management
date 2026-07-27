@@ -1,161 +1,32 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { pushClient } from './client'
+/**
+ * @design_doc   docs/SYSTEM_AUDIT_2026-07-26.md B-3
+ * @related_to   notification/service.ts: consumes explicit push delivery failures
+ * @known_issues A provider adapter must be added before push delivery can be enabled
+ */
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import logger from '@/lib/logger'
+import { pushClient } from './client'
 
-describe('Push Client', () => {
+describe('Push Client without a configured provider', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.useFakeTimers()
   })
 
-  afterEach(() => {
-    vi.useRealTimers()
-  })
+  it.each([
+    ['regular message', 'user-1', 'Title', 'Body'],
+    ['empty content', 'user-2', '', ''],
+    ['unicode content', 'user-3', '予約通知', 'こんにちは 🚀'],
+  ])('fails explicitly for %s', async (_label, userId, title, body) => {
+    const result = await pushClient.send({ userId, title, body })
 
-  describe('send', () => {
-    it('should log the push notification details', async () => {
-      const promise = pushClient.send({
-        userId: 'user123',
-        title: 'Test Notification',
-        body: 'This is a test push notification',
-      })
-
-      // Advance timers to complete the timeout
-      vi.advanceTimersByTime(100)
-
-      await promise
-
-      expect(logger.info).toHaveBeenCalledWith('Sending push notification:', {
-        userId: 'user123',
-        title: 'Test Notification',
-        body: 'This is a test push notification',
-      })
+    expect(result).toEqual({
+      success: false,
+      error: 'Push delivery provider is not configured.',
     })
-
-    it('should return success with a unique ID', async () => {
-      const promise = pushClient.send({
-        userId: 'user123',
-        title: 'Test',
-        body: 'Test body',
-      })
-
-      vi.advanceTimersByTime(100)
-
-      const result = await promise
-
-      expect(result.success).toBe(true)
-      expect(result.id).toBeDefined()
-      expect(result.id).toMatch(/^push-\d+-[a-z0-9]{9}$/)
-    })
-
-    it('should generate different IDs for different notifications', async () => {
-      const promise1 = pushClient.send({
-        userId: 'user1',
-        title: 'First',
-        body: 'First notification',
-      })
-
-      vi.advanceTimersByTime(100)
-      const result1 = await promise1
-
-      // Advance time a bit to ensure different timestamp
-      vi.advanceTimersByTime(10)
-
-      const promise2 = pushClient.send({
-        userId: 'user2',
-        title: 'Second',
-        body: 'Second notification',
-      })
-
-      vi.advanceTimersByTime(100)
-      const result2 = await promise2
-
-      expect(result1.id).not.toBe(result2.id)
-    })
-
-    it('should handle notifications with additional data', async () => {
-      const promise = pushClient.send({
-        userId: 'user123',
-        title: 'Order Update',
-        body: 'Your order has been shipped',
-        data: {
-          orderId: 'order123',
-          trackingNumber: 'TRACK123',
-          estimatedDelivery: '2023-12-25',
-        },
-      })
-
-      vi.advanceTimersByTime(100)
-
-      const result = await promise
-
-      expect(result.success).toBe(true)
-      // Note: The data field is not logged in the current implementation
-      expect(logger.info).toHaveBeenCalledWith('Sending push notification:', {
-        userId: 'user123',
-        title: 'Order Update',
-        body: 'Your order has been shipped',
-      })
-    })
-
-    it('should handle empty title and body', async () => {
-      const promise = pushClient.send({
-        userId: 'user123',
-        title: '',
-        body: '',
-      })
-
-      vi.advanceTimersByTime(100)
-
-      const result = await promise
-
-      expect(result.success).toBe(true)
-      expect(logger.info).toHaveBeenCalledWith('Sending push notification:', {
-        userId: 'user123',
-        title: '',
-        body: '',
-      })
-    })
-
-    it('should handle long title and body', async () => {
-      const longTitle = 'A'.repeat(100)
-      const longBody = 'B'.repeat(500)
-
-      const promise = pushClient.send({
-        userId: 'user123',
-        title: longTitle,
-        body: longBody,
-      })
-
-      vi.advanceTimersByTime(100)
-
-      const result = await promise
-
-      expect(result.success).toBe(true)
-      expect(logger.info).toHaveBeenCalledWith('Sending push notification:', {
-        userId: 'user123',
-        title: longTitle,
-        body: longBody,
-      })
-    })
-
-    it('should handle special characters in content', async () => {
-      const promise = pushClient.send({
-        userId: 'user123',
-        title: '🎉 Special Characters!',
-        body: 'Japanese: こんにちは, Emoji: 🚀',
-      })
-
-      vi.advanceTimersByTime(100)
-
-      const result = await promise
-
-      expect(result.success).toBe(true)
-      expect(logger.info).toHaveBeenCalledWith('Sending push notification:', {
-        userId: 'user123',
-        title: '🎉 Special Characters!',
-        body: 'Japanese: こんにちは, Emoji: 🚀',
-      })
-    })
+    expect(logger.warn).toHaveBeenCalledWith('Push delivery provider is not configured.')
+    expect(JSON.stringify(vi.mocked(logger.warn).mock.calls)).not.toContain(userId)
+    if (body) {
+      expect(JSON.stringify(vi.mocked(logger.warn).mock.calls)).not.toContain(body)
+    }
   })
 })

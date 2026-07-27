@@ -23,7 +23,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-import { RefreshCw, ArrowLeft, Pencil, Trash2, Plus } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2, Plus } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { DEFAULT_DESIGNATION_FEES, normalizeDesignationShares } from '@/lib/designation/fees'
 import {
@@ -221,13 +221,6 @@ export default function DesignationFeesPage() {
     [currentStore.id, toast]
   )
 
-  const handleSync = useCallback(() => {
-    toast({
-      title: '同期機能は準備中です',
-      description: '実装後に全店舗へ同期できるようになります。',
-    })
-  }, [toast])
-
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -238,14 +231,9 @@ export default function DesignationFeesPage() {
           backHref="/admin/settings"
           backIcon={ArrowLeft}
           actions={
-            <>
-              <Button variant="outline" onClick={handleSync}>
-                <RefreshCw className="mr-2 h-4 w-4" /> 全店舗に同期
-              </Button>
-              <Button onClick={openCreateDialog}>
-                <Plus className="mr-2 h-4 w-4" /> 新規項目追加
-              </Button>
-            </>
+            <Button onClick={openCreateDialog}>
+              <Plus className="mr-2 h-4 w-4" /> 新規項目追加
+            </Button>
           }
         />
 
