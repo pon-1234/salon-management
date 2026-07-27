@@ -4,6 +4,9 @@
  * @known_issues None currently
  */
 import type { PublicReview, Review } from './types'
+import { getReviewStatsForStore, getStoreReviews } from './service'
+import { calculateReviewStats } from './utils'
+import logger from '@/lib/logger'
 
 export function toPublicReview(review: Review): PublicReview {
   return {
@@ -22,5 +25,18 @@ export function toPublicReview(review: Review): PublicReview {
     tags: review.tags,
     response: review.response,
     status: review.status,
+  }
+}
+
+export async function getPublicReviewPageData(storeId: string, castId?: string) {
+  try {
+    const [reviews, stats] = await Promise.all([
+      getStoreReviews(storeId, { statuses: ['published'], castId }),
+      getReviewStatsForStore(storeId, ['published']),
+    ])
+    return { reviews: reviews.map(toPublicReview), stats }
+  } catch (error) {
+    logger.error({ err: error, storeId }, 'Failed to load public reviews')
+    return { reviews: [], stats: calculateReviewStats([]) }
   }
 }

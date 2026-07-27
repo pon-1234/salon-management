@@ -3,9 +3,14 @@
  * @related_to   Public review page and Review API
  * @known_issues None currently
  */
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { Review } from './types'
-import { toPublicReview } from './public'
+import { getPublicReviewPageData, toPublicReview } from './public'
+
+vi.mock('./service', () => ({
+  getStoreReviews: vi.fn().mockRejectedValue(new Error('database unavailable')),
+  getReviewStatsForStore: vi.fn().mockRejectedValue(new Error('database unavailable')),
+}))
 
 describe('toPublicReview', () => {
   it('keeps display fields but removes customer and reservation identifiers', () => {
@@ -49,5 +54,19 @@ describe('toPublicReview', () => {
     expect(result).not.toHaveProperty('castId')
     expect(result).not.toHaveProperty('updatedAt')
     expect(result).not.toHaveProperty('publishedAt')
+  })
+})
+
+describe('getPublicReviewPageData', () => {
+  it('returns an empty public review state when persisted reads fail', async () => {
+    await expect(getPublicReviewPageData('store-a')).resolves.toEqual({
+      reviews: [],
+      stats: {
+        totalReviews: 0,
+        averageRating: 0,
+        ratingDistribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+        popularTags: [],
+      },
+    })
   })
 })

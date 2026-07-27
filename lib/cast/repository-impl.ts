@@ -17,6 +17,11 @@ function serializeScheduleInput(entry: CastSchedule) {
   }
 }
 
+export interface CastListQuery {
+  limit: number
+  offset: number
+}
+
 export class CastRepositoryImpl implements CastRepository {
   constructor(
     private readonly client: ApiClient = defaultApiClient,
@@ -31,8 +36,14 @@ export class CastRepositoryImpl implements CastRepository {
     return `${path}${separator}storeId=${encodeURIComponent(this.storeId)}`
   }
 
-  async getAll(): Promise<Cast[]> {
-    return this.client.get<Cast[]>(this.withStore(CAST_ENDPOINT))
+  async getAll(query?: CastListQuery): Promise<Cast[]> {
+    const path = query
+      ? `${CAST_ENDPOINT}?${new URLSearchParams({
+          limit: String(query.limit),
+          offset: String(query.offset),
+        }).toString()}`
+      : CAST_ENDPOINT
+    return this.client.get<Cast[]>(this.withStore(path))
   }
 
   async getById(id: string): Promise<Cast | null> {

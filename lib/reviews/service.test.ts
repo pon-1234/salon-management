@@ -12,6 +12,7 @@ import {
   getReviewById,
   ReviewServiceError,
   updateReview,
+  searchReviews,
 } from './service'
 
 vi.mock('@/lib/db', () => ({
@@ -22,6 +23,7 @@ vi.mock('@/lib/db', () => ({
     },
     review: {
       findFirst: vi.fn(),
+      findMany: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
@@ -32,6 +34,14 @@ vi.mock('@/lib/db', () => ({
 describe('Review service store isolation', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  it('applies a bounded offset to review list queries', async () => {
+    vi.mocked(db.review.findMany).mockResolvedValueOnce([])
+
+    await searchReviews({ storeId: 'store-1', limit: 26, offset: 25 })
+
+    expect(db.review.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 26, skip: 25 }))
   })
 
   it('scopes review ID lookup to the requested store', async () => {

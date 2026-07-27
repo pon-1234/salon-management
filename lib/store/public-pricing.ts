@@ -13,6 +13,7 @@ import {
 } from '@/lib/pricing/data'
 import { ensureCourseSerializable, ensureOptionSerializable } from '@/lib/pricing/adapters'
 import type { CoursePrice, OptionPrice, AdditionalFee, StorePricing } from '@/lib/pricing/types'
+import logger from '@/lib/logger'
 
 export async function getPublicStorePricing(storeId: string): Promise<StorePricing> {
   const useMockFallbacks = shouldUseMockFallbacks()
@@ -52,9 +53,17 @@ export async function getPublicStorePricing(storeId: string): Promise<StorePrici
     }
   } catch (error) {
     if (!useMockFallbacks) {
-      throw error
+      logger.error({ err: error, storeId }, 'Failed to load public store pricing')
+      return {
+        storeId,
+        courses: [],
+        options: [],
+        additionalFees: [],
+        notes: [],
+        lastUpdated: new Date(),
+      }
     }
-    console.error('Failed to load public store pricing, falling back to defaults:', error)
+    logger.error({ err: error, storeId }, 'Failed to load public store pricing; using fixtures')
     return {
       storeId,
       courses: defaultCourses,

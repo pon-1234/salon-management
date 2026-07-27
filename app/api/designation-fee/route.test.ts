@@ -91,6 +91,30 @@ describe('designation-fee production reads', () => {
     vi.mocked(requireAdmin).mockResolvedValue(null)
   })
 
+  it('returns a JSON 404 when the requested store does not exist', async () => {
+    vi.mocked(db.store.findUnique).mockResolvedValueOnce(null)
+
+    const response = await GET(
+      new NextRequest('http://localhost/api/designation-fee?storeId=unknown-store')
+    )
+
+    expect(response.status).toBe(404)
+    await expect(response.json()).resolves.toEqual({ error: 'Unknown store' })
+  })
+
+  it('returns a JSON 500 when DELETE store resolution fails', async () => {
+    vi.mocked(db.store.findUnique).mockRejectedValueOnce(new Error('database unavailable'))
+
+    const response = await DELETE(
+      new NextRequest('http://localhost/api/designation-fee?id=fee-1&storeId=broken-store', {
+        method: 'DELETE',
+      })
+    )
+
+    expect(response.status).toBe(500)
+    await expect(response.json()).resolves.toEqual({ error: 'Internal server error' })
+  })
+
   it('returns an empty list instead of fabricated fees when no rows exist', async () => {
     vi.mocked(db.designationFee.findMany).mockResolvedValue([])
 

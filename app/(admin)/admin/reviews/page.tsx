@@ -35,6 +35,7 @@ import { Loader2, RefreshCw, ShieldCheck, Filter, Eye, EyeOff, Trash2, Star } fr
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 type StatusFilter = 'all' | 'published' | 'pending' | 'hidden'
+const PAGE_SIZE = 25
 
 const statusLabels: Record<
   Review['status'],
@@ -53,20 +54,27 @@ export default function AdminReviewsPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [page, setPage] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
 
   const loadReviews = async () => {
     if (!currentStore?.id) return
     setIsLoading(true)
     try {
+      const offset = page * PAGE_SIZE
       const response = await fetch(
-        buildStoreScopedEndpoint('/api/review?status=all', currentStore.id)
+        buildStoreScopedEndpoint(
+          `/api/review?status=all&limit=${PAGE_SIZE + 1}&offset=${offset}`,
+          currentStore.id
+        )
       )
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}))
         throw new Error(payload.error ?? '口コミ一覧の取得に失敗しました')
       }
       const payload = (await response.json()) as Review[]
-      setReviews(payload)
+      setHasMore(payload.length > PAGE_SIZE)
+      setReviews(payload.slice(0, PAGE_SIZE))
     } catch (error) {
       console.error(error)
       toast({
@@ -81,7 +89,7 @@ export default function AdminReviewsPage() {
   useEffect(() => {
     loadReviews()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStore?.id])
+  }, [currentStore?.id, page])
 
   const filteredReviews = useMemo(() => {
     const normalized = searchTerm.trim().toLowerCase()
@@ -316,6 +324,23 @@ export default function AdminReviewsPage() {
                 )}
               </TableBody>
             </Table>
+          </div>
+          <div className="flex items-center justify-end gap-3">
+            <Button
+              variant="outline"
+              disabled={page === 0 || isLoading}
+              onClick={() => setPage(page - 1)}
+            >
+              前へ
+            </Button>
+            <span className="text-sm text-muted-foreground">{page + 1}ページ</span>
+            <Button
+              variant="outline"
+              disabled={!hasMore || isLoading}
+              onClick={() => setPage(page + 1)}
+            >
+              次へ
+            </Button>
           </div>
         </CardContent>
       </Card>

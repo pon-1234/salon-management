@@ -7,6 +7,7 @@ import { addDays, startOfDay } from 'date-fns'
 import { format as formatDateFns, formatISO } from 'date-fns'
 import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz'
 import { db } from '@/lib/db'
+import logger from '@/lib/logger'
 
 export interface PublicReservationBlock {
   startTime: string
@@ -118,6 +119,15 @@ interface StoreScheduleOptions {
   days?: number
 }
 
+function buildClosedScheduleDays(options: StoreScheduleOptions): PublicScheduleDay[] {
+  const referenceDate = parseDateInput(options.startDate)
+  const days = Math.max(1, Math.floor(options.days ?? 7))
+  return Array.from({ length: days }, (_, index) => ({
+    date: formatISO(utcToZonedTime(addDays(referenceDate, index), DEFAULT_TIME_ZONE)),
+    entries: [],
+  }))
+}
+
 async function fetchStoreScheduleDays(
   storeId: string,
   { startDate, days = 7 }: StoreScheduleOptions
@@ -220,12 +230,18 @@ export async function getStoreScheduleDays(
   storeId: string,
   options?: StoreScheduleOptions
 ): Promise<PublicScheduleDay[]> {
-  return fetchStoreScheduleDays(storeId, options ?? {})
+  const normalizedOptions = options ?? {}
+  try {
+    return await fetchStoreScheduleDays(storeId, normalizedOptions)
+  } catch (error) {
+    logger.error({ err: error, storeId }, 'Failed to load public store schedule')
+    return buildClosedScheduleDays(normalizedOptions)
+  }
 }
 
 export async function getPublicStoreSchedule(
   storeId: string,
   options?: { days?: number }
 ): Promise<PublicScheduleDay[]> {
-  return fetchStoreScheduleDays(storeId, { days: options?.days })
+  return getStoreScheduleDays(storeId, { days: options?.days })
 }

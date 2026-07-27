@@ -80,10 +80,13 @@ export function Header() {
   useEffect(() => {
     const loadCasts = async () => {
       try {
-        const response = await fetch(`/api/cast?storeId=${encodeURIComponent(currentStore.id)}`, {
-          cache: 'no-store',
-          credentials: 'include',
-        })
+        const response = await fetch(
+          `/api/cast?storeId=${encodeURIComponent(currentStore.id)}&limit=100`,
+          {
+            cache: 'no-store',
+            credentials: 'include',
+          }
+        )
         if (!response.ok) {
           throw new Error(`Failed to fetch casts: ${response.status}`)
         }

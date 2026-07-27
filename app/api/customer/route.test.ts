@@ -64,6 +64,52 @@ describe('GET /api/customer', () => {
     vi.mocked(getServerSession).mockResolvedValue(null as any)
   })
 
+  it('preserves the persisted member type in the paginated admin list', async () => {
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { id: 'admin-1', role: 'admin', permissions: ['customer:read'] },
+    } as any)
+    vi.mocked(db.customer.findMany).mockResolvedValueOnce([
+      {
+        id: 'vip-1',
+        name: 'VIP Customer',
+        nameKana: 'ビップ',
+        phone: '09012345678',
+        email: 'vip@example.com',
+        memberType: 'vip',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ] as any)
+
+    const response = await GET(new NextRequest('http://localhost:3000/api/customer?limit=25'))
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.items[0].memberType).toBe('vip')
+    expect(db.customer.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 26,
+        select: expect.objectContaining({ memberType: true }),
+      })
+    )
+  })
+
+  it('applies an offset and fetches one extra row to determine hasMore', async () => {
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { id: 'admin-1', role: 'admin', permissions: ['customer:read'] },
+    } as any)
+    vi.mocked(db.customer.findMany).mockResolvedValueOnce([] as any)
+
+    await GET(new NextRequest('http://localhost:3000/api/customer?limit=25&offset=50'))
+
+    expect(db.customer.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 26,
+        skip: 50,
+      })
+    )
+  })
+
   it('should require authentication to get customer by ID', async () => {
     const request = new NextRequest('http://localhost:3000/api/customer?id=customer1', {
       method: 'GET',

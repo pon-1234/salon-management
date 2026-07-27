@@ -157,6 +157,7 @@ export interface ReviewQueryFilters {
   customerId?: string
   reservationId?: string
   limit?: number
+  offset?: number
 }
 
 function buildReviewStoreWhere(storeId: string): Prisma.ReviewWhereInput {
@@ -203,6 +204,7 @@ export async function searchReviews(filters: ReviewQueryFilters): Promise<Review
       createdAt: 'desc',
     },
     take: filters.limit,
+    skip: filters.offset,
   })
 
   return reviews.map(mapReview)

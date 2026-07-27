@@ -59,6 +59,28 @@ describe('GET /api/option', () => {
     } as any)
   })
 
+  it('returns a JSON 404 when the requested store does not exist', async () => {
+    vi.mocked(db.store.findUnique).mockResolvedValueOnce(null)
+
+    const response = await GET(
+      new NextRequest('http://localhost:3000/api/option?storeId=unknown-store')
+    )
+
+    expect(response.status).toBe(404)
+    await expect(response.json()).resolves.toEqual({ error: 'Unknown store' })
+  })
+
+  it('returns a JSON 500 when store resolution fails', async () => {
+    vi.mocked(db.store.findUnique).mockRejectedValueOnce(new Error('database unavailable'))
+
+    const response = await GET(
+      new NextRequest('http://localhost:3000/api/option?storeId=ikebukuro')
+    )
+
+    expect(response.status).toBe(500)
+    await expect(response.json()).resolves.toEqual({ error: 'Internal server error' })
+  })
+
   it('should get option by ID', async () => {
     const mockOption = {
       id: 'option1',

@@ -69,14 +69,15 @@ describe('getStoreScheduleDays', () => {
     )
   })
 
-  it('propagates database failures so callers cannot present unknown availability as open', async () => {
+  it('returns closed empty days when the database is unavailable', async () => {
     mocks.castScheduleFindMany.mockRejectedValue(new Error('database unavailable'))
 
-    await expect(
-      getStoreScheduleDays('store-a', {
-        startDate: '2026-07-20T00:00:00.000Z',
-        days: 1,
-      })
-    ).rejects.toThrow('database unavailable')
+    const days = await getStoreScheduleDays('store-a', {
+      startDate: '2026-07-20T00:00:00.000Z',
+      days: 1,
+    })
+
+    expect(days).toHaveLength(1)
+    expect(days[0]?.entries).toEqual([])
   })
 })

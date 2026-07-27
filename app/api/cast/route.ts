@@ -14,6 +14,7 @@ import { env } from '@/lib/config/env'
 import { Prisma } from '@prisma/client'
 import { resolveOptionId } from '@/lib/options/data'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
+import { isUnknownStoreError } from '@/lib/store/errors'
 import { sanitizeResponseData } from '@/lib/http/sanitize-response'
 import { normalizePublicProfile } from '@/lib/cast/public-profile'
 
@@ -258,19 +259,43 @@ async function fetchCastWithRelations(id: string, storeId: string) {
   }
 }
 
-async function fetchCastListWithRelations(storeId: string) {
+async function fetchCastListWithRelations(
+  storeId: string,
+  pagination: { take: number; skip: number }
+) {
   try {
     return await db.cast.findMany({
       where: { storeId },
-      include: {
+      take: pagination.take,
+      skip: pagination.skip,
+      select: {
+        id: true,
+        name: true,
+        nameKana: true,
+        age: true,
+        height: true,
+        bust: true,
+        waist: true,
+        hip: true,
+        type: true,
+        image: true,
+        images: true,
+        description: true,
+        publicProfile: true,
+        netReservation: true,
+        requestAttendanceEnabled: true,
+        specialDesignationFee: true,
+        regularDesignationFee: true,
+        panelDesignationRank: true,
+        regularDesignationRank: true,
+        workStatus: true,
+        availableOptions: true,
+        welfareExpenseRate: true,
+        storeId: true,
+        createdAt: true,
+        updatedAt: true,
         schedules: true,
         castOptionSettings: true,
-        reservations: {
-          include: {
-            customer: true,
-            course: true,
-          },
-        },
       },
     })
   } catch (error) {
@@ -281,6 +306,8 @@ async function fetchCastListWithRelations(storeId: string) {
       )
       return db.cast.findMany({
         where: { storeId },
+        take: pagination.take,
+        skip: pagination.skip,
       })
     }
     throw error
@@ -290,11 +317,12 @@ async function fetchCastListWithRelations(storeId: string) {
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const id = searchParams.get('id')
-  const storeId = await ensureStoreId(await resolveStoreId(request))
-  const authError = await requireAdmin({ permissions: 'cast:read', storeId })
-  if (authError) return authError
 
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'cast:read', storeId })
+    if (authError) return authError
+
     if (id) {
       const cast = await fetchCastWithRelations(id, storeId)
 
@@ -307,7 +335,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(sanitizeResponseData(transformedCast))
     }
 
-    const casts = await fetchCastListWithRelations(storeId)
+    const requestedLimit = Number.parseInt(searchParams.get('limit') ?? '25', 10)
+    const requestedOffset = Number.parseInt(searchParams.get('offset') ?? '0', 10)
+    const take = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 100) : 25
+    const skip = Number.isInteger(requestedOffset) ? Math.max(requestedOffset, 0) : 0
+    const casts = await fetchCastListWithRelations(storeId, { take, skip })
 
     // Transform database results to match frontend expectations
     const transformedCasts = casts.map(transformCast)
@@ -315,6 +347,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(sanitizeResponseData(transformedCasts))
   } catch (error) {
     logger.error({ err: error }, 'Error fetching cast data')
+    if (isUnknownStoreError(error)) {
+      return NextResponse.json({ error: 'Unknown store' }, { status: 404 })
+    }
     if (!env.featureFlags.useMockFallbacks) {
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }

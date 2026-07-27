@@ -36,6 +36,35 @@ describe('Cast API endpoints', () => {
   })
 
   describe('GET /api/cast', () => {
+    it('returns a JSON 404 when the requested store does not exist', async () => {
+      mockedDb.store.findUnique.mockResolvedValueOnce(null)
+
+      const response = await GET(
+        new NextRequest('http://localhost:3000/api/cast?storeId=unknown-store')
+      )
+
+      expect(response.status).toBe(404)
+      await expect(response.json()).resolves.toEqual({ error: 'Unknown store' })
+    })
+
+    it('uses a bounded lightweight query for cast lists', async () => {
+      mockedDb.cast.findMany.mockResolvedValue([])
+
+      const response = await GET(
+        new NextRequest('http://localhost:3000/api/cast?storeId=ikebukuro&limit=25&offset=0')
+      )
+
+      expect(response.status).toBe(200)
+      expect(mockedDb.cast.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          take: 25,
+          skip: 0,
+          select: expect.not.objectContaining({ reservations: expect.anything() }),
+        })
+      )
+      expect(mockedDb.cast.findMany.mock.calls[0][0]).not.toHaveProperty('include.reservations')
+    })
+
     it('should return all cast members', async () => {
       const mockCasts = [
         {
@@ -121,19 +150,18 @@ describe('Cast API endpoints', () => {
       expect(JSON.stringify(data)).not.toMatch(
         /cast-list-secret|customer-list-secret|verification-secret/
       )
-      expect(mockedDb.cast.findMany).toHaveBeenCalledWith({
-        where: { storeId: 'ikebukuro' },
-        include: {
-          schedules: true,
-          castOptionSettings: true,
-          reservations: {
-            include: {
-              customer: true,
-              course: true,
-            },
-          },
-        },
-      })
+      expect(mockedDb.cast.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { storeId: 'ikebukuro' },
+          take: 25,
+          skip: 0,
+          select: expect.objectContaining({
+            schedules: true,
+            castOptionSettings: true,
+          }),
+        })
+      )
+      expect(mockedDb.cast.findMany.mock.calls[0][0]).not.toHaveProperty('include.reservations')
       expect(requireAdmin).toHaveBeenCalledWith({
         permissions: 'cast:read',
         storeId: 'ikebukuro',

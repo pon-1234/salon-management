@@ -11,6 +11,7 @@ import { Prisma } from '@prisma/client'
 import logger from '@/lib/logger'
 import { DEFAULT_DESIGNATION_FEES, normalizeDesignationShares } from '@/lib/designation/fees'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
+import { isUnknownStoreError } from '@/lib/store/errors'
 import { requireAdmin } from '@/lib/auth/utils'
 import { env } from '@/lib/config/env'
 import { toPublicDesignationFee } from '@/lib/pricing/public'
@@ -108,10 +109,10 @@ function buildFallbackResponse(id: string | null, includeInactive: boolean, isAd
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const id = searchParams.get('id')
-  const storeId = await ensureStoreId(await resolveStoreId(request))
   const requestedIncludeInactive = searchParams.get('includeInactive') === 'true'
 
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const session = await requireSession()
     if (session instanceof NextResponse) {
       return session
@@ -149,6 +150,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(isAdmin ? fees : fees.map(toPublicDesignationFee))
   } catch (error) {
     logger.error({ err: error }, 'Failed to fetch designation fees')
+    if (isUnknownStoreError(error)) {
+      return NextResponse.json({ error: 'Unknown store' }, { status: 404 })
+    }
     if (!env.featureFlags.useMockFallbacks) {
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
@@ -220,13 +224,13 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const id = searchParams.get('id')
-  const storeId = await ensureStoreId(await resolveStoreId(request))
 
   if (!id) {
     return NextResponse.json({ error: 'ID is required' }, { status: 400 })
   }
 
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const authError = await requireAdmin({ permissions: 'pricing:delete', storeId })
     if (authError) return authError
 
@@ -245,6 +249,9 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true }, { status: 200 })
   } catch (error) {
     logger.error({ err: error }, 'Failed to delete designation fee')
-    return NextResponse.json({ error: '指名料の削除に失敗しました' }, { status: 400 })
+    if (isUnknownStoreError(error)) {
+      return NextResponse.json({ error: 'Unknown store' }, { status: 404 })
+    }
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

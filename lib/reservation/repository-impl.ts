@@ -27,6 +27,13 @@ function normalizeApiError(error: ApiError): ApiError {
   return normalized
 }
 
+export interface ReservationListQuery {
+  limit: number
+  offset: number
+  sortBy: 'startTime' | 'endTime' | 'createdAt' | 'updatedAt' | 'status'
+  sortOrder: 'asc' | 'desc'
+}
+
 export class ReservationRepositoryImpl implements ReservationRepository {
   constructor(
     private readonly client: ApiClient = defaultApiClient,
@@ -41,8 +48,16 @@ export class ReservationRepositoryImpl implements ReservationRepository {
     return `${path}${separator}storeId=${encodeURIComponent(this.storeId)}`
   }
 
-  async getAll(): Promise<Reservation[]> {
-    return this.client.get<Reservation[]>(this.withStore(RESERVATION_ENDPOINT))
+  async getAll(query?: ReservationListQuery): Promise<Reservation[]> {
+    const path = query
+      ? `${RESERVATION_ENDPOINT}?${new URLSearchParams({
+          limit: String(query.limit),
+          offset: String(query.offset),
+          sortBy: query.sortBy,
+          sortOrder: query.sortOrder,
+        }).toString()}`
+      : RESERVATION_ENDPOINT
+    return this.client.get<Reservation[]>(this.withStore(path))
   }
 
   async getById(id: string): Promise<Reservation | null> {

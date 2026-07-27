@@ -422,14 +422,25 @@ export async function GET(request: NextRequest) {
     // ページネーション
     const limit = searchParams.get('limit')
     const offset = searchParams.get('offset')
-    const take = limit ? parseInt(limit, 10) : undefined
-    const skip = offset ? parseInt(offset, 10) : undefined
+    const take = limit === null ? 25 : Number.parseInt(limit, 10)
+    const skip = offset === null ? 0 : Number.parseInt(offset, 10)
 
     // ソート
     const sortBy = searchParams.get('sortBy') || 'startTime'
     const sortOrder = searchParams.get('sortOrder') || 'asc'
-    const orderBy: any = {}
-    orderBy[sortBy] = sortOrder
+    const allowedSortFields = new Set(['startTime', 'endTime', 'createdAt', 'updatedAt', 'status'])
+    if (
+      !allowedSortFields.has(sortBy) ||
+      (sortOrder !== 'asc' && sortOrder !== 'desc') ||
+      !Number.isInteger(take) ||
+      take < 1 ||
+      take > 100 ||
+      !Number.isInteger(skip) ||
+      skip < 0
+    ) {
+      return NextResponse.json({ error: 'Invalid list query' }, { status: 400 })
+    }
+    const orderBy = { [sortBy]: sortOrder }
 
     const reservations = await db.reservation.findMany({
       where,

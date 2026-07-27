@@ -17,6 +17,10 @@ vi.mock('@/lib/auth/config', () => ({
   authOptions: {},
 }))
 
+vi.mock('@/lib/config/env', () => ({
+  env: { featureFlags: { useMockFallbacks: false } },
+}))
+
 // Mock the database
 vi.mock('@/lib/db', () => ({
   db: {
@@ -50,6 +54,28 @@ describe('GET /api/course', () => {
     vi.mocked(getServerSession).mockResolvedValue({
       user: { id: 'admin1', role: 'admin', permissions: ['*'] },
     } as any)
+  })
+
+  it('returns a JSON 404 when the requested store does not exist', async () => {
+    vi.mocked(db.store.findUnique).mockResolvedValueOnce(null)
+
+    const response = await GET(
+      new NextRequest('http://localhost:3000/api/course?storeId=unknown-store')
+    )
+
+    expect(response.status).toBe(404)
+    await expect(response.json()).resolves.toEqual({ error: 'Unknown store' })
+  })
+
+  it('returns a JSON 500 when store resolution fails', async () => {
+    vi.mocked(db.store.findUnique).mockRejectedValueOnce(new Error('database unavailable'))
+
+    const response = await GET(
+      new NextRequest('http://localhost:3000/api/course?storeId=database-failure')
+    )
+
+    expect(response.status).toBe(500)
+    await expect(response.json()).resolves.toEqual({ error: 'Internal server error' })
   })
 
   it('should get course by ID', async () => {

@@ -52,8 +52,16 @@ Create local users with the setup or seed scripts before signing in:
 
 ```bash
 pnpm install
+cp .env.example .env.local
+docker compose up -d postgres
+pnpm prisma migrate deploy
+pnpm prisma generate
 pnpm dev
 ```
+
+The Compose service stores PostgreSQL data in the named `postgres_data` volume. Check readiness
+with `docker compose ps`; stop the service with `docker compose down`. Do not add `--volumes`
+unless you intentionally want to delete the local database.
 
 If you pull changes that modify `prisma/schema.prisma`, regenerate the Prisma Client before starting the dev server:
 
@@ -63,13 +71,14 @@ pnpm prisma generate
 
 ## Environment Setup
 
-1. Copy the environment variables:
+1. Copy the canonical local environment example:
 
 ```bash
 cp .env.example .env.local
 ```
 
-2. Configure the required variables:
+2. The example already points Prisma at the local Compose database. Replace provider credentials
+   only when exercising those integrations:
 
 - **Database**: Set your PostgreSQL connection string
   - Minimum required: `DATABASE_URL`

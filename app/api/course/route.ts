@@ -15,6 +15,7 @@ import logger from '@/lib/logger'
 import { defaultCourses } from '@/lib/pricing/data'
 import { env } from '@/lib/config/env'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
+import { isUnknownStoreError } from '@/lib/store/errors'
 import { sanitizeResponseData } from '@/lib/http/sanitize-response'
 import { toPublicCourse } from '@/lib/pricing/public'
 
@@ -133,10 +134,10 @@ function buildFallbackCourseResponse(id: string | null, isAdmin: boolean) {
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const id = searchParams.get('id')
-  const storeId = await ensureStoreId(await resolveStoreId(request))
   let isAdmin = false
 
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const session = await getServerSession(authOptions)
     if (session?.user?.role === 'admin') {
       if (!canManagePricing(session, storeId, 'pricing:read')) {
@@ -199,6 +200,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(courses.map(toPublicCourse))
   } catch (error) {
     logger.error({ err: error }, 'Error fetching course data')
+    if (isUnknownStoreError(error)) {
+      return NextResponse.json({ error: 'Unknown store' }, { status: 404 })
+    }
     if (!env.featureFlags.useMockFallbacks) {
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }

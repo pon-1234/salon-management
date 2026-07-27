@@ -5,15 +5,25 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mocks = vi.hoisted(() => ({ castFindFirst: vi.fn() }))
+const mocks = vi.hoisted(() => ({ castFindFirst: vi.fn(), castFindMany: vi.fn() }))
 
 vi.mock('@/lib/db', () => ({
   db: {
-    cast: { findFirst: mocks.castFindFirst },
+    cast: { findFirst: mocks.castFindFirst, findMany: mocks.castFindMany },
+    review: { groupBy: vi.fn() },
+    reservation: { groupBy: vi.fn() },
   },
 }))
 
-import { getPublicCastDetail } from './public-casts'
+import { getPublicCastDetail, getPublicCastProfiles } from './public-casts'
+
+describe('getPublicCastProfiles', () => {
+  it('fails closed to an empty public list when the database is unavailable', async () => {
+    mocks.castFindMany.mockRejectedValueOnce(new Error('database unavailable'))
+
+    await expect(getPublicCastProfiles('store-a')).resolves.toEqual([])
+  })
+})
 
 describe('getPublicCastDetail', () => {
   beforeEach(() => {

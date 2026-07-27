@@ -34,6 +34,7 @@ import { useStore } from '@/contexts/store-context'
 import { hasPermission } from '@/lib/auth/permissions'
 
 const ADJUSTING_STATUSES = new Set(['pending', 'tentative', 'modifiable'])
+const PAGE_SIZE = 25
 
 export default function ReservationListPage() {
   const { currentStore } = useStore()
@@ -41,6 +42,8 @@ export default function ReservationListPage() {
   const [rawReservations, setRawReservations] = useState<Reservation[]>([])
   const [dailyReservations, setDailyReservations] = useState<ReservationData[]>([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
   const [updatingReservationId, setUpdatingReservationId] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date>(() => startOfDay(new Date()))
   const [statusFilter, setStatusFilter] = useState<'all' | 'confirmed' | 'pending'>('all')
@@ -71,8 +74,15 @@ export default function ReservationListPage() {
   const fetchReservations = useCallback(async () => {
     setLoading(true)
     try {
-      const fetchedReservations = await reservationRepository.getAll()
-      const normalized = fetchedReservations.map(
+      const offset = page * PAGE_SIZE
+      const fetchedReservations = await reservationRepository.getAll({
+        limit: PAGE_SIZE + 1,
+        offset,
+        sortBy: 'startTime',
+        sortOrder: 'desc',
+      })
+      setHasMore(fetchedReservations.length > PAGE_SIZE)
+      const normalized = fetchedReservations.slice(0, PAGE_SIZE).map(
         (reservation) =>
           ({
             ...reservation,
@@ -91,7 +101,7 @@ export default function ReservationListPage() {
     } finally {
       setLoading(false)
     }
-  }, [reservationRepository])
+  }, [page, reservationRepository])
 
   useEffect(() => {
     fetchReservations()
@@ -313,12 +323,23 @@ export default function ReservationListPage() {
             <div className="text-gray-500">読み込み中...</div>
           </div>
         ) : (
-          <ReservationList
-            reservations={filteredReservations}
-            onOpenReservation={setSelectedReservation}
-            onMakeModifiable={canUpdateReservations ? handleMakeModifiable : undefined}
-            updatingReservationId={updatingReservationId}
-          />
+          <>
+            <ReservationList
+              reservations={filteredReservations}
+              onOpenReservation={setSelectedReservation}
+              onMakeModifiable={canUpdateReservations ? handleMakeModifiable : undefined}
+              updatingReservationId={updatingReservationId}
+            />
+            <div className="mt-4 flex items-center justify-end gap-3">
+              <Button variant="outline" disabled={page === 0} onClick={() => setPage(page - 1)}>
+                前へ
+              </Button>
+              <span className="text-sm text-muted-foreground">{page + 1}ページ</span>
+              <Button variant="outline" disabled={!hasMore} onClick={() => setPage(page + 1)}>
+                次へ
+              </Button>
+            </div>
+          </>
         )}
       </main>
       <ReservationDialog

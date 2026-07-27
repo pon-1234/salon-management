@@ -14,6 +14,7 @@ import { Prisma } from '@prisma/client'
 import logger from '@/lib/logger'
 import { defaultOptions } from '@/lib/pricing/data'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
+import { isUnknownStoreError } from '@/lib/store/errors'
 import { sanitizeResponseData } from '@/lib/http/sanitize-response'
 import { env } from '@/lib/config/env'
 import { toPublicOption } from '@/lib/pricing/public'
@@ -273,10 +274,10 @@ function buildFallbackOptionResponse(id: string | null, isAdmin: boolean) {
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const id = searchParams.get('id')
-  const storeId = await ensureStoreId(await resolveStoreId(request))
   let isAdmin = false
 
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
     const session = await getServerSession(authOptions)
     if (session?.user?.role === 'admin') {
       if (!canManagePricing(session, storeId, 'pricing:read')) {
@@ -355,6 +356,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(options.map(toPublicOption))
   } catch (error) {
     logger.error({ err: error }, 'Error fetching option data')
+    if (isUnknownStoreError(error)) {
+      return NextResponse.json({ error: 'Unknown store' }, { status: 404 })
+    }
     if (!env.featureFlags.useMockFallbacks) {
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }

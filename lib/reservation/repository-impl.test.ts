@@ -67,6 +67,21 @@ describe('ReservationRepositoryImpl', () => {
   }
 
   describe('getAll', () => {
+    it('adds bounded pagination and sorting parameters when requested', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(mockResponse({ body: [] }))
+
+      await repository.getAll({
+        limit: 26,
+        offset: 25,
+        sortBy: 'startTime',
+        sortOrder: 'desc',
+      })
+
+      expect(vi.mocked(fetch).mock.calls[0][0]).toBe(
+        '/api/reservation?limit=26&offset=25&sortBy=startTime&sortOrder=desc'
+      )
+    })
+
     it('should fetch all reservations successfully', async () => {
       const mockReservations = [mockReservation]
       vi.mocked(fetch).mockResolvedValueOnce(mockResponse({ body: mockReservations }))
