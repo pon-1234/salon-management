@@ -9,9 +9,24 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: salon
+          POSTGRES_PASSWORD: salon_local_password
+          POSTGRES_DB: salon_management
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U salon -d salon_management"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     env:
       CI: true
-      DATABASE_URL: postgresql://test:test@localhost:5432/salon_test?schema=public
+      DATABASE_URL: postgresql://salon:salon_local_password@localhost:5432/salon_management?schema=public
+      E2E_DATABASE_URL: postgresql://salon:salon_local_password@localhost:5432/salon_management?schema=public
       NEXTAUTH_SECRET: test-secret-key-for-ci
       NEXTAUTH_URL: http://localhost:3000
       JWT_SECRET: test-jwt-secret-for-ci
@@ -35,6 +50,12 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Prepare test database
+        run: pnpm exec prisma db push
 
       - name: Run CI checks
         run: ./scripts/ci.sh

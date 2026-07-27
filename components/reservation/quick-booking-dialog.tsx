@@ -33,8 +33,8 @@ import {
 } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { format, addMinutes } from 'date-fns'
-import { utcToZonedTime, zonedTimeToUtc, formatInTimeZone } from 'date-fns-tz'
+import { addMinutes, format } from 'date-fns'
+import { formatInTimeZone, utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz'
 import {
   Phone,
   Clock,
@@ -58,7 +58,6 @@ import { useLocations } from '@/hooks/use-locations'
 import { TimeSlotPicker } from './time-slot-picker'
 import { toast } from '@/hooks/use-toast'
 import { isVipMember } from '@/lib/utils'
-import { resolveOptionId } from '@/lib/options/data'
 import { getDesignationFees } from '@/lib/designation/data'
 import type { DesignationFee } from '@/lib/designation/types'
 import { BusinessHoursRange, formatMinutesAsLabel } from '@/lib/settings/business-hours'
@@ -66,143 +65,25 @@ import { useStore } from '@/contexts/store-context'
 import { calculateReservationRevenue } from '@/lib/reservation/revenue'
 import { buildStoreCastEndpoint, buildStoreReservationEndpoint } from '@/lib/reservation/endpoints'
 import { MARKETING_CHANNELS, PAYMENT_METHODS } from '@/lib/constants'
-
-type DesignationType = 'none' | 'regular' | 'special'
-
-type PriceBreakdown = {
-  basePrice: number
-  designationFee: number
-  optionsTotal: number
-  transportationFee: number
-  additionalFee: number
-  discount: number
-  total: number
-  subtotal: number
-  pointsApplied: number
-  storeRevenue: number
-  staffRevenue: number
-  welfareExpense: number
-  welfareRate: number
-}
+import {
+  formatDateInJst,
+  formatTimeInJst,
+  formatYen,
+  getCastAvailableOptions,
+  getDesignationFeeAmount,
+  getDesignationLabel,
+  normalizeToBusinessMinutes,
+  type BookingDetails,
+  type DesignationType,
+  type NormalizedCourse,
+  type NormalizedOption,
+  type PriceBreakdown,
+} from './quick-booking.utils'
 
 const paymentMethods = Object.values(PAYMENT_METHODS)
 const DEFAULT_MARKETING_CHANNELS = [...MARKETING_CHANNELS]
 
-const formatYen = (amount: number) => `${amount.toLocaleString()}円`
-
 const JST_TIMEZONE = 'Asia/Tokyo'
-const formatDateInJst = (date: Date) => format(utcToZonedTime(date, JST_TIMEZONE), 'yyyy-MM-dd')
-
-const formatTimeInJst = (date: Date) => format(utcToZonedTime(date, JST_TIMEZONE), 'HH:mm')
-
-const MINUTES_IN_DAY = 24 * 60
-
-const timeStringToMinutes = (value: string): number | null => {
-  const match = value.match(/^(\d{1,2}):(\d{2})$/)
-  if (!match) return null
-  const hours = Number(match[1])
-  const minutes = Number(match[2])
-  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null
-  return hours * 60 + minutes
-}
-
-const normalizeToBusinessMinutes = (
-  timeValue: string,
-  range: BusinessHoursRange
-): number | null => {
-  const base = timeStringToMinutes(timeValue)
-  if (base === null) return null
-  if (range.endMinutes > MINUTES_IN_DAY && base < range.startMinutes) {
-    return base + MINUTES_IN_DAY
-  }
-  return base
-}
-
-const getDesignationFeeAmount = (type: DesignationType, cast?: Cast) => {
-  if (!cast) return 0
-  if (type === 'special') {
-    return cast.specialDesignationFee ?? 0
-  }
-  if (type === 'regular') {
-    return cast.regularDesignationFee ?? 0
-  }
-  return 0
-}
-
-const getDesignationLabel = (type: DesignationType, cast?: Cast) => {
-  if (!cast) return 'フリー'
-  if (type === 'special' && cast.specialDesignationFee) {
-    return '特別指名'
-  }
-  if (type === 'regular' && cast.regularDesignationFee) {
-    return '本指名'
-  }
-  return 'フリー'
-}
-
-interface NormalizedCourse {
-  id: string
-  name: string
-  duration: number
-  price: number
-  storeShare?: number | null
-  castShare?: number | null
-}
-
-interface NormalizedOption {
-  id: string
-  name: string
-  price: number
-  note?: string | null
-  storeShare?: number | null
-  castShare?: number | null
-}
-
-export function getCastAvailableOptions(
-  cast: Cast | null | undefined,
-  options: NormalizedOption[]
-): NormalizedOption[] {
-  if (!cast) {
-    return []
-  }
-
-  const allowedIds = new Set((cast.availableOptions ?? []).map((value) => resolveOptionId(value)))
-
-  if (allowedIds.size === 0) {
-    return []
-  }
-
-  return options.filter((option) => {
-    const optionId = option.id
-    const resolvedOptionId = resolveOptionId(optionId)
-    return allowedIds.has(optionId) || allowedIds.has(resolvedOptionId)
-  })
-}
-
-interface BookingDetails {
-  customerName: string
-  customerType: string
-  phoneNumber: string
-  points: number
-  usePoints: boolean
-  pointsToUse: number
-  areaId: string
-  stationId: string
-  stationName: string
-  stationTravelTime: number
-  bookingStatus: string
-  staff: string
-  marketingChannel: string
-  date: string
-  time: string
-  options: Record<string, boolean>
-  transportationFee: number
-  additionalFee: number
-  discountAmount: number
-  paymentMethod: string
-  locationMemo: string
-  notes: string
-}
 
 interface QuickBookingDialogProps {
   open: boolean

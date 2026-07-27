@@ -3,7 +3,7 @@
 `salon-management` is the target production runtime for the XServer VPS managed
 by the `platinum-management` repository. Legacy data cutover remains **No-Go**;
 this topology and passing CI do not mean that production traffic has moved.
-Vercel and hosted Supabase are not part of the target runtime.
+External application-hosting platforms are not part of the target runtime.
 
 ## Runtime topology
 
@@ -191,14 +191,14 @@ record a successful backup restore. Even after approval, the script must retain
 ## Optional migration from an earlier Salon deployment
 
 This optional path applies only if this `salon-management` application previously
-ran on Vercel and Supabase. It is not the `gambit-front` legacy migration; follow
-the separate legacy migration runbook for that source and keep it untouched until
-the approved cutover procedure.
+ran on externally hosted infrastructure. It is not the `gambit-front` legacy
+migration; follow the separate legacy migration runbook for that source and keep
+it untouched until the approved cutover procedure.
 
 Export the current PostgreSQL database and restore it into `salon-postgres` before
 DNS cutover. Copy existing Supabase Storage objects into the `images` directory
 of `salon-storage-data`, preserving their stored relative paths. Keep the old
 services read-only through an explicitly approved rollback-retention window.
-Remove the Vercel project and hosted Supabase project only after database row
-counts, login, uploads, images, cron jobs, and restorable backups have been
-verified and the production owner has closed that rollback window.
+Retire the earlier hosted services only after database row counts, login, uploads,
+images, cron jobs, and restorable backups have been verified and the production
+owner has closed that rollback window.

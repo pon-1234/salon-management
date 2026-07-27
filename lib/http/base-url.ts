@@ -24,11 +24,7 @@ function resolveServerBaseUrl(): string {
     }
   }
 
-  candidates.push(
-    process.env.NEXT_PUBLIC_SITE_URL,
-    process.env.NEXTAUTH_URL,
-    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined
-  )
+  candidates.push(process.env.NEXT_PUBLIC_SITE_URL, process.env.NEXTAUTH_URL)
 
   for (const candidate of candidates) {
     const normalized = normalizeBaseUrl(candidate)

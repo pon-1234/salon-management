@@ -5,7 +5,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
-import { middleware } from './middleware'
+import { config, middleware } from './middleware'
 
 // Mock NextAuth JWT
 vi.mock('next-auth/jwt', () => ({
@@ -148,6 +148,8 @@ describe('Middleware Authentication', () => {
 
         expect(response?.status).toBe(200) // NextResponse.next() returns status 200
       }
+
+      expect(getToken).not.toHaveBeenCalled()
     })
 
     it('should allow access to login and register pages without authentication', async () => {
@@ -164,6 +166,26 @@ describe('Middleware Authentication', () => {
 
         expect(response?.status).toBe(200) // NextResponse.next() returns status 200
       }
+    })
+  })
+
+  describe('Middleware Scope', () => {
+    it('does not run against immutable Next.js assets', () => {
+      expect(config.matcher).toContain(
+        '/((?!_next/static|_next/image|favicon.ico|robots.txt|images/|videos/).*)'
+      )
+    })
+
+    it('does not treat a route as public merely because it shares a string prefix', async () => {
+      const { getToken } = await import('next-auth/jwt')
+
+      const request = new NextRequest(new URL('http://localhost:3000/administer'), {
+        headers: { cookie: 'salon_age_verified=1' },
+      })
+      const response = await middleware(request)
+
+      expect(response?.status).toBe(200)
+      expect(getToken).not.toHaveBeenCalled()
     })
   })
 

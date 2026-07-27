@@ -36,15 +36,15 @@ Create local users with the setup or seed scripts before signing in:
 
 ## Recent Updates
 
-### Test Coverage Improvements (2025-08-05)
+### Test Coverage and Browser Journeys
 
 - ✅ Added comprehensive tests for core data modules:
   - `lib/cast/data.ts`
   - `lib/customer/data.ts`
   - `lib/reservation/data.ts`
   - `lib/store/data.ts`
-- ⚠️ The repository currently enforces only a 30% coverage threshold; this remains below the
-  production quality gate and must not be treated as cutover approval
+- ✅ Vitest enforces 55% minimum statement, line, function, and branch coverage
+- ✅ Playwright covers the age gate, reservation journey, security headers, and administrator login
 - 🔍 Identified and documented unused code patterns with `@no-test-required` annotations
 - 🛠 Fixed `createDate` export in cast module
 
@@ -96,7 +96,7 @@ The production target uses a persistent VPS volume for image storage:
 - **Local**: Images remain on the encrypted-backup VPS storage volume
 - **HTTP serving**: Caddy serves the volume read-only under `/salon-uploads/`
 - **Persistent**: Images remain available across deployments
-- **Independent**: No Vercel or hosted Supabase account is required
+- **Self-hosted**: No external hosting-platform account is required
 - **Validated**: The server verifies JPEG, PNG, WebP, and GIF signatures against the declared MIME type and saves each file with the detected format's canonical extension
 
 To enable image uploads:
@@ -148,6 +148,15 @@ Customer login in development should use customers created by the seed scripts o
 ## Development
 
 For detailed development information, see [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md)
+
+The non-functional architecture and local browser-test setup are documented in
+[docs/NONFUNCTIONAL_FOUNDATIONS.md](./docs/NONFUNCTIONAL_FOUNDATIONS.md).
+
+Run the complete local quality gate with:
+
+```bash
+./scripts/ci.sh
+```
 
 ### Recent Improvements (2025-01-06)
 

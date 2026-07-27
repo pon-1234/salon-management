@@ -42,7 +42,7 @@ APIは `app/api/` に77ルート。認可は `middleware.ts`(一次ゲート)+ �
 - **`lib/` のドメイン層**: CLAUDE.md には「repository-impl はモックデータ」とあるが、**これは古い**。cast / customer / reservation / pricing / daily-sales の repository-impl は `/api/*` を叩くHTTPクライアントになっており、Prisma処理はAPIルートと `lib/*/server.ts` にある。モックのままなのは analytics(`lib/analytics/repository-impl.ts`)と cast-schedule(in-memory Map)のみ。
 - **モックフォールバック**: `lib/config/feature-flags.ts` の `shouldUseMockFallbacks()`(env `USE_MOCK_FALLBACK` / `NEXT_PUBLIC_USE_MOCK_FALLBACK`、デフォルトは非productionでtrue)。実データ取得に失敗するとモックへフォールバックする実行時フラグで、**認証にまで及ぶ**(`lib/auth/config.ts:189-198` にハードコードされたデモ顧客 `demo-tanaka` / 田中 太郎)。
 - **外部連携**: LINE Messaging(webhook: `app/api/line/webhook`、通知: `lib/line/`)、Resendメール(`lib/email/client.ts`)、Vonage SMS、Supabase Storage(バケット `images`、`lib/storage/`)。決済は provider registry(`lib/payment/providers/`)でデフォルト `manual`。
-- **定期ジョブ**: GitHub Actions cron のみ(`expire-points.yml` → `/api/customer/points/expire`(`CRON_SECRET` Bearer認証)、`prune-chat-attachments.yml` → `pnpm chat:prune-attachments`)。vercel.json なし。キューなし。
+- **定期ジョブ**: GitHub Actions cron のみ(`expire-points.yml` → `/api/customer/points/expire`(`CRON_SECRET` Bearer認証)、`prune-chat-attachments.yml` → `pnpm chat:prune-attachments`)。キューなし。
 
 ### 品質ゲートの実態(重要)
 
@@ -90,7 +90,7 @@ pnpm build
 - テストのskip・削除・アサーション弱体化で通さない。既存の7件の `it.skip`(`components/reservation/reservation-dialog.test.tsx`)は勝手に解除も削除もしない。
 - `// @ts-ignore` / 空catch / エラー握りつぶしを追加しない。
 - **DBスキーマ(`prisma/schema.prisma`)とマイグレーションを変更しない**(本指示書の全フェーズで禁止。提案のみ可)。
-- `.env` / `.env.production` / `.env.vercel`(ディスク上に存在、git未追跡)を読まない・変更しない・コミットしない。`.gitignore` の `.env*` 除外を変更しない。
+- `.env` / `.env.production` などの環境変数ファイルを読まない・変更しない・コミットしない。`.gitignore` の `.env*` 除外を変更しない。
 - 依存パッケージのバージョンを変更しない(追加も原則しない。必要なら質問)。
 - 無関係な整形・「ついで」のリファクタリングをしない。1コミット=1つの論理的変更。
 - 証拠(import検索・実行結果)なしにコードを削除しない。

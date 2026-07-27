@@ -34,8 +34,19 @@ import {
 } from '@/lib/reservation/location-integrity'
 import { ReservationHotelError, resolveReservationHotel } from '@/lib/reservation/hotel-integrity'
 import { canAdminAccessStore } from '@/lib/auth/store-access'
-import { sanitizeResponseData } from '@/lib/http/sanitize-response'
-import { sanitizeCustomerReservationResponse } from '@/lib/http/customer-dto'
+import {
+  formatCurrency,
+  formatDesignation,
+  formatSchedule,
+  formatStatus,
+  formatText,
+  isValidHotelExpense,
+  normalizePaymentMethodInput,
+  parseReservationDate,
+  sanitizeReservationResponse,
+  sanitizeReservationResponseForRole,
+  valuesDiffer,
+} from '@/lib/reservation/route-utils'
 
 // Types
 interface AvailabilityCheck {
@@ -52,25 +63,6 @@ type PrismaTransactionClient = Omit<
   '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
 >
 
-const STATUS_LABEL_MAP: Record<string, string> = {
-  confirmed: '確定済',
-  pending: '仮予約',
-  tentative: '仮予約',
-  cancelled: 'キャンセル',
-  modifiable: '修正待ち',
-  completed: '対応済み',
-}
-
-const DESIGNATION_LABEL_MAP: Record<string, string> = {
-  special: '特別指名',
-  regular: '本指名',
-  none: 'フリー',
-}
-
-const ALLOWED_PAYMENT_METHODS = new Set<PaymentMethod>(
-  Object.values(PAYMENT_METHODS) as PaymentMethod[]
-)
-const RESERVATION_PRIVATE_CAST_FIELDS = ['loginEmail', 'lineUserId', 'welfareExpenseRate']
 const NON_NEGATIVE_FINANCIAL_UPDATE_FIELDS = [
   'price',
   'designationFee',
@@ -100,48 +92,6 @@ function invalidOptionSelectionResponse(error: InvalidOptionSelectionError) {
     },
     { status: 400 }
   )
-}
-
-function sanitizeReservationResponse<T>(value: T): T {
-  return sanitizeResponseData(value, RESERVATION_PRIVATE_CAST_FIELDS)
-}
-
-function sanitizeReservationResponseForRole<T>(value: T, role: string | undefined): T {
-  return role === 'customer'
-    ? sanitizeCustomerReservationResponse(value)
-    : sanitizeReservationResponse(value)
-}
-
-function isValidHotelExpense(value: unknown): value is number {
-  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
-}
-
-function formatCurrency(value: number | null | undefined): string {
-  if (value === null || value === undefined) {
-    return '未設定'
-  }
-  return `¥${value.toLocaleString()}`
-}
-
-function formatText(value: unknown): string {
-  if (value === null || value === undefined || value === '') {
-    return '未設定'
-  }
-  return String(value)
-}
-
-function formatStatus(value: string | null | undefined): string {
-  if (!value) {
-    return '未設定'
-  }
-  return STATUS_LABEL_MAP[value] ?? value
-}
-
-function formatDesignation(value: string | null | undefined): string {
-  if (!value) {
-    return '未設定'
-  }
-  return DESIGNATION_LABEL_MAP[value] ?? value
 }
 
 async function sendReservationConfirmedChatMessage(
@@ -177,47 +127,6 @@ async function sendReservationConfirmedChatMessage(
       reservationInfo,
     },
   })
-}
-
-function normalizePaymentMethodInput(input: unknown): PaymentMethod | null {
-  if (typeof input !== 'string') {
-    return null
-  }
-  const trimmed = input.trim()
-  if (trimmed.length === 0) {
-    return null
-  }
-  const lower = trimmed.toLowerCase()
-  if (lower.includes('card') || trimmed.includes('カード')) {
-    return PAYMENT_METHODS.CARD
-  }
-  if (lower.includes('cash') || trimmed.includes('現金')) {
-    return PAYMENT_METHODS.CASH
-  }
-  if (ALLOWED_PAYMENT_METHODS.has(trimmed as PaymentMethod)) {
-    return trimmed as PaymentMethod
-  }
-  return null
-}
-
-function formatSchedule(value: Date | null | undefined): string {
-  if (!value) {
-    return '未設定'
-  }
-  return format(value, 'yyyy/MM/dd HH:mm')
-}
-
-function valuesDiffer(a: unknown, b: unknown): boolean {
-  if (a === null || a === undefined) {
-    return !(b === null || b === undefined)
-  }
-  if (b === null || b === undefined) {
-    return true
-  }
-  if (a instanceof Date && b instanceof Date) {
-    return a.getTime() !== b.getTime()
-  }
-  return a !== b
 }
 
 // Helper function to check cast availability
@@ -303,43 +212,6 @@ async function findNgEntry(customerId: string, castId: string) {
       assignedBy: true,
     },
   })
-}
-
-function parseReservationDate(raw: string): Date {
-  if (typeof raw !== 'string') {
-    throw new Error('Invalid date format')
-  }
-
-  const trimmed = raw.trim()
-  if (trimmed.length === 0) {
-    throw new Error('Invalid date format')
-  }
-
-  const direct = new Date(trimmed)
-  if (!Number.isNaN(direct.getTime())) {
-    return direct
-  }
-
-  const normalized = trimmed.replace(/\s+/g, 'T')
-  const hasTimePortion = normalized.includes('T')
-  let isoCandidate = normalized
-
-  if (!hasTimePortion) {
-    isoCandidate = `${isoCandidate}T00:00:00`
-  } else if (/T\d{2}:\d{2}$/.test(isoCandidate)) {
-    isoCandidate = `${isoCandidate}:00`
-  }
-
-  if (!/[Zz]|[+-]\d{2}:?\d{2}$/.test(isoCandidate)) {
-    isoCandidate = `${isoCandidate}+09:00`
-  }
-
-  const fallback = new Date(isoCandidate)
-  if (!Number.isNaN(fallback.getTime())) {
-    return fallback
-  }
-
-  throw new Error('Invalid date format')
 }
 
 export async function GET(request: NextRequest) {

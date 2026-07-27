@@ -32,4 +32,7 @@ env \
   STORAGE_PUBLIC_BASE_URL=https://build.invalid/salon-uploads \
   pnpm build
 
+echo "🎭 Running browser journeys..."
+pnpm test:e2e
+
 echo "✅ All CI checks passed!"

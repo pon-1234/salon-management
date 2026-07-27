@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import type { Reservation } from '@/lib/types/reservation'
 import type { CastChatEntry } from '@/lib/types/chat'
 import { useStore } from '@/contexts/store-context'
+import { useRealtimeRevision } from '@/contexts/realtime-context'
 
 const READ_STORAGE_KEY = 'salon-admin-notification-read-ids'
 
@@ -237,6 +238,7 @@ function mergeNotifications(
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { currentStore } = useStore()
+  const realtimeRevision = useRealtimeRevision()
   const [notifications, setNotifications] = useState<AdminNotification[]>([])
   const [readIds, setReadIds] = useState<Set<string>>(new Set())
   const readIdsRef = useRef(readIds)
@@ -328,15 +330,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       }
     }
 
-    hydrateFromReservations()
-
-    const interval = setInterval(hydrateFromReservations, 30 * 1000)
+    void hydrateFromReservations()
 
     return () => {
       isMounted = false
-      clearInterval(interval)
     }
-  }, [currentStore?.id, currentStore?.displayName])
+  }, [currentStore?.id, currentStore?.displayName, realtimeRevision])
 
   useEffect(() => {
     let isMounted = true
@@ -364,8 +363,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       }
     }
 
-    hydrateFromChat()
-    const interval = setInterval(hydrateFromChat, 30 * 1000)
+    void hydrateFromChat()
 
     const handleMessagesRead = (event: Event) => {
       const custom = event as CustomEvent<{ castId?: string }>
@@ -387,12 +385,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     return () => {
       isMounted = false
-      clearInterval(interval)
       if (typeof window !== 'undefined') {
         window.removeEventListener('chat:messagesRead', handleMessagesRead as EventListener)
       }
     }
-  }, [])
+  }, [realtimeRevision])
 
   const addNotification = useCallback((notification: AdminNotification) => {
     setNotifications((prev) => mergeNotifications(prev, [notification], readIdsRef.current))
