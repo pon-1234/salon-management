@@ -23,6 +23,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Plus, Loader2, Eye, EyeOff } from 'lucide-react'
 import { ImageUpload } from '@/components/ui/image-upload'
+import { SafeImage } from '@/components/ui/safe-image'
 import { FormSection } from '@/components/cast/form-section'
 import { cn } from '@/lib/utils'
 import { usePricing } from '@/hooks/use-pricing'
@@ -904,7 +905,7 @@ export function CastForm({
           {formData.image ? (
             <div className="flex items-center gap-4 rounded-lg border bg-muted/40 p-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <SafeImage
                 src={formData.image}
                 alt="メイン画像プレビュー"
                 className="h-20 w-16 flex-shrink-0 rounded object-cover"

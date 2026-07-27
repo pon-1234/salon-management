@@ -253,6 +253,8 @@ export function RegisterForm({ store }: RegisterFormProps) {
               <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-[#cbb88f]" />
               <Input
                 id="nickname"
+                autoComplete="nickname"
+                required
                 placeholder="お好きなニックネーム"
                 className="pl-10"
                 {...register('nickname')}
@@ -271,6 +273,8 @@ export function RegisterForm({ store }: RegisterFormProps) {
               <Input
                 id="email"
                 type="email"
+                autoComplete="email"
+                required
                 placeholder="example@email.com"
                 className="pl-10"
                 {...register('email')}
@@ -288,6 +292,9 @@ export function RegisterForm({ store }: RegisterFormProps) {
               <Input
                 id="phone"
                 type="tel"
+                autoComplete="tel"
+                inputMode="tel"
+                required
                 placeholder="09012345678 または 090-1234-5678"
                 className="pl-10"
                 {...register('phone')}
@@ -360,6 +367,8 @@ export function RegisterForm({ store }: RegisterFormProps) {
               <Input
                 id="password"
                 type="password"
+                autoComplete="new-password"
+                required
                 placeholder="8文字以上"
                 className="pl-10"
                 {...register('password')}
@@ -377,6 +386,8 @@ export function RegisterForm({ store }: RegisterFormProps) {
               <Input
                 id="confirmPassword"
                 type="password"
+                autoComplete="new-password"
+                required
                 placeholder="パスワードを再入力"
                 className="pl-10"
                 {...register('confirmPassword')}
@@ -392,6 +403,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
           <div className="flex items-center space-x-2">
             <Checkbox
               id="sms"
+              name="smsNotifications"
               checked={Boolean(smsNotifications)}
               onCheckedChange={(checked) =>
                 setValue('smsNotifications', checked === true, { shouldValidate: true })
@@ -407,6 +419,8 @@ export function RegisterForm({ store }: RegisterFormProps) {
           <div className="flex items-start space-x-2">
             <Checkbox
               id="terms"
+              name="agreed"
+              required
               checked={Boolean(agreed)}
               onCheckedChange={(checked) =>
                 setValue('agreed', checked === true, { shouldValidate: true })

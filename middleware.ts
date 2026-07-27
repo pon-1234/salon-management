@@ -8,6 +8,12 @@ import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { env } from '@/lib/config/env'
 import { canAdminAccessStore } from '@/lib/auth/store-access'
+import {
+  AGE_VERIFICATION_COOKIE,
+  AGE_VERIFICATION_COOKIE_VALUE,
+  getStorefrontSlug,
+  isAgeVerificationPath,
+} from '@/lib/age-verification'
 
 // Public routes that don't require authentication
 const publicRoutes = ['/', '/_next', '/favicon.ico']
@@ -15,7 +21,7 @@ const publicRoutes = ['/', '/_next', '/favicon.ico']
 // Auth routes that should be accessible without authentication
 const authRoutes = ['/login', '/register', '/admin/login', '/auth', '/api/auth', '/cast/login']
 const storeCastLoginPattern = /^\/[^/]+\/cast\/login$/
-const publicApiRoutes = ['/api/health', '/api/line/webhook']
+const publicApiRoutes = ['/api/age-verification', '/api/health', '/api/line/webhook']
 const publicPostApiRoutes = ['/api/request-attendance']
 const publicReadApiPrefixes = ['/api/course', '/api/option']
 const storeScopedApiPrefixes = [
@@ -81,6 +87,22 @@ export async function middleware(request: NextRequest) {
       LEGACY_IKEBUKURO_PREVIEW_PATH.length
     )}`
     return NextResponse.redirect(redirectUrl, { status: 307 })
+  }
+
+  const storefrontSlug = getStorefrontSlug(pathname)
+  if (
+    storefrontSlug &&
+    !isAgeVerificationPath(pathname, storefrontSlug) &&
+    request.cookies.get(AGE_VERIFICATION_COOKIE)?.value !== AGE_VERIFICATION_COOKIE_VALUE
+  ) {
+    const verificationUrl = request.nextUrl.clone()
+    verificationUrl.pathname = `/${storefrontSlug}/age-verification`
+    verificationUrl.search = ''
+    verificationUrl.searchParams.set(
+      'callbackUrl',
+      `${request.nextUrl.pathname}${request.nextUrl.search}`
+    )
+    return NextResponse.redirect(verificationUrl, { status: 307 })
   }
 
   const isApiRoute = pathname.startsWith('/api')

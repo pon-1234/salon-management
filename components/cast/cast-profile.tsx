@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { SafeImage } from '@/components/ui/safe-image'
 
 interface CastProfileProps {
   cast: Cast
@@ -48,7 +49,7 @@ export function CastProfile({ cast }: CastProfileProps) {
         <CardContent className="space-y-4">
           <div className="relative mx-auto max-w-sm">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <SafeImage
               src={images[currentImageIndex]}
               alt={`${cast.name}の写真 ${currentImageIndex + 1}`}
               className="aspect-[7/10] w-full rounded-lg object-cover"
@@ -100,7 +101,7 @@ export function CastProfile({ cast }: CastProfileProps) {
                   }`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <SafeImage
                     src={image}
                     alt={`${cast.name} 画像 ${index + 1}`}
                     className="h-20 w-16 rounded border object-cover"

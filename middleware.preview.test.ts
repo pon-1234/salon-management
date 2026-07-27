@@ -29,8 +29,11 @@ import { middleware } from './middleware'
 
 const ACCESS_TOKEN = 'preview-access-gate-token-at-least-32-characters'
 
-function request(pathname: string, accessToken?: string) {
-  const headers = accessToken ? { 'x-preview-access-gate-token': accessToken } : undefined
+function request(pathname: string, accessToken?: string, ageVerified = false) {
+  const headers = {
+    ...(accessToken ? { 'x-preview-access-gate-token': accessToken } : {}),
+    ...(ageVerified ? { cookie: 'salon_age_verified=1' } : {}),
+  }
   return new NextRequest(new URL(pathname, 'https://preview.example.com'), { headers })
 }
 
@@ -88,7 +91,7 @@ describe('preview ingress gate', () => {
   it('does not install the preview-only legacy Ikebukuro redirect in live mode', async () => {
     previewConfig.env.runtimeMode = 'live'
 
-    const response = await middleware(request('/uat-ikebukuro', ACCESS_TOKEN))
+    const response = await middleware(request('/uat-ikebukuro', ACCESS_TOKEN, true))
 
     expect(response.headers.get('x-middleware-next')).toBe('1')
   })

@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Badge } from '@/components/ui/badge'
+import { SafeImage } from '@/components/ui/safe-image'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -743,7 +744,7 @@ export default function CustomerProfile() {
                     >
                       <div className="shrink-0">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
+                        <SafeImage
                           src={FALLBACK_IMAGE}
                           alt="Staff"
                           className="h-12 w-12 rounded-full object-cover"
@@ -1173,7 +1174,7 @@ export default function CustomerProfile() {
                         <div className="flex items-start justify-between">
                           <div className="flex flex-1 items-start gap-3">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
+                            <SafeImage
                               src={cast.image?.trim() ? cast.image : FALLBACK_IMAGE}
                               alt={cast.name}
                               className="aspect-[7/10] w-10 shrink-0 rounded object-cover"
@@ -1256,7 +1257,7 @@ export default function CustomerProfile() {
                   >
                     <div className="shrink-0">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                      <SafeImage
                         src={FALLBACK_IMAGE}
                         alt="Staff"
                         className="h-16 w-16 rounded-full object-cover"

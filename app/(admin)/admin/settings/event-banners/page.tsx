@@ -25,6 +25,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { SafeImage } from '@/components/ui/safe-image'
 import {
   ArrowLeft,
   ArrowUp,
@@ -599,7 +600,11 @@ function ImageField({
         <div className="flex flex-col items-center justify-center rounded-md border border-dashed bg-gray-50 p-3">
           {value ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={value} alt={label} className="max-h-32 w-full rounded-md object-cover" />
+            <SafeImage
+              src={value}
+              alt={label}
+              className="max-h-32 w-full rounded-md object-cover"
+            />
           ) : (
             <div className="flex flex-col items-center gap-2 text-xs text-gray-400">
               <ImageIcon className="h-6 w-6" />

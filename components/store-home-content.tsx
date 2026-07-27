@@ -28,6 +28,7 @@ import { Store } from '@/lib/store/types'
 import { StoreNavigation } from './store-navigation'
 import { StoreFooter } from './store-footer'
 import { CampaignBannerSlider, BannerItem } from './campaign-banner-slider'
+import { SafeImage } from '@/components/ui/safe-image'
 import type {
   PublicStoreHomeData,
   PublicCastSummary,
@@ -120,7 +121,11 @@ export function StoreHomeContent({ store, data }: StoreHomeContentProps) {
         <section className="relative min-h-[70vh] overflow-hidden">
           <div className="absolute inset-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={heroImage} alt={store.displayName} className="h-full w-full object-cover" />
+            <SafeImage
+              src={heroImage}
+              alt={store.displayName}
+              className="h-full w-full object-cover"
+            />
             <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-black/90" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,206,126,0.25),_transparent_55%)]" />
           </div>
@@ -362,7 +367,11 @@ function RankingCard({ cast }: { cast: PublicCastSummary }) {
         <div className="relative mb-4 aspect-[3/4] overflow-hidden border border-[#4a3b28] bg-[#0f0f0f]">
           {cast.images[0] ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={cast.images[0]} alt={cast.name} className="h-full w-full object-cover" />
+            <SafeImage
+              src={cast.images[0]}
+              alt={cast.name}
+              className="h-full w-full object-cover"
+            />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-xs text-luxury-gold-muted">
               NO IMAGE
@@ -390,7 +399,11 @@ function CastSummaryCard({ cast }: { cast: PublicCastSummary }) {
         <div className="relative mb-3 aspect-[3/4] overflow-hidden border border-[#4a3b28] bg-[#0f0f0f]">
           {cast.images[0] ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={cast.images[0]} alt={cast.name} className="h-full w-full object-cover" />
+            <SafeImage
+              src={cast.images[0]}
+              alt={cast.name}
+              className="h-full w-full object-cover"
+            />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-xs text-luxury-gold-muted">
               NO IMAGE
@@ -416,7 +429,11 @@ function ScheduleCard({ schedule }: { schedule: PublicScheduleSummary }) {
         <div className="relative mb-3 aspect-[3/4] overflow-hidden border border-[#4a3b28] bg-[#0f0f0f]">
           {cast.images[0] ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={cast.images[0]} alt={cast.name} className="h-full w-full object-cover" />
+            <SafeImage
+              src={cast.images[0]}
+              alt={cast.name}
+              className="h-full w-full object-cover"
+            />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-xs text-luxury-gold-muted">
               NO IMAGE

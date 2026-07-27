@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { SafeImage } from '@/components/ui/safe-image'
 
 export interface BannerItem {
   id: string
@@ -104,7 +105,7 @@ export function CampaignBannerSlider({
                     <source media="(max-width: 768px)" srcSet={currentBanner.mobileImageUrl} />
                   )}
                   {/* Desktop Image */}
-                  <img
+                  <SafeImage
                     src={currentBanner.imageUrl}
                     alt={currentBanner.title}
                     className="h-full w-full cursor-pointer object-cover"
@@ -118,7 +119,7 @@ export function CampaignBannerSlider({
                   <source media="(max-width: 768px)" srcSet={currentBanner.mobileImageUrl} />
                 )}
                 {/* Desktop Image */}
-                <img
+                <SafeImage
                   src={currentBanner.imageUrl}
                   alt={currentBanner.title}
                   className="h-full w-full object-cover"

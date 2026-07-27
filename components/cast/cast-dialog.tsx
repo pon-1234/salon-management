@@ -8,6 +8,7 @@ import { FALLBACK_IMAGE } from '@/lib/cast/mapper'
 import { options } from '@/lib/course-option/data'
 import { Button } from '@/components/ui/button'
 import { generateCastSchedule } from '@/lib/cast/data'
+import { SafeImage } from '@/components/ui/safe-image'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 
@@ -45,7 +46,7 @@ export function StaffDialog({ open, onOpenChange, staff, selectedDate }: CastDia
             <div className="w-1/2 space-y-6">
               <div className="relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <SafeImage
                   src={staffImage}
                   alt={`${staff.name}の写真`}
                   className="aspect-[7/10] w-full rounded-lg object-cover"

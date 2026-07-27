@@ -41,6 +41,7 @@ import { Calendar } from '@/components/ui/calendar'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import { SafeImage } from '@/components/ui/safe-image'
 import {
   Select,
   SelectContent,
@@ -724,7 +725,7 @@ export function StoreBookingContent({
                           <div className="space-y-4">
                             <div className="flex flex-col gap-4 lg:flex-row">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
+                              <SafeImage
                                 src={selectedCast.image ?? '/images/non-photo.svg'}
                                 alt={selectedCast.name}
                                 className="h-32 w-32 rounded-lg object-cover"

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { SafeImage } from '@/components/ui/safe-image'
 import { Crown, TrendingUp, Star, Heart, Calendar } from 'lucide-react'
 import Link from 'next/link'
 import { getPublicRankingData } from '@/lib/store/public-casts'
@@ -127,7 +128,7 @@ export default async function RankingPage({ params }: { params: Promise<{ store:
                             </Badge>
                             <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-[#4a3b28] bg-[#0f0f0f]">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
+                              <SafeImage
                                 src={cast.image ?? '/images/non-photo.svg'}
                                 alt={cast.name}
                                 className="h-full w-full object-cover"
@@ -185,7 +186,7 @@ export default async function RankingPage({ params }: { params: Promise<{ store:
                             </Badge>
                             <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-[#4a3b28] bg-[#0f0f0f]">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
+                              <SafeImage
                                 src={cast.image ?? '/images/non-photo.svg'}
                                 alt={cast.name}
                                 className="h-full w-full object-cover"
@@ -242,7 +243,7 @@ export default async function RankingPage({ params }: { params: Promise<{ store:
                             </Badge>
                             <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-[#4a3b28] bg-[#0f0f0f]">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
+                              <SafeImage
                                 src={cast.image ?? '/images/non-photo.svg'}
                                 alt={cast.name}
                                 className="h-full w-full object-cover"
@@ -305,7 +306,7 @@ export default async function RankingPage({ params }: { params: Promise<{ store:
                             </Badge>
                             <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-[#4a3b28] bg-[#0f0f0f]">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
+                              <SafeImage
                                 src={cast.image ?? '/images/non-photo.svg'}
                                 alt={cast.name}
                                 className="h-full w-full object-cover"

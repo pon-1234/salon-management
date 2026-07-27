@@ -77,7 +77,9 @@ describe('Middleware Authentication', () => {
       const { getToken } = await import('next-auth/jwt')
       vi.mocked(getToken).mockResolvedValueOnce(null)
 
-      const request = new NextRequest(new URL('http://localhost:3000/store1/mypage'))
+      const request = new NextRequest(new URL('http://localhost:3000/store1/mypage'), {
+        headers: { cookie: 'salon_age_verified=1' },
+      })
 
       const response = await middleware(request)
 
@@ -98,7 +100,9 @@ describe('Middleware Authentication', () => {
         jti: 'test-jwt-id-2',
       })
 
-      const request = new NextRequest(new URL('http://localhost:3000/store1/mypage'))
+      const request = new NextRequest(new URL('http://localhost:3000/store1/mypage'), {
+        headers: { cookie: 'salon_age_verified=1' },
+      })
 
       const response = await middleware(request)
 
@@ -137,7 +141,9 @@ describe('Middleware Authentication', () => {
       const publicRoutes = ['/', '/store1', '/store1/cast', '/store1/services', '/store1/pricing']
 
       for (const route of publicRoutes) {
-        const request = new NextRequest(new URL(`http://localhost:3000${route}`))
+        const request = new NextRequest(new URL(`http://localhost:3000${route}`), {
+          headers: { cookie: 'salon_age_verified=1' },
+        })
         const response = await middleware(request)
 
         expect(response?.status).toBe(200) // NextResponse.next() returns status 200
@@ -151,7 +157,9 @@ describe('Middleware Authentication', () => {
       const authRoutes = ['/admin/login', '/store1/login', '/store1/register']
 
       for (const route of authRoutes) {
-        const request = new NextRequest(new URL(`http://localhost:3000${route}`))
+        const request = new NextRequest(new URL(`http://localhost:3000${route}`), {
+          headers: { cookie: 'salon_age_verified=1' },
+        })
         const response = await middleware(request)
 
         expect(response?.status).toBe(200) // NextResponse.next() returns status 200

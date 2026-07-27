@@ -5,10 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Shield } from 'lucide-react'
 
 interface AgeVerificationProps {
-  onVerify: (isAdult: boolean) => void
+  onVerify: (isAdult: boolean) => void | Promise<void>
+  error?: string | null
 }
 
-export function AgeVerification({ onVerify }: AgeVerificationProps) {
+export function AgeVerification({ onVerify, error }: AgeVerificationProps) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
       <Card className="w-full max-w-md">
@@ -32,6 +33,12 @@ export function AgeVerification({ onVerify }: AgeVerificationProps) {
               18歳未満です
             </Button>
           </div>
+
+          {error ? (
+            <p role="alert" className="text-center text-sm text-destructive">
+              {error}
+            </p>
+          ) : null}
 
           <p className="text-center text-xs text-gray-500">
             年齢を偽った場合、法的措置を取る場合があります。

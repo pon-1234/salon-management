@@ -16,6 +16,7 @@ import { Store } from '@/lib/store/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { SafeImage } from '@/components/ui/safe-image'
 import type { PublicScheduleDay, PublicCastSchedule } from '@/lib/store/public-schedule'
 
 const SLOT_MINUTES = 30
@@ -227,7 +228,7 @@ export function StoreScheduleContent({ store, scheduleDays }: StoreScheduleConte
                     <div className="flex items-center gap-4">
                       <div className="h-20 w-20 overflow-hidden rounded-lg border border-[#4a3b28] bg-[#0f0f0f]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
+                        <SafeImage
                           src={entry.cast.image ?? '/images/non-photo.svg'}
                           alt={entry.cast.name}
                           className="h-full w-full object-cover"
