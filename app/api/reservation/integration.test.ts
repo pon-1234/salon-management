@@ -119,7 +119,7 @@ describe('Reservation API - Notification Integration', () => {
     // Availability check is handled within the transaction
 
     // Mock customer data with preferences
-    const startTime = new Date(Date.now() + 24 * 60 * 60 * 1000)
+    const startTime = new Date('2099-01-20T14:00:00+09:00')
     const endTime = new Date(startTime.getTime() + 60 * 60 * 1000)
 
     const mockReservation = {
@@ -241,7 +241,7 @@ describe('Reservation API - Notification Integration', () => {
 
     // Availability check is handled within the transaction
 
-    const startTime = new Date(Date.now() + 24 * 60 * 60 * 1000)
+    const startTime = new Date('2099-01-20T14:00:00+09:00')
     const endTime = new Date(startTime.getTime() + 60 * 60 * 1000)
 
     const mockReservation = {

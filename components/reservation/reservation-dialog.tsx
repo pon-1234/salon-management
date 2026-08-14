@@ -100,6 +100,10 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { zonedTimeToUtc } from 'date-fns-tz'
 import { CastTimelineModal } from '@/components/reservation/cast-timeline-modal'
 import {
+  isReservationStartBoundary,
+  RESERVATION_START_STEP_SECONDS,
+} from '@/lib/reservation/time-boundary'
+import {
   DiscardReservationEditDialog,
   ReservationCancellationDialog,
 } from '@/components/reservation/reservation-cancellation-dialog'
@@ -1393,6 +1397,15 @@ export function ReservationDialog({
       return
     }
 
+    const startInputChanged =
+      formState.date !== format(reservation.startTime, 'yyyy-MM-dd') ||
+      formState.startTime !== format(reservation.startTime, 'HH:mm')
+
+    if (startInputChanged && !isReservationStartBoundary(enteredStart)) {
+      setValidationError('開始時間の分は00分または30分を指定してください。')
+      return
+    }
+
     const castId = formState.castId || reservation.staffId || ''
     if (!castId) {
       setValidationError('担当キャストを選択してください。')
@@ -1407,9 +1420,6 @@ export function ReservationDialog({
     const optionsChanged =
       originalOptionIds.length !== selectedOptionIds.length ||
       originalOptionIds.some((optionId, index) => optionId !== selectedOptionIds[index])
-    const startInputChanged =
-      formState.date !== format(reservation.startTime, 'yyyy-MM-dd') ||
-      formState.startTime !== format(reservation.startTime, 'HH:mm')
     const start = startInputChanged ? enteredStart : new Date(reservation.startTime)
     const durationMinutes =
       effectiveDurationMinutes > 0 ? effectiveDurationMinutes : reservationDurationMinutes
@@ -1694,6 +1704,7 @@ export function ReservationDialog({
                             <Input
                               id="reservation-start-time"
                               type="time"
+                              step={RESERVATION_START_STEP_SECONDS}
                               value={formState.startTime}
                               onChange={(event) =>
                                 setFormState((prev) => ({ ...prev, startTime: event.target.value }))

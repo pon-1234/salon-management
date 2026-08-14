@@ -771,7 +771,7 @@ export default function DashboardPage() {
                   ) : (
                     <Search className="mr-2 h-4 w-4" />
                   )}
-                  電話番号で予約を検索
+                  電話番号で顧客を検索
                 </Button>
               </div>
 
@@ -798,14 +798,24 @@ export default function DashboardPage() {
                         <p className="font-medium">{customer.name}</p>
                         <p className="text-sm text-muted-foreground">{customer.phone}</p>
                       </div>
-                      <Button size="sm" asChild>
-                        <Link
-                          href={`/admin/reservation?customerId=${encodeURIComponent(customer.id)}`}
-                          aria-label={`${customer.name}で予約を作成`}
-                        >
-                          この顧客で予約
-                        </Link>
-                      </Button>
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <Button size="sm" variant="outline" asChild>
+                          <Link
+                            href={`/admin/customers/${encodeURIComponent(customer.id)}`}
+                            aria-label={`${customer.name}の顧客詳細を見る`}
+                          >
+                            顧客詳細を見る
+                          </Link>
+                        </Button>
+                        <Button size="sm" asChild>
+                          <Link
+                            href={`/admin/reservation?customerId=${encodeURIComponent(customer.id)}`}
+                            aria-label={`${customer.name}で予約を作成`}
+                          >
+                            この顧客で予約
+                          </Link>
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>

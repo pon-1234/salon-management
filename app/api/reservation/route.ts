@@ -39,6 +39,12 @@ import {
 } from '@/lib/reservation/location-integrity'
 import { ReservationHotelError, resolveReservationHotel } from '@/lib/reservation/hotel-integrity'
 import { canAdminAccessStore } from '@/lib/auth/store-access'
+import { isReservationStartBoundary } from '@/lib/reservation/time-boundary'
+import { reservationStartBoundaryErrorResponse } from '@/lib/reservation/time-boundary-response'
+import {
+  InvalidOptionSelectionError,
+  invalidOptionSelectionResponse,
+} from '@/lib/reservation/option-selection-error'
 import {
   formatCurrency,
   formatDesignation,
@@ -81,23 +87,6 @@ const NON_NEGATIVE_FINANCIAL_UPDATE_FIELDS = [
 // The customer UI directs every post-booking change to the store; cancellation uses DELETE.
 // Keep this deny-by-default allowlist explicit so future customer-editable fields require review.
 const CUSTOMER_RESERVATION_UPDATE_FIELDS = new Set<string>()
-
-class InvalidOptionSelectionError extends Error {
-  constructor(readonly missingOptions: string[]) {
-    super('Invalid option selection')
-    this.name = 'InvalidOptionSelectionError'
-  }
-}
-
-function invalidOptionSelectionResponse(error: InvalidOptionSelectionError) {
-  return NextResponse.json(
-    {
-      error: '選択されたオプションが存在しません。',
-      missingOptions: error.missingOptions,
-    },
-    { status: 400 }
-  )
-}
 
 async function sendReservationConfirmedChatMessage(
   reservation: any,
@@ -428,6 +417,8 @@ export async function POST(request: NextRequest) {
     if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
       return NextResponse.json({ error: 'Invalid date format' }, { status: 400 })
     }
+
+    if (!isReservationStartBoundary(startTime)) return reservationStartBoundaryErrorResponse()
 
     if (endTime <= startTime) {
       return NextResponse.json({ error: 'End time must be after start time' }, { status: 400 })
@@ -1093,6 +1084,10 @@ export async function PUT(request: NextRequest) {
       requestedEndTime !== null &&
       requestedEndTime.getTime() !== existingReservation.endTime.getTime()
     const changesTime = startTimeChanged || endTimeChanged
+
+    if (startTimeChanged && !isReservationStartBoundary(nextStartTime))
+      return reservationStartBoundaryErrorResponse()
+
     const changesAssignmentOrTime = castChanged || changesTime
     const nextCastId = castChanged ? updates.castId : existingReservation.castId
 

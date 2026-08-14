@@ -714,6 +714,38 @@ describe('Reservation API - Modifiable Status', () => {
   })
 
   describe('POST endpoint validation and conflicts', () => {
+    it('rejects a reservation whose start time is outside a 30-minute boundary', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          id: 'admin-1',
+          role: 'admin',
+          permissions: ['reservation:create'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+
+      const response = await POST(
+        new NextRequest('http://localhost/api/reservation?storeId=ikebukuro', {
+          method: 'POST',
+          body: JSON.stringify({
+            customerId: 'cust-123',
+            castId: 'cast-123',
+            courseId: 'course-123',
+            startTime: '2099-07-04T18:10:00+09:00',
+            endTime: '2099-07-04T19:10:00+09:00',
+          }),
+        })
+      )
+
+      expect(response.status).toBe(400)
+      await expect(response.json()).resolves.toEqual({
+        error: '開始時間は30分単位（00分・30分）で指定してください。',
+      })
+      expect(db.cast.findFirst).not.toHaveBeenCalled()
+      expect(db.customer.findUnique).not.toHaveBeenCalled()
+      expect(db.$transaction).not.toHaveBeenCalled()
+    })
+
     it('requires a non-sensitive management reference for an administrator card booking', async () => {
       vi.mocked(getServerSession).mockResolvedValue({
         user: {
@@ -1419,6 +1451,35 @@ describe('Reservation API - Modifiable Status', () => {
   })
 
   describe('PUT endpoint validation and conflicts', () => {
+    it('rejects changing a reservation start time outside a 30-minute boundary', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:update'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+
+      const response = await PUT(
+        new NextRequest('http://localhost/api/reservation', {
+          method: 'PUT',
+          body: JSON.stringify({
+            id: mockReservation.id,
+            startTime: '2099-07-04T18:10:00+09:00',
+            endTime: '2099-07-04T19:10:00+09:00',
+          }),
+        })
+      )
+
+      expect(response.status).toBe(400)
+      await expect(response.json()).resolves.toEqual({
+        error: '開始時間は30分単位（00分・30分）で指定してください。',
+      })
+      expect(db.ngCastEntry.findUnique).not.toHaveBeenCalled()
+      expect(db.$transaction).not.toHaveBeenCalled()
+    })
+
     it.each([['staff'], [null]])(
       'rejects unsupported cancellation source %j before starting a database update',
       async (cancellationSource) => {
@@ -1968,6 +2029,8 @@ describe('Reservation API - Modifiable Status', () => {
       } as any)
       const unchangedReservation = {
         ...mockReservation,
+        startTime: new Date('2024-01-20T14:10:00.000Z'),
+        endTime: new Date('2024-01-20T16:10:00.000Z'),
         price: 32_000,
         designationType: 'panel',
         designationFee: 0,

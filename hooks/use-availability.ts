@@ -11,6 +11,7 @@ import {
   minutesToIsoInJst,
 } from '@/lib/settings/business-hours'
 import { useStore } from '@/contexts/store-context'
+import { ceilReservationStartMinutes } from '@/lib/reservation/time-boundary'
 
 interface TimeSlot {
   startTime: string
@@ -140,7 +141,7 @@ export function useAvailability() {
       const nowUtc = new Date()
 
       for (
-        let minute = businessHours.startMinutes;
+        let minute = ceilReservationStartMinutes(businessHours.startMinutes);
         minute + duration <= businessHours.endMinutes;
         minute += increment
       ) {

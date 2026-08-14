@@ -701,8 +701,8 @@ describe('ReservationDialog Edit Mode', () => {
       course: '旧イベント90分',
       options: {},
       paymentMethod: 'cash',
-      startTime: new Date('2024-01-20T14:00:00'),
-      endTime: new Date('2024-01-20T15:30:00'),
+      startTime: new Date('2024-01-20T14:10:00'),
+      endTime: new Date('2024-01-20T15:40:00'),
     }
 
     render(
@@ -722,6 +722,37 @@ describe('ReservationDialog Edit Mode', () => {
     expect(savedPayload).not.toHaveProperty('courseId')
     expect(savedPayload).not.toHaveProperty('paymentMethod')
     expect(savedPayload.endTime).toEqual(legacyCourseReservation.endTime)
+  })
+
+  it('uses a 30-minute input step and rejects an off-boundary edited start time', async () => {
+    const futureReservation: ReservationData = {
+      ...mockReservation,
+      startTime: new Date('2099-01-20T14:00:00'),
+      endTime: new Date('2099-01-20T16:00:00'),
+    }
+
+    render(
+      <ReservationDialog
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        reservation={futureReservation}
+        onSave={mockOnSave}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /編集/i }))
+    const startTimeInput = screen.getByLabelText('開始時間')
+    expect(startTimeInput).toHaveAttribute('step', '1800')
+
+    fireEvent.change(startTimeInput, { target: { value: '14:10' } })
+    fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('開始時間の分は00分または30分を指定してください。')
+      ).toBeInTheDocument()
+    )
+    expect(mockOnSave).not.toHaveBeenCalled()
   })
 
   it('preserves an existing station and transportation fee when it is absent from current options', async () => {

@@ -57,6 +57,10 @@ import { normalizePaymentReference } from '@/lib/reservation/financial-reference
 import { buildStoreCastEndpoint, buildStoreReservationEndpoint } from '@/lib/reservation/endpoints'
 import { MARKETING_CHANNELS, PAYMENT_METHODS } from '@/lib/constants'
 import {
+  RESERVATION_START_STEP_MINUTES,
+  RESERVATION_START_STEP_SECONDS,
+} from '@/lib/reservation/time-boundary'
+import {
   formatDateInJst,
   formatTimeInJst,
   formatYen,
@@ -664,6 +668,15 @@ export function QuickBookingDialog({
       return
     }
 
+    if (bookingStartMinutes % RESERVATION_START_STEP_MINUTES !== 0) {
+      toast({
+        title: '開始時間は30分単位で入力してください',
+        description: '開始時間の分は00分または30分を指定してください。',
+        variant: 'destructive',
+      })
+      return
+    }
+
     if (bookingStartMinutes < businessHours.startMinutes) {
       toast({
         title: '営業時間外です',
@@ -936,6 +949,7 @@ export function QuickBookingDialog({
                       <Input
                         type="time"
                         name="time"
+                        step={RESERVATION_START_STEP_SECONDS}
                         value={bookingDetails.time}
                         onChange={handleTextChange}
                       />
@@ -959,7 +973,7 @@ export function QuickBookingDialog({
                           businessHours={businessHours}
                           windowStart={slotWindowStart ?? undefined}
                           windowEnd={normalizedSlotHourWindowEnd ?? undefined}
-                          stepMinutes={10}
+                          stepMinutes={RESERVATION_START_STEP_MINUTES}
                         />
                       ) : (
                         <div className="rounded-lg bg-gray-50 p-4 text-center text-gray-500">

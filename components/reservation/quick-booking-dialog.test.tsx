@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   checkAvailability: vi.fn(),
   getDesignationFees: vi.fn(),
   toast: vi.fn(),
+  renderTimeSlotPicker: vi.fn(),
   refreshPricing: vi.fn(),
   refreshLocations: vi.fn(),
   legacyCourses: [],
@@ -103,7 +104,10 @@ vi.mock('@/hooks/use-toast', () => ({
 }))
 
 vi.mock('./time-slot-picker', () => ({
-  TimeSlotPicker: () => <div data-testid="time-slot-picker" />,
+  TimeSlotPicker: (props: Record<string, unknown>) => {
+    mocks.renderTimeSlotPicker(props)
+    return <div data-testid="time-slot-picker" />
+  },
 }))
 
 const selectedStaff: Cast = {
@@ -260,6 +264,36 @@ describe('QuickBookingDialog', () => {
     const stickyFooter = screen.getByTestId('quick-booking-sticky-footer')
     expect(stickyFooter).toHaveClass('sticky', 'bottom-0')
     expect(stickyFooter).toContainElement(submit)
+  })
+
+  it('offers only 30-minute start boundaries and rejects an off-boundary manual time', async () => {
+    const fetchMock = createFetchMock()
+    vi.stubGlobal('fetch', fetchMock)
+    render(dialogElement())
+
+    await waitForOnePageBookingForm()
+    await waitFor(() =>
+      expect(mocks.renderTimeSlotPicker).toHaveBeenCalledWith(
+        expect.objectContaining({ stepMinutes: 30 })
+      )
+    )
+
+    const timeInput = document.querySelector<HTMLInputElement>('input[name="time"]')
+    expect(timeInput).not.toBeNull()
+    expect(timeInput).toHaveAttribute('step', '1800')
+
+    fireEvent.change(timeInput!, { target: { value: '12:10' } })
+    fireEvent.click(screen.getByRole('button', { name: '予約を確定' }))
+
+    await waitFor(() =>
+      expect(mocks.toast).toHaveBeenCalledWith({
+        title: '開始時間は30分単位で入力してください',
+        description: '開始時間の分は00分または30分を指定してください。',
+        variant: 'destructive',
+      })
+    )
+    expect(mocks.checkAvailability).not.toHaveBeenCalled()
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false)
   })
 
   it('does not label any amount as welfare expense in the booking price breakdown', async () => {

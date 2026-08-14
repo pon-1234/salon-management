@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Public pricing fixtures must match the payment methods offered by web booking
+ * @related_to   data.ts and StoreBookingContent customer-facing payment guidance
+ * @known_issues Fixture pricing is used only when persisted store pricing is unavailable
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { defaultCourses, defaultOptions, defaultAdditionalFees, defaultPricingNotes } from './data'
 
@@ -200,6 +205,20 @@ describe('Pricing Data', () => {
       expect(notesText).toContain('税込')
       expect(notesText).toContain('キャンセル')
       expect(notesText).toContain('支払い')
+    })
+
+    it('should match the cash and credit-card methods offered by public booking', () => {
+      const notesText = defaultPricingNotes.join(' ')
+
+      expect(notesText).toContain('お支払いは現金・クレジットカードに対応しています')
+      expect(notesText).not.toContain('現金のみ')
+    })
+
+    it('should describe the same 30-minute booking boundary enforced by reservation flows', () => {
+      const notesText = defaultPricingNotes.join(' ')
+
+      expect(notesText).toContain('ご予約は30分単位で承ります')
+      expect(notesText).not.toContain('ご予約は10分単位で承ります')
     })
   })
 

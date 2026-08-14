@@ -177,7 +177,8 @@ describe('DashboardPage field operations', () => {
     expect(await screen.findByRole('button', { name: '予約作成' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '顧客検索' })).toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: '電話番号' })).toHaveAttribute('type', 'tel')
-    expect(screen.getByRole('button', { name: '電話番号で予約を検索' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '電話番号で顧客を検索' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '電話番号で予約を検索' })).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '本日出勤一覧' })).toBeInTheDocument()
     expect(screen.getByText('本日出勤キャスト')).toBeInTheDocument()
     expect(screen.getByText('10:00〜18:00')).toBeInTheDocument()
@@ -316,11 +317,15 @@ describe('DashboardPage field operations', () => {
 
     const phoneInput = await screen.findByRole('textbox', { name: '電話番号' })
     await user.type(phoneInput, '090-1234-5678')
-    await user.click(screen.getByRole('button', { name: '電話番号で予約を検索' }))
+    await user.click(screen.getByRole('button', { name: '電話番号で顧客を検索' }))
 
     expect(await screen.findByRole('link', { name: '電話検索顧客で予約を作成' })).toHaveAttribute(
       'href',
       '/admin/reservation?customerId=legacy-customer-member-100448'
+    )
+    expect(screen.getByRole('link', { name: '電話検索顧客の顧客詳細を見る' })).toHaveAttribute(
+      'href',
+      '/admin/customers/legacy-customer-member-100448'
     )
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/customer?phone=09012345678&limit=10',

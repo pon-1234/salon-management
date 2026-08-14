@@ -88,6 +88,7 @@ import { PageLoading } from '@/components/ui/page-loading'
 import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import { normalizeCustomerEmail } from '@/lib/auth/customer-auth'
 import { isBcryptSafePassword } from '@/lib/auth/password-policy'
+import { partitionCustomerInsightMetrics } from './customer-insight-priority'
 
 const formSchema = z.object({
   name: z.string().min(1, '名前は必須です'),
@@ -116,6 +117,52 @@ type InsightMetric = {
   label: string
   value: string
   helper?: string
+}
+
+function InsightMetricGrid({
+  metrics,
+  loading,
+  skeletonCount,
+  operational = false,
+}: {
+  metrics: readonly InsightMetric[]
+  loading: boolean
+  skeletonCount: number
+  operational?: boolean
+}) {
+  const gridClassName = operational
+    ? 'grid grid-cols-2 gap-4 lg:grid-cols-5'
+    : 'grid grid-cols-2 gap-4 md:grid-cols-4'
+
+  if (loading) {
+    return (
+      <div className={gridClassName}>
+        {Array.from({ length: skeletonCount }).map((_, index) => (
+          <div key={index} className="h-20 animate-pulse rounded-lg bg-muted/60" />
+        ))}
+      </div>
+    )
+  }
+
+  if (metrics.length === 0) {
+    return (
+      <div className="text-sm text-muted-foreground">
+        指標を算出するためのデータが不足しています。
+      </div>
+    )
+  }
+
+  return (
+    <div className={gridClassName}>
+      {metrics.map((metric) => (
+        <div key={metric.label} className="rounded-lg border bg-card p-3 shadow-sm">
+          <p className="text-xs font-medium text-muted-foreground">{metric.label}</p>
+          <p className="mt-1 text-xl font-semibold text-gray-900">{metric.value}</p>
+          {metric.helper && <p className="text-xs text-muted-foreground">{metric.helper}</p>}
+        </div>
+      ))}
+    </div>
+  )
 }
 
 const NG_ASSIGNMENT_LABELS: Record<'customer' | 'cast' | 'staff', string> = {
@@ -723,6 +770,11 @@ export default function CustomerProfile() {
     ]
   }, [insights])
 
+  const { operational: operationalInsightMetrics, other: otherInsightMetrics } = useMemo(
+    () => partitionCustomerInsightMetrics(insightMetrics),
+    [insightMetrics]
+  )
+
   if (loadError) {
     return (
       <div
@@ -749,7 +801,7 @@ export default function CustomerProfile() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <section aria-label="顧客識別・連絡・状態" className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
             {customer.name} <span className="text-base font-medium text-muted-foreground">様</span>
@@ -822,12 +874,12 @@ export default function CustomerProfile() {
             </div>
           )}
         </div>
-      </div>
+      </section>
 
       <Card>
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center justify-between text-lg">
-            お客様の傾向
+            予約受付サマリー
             {insights && (
               <span className="text-xs font-normal text-muted-foreground">
                 {insights.totalVisits > 0
@@ -836,34 +888,15 @@ export default function CustomerProfile() {
               </span>
             )}
           </CardTitle>
-          <CardDescription>
-            予約およびチャット履歴から自動で集計された警戒度と嗜好データ
-          </CardDescription>
+          <CardDescription>予約受付時に先に確認する利用履歴とキャンセル状況</CardDescription>
         </CardHeader>
         <CardContent>
-          {insightsLoading ? (
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-              {Array.from({ length: 12 }).map((_, index) => (
-                <div key={index} className="h-20 animate-pulse rounded-lg bg-muted/60" />
-              ))}
-            </div>
-          ) : insightMetrics.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-              {insightMetrics.map((metric) => (
-                <div key={metric.label} className="rounded-lg border bg-card p-3 shadow-sm">
-                  <p className="text-xs font-medium text-muted-foreground">{metric.label}</p>
-                  <p className="mt-1 text-xl font-semibold text-gray-900">{metric.value}</p>
-                  {metric.helper && (
-                    <p className="text-xs text-muted-foreground">{metric.helper}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-sm text-muted-foreground">
-              指標を算出するためのデータが不足しています。
-            </div>
-          )}
+          <InsightMetricGrid
+            metrics={operationalInsightMetrics}
+            loading={insightsLoading}
+            skeletonCount={5}
+            operational
+          />
         </CardContent>
       </Card>
 
@@ -981,6 +1014,20 @@ export default function CustomerProfile() {
               <p className="text-sm">新しい予約を作成してください</p>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">その他の傾向</CardTitle>
+          <CardDescription>売上、利用間隔、嗜好、チャットなどの補足情報</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <InsightMetricGrid
+            metrics={otherInsightMetrics}
+            loading={insightsLoading}
+            skeletonCount={7}
+          />
         </CardContent>
       </Card>
 
