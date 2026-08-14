@@ -124,6 +124,66 @@ describe('Middleware Authentication', () => {
       expect(getToken).not.toHaveBeenCalled()
     })
 
+    it('exposes only public availability and schedule reads without authentication', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValue(null)
+
+      const publicRequests = [
+        new NextRequest(
+          'http://localhost:3000/api/reservation/availability?storeId=store-a&castId=cast-a&date=2026-08-15&duration=60'
+        ),
+        new NextRequest('http://localhost:3000/api/store-schedule?storeId=store-a&days=1'),
+      ]
+
+      for (const request of publicRequests) {
+        const response = await middleware(request)
+        expect(response?.status).toBe(200)
+        expect(response?.headers.get('x-middleware-next')).toBe('1')
+      }
+      expect(getToken).not.toHaveBeenCalled()
+    })
+
+    it('exposes only the exact review GET endpoint without authentication', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValue(null)
+
+      const publicResponse = await middleware(
+        new NextRequest('http://localhost:3000/api/review?storeId=store-a')
+      )
+      const childResponse = await middleware(
+        new NextRequest('http://localhost:3000/api/review/eligible?storeId=store-a')
+      )
+
+      expect(publicResponse?.status).toBe(200)
+      expect(publicResponse?.headers.get('x-middleware-next')).toBe('1')
+      expect(childResponse?.status).toBe(401)
+      expect(getToken).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps exact reservation conflict details behind authentication', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValueOnce(null)
+
+      const response = await middleware(
+        new NextRequest(
+          'http://localhost:3000/api/reservation/availability?mode=check&storeId=store-a&castId=cast-a'
+        )
+      )
+
+      expect(response?.status).toBe(401)
+    })
+
+    it('does not make future store schedule child APIs public by prefix', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValueOnce(null)
+
+      const response = await middleware(
+        new NextRequest('http://localhost:3000/api/store-schedule/internal?storeId=store-a')
+      )
+
+      expect(response?.status).toBe(401)
+    })
+
     it('allows the container health check without authentication', async () => {
       const { getToken } = await import('next-auth/jwt')
       vi.mocked(getToken).mockResolvedValue(null)
@@ -258,6 +318,25 @@ describe('Middleware Authentication', () => {
       } as any)
       const request = new NextRequest(
         new URL('http://localhost:3000/api/reservation?storeId=ginza')
+      )
+
+      const response = await middleware(request)
+
+      expect(response?.status).toBe(200)
+    })
+
+    it('allows an admin to access an assigned store-scoped API by store slug', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValueOnce({
+        id: 'manager-1',
+        role: 'admin',
+        adminRole: 'manager',
+        permissions: ['reservation:*'],
+        storeIds: ['uat-ikebukuro'],
+        storeSlugs: ['ikebukuro'],
+      } as any)
+      const request = new NextRequest(
+        new URL('http://localhost:3000/api/reservation?storeId=ikebukuro')
       )
 
       const response = await middleware(request)

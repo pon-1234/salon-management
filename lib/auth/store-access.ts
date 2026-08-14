@@ -8,6 +8,7 @@ export interface StoreAccessUser {
   adminRole?: string
   permissions?: string[]
   storeIds?: string[]
+  storeSlugs?: string[]
 }
 
 export function hasGlobalAdminStoreAccess(user: StoreAccessUser): boolean {
@@ -27,13 +28,39 @@ export function canAdminAccessStore(user: StoreAccessUser, storeId: string): boo
   }
 
   const normalizedStoreId = storeId.trim().toLowerCase()
-  if (!normalizedStoreId || !Array.isArray(user.storeIds)) {
+  if (!normalizedStoreId) {
     return false
   }
 
-  return user.storeIds.some(
+  return (Array.isArray(user.storeIds) ? user.storeIds : []).some(
     (assignedStoreId) =>
       typeof assignedStoreId === 'string' &&
       assignedStoreId.trim().toLowerCase() === normalizedStoreId
+  )
+}
+
+/** Performs the middleware's preliminary check before a store slug can be canonicalized. */
+export function canAdminAccessStoreIdentifier(
+  user: StoreAccessUser,
+  storeIdOrSlug: string
+): boolean {
+  if (hasGlobalAdminStoreAccess(user)) {
+    return true
+  }
+
+  const normalizedIdentifier = storeIdOrSlug.trim().toLowerCase()
+  if (user.role !== 'admin' || !normalizedIdentifier) {
+    return false
+  }
+
+  const assignedIdentifiers = [
+    ...(Array.isArray(user.storeIds) ? user.storeIds : []),
+    ...(Array.isArray(user.storeSlugs) ? user.storeSlugs : []),
+  ]
+
+  return assignedIdentifiers.some(
+    (assignedIdentifier) =>
+      typeof assignedIdentifier === 'string' &&
+      assignedIdentifier.trim().toLowerCase() === normalizedIdentifier
   )
 }

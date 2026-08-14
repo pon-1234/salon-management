@@ -206,6 +206,7 @@ describe('Auth Config', () => {
         adminRole: 'super_admin',
         permissions: ['manage_users', 'manage_settings'],
         storeIds: [],
+        storeSlugs: [],
       })
 
       expect(db.admin.update).toHaveBeenCalledWith({
@@ -225,7 +226,10 @@ describe('Auth Config', () => {
         role: 'manager',
         isActive: true,
         permissions: JSON.stringify(['reservation:*']),
-        storeAssignments: [{ storeId: 'ginza' }, { storeId: 'shinjuku' }],
+        storeAssignments: [
+          { storeId: 'store-ginza', store: { slug: 'ginza' } },
+          { storeId: 'store-shinjuku', store: { slug: 'shinjuku' } },
+        ],
         createdAt: new Date(),
         updatedAt: new Date(),
         lastLogin: null,
@@ -243,7 +247,8 @@ describe('Auth Config', () => {
       expect(result).toEqual(
         expect.objectContaining({
           adminRole: 'manager',
-          storeIds: ['ginza', 'shinjuku'],
+          storeIds: ['store-ginza', 'store-shinjuku'],
+          storeSlugs: ['ginza', 'shinjuku'],
         })
       )
     })
@@ -537,6 +542,7 @@ describe('Auth Config', () => {
         adminRole: 'super_admin',
         permissions: ['manage_users'],
         storeIds: ['ginza'],
+        storeSlugs: ['ginza-slug'],
       }
 
       const result = await authOptions.callbacks!.jwt!({
@@ -552,6 +558,7 @@ describe('Auth Config', () => {
         adminRole: 'super_admin',
         permissions: ['manage_users'],
         storeIds: ['ginza'],
+        storeSlugs: ['ginza-slug'],
       })
     })
 
@@ -584,6 +591,7 @@ describe('Auth Config', () => {
         adminRole: 'super_admin',
         permissions: ['manage_users'],
         storeIds: ['ginza'],
+        storeSlugs: ['ginza-slug'],
       }
 
       const result = await authOptions.callbacks!.session!({
@@ -602,6 +610,7 @@ describe('Auth Config', () => {
         adminRole: 'super_admin',
         permissions: ['manage_users'],
         storeIds: ['ginza'],
+        storeSlugs: ['ginza-slug'],
       })
     })
   })

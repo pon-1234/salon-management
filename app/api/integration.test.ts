@@ -627,7 +627,7 @@ describe('Customer Journey Integration Tests', () => {
 
     // Get customer reviews
     const reviewRequest = new NextRequest(
-      `http://localhost:3000/api/review?customerId=${customerId}`,
+      `http://localhost:3000/api/review?storeId=ikebukuro&customerId=${customerId}`,
       {
         method: 'GET',
       }
@@ -675,7 +675,7 @@ describe('Cast Performance Analytics Integration', () => {
         id: 'admin1',
         role: 'admin',
         email: 'admin@test.com',
-        permissions: ['reservation:read'],
+        permissions: ['reservation:read', 'customer:read'],
         adminRole: 'manager',
         storeIds: ['ikebukuro'],
       },

@@ -448,6 +448,41 @@ describe('Reservation API - Modifiable Status', () => {
   })
 
   describe('PUT endpoint - Modifiable Status Support', () => {
+    it('accepts a store slug that resolves to the reservation canonical store ID', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:update'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+      vi.mocked(db.store.findUnique).mockImplementation((async ({ where }: any) => {
+        if (where.slug === 'public-ikebukuro') {
+          return { id: 'ikebukuro' } as any
+        }
+        return null
+      }) as any)
+      const transactionContext = buildTransactionContext({
+        ...mockReservation,
+        status: 'modifiable',
+        modifiableUntil: new Date('2099-01-01T00:00:00.000Z'),
+      })
+      vi.mocked(db.$transaction).mockImplementation(async (callback) =>
+        callback(transactionContext as any)
+      )
+
+      const response = await PUT(
+        new NextRequest('http://localhost/api/reservation?storeId=public-ikebukuro', {
+          method: 'PUT',
+          body: JSON.stringify({ id: mockReservation.id, status: 'modifiable' }),
+        })
+      )
+
+      expect(response.status).toBe(200)
+      expect(transactionContext.reservation.update).toHaveBeenCalled()
+    })
+
     it('persists a server-generated modification deadline when status becomes modifiable', async () => {
       vi.mocked(getServerSession).mockResolvedValue({
         user: {

@@ -1,15 +1,18 @@
 /**
  * @design_doc   Review API endpoints for CRUD operations
- * @related_to   Review service layer, Prisma Review model
+ * @related_to   Review service layer, Prisma Review model, customer:read/update permissions
  * @known_issues None currently
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { z } from 'zod'
 import { authOptions } from '@/lib/auth/config'
+import { hasPermission } from '@/lib/auth/permissions'
 import { canAdminAccessStore } from '@/lib/auth/store-access'
 import logger from '@/lib/logger'
 import { toPublicReview } from '@/lib/reviews/public'
+import { isUnknownStoreError } from '@/lib/store/errors'
+import { ensureStoreId, resolveStoreId } from '@/lib/store/server'
 import {
   searchReviews,
   getReviewById,
@@ -91,9 +94,9 @@ function resolveActorRole(session: AppSession): 'admin' | 'customer' | 'staff' {
   return 'staff'
 }
 
-function resolveRequiredStoreId(request: NextRequest): string | null {
-  const storeId = request.nextUrl.searchParams.get('storeId')?.trim()
-  return storeId || null
+async function resolveRequiredStoreId(request: NextRequest): Promise<string | null> {
+  const requestedStoreId = await resolveStoreId(request)
+  return requestedStoreId ? ensureStoreId(requestedStoreId) : null
 }
 
 function storeIdRequiredResponse() {
@@ -106,6 +109,30 @@ function adminStoreAccessResponse(session: AppSession, storeId: string) {
   }
 
   if (!session?.user || !canAdminAccessStore(session.user, storeId)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  return null
+}
+
+function adminReviewModerationPermissionResponse(session: AppSession) {
+  if (resolveActorRole(session) !== 'admin') {
+    return null
+  }
+
+  if (!hasPermission(session?.user?.permissions, 'customer:update')) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  return null
+}
+
+function adminReviewReadPermissionResponse(session: AppSession) {
+  if (resolveActorRole(session) !== 'admin') {
+    return null
+  }
+
+  if (!hasPermission(session?.user?.permissions, 'customer:read')) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -166,7 +193,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
 
     const id = searchParams.get('id')
-    const storeId = searchParams.get('storeId')?.trim() || null
+    const storeId = await resolveRequiredStoreId(request)
     const castId = searchParams.get('castId')
     const customerId = searchParams.get('customerId')
     const reservationId = searchParams.get('reservationId')
@@ -175,13 +202,18 @@ export async function GET(request: NextRequest) {
     const statusParam = searchParams.get('status')
     const includeStats = searchParams.get('stats') === 'true'
 
+    if (!storeId) {
+      return storeIdRequiredResponse()
+    }
+
     if (actorRole === 'admin') {
-      if (!storeId) {
-        return storeIdRequiredResponse()
-      }
       const accessError = adminStoreAccessResponse(session, storeId)
       if (accessError) {
         return accessError
+      }
+      const permissionError = adminReviewReadPermissionResponse(session)
+      if (permissionError) {
+        return permissionError
       }
     }
 
@@ -190,10 +222,6 @@ export async function GET(request: NextRequest) {
     }
 
     if (id) {
-      if (!storeId) {
-        return storeIdRequiredResponse()
-      }
-
       const review = await getReviewById(id, storeId)
       if (!review) {
         return NextResponse.json({ error: 'Review not found' }, { status: 404 })
@@ -228,7 +256,7 @@ export async function GET(request: NextRequest) {
     }
 
     const filters = {
-      storeId: storeId ?? undefined,
+      storeId,
       castId: castId ?? undefined,
       customerId: customerId ?? undefined,
       reservationId: reservationId ?? undefined,
@@ -250,6 +278,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(responseReviews)
   } catch (error) {
+    if (isUnknownStoreError(error)) {
+      return NextResponse.json({ error: 'Unknown store' }, { status: 404 })
+    }
     logger.error({ err: error }, 'Error fetching review data')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -267,13 +298,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const storeId = resolveRequiredStoreId(request)
+    const storeId = await resolveRequiredStoreId(request)
     if (!storeId) {
       return storeIdRequiredResponse()
     }
     const accessError = adminStoreAccessResponse(session, storeId)
     if (accessError) {
       return accessError
+    }
+    const permissionError = adminReviewModerationPermissionResponse(session)
+    if (permissionError) {
+      return permissionError
     }
 
     const payload = createReviewSchema.safeParse(await request.json())
@@ -308,6 +343,9 @@ export async function POST(request: NextRequest) {
       throw error
     }
   } catch (error) {
+    if (isUnknownStoreError(error)) {
+      return NextResponse.json({ error: 'Unknown store' }, { status: 404 })
+    }
     logger.error({ err: error }, 'Error creating review')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -325,13 +363,17 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const storeId = resolveRequiredStoreId(request)
+    const storeId = await resolveRequiredStoreId(request)
     if (!storeId) {
       return storeIdRequiredResponse()
     }
     const accessError = adminStoreAccessResponse(session, storeId)
     if (accessError) {
       return accessError
+    }
+    const permissionError = adminReviewModerationPermissionResponse(session)
+    if (permissionError) {
+      return permissionError
     }
 
     const payload = updateReviewSchema.safeParse(await request.json())
@@ -366,6 +408,9 @@ export async function PUT(request: NextRequest) {
       throw error
     }
   } catch (error) {
+    if (isUnknownStoreError(error)) {
+      return NextResponse.json({ error: 'Unknown store' }, { status: 404 })
+    }
     logger.error({ err: error }, 'Error updating review')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -383,13 +428,17 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const storeId = resolveRequiredStoreId(request)
+    const storeId = await resolveRequiredStoreId(request)
     if (!storeId) {
       return storeIdRequiredResponse()
     }
     const accessError = adminStoreAccessResponse(session, storeId)
     if (accessError) {
       return accessError
+    }
+    const permissionError = adminReviewModerationPermissionResponse(session)
+    if (permissionError) {
+      return permissionError
     }
 
     const id = request.nextUrl.searchParams.get('id')
@@ -417,6 +466,9 @@ export async function DELETE(request: NextRequest) {
       throw error
     }
   } catch (error) {
+    if (isUnknownStoreError(error)) {
+      return NextResponse.json({ error: 'Unknown store' }, { status: 404 })
+    }
     logger.error({ err: error }, 'Error deleting review')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

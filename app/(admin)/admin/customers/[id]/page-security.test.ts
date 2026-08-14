@@ -36,4 +36,17 @@ describe('customer profile browser logging', () => {
     expect(source).toContain("blocked: 'ブラック'")
     expect(source).toContain("platinum: 'プラチナ'")
   })
+
+  it('labels unavailable store-scoped chat totals instead of rendering null as a count', () => {
+    const source = readFileSync(join(__dirname, 'page.tsx'), 'utf8')
+
+    expect(source).toContain('function formatStoreScopedChatCount')
+    expect(source).toContain("'店舗別集計未対応'")
+    expect(source).toContain('value: formatStoreScopedChatCount(insights.chatCountToday)')
+    expect(source).toContain('value: formatStoreScopedChatCount(insights.chatCountYesterday)')
+    expect(source).toContain('value: formatStoreScopedChatCount(insights.chatCountTotal)')
+    expect(source).not.toContain('`${insights.chatCountToday}回`')
+    expect(source).not.toContain('`${insights.chatCountYesterday}回`')
+    expect(source).not.toContain('`${insights.chatCountTotal}回`')
+  })
 })

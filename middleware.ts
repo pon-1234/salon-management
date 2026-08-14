@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { env } from '@/lib/config/env'
-import { canAdminAccessStore } from '@/lib/auth/store-access'
+import { canAdminAccessStoreIdentifier } from '@/lib/auth/store-access'
 import {
   AGE_VERIFICATION_COOKIE,
   AGE_VERIFICATION_COOKIE_VALUE,
@@ -22,6 +22,7 @@ const storeCustomerAuthPattern = /^\/[^/]+\/(?:login|register)(?:\/|$)/
 const publicApiRoutes = ['/api/age-verification', '/api/health', '/api/line/webhook']
 const publicPostApiRoutes = ['/api/request-attendance']
 const publicReadApiPrefixes = ['/api/course', '/api/option']
+const publicReadApiRoutes = ['/api/store-schedule', '/api/review']
 const storeScopedApiPrefixes = [
   '/api/admin/cast/settlements',
   '/api/analytics',
@@ -110,10 +111,16 @@ export async function middleware(request: NextRequest) {
   }
 
   const isApiRoute = pathname.startsWith('/api')
+  const isPublicAvailabilityRead =
+    pathname === '/api/reservation/availability' &&
+    request.method === 'GET' &&
+    request.nextUrl.searchParams.get('mode') !== 'check'
   const isPublicReadApiRoute =
     isApiRoute &&
     request.method === 'GET' &&
-    publicReadApiPrefixes.some((route) => matchesApiPrefix(pathname, route))
+    (publicReadApiPrefixes.some((route) => matchesApiPrefix(pathname, route)) ||
+      publicReadApiRoutes.includes(pathname) ||
+      isPublicAvailabilityRead)
   const isPublicApiRoute =
     isApiRoute &&
     (matchesApiPrefix(pathname, '/api/public') ||
@@ -191,7 +198,7 @@ export async function middleware(request: NextRequest) {
     if (!storeId) {
       return NextResponse.json({ error: '店舗を明示してください' }, { status: 400 })
     }
-    if (!canAdminAccessStore(token, storeId)) {
+    if (!canAdminAccessStoreIdentifier(token, storeId)) {
       return NextResponse.json({ error: 'この店舗を操作する権限がありません' }, { status: 403 })
     }
   }

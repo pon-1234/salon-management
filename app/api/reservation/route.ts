@@ -992,12 +992,16 @@ export async function PUT(request: NextRequest) {
     }
     const normalizedStoreId = storeId?.trim().toLowerCase()
     const storeIdParam = request.nextUrl.searchParams.get('storeId')
-    if (
-      storeIdParam &&
-      normalizedStoreId &&
-      storeIdParam.trim().toLowerCase() !== normalizedStoreId
-    ) {
-      return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
+    if (storeIdParam && normalizedStoreId) {
+      let requestedCanonicalStoreId: string
+      try {
+        requestedCanonicalStoreId = await ensureStoreId(storeIdParam)
+      } catch {
+        return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
+      }
+      if (requestedCanonicalStoreId !== normalizedStoreId) {
+        return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
+      }
     }
 
     // Check if reservation is modifiable

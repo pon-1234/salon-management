@@ -1,14 +1,16 @@
 /**
  * @design_doc   Eligible review reservation multi-store authorization
- * @related_to   Review submission form and Review service
+ * @related_to   Review submission form, Review service, customer:read permission
  * @known_issues None currently
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
+import { hasPermission } from '@/lib/auth/permissions'
 import { canAdminAccessStore } from '@/lib/auth/store-access'
 import logger from '@/lib/logger'
 import { getEligibleReservationsForCustomer } from '@/lib/reviews/service'
+import { ensureStoreId, resolveStoreId } from '@/lib/store/server'
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,15 +24,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const searchParams = request.nextUrl.searchParams
-    const storeId = searchParams.get('storeId')?.trim()
-    const customerIdParam = searchParams.get('customerId')
+    const requestedStoreId = await resolveStoreId(request)
+    const customerIdParam = request.nextUrl.searchParams.get('customerId')
 
-    if (!storeId) {
+    if (!requestedStoreId) {
       return NextResponse.json({ error: 'storeId is required' }, { status: 400 })
     }
+    const storeId = await ensureStoreId(requestedStoreId)
 
     if (role === 'admin' && !canAdminAccessStore(session.user, storeId)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+    if (role === 'admin' && !hasPermission(session.user.permissions ?? [], 'customer:read')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

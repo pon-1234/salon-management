@@ -1,12 +1,14 @@
 /**
- * @design_doc   Reservation availability check API for conflict detection
- * @related_to   reservation/route.ts, ReservationRepository, Prisma Reservation model
+ * @design_doc   Public slot listing and administrator-only reservation conflict checks
+ * @related_to   reservation/route.ts, requireAdmin, canonical store resolver
  * @known_issues None currently
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import type { PrismaClient } from '@prisma/client'
+import { requireAdmin } from '@/lib/auth/utils'
 import logger from '@/lib/logger'
+import { ensureStoreId, resolveStoreId } from '@/lib/store/server'
 import { differenceInCalendarDays, parse } from 'date-fns'
 import { formatInTimeZone } from 'date-fns-tz'
 import {
@@ -69,31 +71,41 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const path = request.nextUrl.pathname
     const mode = searchParams.get('mode')
+    const requestedStoreId = await resolveStoreId(request)
+
+    if (!requestedStoreId) {
+      return NextResponse.json({ error: 'Missing required parameter: storeId' }, { status: 400 })
+    }
+
+    const storeId = await ensureStoreId(requestedStoreId)
 
     // Check if this is a conflict check request
     if (path.endsWith('/check') || mode === 'check') {
-      return handleConflictCheck(searchParams)
+      const authError = await requireAdmin({ permissions: 'reservation:read', storeId })
+      if (authError) {
+        return authError
+      }
+
+      return handleConflictCheck(searchParams, storeId)
     }
 
     // Otherwise, return available time slots
-    return handleAvailableSlots(searchParams)
+    return handleAvailableSlots(searchParams, storeId)
   } catch (error) {
     logger.error({ err: error }, 'Error checking availability')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-async function handleConflictCheck(searchParams: URLSearchParams): Promise<NextResponse> {
+async function handleConflictCheck(
+  searchParams: URLSearchParams,
+  storeId: string
+): Promise<NextResponse> {
   try {
-    const storeId = searchParams.get('storeId')?.trim().toLowerCase()
     const castId = searchParams.get('castId')
     const castIds = searchParams.get('castIds')
     const startTimeStr = searchParams.get('startTime')
     const endTimeStr = searchParams.get('endTime')
-
-    if (!storeId) {
-      return NextResponse.json({ error: 'Missing required parameter: storeId' }, { status: 400 })
-    }
 
     // Validate required parameters
     if (!castId && !castIds) {
@@ -225,16 +237,14 @@ async function checkCastAvailability(
   }
 }
 
-async function handleAvailableSlots(searchParams: URLSearchParams): Promise<NextResponse> {
+async function handleAvailableSlots(
+  searchParams: URLSearchParams,
+  storeId: string
+): Promise<NextResponse> {
   try {
     const castId = searchParams.get('castId')
-    const storeId = searchParams.get('storeId')?.trim().toLowerCase()
     const dateStr = searchParams.get('date')
     const durationStr = searchParams.get('duration')
-
-    if (!storeId) {
-      return NextResponse.json({ error: 'Missing required parameter: storeId' }, { status: 400 })
-    }
 
     if (!castId || !dateStr || !durationStr) {
       return NextResponse.json(

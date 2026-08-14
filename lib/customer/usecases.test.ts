@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest'
 import { CustomerUseCases } from './usecases'
 import { CustomerRepository } from './repository'
-import { Customer } from './types'
+import { Customer, CustomerInsights } from './types'
 
 // Mock CustomerRepository
 const mockCustomerRepository: CustomerRepository = {
@@ -140,7 +140,7 @@ describe('CustomerUseCases', () => {
   describe('getInsights', () => {
     it("should call repository's getInsights and return insights", async () => {
       const customerId = 'cust1'
-      const insights = {
+      const insights: CustomerInsights = {
         lastVisitDate: null,
         lastCastName: null,
         totalVisits: 0,
@@ -149,9 +149,9 @@ describe('CustomerUseCases', () => {
         averageIntervalDays: null,
         customerCancelCount: 0,
         storeCancelCount: 0,
-        chatCountToday: 0,
-        chatCountYesterday: 0,
-        chatCountTotal: 0,
+        chatCountToday: null,
+        chatCountYesterday: null,
+        chatCountTotal: null,
         preferredBustCup: null,
         cancellationLimit: 3,
       }

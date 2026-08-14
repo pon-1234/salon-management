@@ -1,7 +1,7 @@
 /**
  * @design_doc   docs/LEGACY_GOLD_ADMIN_MIGRATION_INVENTORY.md customer management
  * @related_to   Customer, CustomerInsights, customer API routes
- * @known_issues Usage/reservation panels need approved persisted APIs; identity migration is tracked in the runbook
+ * @known_issues Usage/reservation persistence, identity migration, and store-scoped chat counts remain constrained by their approved data models
  */
 'use client'
 
@@ -142,6 +142,10 @@ const membershipStageLabels: Record<Customer['membershipStage'], string> = {
 }
 
 const formatYen = (amount: number) => `¥${amount.toLocaleString('ja-JP')}`
+
+function formatStoreScopedChatCount(count: number | null): string {
+  return typeof count === 'number' ? `${count}回` : '店舗別集計未対応'
+}
 
 export default function CustomerProfile() {
   const { currentStore } = useStore()
@@ -678,7 +682,7 @@ export default function CustomerProfile() {
       },
       {
         label: '本日のチャット数',
-        value: `${insights.chatCountToday}回`,
+        value: formatStoreScopedChatCount(insights.chatCountToday),
       },
       {
         label: '前回ご利用のキャスト',
@@ -696,7 +700,7 @@ export default function CustomerProfile() {
       },
       {
         label: '昨日のチャット数',
-        value: `${insights.chatCountYesterday}回`,
+        value: formatStoreScopedChatCount(insights.chatCountYesterday),
       },
       {
         label: '平均利用間隔',
@@ -714,7 +718,7 @@ export default function CustomerProfile() {
       },
       {
         label: 'チャット累計数',
-        value: `${insights.chatCountTotal}回`,
+        value: formatStoreScopedChatCount(insights.chatCountTotal),
       },
     ]
   }, [insights])

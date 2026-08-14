@@ -24,6 +24,7 @@ declare module 'next-auth' {
       permissions?: string[]
       storeId?: string
       storeIds?: string[]
+      storeSlugs?: string[]
       image?: string | null
     }
   }
@@ -37,6 +38,7 @@ declare module 'next-auth' {
     permissions?: string[]
     storeId?: string
     storeIds?: string[]
+    storeSlugs?: string[]
     image?: string | null
   }
 }
@@ -49,6 +51,7 @@ declare module 'next-auth/jwt' {
     permissions?: string[]
     storeId?: string
     storeIds?: string[]
+    storeSlugs?: string[]
     image?: string | null
   }
 }
@@ -83,7 +86,10 @@ export const authOptions: NextAuthOptions = {
             where: { email },
             include: {
               storeAssignments: {
-                select: { storeId: true },
+                select: {
+                  storeId: true,
+                  store: { select: { slug: true } },
+                },
                 orderBy: { storeId: 'asc' },
               },
             },
@@ -135,6 +141,9 @@ export const authOptions: NextAuthOptions = {
             permissions,
             storeIds: Array.isArray(admin.storeAssignments)
               ? admin.storeAssignments.map((assignment) => assignment.storeId)
+              : [],
+            storeSlugs: Array.isArray(admin.storeAssignments)
+              ? admin.storeAssignments.map((assignment) => assignment.store.slug)
               : [],
           } as User
         } catch (error) {
@@ -299,6 +308,9 @@ export const authOptions: NextAuthOptions = {
         if (user.storeIds) {
           token.storeIds = user.storeIds
         }
+        if (user.storeSlugs) {
+          token.storeSlugs = user.storeSlugs
+        }
       }
       return token
     },
@@ -317,6 +329,9 @@ export const authOptions: NextAuthOptions = {
         }
         if (token.storeIds) {
           session.user.storeIds = token.storeIds
+        }
+        if (token.storeSlugs) {
+          session.user.storeSlugs = token.storeSlugs
         }
       }
       return session

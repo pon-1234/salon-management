@@ -1,7 +1,7 @@
 /**
  * @design_doc   docs/LEGACY_DATA_MIGRATION_RUNBOOK.md customer data verification
  * @related_to   CustomerRepository and customer admin pages consume these domain records
- * @known_issues Point-event history remains separate from the customer aggregate
+ * @known_issues Point-event history is separate; store-scoped chat counts remain unavailable
  */
 import { BaseEntity } from '../shared'
 import type { Reservation } from '../types/reservation'
@@ -74,9 +74,9 @@ export interface CustomerInsights {
   averageIntervalDays: number | null
   customerCancelCount: number
   storeCancelCount: number
-  chatCountToday: number
-  chatCountYesterday: number
-  chatCountTotal: number
+  chatCountToday: number | null
+  chatCountYesterday: number | null
+  chatCountTotal: number | null
   preferredBustCup: string | null
   cancellationLimit: number
 }
