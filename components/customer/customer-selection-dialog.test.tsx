@@ -17,6 +17,12 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push }),
 }))
 
+vi.mock('@/contexts/store-context', () => ({
+  useStore: () => ({
+    currentStore: { id: 'legacy-store-ikebukuro', slug: 'ikebukuro' },
+  }),
+}))
+
 vi.mock('@/lib/customer/repository-impl', () => ({
   CustomerRepositoryImpl: class {
     getAll = getAll
@@ -143,6 +149,8 @@ describe('CustomerSelectionDialog', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '新規顧客を登録' }))
 
-    expect(push).toHaveBeenCalledWith('/admin/customers/new?returnTo=reservation&phone=09012345678')
+    expect(push).toHaveBeenCalledWith(
+      '/admin/customers/new?returnTo=reservation&phone=09012345678&store=ikebukuro'
+    )
   })
 })

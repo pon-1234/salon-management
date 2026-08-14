@@ -37,6 +37,7 @@ import { cn, isVipMember } from '@/lib/utils'
 import { CustomerUseCases } from '@/lib/customer/usecases'
 import { CustomerRepositoryImpl } from '@/lib/customer/repository-impl'
 import { normalizePhoneQuery } from '@/lib/customer/utils'
+import { useStore } from '@/contexts/store-context'
 
 interface CustomerSelectionDialogProps {
   open: boolean
@@ -61,6 +62,7 @@ export function CustomerSelectionDialog({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [loadAttempt, setLoadAttempt] = useState(0)
   const router = useRouter()
+  const { currentStore } = useStore()
   const hasLoadedRef = useRef(false)
   const wasOpenRef = useRef(false)
 
@@ -219,6 +221,7 @@ export function CustomerSelectionDialog({
     if (normalizedPhone.length >= 3) {
       params.set('phone', normalizedPhone)
     }
+    params.set('store', currentStore.slug)
     router.push(`/admin/customers/new?${params.toString()}`)
     onOpenChange(false)
   }

@@ -332,4 +332,52 @@ describe('DashboardPage field operations', () => {
       expect.objectContaining({ credentials: 'include', cache: 'no-store' })
     )
   })
+
+  it('carries an unmatched phone and the Ikebukuro store into name-only customer registration', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [],
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    render(<DashboardPage />)
+
+    await user.type(await screen.findByRole('textbox', { name: '電話番号' }), '090-1234-5678')
+    await user.click(screen.getByRole('button', { name: '電話番号で顧客を検索' }))
+
+    expect(await screen.findByRole('link', { name: 'この番号で新規顧客を登録' })).toHaveAttribute(
+      'href',
+      '/admin/customers/new?returnTo=reservation&phone=09012345678&store=ikebukuro'
+    )
+
+    await user.clear(screen.getByRole('textbox', { name: '電話番号' }))
+    await user.type(screen.getByRole('textbox', { name: '電話番号' }), '080-9999-8888')
+
+    expect(screen.queryByRole('link', { name: 'この番号で新規顧客を登録' })).not.toBeInTheDocument()
+  })
+
+  it('ignores a phone-search response after the operator changes the number', async () => {
+    const user = userEvent.setup()
+    let resolveSearch: ((response: Response) => void) | undefined
+    const fetchMock = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveSearch = resolve
+        })
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    render(<DashboardPage />)
+
+    const phoneInput = await screen.findByRole('textbox', { name: '電話番号' })
+    await user.type(phoneInput, '090-1234-5678')
+    await user.click(screen.getByRole('button', { name: '電話番号で顧客を検索' }))
+    await user.clear(phoneInput)
+    await user.type(phoneInput, '080-9999-8888')
+
+    resolveSearch?.({ ok: true, json: async () => [] } as Response)
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    expect(screen.queryByText('該当する顧客が見つかりませんでした。')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'この番号で新規顧客を登録' })).not.toBeInTheDocument()
+  })
 })

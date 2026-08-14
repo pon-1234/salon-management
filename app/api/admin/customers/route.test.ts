@@ -9,11 +9,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { requireAdmin } from '@/lib/auth/utils'
 import { db } from '@/lib/db'
+import { ensureStoreId, resolveStoreId } from '@/lib/store/server'
 import { POST } from './route'
 
 vi.mock('bcryptjs', () => ({ default: { hash: vi.fn() } }))
 vi.mock('@/lib/auth/utils', () => ({ requireAdmin: vi.fn() }))
 vi.mock('@/lib/logger', () => ({ default: { error: vi.fn() } }))
+vi.mock('@/lib/store/server', () => ({
+  ensureStoreId: vi.fn(),
+  resolveStoreId: vi.fn(),
+}))
 vi.mock('@/lib/db', () => ({
   db: {
     customer: {
@@ -34,6 +39,8 @@ describe('POST /api/admin/customers', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(requireAdmin).mockResolvedValue(null)
+    vi.mocked(resolveStoreId).mockResolvedValue('legacy-store-ikebukuro')
+    vi.mocked(ensureStoreId).mockResolvedValue('legacy-store-ikebukuro')
     vi.mocked(db.customer.findFirst).mockResolvedValue(null)
     vi.mocked(db.customer.findUnique).mockResolvedValue(null)
     vi.mocked(bcrypt.hash).mockResolvedValue('hashed-password' as never)
@@ -51,20 +58,23 @@ describe('POST /api/admin/customers', () => {
     )
 
     const response = await POST(
-      new NextRequest('http://localhost/api/admin/customers', {
+      new NextRequest('http://localhost/api/admin/customers?storeId=legacy-store-ikebukuro', {
         method: 'POST',
         body: JSON.stringify(validBody),
       })
     )
 
     expect(response.status).toBe(403)
-    expect(requireAdmin).toHaveBeenCalledWith({ permissions: 'customer:create' })
+    expect(requireAdmin).toHaveBeenCalledWith({
+      permissions: 'customer:create',
+      storeId: 'legacy-store-ikebukuro',
+    })
     expect(db.customer.findFirst).not.toHaveBeenCalled()
   })
 
   it('normalizes identity fields and hashes a cryptographically random password', async () => {
     const response = await POST(
-      new NextRequest('http://localhost/api/admin/customers', {
+      new NextRequest('http://localhost/api/admin/customers?storeId=legacy-store-ikebukuro', {
         method: 'POST',
         body: JSON.stringify({
           ...validBody,
@@ -97,7 +107,7 @@ describe('POST /api/admin/customers', () => {
     'rejects invalid phone input %s before persistence',
     async (phone) => {
       const response = await POST(
-        new NextRequest('http://localhost/api/admin/customers', {
+        new NextRequest('http://localhost/api/admin/customers?storeId=legacy-store-ikebukuro', {
           method: 'POST',
           body: JSON.stringify({ ...validBody, phone }),
         })
@@ -111,7 +121,7 @@ describe('POST /api/admin/customers', () => {
 
   it('rejects unknown fields instead of silently discarding store ownership input', async () => {
     const response = await POST(
-      new NextRequest('http://localhost/api/admin/customers', {
+      new NextRequest('http://localhost/api/admin/customers?storeId=legacy-store-ikebukuro', {
         method: 'POST',
         body: JSON.stringify({ ...validBody, storeId: 'ginza' }),
       })

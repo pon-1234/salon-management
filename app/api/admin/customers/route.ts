@@ -11,6 +11,7 @@ import { db } from '@/lib/db'
 import logger from '@/lib/logger'
 import { requireAdmin } from '@/lib/auth/utils'
 import { isValidPhoneInput, normalizePhoneNumber, normalizePhoneQuery } from '@/lib/customer/utils'
+import { ensureStoreId, resolveStoreId } from '@/lib/store/server'
 
 const phoneSchema = z
   .string()
@@ -51,10 +52,11 @@ function databaseErrorCode(error: unknown): string | undefined {
 }
 
 export async function POST(request: NextRequest) {
-  const authError = await requireAdmin({ permissions: 'customer:create' })
-  if (authError) return authError
-
   try {
+    const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({ permissions: 'customer:create', storeId })
+    if (authError) return authError
+
     const body = await request.json()
     const parsed = payloadSchema.safeParse(body)
     if (!parsed.success) {

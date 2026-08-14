@@ -22,12 +22,14 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useStore } from '@/contexts/store-context'
 import {
   normalizePhoneNumber,
   normalizePhoneQuery,
   formatPhoneNumber,
   isValidPhoneInput,
 } from '@/lib/customer/utils'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 
 const phoneSchema = z
   .string()
@@ -45,10 +47,23 @@ const formSchema = z.object({
 })
 
 type FormData = z.infer<typeof formSchema>
+const IKEBUKURO_STORE_SLUG = 'ikebukuro'
 
 export function NewCustomerContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { currentStore, availableStores, switchStore } = useStore()
+  const phoneFromQuery = searchParams.get('phone') ?? ''
+  const inheritedPhone = normalizePhoneQuery(phoneFromQuery)
+  const isPhoneIntake =
+    isValidPhoneInput(phoneFromQuery) && inheritedPhone.length >= 10 && inheritedPhone.length <= 11
+  const requestedStore = searchParams.get('store')
+  const requestedRegistrationStore =
+    availableStores.find((store) => store.id === requestedStore || store.slug === requestedStore) ??
+    currentStore
+  const ikebukuroStore = availableStores.find((store) => store.slug === IKEBUKURO_STORE_SLUG)
+  const registrationStore = isPhoneIntake ? ikebukuroStore : requestedRegistrationStore
+  const returnsToReservation = searchParams.get('returnTo') === 'reservation'
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -58,27 +73,35 @@ export function NewCustomerContent() {
       email: '',
     },
   })
+  const { setValue } = form
 
   useEffect(() => {
-    const phone = searchParams.get('phone')
-    if (phone) {
-      form.setValue('phone', phone)
+    if (phoneFromQuery) {
+      setValue('phone', isPhoneIntake ? inheritedPhone : phoneFromQuery)
     }
-  }, [searchParams, form])
+  }, [inheritedPhone, isPhoneIntake, phoneFromQuery, setValue])
 
   const onSubmit = async (data: FormData) => {
-    const normalizedPhone = normalizePhoneNumber(data.phone)
+    if (!registrationStore) {
+      form.setError('root', { message: '池袋店の利用権限を確認できません' })
+      return
+    }
+
+    const normalizedPhone = normalizePhoneNumber(isPhoneIntake ? inheritedPhone : data.phone)
     try {
-      const response = await fetch('/api/admin/customers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          name: data.name,
-          phone: normalizedPhone,
-          email: data.email?.trim() || undefined,
-        }),
-      })
+      const response = await fetch(
+        buildStoreScopedEndpoint('/api/admin/customers', registrationStore.id),
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            name: data.name,
+            phone: normalizedPhone,
+            email: data.email?.trim() || undefined,
+          }),
+        }
+      )
 
       const payload = await response.json().catch(() => ({}))
       if (!response.ok) {
@@ -91,10 +114,12 @@ export function NewCustomerContent() {
       }
 
       const encodedCustomerId = encodeURIComponent(customerId)
-      if (searchParams.get('returnTo') === 'reservation') {
-        router.push(`/admin/reservation?customerId=${encodedCustomerId}`)
+      const encodedStoreSlug = encodeURIComponent(registrationStore.slug)
+      switchStore(registrationStore.slug)
+      if (returnsToReservation) {
+        router.push(`/admin/reservation?customerId=${encodedCustomerId}&store=${encodedStoreSlug}`)
       } else {
-        router.push(`/admin/customers/${encodedCustomerId}`)
+        router.push(`/admin/customers/${encodedCustomerId}?store=${encodedStoreSlug}`)
       }
     } catch (error) {
       console.error('Failed to create customer:', error)
@@ -109,7 +134,9 @@ export function NewCustomerContent() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">新規顧客登録</h1>
         <p className="mt-2 text-sm text-gray-600">
-          基本情報を入力してください。詳細情報は後で編集できます。
+          {isPhoneIntake
+            ? '電話番号と店舗は引き継いでいます。名前だけ入力してください。'
+            : '基本情報を入力してください。詳細情報は後で編集できます。'}
         </p>
       </div>
 
@@ -130,62 +157,98 @@ export function NewCustomerContent() {
                       名前 <span className="text-red-500">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="山田太郎" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium">
-                      メールアドレス <span className="text-gray-400">(任意)</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input placeholder="example@email.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium">
-                      電話番号 <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <FormControl>
                       <Input
-                        placeholder="09012345678 または 090-1234-5678"
+                        placeholder="山田太郎"
+                        disabled={isPhoneIntake && !registrationStore}
                         {...field}
-                        onBlur={(event) => {
-                          field.onBlur()
-                          const normalized = normalizePhoneNumber(event.target.value)
-                          const formatted = formatPhoneNumber(normalized)
-                          form.setValue('phone', formatted, { shouldValidate: true })
-                        }}
                       />
                     </FormControl>
                     <FormMessage />
-                    <p className="text-xs text-gray-500">
-                      ハイフンの有無は問いません。入力後は自動で整形されます。
-                    </p>
                   </FormItem>
                 )}
               />
+
+              {isPhoneIntake ? (
+                registrationStore ? (
+                  <div className="grid gap-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 sm:grid-cols-2">
+                    <div>
+                      <p className="text-xs font-medium text-emerald-700">登録先店舗（固定）</p>
+                      <p className="mt-1 font-semibold text-emerald-950">
+                        {registrationStore.displayName}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-emerald-700">電話番号（引継ぎ済み）</p>
+                      <p className="mt-1 font-semibold text-emerald-950">
+                        {formatPhoneNumber(inheritedPhone)}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    role="alert"
+                    className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+                  >
+                    池袋店の利用権限を確認できません。管理者へ確認してください。
+                  </div>
+                )
+              ) : (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">
+                          メールアドレス <span className="text-gray-400">(任意)</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input placeholder="example@email.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">
+                          電話番号 <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="09012345678 または 090-1234-5678"
+                            {...field}
+                            onBlur={(event) => {
+                              field.onBlur()
+                              const normalized = normalizePhoneNumber(event.target.value)
+                              const formatted = formatPhoneNumber(normalized)
+                              form.setValue('phone', formatted, { shouldValidate: true })
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                        <p className="text-xs text-gray-500">
+                          ハイフンの有無は問いません。入力後は自動で整形されます。
+                        </p>
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
 
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
                 <p className="text-sm text-blue-800">
                   <strong>📝 登録後について</strong>
                   <br />
-                  基本登録後、顧客詳細ページでメールアドレス、生年月日、会員タイプなどの詳細情報を追加できます。
+                  {isPhoneIntake
+                    ? returnsToReservation
+                      ? '名前を登録すると、そのまま池袋の予約作成へ戻ります。その他の詳細情報は顧客詳細で後から追加できます。'
+                      : '名前を登録すると顧客詳細へ進みます。その他の詳細情報はそこで追加できます。'
+                    : '基本登録後、顧客詳細ページでメールアドレス、生年月日、会員タイプなどの詳細情報を追加できます。'}
                 </p>
               </div>
             </CardContent>
@@ -207,7 +270,7 @@ export function NewCustomerContent() {
             </Button>
             <Button
               type="submit"
-              disabled={form.formState.isSubmitting}
+              disabled={form.formState.isSubmitting || !registrationStore}
               className="bg-emerald-600 px-8 text-white hover:bg-emerald-700"
             >
               {form.formState.isSubmitting ? '登録中…' : '登録'}

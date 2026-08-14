@@ -5,7 +5,7 @@
  */
 'use client'
 
-import { useState, useEffect, useMemo, type FormEvent } from 'react'
+import { useState, useEffect, useMemo, useRef, type FormEvent } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -293,6 +293,14 @@ export default function DashboardPage() {
   const [phoneResults, setPhoneResults] = useState<PhoneCustomerSearchResult[]>([])
   const [phoneSearchStatus, setPhoneSearchStatus] = useState<PhoneSearchStatus>('idle')
   const [phoneSearchMessage, setPhoneSearchMessage] = useState<string | null>(null)
+  const [lastSearchedPhone, setLastSearchedPhone] = useState<string | null>(null)
+  const phoneSearchRequestIdRef = useRef(0)
+  const canRegisterSearchedPhone =
+    phoneSearchStatus === 'ready' &&
+    phoneResults.length === 0 &&
+    lastSearchedPhone !== null &&
+    lastSearchedPhone.length >= 10 &&
+    lastSearchedPhone.length <= 11
 
   useEffect(() => {
     if (status === 'loading') {
@@ -411,23 +419,29 @@ export default function DashboardPage() {
 
   const handlePhoneSearch = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    const requestId = ++phoneSearchRequestIdRef.current
     const normalizedPhone = phoneQuery.replace(/\D/g, '')
 
     if (normalizedPhone.length < 3) {
       setPhoneResults([])
       setPhoneSearchStatus('error')
       setPhoneSearchMessage('電話番号を3桁以上入力してください。')
+      setLastSearchedPhone(null)
       return
     }
 
     setPhoneSearchStatus('loading')
     setPhoneSearchMessage(null)
+    setLastSearchedPhone(null)
 
     try {
       const response = await fetch(
         `/api/customer?phone=${encodeURIComponent(normalizedPhone)}&limit=10`,
         { credentials: 'include', cache: 'no-store' }
       )
+      if (requestId !== phoneSearchRequestIdRef.current) {
+        return
+      }
       if (!response.ok) {
         throw new Error(`Customer search failed: ${response.status}`)
       }
@@ -440,14 +454,22 @@ export default function DashboardPage() {
         : Array.isArray(payload.data)
           ? payload.data
           : []
+      if (requestId !== phoneSearchRequestIdRef.current) {
+        return
+      }
       setPhoneResults(results)
       setPhoneSearchStatus('ready')
       setPhoneSearchMessage(results.length === 0 ? '該当する顧客が見つかりませんでした。' : null)
+      setLastSearchedPhone(normalizedPhone)
     } catch (error) {
+      if (requestId !== phoneSearchRequestIdRef.current) {
+        return
+      }
       console.error('Dashboard customer phone search failed:', error)
       setPhoneResults([])
       setPhoneSearchStatus('error')
       setPhoneSearchMessage('顧客検索に失敗しました。もう一度お試しください。')
+      setLastSearchedPhone(null)
     }
   }
 
@@ -756,7 +778,14 @@ export default function DashboardPage() {
                     inputMode="tel"
                     autoComplete="tel"
                     value={phoneQuery}
-                    onChange={(event) => setPhoneQuery(event.target.value)}
+                    onChange={(event) => {
+                      phoneSearchRequestIdRef.current += 1
+                      setPhoneQuery(event.target.value)
+                      setPhoneResults([])
+                      setPhoneSearchStatus('idle')
+                      setPhoneSearchMessage(null)
+                      setLastSearchedPhone(null)
+                    }}
                     placeholder="090-1234-5678"
                     className="pl-9"
                   />
@@ -786,6 +815,16 @@ export default function DashboardPage() {
                   {phoneSearchMessage}
                 </p>
               )}
+
+              {canRegisterSearchedPhone ? (
+                <Button asChild>
+                  <Link
+                    href={`/admin/customers/new?returnTo=reservation&phone=${encodeURIComponent(lastSearchedPhone)}&store=${encodeURIComponent(currentStore.slug)}`}
+                  >
+                    この番号で新規顧客を登録
+                  </Link>
+                </Button>
+              ) : null}
 
               {phoneResults.length > 0 && (
                 <div className="space-y-2 pt-2">
