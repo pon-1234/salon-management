@@ -89,6 +89,13 @@ ${expectedMigrations}
   END IF;
 
   SELECT count(*) INTO actual
+  FROM "HotelSettings"
+  WHERE NOT "isActive";
+  IF actual <> 0 THEN
+    RAISE EXCEPTION 'active hotel count mismatch';
+  END IF;
+
+  SELECT count(*) INTO actual
   FROM "Reservation" r
   LEFT JOIN "Customer" customer ON customer."id" = r."customerId"
   LEFT JOIN "Cast" c ON c."id" = r."castId"

@@ -6,11 +6,11 @@
 
 現時点は **No-Go（本番切替不可）** です。池袋V5候補artifactについて、snapshot・画像105件・変換後全model／全field SHA-256・Prisma migration 16件をDB非接続で照合し、PIIを含まないowner-only control、report、取込後read-only SQLを生成しました。
 
-V5のリモートbackup、空DB・storage再作成、取込、取込後突合、移行後backup復元、browser確認はまだ実施していません。V4ではこれらのリハーサルと限定browser確認に成功しましたが、V5の合格証跡として流用しません。
+2026年8月14日に、隔離previewで更新前backupの復元確認、空DB・storage再作成、V5取込、取込後DB全件突合、公開画像105件のSHA-256照合、移行後backupの隔離復元、application health、主要な公開・管理・顧客画面の技術確認まで完了しました。これは現場確認を開始できることを示しますが、現場承認または本番切替可能性を示すものではありません。
 
 V5取得でも旧本番の稼働・データ・画像・routingを変更していません。旧システムは本番として書込みを継続しているため、`2026-08-14T19:31:10+09:00` より後の更新はsnapshotへ含まれません。最終切替では、旧側のcoordinated write pause、共有会員DBを含むlocked final extract、画像差分取得、全件突合を改めて実施します。
 
-### 2026-08-14 池袋V5取込前検証結果
+### 2026-08-14 池袋V5検証結果
 
 | 項目                     | 検証値                                                             |
 | ------------------------ | ------------------------------------------------------------------ |
@@ -24,7 +24,9 @@ V5取得でも旧本番の稼働・データ・画像・routingを変更して�
 
 V5変換後の主要期待件数は `Customer=13,313`、`Cast=35`、`CastSchedule=241`、`Reservation=2,122`、`ReservationOption=3,753`、`Review=261` です。`legacy-cast-56060` と `legacy-cast-56229` は存在し、画像参照はそれぞれ4枚・3枚でmanifest実fileと一致します。QA顧客には完了予約15件が紐付きます。詳細な全model件数とaggregateは[現場確認環境チェックリスト](./PREVIEW_UAT_CHECKLIST.md)に固定します。
 
-この成功は `ikebukuro-preview-artifact` の範囲に限ります。稼働中の旧本番と同一時点の全件性、V5のDB取込後一致、画面動作、本番切替可能性は証明しません。
+取込直後のlive previewと移行後backup復元先は、ともに `V5_FULL_DATABASE_RECONCILIATION_OK` を返しました。画像は双方で105件・9,794,316 byteがmanifestのSHA-256と一致しました。移行後backupは `/opt/platinum/maintenance/salon-preview/post-v5-20260814/` 配下へ暗号化・owner-onlyで保存しています。
+
+この成功は `ikebukuro-preview-artifact` と隔離previewの取込直後状態に限ります。稼働中の旧本番と同一時点の全件性、未取得domain、現場での業務上の正しさ、本番切替可能性は証明しません。技術確認用の `[UAT]` 書込み開始後はlive件数が基準値から増えるため、全件突合の正本は移行後backupの隔離復元結果とします。
 
 ### 2026-07-28 池袋V4 snapshot・画像取得結果
 
@@ -129,8 +131,10 @@ artifactはGit管理対象外のprivate作業領域へ置きます。credential�
 - 旧会員行の生年月日4件、登録日時71件、電話65件と参照先台帳欠落顧客1件はpreview補完値を含み、多数の旧メール形式不正と `nameKana` の氏名コピーも含む。本番投入前に補完・修正・本人確認の方針が必要である。
 - 全店共通会員の統合、重複・欠損連絡先、退会／blacklist／店舗membership、通知同意の意味を決めていない。
 - V5はオプションと口コミを変換対象に含めたが、NG設定、ポイント履歴、チャット、精算、日報、削除履歴、非公開画像など、未対応domainの保存先または参照専用アーカイブ方針が未決である。
-- V4のリモートbackup、空DB・storage再作成、取込、全件突合、移行後backup復元、管理画面の限定browser確認は過去のリハーサルとして完了した。V5ではすべて再実施が必要である。
-- 公開画像105件はV5ローカルpackageで全件検証済みだが、preview storageへのcopy、DB参照とのlive突合、移行後backup復元は未実施である。非公開画像は対象外である。
+- V5のリモートbackup、空DB・storage再作成、取込、全件突合、移行後backup復元、主要画面確認は実施済みである。ただし現場担当者の業務・視認性確認と最終切替時の再実施は未完了である。
+- 公開画像105件はV5ローカルpackage、live preview storage、移行後backup復元先で全件一致した。非公開画像は対象外であり、正式移行の扱いは未決である。
+- V5では旧入金・精算履歴を取得しておらず、`SettlementPayment=0` である。画面と新規記録機能が動いても、旧精算実績の統合完了とは扱わない。
+- V5の出勤は2026-08-01〜2026-09-30だけであり、それ以前の日報の勤務時間は完全にならない。旧媒体番号から姫予約へ分類する対応表と、手取り・店舗売上の正式配分規則も未承認である。
 
 ## 絶対に守ること
 
@@ -385,7 +389,7 @@ pnpm preview:verify-ikebukuro -- \
 
 VPS runner imageにはこのCLIを同梱しますが、`.dockerignore` は `migration-data` を除外します。private artifactをimageへ焼き込まず、保守作業時だけ暗号化された転送元から `/app/migration-data` へ安全にmountまたはcopyし、所有者・権限を確認します。CLIは自動起動せず、DB URL・SSH・旧本番接続引数を受け付けません。
 
-生成されたSQLは、V5取込後にpreview DBへ到達できる保守用PostgreSQL clientから実行します。SQL自体が `ON_ERROR_STOP`、`REPEATABLE READ READ ONLY`、`salon.environment=staging-preview`、全model件数、migration名／checksum完全集合、外部キー／孤立行、主要aggregate、画像参照件数を検査し、成功時だけ `V5_FULL_DATABASE_RECONCILIATION_OK` を出して `ROLLBACK` します。SQLを手編集した場合は承認対象外とし、再生成します。
+生成されたSQLは、V5取込後にpreview DBへ到達できる保守用PostgreSQL clientから実行します。SQL自体が `ON_ERROR_STOP`、`REPEATABLE READ READ ONLY`、`salon.environment=staging-preview`、全model件数、ホテル2件がすべて有効であること、migration名／checksum完全集合、外部キー／孤立行、主要aggregate、画像参照件数を検査し、成功時だけ `V5_FULL_DATABASE_RECONCILIATION_OK` を出して `ROLLBACK` します。SQLを手編集した場合は承認対象外とし、再生成します。
 
 preview DBは、この移行だけに使う破棄可能な専用DBでなければなりません。新規投入時は、承認済みの事前配置Storeだけが過不足なく存在し、インポーターが作成する6テーブル（`CoursePrice`、`Cast`、`Customer`、`CastSchedule`、`Reservation`、`CustomerPointHistory`）と、`LegacyMigrationMapping`、`LegacyMigrationRun` の件数がすべて0であることを要求します。完全一致rerun時は、Storeと6テーブルの行が計画どおり過不足なく存在し、mappingが計画件数と完全一致し、run台帳が当該sourceの完全一致する1件だけであることを要求します。別用途のdemo・seed行、計画外Store、mappingのない対象行、別sourceのmappingまたはrunが1件でもあれば停止し、既存DBを補正せず空から作り直します。
 

@@ -1362,14 +1362,6 @@ export function QuickBookingDialog({
                         <span>-{formatYen(priceBreakdown.discount)}</span>
                       </div>
                     )}
-                    {priceBreakdown.welfareExpense > 0 && (
-                      <div className="flex justify-between text-sm text-muted-foreground">
-                        <span>
-                          厚生費（{priceBreakdown.welfareRate.toFixed(1).replace(/\.0$/, '')}%）
-                        </span>
-                        <span>{formatYen(priceBreakdown.welfareExpense)}</span>
-                      </div>
-                    )}
                     <div className="flex justify-between text-sm text-gray-600">
                       <span>小計</span>
                       <span>{formatYen(priceBreakdown.subtotal)}</span>

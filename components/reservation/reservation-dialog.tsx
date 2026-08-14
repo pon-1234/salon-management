@@ -2789,15 +2789,6 @@ export function ReservationDialog({
                               <dd>-{formatCurrency(priceBreakdown.pointsUsed)}</dd>
                             </div>
                           )}
-                          {priceBreakdown.welfareExpense > 0 && (
-                            <div className="flex items-center justify-between text-sm text-muted-foreground">
-                              <dt>
-                                厚生費（{priceBreakdown.welfareRate.toFixed(1).replace(/\.0$/, '')}
-                                %）
-                              </dt>
-                              <dd>{formatCurrency(priceBreakdown.welfareExpense)}</dd>
-                            </div>
-                          )}
                         </dl>
                       </div>
 

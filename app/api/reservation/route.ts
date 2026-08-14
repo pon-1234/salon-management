@@ -32,6 +32,7 @@ import {
   normalizeCancellationReason,
   normalizePaymentReference,
 } from '@/lib/reservation/financial-reference'
+import { resolveCancellationSourceUpdate } from '@/lib/reservation/cancellation-source'
 import {
   ReservationLocationError,
   resolveReservationLocation,
@@ -934,6 +935,18 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    const cancellationSourceResolution = resolveCancellationSourceUpdate(
+      updates,
+      isAdmin ? 'store' : 'customer'
+    )
+    if (!cancellationSourceResolution.ok) {
+      return NextResponse.json(
+        { error: 'キャンセル元は店舗または顧客を指定してください。' },
+        { status: 400 }
+      )
+    }
+    const cancellationSourceToPersist = cancellationSourceResolution.value
+
     let cancellationReasonToPersist: string | null | undefined
     if (isAdmin && updates.status === 'cancelled') {
       try {
@@ -1248,11 +1261,8 @@ export async function PUT(request: NextRequest) {
             ? new Date(Date.now() + DEFAULT_VALUES.MODIFICATION_TIMEOUT_MINUTES * 60 * 1000)
             : null
       }
-      if ('cancellationSource' in updates) {
-        updateData.cancellationSource =
-          updates.status === 'cancelled' ? (updates.cancellationSource ?? null) : null
-      } else if (updates.status && updates.status !== 'cancelled') {
-        updateData.cancellationSource = null
+      if (cancellationSourceToPersist !== undefined) {
+        updateData.cancellationSource = cancellationSourceToPersist
       }
       if (cancellationReasonToPersist !== undefined) {
         updateData.cancellationReason = cancellationReasonToPersist

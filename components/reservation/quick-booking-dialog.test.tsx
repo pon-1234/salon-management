@@ -262,6 +262,15 @@ describe('QuickBookingDialog', () => {
     expect(stickyFooter).toContainElement(submit)
   })
 
+  it('does not label any amount as welfare expense in the booking price breakdown', async () => {
+    vi.stubGlobal('fetch', createFetchMock())
+    render(dialogElement())
+
+    await waitForOnePageBookingForm()
+
+    expect(screen.queryByText(/厚生費/)).not.toBeInTheDocument()
+  })
+
   it('toggles an option exactly once from either the whole row or its checkbox', async () => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', createFetchMock())

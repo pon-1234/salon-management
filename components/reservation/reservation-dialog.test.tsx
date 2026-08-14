@@ -374,6 +374,31 @@ describe('ReservationDialog Edit Mode', () => {
     })
   })
 
+  it('does not label any amount as welfare expense in the editable price breakdown', async () => {
+    const pricedReservation: ReservationData = {
+      ...mockReservation,
+      serviceId: 'course-1',
+    }
+
+    render(
+      <ReservationDialog
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        reservation={pricedReservation}
+        onSave={mockOnSave}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /編集/i }))
+    fireEvent.mouseDown(screen.getByRole('tab', { name: /詳細/i }), {
+      button: 0,
+      ctrlKey: false,
+    })
+
+    expect(await screen.findByText('料金プレビュー')).toBeInTheDocument()
+    expect(screen.queryByText(/厚生費/)).not.toBeInTheDocument()
+  })
+
   it('should offer the modifiable status for confirmed reservations', async () => {
     render(
       <ReservationDialog

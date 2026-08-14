@@ -167,6 +167,21 @@ describe('Middleware Authentication', () => {
         expect(response?.status).toBe(200) // NextResponse.next() returns status 200
       }
     })
+
+    it('allows cast login pages without authentication', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValue(null)
+
+      const authRoutes = ['/cast/login', '/ikebukuro/cast/login']
+
+      for (const route of authRoutes) {
+        const request = new NextRequest(new URL(`http://localhost:3000${route}`))
+        const response = await middleware(request)
+
+        expect(response?.status).toBe(200)
+        expect(response?.headers.get('x-middleware-next')).toBe('1')
+      }
+    })
   })
 
   describe('Middleware Scope', () => {
@@ -310,6 +325,33 @@ describe('Middleware Authentication', () => {
   })
 
   describe('Session Management', () => {
+    it('allows a customer session to open cast login pages and switch roles', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      const customerToken = {
+        id: 'customer-1',
+        email: 'customer@example.com',
+        role: 'customer',
+        sub: 'customer-1',
+        iat: Date.now() / 1000,
+        exp: (Date.now() + 86400000) / 1000,
+        jti: 'customer-session',
+      } as const
+      vi.mocked(getToken).mockResolvedValueOnce(customerToken).mockResolvedValueOnce(customerToken)
+
+      const castLoginRoutes = ['/cast/login', '/ikebukuro/cast/login']
+
+      for (const route of castLoginRoutes) {
+        const request = new NextRequest(new URL(`http://localhost:3000${route}`), {
+          headers: { cookie: 'salon_age_verified=1' },
+        })
+        const response = await middleware(request)
+
+        expect(response?.status).toBe(200)
+        expect(response?.headers.get('x-middleware-next')).toBe('1')
+        expect(response?.headers.get('location')).toBeNull()
+      }
+    })
+
     it('should redirect authenticated admin to dashboard from login page', async () => {
       const { getToken } = await import('next-auth/jwt')
       const mockToken = {

@@ -8,8 +8,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { DailyReport } from '@/lib/report/types'
 import { DailyReportTable } from '@/components/analytics/daily-report-table'
-import { DatePicker } from '@/components/ui/date-picker'
-import { format } from 'date-fns'
+import { addDays, format, isValid, parseISO } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { RefreshCw } from 'lucide-react'
 import { useStore } from '@/contexts/store-context'
@@ -68,11 +67,47 @@ export function DailyReportPageClient() {
     fetchReport(selectedDate)
   }
 
+  const handleDateInputChange = (value: string) => {
+    const date = parseISO(value)
+    if (isValid(date) && format(date, 'yyyy-MM-dd') === value) {
+      setSelectedDate(date)
+    }
+  }
+
   return (
     <div className="container mx-auto py-8">
       <h1 className="mb-4 text-2xl font-bold">日報</h1>
-      <div className="mb-6 flex items-center gap-4">
-        <DatePicker selected={selectedDate} onSelect={(date) => date && setSelectedDate(date)} />
+      <div className="mb-6 flex flex-wrap items-end gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setSelectedDate((date) => addDays(date, -1))}
+        >
+          前日
+        </Button>
+        <div className="space-y-1">
+          <label htmlFor="daily-report-date" className="block text-sm font-medium">
+            対象日
+          </label>
+          <input
+            id="daily-report-date"
+            aria-label="日報の日付"
+            type="date"
+            value={format(selectedDate, 'yyyy-MM-dd')}
+            onChange={(event) => handleDateInputChange(event.target.value)}
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+          />
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setSelectedDate((date) => addDays(date, 1))}
+        >
+          翌日
+        </Button>
+        <Button type="button" variant="outline" onClick={() => setSelectedDate(new Date())}>
+          今日
+        </Button>
         <Button onClick={handleRefresh} variant="outline" size="icon" aria-label="日報を再読み込み">
           <RefreshCw className="h-4 w-4" />
         </Button>

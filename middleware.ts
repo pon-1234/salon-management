@@ -67,6 +67,7 @@ function extractStoreContext(request: NextRequest): string | null {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const isStoreCastAuthRoute = storeCastLoginPattern.test(pathname)
 
   if (
     env.runtimeMode === 'preview' &&
@@ -94,6 +95,7 @@ export async function middleware(request: NextRequest) {
   const storefrontSlug = getStorefrontSlug(pathname)
   if (
     storefrontSlug &&
+    !isStoreCastAuthRoute &&
     !isAgeVerificationPath(pathname, storefrontSlug) &&
     request.cookies.get(AGE_VERIFICATION_COOKIE)?.value !== AGE_VERIFICATION_COOKIE_VALUE
   ) {
@@ -123,8 +125,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  const isStoreCastAuthRoute = storeCastLoginPattern.test(pathname)
   const isStoreCustomerAuthRoute = storeCustomerAuthPattern.test(pathname)
+  const isCastLoginRoute = isExactOrChild(pathname, '/cast/login') || isStoreCastAuthRoute
   const isAuthRoute =
     authRoutes.some((route) => isExactOrChild(pathname, route)) ||
     isStoreCastAuthRoute ||
@@ -152,6 +154,13 @@ export async function middleware(request: NextRequest) {
     }
 
     if (token) {
+      // NextAuth uses one session cookie for every credentials provider. Let a user who is
+      // signed in under another role reach the cast form so a successful cast sign-in can
+      // replace that JWT. An existing cast session still follows the dashboard redirect below.
+      if (isCastLoginRoute && token.role !== 'cast') {
+        return NextResponse.next()
+      }
+
       if (token.role === 'admin' && isAdminRoute) {
         return NextResponse.redirect(new URL('/admin/dashboard', request.url))
       }

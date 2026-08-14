@@ -20,6 +20,7 @@ function control(): GoldMasterPreviewVerificationControl {
   models.Reservation = { count: 2122, fieldCount: 45, canonicalSha256: '3'.repeat(64) }
   models.ReservationOption = { count: 3753, fieldCount: 7, canonicalSha256: '4'.repeat(64) }
   models.Cast = { count: 35, fieldCount: 29, canonicalSha256: '5'.repeat(64) }
+  models.HotelSettings = { count: 2, fieldCount: 18, canonicalSha256: '8'.repeat(64) }
 
   return {
     version: 1,
@@ -123,6 +124,9 @@ describe('buildGoldMasterPostImportSql', () => {
     expect(sql).toContain('c."id" IS NULL')
     expect(sql).toContain('LEFT JOIN "Reservation" r')
     expect(sql).toContain('r."id" IS NULL')
+    expect(sql).toContain('FROM "HotelSettings"')
+    expect(sql).toContain('WHERE NOT "isActive"')
+    expect(sql).toContain("'active hotel count mismatch'")
     expect(sql).toContain('V5_FULL_DATABASE_RECONCILIATION_OK')
     expect(sql).toContain('ROLLBACK;')
     expect(sql).not.toMatch(/\b(?:INSERT|UPDATE|DELETE|TRUNCATE|DROP|ALTER|CREATE)\b/u)

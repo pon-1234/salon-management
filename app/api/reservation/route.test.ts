@@ -1384,6 +1384,88 @@ describe('Reservation API - Modifiable Status', () => {
   })
 
   describe('PUT endpoint validation and conflicts', () => {
+    it.each([['staff'], [null]])(
+      'rejects unsupported cancellation source %j before starting a database update',
+      async (cancellationSource) => {
+        vi.mocked(getServerSession).mockResolvedValue({
+          user: {
+            role: 'admin',
+            adminRole: 'manager',
+            permissions: ['reservation:update'],
+            storeIds: ['ikebukuro'],
+          },
+        } as any)
+        const transactionContext = buildTransactionContext({
+          ...mockReservation,
+          status: 'cancelled',
+          cancellationSource,
+          cancellationReason: '動作確認のため',
+        })
+        vi.mocked(db.$transaction).mockImplementation(async (callback) =>
+          callback(transactionContext as any)
+        )
+
+        const response = await PUT(
+          new NextRequest('http://localhost/api/reservation', {
+            method: 'PUT',
+            body: JSON.stringify({
+              id: mockReservation.id,
+              status: 'cancelled',
+              cancellationSource,
+              cancellationReason: '動作確認のため',
+            }),
+          })
+        )
+
+        expect(response.status).toBe(400)
+        await expect(response.json()).resolves.toEqual({
+          error: 'キャンセル元は店舗または顧客を指定してください。',
+        })
+        expect(db.$transaction).not.toHaveBeenCalled()
+        expect(transactionContext.reservation.update).not.toHaveBeenCalled()
+      }
+    )
+
+    it('defaults an administrator cancellation without a source to the store', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:update'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+      const transactionContext = buildTransactionContext({
+        ...mockReservation,
+        status: 'cancelled',
+        cancellationSource: 'store',
+        cancellationReason: '動作確認のため',
+      })
+      vi.mocked(db.$transaction).mockImplementation(async (callback) =>
+        callback(transactionContext as any)
+      )
+
+      const response = await PUT(
+        new NextRequest('http://localhost/api/reservation', {
+          method: 'PUT',
+          body: JSON.stringify({
+            id: mockReservation.id,
+            status: 'cancelled',
+            cancellationReason: '動作確認のため',
+          }),
+        })
+      )
+
+      expect(response.status).toBe(200)
+      expect(transactionContext.reservation.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            cancellationSource: 'store',
+          }),
+        })
+      )
+    })
+
     it('requires and persists a concrete reason when cancelling a reservation', async () => {
       vi.mocked(getServerSession).mockResolvedValue({
         user: {
