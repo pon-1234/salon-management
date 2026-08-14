@@ -1,5 +1,10 @@
+/**
+ * @design_doc   docs/SYSTEM_AUDIT_2026-07-26.md D-1 reservation module split
+ * @related_to   QuickBookingDialog pure option-selection and catalog helpers
+ * @known_issues None currently
+ */
 import { describe, it, expect } from 'vitest'
-import { getCastAvailableOptions } from './quick-booking.utils'
+import { getCastAvailableOptions, getUniqueSelectedOptionIds } from './quick-booking.utils'
 import type { Cast } from '@/lib/cast/types'
 
 const baseCast: Cast = {
@@ -58,5 +63,17 @@ describe('getCastAvailableOptions', () => {
       normalizedOptions
     )
     expect(result).toEqual([{ id: '1', name: '膝枕耳かき', price: 0 }])
+  })
+})
+
+describe('getUniqueSelectedOptionIds', () => {
+  it('preserves the selected option IDs while removing duplicates', () => {
+    expect(
+      getUniqueSelectedOptionIds([
+        'legacy-option-aroma',
+        'legacy-option-stone',
+        'legacy-option-aroma',
+      ])
+    ).toEqual(['legacy-option-aroma', 'legacy-option-stone'])
   })
 })

@@ -1,6 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+/**
+ * @design_doc   Customer and cast chat deep-link selection
+ * @related_to   CustomerList, CastList, chat participant APIs
+ * @known_issues Customer-list pagination is handled separately
+ */
+import { useEffect, useState } from 'react'
 import { ChatWindow } from '@/components/chat/chat-window'
 import { CustomerList } from '@/components/chat/customer-list'
 import { CustomerHeader } from '@/components/chat/customer-header'
@@ -10,64 +15,114 @@ import { Customer, CastChatEntry } from '@/lib/types/chat'
 import { Button } from '@/components/ui/button'
 import { useSearchParams } from 'next/navigation'
 import { ChatBroadcastDialog } from '@/components/chat/chat-broadcast-dialog'
+import { useStore } from '@/contexts/store-context'
+
+const CUSTOMER_LOAD_ERROR =
+  '対象の顧客チャットを開けませんでした。顧客情報を確認して再度お試しください。'
+const CAST_LOAD_ERROR =
+  '対象のキャストチャットを開けませんでした。現在の店舗とキャスト情報を確認してください。'
 
 export default function ChatPage() {
+  const { currentStore } = useStore()
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [selectedCast, setSelectedCast] = useState<CastChatEntry | null>(null)
   const [activePane, setActivePane] = useState<'customer' | 'cast'>('customer')
   const [broadcastOpen, setBroadcastOpen] = useState(false)
+  const [selectionError, setSelectionError] = useState<string | null>(null)
   const searchParams = useSearchParams()
+  const initialCustomerId = searchParams.get('customerId')
   const initialCastId = searchParams.get('castId')
 
   useEffect(() => {
-    if (!initialCastId) {
+    setSelectedCustomer(null)
+    setSelectedCast(null)
+    setSelectionError(null)
+  }, [currentStore.id])
+
+  useEffect(() => {
+    if (!initialCustomerId) {
       return
     }
 
+    let ignore = false
+    setActivePane('customer')
+    setSelectedCast(null)
+    setSelectedCustomer(null)
+    setSelectionError(null)
+
+    const loadCustomer = async () => {
+      try {
+        const response = await fetch(
+          `/api/chat/customers?id=${encodeURIComponent(initialCustomerId)}&storeId=${encodeURIComponent(currentStore.id)}`,
+          {
+            credentials: 'include',
+          }
+        )
+        if (!response.ok) {
+          throw new Error(`Failed to fetch customer: ${response.status}`)
+        }
+
+        const payload = await response.json()
+        const customer = (payload?.data ?? payload) as Customer | null
+        if (!customer || customer.id !== initialCustomerId) {
+          throw new Error('Requested customer was not returned')
+        }
+
+        if (!ignore) {
+          setSelectedCustomer(customer)
+        }
+      } catch (error) {
+        console.warn('Failed to hydrate customer selection from query:', error)
+        if (!ignore) {
+          setSelectedCustomer(null)
+          setSelectionError(CUSTOMER_LOAD_ERROR)
+        }
+      }
+    }
+
+    void loadCustomer()
+
+    return () => {
+      ignore = true
+    }
+  }, [currentStore.id, initialCustomerId])
+
+  useEffect(() => {
+    if (!initialCastId || initialCustomerId) {
+      return
+    }
+
+    setSelectionError(null)
     setActivePane('cast')
     setSelectedCustomer(null)
+    setSelectedCast(null)
 
     const loadCast = async () => {
       try {
-        const response = await fetch(`/api/chat/casts?id=${encodeURIComponent(initialCastId)}`, {
-          credentials: 'include',
-        })
+        const response = await fetch(
+          `/api/chat/casts?id=${encodeURIComponent(initialCastId)}&storeId=${encodeURIComponent(currentStore.id)}`,
+          {
+            credentials: 'include',
+          }
+        )
         if (!response.ok) {
           throw new Error(`Failed to fetch cast: ${response.status}`)
         }
         const payload = await response.json()
         const cast = (payload?.data ?? payload) as CastChatEntry | null
-        if (cast) {
-          setSelectedCast(cast)
-        } else {
-          setSelectedCast({
-            id: initialCastId,
-            name: `キャスト(${initialCastId.slice(0, 6)})`,
-            lastMessage: '',
-            lastMessageTime: '',
-            hasUnread: false,
-            unreadCount: 0,
-            isOnline: false,
-            status: 'オフライン',
-          })
+        if (!cast || cast.id !== initialCastId) {
+          throw new Error('Requested cast was not returned')
         }
+        setSelectedCast(cast)
       } catch (error) {
         console.warn('Failed to hydrate cast selection from query:', error)
-        setSelectedCast({
-          id: initialCastId,
-          name: `キャスト(${initialCastId.slice(0, 6)})`,
-          lastMessage: '',
-          lastMessageTime: '',
-          hasUnread: false,
-          unreadCount: 0,
-          isOnline: false,
-          status: 'オフライン',
-        })
+        setSelectedCast(null)
+        setSelectionError(CAST_LOAD_ERROR)
       }
     }
 
     void loadCast()
-  }, [initialCastId])
+  }, [currentStore.id, initialCastId, initialCustomerId])
 
   return (
     <>
@@ -76,14 +131,20 @@ export default function ChatPage() {
           <Button
             variant={activePane === 'customer' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => setActivePane('customer')}
+            onClick={() => {
+              setActivePane('customer')
+              setSelectionError(null)
+            }}
           >
             顧客チャット
           </Button>
           <Button
             variant={activePane === 'cast' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => setActivePane('cast')}
+            onClick={() => {
+              setActivePane('cast')
+              setSelectionError(null)
+            }}
           >
             キャストチャット
           </Button>
@@ -92,6 +153,15 @@ export default function ChatPage() {
             一括送信
           </Button>
         </div>
+
+        {selectionError ? (
+          <div
+            role="alert"
+            className="border-b border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          >
+            {selectionError}
+          </div>
+        ) : null}
 
         <div className="flex h-full flex-1">
           <div
@@ -109,6 +179,7 @@ export default function ChatPage() {
               <CustomerList
                 selectedCustomerId={selectedCustomer?.id}
                 onSelectCustomer={(customer) => {
+                  setSelectionError(null)
                   setSelectedCustomer(customer)
                   setSelectedCast(null)
                 }}
@@ -117,6 +188,7 @@ export default function ChatPage() {
               <CastList
                 selectedCastId={selectedCast?.id}
                 onSelectCast={(cast) => {
+                  setSelectionError(null)
                   setSelectedCast(cast)
                   setSelectedCustomer(null)
                 }}

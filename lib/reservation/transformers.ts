@@ -136,6 +136,7 @@ export function mapReservationToReservationData(
     options: optionMap,
     transportationFee: reservation.transportationFee ?? (reservation as any).transportationFee ?? 0,
     paymentMethod: reservation.paymentMethod || (reservation as any).paymentMethod || '現金',
+    paymentReference: reservation.paymentReference ?? null,
     discount: (reservation as any).discount || 'なし',
     additionalFee: reservation.additionalFee ?? (reservation as any).additionalFee ?? 0,
     discountAmount: reservation.discountAmount ?? 0,
@@ -169,5 +170,7 @@ export function mapReservationToReservationData(
     castCheckedInAt: toDateOrNull(reservation.castCheckedInAt),
     castCheckedOutAt: toDateOrNull(reservation.castCheckedOutAt),
     pointsUsed: reservation.pointsUsed ?? 0,
+    cancellationSource: reservation.cancellationSource ?? null,
+    cancellationReason: reservation.cancellationReason ?? null,
   }
 }

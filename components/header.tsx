@@ -2,7 +2,7 @@
 
 /**
  * @design_doc   ui-improvement-instructions.md U-6 admin navigation
- * @related_to   StoreSelector, NotificationList: global admin header controls
+ * @related_to   StoreSelector, NotificationList, and the daily-report/analytics routes
  * @known_issues Full breadcrumb rollout is left for later page-by-page adoption
  */
 import {
@@ -14,6 +14,7 @@ import {
   Bell,
   MessageSquare,
   Calendar,
+  CalendarDays,
   Users,
   Clock,
   Settings,
@@ -181,13 +182,22 @@ export function Header() {
                 </Link>
               ))}
               {canViewAnalytics && (
-                <Link
-                  href="/admin/analytics/daily-sales"
-                  className="flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-muted"
-                >
-                  <BarChart2 className="h-4 w-4" />
-                  集計
-                </Link>
+                <>
+                  <Link
+                    href="/admin/analytics/daily-report"
+                    className="flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-muted"
+                  >
+                    <CalendarDays className="h-4 w-4" />
+                    日報
+                  </Link>
+                  <Link
+                    href="/admin/analytics/daily-sales"
+                    className="flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-muted"
+                  >
+                    <BarChart2 className="h-4 w-4" />
+                    集計
+                  </Link>
+                </>
               )}
             </nav>
           </SheetContent>
@@ -314,15 +324,26 @@ export function Header() {
         </div>
 
         {canViewAnalytics && (
-          <Link href="/admin/analytics/daily-sales" className="hidden xl:block">
-            <Button
-              variant="ghost"
-              className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
-            >
-              <BarChart2 className="h-5 w-5" />
-              <span className="text-xs text-gray-600">集計</span>
-            </Button>
-          </Link>
+          <>
+            <Link href="/admin/analytics/daily-report" className="hidden xl:block">
+              <Button
+                variant="ghost"
+                className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
+              >
+                <CalendarDays className="h-5 w-5" />
+                <span className="text-xs text-gray-600">日報</span>
+              </Button>
+            </Link>
+            <Link href="/admin/analytics/daily-sales" className="hidden xl:block">
+              <Button
+                variant="ghost"
+                className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
+              >
+                <BarChart2 className="h-5 w-5" />
+                <span className="text-xs text-gray-600">集計</span>
+              </Button>
+            </Link>
+          </>
         )}
 
         <Link href="/admin/reviews" className="hidden xl:block">

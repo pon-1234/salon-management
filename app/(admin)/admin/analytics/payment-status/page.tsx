@@ -8,7 +8,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { PaymentStatusTable } from '@/components/analytics/payment-status-table'
-import { PaymentTransaction } from '@/lib/payment/types'
+import type { PaymentTransaction, PaymentTransactionSummary } from '@/lib/payment/types'
 import {
   Select,
   SelectContent,
@@ -19,16 +19,34 @@ import {
 import { DatePicker } from '@/components/ui/date-picker'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CalendarIcon, CreditCardIcon, TrendingUpIcon } from 'lucide-react'
-import { addDays, format } from 'date-fns'
+import { CalendarIcon, CreditCardIcon } from 'lucide-react'
+import { addDays, format, startOfDay } from 'date-fns'
 import { useStore } from '@/contexts/store-context'
 import { toast } from '@/hooks/use-toast'
 
 const PAGE_SIZE = 25
 
+function emptyPaymentSummary(): PaymentTransactionSummary {
+  return {
+    statusCounts: {
+      completed: 0,
+      pending: 0,
+      processing: 0,
+      failed: 0,
+      cancelled: 0,
+      refunded: 0,
+    },
+    completedAmount: 0,
+    refundedAmount: 0,
+    totalTransactions: 0,
+    totalAmount: 0,
+  }
+}
+
 export default function PaymentStatusPage() {
   const { currentStore } = useStore()
   const [payments, setPayments] = useState<PaymentTransaction[]>([])
+  const [summary, setSummary] = useState<PaymentTransactionSummary>(emptyPaymentSummary)
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [providerFilter, setProviderFilter] = useState<string>('all')
@@ -40,12 +58,13 @@ export default function PaymentStatusPage() {
   const fetchPaymentData = useCallback(async () => {
     setLoading(true)
     try {
+      const endExclusive = startOfDay(addDays(endDate, 1))
       const params = new URLSearchParams({
         storeId: currentStore.id,
         limit: String(PAGE_SIZE + 1),
         offset: String(page * PAGE_SIZE),
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
+        startDate: startOfDay(startDate).toISOString(),
+        endDate: endExclusive.toISOString(),
       })
       if (statusFilter !== 'all') params.set('status', statusFilter)
       if (providerFilter !== 'all') params.set('provider', providerFilter)
@@ -57,12 +76,17 @@ export default function PaymentStatusPage() {
       if (!response.ok) {
         throw new Error(`Payment list failed: ${response.status}`)
       }
-      const payload = (await response.json()) as { transactions: PaymentTransaction[] }
+      const payload = (await response.json()) as {
+        transactions: PaymentTransaction[]
+        summary: PaymentTransactionSummary
+      }
       setHasMore(payload.transactions.length > PAGE_SIZE)
       setPayments(payload.transactions.slice(0, PAGE_SIZE))
+      setSummary(payload.summary)
     } catch (error) {
       console.error('Failed to fetch payment data:', error)
       setPayments([])
+      setSummary(emptyPaymentSummary())
       setHasMore(false)
       toast({ variant: 'destructive', description: '決済データの取得に失敗しました。' })
     } finally {
@@ -76,6 +100,28 @@ export default function PaymentStatusPage() {
 
   const refreshData = () => {
     fetchPaymentData()
+  }
+
+  const handleStartDateChange = (date: Date | undefined) => {
+    if (!date) return
+    setPage(0)
+    setStartDate(date)
+  }
+
+  const handleEndDateChange = (date: Date | undefined) => {
+    if (!date) return
+    setPage(0)
+    setEndDate(date)
+  }
+
+  const handleStatusFilterChange = (value: string) => {
+    setPage(0)
+    setStatusFilter(value)
+  }
+
+  const handleProviderFilterChange = (value: string) => {
+    setPage(0)
+    setProviderFilter(value)
   }
 
   return (
@@ -103,15 +149,15 @@ export default function PaymentStatusPage() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
             <div className="space-y-2">
               <label className="text-sm font-medium">開始日</label>
-              <DatePicker selected={startDate} onSelect={(date) => date && setStartDate(date)} />
+              <DatePicker selected={startDate} onSelect={handleStartDateChange} />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">終了日</label>
-              <DatePicker selected={endDate} onSelect={(date) => date && setEndDate(date)} />
+              <DatePicker selected={endDate} onSelect={handleEndDateChange} />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">ステータス</label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="ステータスを選択" />
                 </SelectTrigger>
@@ -128,7 +174,7 @@ export default function PaymentStatusPage() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">決済プロバイダー</label>
-              <Select value={providerFilter} onValueChange={setProviderFilter}>
+              <Select value={providerFilter} onValueChange={handleProviderFilterChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="プロバイダーを選択" />
                 </SelectTrigger>
@@ -170,7 +216,7 @@ export default function PaymentStatusPage() {
             </div>
           ) : (
             <>
-              <PaymentStatusTable payments={payments} />
+              <PaymentStatusTable payments={payments} summary={summary} />
               <div className="mt-4 flex items-center justify-end gap-3">
                 <Button variant="outline" disabled={page === 0} onClick={() => setPage(page - 1)}>
                   前へ

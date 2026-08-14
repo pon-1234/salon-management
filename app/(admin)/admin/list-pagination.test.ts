@@ -10,7 +10,6 @@ import { describe, expect, it } from 'vitest'
 const listPages = [
   'customers/page.tsx',
   'reservation-list/page.tsx',
-  'cast/list/page.tsx',
   'reviews/page.tsx',
   'search/search-content.tsx',
 ] as const
@@ -29,5 +28,17 @@ describe('admin list pagination', () => {
     const source = await readFile(resolve(process.cwd(), 'components/header.tsx'), 'utf8')
 
     expect(source).toContain('limit=100')
+  })
+
+  it('loads every bounded cast page before applying client-side operational filters', async () => {
+    const source = await readFile(
+      resolve(process.cwd(), 'app/(admin)/admin/cast/list/page.tsx'),
+      'utf8'
+    )
+
+    expect(source).toContain('const pageSize = 100')
+    expect(source).toContain('limit: 100, offset')
+    expect(source).toContain('casts.push(...page)')
+    expect(source).toContain('while (page.length === pageSize)')
   })
 })

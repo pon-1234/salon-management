@@ -15,8 +15,14 @@ export interface RevenueDesignationShare {
   castShare?: number | null
 }
 
+export interface RevenueCourseShare {
+  storeShare?: number | null
+  castShare?: number | null
+}
+
 export interface ReservationRevenueInput {
   basePrice: number
+  course?: RevenueCourseShare | null
   options?: RevenueOptionShare[]
   designation?: RevenueDesignationShare | null
   transportationFee?: number
@@ -96,10 +102,13 @@ export function calculateReservationRevenue(
   const welfareRate = clamp(welfareRateRaw ?? DEFAULT_WELFARE_RATE, 0, 100)
   const welfareExpense = Math.max(Math.round(basePrice * (welfareRate / 100)), 0)
 
+  const hasCanonicalCourseShare =
+    Number.isFinite(input.course?.storeShare ?? null) ||
+    Number.isFinite(input.course?.castShare ?? null)
   const { store: courseStoreShare, cast: courseCastShare } = resolveShare(
     basePrice,
-    welfareExpense,
-    basePrice - welfareExpense
+    hasCanonicalCourseShare ? input.course?.storeShare : welfareExpense,
+    hasCanonicalCourseShare ? input.course?.castShare : basePrice - welfareExpense
   )
 
   const options = input.options ?? []

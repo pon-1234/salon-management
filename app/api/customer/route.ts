@@ -118,6 +118,7 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const id = searchParams.get('id')
   const phoneQuery = searchParams.get('phone')
+  const customerQuery = searchParams.get('query')?.trim() ?? ''
   const limitParam = searchParams.get('limit')
   const offsetParam = searchParams.get('offset')
   const take = limitParam ? Math.min(Math.max(parseInt(limitParam, 10) || 10, 1), 50) : 10
@@ -208,6 +209,10 @@ export async function GET(request: NextRequest) {
           email: true,
           birthDate: true,
           memberType: true,
+          accountStatus: true,
+          membershipStage: true,
+          lastLoginAt: true,
+          lastVisitAt: true,
           points: true,
           createdAt: true,
           updatedAt: true,
@@ -226,8 +231,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    if (customerQuery.length > 100) {
+      return NextResponse.json(INVALID_REQUEST, { status: 400 })
+    }
+
+    const normalizedCustomerPhone = normalizePhoneQuery(customerQuery)
+    const phoneSearchQuery =
+      normalizedCustomerPhone.length >= 3 ? normalizedCustomerPhone : customerQuery
     const customers = await db.customer.findMany({
-      orderBy: { createdAt: 'desc' },
+      ...(customerQuery
+        ? {
+            where: {
+              OR: [
+                { id: { contains: customerQuery, mode: 'insensitive' as const } },
+                { name: { contains: customerQuery, mode: 'insensitive' as const } },
+                { nameKana: { contains: customerQuery, mode: 'insensitive' as const } },
+                { phone: { contains: phoneSearchQuery } },
+                { email: { contains: customerQuery, mode: 'insensitive' as const } },
+              ],
+            },
+          }
+        : {}),
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
       take: take + 1,
       skip,
       select: {
@@ -238,6 +263,10 @@ export async function GET(request: NextRequest) {
         email: true,
         birthDate: true,
         memberType: true,
+        accountStatus: true,
+        membershipStage: true,
+        lastLoginAt: true,
+        lastVisitAt: true,
         points: true,
         createdAt: true,
         updatedAt: true,

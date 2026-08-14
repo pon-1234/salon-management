@@ -1,7 +1,12 @@
+/**
+ * @design_doc   docs/PREVIEW_UAT_CHECKLIST.md
+ * @related_to   DailyReportUseCases and the store-scoped daily-report API
+ * @known_issues None
+ */
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { DailyReport } from '@/lib/report/types'
+import type { DailyReport } from '@/lib/report/types'
 import { DailyReportTable } from '@/components/analytics/daily-report-table'
 import { DatePicker } from '@/components/ui/date-picker'
 import { format } from 'date-fns'
@@ -14,11 +19,13 @@ export function DailyReportPageClient() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [report, setReport] = useState<DailyReport | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const { currentStore } = useStore()
 
   const fetchReport = useCallback(
     async (date: Date) => {
       setIsLoading(true)
+      setError(null)
       try {
         const formattedDate = format(date, 'yyyy-MM-dd')
         const params = new URLSearchParams({
@@ -30,13 +37,22 @@ export function DailyReportPageClient() {
           cache: 'no-store',
         })
         if (!response.ok) {
-          throw new Error(`Failed to fetch daily report: ${response.statusText}`)
+          const payload: unknown = await response.json().catch(() => null)
+          const message =
+            payload &&
+            typeof payload === 'object' &&
+            'error' in payload &&
+            typeof payload.error === 'string'
+              ? payload.error
+              : '日報データの取得に失敗しました。'
+          throw new Error(message)
         }
         const dailyReport = (await response.json()) as DailyReport
         setReport(dailyReport)
       } catch (error) {
         console.error('Error fetching daily report:', error)
         setReport(null)
+        setError(error instanceof Error ? error.message : '日報データの取得に失敗しました。')
       } finally {
         setIsLoading(false)
       }
@@ -63,6 +79,14 @@ export function DailyReportPageClient() {
       </div>
       {isLoading ? (
         <PageLoading compact label="日報を読み込んでいます" />
+      ) : error ? (
+        <div
+          role="alert"
+          aria-label="日報データの取得エラー"
+          className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive"
+        >
+          {error}
+        </div>
       ) : report ? (
         <DailyReportTable report={report} />
       ) : (

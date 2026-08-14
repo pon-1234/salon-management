@@ -27,4 +27,13 @@ describe('customer profile browser logging', () => {
     expect(source).toContain('smsEnabled: data.smsEnabled')
     expect(source).not.toContain('name="notes"')
   })
+
+  it('shows imported account status and membership stage without relabeling them as member type', () => {
+    const source = readFileSync(join(__dirname, 'page.tsx'), 'utf8')
+
+    expect(source).toContain('accountStatusLabels')
+    expect(source).toContain('membershipStageLabels')
+    expect(source).toContain("blocked: 'ブラック'")
+    expect(source).toContain("platinum: 'プラチナ'")
+  })
 })

@@ -1,6 +1,11 @@
+/**
+ * @design_doc   docs/SYSTEM_AUDIT_2026-07-26.md D-1 reservation module split
+ * @related_to   TimeSlotPicker, reservation API, and quick-booking.utils reservation helpers
+ * @known_issues None known within the one-page booking flow
+ */
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -35,26 +40,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { addMinutes, format } from 'date-fns'
 import { formatInTimeZone, utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz'
-import {
-  Phone,
-  Clock,
-  User,
-  MapPin,
-  CreditCard,
-  DollarSign,
-  ChevronRight,
-  ChevronLeft,
-  Check,
-  Calendar,
-  Users,
-  Loader2,
-  Train,
-} from 'lucide-react'
+import { Phone, User, CreditCard, DollarSign, Check, Calendar, Users, Loader2 } from 'lucide-react'
 import { Customer } from '@/lib/customer/types'
 import { Cast } from '@/lib/cast/types'
 import { usePricing } from '@/hooks/use-pricing'
 import { useAvailability } from '@/hooks/use-availability'
-import { useLocations } from '@/hooks/use-locations'
 import { TimeSlotPicker } from './time-slot-picker'
 import { toast } from '@/hooks/use-toast'
 import { isVipMember } from '@/lib/utils'
@@ -63,6 +53,7 @@ import type { DesignationFee } from '@/lib/designation/types'
 import { BusinessHoursRange, formatMinutesAsLabel } from '@/lib/settings/business-hours'
 import { useStore } from '@/contexts/store-context'
 import { calculateReservationRevenue } from '@/lib/reservation/revenue'
+import { normalizePaymentReference } from '@/lib/reservation/financial-reference'
 import { buildStoreCastEndpoint, buildStoreReservationEndpoint } from '@/lib/reservation/endpoints'
 import { MARKETING_CHANNELS, PAYMENT_METHODS } from '@/lib/constants'
 import {
@@ -72,6 +63,7 @@ import {
   getCastAvailableOptions,
   getDesignationFeeAmount,
   getDesignationLabel,
+  getUniqueSelectedOptionIds,
   normalizeToBusinessMinutes,
   type BookingDetails,
   type DesignationType,
@@ -96,6 +88,48 @@ interface QuickBookingDialogProps {
   businessHours: BusinessHoursRange
 }
 
+interface InitialBookingDetailsInput {
+  customer: Customer | null
+  staffName: string
+  selectedTime?: Date
+  businessHoursStartLabel: string
+  marketingChannel: string
+}
+
+function createInitialBookingDetails({
+  customer,
+  staffName,
+  selectedTime,
+  businessHoursStartLabel,
+  marketingChannel,
+}: InitialBookingDetailsInput): BookingDetails {
+  return {
+    customerName: customer?.name ?? '',
+    customerType: customer ? (isVipMember(customer.memberType) ? 'VIP会員' : '通常会員') : '',
+    phoneNumber: customer?.phone ?? '',
+    points: customer?.points ?? 0,
+    usePoints: false,
+    pointsToUse: 0,
+    areaId: '',
+    stationId: '',
+    stationName: '',
+    stationTravelTime: 0,
+    bookingStatus: '確定済',
+    staff: staffName,
+    marketingChannel,
+    date: selectedTime ? formatDateInJst(selectedTime) : formatDateInJst(new Date()),
+    time: selectedTime ? formatTimeInJst(selectedTime) : businessHoursStartLabel,
+    options: {},
+    transportationFee: 0,
+    additionalFee: 0,
+    discountAmount: 0,
+    paymentMethod: PAYMENT_METHODS.CASH,
+    paymentReference: '',
+    locationMemo: '',
+    notes: '',
+  }
+}
+
 export function QuickBookingDialog({
   open,
   onOpenChange,
@@ -107,9 +141,8 @@ export function QuickBookingDialog({
   businessHours,
 }: QuickBookingDialogProps) {
   const { currentStore } = useStore()
-  const [currentStep, setCurrentStep] = useState(1)
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false)
-  const totalSteps = 3
+  const wasOpenRef = useRef(false)
   const [staffDetails, setStaffDetails] = useState<Cast | null>(
     selectedStaff &&
       Array.isArray(selectedStaff.availableOptions) &&
@@ -144,7 +177,6 @@ export function QuickBookingDialog({
     optionPrices,
     loading: pricingLoading,
   } = usePricing(currentStore.id)
-  const { areas, stations, loading: locationsLoading } = useLocations()
 
   const courseCatalog: NormalizedCourse[] = useMemo(() => {
     if (coursePrices.length > 0) {
@@ -194,9 +226,6 @@ export function QuickBookingDialog({
   const [selectedCourseId, setSelectedCourseId] = useState<string>('')
   const [designationType, setDesignationType] = useState<DesignationType>('none')
   const [selectedDesignationId, setSelectedDesignationId] = useState<string>('')
-
-  const [selectedAreaId, setSelectedAreaId] = useState<string>('')
-  const [selectedStationId, setSelectedStationId] = useState<string>('')
 
   useEffect(() => {
     let ignore = false
@@ -254,38 +283,21 @@ export function QuickBookingDialog({
     [staffDetails, selectedStaff]
   )
 
-  const [bookingDetails, setBookingDetails] = useState<BookingDetails>({
-    customerName: selectedCustomer?.name ?? '',
-    customerType: selectedCustomer
-      ? isVipMember(selectedCustomer.memberType)
-        ? 'VIP会員'
-        : '通常会員'
-      : '',
-    phoneNumber: selectedCustomer?.phone ?? '',
-    points: selectedCustomer?.points ?? 0,
-    usePoints: false,
-    pointsToUse: 0,
-    areaId: '',
-    stationId: '',
-    stationName: '',
-    stationTravelTime: 0,
-    bookingStatus: '仮予約',
-    staff: selectedStaff?.name ?? '',
-    marketingChannel: DEFAULT_MARKETING_CHANNELS[0] ?? 'WEB',
-    date: selectedTime ? formatDateInJst(selectedTime) : formatDateInJst(new Date()),
-    time: selectedTime ? formatTimeInJst(selectedTime) : businessHours.startLabel,
-    options: {},
-    transportationFee: 0,
-    additionalFee: 0,
-    discountAmount: 0,
-    paymentMethod: PAYMENT_METHODS.CASH,
-    locationMemo: '',
-    notes: '',
-  })
+  const [bookingDetails, setBookingDetails] = useState<BookingDetails>(() =>
+    createInitialBookingDetails({
+      customer: selectedCustomer,
+      staffName: selectedStaff?.name ?? '',
+      selectedTime,
+      businessHoursStartLabel: businessHours.startLabel,
+      marketingChannel: DEFAULT_MARKETING_CHANNELS[0] ?? 'WEB',
+    })
+  )
 
   useEffect(() => {
     if (!pricingLoading && courseCatalog.length > 0) {
-      setSelectedCourseId((prev) => prev || courseCatalog[0].id)
+      setSelectedCourseId((prev) =>
+        prev && courseCatalog.some((course) => course.id === prev) ? prev : courseCatalog[0].id
+      )
     }
   }, [courseCatalog, pricingLoading])
 
@@ -375,53 +387,13 @@ export function QuickBookingDialog({
   }, [currentStore.id])
 
   useEffect(() => {
-    if (!locationsLoading && areas.length > 0) {
-      setSelectedAreaId((prev) => prev || areas[0].id)
-    }
-  }, [areas, locationsLoading])
-
-  useEffect(() => {
-    if (!selectedAreaId) {
-      setSelectedStationId('')
+    if (!open || designationFees.length === 0) {
       return
     }
-    const areaStations = stations.filter((station) => station.areaId === selectedAreaId)
-    if (areaStations.length === 0) {
-      setSelectedStationId('')
-      return
-    }
-    setSelectedStationId((prev) =>
-      prev && areaStations.some((station) => station.id === prev) ? prev : areaStations[0].id
+    setSelectedDesignationId((prev) =>
+      prev && designationFees.some((fee) => fee.id === prev) ? prev : designationFees[0].id
     )
-  }, [selectedAreaId, stations])
-
-  useEffect(() => {
-    const area = areas.find((entry) => entry.id === selectedAreaId)
-    const station = stations.find((entry) => entry.id === selectedStationId)
-
-    setBookingDetails((prev) => ({
-      ...prev,
-      areaId: selectedAreaId,
-      stationId: selectedStationId,
-      stationName: station?.name ?? '',
-      stationTravelTime: station?.travelTime ?? 0,
-      locationMemo: prev.locationMemo || station?.name || '',
-      transportationFee: station?.transportationFee ?? prev.transportationFee,
-    }))
-
-    if (area) {
-      setBookingDetails((prev) => ({
-        ...prev,
-        marketingChannel:
-          prev.marketingChannel && marketingChannels.includes(prev.marketingChannel)
-            ? prev.marketingChannel
-            : (marketingChannels[0] ??
-              prev.marketingChannel ??
-              DEFAULT_MARKETING_CHANNELS[0] ??
-              'WEB'),
-      }))
-    }
-  }, [selectedAreaId, selectedStationId, areas, stations, marketingChannels])
+  }, [designationFees, open])
 
   useEffect(() => {
     setBookingDetails((prev) => ({
@@ -635,76 +607,6 @@ export function QuickBookingDialog({
   const { checkAvailability } = useAvailability()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const validateStep = () => {
-    if (currentStep === 1) {
-      if (!selectedCustomer) {
-        toast({
-          title: '顧客未選択',
-          description: '顧客を選択してから進めてください。',
-          variant: 'destructive',
-        })
-        return false
-      }
-      if (!selectedCourse) {
-        toast({
-          title: 'コース未選択',
-          description: 'コースを選択してください。',
-          variant: 'destructive',
-        })
-        return false
-      }
-      if (!bookingDetails.date || !bookingDetails.time) {
-        toast({
-          title: '日時未設定',
-          description: '予約日時を入力してください。',
-          variant: 'destructive',
-        })
-        return false
-      }
-
-      const bookingStartMinutes = normalizeToBusinessMinutes(bookingDetails.time, businessHours)
-
-      if (bookingStartMinutes === null) {
-        toast({
-          title: '時間形式エラー',
-          description: '有効な時間を入力してください。',
-          variant: 'destructive',
-        })
-        return false
-      }
-
-      if (selectedCourse) {
-        const bookingEndMinutes = bookingStartMinutes + selectedCourse.duration
-        if (
-          bookingStartMinutes < businessHours.startMinutes ||
-          bookingEndMinutes > businessHours.endMinutes
-        ) {
-          toast({
-            title: '営業時間外',
-            description: `営業時間内（${businessHours.startLabel}〜${businessHours.endLabel}）で時間を選択してください。`,
-            variant: 'destructive',
-          })
-          return false
-        }
-      }
-    }
-
-    return true
-  }
-
-  const nextStep = () => {
-    if (!validateStep()) return
-    if (currentStep < totalSteps) {
-      setCurrentStep((prev) => prev + 1)
-    }
-  }
-
-  const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep((prev) => prev - 1)
-    }
-  }
-
   const handleSubmit = async () => {
     if (!currentStaff) {
       toast({
@@ -810,9 +712,7 @@ export function QuickBookingDialog({
         return
       }
 
-      const selectedOptionIds = Object.entries(optionSelections)
-        .filter(([, selected]) => Boolean(selected))
-        .map(([optionId]) => optionId)
+      const selectedOptionIds = getUniqueSelectedOptionIds(optionSelections)
 
       const response = await fetch(buildStoreReservationEndpoint(currentStore.id), {
         method: 'POST',
@@ -823,22 +723,26 @@ export function QuickBookingDialog({
           courseId: selectedCourseId,
           startTime: startTime.toISOString(),
           endTime: endTime.toISOString(),
-          status: bookingDetails.bookingStatus === '確定済' ? 'confirmed' : 'pending',
+          status: bookingDetails.bookingStatus === '仮予約' ? 'pending' : 'confirmed',
           options: selectedOptionIds,
           price: priceBreakdown.total,
           designationType:
             selectedDesignationFee?.name ??
             getDesignationLabel(designationType, currentStaff ?? undefined),
           designationFee: priceBreakdown.designationFee,
-          transportationFee: priceBreakdown.transportationFee,
+          transportationFee: 0,
           additionalFee: priceBreakdown.additionalFee,
           discountAmount: priceBreakdown.discount,
           pointsUsed: priceBreakdown.pointsApplied,
           paymentMethod: bookingDetails.paymentMethod,
+          paymentReference:
+            bookingDetails.paymentMethod === PAYMENT_METHODS.CARD
+              ? normalizePaymentReference(bookingDetails.paymentReference)
+              : null,
           marketingChannel: bookingDetails.marketingChannel,
-          areaId: bookingDetails.areaId || null,
-          stationId: bookingDetails.stationId || null,
-          locationMemo: bookingDetails.locationMemo,
+          areaId: null,
+          stationId: null,
+          locationMemo: '',
           notes: bookingDetails.notes,
           storeRevenue: priceBreakdown.storeRevenue,
           staffRevenue: priceBreakdown.staffRevenue,
@@ -902,33 +806,6 @@ export function QuickBookingDialog({
     }
   }
 
-  const StepIndicator = () => (
-    <div className="mb-6 flex items-center justify-center">
-      {[1, 2, 3].map((step) => (
-        <div key={step} className="flex items-center">
-          <div
-            className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${
-              step === currentStep
-                ? 'bg-gray-900 text-white'
-                : step < currentStep
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'bg-gray-200 text-gray-500'
-            }`}
-          >
-            {step < currentStep ? <Check className="h-4 w-4" /> : step}
-          </div>
-          {step < 3 && (
-            <div
-              className={`mx-2 h-1 w-12 ${step < currentStep ? 'bg-gray-900' : 'bg-gray-200'}`}
-            />
-          )}
-        </div>
-      ))}
-    </div>
-  )
-
-  const stepTitles = ['基本情報', '詳細設定', '確認・完了']
-
   const selectedTimeIso =
     bookingDetails.date && bookingDetails.time
       ? zonedTimeToUtc(
@@ -937,13 +814,8 @@ export function QuickBookingDialog({
         ).toISOString()
       : undefined
 
-  const stationOptions = stations.filter(
-    (station) => !selectedAreaId || station.areaId === selectedAreaId
-  )
-  const selectedStation = stations.find((station) => station.id === selectedStationId) ?? null
-  const selectedArea = areas.find((area) => area.id === selectedAreaId) ?? null
   const hasUnsavedInput =
-    currentStep > 1 ||
+    bookingDetails.bookingStatus === '仮予約' ||
     bookingDetails.usePoints ||
     bookingDetails.pointsToUse > 0 ||
     bookingDetails.additionalFee > 0 ||
@@ -966,55 +838,22 @@ export function QuickBookingDialog({
   }
 
   useEffect(() => {
-    if (!open) return
+    const justOpened = open && !wasOpenRef.current
+    wasOpenRef.current = open
+    if (!justOpened) return
 
-    setCurrentStep(1)
-    if (courseCatalog.length > 0) {
-      setSelectedCourseId(courseCatalog[0].id)
-    }
-    if (areas.length > 0) {
-      setSelectedAreaId(areas[0].id)
-    }
-
-    const stationOptions = stations.filter((station) =>
-      areas.length > 0 ? station.areaId === (areas[0]?.id ?? station.areaId) : true
+    setDiscardConfirmOpen(false)
+    setSelectedCourseId(courseCatalog[0]?.id ?? '')
+    setSelectedDesignationId(designationFees[0]?.id ?? '')
+    setBookingDetails(
+      createInitialBookingDetails({
+        customer: selectedCustomer,
+        staffName: currentStaff?.name ?? '',
+        selectedTime,
+        businessHoursStartLabel: businessHours.startLabel,
+        marketingChannel: marketingChannels[0] ?? DEFAULT_MARKETING_CHANNELS[0] ?? 'WEB',
+      })
     )
-    if (stationOptions.length > 0) {
-      setSelectedStationId(stationOptions[0].id)
-    }
-
-    // Set default designation fee (first one, which should be "フリー指名")
-    if (designationFees.length > 0) {
-      setSelectedDesignationId(designationFees[0].id)
-    }
-
-    setBookingDetails((prev) => ({
-      ...prev,
-      customerName: selectedCustomer?.name ?? '',
-      customerType: selectedCustomer
-        ? isVipMember(selectedCustomer.memberType)
-          ? 'VIP会員'
-          : '通常会員'
-        : '',
-      phoneNumber: selectedCustomer?.phone ?? '',
-      points: selectedCustomer?.points ?? 0,
-      usePoints: false,
-      pointsToUse: 0,
-      staff: currentStaff?.name ?? '',
-      date: selectedTime ? formatDateInJst(selectedTime) : prev.date || formatDateInJst(new Date()),
-      time: selectedTime ? formatTimeInJst(selectedTime) : businessHours.startLabel,
-      options: {},
-      transportationFee: stationOptions[0]?.transportationFee ?? 0,
-      additionalFee: 0,
-      discountAmount: 0,
-      paymentMethod: PAYMENT_METHODS.CASH,
-      marketingChannel:
-        marketingChannels.includes(prev.marketingChannel) && prev.marketingChannel.length > 0
-          ? prev.marketingChannel
-          : (marketingChannels[0] ?? DEFAULT_MARKETING_CHANNELS[0] ?? 'WEB'),
-      locationMemo: stationOptions[0]?.name ?? '',
-      notes: '',
-    }))
     setDesignationType('none')
   }, [
     open,
@@ -1022,8 +861,6 @@ export function QuickBookingDialog({
     currentStaff,
     selectedTime,
     courseCatalog,
-    areas,
-    stations,
     designationFees,
     businessHours.startLabel,
     marketingChannels,
@@ -1032,646 +869,553 @@ export function QuickBookingDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={handleDialogOpenChange}>
-        <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col overflow-hidden">
+        <DialogContent className="flex max-h-[90vh] max-w-3xl flex-col overflow-hidden">
           <DialogDescription className="sr-only">
-            予約受付の各ステップを完了し、情報を確認して予約を確定します。
+            基本情報から確認内容までを一画面で入力し、予約を確定します。
           </DialogDescription>
           <DialogHeader>
-            <DialogTitle className="text-center text-2xl font-bold">簡単受付</DialogTitle>
-            <StepIndicator />
-            <div className="text-center">
-              <h3 className="text-lg font-semibold text-gray-800">{stepTitles[currentStep - 1]}</h3>
-            </div>
+            <DialogTitle className="text-center text-2xl font-bold">予約受付</DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto px-2">
-            {currentStep === 1 && (
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center">
-                      <User className="mr-2 h-5 w-5" />
-                      お客様情報
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="rounded-lg bg-gray-50 p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="text-lg font-semibold">
-                            {bookingDetails.customerName || '未選択'}
-                          </h3>
-                          <Badge variant="secondary" className="mt-1">
-                            {bookingDetails.customerType || '---'}
-                          </Badge>
+          <div className="min-h-0 flex-1 overflow-y-auto px-2">
+            <div className="space-y-6 pb-6">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center">
+                    <User className="mr-2 h-5 w-5" />
+                    お客様情報
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-lg bg-gray-50 p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold">
+                          {bookingDetails.customerName || '未選択'}
+                        </h3>
+                        <Badge variant="secondary" className="mt-1">
+                          {bookingDetails.customerType || '---'}
+                        </Badge>
+                      </div>
+                      <div className="text-right">
+                        <div className="flex items-center">
+                          <Phone className="mr-1 h-4 w-4" />
+                          <span className="font-semibold">
+                            {bookingDetails.phoneNumber || '未設定'}
+                          </span>
                         </div>
-                        <div className="text-right">
-                          <div className="flex items-center">
-                            <Phone className="mr-1 h-4 w-4" />
-                            <span className="font-semibold">
-                              {bookingDetails.phoneNumber || '未設定'}
-                            </span>
-                          </div>
-                          <div className="mt-1 text-sm text-gray-600">
-                            現在 {bookingDetails.points.toLocaleString()}pt
-                          </div>
+                        <div className="mt-1 text-sm text-gray-600">
+                          現在 {bookingDetails.points.toLocaleString()}pt
                         </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </CardContent>
+              </Card>
 
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center">
-                      <Calendar className="mr-2 h-5 w-5" />
-                      サービス詳細
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label>日付</Label>
-                        <Input
-                          type="date"
-                          name="date"
-                          value={bookingDetails.date}
-                          onChange={handleTextChange}
-                        />
-                      </div>
-                      <div>
-                        <Label>時間</Label>
-                        <Input
-                          type="time"
-                          name="time"
-                          value={bookingDetails.time}
-                          onChange={handleTextChange}
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <Label>時間帯を選択</Label>
-                        {currentStaff && bookingDetails.date && selectedCourse ? (
-                          <TimeSlotPicker
-                            castId={currentStaff.id}
-                            date={bookingDetails.date}
-                            duration={selectedCourse.duration}
-                            selectedTime={selectedTimeIso}
-                            onTimeSelect={(time) => {
-                              const zoned = utcToZonedTime(new Date(time), JST_TIMEZONE)
-                              setBookingDetails((prev) => ({
-                                ...prev,
-                                time: format(zoned, 'HH:mm'),
-                                date: format(zoned, 'yyyy-MM-dd'),
-                              }))
-                            }}
-                            businessHours={businessHours}
-                            windowStart={slotWindowStart ?? undefined}
-                            windowEnd={normalizedSlotHourWindowEnd ?? undefined}
-                            stepMinutes={10}
-                          />
-                        ) : (
-                          <div className="rounded-lg bg-gray-50 p-4 text-center text-gray-500">
-                            担当者・日付・コースを選択すると空き時間が表示されます
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center">
+                    <Calendar className="mr-2 h-5 w-5" />
+                    サービス詳細
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label>担当キャスト</Label>
+                      <Label>日付</Label>
                       <Input
-                        value={bookingDetails.staff || '未選択'}
-                        readOnly
-                        className="bg-gray-50"
+                        type="date"
+                        name="date"
+                        value={bookingDetails.date}
+                        onChange={handleTextChange}
                       />
                     </div>
-
                     <div>
-                      <Label>コース選択</Label>
-                      <Select
-                        value={selectedCourseId}
-                        onValueChange={(value) => setSelectedCourseId(value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="コースを選択" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {pricingLoading ? (
-                            <div className="px-4 py-2 text-sm text-gray-500">読み込み中...</div>
-                          ) : courseCatalog.length === 0 ? (
-                            <div className="px-4 py-2 text-sm text-gray-500">
-                              利用可能なコースがありません
-                            </div>
-                          ) : (
-                            courseCatalog.map((course) => (
-                              <SelectItem key={course.id} value={course.id}>
-                                {course.name} {course.duration}分 {course.price.toLocaleString()}円
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
+                      <Label>時間</Label>
+                      <Input
+                        type="time"
+                        name="time"
+                        value={bookingDetails.time}
+                        onChange={handleTextChange}
+                      />
                     </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center">
-                      <MapPin className="mr-2 h-5 w-5" />
-                      出張エリア・待ち合わせ場所
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label>エリア</Label>
-                        <Select
-                          value={selectedAreaId}
-                          onValueChange={(value) => setSelectedAreaId(value)}
-                          disabled={locationsLoading}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="エリアを選択" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {areas.length === 0 ? (
-                              <div className="px-4 py-2 text-sm text-gray-500">
-                                エリア情報がありません
-                              </div>
-                            ) : (
-                              areas.map((area) => (
-                                <SelectItem key={area.id} value={area.id}>
-                                  {area.name}
-                                </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label>待ち合わせ駅</Label>
-                        <Select
-                          value={selectedStationId}
-                          onValueChange={(value) => setSelectedStationId(value)}
-                          disabled={locationsLoading || stationOptions.length === 0}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="駅を選択" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {stationOptions.length === 0 ? (
-                              <div className="px-4 py-2 text-sm text-gray-500">
-                                駅情報がありません
-                              </div>
-                            ) : (
-                              stationOptions.map((station) => (
-                                <SelectItem key={station.id} value={station.id}>
-                                  {station.name}
-                                  {station.transportationFee
-                                    ? `（+${station.transportationFee}円）`
-                                    : ''}
-                                </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
-                      <div className="flex items-center gap-2">
-                        <Train className="h-4 w-4" />
-                        <span>
-                          {selectedStation
-                            ? `${selectedStation.name} / 目安移動時間 ${
-                                selectedStation.travelTime ?? 0
-                              }分 / 交通費 ${formatYen(selectedStation.transportationFee ?? 0)}`
-                            : '駅情報が選択されていません'}
-                        </span>
-                      </div>
-                      {selectedArea?.description && (
-                        <div className="mt-2">{selectedArea.description}</div>
+                    <div className="col-span-2">
+                      <Label>時間帯を選択</Label>
+                      {currentStaff && bookingDetails.date && selectedCourse ? (
+                        <TimeSlotPicker
+                          castId={currentStaff.id}
+                          date={bookingDetails.date}
+                          duration={selectedCourse.duration}
+                          selectedTime={selectedTimeIso}
+                          onTimeSelect={(time) => {
+                            const zoned = utcToZonedTime(new Date(time), JST_TIMEZONE)
+                            setBookingDetails((prev) => ({
+                              ...prev,
+                              time: format(zoned, 'HH:mm'),
+                              date: format(zoned, 'yyyy-MM-dd'),
+                            }))
+                          }}
+                          businessHours={businessHours}
+                          windowStart={slotWindowStart ?? undefined}
+                          windowEnd={normalizedSlotHourWindowEnd ?? undefined}
+                          stepMinutes={10}
+                        />
+                      ) : (
+                        <div className="rounded-lg bg-gray-50 p-4 text-center text-gray-500">
+                          担当者・日付・コースを選択すると空き時間が表示されます
+                        </div>
                       )}
                     </div>
+                  </div>
 
-                    <div>
-                      <Label>現地情報メモ</Label>
-                      <Textarea
-                        name="locationMemo"
-                        value={bookingDetails.locationMemo}
-                        onChange={handleTextChange}
-                        placeholder="ホテル名や部屋番号などがあれば入力してください"
-                        rows={2}
-                      />
+                  <div>
+                    <Label>担当キャスト</Label>
+                    <Input
+                      value={bookingDetails.staff || '未選択'}
+                      readOnly
+                      className="bg-gray-50"
+                    />
+                  </div>
+
+                  <div>
+                    <Label>コース選択</Label>
+                    <Select
+                      value={selectedCourseId}
+                      onValueChange={(value) => setSelectedCourseId(value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="コースを選択" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {pricingLoading ? (
+                          <div className="px-4 py-2 text-sm text-gray-500">読み込み中...</div>
+                        ) : courseCatalog.length === 0 ? (
+                          <div className="px-4 py-2 text-sm text-gray-500">
+                            利用可能なコースがありません
+                          </div>
+                        ) : (
+                          courseCatalog.map((course) => (
+                            <SelectItem key={course.id} value={course.id}>
+                              {course.name} {course.duration}分 {course.price.toLocaleString()}円
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center">
+                    <DollarSign className="mr-2 h-5 w-5" />
+                    指名設定
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    {designationFees.map((fee) => (
+                      <Button
+                        key={fee.id}
+                        type="button"
+                        size="sm"
+                        variant={selectedDesignationId === fee.id ? 'default' : 'outline'}
+                        onClick={() => setSelectedDesignationId(fee.id)}
+                      >
+                        {fee.name}
+                        <span className="ml-2 text-xs text-gray-500">
+                          {fee.price > 0 ? formatYen(fee.price) : '0円'}
+                        </span>
+                      </Button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    選択中: {selectedDesignationFee?.name ?? 'なし'}
+                    {priceBreakdown.designationFee > 0
+                      ? `（${formatYen(priceBreakdown.designationFee)}）`
+                      : ''}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center">
+                    <Users className="mr-2 h-5 w-5" />
+                    オプション選択
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {availableOptions.length === 0 ? (
+                    <div className="rounded-lg bg-gray-50 p-4 text-center text-gray-500">
+                      利用可能なオプションがありません
                     </div>
-                  </CardContent>
-                </Card>
+                  ) : (
+                    availableOptions.map((option) => {
+                      const optionCheckboxId = `quick-booking-option-${option.id}`
+                      const isSelected = Boolean(bookingDetails.options[option.id])
 
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center">
-                      <DollarSign className="mr-2 h-5 w-5" />
-                      指名設定
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex flex-wrap gap-2">
-                      {designationFees.map((fee) => (
-                        <Button
-                          key={fee.id}
-                          type="button"
-                          size="sm"
-                          variant={selectedDesignationId === fee.id ? 'default' : 'outline'}
-                          onClick={() => setSelectedDesignationId(fee.id)}
-                        >
-                          {fee.name}
-                          <span className="ml-2 text-xs text-gray-500">
-                            {fee.price > 0 ? formatYen(fee.price) : '0円'}
-                          </span>
-                        </Button>
-                      ))}
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      選択中: {selectedDesignationFee?.name ?? 'なし'}
-                      {priceBreakdown.designationFee > 0
-                        ? `（${formatYen(priceBreakdown.designationFee)}）`
-                        : ''}
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {currentStep === 2 && (
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center">
-                      <Users className="mr-2 h-5 w-5" />
-                      オプション選択
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {availableOptions.length === 0 ? (
-                      <div className="rounded-lg bg-gray-50 p-4 text-center text-gray-500">
-                        利用可能なオプションがありません
-                      </div>
-                    ) : (
-                      availableOptions.map((option) => (
-                        <div
+                      return (
+                        <Label
                           key={option.id}
-                          className="flex items-center justify-between rounded-lg border p-3"
+                          htmlFor={optionCheckboxId}
+                          data-testid={`option-row-${option.id}`}
+                          className={`flex w-full cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors ${
+                            isSelected
+                              ? 'border-primary bg-primary/5'
+                              : 'hover:border-gray-400 hover:bg-gray-50'
+                          }`}
                         >
-                          <div className="flex items-center">
+                          <span className="flex items-center">
                             <Checkbox
-                              id={option.id}
-                              checked={Boolean(bookingDetails.options[option.id])}
+                              id={optionCheckboxId}
+                              checked={isSelected}
                               onCheckedChange={(checked) =>
                                 handleCheckboxChange(option.id, Boolean(checked))
                               }
                             />
-                            <Label htmlFor={option.id} className="ml-3 font-medium">
+                            <span className="ml-3 font-medium">
                               {option.name}
                               {option.note ? (
                                 <span className="ml-2 text-xs text-gray-500">({option.note})</span>
                               ) : null}
-                            </Label>
-                          </div>
+                            </span>
+                          </span>
                           <Badge variant="secondary">
                             {option.price === 0 ? '無料' : `+${option.price.toLocaleString()}円`}
                           </Badge>
-                        </div>
-                      ))
-                    )}
-                  </CardContent>
-                </Card>
+                        </Label>
+                      )
+                    })
+                  )}
+                </CardContent>
+              </Card>
 
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center">
-                      <CreditCard className="mr-2 h-5 w-5" />
-                      支払い・経路情報
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label>支払い方法</Label>
-                        <Select
-                          value={bookingDetails.paymentMethod}
-                          onValueChange={(value) =>
-                            setBookingDetails((prev) => ({ ...prev, paymentMethod: value }))
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {paymentMethods.map((method) => (
-                              <SelectItem key={method} value={method}>
-                                {method}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label>集客チャネル</Label>
-                        <Select
-                          value={bookingDetails.marketingChannel}
-                          onValueChange={(value) =>
-                            setBookingDetails((prev) => ({ ...prev, marketingChannel: value }))
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {marketingChannels.map((channel) => (
-                              <SelectItem key={channel} value={channel}>
-                                {channel}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center">
+                    <CreditCard className="mr-2 h-5 w-5" />
+                    支払い・受付情報
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="quick-booking-payment-method">支払い方法</Label>
+                      <Select
+                        value={bookingDetails.paymentMethod}
+                        onValueChange={(value) =>
+                          setBookingDetails((prev) => ({
+                            ...prev,
+                            paymentMethod: value,
+                            paymentReference:
+                              value === PAYMENT_METHODS.CARD ? prev.paymentReference : '',
+                          }))
+                        }
+                      >
+                        <SelectTrigger id="quick-booking-payment-method">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {paymentMethods.map((method) => (
+                            <SelectItem key={method} value={method}>
+                              {method}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
+                    <div>
+                      <Label>集客チャネル</Label>
+                      <Select
+                        value={bookingDetails.marketingChannel}
+                        onValueChange={(value) =>
+                          setBookingDetails((prev) => ({ ...prev, marketingChannel: value }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {marketingChannels.map((channel) => (
+                            <SelectItem key={channel} value={channel}>
+                              {channel}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-                    <div className="grid gap-4 sm:grid-cols-3">
+                  {bookingDetails.paymentMethod === PAYMENT_METHODS.CARD ? (
+                    <div>
+                      <Label htmlFor="quick-booking-payment-reference">カード管理番号</Label>
+                      <Input
+                        id="quick-booking-payment-reference"
+                        name="paymentReference"
+                        value={bookingDetails.paymentReference}
+                        onChange={handleTextChange}
+                        maxLength={100}
+                        autoComplete="off"
+                        placeholder="決済伝票の管理番号（カード番号は入力しない）"
+                      />
+                    </div>
+                  ) : null}
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <Label>追加料金（円）</Label>
+                      <Input
+                        type="number"
+                        value={bookingDetails.additionalFee}
+                        onChange={(event) =>
+                          handleNumberChange('additionalFee', Number(event.target.value))
+                        }
+                        min={0}
+                      />
+                    </div>
+                    <div>
+                      <Label>割引（円）</Label>
+                      <Input
+                        type="number"
+                        value={bookingDetails.discountAmount}
+                        onChange={(event) =>
+                          handleNumberChange(
+                            'discountAmount',
+                            Math.max(Number(event.target.value), 0)
+                          )
+                        }
+                        min={0}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border p-3">
+                    <div className="flex items-center justify-between gap-4">
                       <div>
-                        <Label>交通費（円）</Label>
-                        <Input
-                          type="number"
-                          value={bookingDetails.transportationFee}
-                          readOnly
-                          disabled
-                          className="bg-gray-100"
-                        />
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          エリア・駅の選択内容から自動設定されます
+                        <Label htmlFor="provisional-booking" className="text-sm font-medium">
+                          仮予約として保存
+                        </Label>
+                        <p className="text-xs text-gray-500">
+                          確定前の予約として登録する場合のみ選択してください
                         </p>
                       </div>
-                      <div>
-                        <Label>追加料金（円）</Label>
-                        <Input
-                          type="number"
-                          value={bookingDetails.additionalFee}
-                          onChange={(event) =>
-                            handleNumberChange('additionalFee', Number(event.target.value))
-                          }
-                          min={0}
-                        />
-                      </div>
-                      <div>
-                        <Label>割引（円）</Label>
-                        <Input
-                          type="number"
-                          value={bookingDetails.discountAmount}
-                          onChange={(event) =>
-                            handleNumberChange(
-                              'discountAmount',
-                              Math.max(Number(event.target.value), 0)
-                            )
-                          }
-                          min={0}
-                        />
-                      </div>
+                      <Switch
+                        id="provisional-booking"
+                        checked={bookingDetails.bookingStatus === '仮予約'}
+                        onCheckedChange={(checked) =>
+                          setBookingDetails((prev) => ({
+                            ...prev,
+                            bookingStatus: checked ? '仮予約' : '確定済',
+                          }))
+                        }
+                      />
                     </div>
+                  </div>
 
-                    <div className="rounded-lg border p-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label className="text-sm font-medium">ポイントを利用</Label>
-                          <p className="text-xs text-gray-500">
-                            利用可能ポイント: {bookingDetails.points.toLocaleString()}pt
-                          </p>
-                        </div>
-                        <Switch
-                          disabled={!selectedCustomer}
-                          checked={bookingDetails.usePoints}
-                          onCheckedChange={(checked) =>
+                  <div className="rounded-lg border p-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-sm font-medium">ポイントを利用</Label>
+                        <p className="text-xs text-gray-500">
+                          利用可能ポイント: {bookingDetails.points.toLocaleString()}pt
+                        </p>
+                      </div>
+                      <Switch
+                        disabled={!selectedCustomer}
+                        checked={bookingDetails.usePoints}
+                        onCheckedChange={(checked) =>
+                          setBookingDetails((prev) => ({
+                            ...prev,
+                            usePoints: Boolean(checked),
+                            pointsToUse: checked ? prev.pointsToUse : 0,
+                          }))
+                        }
+                      />
+                    </div>
+                    {bookingDetails.usePoints && (
+                      <div className="mt-3">
+                        <Label htmlFor="pointsToUse">利用ポイント数</Label>
+                        <Input
+                          id="pointsToUse"
+                          type="number"
+                          min={0}
+                          value={bookingDetails.pointsToUse}
+                          onChange={(event) =>
                             setBookingDetails((prev) => ({
                               ...prev,
-                              usePoints: Boolean(checked),
-                              pointsToUse: checked ? prev.pointsToUse : 0,
+                              pointsToUse: Number(event.target.value),
                             }))
                           }
                         />
+                        <p className="mt-1 text-xs text-gray-500">
+                          入力したポイントが自動で差し引かれます
+                        </p>
                       </div>
-                      {bookingDetails.usePoints && (
-                        <div className="mt-3">
-                          <Label htmlFor="pointsToUse">利用ポイント数</Label>
-                          <Input
-                            id="pointsToUse"
-                            type="number"
-                            min={0}
-                            value={bookingDetails.pointsToUse}
-                            onChange={(event) =>
-                              setBookingDetails((prev) => ({
-                                ...prev,
-                                pointsToUse: Number(event.target.value),
-                              }))
-                            }
-                          />
-                          <p className="mt-1 text-xs text-gray-500">
-                            入力したポイントが自動で差し引かれます
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                    )}
+                  </div>
 
-                    <div>
-                      <Label>メモ</Label>
-                      <Textarea
-                        name="notes"
-                        value={bookingDetails.notes}
-                        onChange={handleTextChange}
-                        placeholder="店舗用メモがあれば記載してください"
-                        rows={3}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+                  <div>
+                    <Label>メモ</Label>
+                    <Textarea
+                      name="notes"
+                      value={bookingDetails.notes}
+                      onChange={handleTextChange}
+                      placeholder="店舗用メモがあれば記載してください"
+                      rows={3}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
 
-            {currentStep === 3 && (
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center">
-                      <Check className="mr-2 h-5 w-5" />
-                      予約内容確認
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div className="space-y-2">
-                        <div>
-                          <span className="text-gray-600">お客様:</span>
-                          <span className="ml-2 font-semibold">
-                            {bookingDetails.customerName || '未選択'}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">日時:</span>
-                          <span className="ml-2 font-semibold">
-                            {bookingDetails.date} {bookingDetails.time}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">担当:</span>
-                          <span className="ml-2 font-semibold">
-                            {bookingDetails.staff || '未選択'}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <div>
-                          <span className="text-gray-600">コース:</span>
-                          <span className="ml-2 font-semibold">
-                            {selectedCourse
-                              ? `${selectedCourse.name} ${selectedCourse.duration}分 ${formatYen(selectedCourse.price)}`
-                              : '未選択'}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">エリア:</span>
-                          <span className="ml-2 font-semibold">
-                            {selectedArea?.name || '未設定'}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">駅:</span>
-                          <span className="ml-2 font-semibold">
-                            {selectedStation?.name || '未設定'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="rounded-lg bg-gray-50 p-3 text-sm">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center">
+                    <Check className="mr-2 h-5 w-5" />
+                    予約内容確認
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="space-y-2">
                       <div>
-                        <span className="text-gray-600">現地メモ:</span>
-                        <span className="ml-2">{bookingDetails.locationMemo || '記載なし'}</span>
+                        <span className="text-gray-600">お客様:</span>
+                        <span className="ml-2 font-semibold">
+                          {bookingDetails.customerName || '未選択'}
+                        </span>
                       </div>
-                      <div className="mt-1">
-                        <span className="text-gray-600">支払い方法:</span>
-                        <span className="ml-2">{bookingDetails.paymentMethod}</span>
+                      <div>
+                        <span className="text-gray-600">日時:</span>
+                        <span className="ml-2 font-semibold">
+                          {bookingDetails.date} {bookingDetails.time}
+                        </span>
                       </div>
-                      <div className="mt-1">
-                        <span className="text-gray-600">集客チャネル:</span>
-                        <span className="ml-2">{bookingDetails.marketingChannel}</span>
+                      <div>
+                        <span className="text-gray-600">担当:</span>
+                        <span className="ml-2 font-semibold">
+                          {bookingDetails.staff || '未選択'}
+                        </span>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                    <div className="space-y-2">
+                      <div>
+                        <span className="text-gray-600">コース:</span>
+                        <span className="ml-2 font-semibold">
+                          {selectedCourse
+                            ? `${selectedCourse.name} ${selectedCourse.duration}分 ${formatYen(selectedCourse.price)}`
+                            : '未選択'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle>料金内訳</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 text-sm">
+                  <div className="rounded-lg bg-gray-50 p-3 text-sm">
+                    <div>
+                      <span className="text-gray-600">支払い方法:</span>
+                      <span className="ml-2">{bookingDetails.paymentMethod}</span>
+                    </div>
+                    {bookingDetails.paymentMethod === PAYMENT_METHODS.CARD ? (
+                      <div className="mt-1">
+                        <span className="text-gray-600">カード管理番号:</span>
+                        <span className="ml-2">{bookingDetails.paymentReference}</span>
+                      </div>
+                    ) : null}
+                    <div className="mt-1">
+                      <span className="text-gray-600">集客チャネル:</span>
+                      <span className="ml-2">{bookingDetails.marketingChannel}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle>料金内訳</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>基本料金</span>
+                      <span>{formatYen(priceBreakdown.basePrice)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>{selectedDesignationFee?.name ?? 'フリー'}料</span>
+                      <span>{formatYen(priceBreakdown.designationFee)}</span>
+                    </div>
+                    {priceBreakdown.optionsTotal > 0 && (
                       <div className="flex justify-between">
-                        <span>基本料金</span>
-                        <span>{formatYen(priceBreakdown.basePrice)}</span>
+                        <span>オプション</span>
+                        <span>{formatYen(priceBreakdown.optionsTotal)}</span>
                       </div>
+                    )}
+                    {priceBreakdown.additionalFee > 0 && (
                       <div className="flex justify-between">
-                        <span>{selectedDesignationFee?.name ?? 'フリー'}料</span>
-                        <span>{formatYen(priceBreakdown.designationFee)}</span>
+                        <span>追加料金</span>
+                        <span>{formatYen(priceBreakdown.additionalFee)}</span>
                       </div>
-                      {priceBreakdown.optionsTotal > 0 && (
-                        <div className="flex justify-between">
-                          <span>オプション</span>
-                          <span>{formatYen(priceBreakdown.optionsTotal)}</span>
-                        </div>
-                      )}
-                      {priceBreakdown.transportationFee > 0 && (
-                        <div className="flex justify-between">
-                          <span>交通費</span>
-                          <span>{formatYen(priceBreakdown.transportationFee)}</span>
-                        </div>
-                      )}
-                      {priceBreakdown.additionalFee > 0 && (
-                        <div className="flex justify-between">
-                          <span>追加料金</span>
-                          <span>{formatYen(priceBreakdown.additionalFee)}</span>
-                        </div>
-                      )}
-                      {priceBreakdown.discount > 0 && (
-                        <div className="flex justify-between text-red-600">
-                          <span>割引</span>
-                          <span>-{formatYen(priceBreakdown.discount)}</span>
-                        </div>
-                      )}
-                      {priceBreakdown.welfareExpense > 0 && (
-                        <div className="flex justify-between text-sm text-muted-foreground">
-                          <span>
-                            厚生費（{priceBreakdown.welfareRate.toFixed(1).replace(/\.0$/, '')}%）
-                          </span>
-                          <span>{formatYen(priceBreakdown.welfareExpense)}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between text-sm text-gray-600">
-                        <span>小計</span>
-                        <span>{formatYen(priceBreakdown.subtotal)}</span>
+                    )}
+                    {priceBreakdown.discount > 0 && (
+                      <div className="flex justify-between text-red-600">
+                        <span>割引</span>
+                        <span>-{formatYen(priceBreakdown.discount)}</span>
                       </div>
-                      {priceBreakdown.pointsApplied > 0 && (
-                        <div className="flex justify-between text-emerald-600">
-                          <span>ポイント利用</span>
-                          <span>-{formatYen(priceBreakdown.pointsApplied)}</span>
-                        </div>
-                      )}
-                      <hr className="my-2" />
-                      <div className="flex justify-between text-lg font-bold">
-                        <span>合計</span>
-                        <span className="font-bold">{formatYen(priceBreakdown.total)}</span>
+                    )}
+                    {priceBreakdown.welfareExpense > 0 && (
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>
+                          厚生費（{priceBreakdown.welfareRate.toFixed(1).replace(/\.0$/, '')}%）
+                        </span>
+                        <span>{formatYen(priceBreakdown.welfareExpense)}</span>
                       </div>
-                      <div className="mt-2 grid grid-cols-2 gap-4 text-xs text-gray-500">
-                        <div className="rounded-md bg-gray-100 p-2">
-                          店舗売上: {formatYen(priceBreakdown.storeRevenue)}
-                        </div>
-                        <div className="rounded-md bg-gray-100 p-2">
-                          キャスト売上: {formatYen(priceBreakdown.staffRevenue)}
-                        </div>
+                    )}
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>小計</span>
+                      <span>{formatYen(priceBreakdown.subtotal)}</span>
+                    </div>
+                    {priceBreakdown.pointsApplied > 0 && (
+                      <div className="flex justify-between text-emerald-600">
+                        <span>ポイント利用</span>
+                        <span>-{formatYen(priceBreakdown.pointsApplied)}</span>
+                      </div>
+                    )}
+                    <hr className="my-2" />
+                    <div className="flex justify-between text-lg font-bold">
+                      <span>合計</span>
+                      <span className="font-bold">{formatYen(priceBreakdown.total)}</span>
+                    </div>
+                    <div className="mt-2 grid grid-cols-2 gap-4 text-xs text-gray-500">
+                      <div className="rounded-md bg-gray-100 p-2">
+                        店舗売上: {formatYen(priceBreakdown.storeRevenue)}
+                      </div>
+                      <div className="rounded-md bg-gray-100 p-2">
+                        キャスト売上: {formatYen(priceBreakdown.staffRevenue)}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
 
-          <div className="border-t px-6 pb-6 pt-4">
-            <div className="flex justify-between">
-              <Button onClick={prevStep} disabled={currentStep === 1} variant="outline">
-                <ChevronLeft className="mr-1 h-4 w-4" />
-                戻る
-              </Button>
-
-              {currentStep < totalSteps ? (
-                <Button onClick={nextStep}>
-                  次へ
-                  <ChevronRight className="ml-1 h-4 w-4" />
-                </Button>
+          <div
+            data-testid="quick-booking-sticky-footer"
+            className="sticky bottom-0 z-10 -mx-6 -mb-6 shrink-0 border-t bg-background px-6 py-4 shadow-[0_-8px_18px_-16px_rgba(0,0,0,0.45)]"
+          >
+            <Button className="w-full" onClick={handleSubmit} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                  処理中...
+                </>
               ) : (
-                <Button onClick={handleSubmit} disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                      処理中...
-                    </>
-                  ) : (
-                    <>
-                      <Check className="mr-1 h-4 w-4" />
-                      予約を確定
-                    </>
-                  )}
-                </Button>
+                <>
+                  <Check className="mr-1 h-4 w-4" />
+                  {bookingDetails.bookingStatus === '仮予約' ? '仮予約として保存' : '予約を確定'}
+                </>
               )}
-            </div>
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

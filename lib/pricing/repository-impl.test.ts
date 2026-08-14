@@ -139,4 +139,42 @@ describe('PricingRepositoryImpl store routing', () => {
     await expect(repository.getCourses('ikebukuro')).resolves.toHaveLength(2)
     await expect(repository.getOptions('ikebukuro')).resolves.toHaveLength(2)
   })
+
+  it('preserves the canonical course display order returned by the API', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValueOnce(
+        new Response(
+          JSON.stringify([
+            {
+              id: 'course-standard',
+              name: '80分',
+              displayOrder: 2,
+              duration: 80,
+              price: 21000,
+              isActive: true,
+              enableWebBooking: true,
+            },
+            {
+              id: 'course-extension',
+              name: '延長30分',
+              displayOrder: 13,
+              duration: 30,
+              price: 8000,
+              isActive: true,
+              enableWebBooking: false,
+            },
+          ]),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      )
+    )
+
+    const repository = new PricingRepositoryImpl()
+
+    await expect(repository.getCourses('ikebukuro')).resolves.toMatchObject([
+      { id: 'course-standard' },
+      { id: 'course-extension' },
+    ])
+  })
 })

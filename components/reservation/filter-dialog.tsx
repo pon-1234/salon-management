@@ -1,256 +1,164 @@
+/**
+ * @design_doc   docs/PREVIEW_UAT_CHECKLIST.md reservation timeline operational filters
+ * @related_to   ReservationPageContent and TimelineFilterOptions
+ * @known_issues None
+ */
 'use client'
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useEffect, useState } from 'react'
+import { formatInTimeZone } from 'date-fns-tz'
+import {
+  DEFAULT_TIMELINE_FILTERS,
+  type TimelineFilterOptions,
+} from '@/lib/reservation/timeline-filters'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useState, useCallback, useMemo } from 'react'
+
+interface FilterOption {
+  id: string
+  name: string
+}
 
 interface FilterDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onApplyFilters: (filters: FilterOptions) => void
+  onApplyFilters: (filters: TimelineFilterOptions) => void
+  filters: TimelineFilterOptions
+  selectedDate: Date
+  options: FilterOption[]
 }
 
-export interface FilterOptions {
-  workStatus: '出勤' | '未出勤' | 'すべて'
-  courseType: 'イベントコース' | '基本コース' | 'すべて'
-  name: string
-  ageRange: string
-  heightRange: string
-  bustSize: string
-  waistRange: string
-  type: string
-}
+const AVAILABILITY_FILTERS: Array<{
+  value: TimelineFilterOptions['availability']
+  label: string
+}> = [
+  { value: 'all', label: 'すべて' },
+  { value: 'open', label: '空きあり' },
+  { value: 'booked', label: '予約あり' },
+]
 
-const initialFilters: FilterOptions = {
-  workStatus: 'すべて',
-  courseType: 'すべて',
-  name: '',
-  ageRange: '',
-  heightRange: '',
-  bustSize: '',
-  waistRange: '',
-  type: '',
-}
+export function FilterDialog({
+  open,
+  onOpenChange,
+  onApplyFilters,
+  filters,
+  selectedDate,
+  options,
+}: FilterDialogProps) {
+  const [draft, setDraft] = useState<TimelineFilterOptions>(filters)
 
-export function FilterDialog({ open, onOpenChange, onApplyFilters }: FilterDialogProps) {
-  const [filters, setFilters] = useState<FilterOptions>(initialFilters)
+  useEffect(() => {
+    if (open) {
+      setDraft(filters)
+    }
+  }, [filters, open])
 
-  const handleSubmit = useCallback(
-    (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault()
-      onApplyFilters(filters)
-      onOpenChange(false)
-    },
-    [filters, onApplyFilters, onOpenChange]
-  )
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    onApplyFilters(draft)
+    onOpenChange(false)
+  }
 
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFilters((prev) => ({ ...prev, [name]: value }))
-  }, [])
-
-  const handleButtonClick = useCallback((name: string, value: string) => {
-    setFilters((prev) => ({ ...prev, [name]: value }))
-  }, [])
-
-  const ageRanges = useMemo(
-    () => ['18-19歳', '20-24歳', '25-29歳', '30-34歳', '35-39歳', '40歳以上'],
-    []
-  )
-  const heightRanges = useMemo(
-    () => ['149cm以下', '150-154cm', '155-159cm', '160-164cm', '165-169cm', '170cm以上'],
-    []
-  )
-  const bustSizes = useMemo(() => ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I以上'], [])
-  const waistRanges = useMemo(
-    () => [
-      '49cm以下',
-      '50-54cm',
-      '55-59cm',
-      '60-64cm',
-      '65-69cm',
-      '70-74cm',
-      '75-79cm',
-      '80cm以上',
-    ],
-    []
-  )
-  const types = useMemo(() => ['カワイイ系', 'キレイ系', 'ロリ系', '人妻系'], [])
+  const selectedDateLabel = formatInTimeZone(selectedDate, 'Asia/Tokyo', 'yyyy年MM月dd日')
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-center text-2xl font-bold">絞り込み</DialogTitle>
+          <DialogDescription className="text-center">
+            予約受付に必要な空き状況・オプション・キャスト名で絞り込みます。
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* 勤務状況で絞り込み */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">2024年12月09日の勤務状況で絞り込み</h3>
-            <div className="flex gap-2">
-              {['出勤', '未出勤', 'すべて'].map((status) => (
+          <fieldset className="space-y-3">
+            <legend className="text-lg font-medium">{selectedDateLabel}の空き状況</legend>
+            <div className="flex flex-wrap gap-2">
+              {AVAILABILITY_FILTERS.map(({ value, label }) => (
                 <Button
-                  key={status}
+                  key={value}
                   type="button"
-                  onClick={() => handleButtonClick('workStatus', status)}
-                  variant={filters.workStatus === status ? 'default' : 'outline'}
-                  className={filters.workStatus === status ? 'bg-emerald-600' : ''}
+                  onClick={() => setDraft((current) => ({ ...current, availability: value }))}
+                  variant={draft.availability === value ? 'default' : 'outline'}
+                  className={draft.availability === value ? 'bg-emerald-600' : ''}
                 >
-                  {status}
+                  {label}
                 </Button>
               ))}
             </div>
-          </div>
+          </fieldset>
 
-          {/* コースで絞り込み */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">コースで絞り込み</h3>
-            <div className="flex gap-2">
-              {['イベントコース', '基本コース', 'すべて'].map((course) => (
+          <fieldset className="space-y-3">
+            <legend className="text-lg font-medium">対応オプション</legend>
+            {options.length === 0 ? (
+              <p className="text-sm text-muted-foreground">登録済みオプションがありません。</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
                 <Button
-                  key={course}
                   type="button"
-                  onClick={() => handleButtonClick('courseType', course)}
-                  variant={filters.courseType === course ? 'default' : 'outline'}
-                  className={filters.courseType === course ? 'bg-emerald-600' : ''}
+                  onClick={() => setDraft((current) => ({ ...current, optionId: '' }))}
+                  variant={draft.optionId === '' ? 'default' : 'outline'}
+                  className={draft.optionId === '' ? 'bg-emerald-600' : ''}
                 >
-                  {course === 'すべて' ? course : `${course}（税込）`}
+                  すべて
                 </Button>
-              ))}
-            </div>
-          </div>
-
-          {/* 名前で絞り込み */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">名前（ふりがな）で絞り込み</h3>
-            <div>
-              <Label htmlFor="name">名前</Label>
-              <Input
-                id="name"
-                name="name"
-                value={filters.name}
-                onChange={handleInputChange}
-                placeholder="例：はまれ"
-                className="mt-2"
-              />
-            </div>
-          </div>
-
-          {/* サイズで絞り込み */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">サイズで絞り込み</h3>
-
-            {/* 年齢 */}
-            <div>
-              <Label>年齢</Label>
-              <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-6">
-                {ageRanges.map((age) => (
+                {options.map((option) => (
                   <Button
-                    key={age}
+                    key={option.id}
                     type="button"
-                    onClick={() => handleButtonClick('ageRange', age)}
-                    variant={filters.ageRange === age ? 'default' : 'outline'}
-                    className={filters.ageRange === age ? 'bg-emerald-600' : ''}
+                    onClick={() => setDraft((current) => ({ ...current, optionId: option.id }))}
+                    variant={draft.optionId === option.id ? 'default' : 'outline'}
+                    className={draft.optionId === option.id ? 'bg-emerald-600' : ''}
                   >
-                    {age}
+                    {option.name}
                   </Button>
                 ))}
               </div>
-            </div>
+            )}
+          </fieldset>
 
-            {/* 身長 */}
-            <div>
-              <Label>身長</Label>
-              <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-6">
-                {heightRanges.map((height) => (
-                  <Button
-                    key={height}
-                    type="button"
-                    onClick={() => handleButtonClick('heightRange', height)}
-                    variant={filters.heightRange === height ? 'default' : 'outline'}
-                    className={filters.heightRange === height ? 'bg-emerald-600' : ''}
-                  >
-                    {height}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* バスト */}
-            <div>
-              <Label>バスト</Label>
-              <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-9">
-                {bustSizes.map((size) => (
-                  <Button
-                    key={size}
-                    type="button"
-                    onClick={() => handleButtonClick('bustSize', size)}
-                    variant={filters.bustSize === size ? 'default' : 'outline'}
-                    className={filters.bustSize === size ? 'bg-emerald-600' : ''}
-                  >
-                    {size}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* ウエスト */}
-            <div>
-              <Label>ウエスト</Label>
-              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-8">
-                {waistRanges.map((size) => (
-                  <Button
-                    key={size}
-                    type="button"
-                    onClick={() => handleButtonClick('waistRange', size)}
-                    variant={filters.waistRange === size ? 'default' : 'outline'}
-                    className={filters.waistRange === size ? 'bg-emerald-600' : ''}
-                  >
-                    {size}
-                  </Button>
-                ))}
-              </div>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="timeline-cast-name">キャスト名</Label>
+            <Input
+              id="timeline-cast-name"
+              value={draft.name}
+              onChange={(event) =>
+                setDraft((current) => ({ ...current, name: event.target.value }))
+              }
+              placeholder="名前・ふりがな"
+            />
           </div>
 
-          {/* タイプで絞り込み */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">タイプ</h3>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {types.map((type) => (
-                <Button
-                  key={type}
-                  type="button"
-                  onClick={() => handleButtonClick('type', type)}
-                  variant={filters.type === type ? 'default' : 'outline'}
-                  className={filters.type === type ? 'bg-emerald-600' : ''}
-                >
-                  {type}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="flex flex-wrap justify-between gap-2 pt-2">
             <Button
               type="button"
-              variant="outline"
-              onClick={() => {
-                setFilters(initialFilters)
-                onOpenChange(false)
-              }}
+              variant="ghost"
+              onClick={() => setDraft(DEFAULT_TIMELINE_FILTERS)}
             >
-              キャンセル
+              条件をクリア
             </Button>
-            <Button type="submit" className="bg-emerald-600">
-              適用
-            </Button>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                キャンセル
+              </Button>
+              <Button type="submit" className="bg-emerald-600">
+                適用
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>
     </Dialog>
   )
 }
+
+export type FilterOptions = TimelineFilterOptions

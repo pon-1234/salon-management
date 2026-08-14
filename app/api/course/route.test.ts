@@ -57,7 +57,7 @@ describe('GET /api/course', () => {
   })
 
   it('returns a JSON 404 when the requested store does not exist', async () => {
-    vi.mocked(db.store.findUnique).mockResolvedValueOnce(null)
+    vi.mocked(db.store.findUnique).mockResolvedValueOnce(null).mockResolvedValueOnce(null)
 
     const response = await GET(
       new NextRequest('http://localhost:3000/api/course?storeId=unknown-store')
@@ -199,9 +199,7 @@ describe('GET /api/course', () => {
           },
         },
       },
-      orderBy: {
-        duration: 'asc',
-      },
+      orderBy: [{ displayOrder: 'asc' }, { duration: 'asc' }],
     })
   })
 
@@ -520,6 +518,7 @@ describe('PUT /api/course', () => {
     const existingCourse = {
       id: 'course1',
       name: 'Original Course Name',
+      displayOrder: 5,
       duration: 60,
       price: 10000,
       description: 'Original description',
@@ -571,6 +570,7 @@ describe('PUT /api/course', () => {
         name: 'Updated Course Name',
         price: 12000,
         description: 'Updated description',
+        displayOrder: 5,
         isActive: true,
         archivedAt: null,
       }),

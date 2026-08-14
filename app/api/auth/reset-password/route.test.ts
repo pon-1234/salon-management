@@ -27,6 +27,10 @@ vi.mock('bcryptjs', () => ({
 }))
 
 const customerPhoneVerificationFields = {
+  accountStatus: 'active',
+  membershipStage: 'regular',
+  lastLoginAt: null,
+  lastVisitAt: null,
   phoneVerified: false,
   phoneVerifiedAt: null,
   phoneVerificationCode: null,

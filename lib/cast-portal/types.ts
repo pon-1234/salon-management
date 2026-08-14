@@ -1,4 +1,10 @@
+/**
+ * @design_doc   Cast portal transport contracts and server-authorized projections
+ * @related_to   lib/cast-portal/server.ts and cast portal client components
+ * @known_issues Access ranking remains unavailable until an external source is integrated
+ */
 import type { Reservation } from '@prisma/client'
+import type { CastPerformanceReport } from '@/lib/types/cast-performance'
 
 export type CastReservationScope = 'upcoming' | 'past' | 'today'
 
@@ -93,6 +99,7 @@ export interface CastPerformanceSnapshot {
   totalDesignation: CastRankingMetric
   regularDesignation: CastRankingMetric
   access: CastRankingMetric
+  performance: CastPerformanceReport
 }
 
 export interface CastReservationListResponse {

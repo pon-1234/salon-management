@@ -9,26 +9,38 @@ import { Prisma } from '@prisma/client'
 import {
   GoldMasterPreviewError,
   buildGoldMasterPreviewFixture,
-  type GoldMasterIkebukuroSnapshotV3,
+  projectGoldMasterPreviewImages,
+  type GoldMasterIkebukuroSnapshotV4,
 } from './gold-master-fixture'
 
 const passwordHashes = {
   admin: 'admin-hash',
   customer: 'customer-hash',
+  customerDisabled: 'customer-disabled-hash',
   cast: 'cast-hash',
 }
+const resolveImageUrl = ({
+  girlNo,
+  slot,
+  fileName,
+}: {
+  girlNo: number
+  slot: number
+  fileName: string
+}) => `/salon-uploads/casts/legacy-cast-${girlNo}/${slot}-${fileName}`
 
-function snapshot(): GoldMasterIkebukuroSnapshotV3 {
+function snapshot(): GoldMasterIkebukuroSnapshotV4 {
   return {
-    version: 3,
+    version: 4,
     scope: {
       sourceDatabase: 'nzuadtjn_gold_master',
+      customerSourceDatabase: 'nzuadtjn_primegb_master',
       shopNo: 5600,
       cutoffAt: '2026-07-20T04:00:00+00:00',
       scheduleFrom: '2026-07-20',
       scheduleTo: '2026-08-09',
       reservationFrom: '2026-04-21',
-      consistency: 'best-effort-read-only',
+      consistency: 'best-effort-read-only-count-checked',
     },
     beforeCounts: {
       stores: 1,
@@ -43,6 +55,7 @@ function snapshot(): GoldMasterIkebukuroSnapshotV3 {
       schedules: 2,
       reservations: 1,
       reviews: 1,
+      customers: 2,
     },
     afterCounts: {
       stores: 1,
@@ -57,6 +70,7 @@ function snapshot(): GoldMasterIkebukuroSnapshotV3 {
       schedules: 2,
       reservations: 1,
       reviews: 1,
+      customers: 2,
     },
     rows: {
       stores: [
@@ -322,13 +336,61 @@ function snapshot(): GoldMasterIkebukuroSnapshotV3 {
           lev: 1,
         },
       ],
+      customers: [
+        {
+          mem_id: 1234,
+          shop_no: 5600,
+          name: '旧実名顧客',
+          tel: '090-1234-5678',
+          mail_ad: 'legacy-customer@example.com',
+          birth: '1985-04-03',
+          age: 41,
+          point: 3200,
+          lev_member: 4,
+          lev: 2,
+          lev_admin: 0,
+          flg_smail: 0,
+          regist_date: '2020-05-06 12:34:56',
+          regist_date_new: '2020-05-06',
+          login_date: '2026-07-19 09:00:00',
+          deli_date: '2026-07-20',
+        },
+        {
+          mem_id: 2345,
+          shop_no: null,
+          name: '旧台帳のみ顧客',
+          tel: '080-2222-3333',
+          mail_ad: 'ledger-only@example.com',
+          birth: '1992-06-07',
+          age: 34,
+          point: 500,
+          lev_member: 1,
+          lev: 1,
+          lev_admin: 0,
+          flg_smail: 1,
+          regist_date: '2024-03-02 01:02:03',
+          regist_date_new: '2024-03-02',
+          login_date: null,
+          deli_date: null,
+        },
+      ],
     },
   }
 }
 
 describe('buildGoldMasterPreviewFixture', () => {
-  it('builds a one-store fixture with real public data and sanitized customer identities', () => {
-    const fixture = buildGoldMasterPreviewFixture(snapshot(), { passwordHashes })
+  it('projects the exact legacy photo slots at the canonical snapshot cutoff', () => {
+    expect(projectGoldMasterPreviewImages(snapshot())).toEqual({
+      cutoffAt: '2026-07-20T04:00:00.000Z',
+      references: [
+        { girlNo: 56019, slot: 1, fileName: 'main.jpg' },
+        { girlNo: 56019, slot: 2, fileName: 'second.jpg' },
+      ],
+    })
+  })
+
+  it('builds a one-store fixture with real public and customer data plus isolated credentials', () => {
+    const fixture = buildGoldMasterPreviewFixture(snapshot(), { passwordHashes, resolveImageUrl })
 
     expect(fixture.stores).toEqual([
       expect.objectContaining({
@@ -349,6 +411,7 @@ describe('buildGoldMasterPreviewFixture', () => {
     expect(fixture.courses).toEqual([
       expect.objectContaining({
         id: 'legacy-course-2',
+        displayOrder: 2,
         duration: 80,
         price: 21000,
         storeShare: 10000,
@@ -357,6 +420,7 @@ describe('buildGoldMasterPreviewFixture', () => {
       }),
       expect.objectContaining({
         id: 'legacy-course-13',
+        displayOrder: 13,
         enableWebBooking: false,
       }),
     ])
@@ -380,10 +444,10 @@ describe('buildGoldMasterPreviewFixture', () => {
         id: 'legacy-cast-56019',
         name: '旧公開キャストA',
         bust: '86',
-        image: 'https://gold-esthe.com/ikebukuro/img_girls/5600/56019/main.jpg',
+        image: '/salon-uploads/casts/legacy-cast-56019/1-main.jpg',
         images: [
-          'https://gold-esthe.com/ikebukuro/img_girls/5600/56019/main.jpg',
-          'https://gold-esthe.com/ikebukuro/img_girls/5600/56019/second.jpg',
+          '/salon-uploads/casts/legacy-cast-56019/1-main.jpg',
+          '/salon-uploads/casts/legacy-cast-56019/2-second.jpg',
         ],
         panelDesignationRank: 1,
         loginEmail: 'cast-ikebukuro@preview-uat.invalid',
@@ -487,15 +551,43 @@ describe('buildGoldMasterPreviewFixture', () => {
     )
     expect(migratedCustomer).toEqual(
       expect.objectContaining({
-        name: '[確認用] 旧顧客 #1234',
-        email: 'legacy-customer-000001@preview-uat.invalid',
-        phone: '09900000001',
+        name: '[確認用] 旧実名顧客',
+        email: 'customer@preview-uat.invalid',
+        phone: '09012345678',
+        birthDate: new Date('1985-04-03T00:00:00.000Z'),
+        memberType: 'vip',
+        accountStatus: 'active',
+        membershipStage: 'platinum',
+        lastLoginAt: new Date('2026-07-19T00:00:00.000Z'),
+        lastVisitAt: new Date('2026-07-19T15:00:00.000Z'),
+        points: 3200,
         password: 'customer-hash',
         smsEnabled: false,
         emailNotificationEnabled: false,
+        emailVerified: true,
       })
     )
-    expect(JSON.stringify(migratedCustomer)).not.toContain('03-5931-5743')
+    expect(fixture.customers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'legacy-customer-member-2345',
+          name: '[確認用] 旧台帳のみ顧客',
+          email: 'ledger-only@example.com',
+          phone: '08022223333',
+          password: 'customer-disabled-hash',
+          accountStatus: 'active',
+          membershipStage: 'regular',
+          lastLoginAt: null,
+          lastVisitAt: null,
+          points: 500,
+          emailVerified: false,
+        }),
+      ])
+    )
+    expect(fixture.customers).toHaveLength(2)
+    expect(fixture.reservations.some(({ customerId }) => customerId === migratedCustomer?.id)).toBe(
+      true
+    )
 
     expect(fixture.reservations).toEqual([
       expect.objectContaining({
@@ -506,7 +598,7 @@ describe('buildGoldMasterPreviewFixture', () => {
         startTime: new Date('2026-07-20T16:30:00.000Z'),
         endTime: new Date('2026-07-20T18:20:00.000Z'),
         status: 'completed',
-        settlementStatus: 'completed',
+        settlementStatus: 'pending',
         price: 30500,
         designationType: 'regular',
         designationFee: 1000,
@@ -553,8 +645,20 @@ describe('buildGoldMasterPreviewFixture', () => {
     ])
   })
 
+  it('normalizes legacy phones and replaces digit-equivalent duplicates deterministically', () => {
+    const legacy = snapshot()
+    legacy.rows.customers[1].tel = '09012345678'
+
+    const fixture = buildGoldMasterPreviewFixture(legacy, { passwordHashes, resolveImageUrl })
+    const phones = fixture.customers.map(({ phone }) => phone)
+
+    expect(phones[0]).toBe('09012345678')
+    expect(phones[1]).toMatch(/^\d{11}$/u)
+    expect(new Set(phones).size).toBe(phones.length)
+  })
+
   it('converts legacy 24-29 hour schedule notation to the following JST day', () => {
-    const fixture = buildGoldMasterPreviewFixture(snapshot(), { passwordHashes })
+    const fixture = buildGoldMasterPreviewFixture(snapshot(), { passwordHashes, resolveImageUrl })
 
     expect(fixture.castSchedules[0]).toEqual(
       expect.objectContaining({
@@ -578,13 +682,38 @@ describe('buildGoldMasterPreviewFixture', () => {
     legacy.rows.casts[0].photo_2 = null
     legacy.rows.reservations[0].simei_kin = null
 
-    const fixture = buildGoldMasterPreviewFixture(legacy, { passwordHashes })
+    const fixture = buildGoldMasterPreviewFixture(legacy, { passwordHashes, resolveImageUrl })
 
-    expect(fixture.casts[0].images).toEqual([
-      'https://gold-esthe.com/ikebukuro/img_girls/5600/56019/main.jpg',
-    ])
+    expect(fixture.casts[0].images).toEqual(['/salon-uploads/casts/legacy-cast-56019/1-main.jpg'])
     expect(fixture.reservations[0]).toEqual(
       expect.objectContaining({ designationType: 'regular', designationFee: 0 })
+    )
+  })
+
+  it('binds every legacy photo slot to its verified preview-storage URL', () => {
+    const fixtureOptions = {
+      passwordHashes,
+      resolveImageUrl: ({
+        girlNo,
+        slot,
+        fileName,
+      }: {
+        girlNo: number
+        slot: number
+        fileName: string
+      }) => `/salon-uploads/casts/legacy-cast-${girlNo}/${slot}-${fileName}`,
+    }
+
+    const fixture = buildGoldMasterPreviewFixture(snapshot(), fixtureOptions)
+
+    expect(fixture.casts[0]).toEqual(
+      expect.objectContaining({
+        image: '/salon-uploads/casts/legacy-cast-56019/1-main.jpg',
+        images: [
+          '/salon-uploads/casts/legacy-cast-56019/1-main.jpg',
+          '/salon-uploads/casts/legacy-cast-56019/2-second.jpg',
+        ],
+      })
     )
   })
 
@@ -592,7 +721,7 @@ describe('buildGoldMasterPreviewFixture', () => {
     const legacy = snapshot() as any
     legacy.rows.hotels[0].area_no = 19
 
-    const fixture = buildGoldMasterPreviewFixture(legacy, { passwordHashes })
+    const fixture = buildGoldMasterPreviewFixture(legacy, { passwordHashes, resolveImageUrl })
 
     expect(fixture.hotels[0]).toEqual(
       expect.objectContaining({
@@ -637,14 +766,14 @@ describe('buildGoldMasterPreviewFixture', () => {
     const unsafe = snapshot() as any
     mutate(unsafe)
 
-    expect(() => buildGoldMasterPreviewFixture(unsafe, { passwordHashes })).toThrow(
-      GoldMasterPreviewError
-    )
+    expect(() =>
+      buildGoldMasterPreviewFixture(unsafe, { passwordHashes, resolveImageUrl })
+    ).toThrow(GoldMasterPreviewError)
   })
 
   it('is deterministic for the same snapshot and password hashes', () => {
-    const first = buildGoldMasterPreviewFixture(snapshot(), { passwordHashes })
-    const second = buildGoldMasterPreviewFixture(snapshot(), { passwordHashes })
+    const first = buildGoldMasterPreviewFixture(snapshot(), { passwordHashes, resolveImageUrl })
+    const second = buildGoldMasterPreviewFixture(snapshot(), { passwordHashes, resolveImageUrl })
 
     expect(second).toEqual(first)
   })

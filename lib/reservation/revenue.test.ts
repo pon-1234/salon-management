@@ -8,6 +8,21 @@ import { describe, expect, it } from 'vitest'
 import { calculateReservationRevenue } from './revenue'
 
 describe('calculateReservationRevenue', () => {
+  it('uses the migrated course shares without replacing them with the welfare rate', () => {
+    expect(
+      calculateReservationRevenue({
+        basePrice: 30_000,
+        course: { storeShare: 12_000, castShare: 18_000 },
+        welfareRate: 10,
+      })
+    ).toMatchObject({
+      courseStoreShare: 12_000,
+      courseCastShare: 18_000,
+      storeRevenue: 12_000,
+      staffRevenue: 18_000,
+    })
+  })
+
   it('preserves the current course, option, designation, and fee breakdown', () => {
     expect(
       calculateReservationRevenue({

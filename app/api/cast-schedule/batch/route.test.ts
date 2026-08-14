@@ -5,6 +5,7 @@
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { POST } from './route'
+import { parseScheduleDateTimeInJst } from '@/lib/cast-schedule/date-time'
 import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { db } from '@/lib/db'
@@ -44,6 +45,58 @@ describe('POST /api/cast-schedule/batch', () => {
     vi.clearAllMocks()
     vi.mocked(db.store.findUnique).mockResolvedValue({ id: 'store-a' } as any)
     vi.mocked(db.cast.findFirst).mockResolvedValue({ id: 'cast-1', storeId: 'store-a' } as any)
+  })
+
+  it('parses schedule clocks as JST even when the server process uses UTC', () => {
+    expect(parseScheduleDateTimeInJst('2026-08-14', '10:00').toISOString()).toBe(
+      '2026-08-14T01:00:00.000Z'
+    )
+    expect(parseScheduleDateTimeInJst('2026-08-14', '24:00').toISOString()).toBe(
+      '2026-08-14T15:00:00.000Z'
+    )
+  })
+
+  it('stores an editor midnight end as the following JST midnight', async () => {
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { id: 'admin-1', role: 'admin', permissions: ['*'] },
+    } as any)
+
+    let capturedCreateData: any
+    vi.mocked(db.$transaction).mockImplementation(async (callback: any) =>
+      callback({
+        castSchedule: {
+          findUnique: vi.fn().mockResolvedValue(null),
+          create: vi.fn(async ({ data }) => {
+            capturedCreateData = data
+            return { id: 'new-1', ...data }
+          }),
+          update: vi.fn(),
+          delete: vi.fn(),
+        },
+      })
+    )
+
+    const response = await POST(
+      new NextRequest('http://localhost:3000/api/cast-schedule/batch?storeId=store-a', {
+        method: 'POST',
+        body: JSON.stringify({
+          castId: 'cast-1',
+          schedules: [
+            {
+              date: '2026-08-14',
+              status: 'working',
+              startTime: '14:00',
+              endTime: '00:00',
+            },
+          ],
+        }),
+      })
+    )
+
+    expect(response.status).toBe(200)
+    expect(capturedCreateData.date.toISOString()).toBe('2026-08-13T15:00:00.000Z')
+    expect(capturedCreateData.startTime.toISOString()).toBe('2026-08-14T05:00:00.000Z')
+    expect(capturedCreateData.endTime.toISOString()).toBe('2026-08-14T15:00:00.000Z')
   })
 
   it('should create and update schedules in batch', async () => {

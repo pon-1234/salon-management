@@ -1,7 +1,7 @@
 /**
  * @design_doc   Public storefront cast projections expose only explicitly approved profile data
  * @related_to   Public cast listing, ranking, recruitment, and detail pages
- * @known_issues Public option labels still use the existing option catalog adapter
+ * @known_issues None
  */
 import { differenceInDays } from 'date-fns'
 import { db } from '@/lib/db'
@@ -292,6 +292,13 @@ export interface PublicCastDetail {
     optionId: string
     visibility: 'public'
   }>
+  availableOptionDetails: Array<{
+    id: string
+    name: string
+    description: string | null
+    price: number
+    note: string | null
+  }>
   publicProfile: PublicProfile | null
 }
 
@@ -347,8 +354,25 @@ export async function getPublicCastDetail(
       availableOptions: true,
       publicProfile: true,
       castOptionSettings: {
-        where: { visibility: 'public' },
-        select: { optionId: true, visibility: true },
+        where: {
+          visibility: 'public',
+          option: {
+            is: { storeId, isActive: true, visibility: 'public', archivedAt: null },
+          },
+        },
+        select: {
+          optionId: true,
+          visibility: true,
+          option: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              price: true,
+              note: true,
+            },
+          },
+        },
       },
     },
   })
@@ -365,6 +389,32 @@ export async function getPublicCastDetail(
     availableOptionSettings.length > 0
       ? availableOptionSettings.map((setting) => setting.optionId)
       : record.availableOptions.filter((optionId) => typeof optionId === 'string' && optionId)
+  const fallbackOptionDetails =
+    availableOptionSettings.length === 0 && availableOptions.length > 0
+      ? await db.optionPrice.findMany({
+          where: {
+            id: { in: availableOptions },
+            storeId,
+            isActive: true,
+            visibility: 'public',
+            archivedAt: null,
+          },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            price: true,
+            note: true,
+          },
+          orderBy: [{ displayOrder: 'asc' }, { id: 'asc' }],
+        })
+      : []
+  const availableOptionDetails =
+    availableOptionSettings.length > 0
+      ? record.castOptionSettings
+          .filter((setting) => setting.visibility === 'public')
+          .map((setting) => setting.option)
+      : fallbackOptionDetails
 
   return {
     id: record.id,
@@ -387,6 +437,7 @@ export async function getPublicCastDetail(
     workEnd: undefined,
     availableOptions,
     availableOptionSettings,
+    availableOptionDetails,
     publicProfile: normalizePublicProfile(record.publicProfile),
   }
 }

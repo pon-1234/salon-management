@@ -322,6 +322,11 @@ describe('ReservationDialog Edit Mode', () => {
       expect(screen.getByText(/キャンセル理由を選択/)).toBeInTheDocument()
     })
 
+    const confirmCancellation = screen.getByRole('button', { name: /確定してキャンセル/ })
+    expect(confirmCancellation).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('キャンセル理由詳細'), {
+      target: { value: 'お客様の予定変更のため' },
+    })
     fireEvent.click(screen.getByRole('button', { name: /確定してキャンセル/ }))
 
     // onSave should be called with updated status
@@ -329,7 +334,43 @@ describe('ReservationDialog Edit Mode', () => {
       expect(mockOnSave).toHaveBeenCalledWith(mockReservation.id, {
         status: 'cancelled',
         cancellationSource: 'customer',
+        cancellationReason: 'お客様の予定変更のため',
       })
+    })
+  })
+
+  it('edits and displays the card receipt management reference without exposing a card number field', async () => {
+    const cardReservation: ReservationData = {
+      ...mockReservation,
+      serviceId: 'course-1',
+      designation: 'なし',
+      designationFee: '0円',
+      options: {},
+      paymentMethod: 'クレジットカード',
+      paymentReference: 'IK-2026-00421',
+    }
+
+    render(
+      <ReservationDialog
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        reservation={cardReservation}
+        onSave={mockOnSave}
+      />
+    )
+
+    expect(screen.getByText('IK-2026-00421')).toBeInTheDocument()
+    expect(screen.queryByLabelText('カード番号')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /編集/i }))
+    const referenceInput = screen.getByLabelText('カード管理番号')
+    fireEvent.change(referenceInput, { target: { value: 'IK-2026-00422' } })
+    fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalledWith(
+        cardReservation.id,
+        expect.objectContaining({ paymentReference: 'IK-2026-00422' })
+      )
     })
   })
 

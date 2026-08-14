@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Package, Plus, Edit, Trash2, RefreshCw, Clock } from 'lucide-react'
+import { ArrowLeft, Package, Plus, Edit, Trash2, Clock } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -68,7 +68,6 @@ export default function OptionInfoPage() {
   const { currentStore } = useStore()
   const [options, setOptions] = useState<OptionPrice[]>([])
   const [loading, setLoading] = useState(true)
-  const [syncing, setSyncing] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingOption, setEditingOption] = useState<OptionPrice | null>(null)
   const { toast } = useToast()
@@ -108,26 +107,6 @@ export default function OptionInfoPage() {
   useEffect(() => {
     loadOptions()
   }, [loadOptions])
-
-  const handleSync = async () => {
-    try {
-      setSyncing(true)
-      // In a real app, this would sync with all stores
-      await pricingUseCases.syncPricing(currentStore.id)
-      toast({
-        title: '同期完了',
-        description: '料金情報が全店舗に同期されました',
-      })
-    } catch (error) {
-      toast({
-        title: 'エラー',
-        description: '同期に失敗しました',
-        variant: 'destructive',
-      })
-    } finally {
-      setSyncing(false)
-    }
-  }
 
   const handleAddOption = () => {
     setEditingOption(null)
@@ -292,16 +271,10 @@ export default function OptionInfoPage() {
             backIcon={ArrowLeft}
             icon={Package}
             actions={
-              <>
-                <Button onClick={handleSync} variant="outline" disabled={syncing}>
-                  <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-                  全店舗に同期
-                </Button>
-                <Button onClick={handleAddOption} className="bg-emerald-600 hover:bg-emerald-700">
-                  <Plus className="mr-2 h-4 w-4" />
-                  新規オプション追加
-                </Button>
-              </>
+              <Button onClick={handleAddOption} className="bg-emerald-600 hover:bg-emerald-700">
+                <Plus className="mr-2 h-4 w-4" />
+                新規オプション追加
+              </Button>
             }
           />
 

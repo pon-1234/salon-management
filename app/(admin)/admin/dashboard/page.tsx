@@ -1,11 +1,17 @@
+/**
+ * @design_doc   docs/LEGACY_GOLD_ADMIN_MIGRATION_INVENTORY.md admin dashboard mapping
+ * @related_to   CustomerSelectionDialog, CastScheduleUseCases, and dashboard.utils
+ * @known_issues None currently
+ */
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, type FormEvent } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   TrendingUp,
   TrendingDown,
@@ -15,41 +21,30 @@ import {
   Clock,
   Activity,
   ArrowUpRight,
-  ArrowDownRight,
   BarChart3,
   PieChart,
   Target,
-  Award,
   AlertCircle,
   CheckCircle2,
   XCircle,
-  Timer,
-  UserCheck,
-  MessageSquare,
   Sparkles,
   Loader2,
+  Phone,
+  Search,
+  FileText,
 } from 'lucide-react'
 import { getAllReservations } from '@/lib/reservation/data'
-import {
-  format,
-  startOfDay,
-  endOfDay,
-  startOfWeek,
-  endOfWeek,
-  startOfMonth,
-  endOfMonth,
-  subDays,
-  subMonths,
-  addHours,
-  subHours,
-  differenceInMinutes,
-} from 'date-fns'
+import { subDays, addHours, subHours, differenceInMinutes } from 'date-fns'
 import { ja } from 'date-fns/locale'
-import { Reservation } from '@/lib/types/reservation'
+import { formatInTimeZone } from 'date-fns-tz'
+import {
+  type Reservation,
+  type ReservationData,
+  type ReservationSavePayload,
+} from '@/lib/types/reservation'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { ReservationDialog } from '@/components/reservation/reservation-dialog'
-import { ReservationData } from '@/lib/types/reservation'
 import { CustomerSelectionDialog } from '@/components/customer/customer-selection-dialog'
 import { useStore } from '@/contexts/store-context'
 import { mapReservationToReservationData } from '@/lib/reservation/transformers'
@@ -73,6 +68,27 @@ import { useSession } from 'next-auth/react'
 import { hasPermission } from '@/lib/auth/permissions'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from '@/hooks/use-toast'
+import { CastScheduleUseCases } from '@/lib/cast-schedule/usecases'
+import type { WeeklySchedule } from '@/lib/cast-schedule/old-types'
+import {
+  fetchAllDashboardReservations,
+  getDashboardQueryWindow,
+  getJstPeriodBounds,
+  isWithinPeriod,
+  sumActiveReservationRevenue,
+  type DashboardPeriod,
+} from './dashboard.utils'
+
+const JST_TIMEZONE = 'Asia/Tokyo'
+const castScheduleUseCases = new CastScheduleUseCases()
+
+interface PhoneCustomerSearchResult {
+  id: string
+  name: string
+  phone: string
+}
+
+type PhoneSearchStatus = 'idle' | 'loading' | 'ready' | 'error'
 
 // カラーパレット
 const colors = {
@@ -82,7 +98,6 @@ const colors = {
   warning: '#f59e0b',
   danger: '#ef4444',
   info: '#3b82f6',
-  muted: '#6b7280',
 }
 
 // KPIカード用のインターフェース
@@ -251,7 +266,7 @@ function getUpcomingTimingBadge(startTime: Date) {
   }
 
   return {
-    label: `${format(startTime, 'MM月dd日 HH:mm')} 開始予定`,
+    label: `${formatInTimeZone(startTime, JST_TIMEZONE, 'MM月dd日 HH:mm')} 開始予定`,
     variant: 'outline' as const,
   }
 }
@@ -262,15 +277,22 @@ export default function DashboardPage() {
   const grantedPermissions = session?.user?.permissions ?? []
   const isAdmin = session?.user?.role === 'admin'
   const isAdminUser = isAdmin
-  const canViewFinancials =
-    hasPermission(grantedPermissions, 'analytics:read') ||
-    hasPermission(grantedPermissions, 'dashboard:view')
+  const canViewAnalytics = hasPermission(grantedPermissions, 'analytics:read')
+  const canViewFinancials = canViewAnalytics || hasPermission(grantedPermissions, 'dashboard:view')
+  const canUpdateReservations = hasPermission(grantedPermissions, 'reservation:update')
 
   const [reservations, setReservations] = useState<Reservation[]>([])
+  const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule | null>(null)
   const [loading, setLoading] = useState(true)
-  const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month'>('today')
+  const [selectedPeriod, setSelectedPeriod] = useState<DashboardPeriod>('today')
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
-  const [showCustomerSelection, setShowCustomerSelection] = useState(false)
+  const [customerDialogMode, setCustomerDialogMode] = useState<'reservation' | 'lookup' | null>(
+    null
+  )
+  const [phoneQuery, setPhoneQuery] = useState('')
+  const [phoneResults, setPhoneResults] = useState<PhoneCustomerSearchResult[]>([])
+  const [phoneSearchStatus, setPhoneSearchStatus] = useState<PhoneSearchStatus>('idle')
+  const [phoneSearchMessage, setPhoneSearchMessage] = useState<string | null>(null)
 
   useEffect(() => {
     if (status === 'loading') {
@@ -280,23 +302,57 @@ export default function DashboardPage() {
     if (!isAdminUser || status !== 'authenticated') {
       setLoading((prev) => (prev ? false : prev))
       setReservations((prev) => (prev.length ? [] : prev))
+      setWeeklySchedule(null)
       return
     }
 
+    let ignore = false
+
     const fetchData = async () => {
       setLoading(true)
-      try {
-        const fetchedReservations = await getAllReservations({ storeId: currentStore.id })
-        setReservations(fetchedReservations)
-      } catch (error) {
-        console.error('Failed to fetch reservations:', error)
-      } finally {
+      const now = new Date()
+      const queryWindow = getDashboardQueryWindow(selectedPeriod, now)
+      const [reservationResult, scheduleResult] = await Promise.allSettled([
+        fetchAllDashboardReservations({
+          storeId: currentStore.id,
+          start: queryWindow.start,
+          endExclusive: queryWindow.endExclusive,
+          fetchPage: getAllReservations,
+        }),
+        castScheduleUseCases.getWeeklySchedule({
+          date: now,
+          castFilter: 'all',
+          storeId: currentStore.id,
+        }),
+      ])
+
+      if (ignore) return
+
+      if (reservationResult.status === 'fulfilled') {
+        setReservations(reservationResult.value)
+      } else {
+        console.error('Failed to fetch reservations:', reservationResult.reason)
+        setReservations([])
+      }
+
+      if (scheduleResult.status === 'fulfilled') {
+        setWeeklySchedule(scheduleResult.value)
+      } else {
+        console.error('Failed to fetch weekly schedule:', scheduleResult.reason)
+        setWeeklySchedule(null)
+      }
+
+      if (!ignore) {
         setLoading(false)
       }
     }
 
-    fetchData()
-  }, [currentStore.id, isAdminUser, status])
+    void fetchData()
+
+    return () => {
+      ignore = true
+    }
+  }, [currentStore.id, isAdminUser, selectedPeriod, status])
 
   const isSessionLoading = status === 'loading'
   const isUnauthorized = !isSessionLoading && !isAdminUser
@@ -308,9 +364,14 @@ export default function DashboardPage() {
     return mapReservationToReservationData(reservation)
   }
 
-  const handleMakeModifiable = async (reservationId: string) => {
-    const reservation = reservations.find((r) => r.id === reservationId)
-    if (!reservation) return
+  const handleReservationSave = async (
+    reservationId: string,
+    payload: ReservationSavePayload
+  ): Promise<void> => {
+    const currentReservation = reservations.find((reservation) => reservation.id === reservationId)
+    if (!currentReservation) {
+      throw new Error('対象の予約が見つかりません。')
+    }
 
     const response = await fetch(
       `/api/reservation?storeId=${encodeURIComponent(currentStore.id)}`,
@@ -318,84 +379,107 @@ export default function DashboardPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ id: reservationId, status: 'modifiable' }),
+        body: JSON.stringify({ id: reservationId, ...payload }),
       }
     )
+    const responseBody = await response.json().catch(() => null)
+
     if (!response.ok) {
-      toast({ variant: 'destructive', description: '予約を修正可能にできませんでした。' })
+      const message =
+        responseBody && typeof responseBody.error === 'string'
+          ? responseBody.error
+          : '予約を更新できませんでした。'
+      throw new Error(message)
+    }
+
+    const updatedReservation = {
+      ...currentReservation,
+      ...responseBody,
+      startTime: new Date(responseBody?.startTime ?? currentReservation.startTime),
+      endTime: new Date(responseBody?.endTime ?? currentReservation.endTime),
+      updatedAt: new Date(responseBody?.updatedAt ?? Date.now()),
+    } as Reservation
+
+    setReservations((current) =>
+      current.map((reservation) =>
+        reservation.id === reservationId ? updatedReservation : reservation
+      )
+    )
+    setSelectedReservation(updatedReservation.status === 'cancelled' ? null : updatedReservation)
+    toast({ description: '予約を更新しました。' })
+  }
+
+  const handlePhoneSearch = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const normalizedPhone = phoneQuery.replace(/\D/g, '')
+
+    if (normalizedPhone.length < 3) {
+      setPhoneResults([])
+      setPhoneSearchStatus('error')
+      setPhoneSearchMessage('電話番号を3桁以上入力してください。')
       return
     }
 
-    setReservations((prev) =>
-      prev.map((reservation) =>
-        reservation.id === reservationId
-          ? {
-              ...reservation,
-              status: 'modifiable' as const,
-              modifiableUntil: new Date(Date.now() + 30 * 60 * 1000), // 30分後まで修正可能
-              lastModified: new Date(),
-            }
-          : reservation
+    setPhoneSearchStatus('loading')
+    setPhoneSearchMessage(null)
+
+    try {
+      const response = await fetch(
+        `/api/customer?phone=${encodeURIComponent(normalizedPhone)}&limit=10`,
+        { credentials: 'include', cache: 'no-store' }
       )
-    )
+      if (!response.ok) {
+        throw new Error(`Customer search failed: ${response.status}`)
+      }
+
+      const payload = (await response.json()) as
+        | PhoneCustomerSearchResult[]
+        | { data?: PhoneCustomerSearchResult[] }
+      const results = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload.data)
+          ? payload.data
+          : []
+      setPhoneResults(results)
+      setPhoneSearchStatus('ready')
+      setPhoneSearchMessage(results.length === 0 ? '該当する顧客が見つかりませんでした。' : null)
+    } catch (error) {
+      console.error('Dashboard customer phone search failed:', error)
+      setPhoneResults([])
+      setPhoneSearchStatus('error')
+      setPhoneSearchMessage('顧客検索に失敗しました。もう一度お試しください。')
+    }
   }
 
   const filteredReservations = useMemo(() => {
-    const now = new Date()
-    let startDate: Date
-    let endDate: Date
-
-    switch (selectedPeriod) {
-      case 'today':
-        startDate = startOfDay(now)
-        endDate = endOfDay(now)
-        break
-      case 'week':
-        startDate = startOfWeek(now, { locale: ja })
-        endDate = endOfWeek(now, { locale: ja })
-        break
-      case 'month':
-        startDate = startOfMonth(now)
-        endDate = endOfMonth(now)
-        break
-    }
-
-    return reservations.filter((r) => r.startTime >= startDate && r.startTime <= endDate)
+    const bounds = getJstPeriodBounds(selectedPeriod)
+    return reservations.filter((reservation) =>
+      isWithinPeriod(new Date(reservation.startTime), bounds)
+    )
   }, [reservations, selectedPeriod])
 
   const previousPeriodReservations = useMemo(() => {
-    const now = new Date()
-    let startDate: Date
-    let endDate: Date
-
-    switch (selectedPeriod) {
-      case 'today':
-        startDate = startOfDay(subDays(now, 1))
-        endDate = endOfDay(subDays(now, 1))
-        break
-      case 'week':
-        startDate = startOfWeek(subDays(now, 7), { locale: ja })
-        endDate = endOfWeek(subDays(now, 7), { locale: ja })
-        break
-      case 'month':
-        startDate = startOfMonth(subMonths(now, 1))
-        endDate = endOfMonth(subMonths(now, 1))
-        break
-    }
-
-    return reservations.filter((r) => r.startTime >= startDate && r.startTime <= endDate)
+    const bounds = getJstPeriodBounds(selectedPeriod, new Date(), true)
+    return reservations.filter((reservation) =>
+      isWithinPeriod(new Date(reservation.startTime), bounds)
+    )
   }, [reservations, selectedPeriod])
 
   const kpis = useMemo(() => {
-    const totalRevenue = filteredReservations.reduce((sum, r) => sum + r.price, 0)
-    const avgRevenue =
-      filteredReservations.length > 0 ? totalRevenue / filteredReservations.length : 0
-    const confirmedCount = filteredReservations.filter((r) => r.status === 'confirmed').length
-    const cancelledCount = filteredReservations.filter((r) => r.status === 'cancelled').length
+    const activeReservations = filteredReservations.filter(
+      (reservation) => reservation.status !== 'cancelled'
+    )
+    const activePreviousReservations = previousPeriodReservations.filter(
+      (reservation) => reservation.status !== 'cancelled'
+    )
+    const totalRevenue = sumActiveReservationRevenue(filteredReservations)
+    const avgRevenue = activeReservations.length > 0 ? totalRevenue / activeReservations.length : 0
+    const confirmedCount = activeReservations.filter((r) => r.status === 'confirmed').length
+    const cancelledCount = filteredReservations.length - activeReservations.length
     const cancelRate =
       filteredReservations.length > 0 ? (cancelledCount / filteredReservations.length) * 100 : 0
 
-    const previousRevenue = previousPeriodReservations.reduce((sum, r) => sum + r.price, 0)
+    const previousRevenue = sumActiveReservationRevenue(previousPeriodReservations)
     const revenueChange =
       previousRevenue > 0 ? ((totalRevenue - previousRevenue) / previousRevenue) * 100 : 0
 
@@ -405,8 +489,8 @@ export default function DashboardPage() {
       confirmedCount,
       cancelRate,
       revenueChange,
-      totalBookings: filteredReservations.length,
-      previousBookings: previousPeriodReservations.length,
+      totalBookings: activeReservations.length,
+      previousBookings: activePreviousReservations.length,
     }
   }, [filteredReservations, previousPeriodReservations])
 
@@ -422,7 +506,10 @@ export default function DashboardPage() {
     const windowStart = subHours(now, 1)
     const windowEnd = addHours(now, 48)
 
-    const upcoming = reservations
+    const activeReservations = reservations.filter(
+      (reservation) => reservation.status !== 'cancelled'
+    )
+    const upcoming = activeReservations
       .filter((reservation) => {
         const start =
           reservation.startTime instanceof Date
@@ -443,7 +530,7 @@ export default function DashboardPage() {
       }
     }
 
-    const latest = [...reservations].sort((a, b) => {
+    const latest = [...activeReservations].sort((a, b) => {
       const aStart = a.startTime instanceof Date ? a.startTime : new Date(a.startTime)
       const bStart = b.startTime instanceof Date ? b.startTime : new Date(b.startTime)
       return bStart.getTime() - aStart.getTime()
@@ -460,11 +547,14 @@ export default function DashboardPage() {
     return Array.from({ length: 7 }, (_, i) => {
       const date = subDays(new Date(), 6 - i)
       const dayReservations = reservations.filter(
-        (r) => format(r.startTime, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+        (reservation) =>
+          reservation.status !== 'cancelled' &&
+          formatInTimeZone(new Date(reservation.startTime), JST_TIMEZONE, 'yyyy-MM-dd') ===
+            formatInTimeZone(date, JST_TIMEZONE, 'yyyy-MM-dd')
       )
       return {
-        date: format(date, 'MM/dd'),
-        revenue: dayReservations.reduce((sum, r) => sum + r.price, 0),
+        date: formatInTimeZone(date, JST_TIMEZONE, 'MM/dd'),
+        revenue: sumActiveReservationRevenue(dayReservations),
         count: dayReservations.length,
       }
     })
@@ -476,11 +566,13 @@ export default function DashboardPage() {
       revenue: 0,
     }))
 
-    filteredReservations.forEach((r) => {
-      const hour = r.startTime.getHours()
-      hourly[hour].count += 1
-      hourly[hour].revenue += r.price
-    })
+    filteredReservations
+      .filter((reservation) => reservation.status !== 'cancelled')
+      .forEach((r) => {
+        const hour = Number(formatInTimeZone(new Date(r.startTime), JST_TIMEZONE, 'H'))
+        hourly[hour].count += 1
+        hourly[hour].revenue += r.price
+      })
 
     return hourly.filter((h) => h.count > 0)
   }, [filteredReservations])
@@ -489,26 +581,41 @@ export default function DashboardPage() {
     () => [
       {
         name: '確定済み',
-        value: reservations.filter((r) => r.status === 'confirmed').length,
+        value: filteredReservations.filter((r) => r.status === 'confirmed').length,
         color: colors.success,
       },
       {
         name: '保留中',
-        value: reservations.filter((r) => r.status === 'pending').length,
+        value: filteredReservations.filter((r) => r.status === 'pending').length,
         color: colors.warning,
       },
       {
         name: 'キャンセル',
-        value: reservations.filter((r) => r.status === 'cancelled').length,
+        value: filteredReservations.filter((r) => r.status === 'cancelled').length,
         color: colors.danger,
       },
       {
         name: '修正可能',
-        value: reservations.filter((r) => r.status === 'modifiable').length,
+        value: filteredReservations.filter((r) => r.status === 'modifiable').length,
         color: colors.info,
       },
     ],
-    [reservations]
+    [filteredReservations]
+  )
+
+  const todayDateKey = formatInTimeZone(new Date(), JST_TIMEZONE, 'yyyy-MM-dd')
+  const todaysWorkingCasts = useMemo(
+    () =>
+      (weeklySchedule?.entries ?? [])
+        .map((entry) => ({ entry, shift: entry.schedule[todayDateKey] }))
+        .filter(({ shift }) => shift?.type === '出勤予定')
+        .sort((left, right) => {
+          const timeOrder = (left.shift?.startTime ?? '').localeCompare(
+            right.shift?.startTime ?? ''
+          )
+          return timeOrder || left.entry.name.localeCompare(right.entry.name, 'ja')
+        }),
+    [todayDateKey, weeklySchedule]
   )
 
   if (isSessionLoading) {
@@ -561,34 +668,6 @@ export default function DashboardPage() {
     )
   }
 
-  if (!loading && reservations.length === 0) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center p-6">
-        <Card className="max-w-xl text-center">
-          <CardHeader>
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-purple-100 text-purple-600">
-              <Sparkles className="h-6 w-6" />
-            </div>
-            <CardTitle>まだデータがありません</CardTitle>
-            <CardDescription>
-              新しい予約が登録されると、このダッシュボードで売上や稼働状況を確認できます。
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              <Button onClick={() => setShowCustomerSelection(true)}>
-                <Calendar className="mr-2 h-4 w-4" /> 予約を登録
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href="/admin/analytics/daily-sales">レポートを見る</Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6 p-6">
       {/* ヘッダー */}
@@ -599,17 +678,177 @@ export default function DashboardPage() {
             ダッシュボード
           </h1>
           <p className="mt-1 text-muted-foreground">
-            {format(new Date(), 'yyyy年MM月dd日 (E)', { locale: ja })} 現在の統計
+            {formatInTimeZone(new Date(), JST_TIMEZONE, 'yyyy年MM月dd日 (E)', {
+              locale: ja,
+            })}{' '}
+            {currentStore.displayName}の状況
           </p>
         </div>
 
-        <Tabs value={selectedPeriod} onValueChange={(v) => setSelectedPeriod(v as any)}>
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="today">今日</TabsTrigger>
-            <TabsTrigger value="week">今週</TabsTrigger>
-            <TabsTrigger value="month">今月</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
+          {canViewAnalytics && (
+            <Button variant="outline" asChild>
+              <Link href="/admin/analytics/daily-report" aria-label="業務日報を開く">
+                <FileText className="mr-2 h-4 w-4" />
+                業務日報
+              </Link>
+            </Button>
+          )}
+          <Tabs
+            value={selectedPeriod}
+            onValueChange={(value) => {
+              if (value === 'today' || value === 'week' || value === 'month') {
+                setSelectedPeriod(value)
+              }
+            }}
+          >
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="today">今日</TabsTrigger>
+              <TabsTrigger value="week">今週</TabsTrigger>
+              <TabsTrigger value="month">今月</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <Card className="border-purple-200 shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-purple-600" />
+              予約受付
+            </CardTitle>
+            <CardDescription>
+              予約作成と顧客情報の確認は、それぞれ専用の入口から操作できます。
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Button
+                type="button"
+                size="lg"
+                className="h-12 text-base"
+                onClick={() => setCustomerDialogMode('reservation')}
+              >
+                <Calendar className="mr-2 h-5 w-5" />
+                予約作成
+              </Button>
+              <Button
+                type="button"
+                size="lg"
+                variant="outline"
+                className="h-12 text-base"
+                onClick={() => setCustomerDialogMode('lookup')}
+              >
+                <Search className="mr-2 h-5 w-5" />
+                顧客検索
+              </Button>
+            </div>
+
+            <form className="space-y-2 border-t pt-4" onSubmit={handlePhoneSearch}>
+              <Label htmlFor="dashboard-phone-search">電話番号</Label>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <div className="relative flex-1">
+                  <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="dashboard-phone-search"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    value={phoneQuery}
+                    onChange={(event) => setPhoneQuery(event.target.value)}
+                    placeholder="090-1234-5678"
+                    className="pl-9"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  variant="secondary"
+                  disabled={phoneSearchStatus === 'loading'}
+                >
+                  {phoneSearchStatus === 'loading' ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Search className="mr-2 h-4 w-4" />
+                  )}
+                  電話番号で予約を検索
+                </Button>
+              </div>
+
+              {phoneSearchMessage && (
+                <p
+                  role={phoneSearchStatus === 'error' ? 'alert' : 'status'}
+                  className={cn(
+                    'text-sm',
+                    phoneSearchStatus === 'error' ? 'text-destructive' : 'text-muted-foreground'
+                  )}
+                >
+                  {phoneSearchMessage}
+                </p>
+              )}
+
+              {phoneResults.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  {phoneResults.map((customer) => (
+                    <div
+                      key={customer.id}
+                      className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div>
+                        <p className="font-medium">{customer.name}</p>
+                        <p className="text-sm text-muted-foreground">{customer.phone}</p>
+                      </div>
+                      <Button size="sm" asChild>
+                        <Link
+                          href={`/admin/reservation?customerId=${encodeURIComponent(customer.id)}`}
+                          aria-label={`${customer.name}で予約を作成`}
+                        >
+                          この顧客で予約
+                        </Link>
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm">
+          <CardHeader className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold leading-none tracking-tight">本日出勤一覧</h2>
+                <CardDescription className="mt-2">出勤開始時刻順で表示しています。</CardDescription>
+              </div>
+              <Badge variant="secondary">出勤 {todaysWorkingCasts.length}名</Badge>
+            </div>
+            <Button variant="outline" size="sm" className="w-full sm:w-fit" asChild>
+              <Link href="/admin/cast/weekly-schedule">週間出勤表を見る</Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {todaysWorkingCasts.length === 0 ? (
+              <div className="flex min-h-24 items-center justify-center rounded-lg border border-dashed px-4 text-center text-sm text-muted-foreground">
+                本日の出勤予定はありません。週間出勤表で登録状況を確認できます。
+              </div>
+            ) : (
+              <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                {todaysWorkingCasts.map(({ entry, shift }) => (
+                  <div
+                    key={entry.castId}
+                    className="flex items-center justify-between gap-4 rounded-lg border p-3"
+                  >
+                    <p className="font-medium">{entry.name}</p>
+                    <Badge variant="outline" className="whitespace-nowrap">
+                      {shift?.startTime ?? '--:--'}〜{shift?.endTime ?? '--:--'}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* メインKPIカード */}
@@ -744,7 +983,7 @@ export default function DashboardPage() {
               <PieChart className="h-5 w-5" />
               予約ステータス分布
             </CardTitle>
-            <CardDescription>全期間の予約ステータス内訳</CardDescription>
+            <CardDescription>選択期間の予約ステータス内訳</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-80">
@@ -801,7 +1040,7 @@ export default function DashboardPage() {
         <Card className="cursor-pointer transition-shadow hover:shadow-lg">
           <CardContent className="p-6">
             <div
-              onClick={() => setShowCustomerSelection(true)}
+              onClick={() => setCustomerDialogMode('reservation')}
               className="flex cursor-pointer items-center justify-between"
             >
               <div className="flex items-center gap-4">
@@ -917,7 +1156,8 @@ export default function DashboardPage() {
                         </div>
                         <p className="text-sm text-muted-foreground">担当: {staffDisplayName}</p>
                         <p className="whitespace-nowrap text-xs text-muted-foreground">
-                          {format(startAt, 'MM月dd日 HH:mm')} - {format(endAt, 'HH:mm')}
+                          {formatInTimeZone(startAt, JST_TIMEZONE, 'MM月dd日 HH:mm')} -{' '}
+                          {formatInTimeZone(endAt, JST_TIMEZONE, 'HH:mm')}
                         </p>
                       </div>
                     </div>
@@ -946,11 +1186,15 @@ export default function DashboardPage() {
         open={!!selectedReservation}
         onOpenChange={(open) => !open && setSelectedReservation(null)}
         reservation={selectedReservation ? convertToReservationData(selectedReservation) : null}
+        onSave={canUpdateReservations ? handleReservationSave : undefined}
       />
 
       <CustomerSelectionDialog
-        open={showCustomerSelection}
-        onOpenChange={setShowCustomerSelection}
+        open={customerDialogMode !== null}
+        mode={customerDialogMode ?? 'reservation'}
+        onOpenChange={(open) => {
+          if (!open) setCustomerDialogMode(null)
+        }}
       />
     </div>
   )

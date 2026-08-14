@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Shared customer and cast chat transport contracts
+ * @related_to   Chat participant APIs, lists, headers, and message window
+ * @known_issues Presence values remain transport-provided placeholders
+ */
 export interface ReservationInfo {
   date: string
   time: string
@@ -33,6 +38,7 @@ export interface Message {
 export interface Customer {
   id: string
   name: string
+  phone?: string
   lastMessage: string
   lastMessageTime: string
   hasUnread: boolean

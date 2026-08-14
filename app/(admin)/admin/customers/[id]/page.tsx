@@ -63,17 +63,23 @@ import {
   CustomerInsights,
   NgCastEntry,
 } from '@/lib/customer/types'
-import { Reservation } from '@/lib/types/reservation'
+import { Reservation, ReservationData, ReservationSavePayload } from '@/lib/types/reservation'
 import { Cast } from '@/lib/cast/types'
 import { FALLBACK_IMAGE, normalizeCastList } from '@/lib/cast/mapper'
 import { getAllCasts } from '@/lib/cast/data'
 import { NgCastDialog } from '@/components/customer/ng-cast-dialog'
 import { ReservationDialog } from '@/components/reservation/reservation-dialog'
-import { ReservationData } from '@/lib/types/reservation'
 import { CustomerUseCases } from '@/lib/customer/usecases'
 import { CustomerRepositoryImpl } from '@/lib/customer/repository-impl'
+import { ReservationRepositoryImpl } from '@/lib/reservation/repository-impl'
 import { isVipMember } from '@/lib/utils'
-import { calculateAge, deserializeCustomer, normalizePhoneQuery } from '@/lib/customer/utils'
+import {
+  calculateAge,
+  deserializeCustomer,
+  findCustomerReservationByUsageRecordId,
+  normalizePhoneQuery,
+  partitionCustomerReservationHistory,
+} from '@/lib/customer/utils'
 import { toast } from '@/hooks/use-toast'
 import { mapReservationToReservationData } from '@/lib/reservation/transformers'
 import { PointAdjustmentDialog } from '@/components/admin/point-adjustment-dialog'
@@ -118,6 +124,23 @@ const NG_ASSIGNMENT_LABELS: Record<'customer' | 'cast' | 'staff', string> = {
   staff: '店舗NG',
 }
 
+const accountStatusLabels: Record<Customer['accountStatus'], string> = {
+  pending: '仮会員',
+  active: '利用可',
+  withdrawn: '退会',
+  blocked: 'ブラック',
+  unknown: '要確認',
+}
+
+const membershipStageLabels: Record<Customer['membershipStage'], string> = {
+  regular: 'レギュラー',
+  silver: 'シルバー',
+  gold: 'ゴールド',
+  platinum: 'プラチナ',
+  god: 'ゴッド',
+  unknown: '要確認',
+}
+
 const formatYen = (amount: number) => `¥${amount.toLocaleString('ja-JP')}`
 
 export default function CustomerProfile() {
@@ -128,6 +151,8 @@ export default function CustomerProfile() {
   const id = Array.isArray(idParam) ? idParam[0] : (idParam ?? '')
 
   const [customer, setCustomer] = useState<Customer | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [loadAttempt, setLoadAttempt] = useState(0)
   const [usageHistory, setUsageHistory] = useState<CustomerUsageRecord[]>([])
   const [pointHistory, setPointHistory] = useState<CustomerPointHistory[]>([])
   const [reservations, setReservations] = useState<Reservation[]>([])
@@ -139,6 +164,14 @@ export default function CustomerProfile() {
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
   const [insights, setInsights] = useState<CustomerInsights | null>(null)
   const [insightsLoading, setInsightsLoading] = useState(false)
+  const reservationRepository = useMemo(
+    () => new ReservationRepositoryImpl(undefined, currentStore.id),
+    [currentStore.id]
+  )
+  const availableCastById = useMemo(
+    () => new Map(availableCasts.map((cast) => [cast.id, cast])),
+    [availableCasts]
+  )
   const fetchPointHistory = useCallback(async () => {
     if (!id) return
     try {
@@ -197,57 +230,79 @@ export default function CustomerProfile() {
 
   useEffect(() => {
     if (!id) return
+    let ignore = false
+
     const fetchCustomerData = async () => {
-      // Instantiate repository and use cases
+      setLoadError(null)
       const customerRepository = new CustomerRepositoryImpl()
       const customerUseCases = new CustomerUseCases(customerRepository)
 
-      // Fetch main customer data
-      const fetchedCustomer = await customerUseCases.getById(id)
+      try {
+        const fetchedCustomer = await customerUseCases.getById(id)
 
-      if (!fetchedCustomer) {
-        toast({
-          title: 'エラー',
-          description: '顧客情報が見つかりませんでした',
-          variant: 'destructive',
+        if (ignore) return
+        if (!fetchedCustomer) {
+          setLoadError('顧客情報が見つかりませんでした')
+          return
+        }
+
+        const normalizedCustomer = deserializeCustomer(fetchedCustomer)
+        setCustomer(normalizedCustomer)
+        form.reset({
+          name: normalizedCustomer.name,
+          phone: normalizedCustomer.phone,
+          email: normalizedCustomer.email,
+          password: '',
+          birthDate: normalizedCustomer.birthDate,
+          memberType: normalizedCustomer.memberType as 'regular' | 'vip',
+          smsEnabled: normalizedCustomer.smsEnabled || false,
+          points: normalizedCustomer.points,
         })
-        router.replace('/admin/customers')
+
+        const customerHistory = partitionCustomerReservationHistory(
+          normalizedCustomer.reservations ?? []
+        )
+        setUsageHistory(customerHistory.usageHistory)
+        setReservations(customerHistory.activeReservations)
+      } catch (error) {
+        console.error('Failed to load customer data:', error)
+        if (!ignore) {
+          setCustomer(null)
+          setLoadError('顧客情報を取得できませんでした')
+        }
         return
       }
-
-      const normalizedCustomer = deserializeCustomer(fetchedCustomer)
-      setCustomer(normalizedCustomer)
-      form.reset({
-        name: normalizedCustomer.name,
-        phone: normalizedCustomer.phone,
-        email: normalizedCustomer.email,
-        password: '',
-        birthDate: normalizedCustomer.birthDate,
-        memberType: normalizedCustomer.memberType as 'regular' | 'vip',
-        smsEnabled: normalizedCustomer.smsEnabled || false,
-        points: normalizedCustomer.points,
-      })
-
-      setUsageHistory([])
-      setReservations([])
 
       try {
         const response = await fetch(buildStoreScopedEndpoint('/api/cast', currentStore.id), {
           cache: 'no-store',
           credentials: 'include',
         })
-        if (response.ok) {
-          const payload = await response.json()
-          const data = Array.isArray(payload?.data) ? payload.data : payload
+        if (!response.ok) {
+          throw new Error(`Failed to fetch casts: ${response.status}`)
+        }
+        const payload = await response.json()
+        const data = Array.isArray(payload?.data) ? payload.data : payload
+        if (!ignore) {
           setAvailableCasts(normalizeCastList(data))
         }
       } catch (error) {
         console.error('Failed to load cast list:', error)
+        if (!ignore) {
+          toast({
+            title: 'キャスト一覧の取得に失敗しました',
+            description: '顧客の基本情報はそのまま確認できます。',
+            variant: 'destructive',
+          })
+        }
       }
     }
 
     fetchCustomerData()
-  }, [currentStore.id, id, form, router])
+    return () => {
+      ignore = true
+    }
+  }, [currentStore.id, id, form, loadAttempt])
 
   useEffect(() => {
     fetchPointHistory()
@@ -263,7 +318,7 @@ export default function CustomerProfile() {
     const loadInsights = async () => {
       setInsightsLoading(true)
       try {
-        const data = await customerUseCases.getInsights(id)
+        const data = await customerUseCases.getInsights(id, currentStore.id)
         if (!ignore) {
           setInsights(data)
         }
@@ -287,7 +342,7 @@ export default function CustomerProfile() {
     return () => {
       ignore = true
     }
-  }, [id])
+  }, [currentStore.id, id])
 
   const handlePointAdjustment = useCallback(
     (delta: number) => {
@@ -306,8 +361,86 @@ export default function CustomerProfile() {
     [fetchPointHistory, form]
   )
 
+  const reloadCustomerReservations = useCallback(async (): Promise<Customer> => {
+    if (!id) {
+      throw new Error('顧客IDが指定されていません。')
+    }
+
+    const customerRepository = new CustomerRepositoryImpl()
+    const customerUseCases = new CustomerUseCases(customerRepository)
+    const fetchedCustomer = await customerUseCases.getById(id)
+    if (!fetchedCustomer) {
+      throw new Error('顧客情報が見つかりませんでした。')
+    }
+
+    const normalizedCustomer = deserializeCustomer(fetchedCustomer)
+    const customerHistory = partitionCustomerReservationHistory(
+      normalizedCustomer.reservations ?? []
+    )
+    setCustomer(normalizedCustomer)
+    setUsageHistory(customerHistory.usageHistory)
+    setReservations(customerHistory.activeReservations)
+    return normalizedCustomer
+  }, [id])
+
   const handleBooking = () => {
-    router.push(`/admin/reservation?customerId=${id}`)
+    router.push(`/admin/reservation?customerId=${encodeURIComponent(id)}`)
+  }
+
+  const handleReservationSave = async (
+    reservationId: string,
+    payload: ReservationSavePayload
+  ): Promise<void> => {
+    let updatedReservation: Reservation
+    try {
+      updatedReservation = await reservationRepository.update(reservationId, { ...payload })
+    } catch (error) {
+      const updateError = error instanceof Error ? error : new Error('予約の更新に失敗しました。')
+      toast({
+        title: '更新に失敗しました',
+        description: updateError.message,
+        variant: 'destructive',
+      })
+      throw updateError
+    }
+
+    try {
+      const refreshedCustomer = await reloadCustomerReservations()
+      const refreshedReservation = findCustomerReservationByUsageRecordId(
+        refreshedCustomer.reservations ?? [],
+        reservationId
+      )
+      setSelectedReservation(
+        refreshedReservation?.status === 'cancelled' ? null : refreshedReservation
+      )
+    } catch (error) {
+      console.error('Failed to reload customer reservations after update:', error)
+      const previousReservation = findCustomerReservationByUsageRecordId(
+        customer?.reservations ?? [],
+        reservationId
+      )
+      const normalizedUpdatedReservation = {
+        ...previousReservation,
+        ...updatedReservation,
+        startTime: new Date(updatedReservation.startTime),
+        endTime: new Date(updatedReservation.endTime),
+        updatedAt: new Date(updatedReservation.updatedAt ?? Date.now()),
+      } as Reservation
+      setSelectedReservation(
+        normalizedUpdatedReservation.status === 'cancelled' ? null : normalizedUpdatedReservation
+      )
+      setLoadAttempt((attempt) => attempt + 1)
+      toast({
+        title: '予約は更新されました',
+        description: '最新情報の再読み込みを続けています。',
+      })
+      return
+    }
+
+    toast({
+      title: '予約を更新しました',
+      description: '更新後の最新情報を再読み込みしました。',
+    })
   }
 
   const handleSave = async (data: FormData) => {
@@ -586,6 +719,25 @@ export default function CustomerProfile() {
     ]
   }, [insights])
 
+  if (loadError) {
+    return (
+      <div
+        role="alert"
+        className="mx-auto mt-12 flex max-w-xl flex-col items-center gap-4 rounded-lg border border-red-200 bg-red-50 p-8 text-center text-red-700"
+      >
+        <p>{loadError}</p>
+        <div className="flex gap-3">
+          <Button type="button" variant="outline" onClick={() => router.push('/admin/customers')}>
+            顧客一覧に戻る
+          </Button>
+          <Button type="button" onClick={() => setLoadAttempt((attempt) => attempt + 1)}>
+            再試行
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   if (!customer) {
     return <PageLoading compact label="顧客情報を読み込んでいます" />
   }
@@ -617,7 +769,17 @@ export default function CustomerProfile() {
               {isVipMember(customer.memberType) ? 'VIPメンバー' : '通常会員'}
             </Badge>
             <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700">
-              レギュラーステージ
+              {membershipStageLabels[customer.membershipStage]}ステージ
+            </Badge>
+            <Badge
+              variant={customer.accountStatus === 'active' ? 'outline' : 'destructive'}
+              className={
+                customer.accountStatus === 'active'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  : undefined
+              }
+            >
+              {accountStatusLabels[customer.accountStatus]}
             </Badge>
             <Badge variant="outline" className="bg-gray-50 text-gray-600">
               ポイント残高: {customer.points.toLocaleString()}pt
@@ -629,7 +791,7 @@ export default function CustomerProfile() {
             onClick={handleBooking}
             className="bg-emerald-600 text-white hover:bg-emerald-700"
           >
-            新規予約
+            オーダー新規作成
           </Button>
           {!isEditing ? (
             <Button
@@ -726,6 +888,9 @@ export default function CustomerProfile() {
               {reservations
                 .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
                 .map((reservation) => {
+                  const assignedCast = availableCastById.get(
+                    reservation.castId ?? reservation.staffId
+                  )
                   const isToday =
                     new Date(reservation.startTime).toDateString() === new Date().toDateString()
                   const isTomorrow =
@@ -746,14 +911,16 @@ export default function CustomerProfile() {
                       <div className="shrink-0">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <SafeImage
-                          src={FALLBACK_IMAGE}
-                          alt="Staff"
+                          src={assignedCast?.image?.trim() ? assignedCast.image : FALLBACK_IMAGE}
+                          alt={assignedCast?.name ?? reservation.staffName ?? '担当キャスト未設定'}
                           className="h-12 w-12 rounded-full object-cover"
                         />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <h3 className="font-medium">スタッフ名</h3>
+                          <h3 className="font-medium">
+                            {assignedCast?.name ?? reservation.staffName ?? '担当キャスト未設定'}
+                          </h3>
                           <Badge
                             variant={reservation.status === 'confirmed' ? 'default' : 'secondary'}
                           >
@@ -855,10 +1022,12 @@ export default function CustomerProfile() {
                             <Button
                               type="button"
                               className="shrink-0 bg-blue-500 hover:bg-blue-600"
-                              onClick={() => router.push('/admin/chat')}
+                              onClick={() =>
+                                router.push(`/admin/chat?customerId=${encodeURIComponent(id)}`)
+                              }
                             >
                               <MessageSquare className="mr-2 h-4 w-4" />
-                              メッセージ
+                              チャット
                             </Button>
                           </div>
                           <FormMessage />
@@ -878,9 +1047,14 @@ export default function CustomerProfile() {
                             <FormControl>
                               <Input {...field} disabled={!isEditing} />
                             </FormControl>
-                            <Button type="button" variant="destructive" className="shrink-0">
-                              <Phone className="mr-2 h-4 w-4" />
-                              電話
+                            <Button asChild variant="destructive" className="shrink-0">
+                              <a
+                                href={`tel:${normalizePhoneQuery(customer.phone)}`}
+                                aria-label={`${customer.name}へ電話`}
+                              >
+                                <Phone className="mr-2 h-4 w-4" />
+                                電話
+                              </a>
                             </Button>
                           </div>
                           <FormMessage />
@@ -1288,13 +1462,19 @@ export default function CustomerProfile() {
                         variant="link"
                         className="p-0 text-sm text-emerald-600"
                         onClick={() => {
-                          // 利用履歴から対応する予約を探す（簡易実装）
-                          const relatedReservation = reservations.find(
-                            (r) => r.startTime.toDateString() === record.date.toDateString()
+                          const relatedReservation = findCustomerReservationByUsageRecordId(
+                            customer.reservations ?? [],
+                            record.id
                           )
                           if (relatedReservation) {
                             setSelectedReservation(relatedReservation)
+                            return
                           }
+                          toast({
+                            title: '予約詳細を表示できません',
+                            description: '最新の顧客情報を再読み込みしてからお試しください。',
+                            variant: 'destructive',
+                          })
                         }}
                       >
                         詳細を見る
@@ -1431,6 +1611,8 @@ export default function CustomerProfile() {
         open={!!selectedReservation}
         onOpenChange={(open) => !open && setSelectedReservation(null)}
         reservation={selectedReservation ? convertToReservationData(selectedReservation) : null}
+        casts={availableCasts}
+        onSave={handleReservationSave}
       />
     </div>
   )

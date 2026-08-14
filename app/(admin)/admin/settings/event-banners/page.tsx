@@ -146,6 +146,10 @@ export default function EventBannersPage() {
     setBanners((prev) =>
       prev.filter((_, i) => i !== index).map((banner, i) => ({ ...banner, displayOrder: i }))
     )
+    toast({
+      title: '一覧から削除しました',
+      description: '削除しました。「すべて保存する」で反映してください',
+    })
   }
 
   const handleReorder = (index: number, direction: 'up' | 'down') => {
@@ -212,15 +216,6 @@ export default function EventBannersPage() {
   }
 
   const handleSave = async (triggerIndex: number | null = null) => {
-    if (banners.length === 0) {
-      toast({
-        title: 'バナーがありません',
-        description: '少なくとも1件のバナーを登録してください',
-        variant: 'destructive',
-      })
-      return
-    }
-
     const hasInvalid = banners.some((banner) => !banner.title.trim() || !banner.imageUrl.trim())
     if (hasInvalid) {
       toast({
@@ -465,11 +460,7 @@ export default function EventBannersPage() {
                 </CardContent>
                 <CardFooter className="flex flex-wrap items-center justify-between gap-3 border-t">
                   <p className="text-sm text-gray-500">このバナーの編集内容を保存します</p>
-                  <Button
-                    type="button"
-                    onClick={() => handleSave(index)}
-                    disabled={saving && savingIndex !== index}
-                  >
+                  <Button type="button" onClick={() => handleSave(index)} disabled={saving}>
                     {saving && savingIndex === index ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />

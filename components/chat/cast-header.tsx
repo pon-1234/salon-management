@@ -1,8 +1,13 @@
+/**
+ * @design_doc   Admin chat cast context and supported navigation controls
+ * @related_to   Cast chat API and cast management page
+ * @known_issues Cast chat records do not expose a telephone number
+ */
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
-import { User, PhoneCall } from 'lucide-react'
+import { User } from 'lucide-react'
 import type { CastChatEntry } from '@/lib/types/chat'
 
 interface CastHeaderProps {
@@ -55,22 +60,16 @@ export function CastHeader({ cast }: CastHeaderProps) {
 
       <div className="flex items-center gap-2">
         <Button
+          asChild
           variant="ghost"
           size="sm"
           className="text-gray-600 hover:bg-purple-50 hover:text-purple-600"
         >
-          <PhoneCall className="h-4 w-4" />
-        </Button>
-        <Link href={`/admin/cast/manage/${cast.id}`}>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-gray-600 hover:bg-purple-50 hover:text-purple-600"
-          >
+          <Link href={`/admin/cast/manage/${cast.id}`} aria-label={`${cast.name}の詳細`}>
             <User className="mr-2 h-4 w-4" />
             詳細
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     </div>
   )

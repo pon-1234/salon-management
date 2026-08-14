@@ -1,18 +1,23 @@
 'use client'
 
+/**
+ * @design_doc   Client operational review: cast dashboard actions persist through domain APIs
+ * @related_to   CastManagePage, ReservationDialog, ReservationRepositoryImpl
+ * @known_issues Cast phone numbers are not part of the current Cast domain model
+ */
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Cast, CastSchedule } from '@/lib/cast/types'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
-import { Clock, CalendarDays, User, Phone, Mail, Settings, Edit, DollarSign } from 'lucide-react'
+import { Clock, CalendarDays, User, Mail, Settings, Edit, DollarSign } from 'lucide-react'
 import { ReservationDialog } from '@/components/reservation/reservation-dialog'
-import { ReservationData, Reservation } from '@/lib/types/reservation'
+import { ReservationData, Reservation, ReservationSavePayload } from '@/lib/types/reservation'
 import { getAllReservations } from '@/lib/reservation/data'
+import { ReservationRepositoryImpl } from '@/lib/reservation/repository-impl'
 import { format, addDays, startOfDay } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { useToast } from '@/hooks/use-toast'
@@ -26,64 +31,83 @@ import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import { mapReservationToReservationData } from '@/lib/reservation/transformers'
 interface CastDashboardProps {
   cast: Cast
-  onUpdate: (data: Partial<Cast>) => void
+  onUpdate: (data: Partial<Cast>) => Promise<void> | void
+  onRequestEdit: () => void
 }
 
-export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
+export function CastDashboard({ cast, onUpdate, onRequestEdit }: CastDashboardProps) {
   const { currentStore } = useStore()
-  const [isEditing, setIsEditing] = useState(false)
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
   const [scheduleMap, setScheduleMap] = useState<Record<string, CastSchedule>>({})
   const weekStart = useMemo(() => startOfDay(new Date()), [])
   const weekEnd = useMemo(() => addDays(weekStart, 6), [weekStart])
-  const [formData, setFormData] = useState({
-    name: cast.name,
-    nameKana: cast.nameKana,
-    phone: '',
-    email: '',
-    type: cast.type,
-    netReservation: cast.netReservation,
-    specialDesignationFee: cast.specialDesignationFee,
-    regularDesignationFee: cast.regularDesignationFee,
-  })
   const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
     [weekStart]
   )
   const { toast } = useToast()
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const handleSave = () => {
-    onUpdate(formData)
-    setIsEditing(false)
-  }
+  const reservationRepository = useMemo(
+    () => new ReservationRepositoryImpl(undefined, currentStore.id),
+    [currentStore.id]
+  )
 
   // 予約データを取得
   useEffect(() => {
+    let ignore = false
+
     const fetchReservations = async () => {
-      const allReservations = await getAllReservations({ storeId: currentStore.id })
-      const castReservations = allReservations
-        .filter((reservation) => {
-          const reservationCastId = reservation.castId ?? reservation.staffId
-          return reservationCastId === cast.id
-        })
-        .map(
-          (reservation) =>
-            ({
-              ...reservation,
-              startTime: new Date(reservation.startTime),
-              endTime: new Date(reservation.endTime),
-            }) as Reservation
-        )
-      setReservations(castReservations)
+      try {
+        const pageSize = 100
+        const now = new Date()
+        const rangeEnd = addDays(now, 366)
+        const allReservations: Reservation[] = []
+        let offset = 0
+        let page: Reservation[]
+
+        do {
+          page = await getAllReservations({
+            storeId: currentStore.id,
+            castId: cast.id,
+            status: 'active',
+            startDate: now.toISOString(),
+            endDate: rangeEnd.toISOString(),
+            limit: 100,
+            offset,
+          })
+          allReservations.push(...page)
+          offset += page.length
+        } while (page.length === pageSize)
+
+        if (!ignore) {
+          setReservations(
+            allReservations.map(
+              (reservation) =>
+                ({
+                  ...reservation,
+                  startTime: new Date(reservation.startTime),
+                  endTime: new Date(reservation.endTime),
+                }) as Reservation
+            )
+          )
+        }
+      } catch (error) {
+        console.error('Failed to load cast reservations:', error)
+        if (!ignore) {
+          toast({
+            title: 'エラー',
+            description: '予約情報の取得に失敗しました',
+            variant: 'destructive',
+          })
+        }
+      }
     }
-    fetchReservations()
-  }, [cast.id, currentStore.id])
+    void fetchReservations()
+
+    return () => {
+      ignore = true
+    }
+  }, [cast.id, currentStore.id, toast])
 
   const upcomingReservations = useMemo(() => {
     const now = new Date()
@@ -308,6 +332,37 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
     return mapReservationToReservationData(reservation, { casts: [cast] })
   }
 
+  const handleReservationSave = useCallback(
+    async (reservationId: string, payload: ReservationSavePayload): Promise<void> => {
+      const currentReservation = reservations.find(
+        (reservation) => reservation.id === reservationId
+      )
+      if (!currentReservation) {
+        throw new Error('対象の予約が見つかりません。')
+      }
+
+      const updated = await reservationRepository.update(reservationId, payload)
+      const normalizedUpdated = {
+        ...currentReservation,
+        ...updated,
+        startTime: new Date(updated.startTime),
+        endTime: new Date(updated.endTime),
+        updatedAt: new Date(updated.updatedAt),
+      } as Reservation
+
+      setReservations((current) =>
+        normalizedUpdated.status === 'cancelled'
+          ? current.filter((reservation) => reservation.id !== reservationId)
+          : current.map((reservation) =>
+              reservation.id === reservationId ? normalizedUpdated : reservation
+            )
+      )
+      setSelectedReservation(normalizedUpdated.status === 'cancelled' ? null : normalizedUpdated)
+      toast({ title: '予約を更新しました' })
+    },
+    [reservationRepository, reservations, toast]
+  )
+
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-5 lg:gap-6">
       {/* 左側: 基本情報 (2/5) */}
@@ -320,98 +375,39 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
                 <User className="h-5 w-5" />
                 基本情報
               </CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => setIsEditing(!isEditing)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onRequestEdit}
+                aria-label="プロフィール編集を開く"
+              >
                 <Edit className="h-4 w-4" />
               </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {isEditing ? (
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label htmlFor="name" className="text-sm">
-                    源氏名
-                  </Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="h-8"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="nameKana" className="text-sm">
-                    本名
-                  </Label>
-                  <Input
-                    id="nameKana"
-                    name="nameKana"
-                    value={formData.nameKana}
-                    onChange={handleInputChange}
-                    className="h-8"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-sm">
-                    TEL
-                  </Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    className="h-8"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm">
-                    メール
-                  </Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="h-8"
-                  />
-                </div>
-                <div className="flex gap-2 pt-2">
-                  <Button size="sm" onClick={handleSave}>
-                    保存
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => setIsEditing(false)}>
-                    キャンセル
-                  </Button>
-                </div>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">源氏名</span>
+                <span className="font-medium">{cast.name}</span>
               </div>
-            ) : (
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">源氏名</span>
-                  <span className="font-medium">{cast.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">本名</span>
-                  <span>{cast.nameKana}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">タイプ</span>
-                  <Badge variant="outline" className="text-xs">
-                    {cast.type}
-                  </Badge>
-                </div>
-                <Separator className="my-2" />
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Phone className="h-3 w-3" />
-                  <span className="text-xs">090-1234-5678</span>
-                </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">本名</span>
+                <span>{cast.nameKana}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">タイプ</span>
+                <Badge variant="outline" className="text-xs">
+                  {cast.type}
+                </Badge>
+              </div>
+              {cast.loginEmail ? (
                 <div className="flex items-center gap-2 text-gray-600">
                   <Mail className="h-3 w-3" />
-                  <span className="text-xs">cast@example.com</span>
+                  <span className="break-all text-xs">{cast.loginEmail}</span>
                 </div>
-              </div>
-            )}
+              ) : null}
+            </div>
           </CardContent>
         </Card>
 
@@ -431,7 +427,7 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
               <Switch
                 id="netReservation"
                 checked={cast.netReservation}
-                onCheckedChange={(checked) => onUpdate({ netReservation: checked })}
+                onCheckedChange={(checked) => void onUpdate({ netReservation: checked })}
               />
             </div>
             <Separator />
@@ -620,6 +616,7 @@ export function CastDashboard({ cast, onUpdate }: CastDashboardProps) {
         open={!!selectedReservation}
         onOpenChange={(open) => !open && setSelectedReservation(null)}
         reservation={selectedReservation ? convertToReservationData(selectedReservation) : null}
+        onSave={handleReservationSave}
       />
     </div>
   )

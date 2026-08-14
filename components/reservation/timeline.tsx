@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Clock, User, AlertCircle } from 'lucide-react'
 import { Cast, Appointment } from '@/lib/cast/types'
 import { logError } from '@/lib/error-utils'
-import { StaffDialog } from '@/components/cast/cast-dialog'
+import { StaffDialog, type StaffOptionCatalogEntry } from '@/components/cast/cast-dialog'
 import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz'
 import { differenceInCalendarDays, differenceInMinutes, parse } from 'date-fns'
 import { getCourseById } from '@/lib/course-option/utils'
@@ -29,8 +29,8 @@ import {
 
 const JST_TIMEZONE = 'Asia/Tokyo'
 const MINUTES_IN_DAY = 24 * 60
-const TIMELINE_INTERVAL_MINUTES = 60
-const BOOKING_STEP_MINUTES = 10
+const TIMELINE_INTERVAL_MINUTES = 30
+const BOOKING_STEP_MINUTES = 30
 const MIN_BOOKING_DURATION_MINUTES = 10
 const MIN_DISPLAY_SLOT_MINUTES = 10
 
@@ -50,6 +50,7 @@ interface TimelineProps {
   reservations: ReservationData[]
   onReservationCreated?: (reservationId?: string) => void
   businessHours: BusinessHoursRange
+  optionCatalog?: StaffOptionCatalogEntry[]
 }
 
 interface AvailableSlot {
@@ -68,6 +69,7 @@ export function Timeline({
   reservations,
   onReservationCreated,
   businessHours,
+  optionCatalog = [],
 }: TimelineProps) {
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null)
   const [selectedStaff, setSelectedStaff] = useState<Cast | null>(null)
@@ -115,6 +117,7 @@ export function Timeline({
   const now = new Date()
   const todayKey = formatInTimeZone(now, JST_TIMEZONE, 'yyyy-MM-dd')
   const isSelectedDateToday = todayKey === selectedDateKey
+  const isSelectedDatePast = selectedDateKey < todayKey
   const nowMinutes = isSelectedDateToday ? getMinutesFromDate(now) : null
 
   const buildSelectableStartTimes = useCallback(
@@ -186,27 +189,33 @@ export function Timeline({
       formatInTimeZone(app.startTime, JST_TIMEZONE, 'yyyy-MM-dd') === selectedDateKey ? app : null
     ).filter((app): app is Appointment => app !== null)
 
+    let workStart = member.workStart
+    let workEnd = member.workEnd
+
+    if (workStart && workEnd) {
+      const sourceStartDateKey = formatInTimeZone(workStart, JST_TIMEZONE, 'yyyy-MM-dd')
+
+      if (sourceStartDateKey !== selectedDateKey) {
+        const sourceEndDateKey = formatInTimeZone(workEnd, JST_TIMEZONE, 'yyyy-MM-dd')
+        const startMinute =
+          Number(formatInTimeZone(workStart, JST_TIMEZONE, 'HH')) * 60 +
+          Number(formatInTimeZone(workStart, JST_TIMEZONE, 'mm'))
+        const endMinuteOfDay =
+          Number(formatInTimeZone(workEnd, JST_TIMEZONE, 'HH')) * 60 +
+          Number(formatInTimeZone(workEnd, JST_TIMEZONE, 'mm'))
+        const crossesMidnight =
+          sourceEndDateKey > sourceStartDateKey || endMinuteOfDay <= startMinute
+
+        workStart = minutesToUtcDate(startMinute)
+        workEnd = minutesToUtcDate(endMinuteOfDay + (crossesMidnight ? MINUTES_IN_DAY : 0))
+      }
+    }
+
     return {
       ...member,
       appointments: filteredAppointments,
-      workStart:
-        member.workStart &&
-        new Date(
-          selectedDate.getFullYear(),
-          selectedDate.getMonth(),
-          selectedDate.getDate(),
-          member.workStart.getHours(),
-          member.workStart.getMinutes()
-        ),
-      workEnd:
-        member.workEnd &&
-        new Date(
-          selectedDate.getFullYear(),
-          selectedDate.getMonth(),
-          selectedDate.getDate(),
-          member.workEnd.getHours(),
-          member.workEnd.getMinutes()
-        ),
+      workStart,
+      workEnd,
     }
   }).filter((member) => {
     // Filter out NG casts if a customer is selected
@@ -221,7 +230,7 @@ export function Timeline({
 
   const getAvailableSlots = (staff: Cast): AvailableSlot[] => {
     try {
-      if (!staff.workStart || !staff.workEnd) return []
+      if (isSelectedDatePast || !staff.workStart || !staff.workEnd) return []
 
       const workStartMinute = Math.max(getMinutesFromDate(staff.workStart), startMinutes)
       const workEndMinute = Math.min(getMinutesFromDate(staff.workEnd), endMinutes)
@@ -359,16 +368,19 @@ export function Timeline({
         </div>
       </div>
 
-      <ScrollArea className="w-full">
+      <ScrollArea
+        data-testid="reservation-timeline-scroll"
+        className="h-[calc(100vh-14rem)] min-h-[28rem] w-full"
+      >
         <div className="flex" style={{ minWidth: `${hourSegments * HOUR_WIDTH + 240}px` }}>
           {/* キャスト列 */}
           <div
             className="sticky left-0 z-20 border-r bg-white shadow-sm"
             style={{ width: '240px' }}
           >
-            <div className="flex h-16 items-center border-b bg-gray-50 px-4">
+            <div className="sticky top-0 z-30 flex h-16 items-center border-b bg-gray-50 px-4">
               <User className="mr-2 h-4 w-4 text-gray-600" />
-              <span className="font-medium">担当キャスト</span>
+              <span className="font-medium">キャスト</span>
             </div>
             {safeMap(filteredStaff, (member) => (
               <button
@@ -382,6 +394,18 @@ export function Timeline({
                 </Avatar>
                 <div className="flex-1 text-left">
                   <div className="font-medium">{member.name}</div>
+                  <div className="mt-0.5 flex flex-wrap gap-1">
+                    {member.regularDesignationRank > 0 ? (
+                      <Badge variant="outline" className="h-4 px-1 text-[10px]">
+                        本指名 {member.regularDesignationRank}位
+                      </Badge>
+                    ) : null}
+                    {member.panelDesignationRank > 0 ? (
+                      <Badge variant="outline" className="h-4 px-1 text-[10px]">
+                        パネル {member.panelDesignationRank}位
+                      </Badge>
+                    ) : null}
+                  </div>
                   {member.workStart && member.workEnd ? (
                     <div className="flex items-center gap-1 text-xs text-gray-600">
                       <Clock className="h-3 w-3" />
@@ -407,20 +431,20 @@ export function Timeline({
           {/* タイムグリッド */}
           <div className="relative flex-1">
             {/* 時間ヘッダー */}
-            <div className="sticky top-0 z-10 flex h-16 border-b bg-gray-50">
+            <div
+              data-testid="timeline-time-header"
+              className="sticky top-0 z-10 flex h-16 border-b bg-gray-50"
+            >
               {Array.from({ length: hourSegments }).map((_, index) => {
                 const minute = startMinutes + index * 60
-                const minuteOfDay = ((minute % MINUTES_IN_DAY) + MINUTES_IN_DAY) % MINUTES_IN_DAY
                 const label = formatMinutesAsLabel(minute)
-                const period = minuteOfDay < 12 * 60 ? '午前' : '午後'
                 return (
                   <div
                     key={index}
-                    className="flex flex-col items-center justify-center border-r"
+                    className="flex items-center justify-center border-r"
                     style={{ width: `${HOUR_WIDTH}px` }}
                   >
                     <div className="font-medium">{label}</div>
-                    <div className="text-xs text-gray-500">{period}</div>
                   </div>
                 )
               })}
@@ -604,6 +628,7 @@ export function Timeline({
         onOpenChange={(open) => !open && setSelectedStaff(null)}
         staff={selectedStaff}
         selectedDate={selectedDate}
+        optionCatalog={optionCatalog}
       />
     </div>
   )

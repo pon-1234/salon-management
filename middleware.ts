@@ -274,5 +274,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|robots.txt|images/|videos/).*)'],
+  matcher: [
+    '/((?!_next/static|_next/image|salon-uploads/|favicon.ico|robots.txt|images/|videos/).*)',
+  ],
 }

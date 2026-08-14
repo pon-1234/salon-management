@@ -6,8 +6,8 @@
  * @known_issues Request attendance depends on the store notification provider being ready
  */
 import { useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
+import { SafeImage } from '@/components/ui/safe-image'
 import type { PublicCastDetail } from '@/lib/store/public-casts'
 import { Store } from '@/lib/store/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -52,8 +52,6 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
-import { getOptionById } from '@/lib/options/data'
-import type { Option } from '@/lib/types/course-option'
 
 interface CastDetailContentProps {
   cast: PublicCastDetail
@@ -63,24 +61,9 @@ interface CastDetailContentProps {
 export function CastDetailContent({ cast, store }: CastDetailContentProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
-  const [isFavorite, setIsFavorite] = useState(false)
   const [isRequestOpen, setIsRequestOpen] = useState(false)
 
-  // Get available options details
-  const optionIdsForDisplay =
-    cast.availableOptionSettings && cast.availableOptionSettings.length > 0
-      ? cast.availableOptionSettings
-          .filter((setting) => setting.visibility === 'public')
-          .map((setting) => setting.optionId)
-      : cast.availableOptions
-  const availableOptions: Option[] = optionIdsForDisplay
-    .map((optionId) => getOptionById(optionId))
-    .filter((option): option is Option => Boolean(option))
-    .filter((option) =>
-      cast.availableOptionSettings && cast.availableOptionSettings.length > 0
-        ? true
-        : option.visibility !== 'internal'
-    )
+  const availableOptions = cast.availableOptionDetails
 
   const nextImage = () => {
     setSelectedImageIndex((prev) => (prev === cast.images.length - 1 ? 0 : prev + 1))
@@ -120,7 +103,7 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
               <div className="absolute inset-0 bg-gradient-to-br from-pink-300 to-purple-400" />
               {cast.images.length > 0 && (
                 <>
-                  <Image
+                  <SafeImage
                     src={cast.images[selectedImageIndex]}
                     alt={cast.name}
                     fill
@@ -132,12 +115,14 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
                       <button
                         onClick={prevImage}
                         className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
+                        aria-label="前の画像を表示"
                       >
                         <ChevronLeft className="h-5 w-5" />
                       </button>
                       <button
                         onClick={nextImage}
                         className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
+                        aria-label="次の画像を表示"
                       >
                         <ChevronRight className="h-5 w-5" />
                       </button>
@@ -158,18 +143,6 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
                   </Badge>
                 )}
               </div>
-
-              {/* Favorite Button */}
-              <button
-                onClick={() => setIsFavorite(!isFavorite)}
-                className="absolute right-2 top-2 rounded-full border border-[#3b2e1f] bg-[#1a1a1a]/90 p-2 backdrop-blur hover:bg-[#2b2114]"
-              >
-                <Heart
-                  className={`h-5 w-5 ${
-                    isFavorite ? 'fill-[#f28b96] text-[#f28b96]' : 'text-[#cbb88f]'
-                  }`}
-                />
-              </button>
             </div>
 
             {/* Thumbnail Images */}
@@ -183,7 +156,7 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
                       selectedImageIndex === index ? 'ring-2 ring-[#f3d08a]' : ''
                     }`}
                   >
-                    <Image
+                    <SafeImage
                       src={image}
                       alt={`${cast.name} ${index + 1}`}
                       fill
@@ -262,13 +235,17 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
 
           {/* Action Buttons */}
           <div className="space-y-3">
-            <Button className="w-full" size="lg">
-              <Phone className="mr-2 h-5 w-5" />
-              今すぐ予約
+            <Button className="w-full" size="lg" asChild>
+              <Link href={`/${store.slug}/booking?cast=${encodeURIComponent(cast.id)}`}>
+                <Phone className="mr-2 h-5 w-5" />
+                このキャストで予約
+              </Link>
             </Button>
-            <Button variant="outline" className="w-full">
-              <MessageSquare className="mr-2 h-5 w-5" />
-              口コミを見る
+            <Button variant="outline" className="w-full" asChild>
+              <Link href={`/${store.slug}/reviews?castId=${encodeURIComponent(cast.id)}`}>
+                <MessageSquare className="mr-2 h-5 w-5" />
+                口コミを見る
+              </Link>
             </Button>
             {cast.requestAttendanceEnabled && (
               <Dialog open={isRequestOpen} onOpenChange={setIsRequestOpen}>
@@ -461,27 +438,25 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
                 <CardContent>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     {availableOptions.map((option) => (
-                      <div key={option!.id} className="rounded-lg border p-4">
+                      <div key={option.id} className="rounded-lg border p-4">
                         <div className="flex items-start justify-between">
                           <div>
-                            <h4 className="font-medium">{option!.name}</h4>
-                            {option!.description && (
+                            <h4 className="font-medium">{option.name}</h4>
+                            {option.description && (
                               <p className="mt-1 text-sm text-muted-foreground">
-                                {option!.description}
+                                {option.description}
                               </p>
                             )}
                           </div>
                           <span
                             className={`font-bold ${
-                              option!.price === 0 ? 'text-[#2fc8b7]' : 'text-[#f3d08a]'
+                              option.price === 0 ? 'text-[#2fc8b7]' : 'text-[#f3d08a]'
                             }`}
                           >
-                            {option!.price === 0 ? '無料' : `¥${option!.price.toLocaleString()}`}
+                            {option.price === 0 ? '無料' : `¥${option.price.toLocaleString()}`}
                           </span>
                         </div>
-                        {option!.isPopular && option!.note && (
-                          <Badge className="mt-2 bg-red-500">{option!.note}</Badge>
-                        )}
+                        {option.note && <Badge className="mt-2 bg-red-500">{option.note}</Badge>}
                       </div>
                     ))}
                   </div>
@@ -500,10 +475,12 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
                 </CardHeader>
                 <CardContent>
                   <div className="py-12 text-center">
-                    <p className="mb-4 text-gray-500">まだ口コミがありません</p>
+                    <p className="mb-4 text-gray-500">
+                      公開中の口コミと評価は口コミ一覧で確認できます。
+                    </p>
                     <Button variant="outline" asChild>
-                      <Link href={`/${store.slug}/reviews?castId=${cast.id}`}>
-                        口コミを見る・投稿する
+                      <Link href={`/${store.slug}/reviews?castId=${encodeURIComponent(cast.id)}`}>
+                        このキャストの口コミ一覧を見る
                       </Link>
                     </Button>
                   </div>
@@ -520,7 +497,7 @@ export function CastDetailContent({ cast, store }: CastDetailContentProps) {
             <DialogTitle className="sr-only">{cast.name}の画像プレビュー</DialogTitle>
           </DialogHeader>
           <div className="relative mx-auto max-h-[90vh] max-w-4xl">
-            <Image
+            <SafeImage
               src={cast.images[selectedImageIndex]}
               alt={cast.name}
               width={800}

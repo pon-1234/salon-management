@@ -272,4 +272,60 @@ describe('Prisma schema', () => {
     expect(migration).not.toMatch(/DELETE\s+FROM/i)
     expect(migration).not.toMatch(/UPDATE\s+"PaymentTransaction"/i)
   })
+
+  it('allows each reservation to be allocated to only one settlement payment', () => {
+    const allocationModel = schemaContent.match(
+      /model SettlementPaymentReservation \{[\s\S]*?\n\}/u
+    )?.[0]
+    expect(allocationModel).toBeDefined()
+    expect(allocationModel).toContain(
+      '@@unique([reservationId], map: "SettlementPaymentReservation_reservationId_key")'
+    )
+
+    const migration = readFileSync(
+      join(
+        process.cwd(),
+        'prisma',
+        'migrations',
+        '20260814193000_enforce_settlement_allocation_integrity',
+        'migration.sql'
+      ),
+      'utf8'
+    )
+    expect(migration.trimStart()).toMatch(/^BEGIN;/u)
+    expect(migration).toContain(
+      'LOCK TABLE "SettlementPaymentReservation" IN SHARE ROW EXCLUSIVE MODE'
+    )
+    expect(migration).toContain('GROUP BY "reservationId"')
+    expect(migration).toContain('HAVING COUNT(*) > 1')
+    expect(migration).toContain('RAISE EXCEPTION')
+    expect(migration).toContain(
+      'CREATE UNIQUE INDEX "SettlementPaymentReservation_reservationId_key"'
+    )
+    expect(migration.trimEnd()).toMatch(/COMMIT;$/u)
+    expect(migration).not.toMatch(/DELETE\s+FROM/iu)
+    expect(migration).not.toMatch(/UPDATE\s+"SettlementPaymentReservation"/iu)
+  })
+
+  it('persists non-sensitive card references and free-text cancellation reasons', () => {
+    const reservationModel = schemaContent.match(/model Reservation \{[\s\S]*?\n\}/u)?.[0]
+    expect(reservationModel).toBeDefined()
+    expect(reservationModel).toMatch(/paymentReference\s+String\?/)
+    expect(reservationModel).toMatch(/cancellationReason\s+String\?/)
+
+    const migration = readFileSync(
+      join(
+        process.cwd(),
+        'prisma',
+        'migrations',
+        '20260814200000_add_reservation_payment_and_cancellation_details',
+        'migration.sql'
+      ),
+      'utf8'
+    )
+    expect(migration).toContain('ADD COLUMN "paymentReference" TEXT')
+    expect(migration).toContain('ADD COLUMN "cancellationReason" TEXT')
+    expect(migration).not.toMatch(/DROP\s+(?:TABLE|COLUMN)/iu)
+    expect(migration).not.toMatch(/DELETE\s+FROM/iu)
+  })
 })

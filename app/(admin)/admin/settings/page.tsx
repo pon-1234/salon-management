@@ -11,21 +11,14 @@ import { PageHeader } from '@/components/admin/page-header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { toast } from '@/hooks/use-toast'
 import {
   Store,
-  HelpCircle,
-  MessageSquare,
   Calendar,
   MapPin,
   Train,
-  Megaphone,
   Shield,
   CreditCard,
-  Link as LinkIcon,
   Building,
-  FileText,
-  Mail,
   Settings as SettingsIcon,
   ChevronRight,
   Package,
@@ -39,9 +32,9 @@ interface SettingItem {
   title: string
   description: string
   icon: React.ReactNode
-  status: 'available' | 'coming-soon'
+  status: 'available'
   category: string
-  href?: string
+  href: string
 }
 
 export default function SettingsPage() {
@@ -56,22 +49,6 @@ export default function SettingsPage() {
       status: 'available',
       category: '基本設定',
       href: '/admin/settings/store-info',
-    },
-    {
-      id: 'business-qa',
-      title: '業務Q&A管理',
-      description: 'スタッフ向けの業務Q&Aを管理',
-      icon: <HelpCircle className="h-5 w-5" />,
-      status: 'coming-soon',
-      category: '業務管理',
-    },
-    {
-      id: 'faq',
-      title: 'よくある質問',
-      description: '顧客向けのよくある質問を管理',
-      icon: <MessageSquare className="h-5 w-5" />,
-      status: 'coming-soon',
-      category: '顧客対応',
     },
     {
       id: 'reviews',
@@ -110,14 +87,6 @@ export default function SettingsPage() {
       href: '/admin/settings/station-info',
     },
     {
-      id: 'media-info',
-      title: '媒体情報',
-      description: '広告媒体や集客チャネルの情報を管理',
-      icon: <Megaphone className="h-5 w-5" />,
-      status: 'coming-soon',
-      category: 'マーケティング',
-    },
-    {
       id: 'admin-info',
       title: '管理者情報',
       description: '管理者アカウントと権限を管理',
@@ -131,16 +100,9 @@ export default function SettingsPage() {
       title: 'HP料金情報',
       description: 'ホームページに表示する料金情報を管理',
       icon: <CreditCard className="h-5 w-5" />,
-      status: 'coming-soon',
+      status: 'available',
       category: 'コンテンツ管理',
-    },
-    {
-      id: 'mutual-links',
-      title: '相互リンク',
-      description: '相互リンクの管理',
-      icon: <LinkIcon className="h-5 w-5" />,
-      status: 'coming-soon',
-      category: 'コンテンツ管理',
+      href: '/admin/settings/hp-pricing',
     },
     {
       id: 'hotel-info',
@@ -150,22 +112,6 @@ export default function SettingsPage() {
       status: 'available',
       category: '地域設定',
       href: '/admin/settings/hotel-info',
-    },
-    {
-      id: 'templates',
-      title: '定型文',
-      description: 'メッセージやメールの定型文を管理',
-      icon: <FileText className="h-5 w-5" />,
-      status: 'coming-soon',
-      category: '顧客対応',
-    },
-    {
-      id: 'newsletter',
-      title: 'メルマガ送信',
-      description: 'メルマガの作成と送信管理',
-      icon: <Mail className="h-5 w-5" />,
-      status: 'coming-soon',
-      category: 'マーケティング',
     },
     {
       id: 'points',
@@ -241,40 +187,13 @@ export default function SettingsPage() {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredItems.map((item) => {
             const card = (
-              <Card
-                className={`h-full transition-all duration-200 hover:shadow-md ${
-                  item.status === 'coming-soon'
-                    ? 'cursor-not-allowed opacity-60'
-                    : 'hover:-translate-y-1 hover:shadow-lg'
-                }`}
-                aria-disabled={item.status === 'coming-soon'}
-                onClick={
-                  item.status === 'coming-soon'
-                    ? () => toast({ description: `${item.title}の設定ページは準備中です` })
-                    : undefined
-                }
-              >
+              <Card className="h-full transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
-                    <div
-                      className={`rounded-lg p-3 ${
-                        item.status === 'available' ? 'bg-emerald-100' : 'bg-gray-100'
-                      }`}
-                    >
-                      <div
-                        className={`${
-                          item.status === 'available' ? 'text-emerald-600' : 'text-gray-400'
-                        }`}
-                      >
-                        {item.icon}
-                      </div>
+                    <div className="rounded-lg bg-emerald-100 p-3">
+                      <div className="text-emerald-600">{item.icon}</div>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      {item.status === 'coming-soon' && (
-                        <Badge variant="secondary" className="text-xs">
-                          準備中
-                        </Badge>
-                      )}
+                    <div>
                       <Badge variant="outline" className="text-xs">
                         {item.category}
                       </Badge>
@@ -288,26 +207,22 @@ export default function SettingsPage() {
                   </CardDescription>
                   <div className="flex items-center justify-between">
                     <div className="flex-1" />
-                    {item.status === 'available' && (
-                      <ChevronRight className="h-4 w-4 text-gray-400" />
-                    )}
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
                   </div>
                 </CardContent>
               </Card>
             )
 
-            return item.href ? (
+            return (
               <NextLink key={item.id} href={item.href} className="block">
                 {card}
               </NextLink>
-            ) : (
-              <div key={item.id}>{card}</div>
             )
           })}
         </div>
 
         {/* 統計情報 */}
-        <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">設定項目</CardTitle>
@@ -327,18 +242,6 @@ export default function SettingsPage() {
                 {settingsItems.filter((item) => item.status === 'available').length}
               </div>
               <p className="text-sm text-gray-600">設定可能な項目</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">準備中</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-orange-600">
-                {settingsItems.filter((item) => item.status === 'coming-soon').length}
-              </div>
-              <p className="text-sm text-gray-600">準備中の項目</p>
             </CardContent>
           </Card>
         </div>

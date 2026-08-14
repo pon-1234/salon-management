@@ -44,7 +44,11 @@ describe('CustomerRepositoryImpl', () => {
   it('getAll returns deserialized customers', async () => {
     mockFetch({
       ok: true,
-      json: async () => [rawCustomer],
+      json: async () => ({
+        items: [rawCustomer],
+        limit: 10,
+        hasMore: false,
+      }),
     })
 
     const customers = await repository.getAll()
@@ -89,6 +93,29 @@ describe('CustomerRepositoryImpl', () => {
     expectCustomer(customers[0])
   })
 
+  it('search queries the paginated customer endpoint and returns matching customers', async () => {
+    mockFetch({
+      ok: true,
+      json: async () => ({
+        items: [rawCustomer],
+        limit: 50,
+        hasMore: false,
+      }),
+    })
+
+    const customers = await repository.search('山田 太郎')
+
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/customer?query=%E5%B1%B1%E7%94%B0%20%E5%A4%AA%E9%83%8E&limit=50',
+      {
+        credentials: 'include',
+        cache: 'no-store',
+      }
+    )
+    expect(customers).toHaveLength(1)
+    expectCustomer(customers[0])
+  })
+
   it('getCustomerByPhone returns first exact match', async () => {
     mockFetch({
       ok: true,
@@ -108,6 +135,23 @@ describe('CustomerRepositoryImpl', () => {
 
     const customer = await repository.getCustomerByPhone('0000000000')
     expect(customer).toBeNull()
+  })
+
+  it('getInsights includes the current store scope', async () => {
+    mockFetch({
+      ok: true,
+      json: async () => ({ totalVisits: 0 }),
+    })
+
+    await repository.getInsights('customer/1', 'uat-ikebukuro')
+
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/customer/insights?customerId=customer%2F1&storeId=uat-ikebukuro',
+      {
+        credentials: 'include',
+        cache: 'no-store',
+      }
+    )
   })
 
   it('create returns created customer', async () => {

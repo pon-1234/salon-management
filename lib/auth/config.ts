@@ -183,6 +183,11 @@ export const authOptions: NextAuthOptions = {
 
         if (customer) {
           try {
+            if (customer.accountStatus !== 'active') {
+              recordLoginAttempt(rateLimitIdentifier, false)
+              return null
+            }
+
             const isPasswordValid = await bcrypt.compare(credentials.password, customer.password)
 
             if (!isPasswordValid) {

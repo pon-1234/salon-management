@@ -25,7 +25,10 @@ import {
   type LegacyPreviewPreparedDigestInput,
   type PreparedLegacyPreviewImport,
 } from './preview-prepare'
-import { createLegacyPreviewImageFilesystemIo } from './preview-image-filesystem'
+import {
+  createLegacyPreviewImageFilesystemIo,
+  inspectLegacyPreviewImageSourcePackage,
+} from './preview-image-filesystem'
 import {
   executeLegacyPreviewImageImport,
   prepareLegacyPreviewImageImport,
@@ -205,6 +208,38 @@ describe('createLegacyPreviewImageFilesystemIo', () => {
   function adapter(): LegacyPreviewImageImportIo {
     return createLegacyPreviewImageFilesystemIo({ sourceRoot, targetRoot })
   }
+
+  it('inspects one source package without creating a target or trusting manifest metadata', async () => {
+    const manifest = createManifest()
+
+    const result = await inspectLegacyPreviewImageSourcePackage(sourceRoot, manifest.files)
+
+    expect(result.inventory).toEqual(manifest.files.map(({ sourcePath }) => sourcePath).sort())
+    expect(result.files).toEqual([
+      {
+        sourcePath: 'public/girls/cast-7/main.png',
+        inspection: expect.objectContaining({
+          isFile: true,
+          isSymbolicLink: false,
+          sha256: digest(mainContents),
+          mediaType: 'image/png',
+          width: 1,
+          height: 1,
+        }),
+      },
+      {
+        sourcePath: 'public/girls/cast-7/gallery.png',
+        inspection: expect.objectContaining({
+          isFile: true,
+          isSymbolicLink: false,
+          sha256: digest(galleryContents),
+          mediaType: 'image/png',
+          width: 1,
+          height: 1,
+        }),
+      },
+    ])
+  })
 
   it('streams files into exclusive target paths and reuses an exact second run', async () => {
     const plan = createPlan()

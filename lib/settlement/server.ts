@@ -18,11 +18,29 @@ type UpsertInput = {
   reservationIds: string[]
 }
 
+export class SettlementValidationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'SettlementValidationError'
+  }
+}
+
 export async function upsertSettlementPayment(input: UpsertInput): Promise<SettlementPaymentDto> {
   const paidAt = input.paidAt ? new Date(input.paidAt) : new Date()
   const reservationIds = [...new Set(input.reservationIds)]
 
+  if (reservationIds.length === 0) {
+    throw new SettlementValidationError('At least one settlement reservation is required')
+  }
+  if (!Number.isSafeInteger(input.amount) || input.amount <= 0) {
+    throw new SettlementValidationError('Settlement amount must be a positive integer')
+  }
+  if (Number.isNaN(paidAt.getTime())) {
+    throw new SettlementValidationError('Settlement paidAt is invalid')
+  }
+
   const payment = await db.$transaction(async (tx) => {
+    let existingReservationIds: string[] = []
     if (input.id) {
       const existingPayment = await tx.settlementPayment.findFirst({
         where: {
@@ -30,26 +48,69 @@ export async function upsertSettlementPayment(input: UpsertInput): Promise<Settl
           castId: input.castId,
           storeId: input.storeId,
         },
-        select: { id: true },
-      })
-
-      if (!existingPayment) {
-        throw new Error('Settlement payment not found')
-      }
-    }
-
-    if (reservationIds.length > 0) {
-      const matchingReservationCount = await tx.reservation.count({
-        where: {
-          id: { in: reservationIds },
-          castId: input.castId,
-          storeId: input.storeId,
+        select: {
+          id: true,
+          reservations: { select: { reservationId: true } },
         },
       })
 
-      if (matchingReservationCount !== reservationIds.length) {
-        throw new Error('Settlement reservation not found')
+      if (!existingPayment) {
+        throw new SettlementValidationError('Settlement payment not found')
       }
+
+      existingReservationIds = existingPayment.reservations.map(
+        (reservation) => reservation.reservationId
+      )
+    }
+
+    const reservations = await tx.reservation.findMany({
+      where: {
+        id: { in: reservationIds },
+        castId: input.castId,
+        storeId: input.storeId,
+      },
+      select: {
+        id: true,
+        status: true,
+        settlementStatus: true,
+        staffRevenue: true,
+        settlementPayments: {
+          select: { paymentId: true },
+        },
+      },
+    })
+
+    if (reservations.length !== reservationIds.length) {
+      throw new SettlementValidationError('Settlement reservation not found')
+    }
+
+    const containsIneligibleReservation = reservations.some((reservation) => {
+      const belongsToCurrentPayment = reservation.settlementPayments.some(
+        ({ paymentId }) => paymentId === input.id
+      )
+      const belongsToAnotherPayment = reservation.settlementPayments.some(
+        ({ paymentId }) => paymentId !== input.id
+      )
+      return (
+        reservation.status !== 'completed' ||
+        reservation.staffRevenue === null ||
+        belongsToAnotherPayment ||
+        (reservation.settlementStatus === 'settled' && !belongsToCurrentPayment)
+      )
+    })
+
+    if (containsIneligibleReservation) {
+      throw new SettlementValidationError('Only completed, unallocated reservations can be settled')
+    }
+
+    const expectedAmount = reservations.reduce(
+      (sum, reservation) => sum + (reservation.staffRevenue ?? 0),
+      0
+    )
+    if (input.amount !== expectedAmount) {
+      throw new SettlementValidationError(
+        'Settlement amount must equal selected reservation staff revenue'
+      )
     }
 
     const paymentRecord = input.id
@@ -75,28 +136,39 @@ export async function upsertSettlementPayment(input: UpsertInput): Promise<Settl
           },
         })
 
-    // Clear existing links when updating
     if (input.id) {
       await tx.settlementPaymentReservation.deleteMany({ where: { paymentId: paymentRecord.id } })
+
+      const removedReservationIds = existingReservationIds.filter(
+        (reservationId) => !reservationIds.includes(reservationId)
+      )
+      if (removedReservationIds.length > 0) {
+        await tx.reservation.updateMany({
+          where: {
+            id: { in: removedReservationIds },
+            castId: input.castId,
+            storeId: input.storeId,
+          },
+          data: { settlementStatus: 'pending' },
+        })
+      }
     }
 
-    if (reservationIds.length > 0) {
-      await tx.settlementPaymentReservation.createMany({
-        data: reservationIds.map((reservationId) => ({
-          paymentId: paymentRecord.id,
-          reservationId,
-        })),
-      })
+    await tx.settlementPaymentReservation.createMany({
+      data: reservationIds.map((reservationId) => ({
+        paymentId: paymentRecord.id,
+        reservationId,
+      })),
+    })
 
-      await tx.reservation.updateMany({
-        where: {
-          id: { in: reservationIds },
-          castId: input.castId,
-          storeId: input.storeId,
-        },
-        data: { settlementStatus: 'settled' },
-      })
-    }
+    await tx.reservation.updateMany({
+      where: {
+        id: { in: reservationIds },
+        castId: input.castId,
+        storeId: input.storeId,
+      },
+      data: { settlementStatus: 'settled' },
+    })
 
     return paymentRecord
   })

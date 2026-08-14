@@ -31,10 +31,43 @@ describe('SafeImage', () => {
     expect(image).toHaveAttribute('src', '/images/non-photo.svg')
   })
 
+  it('loads reverse-proxied salon uploads directly instead of asking the Next optimizer to self-fetch them', () => {
+    render(
+      <SafeImage
+        src="/salon-uploads/casts/ikebukuro/legacy-cast-56060/01-photo.jpg"
+        alt="移行済みキャスト画像"
+      />
+    )
+
+    const image = screen.getByRole('img', { name: '移行済みキャスト画像' })
+
+    expect(
+      image
+        .getAttribute('src')
+        ?.endsWith('/salon-uploads/casts/ikebukuro/legacy-cast-56060/01-photo.jpg')
+    ).toBe(true)
+    expect(image.getAttribute('src')).not.toContain('/_next/image')
+    expect(image).not.toHaveAttribute('srcset')
+  })
+
+  it('supports fill-layout consumers without supplying conflicting fixed dimensions', () => {
+    render(
+      <div className="relative">
+        <SafeImage src="/images/non-photo.svg" alt="全体表示" fill />
+      </div>
+    )
+
+    expect(screen.getByRole('img', { name: '全体表示' })).toHaveAttribute('data-nimg', 'fill')
+  })
+
   it('renders through the Next.js image optimizer', () => {
     const source = readFileSync(join(process.cwd(), 'components/ui/safe-image.tsx'), 'utf8')
+    render(<SafeImage src="/images/example.jpg" alt="通常画像" />)
 
     expect(source).toContain("from 'next/image'")
     expect(source).not.toContain('<img')
+    expect(screen.getByRole('img', { name: '通常画像' }).getAttribute('src')).toContain(
+      '/_next/image'
+    )
   })
 })

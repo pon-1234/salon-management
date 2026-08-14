@@ -47,6 +47,10 @@ describe('mapReservationToReservationData', () => {
       hotelName: '池袋グランドホテル',
       hotelExpense: 3_500,
       pointsUsed: 500,
+      paymentMethod: 'クレジットカード',
+      paymentReference: 'IK-2026-00421',
+      cancellationSource: 'store',
+      cancellationReason: 'キャスト体調不良のため',
       storeMemo: '電話受付済み',
       createdAt: new Date('2026-07-20T00:00:00+09:00'),
       updatedAt: new Date('2026-07-20T00:00:00+09:00'),
@@ -62,6 +66,9 @@ describe('mapReservationToReservationData', () => {
       hotelName: '池袋グランドホテル',
       hotelExpense: 3_500,
       pointsUsed: 500,
+      paymentReference: 'IK-2026-00421',
+      cancellationSource: 'store',
+      cancellationReason: 'キャスト体調不良のため',
       storeMemo: '電話受付済み',
     })
   })

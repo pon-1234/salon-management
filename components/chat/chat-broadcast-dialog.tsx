@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @design_doc   Current-store administrative chat broadcast confirmation
+ * @related_to   /api/chat/broadcast and chat attachment upload handling
+ * @known_issues Customer identities visiting multiple stores retain one shared chat thread
+ */
 import { useState } from 'react'
 import {
   Dialog,
@@ -17,6 +22,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { useChatAttachments } from '@/hooks/use-chat-attachments'
 import { ChatAttachmentPreviewList } from '@/components/chat/chat-attachment-previews'
 import { cn } from '@/lib/utils'
+import { useStore } from '@/contexts/store-context'
 
 type BroadcastTarget = 'customers' | 'casts'
 
@@ -27,16 +33,17 @@ interface ChatBroadcastDialogProps {
 
 const TARGET_META: Record<BroadcastTarget, { label: string; description: string }> = {
   customers: {
-    label: '全顧客',
-    description: '会員登録しているすべてのお客様にメッセージを送信します。',
+    label: '現在店舗の顧客',
+    description: '現在選択している店舗のお客様にだけメッセージを送信します。',
   },
   casts: {
-    label: '全キャスト',
-    description: '在籍キャスト全員にメッセージを送信します。',
+    label: '現在店舗のキャスト',
+    description: '現在選択している店舗の在籍キャストだけにメッセージを送信します。',
   },
 }
 
 export function ChatBroadcastDialog({ open, onOpenChange }: ChatBroadcastDialogProps) {
+  const { currentStore } = useStore()
   const { toast } = useToast()
   const [target, setTarget] = useState<BroadcastTarget>('customers')
   const [message, setMessage] = useState('')
@@ -76,6 +83,7 @@ export function ChatBroadcastDialog({ open, onOpenChange }: ChatBroadcastDialogP
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
+          storeId: currentStore.id,
           target,
           content: message,
           attachments: readyAttachments,
@@ -146,6 +154,7 @@ export function ChatBroadcastDialog({ open, onOpenChange }: ChatBroadcastDialogP
             <Textarea
               value={message}
               onChange={(event) => setMessage(event.target.value)}
+              maxLength={1000}
               placeholder="全員に送る重要なお知らせを入力してください"
               rows={6}
               className="mt-2"

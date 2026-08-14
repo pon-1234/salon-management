@@ -1,3 +1,8 @@
+/**
+ * @design_doc   docs/LEGACY_DATA_MIGRATION_RUNBOOK.md customer preview behavior
+ * @related_to   Customer API development fallback records
+ * @known_issues Development-only data is never used when production fallbacks are disabled
+ */
 import { Customer, type CustomerUsageRecord, type CustomerPointHistory } from './types'
 
 export type { Customer }
@@ -13,6 +18,8 @@ export const customers: Customer[] = [
     birthDate: new Date(1990, 0, 1),
     age: 34,
     memberType: 'regular',
+    accountStatus: 'active',
+    membershipStage: 'regular',
     smsEnabled: true,
     emailNotificationEnabled: true,
     points: 4900,
@@ -32,6 +39,8 @@ export const customers: Customer[] = [
     birthDate: new Date(1992, 4, 12),
     age: 32,
     memberType: 'vip',
+    accountStatus: 'active',
+    membershipStage: 'gold',
     smsEnabled: true,
     emailNotificationEnabled: true,
     points: 12500,

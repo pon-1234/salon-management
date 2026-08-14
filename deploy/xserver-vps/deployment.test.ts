@@ -104,6 +104,22 @@ describe('XServer VPS deployment artifacts', () => {
     expect(entrypoint).not.toContain('import-gold-master-ikebukuro-preview.ts')
   })
 
+  it('packages the non-writing V5 verifier without running it automatically', () => {
+    const dockerfile = readFileSync(join(deploymentDirectory, 'Dockerfile'), 'utf8')
+    const entrypoint = readFileSync(join(deploymentDirectory, 'entrypoint.sh'), 'utf8')
+    const packageJson = readFileSync(join(process.cwd(), 'package.json'), 'utf8')
+
+    expect(packageJson).toContain(
+      '"preview:verify-ikebukuro": "tsx scripts/verify-gold-master-ikebukuro-preview.ts"'
+    )
+    expect(dockerfile).toContain(
+      'COPY --from=builder /app/scripts/verify-gold-master-ikebukuro-preview.ts ./scripts/verify-gold-master-ikebukuro-preview.ts'
+    )
+    expect(dockerfile).not.toMatch(/^RUN .*preview:verify-ikebukuro/m)
+    expect(entrypoint).not.toContain('preview:verify-ikebukuro')
+    expect(entrypoint).not.toContain('verify-gold-master-ikebukuro-preview.ts')
+  })
+
   it('documents secret-safe, empty-database preview UAT setup', () => {
     const checklist = readFileSync(join(process.cwd(), 'docs', 'PREVIEW_UAT_CHECKLIST.md'), 'utf8')
 
@@ -114,6 +130,20 @@ describe('XServer VPS deployment artifacts', () => {
     expect(checklist).toContain('CREATE_SYNTHETIC_UAT_DATA_IN_EMPTY_ISOLATED_PREVIEW')
     expect(checklist).toMatch(/旧本番.*接続しません/u)
     expect(checklist).toMatch(/完全に空/u)
+  })
+
+  it('documents an isolated write journey for field UAT without modifying copied customers', () => {
+    const manual = readFileSync(
+      join(process.cwd(), 'docs', 'IKEBUKURO_FIELD_UAT_MANUAL.md'),
+      'utf8'
+    )
+
+    expect(manual).toContain('`[UAT]` 専用データだけ')
+    expect(manual).toMatch(/`000`.*月日.*時分/u)
+    expect(manual).toMatch(/新規顧客.*予約.*変更.*キャンセル/u)
+    expect(manual).toMatch(/キャンセル理由/u)
+    expect(manual).toMatch(/コピー済み.*変更・削除し(?:ない|ません)/u)
+    expect(manual).toMatch(/LINE.*メール.*SMS.*Push.*決済/u)
   })
 
   it('documents secret-safe production bootstrap and overwrite acknowledgement', () => {

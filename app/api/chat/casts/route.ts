@@ -1,6 +1,7 @@
 /**
  * @design_doc   Chat casts API endpoint
  * @related_to   Chat system, Cast management, Message model
+ * @known_issues Presence remains offline until a real presence source is introduced
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { db as prisma } from '@/lib/db'
@@ -8,6 +9,7 @@ import { requireAdmin } from '@/lib/auth/utils'
 import { handleApiError } from '@/lib/api/errors'
 import { SuccessResponses } from '@/lib/api/responses'
 import { buildChatPreview } from '@/lib/chat/attachments'
+import { isActiveChatStore } from '@/lib/chat/customer-store-scope'
 
 interface ChatCast {
   id: string
@@ -34,15 +36,24 @@ function formatTimestamp(timestamp: Date | string): string {
 }
 
 export async function GET(request: NextRequest) {
-  const authError = await requireAdmin()
+  const searchParams = request.nextUrl.searchParams
+  const storeId = searchParams.get('storeId')?.trim() ?? ''
+  const authError = await requireAdmin(storeId ? { storeId } : undefined)
   if (authError) return authError
 
-  const searchParams = request.nextUrl.searchParams
+  if (!storeId) {
+    return NextResponse.json({ error: 'storeId is required' }, { status: 400 })
+  }
+
+  if (!(await isActiveChatStore(prisma, storeId))) {
+    return NextResponse.json({ error: 'Store not found' }, { status: 404 })
+  }
+
   const id = searchParams.get('id')
 
   try {
     if (id) {
-      const cast = await prisma.cast.findUnique({ where: { id } })
+      const cast = await prisma.cast.findFirst({ where: { id, storeId } })
       if (!cast) {
         return NextResponse.json({ error: 'Cast not found' }, { status: 404 })
       }
@@ -67,7 +78,7 @@ export async function GET(request: NextRequest) {
           ? buildChatPreview(lastMessage.content, lastMessage.attachments)
           : '',
         lastMessageTime: lastMessage ? formatTimestamp(lastMessage.timestamp) : '',
-        avatar: cast.image || `/avatars/cast-${cast.id}.jpg`,
+        avatar: cast.image || undefined,
         hasUnread: unreadCount > 0,
         unreadCount,
         isOnline: false,
@@ -78,15 +89,19 @@ export async function GET(request: NextRequest) {
       return SuccessResponses.ok(chatCast)
     }
 
-    const casts = await prisma.cast.findMany()
-    const messages = await prisma.message.findMany({
-      where: {
-        castId: { not: null },
-      },
-      orderBy: { timestamp: 'desc' },
-    })
+    const casts = await prisma.cast.findMany({ where: { storeId } })
+    const castIds = casts.map((cast) => cast.id)
+    const messages =
+      castIds.length > 0
+        ? await prisma.message.findMany({
+            where: {
+              castId: { in: castIds },
+            },
+            orderBy: { timestamp: 'desc' },
+          })
+        : []
 
-    const lastMessageByCast = new Map<string, any>()
+    const lastMessageByCast = new Map<string, (typeof messages)[number]>()
     const unreadCountByCast = new Map<string, number>()
 
     messages.forEach((message) => {
@@ -110,7 +125,7 @@ export async function GET(request: NextRequest) {
           ? buildChatPreview(lastMessage.content, lastMessage.attachments)
           : '',
         lastMessageTime: lastMessage ? formatTimestamp(lastMessage.timestamp) : '',
-        avatar: cast.image || `/avatars/cast-${cast.id}.jpg`,
+        avatar: cast.image || undefined,
         hasUnread: unreadCount > 0,
         unreadCount,
         isOnline: false,

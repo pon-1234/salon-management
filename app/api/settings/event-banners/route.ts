@@ -127,10 +127,6 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const { banners } = updateSchema.parse(body)
 
-    if (banners.length === 0) {
-      return ErrorResponses.badRequest('少なくとも1件のバナーを登録してください')
-    }
-
     const normalized = banners.map((banner, index) => ({
       id: banner.id,
       title: banner.title.trim(),

@@ -2,28 +2,96 @@
 
 /**
  * @design_doc   Multi-store weekly cast schedule administration
- * @related_to   CastScheduleUseCases and batch cast-schedule API
- * @known_issues Filtering controls are placeholders
+ * @related_to   CastScheduleUseCases, ScheduleActionButtons, and ScheduleGrid
+ * @known_issues None
  */
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { ScheduleGrid } from '@/components/cast-schedule/schedule-grid'
 import { CastScheduleUseCases } from '@/lib/cast-schedule/usecases'
-import { WeeklySchedule } from '@/lib/cast-schedule/old-types'
+import type { CastScheduleEntry, WeeklySchedule } from '@/lib/cast-schedule/old-types'
 import { ScheduleInfoBar } from '@/components/cast-schedule/schedule-info-bar'
-import { ScheduleActionButtons } from '@/components/cast-schedule/schedule-action-buttons'
+import {
+  ScheduleActionButtons,
+  type ScheduleCharacterFilter,
+  type ScheduleStatusFilter,
+  type ScheduleViewMode,
+} from '@/components/cast-schedule/schedule-action-buttons'
+import type { WeeklyScheduleEdit } from '@/components/cast-schedule/schedule-edit-dialog'
 import { toast } from '@/hooks/use-toast'
 import { useStore } from '@/contexts/store-context'
 import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
+import { formatScheduleDate, getWeekDates } from '@/lib/cast-schedule/utils'
 
 const castScheduleUseCases = new CastScheduleUseCases()
 
+const KANA_GROUPS: Record<Exclude<ScheduleCharacterFilter, '全' | 'その他'>, string> = {
+  あ: 'ぁあぃいぅうぇえぉおゔ',
+  か: 'かがきぎくぐけげこご',
+  さ: 'さざしじすずせぜそぞ',
+  た: 'ただちぢっつづてでとど',
+  な: 'なにぬねの',
+  は: 'はばぱひびぴふぶぷへべぺほぼぽ',
+  ま: 'まみむめも',
+  や: 'ゃやゅゆょよ',
+  ら: 'らりるれろ',
+  わ: 'ゎわゐゑをん',
+}
+
+function katakanaToHiragana(value: string): string {
+  return value.replace(/[ァ-ヶ]/g, (character) =>
+    String.fromCharCode(character.charCodeAt(0) - 0x60)
+  )
+}
+
+function normalizeSearchValue(value: string): string {
+  return katakanaToHiragana(value.normalize('NFKC').toLocaleLowerCase('ja-JP')).replace(/\s+/g, '')
+}
+
+function matchesCharacterFilter(
+  entry: CastScheduleEntry,
+  characterFilter: ScheduleCharacterFilter
+): boolean {
+  if (characterFilter === '全') return true
+
+  const firstCharacter = normalizeSearchValue(entry.nameKana || entry.name).charAt(0)
+  const matchesKnownGroup = Object.values(KANA_GROUPS).some((group) =>
+    group.includes(firstCharacter)
+  )
+
+  if (characterFilter === 'その他') return !matchesKnownGroup
+  return KANA_GROUPS[characterFilter].includes(firstCharacter)
+}
+
+function matchesStatusFilter(
+  entry: CastScheduleEntry,
+  statusFilter: ScheduleStatusFilter,
+  weekDateKeys: string[]
+): boolean {
+  if (statusFilter === 'all') return true
+
+  const weekStatuses = weekDateKeys.map((dateKey) => entry.schedule[dateKey])
+  if (statusFilter === 'working') {
+    return weekStatuses.some((status) => status?.type === '出勤予定')
+  }
+  if (statusFilter === 'holiday') {
+    return weekStatuses.length > 0 && weekStatuses.every((status) => status?.type === '休日')
+  }
+  return weekStatuses.some((status) => !status || status.type === '未入力')
+}
+
 export default function WeeklySchedulePage() {
-  const { currentStore } = useStore()
+  const { currentStore, availableStores, switchStore } = useStore()
   const [date, setDate] = useState(() => new Date())
   const [schedule, setSchedule] = useState<WeeklySchedule | null>(null)
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<ScheduleStatusFilter>('all')
+  const [characterFilter, setCharacterFilter] = useState<ScheduleCharacterFilter>('全')
+  const [viewMode, setViewMode] = useState<ScheduleViewMode>('grid')
 
   useEffect(() => {
+    let active = true
+
     const fetchSchedule = async () => {
       setLoading(true)
       try {
@@ -32,34 +100,44 @@ export default function WeeklySchedulePage() {
           castFilter: 'all',
           storeId: currentStore.id,
         })
-        setSchedule(weeklySchedule)
+        if (active) setSchedule(weeklySchedule)
       } catch (error) {
         console.error('Failed to fetch schedule:', error)
-        toast({
-          title: 'エラー',
-          description: 'スケジュールの取得に失敗しました',
-          variant: 'destructive',
-        })
+        if (active) {
+          toast({
+            title: 'エラー',
+            description: 'スケジュールの取得に失敗しました',
+            variant: 'destructive',
+          })
+        }
       } finally {
-        setLoading(false)
+        if (active) setLoading(false)
       }
     }
 
-    fetchSchedule()
+    void fetchSchedule()
+    return () => {
+      active = false
+    }
   }, [currentStore.id, date])
 
-  if (loading || !schedule) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="flex h-64 items-center justify-center">
-          <div className="text-center">
-            <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-emerald-600"></div>
-            <p className="text-gray-600">読み込み中...</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const filteredEntries = useMemo(() => {
+    if (!schedule) return []
+
+    const normalizedQuery = normalizeSearchValue(searchQuery)
+    const weekDateKeys = getWeekDates(schedule.startDate).map(formatScheduleDate)
+
+    return schedule.entries.filter((entry) => {
+      const searchableValue = normalizeSearchValue(`${entry.name}${entry.nameKana}`)
+      const matchesSearch = !normalizedQuery || searchableValue.includes(normalizedQuery)
+
+      return (
+        matchesSearch &&
+        matchesCharacterFilter(entry, characterFilter) &&
+        matchesStatusFilter(entry, statusFilter, weekDateKeys)
+      )
+    })
+  }, [characterFilter, schedule, searchQuery, statusFilter])
 
   const handleRefresh = async () => {
     setLoading(true)
@@ -86,90 +164,88 @@ export default function WeeklySchedulePage() {
     }
   }
 
-  const handleFilter = () => {
-    // Filter logic can be implemented here
-  }
+  const handleSaveSchedule = async (castId: string, editedSchedule: WeeklyScheduleEdit) => {
+    setSchedule((previousSchedule) => {
+      if (!previousSchedule) return previousSchedule
 
-  const handleFilterCharacter = () => {
-    // Character filter logic can be implemented here
-  }
-
-  const handleSaveSchedule = async (castId: string, schedule: any) => {
-    // Optimistic update - immediately update UI
-    setSchedule((prev) => {
-      if (!prev) return prev
+      const optimisticSchedule: CastScheduleEntry['schedule'] = Object.fromEntries(
+        Object.entries(editedSchedule).map(([dateKey, daySchedule]) => [
+          dateKey,
+          {
+            type: daySchedule.status,
+            startTime: daySchedule.startTime,
+            endTime: daySchedule.endTime,
+            note: daySchedule.note,
+          },
+        ])
+      )
 
       return {
-        ...prev,
-        entries: prev.entries.map((entry) => {
-          if (entry.castId === castId) {
-            return {
-              ...entry,
-              schedule,
-            }
-          }
-          return entry
-        }),
+        ...previousSchedule,
+        entries: previousSchedule.entries.map((entry) =>
+          entry.castId === castId ? { ...entry, schedule: optimisticSchedule } : entry
+        ),
       }
     })
 
     try {
-      // Convert schedule format for batch API
-      const schedules = Object.entries(schedule).map(([dateStr, daySchedule]: [string, any]) => {
+      const schedules = Object.entries(editedSchedule).map(([dateKey, daySchedule]) => {
         if (daySchedule.status === '出勤予定' && daySchedule.startTime && daySchedule.endTime) {
           return {
-            date: dateStr,
+            date: dateKey,
             status: 'working' as const,
             startTime: daySchedule.startTime,
             endTime: daySchedule.endTime,
           }
-        } else {
-          return {
-            date: dateStr,
-            status: 'holiday' as const,
-          }
+        }
+
+        return {
+          date: dateKey,
+          status: 'holiday' as const,
         }
       })
 
-      // Use batch API for better performance
       const response = await fetch(
         buildStoreScopedEndpoint('/api/cast-schedule/batch', currentStore.id),
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            castId,
-            schedules,
-          }),
+          body: JSON.stringify({ castId, schedules }),
         }
       )
+      const result = (await response.json()) as { error?: string; message?: string }
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'スケジュールの保存に失敗しました')
+        throw new Error(result.error || 'スケジュールの保存に失敗しました')
       }
-
-      const result = await response.json()
 
       toast({
         title: '成功',
         description: result.message || 'スケジュールを保存しました',
       })
-
-      // Refresh the schedule to ensure consistency
       await handleRefresh()
     } catch (error) {
       console.error('Failed to save schedule:', error)
-
-      // Revert optimistic update on error
       await handleRefresh()
-
       toast({
         title: 'エラー',
         description: error instanceof Error ? error.message : 'スケジュールの保存に失敗しました',
         variant: 'destructive',
       })
     }
+  }
+
+  if (loading || !schedule) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="flex h-64 items-center justify-center">
+          <div className="text-center">
+            <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-emerald-600" />
+            <p className="text-gray-600">読み込み中...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -182,15 +258,28 @@ export default function WeeklySchedulePage() {
       />
       <ScheduleActionButtons
         onRefresh={handleRefresh}
-        onFilter={handleFilter}
-        onFilterCharacter={handleFilterCharacter}
         date={date}
         onDateChange={setDate}
+        stores={availableStores.map((store) => ({
+          id: store.id,
+          displayName: store.displayName || store.name,
+        }))}
+        selectedStoreId={currentStore.id}
+        onStoreChange={switchStore}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        characterFilter={characterFilter}
+        onCharacterFilterChange={setCharacterFilter}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
       <ScheduleGrid
         startDate={schedule.startDate}
-        entries={schedule.entries}
+        entries={filteredEntries}
         onSaveSchedule={handleSaveSchedule}
+        viewMode={viewMode}
       />
     </div>
   )

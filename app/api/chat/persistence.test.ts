@@ -21,16 +21,27 @@ vi.mock('@/lib/db', () => ({
       findMany: vi.fn(),
       create: vi.fn(),
     },
+    customer: {
+      findFirst: vi.fn(),
+    },
+    store: {
+      count: vi.fn(),
+      findFirst: vi.fn(),
+    },
   },
 }))
 
 describe('Chat Message Persistence', () => {
   it('should persist messages and retrieve them on subsequent requests', async () => {
-    const mockSession = { user: { role: 'admin' } }
+    const mockSession = { user: { role: 'admin', adminRole: 'super_admin' } }
     vi.mocked(getServerSession).mockResolvedValue(mockSession)
+    vi.mocked(prisma.store.count).mockResolvedValue(1)
+    vi.mocked(prisma.store.findFirst).mockResolvedValue({ id: 'store-a' } as never)
+    vi.mocked(prisma.customer.findFirst).mockResolvedValue({ id: 'test-customer-1' } as never)
 
     // Step 1: Create a new message
     const newMessage = {
+      storeId: 'store-a',
       customerId: 'test-customer-1',
       sender: 'staff' as const,
       content: 'This message should persist across page refreshes',
@@ -62,7 +73,9 @@ describe('Chat Message Persistence', () => {
     // Step 2: Simulate page refresh by fetching messages again
     vi.mocked(prisma.message.findMany).mockResolvedValue([createdMessage])
 
-    const getRequest = new NextRequest('http://localhost/api/chat?customerId=test-customer-1')
+    const getRequest = new NextRequest(
+      'http://localhost/api/chat?customerId=test-customer-1&storeId=store-a'
+    )
     const getResponse = await GET(getRequest)
     expect(getResponse.status).toBe(200)
 
@@ -91,8 +104,11 @@ describe('Chat Message Persistence', () => {
   })
 
   it('should handle multiple messages from different senders persistently', async () => {
-    const mockSession = { user: { role: 'admin' } }
+    const mockSession = { user: { role: 'admin', adminRole: 'super_admin' } }
     vi.mocked(getServerSession).mockResolvedValue(mockSession)
+    vi.mocked(prisma.store.count).mockResolvedValue(1)
+    vi.mocked(prisma.store.findFirst).mockResolvedValue({ id: 'store-a' } as never)
+    vi.mocked(prisma.customer.findFirst).mockResolvedValue({ id: 'customer-1' } as never)
 
     // Mock multiple messages in database
     const persistedMessages = [
@@ -143,7 +159,9 @@ describe('Chat Message Persistence', () => {
     vi.mocked(prisma.message.findMany).mockResolvedValue(persistedMessages)
 
     // Fetch messages after "page refresh"
-    const request = new NextRequest('http://localhost/api/chat?customerId=customer-1')
+    const request = new NextRequest(
+      'http://localhost/api/chat?customerId=customer-1&storeId=store-a'
+    )
     const response = await GET(request)
     expect(response.status).toBe(200)
 

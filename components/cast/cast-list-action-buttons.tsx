@@ -1,5 +1,10 @@
+/**
+ * @design_doc   Client operational review: cast list controls filter persisted cast attributes
+ * @related_to   CastListPage, CastListView
+ * @known_issues None currently
+ */
 import { Button } from '@/components/ui/button'
-import { RefreshCw, Filter, PlusCircle } from 'lucide-react'
+import { RefreshCw, PlusCircle } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -13,7 +18,6 @@ import Link from 'next/link'
 interface CastListActionButtonsProps {
   onRefresh: () => void
   onFilterCharacter: (char: string) => void
-  onFilter: () => void
   nameSearch: string
   onNameSearchChange: (value: string) => void
   workStatus: string
@@ -23,7 +27,6 @@ interface CastListActionButtonsProps {
 export function CastListActionButtons({
   onRefresh,
   onFilterCharacter,
-  onFilter,
   nameSearch,
   onNameSearchChange,
   workStatus,
@@ -34,16 +37,10 @@ export function CastListActionButtons({
   return (
     <div className="space-y-4 border-b p-4">
       <div className="flex items-center justify-between">
-        <div className="flex gap-2">
-          <Button onClick={onRefresh} variant="outline" size="sm">
-            <RefreshCw className="mr-2 h-4 w-4" />
-            更新
-          </Button>
-          <Button onClick={onFilter} variant="outline" size="sm">
-            <Filter className="mr-2 h-4 w-4" />
-            フィルター
-          </Button>
-        </div>
+        <Button onClick={onRefresh} variant="outline" size="sm">
+          <RefreshCw className="mr-2 h-4 w-4" />
+          更新
+        </Button>
         <Link href="/admin/cast/manage/new">
           <Button className="bg-emerald-600 hover:bg-emerald-700">
             <PlusCircle className="mr-2 h-4 w-4" />
@@ -58,15 +55,16 @@ export function CastListActionButtons({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="就業中(公開)">就業中(公開)</SelectItem>
-            <SelectItem value="休職中">休職中</SelectItem>
-            <SelectItem value="退職">退職</SelectItem>
+            <SelectItem value="all">すべて</SelectItem>
+            <SelectItem value="出勤">出勤</SelectItem>
+            <SelectItem value="未出勤">未出勤</SelectItem>
+            <SelectItem value="休日">休日</SelectItem>
           </SelectContent>
         </Select>
 
         <Input
           type="search"
-          placeholder="本名検索"
+          placeholder="キャスト名・かな検索"
           value={nameSearch}
           onChange={(e) => onNameSearchChange(e.target.value)}
           className="w-[200px]"

@@ -4,15 +4,26 @@
  * @known_issues None
  */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { addDays, format, startOfDay } from 'date-fns'
+import { addDays } from 'date-fns'
+import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz'
 import { ja } from 'date-fns/locale'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Reservation, ReservationUpdatePayload } from '@/lib/types/reservation'
 import ReservationListPage from './page'
 
+const JST_TIMEZONE = 'Asia/Tokyo'
+
+Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+  configurable: true,
+  value: vi.fn(),
+})
+
 const repositoryMocks = vi.hoisted(() => ({
-  getAll: vi.fn(),
   update: vi.fn(),
+}))
+
+const reservationDataMocks = vi.hoisted(() => ({
+  getAllReservations: vi.fn(),
 }))
 
 const childComponentState = vi.hoisted(() => ({
@@ -47,9 +58,12 @@ vi.mock('@/hooks/use-toast', () => ({
 
 vi.mock('@/lib/reservation/repository-impl', () => ({
   ReservationRepositoryImpl: class {
-    getAll = repositoryMocks.getAll
     update = repositoryMocks.update
   },
+}))
+
+vi.mock('@/lib/reservation/data', () => ({
+  getAllReservations: reservationDataMocks.getAllReservations,
 }))
 
 vi.mock('@/components/reservation/reservation-list', () => ({
@@ -69,7 +83,7 @@ vi.mock('@/components/reservation/reservation-list', () => ({
           <button type="button" onClick={() => onOpenReservation?.(reservation)}>
             {reservation.customerName}の予約を開く
           </button>
-          {reservation.status === 'confirmed' ? (
+          {reservation.status === 'confirmed' && onMakeModifiable ? (
             <button type="button" onClick={() => onMakeModifiable?.(reservation.id)}>
               修正可能にする
             </button>
@@ -111,15 +125,16 @@ const createReservation = ({
   id = 'reservation-confirmed',
   customerName = '当日顧客',
   startTime = new Date(),
+  status = 'confirmed',
 }: {
   id?: string
   customerName?: string
   startTime?: Date
+  status?: Reservation['status']
 } = {}): Reservation => {
-  const normalizedStart = new Date(startTime)
-  normalizedStart.setHours(10, 0, 0, 0)
-  const endTime = new Date(normalizedStart)
-  endTime.setHours(12, 0, 0, 0)
+  const dateKey = formatInTimeZone(startTime, JST_TIMEZONE, 'yyyy-MM-dd')
+  const normalizedStart = zonedTimeToUtc(`${dateKey}T10:00:00`, JST_TIMEZONE)
+  const endTime = new Date(normalizedStart.getTime() + 2 * 60 * 60 * 1000)
 
   return {
     id,
@@ -132,7 +147,7 @@ const createReservation = ({
     serviceName: '現在コース',
     startTime: normalizedStart,
     endTime,
-    status: 'confirmed',
+    status,
     price: 20_000,
     storeId: 'ikebukuro',
     createdAt: new Date('2026-01-01T00:00:00.000Z'),
@@ -147,7 +162,7 @@ describe('ReservationListPage interactions', () => {
     vi.clearAllMocks()
     childComponentState.dialogSavePayload = null
     confirmedReservation = createReservation()
-    repositoryMocks.getAll.mockResolvedValue([confirmedReservation])
+    reservationDataMocks.getAllReservations.mockResolvedValue([confirmedReservation])
     repositoryMocks.update.mockImplementation(
       async (_reservationId: string, update: Partial<Reservation>) => ({
         ...confirmedReservation,
@@ -157,17 +172,111 @@ describe('ReservationListPage interactions', () => {
     )
   })
 
-  it('persists the confirmed reservation as modifiable from the quick action', async () => {
+  it('requests the selected JST day instead of a global reservation page', async () => {
     render(<ReservationListPage />)
 
-    fireEvent.click(await screen.findByRole('button', { name: '修正可能にする' }))
+    const selectedDateKey = formatInTimeZone(new Date(), JST_TIMEZONE, 'yyyy-MM-dd')
+    const rangeStart = zonedTimeToUtc(`${selectedDateKey}T00:00:00`, JST_TIMEZONE)
+    const rangeEnd = addDays(rangeStart, 1)
 
     await waitFor(() => {
-      expect(repositoryMocks.update).toHaveBeenCalledWith(
-        confirmedReservation.id,
-        expect.objectContaining({ status: 'modifiable' })
+      expect(reservationDataMocks.getAllReservations).toHaveBeenCalledWith(
+        expect.objectContaining({
+          startDate: rangeStart.toISOString(),
+          endDate: rangeEnd.toISOString(),
+          storeId: 'ikebukuro',
+          status: 'active',
+        })
       )
     })
+  })
+
+  it('excludes cancelled reservations by default and exposes them in cancellation history', async () => {
+    const cancelledReservation = createReservation({
+      id: 'reservation-cancelled',
+      customerName: 'キャンセル顧客',
+      status: 'cancelled',
+    })
+    reservationDataMocks.getAllReservations.mockResolvedValue([
+      confirmedReservation,
+      cancelledReservation,
+    ])
+
+    render(<ReservationListPage />)
+
+    expect(await screen.findByText('当日顧客')).toBeInTheDocument()
+    expect(screen.queryByText('キャンセル顧客')).not.toBeInTheDocument()
+    expect(screen.getByText('総件数').parentElement).toHaveTextContent('1')
+
+    fireEvent.click(screen.getByRole('combobox'))
+    fireEvent.click(await screen.findByRole('option', { name: 'キャンセル履歴' }))
+
+    expect(await screen.findByText('キャンセル顧客')).toBeInTheDocument()
+    expect(screen.queryByText('当日顧客')).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(reservationDataMocks.getAllReservations).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: 'cancelled' })
+      )
+    })
+  })
+
+  it('requests every adjusting status from the API for the adjusting filter', async () => {
+    render(<ReservationListPage />)
+
+    expect(await screen.findByText('当日顧客')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('combobox'))
+    fireEvent.click(await screen.findByRole('option', { name: '調整中' }))
+
+    await waitFor(() => {
+      expect(reservationDataMocks.getAllReservations).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: 'adjusting' })
+      )
+    })
+  })
+
+  it('opens a confirmed reservation directly without requiring a status mutation', async () => {
+    render(<ReservationListPage />)
+
+    expect(await screen.findByText('当日顧客')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '修正可能にする' })).not.toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: `${confirmedReservation.customerName}の予約を開く`,
+      })
+    )
+
+    expect(await screen.findByRole('button', { name: '全項目を保存' })).toBeInTheDocument()
+    expect(repositoryMocks.update).not.toHaveBeenCalled()
+  })
+
+  it('removes a cancelled reservation immediately and closes its dialog', async () => {
+    childComponentState.dialogSavePayload = {
+      status: 'cancelled',
+      cancellationSource: 'store',
+      cancellationReason: 'お客様都合',
+    }
+
+    render(<ReservationListPage />)
+
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: `${confirmedReservation.customerName}の予約を開く`,
+      })
+    )
+    fireEvent.click(await screen.findByRole('button', { name: '全項目を保存' }))
+
+    await waitFor(() => {
+      expect(screen.queryByText('当日顧客')).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: '全項目を保存' })).not.toBeInTheDocument()
+    })
+    expect(repositoryMocks.update).toHaveBeenCalledWith(
+      confirmedReservation.id,
+      expect.objectContaining({
+        status: 'cancelled',
+        cancellationReason: 'お客様都合',
+      })
+    )
   })
 
   it('forwards every editable dialog field to the reservation repository', async () => {
@@ -182,6 +291,7 @@ describe('ReservationListPage interactions', () => {
       endTime: changedEnd,
       status: 'cancelled',
       cancellationSource: 'store',
+      cancellationReason: '日時変更のため',
       notes: '変更後の詳細メモ',
       storeMemo: '変更後の店舗メモ',
       price: 31_000,
@@ -232,20 +342,25 @@ describe('ReservationListPage interactions', () => {
   })
 
   it('switches the displayed reservations with a weekly date shortcut', async () => {
-    const tomorrow = addDays(startOfDay(new Date()), 1)
+    const todayKey = formatInTimeZone(new Date(), JST_TIMEZONE, 'yyyy-MM-dd')
+    const todayStart = zonedTimeToUtc(`${todayKey}T00:00:00`, JST_TIMEZONE)
+    const tomorrow = addDays(todayStart, 1)
     const tomorrowReservation = createReservation({
       id: 'reservation-tomorrow',
       customerName: '翌日顧客',
       startTime: tomorrow,
     })
-    repositoryMocks.getAll.mockResolvedValue([confirmedReservation, tomorrowReservation])
+    reservationDataMocks.getAllReservations.mockResolvedValue([
+      confirmedReservation,
+      tomorrowReservation,
+    ])
 
     render(<ReservationListPage />)
 
     expect(await screen.findByText('当日顧客')).toBeInTheDocument()
     expect(screen.queryByText('翌日顧客')).not.toBeInTheDocument()
 
-    const tomorrowLabel = format(tomorrow, 'M/d(E)', { locale: ja })
+    const tomorrowLabel = formatInTimeZone(tomorrow, JST_TIMEZONE, 'M/d(E)', { locale: ja })
     const tomorrowShortcut = screen
       .getAllByRole('button')
       .find((button) => button.textContent?.includes(tomorrowLabel))
@@ -254,16 +369,24 @@ describe('ReservationListPage interactions', () => {
 
     expect(await screen.findByText('翌日顧客')).toBeInTheDocument()
     expect(screen.queryByText('当日顧客')).not.toBeInTheDocument()
+
+    const tomorrowEnd = addDays(tomorrow, 1)
+    expect(reservationDataMocks.getAllReservations).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        startDate: tomorrow.toISOString(),
+        endDate: tomorrowEnd.toISOString(),
+      })
+    )
   })
 
   it('fetches the reservation list again from the reload button', async () => {
     render(<ReservationListPage />)
 
     const reloadButton = await screen.findByRole('button', { name: '再読込' })
-    await waitFor(() => expect(repositoryMocks.getAll).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(reservationDataMocks.getAllReservations).toHaveBeenCalledTimes(1))
 
     fireEvent.click(reloadButton)
 
-    await waitFor(() => expect(repositoryMocks.getAll).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(reservationDataMocks.getAllReservations).toHaveBeenCalledTimes(2))
   })
 })

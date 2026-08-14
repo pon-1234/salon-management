@@ -1,9 +1,9 @@
 /**
  * @design_doc   Chat API endpoints for admin-customer messaging
  * @related_to   Chat components, Customer type, Message model
- * @known_issues None
+ * @known_issues Customer identities visiting multiple stores retain one shared chat thread
  */
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db as prisma } from '@/lib/db'
 import { requireAdmin } from '@/lib/auth/utils'
 import { handleApiError, ErrorResponses } from '@/lib/api/errors'
@@ -13,6 +13,8 @@ import { castNotificationService } from '@/lib/notification/cast-service'
 import { normalizeChatAttachments } from '@/lib/chat/attachments'
 import type { ChatAttachment } from '@/lib/types/chat'
 import { chatMessageSchema } from '@/lib/chat/schema'
+import { z } from 'zod'
+import { isActiveChatStore, resolveCustomerChatScope } from '@/lib/chat/customer-store-scope'
 
 type ApiChatMessage = Omit<Message, 'attachments'> & { attachments: ChatAttachment[] }
 
@@ -23,17 +25,43 @@ function normalizeMessage(message: Message): ApiChatMessage {
   }
 }
 
+async function findVisibleCustomer(customerId: string, storeId: string) {
+  const customerStoreScope = await resolveCustomerChatScope(prisma, storeId)
+  return prisma.customer.findFirst({
+    where: { id: customerId, ...customerStoreScope },
+    select: { id: true },
+  })
+}
+
 // GET /api/chat - Get messages for a customer
 export async function GET(request: NextRequest) {
-  const authError = await requireAdmin()
+  const searchParams = request.nextUrl.searchParams
+  const storeId = searchParams.get('storeId')?.trim() ?? ''
+  const authError = await requireAdmin(storeId ? { storeId } : undefined)
   if (authError) return authError
 
-  const searchParams = request.nextUrl.searchParams
+  if (!storeId) {
+    return ErrorResponses.badRequest('storeId is required')
+  }
+
+  if (!(await isActiveChatStore(prisma, storeId))) {
+    return ErrorResponses.notFound('店舗')
+  }
+
   const customerId = searchParams.get('customerId')
   const castId = searchParams.get('castId')
 
   try {
+    if (Boolean(customerId) === Boolean(castId)) {
+      return ErrorResponses.badRequest('customerId または castId のどちらか一方が必要です')
+    }
+
     if (customerId) {
+      const customer = await findVisibleCustomer(customerId, storeId)
+      if (!customer) {
+        return ErrorResponses.notFound('顧客')
+      }
+
       const messages = await prisma.message.findMany({
         where: { customerId },
         orderBy: { timestamp: 'asc' },
@@ -43,6 +71,14 @@ export async function GET(request: NextRequest) {
     }
 
     if (castId) {
+      const cast = await prisma.cast.findFirst({
+        where: { id: castId, storeId },
+        select: { id: true },
+      })
+      if (!cast) {
+        return ErrorResponses.notFound('キャスト')
+      }
+
       const messages = await prisma.message.findMany({
         where: { castId },
         orderBy: { timestamp: 'asc' },
@@ -55,24 +91,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get all messages grouped by customer
-    const messages = await prisma.message.findMany({
-      orderBy: { timestamp: 'asc' },
-    })
-
-    const messagesByCustomer = messages.reduce(
-      (acc, msg) => {
-        if (msg.customerId) {
-          const normalized = normalizeMessage(msg)
-          acc[msg.customerId] = acc[msg.customerId] || []
-          acc[msg.customerId].push(normalized)
-        }
-        return acc
-      },
-      {} as Record<string, ApiChatMessage[]>
-    )
-
-    return SuccessResponses.ok(messagesByCustomer)
+    return ErrorResponses.badRequest('participant is required')
   } catch (error) {
     return handleApiError(error)
   }
@@ -87,14 +106,36 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
 
     // Validate request body
-    const { customerId, castId, sender, content, attachments, isReservationInfo, reservationInfo } =
-      chatMessageSchema.parse(body)
+    const {
+      storeId,
+      customerId,
+      castId,
+      sender,
+      content,
+      attachments,
+      isReservationInfo,
+      reservationInfo,
+    } = chatMessageSchema.parse(body)
+
+    const storeAuthError = await requireAdmin({ storeId })
+    if (storeAuthError) return storeAuthError
+
+    if (!(await isActiveChatStore(prisma, storeId))) {
+      return ErrorResponses.notFound('店舗')
+    }
 
     const trimmedContent = (content ?? '').trim()
 
+    if (customerId) {
+      const customer = await findVisibleCustomer(customerId, storeId)
+      if (!customer) {
+        return ErrorResponses.notFound('顧客')
+      }
+    }
+
     const castForNotification = castId
-      ? await prisma.cast.findUnique({
-          where: { id: castId },
+      ? await prisma.cast.findFirst({
+          where: { id: castId, storeId },
           select: {
             id: true,
             name: true,
@@ -102,6 +143,10 @@ export async function POST(request: NextRequest) {
           },
         })
       : null
+
+    if (castId && !castForNotification) {
+      return ErrorResponses.notFound('キャスト')
+    }
 
     // Create new message in database
     const newMessage = await prisma.message.create({
@@ -118,7 +163,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    if (castForNotification && sender !== 'cast') {
+    if (castForNotification) {
       try {
         await castNotificationService.sendChatMessageNotification({
           cast: {
@@ -158,16 +203,39 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { id, readStatus } = body
+    const { storeId, id, readStatus } = z
+      .object({
+        storeId: z.string().trim().min(1).max(100),
+        id: z.string().trim().min(1),
+        readStatus: z.literal('既読'),
+      })
+      .strict()
+      .parse(body)
 
-    if (!id) {
-      return ErrorResponses.badRequest('メッセージIDが必要です')
+    const storeAuthError = await requireAdmin({ storeId })
+    if (storeAuthError) return storeAuthError
+
+    if (!(await isActiveChatStore(prisma, storeId))) {
+      return ErrorResponses.notFound('店舗')
+    }
+
+    const customerStoreScope = await resolveCustomerChatScope(prisma, storeId)
+    const visibleMessage = await prisma.message.findFirst({
+      where: {
+        id,
+        sender: { in: ['customer', 'cast'] },
+        OR: [{ cast: { is: { storeId } } }, { customer: { is: customerStoreScope } }],
+      },
+      select: { id: true },
+    })
+    if (!visibleMessage) {
+      return ErrorResponses.notFound('メッセージ')
     }
 
     // Update message in database
     const updatedMessage = await prisma.message.update({
       where: { id },
-      data: { readStatus: readStatus || '既読' },
+      data: { readStatus },
     })
 
     return SuccessResponses.updated(updatedMessage)

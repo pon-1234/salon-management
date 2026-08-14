@@ -47,6 +47,10 @@ vi.mock('crypto', async () => {
 })
 
 const customerPhoneVerificationFields = {
+  accountStatus: 'active',
+  membershipStage: 'regular',
+  lastLoginAt: null,
+  lastVisitAt: null,
   phoneVerified: false,
   phoneVerifiedAt: null,
   phoneVerificationCode: null,

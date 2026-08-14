@@ -32,6 +32,7 @@ vi.mock('@/lib/db', () => ({
     paymentTransaction: {
       findFirst: vi.fn(),
       findMany: vi.fn(),
+      groupBy: vi.fn(),
     },
   },
 }))
@@ -88,6 +89,7 @@ describe('/api/payments', () => {
     vi.mocked(getServerSession).mockResolvedValue(assignedAdmin as never)
     vi.mocked(db.reservation.findUnique).mockResolvedValue(reservation as never)
     vi.mocked(db.paymentTransaction.findFirst).mockResolvedValue(null)
+    vi.mocked(db.paymentTransaction.groupBy).mockResolvedValue([] as never)
     mockPaymentService.processPayment.mockResolvedValue({
       success: true,
       transaction: {
@@ -285,6 +287,13 @@ describe('/api/payments', () => {
           updatedAt: new Date('2026-07-20T00:00:00.000Z'),
         },
       ] as never)
+      vi.mocked(db.paymentTransaction.groupBy).mockResolvedValueOnce([
+        {
+          status: 'completed',
+          _count: { _all: 42 },
+          _sum: { amount: 504_000, refundAmount: null },
+        },
+      ] as never)
 
       const response = await GET(
         new NextRequest(
@@ -295,6 +304,20 @@ describe('/api/payments', () => {
 
       expect(response.status).toBe(200)
       expect(payload.transactions).toHaveLength(1)
+      expect(payload.summary).toEqual({
+        statusCounts: {
+          completed: 42,
+          pending: 0,
+          processing: 0,
+          failed: 0,
+          cancelled: 0,
+          refunded: 0,
+        },
+        completedAmount: 504_000,
+        refundedAmount: 0,
+        totalTransactions: 42,
+        totalAmount: 504_000,
+      })
       expect(db.paymentTransaction.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
@@ -303,6 +326,15 @@ describe('/api/payments', () => {
           }),
           take: 26,
           skip: 25,
+        })
+      )
+      expect(db.paymentTransaction.groupBy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          by: ['status'],
+          where: expect.objectContaining({
+            reservation: { storeId: 'ginza' },
+            status: 'completed',
+          }),
         })
       )
     })

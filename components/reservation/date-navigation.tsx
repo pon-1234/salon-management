@@ -1,10 +1,20 @@
+/**
+ * @design_doc   Reservation timeline date navigation and past-booking guard
+ * @related_to   ReservationPageContent and Calendar
+ * @known_issues None
+ */
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ChevronLeft, ChevronRight, CalendarIcon } from 'lucide-react'
 import { useState } from 'react'
-import { format } from 'date-fns'
+import { addDays } from 'date-fns'
+import { formatInTimeZone } from 'date-fns-tz'
 import { ja } from 'date-fns/locale'
+
+const JST_TIMEZONE = 'Asia/Tokyo'
+
+const dateKeyInJapan = (date: Date): string => formatInTimeZone(date, JST_TIMEZONE, 'yyyy-MM-dd')
 
 interface DateNavigationProps {
   selectedDate: Date
@@ -13,41 +23,42 @@ interface DateNavigationProps {
 
 export function DateNavigation({ selectedDate, onSelectDate }: DateNavigationProps) {
   const DAYS_OF_WEEK_JP = ['日', '月', '火', '水', '木', '金', '土']
+  const today = new Date()
+  const todayKey = dateKeyInJapan(today)
 
   // baseDate: 現在表示している週の開始日 (初期値はselectedDateでOK)
-  const [baseDate, setBaseDate] = useState(new Date(selectedDate))
+  const [baseDate, setBaseDate] = useState(() =>
+    dateKeyInJapan(selectedDate) < todayKey ? today : new Date(selectedDate)
+  )
   const [calendarOpen, setCalendarOpen] = useState(false)
 
   // 7日分の日付リストを作成
   const dates = Array.from({ length: 7 }, (_, i) => {
-    const currentDate = new Date(baseDate)
-    currentDate.setDate(baseDate.getDate() + i)
-    const dayOfMonth = currentDate.getDate()
-    const dayOfWeek = DAYS_OF_WEEK_JP[currentDate.getDay()]
+    const currentDate = addDays(baseDate, i)
+    const dayOfMonth = Number(formatInTimeZone(currentDate, JST_TIMEZONE, 'd'))
+    const dayOfWeek = DAYS_OF_WEEK_JP[Number(formatInTimeZone(currentDate, JST_TIMEZONE, 'i')) % 7]
     return {
       date: currentDate,
       label: `${dayOfMonth}日(${dayOfWeek})`,
-      active: currentDate.toDateString() === selectedDate.toDateString(),
+      active: dateKeyInJapan(currentDate) === dateKeyInJapan(selectedDate),
+      disabled: dateKeyInJapan(currentDate) < todayKey,
     }
   })
 
   // 前週へ移動
   const handlePrevWeek = () => {
-    const newBase = new Date(baseDate)
-    newBase.setDate(newBase.getDate() - 7)
-    setBaseDate(newBase)
+    const candidate = addDays(baseDate, -7)
+    setBaseDate(dateKeyInJapan(candidate) < todayKey ? today : candidate)
   }
 
   // 次週へ移動
   const handleNextWeek = () => {
-    const newBase = new Date(baseDate)
-    newBase.setDate(newBase.getDate() + 7)
-    setBaseDate(newBase)
+    setBaseDate(addDays(baseDate, 7))
   }
 
   // カレンダーで日付選択
   const handleCalendarSelect = (date: Date | undefined) => {
-    if (date) {
+    if (date && dateKeyInJapan(date) >= todayKey) {
       onSelectDate(date)
       setBaseDate(date)
       setCalendarOpen(false)
@@ -61,13 +72,16 @@ export function DateNavigation({ selectedDate, onSelectDate }: DateNavigationPro
           <PopoverTrigger asChild>
             <Button variant="outline" className="w-[280px] justify-start text-left font-normal">
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {format(selectedDate, 'yyyy年MM月dd日(E)', { locale: ja })}
+              {formatInTimeZone(selectedDate, JST_TIMEZONE, 'yyyy年MM月dd日(E)', {
+                locale: ja,
+              })}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0">
             <Calendar
               selectedDay={selectedDate}
               onSelectedDayChange={handleCalendarSelect}
+              disabled={(date) => dateKeyInJapan(date) < todayKey}
               initialFocus
             />
           </PopoverContent>
@@ -75,7 +89,13 @@ export function DateNavigation({ selectedDate, onSelectDate }: DateNavigationPro
       </div>
 
       <div className="flex items-center gap-2 overflow-x-auto">
-        <Button variant="outline" size="icon" onClick={handlePrevWeek} aria-label="前の週へ">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handlePrevWeek}
+          aria-label="前の週へ"
+          disabled={dateKeyInJapan(baseDate) <= todayKey}
+        >
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <div className="flex gap-2">
@@ -85,6 +105,7 @@ export function DateNavigation({ selectedDate, onSelectDate }: DateNavigationPro
               variant={item.active ? 'default' : 'outline'}
               className={`rounded-full ${item.active ? 'bg-emerald-600 text-white' : ''}`}
               onClick={() => onSelectDate(item.date)}
+              disabled={item.disabled}
             >
               {item.label}
             </Button>

@@ -1,16 +1,46 @@
 # 旧本番データ移行ランブック
 
-更新日: 2026-07-21
+更新日: 2026-08-14
 
 ## 現在の判定
 
-現時点は **No-Go（本番切替不可）** です。ただし、2026-07-21の池袋V3 snapshotについては、隔離preview DBの初期化・再投入、全件数・参照整合性の突合、依頼対象画面の実browser smoke、full CIまで完了しました。明日の池袋現場確認は開始できます。No-Goの理由は、旧システムの通常書込みを停止していないbest-effortなread-only extractであり、共有会員DBを含むlocked final extract、PII・画像移行、全originの完全突合、現場承認が未完了だからです。
+現時点は **No-Go（本番切替不可）** です。池袋V5候補artifactについて、snapshot・画像105件・変換後全model／全field SHA-256・Prisma migration 16件をDB非接続で照合し、PIIを含まないowner-only control、report、取込後read-only SQLを生成しました。
 
-旧本番の稼働・データ・routingは変更しておらず、本番trafficの切替も行っていません。最終切替では、旧側のcoordinated write pause、共有会員DBを含むlocked final extract、全件突合、画像byteの検証付きcopyを改めて実施します。
+V5のリモートbackup、空DB・storage再作成、取込、取込後突合、移行後backup復元、browser確認はまだ実施していません。V4ではこれらのリハーサルと限定browser確認に成功しましたが、V5の合格証跡として流用しません。
 
-### 2026-07-21 池袋V3 snapshot取得・変換結果
+V5取得でも旧本番の稼働・データ・画像・routingを変更していません。旧システムは本番として書込みを継続しているため、`2026-08-14T19:31:10+09:00` より後の更新はsnapshotへ含まれません。最終切替では、旧側のcoordinated write pause、共有会員DBを含むlocked final extract、画像差分取得、全件突合を改めて実施します。
 
-旧本番DB `nzuadtjn_gold_master` の `shop_no=5600` を読み取り専用transactionで取得し、直接の顧客PIIを除いたV3 snapshotをローカルで厳格変換しました。artifactはGit管理対象外の `migration-data/ikebukuro-preview-v3-20260721.json`、取得基準日時は `2026-07-21T12:07:35+09:00`、SHA-256は `e2b19b1d287094c0066e740c4812ab4fde6a3ba4161991395a38f5194ccba479` です。公開画面の確認対象URLは `https://salon.c-platinum.com/ikebukuro` です。
+### 2026-08-14 池袋V5取込前検証結果
+
+| 項目                     | 検証値                                                             |
+| ------------------------ | ------------------------------------------------------------------ |
+| データ基準日時           | `2026-08-14T19:31:10+09:00`                                        |
+| V5 snapshot SHA-256      | `12bf7fd7b165f3c697adbfe82390f2f5188433bf03ccf0e871f289029dc1cd9b` |
+| 画像manifest SHA-256     | `58e23753728587566619bb92df96ac7e6af83090b75398509110d28dae219616` |
+| 画像                     | 105件、9,794,316 byte、SHA-256・MIME・寸法・inventory一致          |
+| 変換後fixture SHA-256    | `00a0211ae87c5c254717c1b93ca0de37d89aca71d6d4b8d53af745b7438c4abd` |
+| redacted control SHA-256 | `2c822b626afa9ad4db6604e666655dfe60acfaff4bd6aa3ed1e561de33725703` |
+| Prisma migration         | 16件の名前・内容SHA-256完全一致                                    |
+
+V5変換後の主要期待件数は `Customer=13,313`、`Cast=35`、`CastSchedule=241`、`Reservation=2,122`、`ReservationOption=3,753`、`Review=261` です。`legacy-cast-56060` と `legacy-cast-56229` は存在し、画像参照はそれぞれ4枚・3枚でmanifest実fileと一致します。QA顧客には完了予約15件が紐付きます。詳細な全model件数とaggregateは[現場確認環境チェックリスト](./PREVIEW_UAT_CHECKLIST.md)に固定します。
+
+この成功は `ikebukuro-preview-artifact` の範囲に限ります。稼働中の旧本番と同一時点の全件性、V5のDB取込後一致、画面動作、本番切替可能性は証明しません。
+
+### 2026-07-28 池袋V4 snapshot・画像取得結果
+
+旧店舗DB `nzuadtjn_gold_master` と会員DBから、池袋 `shop_no=5600` を読み取り専用で取得しました。V4は顧客台帳を含みますが、旧password、ポイント履歴、NG履歴は取得しません。対象tableはMyISAMのためtransactional snapshotではありません。取得前後のtable件数一致を確認したbest-effortな現場確認用copyであり、最終切替時はcoordinated write pause中のlocked extractが必須です。
+
+artifactはGit管理対象外のprivate作業領域へ置きます。credentialを含むprivateファイルの内容を追跡対象文書、チケット、チャット、ログへ転記してはいけません。
+
+| artifact              | 証跡                                                               |
+| --------------------- | ------------------------------------------------------------------ |
+| データ基準日時        | `2026-07-28T19:10:28+09:00`                                        |
+| V4 snapshot SHA-256   | `cce2d631fd36e70da9fcb91c55c162b678472bea239d4aec8e7430f924e8d1f5` |
+| 画像manifest SHA-256  | `8abf7014d22dc151c8467db3be74f6291ae139748881f045ee73c62cd1ab782b` |
+| 画像                  | 112件、10,404,123 byte、全件SHA-256一致                            |
+| 新システム上の画像URL | `/salon-uploads/casts/ikebukuro/...`                               |
+| 公開画面の確認対象    | `https://salon.c-platinum.com/ikebukuro`                           |
+| 管理画面の確認対象    | `https://salon.c-platinum.com/admin/login`                         |
 
 | 取得元対象         | 行数・範囲                    |
 | ------------------ | ----------------------------- |
@@ -23,71 +53,84 @@
 | ホテル表示グループ | 1                             |
 | ホテル             | 2                             |
 | キャスト           | 38                            |
-| 出勤               | 129（2026-07-21〜2026-08-18） |
-| 予約               | 959（2026-04-21以降）         |
-| 口コミ             | 258                           |
+| 顧客               | 13,226                        |
+| 出勤               | 210（2026-07-21〜2026-08-25） |
+| 予約               | 1,049（2026-04-21以降）       |
+| 口コミ             | 259                           |
+| キャスト公開画像   | 112                           |
 
-| 変換後対象                | 件数 |
-| ------------------------- | ---: |
-| オプションマスタ          |   11 |
-| キャスト別オプション設定  |  280 |
-| エリア                    |    1 |
-| 駅                        |    7 |
-| ホテル                    |    2 |
-| ホテル対応エリア          |    0 |
-| ホテル料金                |    0 |
-| キャスト                  |   38 |
-| 出勤                      |  129 |
-| 予約                      |  959 |
-| 予約オプション            | 1706 |
-| 口コミ                    |  258 |
-| エリア参照付き予約        |  959 |
-| 駅参照付き予約            |  959 |
-| ホテル参照付き予約        |    0 |
-| `hotelExpense` がある予約 |    0 |
-| `hotelExpense` 合計       |    0 |
+### V4取込後の検証値
 
-旧 `hotel_area` は地理的な施術対応エリアではなくホテル表示グループなので、`HotelSettings.area` へ変換します。`HotelServiceArea` は `city_no` / `city_no2` だけから作成します。今回のホテル2件は両列が0、`price1`〜`price4` も空であり、ホテル対応エリアとホテル料金が各0件なのは意図した結果です。旧予約にもホテル参照はありませんでした。
+| 対象                     | 検証件数 |
+| ------------------------ | -------: |
+| 店舗                     |        1 |
+| 管理者                   |        2 |
+| 顧客                     |   13,227 |
+| コース                   |       13 |
+| オプション               |       11 |
+| キャスト                 |       38 |
+| キャスト別オプション設定 |      280 |
+| 出勤                     |      210 |
+| 予約                     |    1,049 |
+| 予約オプション           |    1,858 |
+| 口コミ                   |      259 |
+| ポイント履歴             |        0 |
+| NG設定                   |        0 |
+| 予約変更履歴             |        0 |
+| キャスト公開画像         |      112 |
 
-旧顧客の氏名・電話・メール等の直接PIIと画像byteはV3 snapshotの対象外です。顧客・管理者の件数は今回の取得元inventoryへ含めず、previewでは旧予約参照キーから匿名化顧客952件と操作確認用顧客1件、preview専用管理者2件を作成しました。
+`Customer=13,227` は旧会員行13,226件と、予約・口コミから参照された会員台帳欠落IDの確認用補完1件です。QA顧客は旧会員行のうち1件を確認用ログインへ割り当て、紐付く完了予約10件の履歴表示をbrowserで確認済みです。この10件は予約変更履歴ではありません。
 
-### 2026-07-21 池袋preview投入・技術UAT結果
+顧客aggregateの検証値は次です。
 
-| 項目                         | 結果                                                                      |
-| ---------------------------- | ------------------------------------------------------------------------- |
-| release                      | `20260721T042233Z`                                                        |
-| 配置source tree SHA-256      | `cf245f58a8891d6895b45a9b2e90aa078f262a3c607f219db25873451f8c4f97`        |
-| Docker image digest          | `sha256:e90b744c6f746a30d4dc81a9ce85877077b42cb8e443ccce6a10a8544f490563` |
-| preview DB初期化・marker照合 | 成功                                                                      |
-| 投入件数・参照整合性         | 期待値と完全一致、不整合0件                                               |
-| full CI                      | 成功                                                                      |
-| 実browser代表smoke           | 公開・管理・予約・timeline・設定画面で成功                                |
-| 後処理                       | 書込みsmoke後にDBを再初期化・再投入し、試験データを除去                   |
-| 旧本番                       | application・DB container ID不変、書込み・routing変更なし                 |
+- account status: `active=13,184`、`blocked=28`、`pending=4`、`withdrawn=10`、`unknown=1`
+- membership stage: `regular=13,216`、`silver=8`、`gold=2`、`platinum=1`
+- member type: `vip=11,814`、`regular=1,413`
+- security: 電話・メール文字列は各13,227件で重複なし、SMS・メール通知は全件無効、QA顧客1件だけログイン可能・メール確認済み、QA以外13,226件は無効credential、旧passwordは0件
 
-最終preview DBは `Store=1`、`StoreSettings=1`、`Admin=2`、`Customer=953`、`CoursePrice=13`、`OptionPrice=11`、`CastOptionSetting=280`、`AreaInfo=1`、`StationInfo=7`、`HotelSettings=2`、`HotelServiceArea=0`、`HotelRate=0`、`Cast=38`、`CastSchedule=129`、`Reservation=959`、`ReservationOption=1706`、`Review=258` です。予約・オプション・エリア・駅の店舗越境および参照不整合はすべて0件、959予約すべてにエリア・駅参照があります。
+旧値の不足により、生年月日4件、登録日時71件、電話番号12件をpreview用に補完します。メールは形式不正・欠損が多数あり、小文字化・重複排除をしても本番ログインIDや通知先として承認できません。`nameKana` はフリガナ専用の旧値がないため、多くの顧客で氏名をそのままコピーします。
 
-旧本番の通常書込みを止めずに取得しており、共有会員DBと画像を同一cutoffで取得していません。このため、V3変換が成功しても本番切替はNo-Goのままです。
+### V4リモート実施状況
+
+| 工程                                | 状況・証跡                                                                                        |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------- |
+| 更新前preview DB・storage backup    | `/opt/platinum/maintenance/salon-preview/20260728T104001Z-pre-v4-customer-refresh-*`、暗号化成功  |
+| 更新前backupの隔離完全復元          | 成功。`Customer=1,007`、`Reservation=1,047`、storage 113 files・10,404,226 byteで一致             |
+| preview DB・storageの空からの再作成 | 成功                                                                                              |
+| Prisma migration                    | 13件適用                                                                                          |
+| V4データ・画像112件の取込           | 成功                                                                                              |
+| DB全件・aggregate・画像SHA突合      | `FULL_DATABASE_RECONCILIATION_OK`                                                                 |
+| 移行後DB・storage backup            | `/opt/platinum/maintenance/salon-preview/20260728T105105Z-post-v4-customer-refresh-*`、暗号化成功 |
+| 移行後backupの隔離完全復元          | DBで全件再突合成功。storage復元・画像SHA一致                                                      |
+| application                         | healthy                                                                                           |
+| 管理画面browser                     | 顧客一覧・検索・詳細、QA完了予約10件、顧客指定timeline氏名表示に成功                              |
+| 公開年齢確認・顧客／キャストlogin   | **Pending**                                                                                       |
+| 現場確認                            | **Pending**                                                                                       |
+| 旧本番                              | 稼働継続。V4作業による書込み・routing変更なし                                                     |
+
+更新前storageの113 filesは、公開画像112件とpreview target marker 1件です。
 
 切替可能になる条件は、次のすべてを満たすことです。
 
 1. 新システムのCI、主要操作、外部連携の本番相当テストが成功する。
 2. 移行対象店舗と旧店舗キーから新 `Store` への対応表を承認する。
-3. 旧側のcoordinated write pause中に、共有会員DBを含めて取得したlocked final extractで、移行をステージング上に再現できる。
+3. 旧側のcoordinated write pause中に、共有会員DBと画像差分を含めて取得したlocked final extractで、移行をステージング上に再現できる。
 4. 件数、金額、ポイント、未来予約、出勤、画像、ログイン移行を突合し、未解決差分がゼロになる。
 5. 切替担当、書込停止時間、ロールバック判断者を決める。
 
 ### 現在残っている主要ブロッカー
 
-- 2026-07-21の池袋V3 extractorは今回の限定datasetを厳格変換できるが、書込み停止後の全origin・全table・画像を対象とするproduction-gradeの raw snapshot → canonical extractorの代替ではない。現行runnerのraw tableとcanonical exportの結合はtable別件数までで、raw主キー／raw row digestの完全なset照合は未実装である。実装・受入条件は[旧データextractor完全性契約](./LEGACY_EXTRACTOR_CONTRACT.md)に固定する。
+- 2026-08-14の池袋V5 extractorは今回の限定datasetを厳格変換できるが、書込み停止後の全origin・全tableを対象とするproduction-gradeの raw snapshot → canonical extractorの代替ではない。現行runnerのraw tableとcanonical exportの結合はtable別件数までで、raw主キー／raw row digestの完全なset照合は未実装である。実装・受入条件は[旧データextractor完全性契約](./LEGACY_EXTRACTOR_CONTRACT.md)に固定する。
+- 今回の取得対象tableはMyISAMであり、`START TRANSACTION WITH CONSISTENT SNAPSHOT` では行を凍結できない。取得前後の件数一致は同一件数の更新を検知できないため、今回のsnapshotは現場確認用のbest-effort copyに限る。最終切替では旧アプリの書込みを停止してlocked extractを取得する。
 - 中央会員DBと店舗DB群を同じcutoffへ揃える取得方式が未承認である。単一DB transactionでない場合は、書込停止または検証可能なhigh-water mark／追補logが必要になる。
 - オプションはマスタ、キャスト別設定、予約時点snapshotへ正規化したが、旧予約の最大3コース、値引き・指名料・交通費・場所・配分を、現行の1予約1コースモデルへ損失なく保存する最終規則は未承認である。
 - 24〜29時表記、削除済み予約、出勤status 0〜9、休日行、同一cast同日複数出勤の最終変換規則が未承認である。
-- 全店共通会員の統合、欠損メール・カナ・生年月日、退会／blacklist／店舗membership、通知同意の意味を決めていない。
-- 旧ポイントの全残高失効方式と新システムのlot/FIFO期限方式が一致せず、同一予約・同種の複数旧イベントを保存する方針も未確定である。
-- V3はオプションと口コミを変換対象に含めたが、NG設定、チャット、精算、日報、削除履歴、非公開画像など、未対応domainの保存先または参照専用アーカイブ方針が未決である。
-- V3 snapshotの隔離preview DBへの再投入と依頼対象の代表browser smokeは完了した。現場担当者の承認、全role・全業務ケースの正式移行UAT、locked final extractに基づく最終証跡は未完了である。
-- キャスト画像は旧公開サイト `gold-esthe.com` のURL参照のままであり、所有者・byte数・SHA-256・実MIME・実寸法を検証したpreview storageへの画像byte copyが未完了である。
+- V5は顧客台帳を含むが、予約は2026-01-01以降だけであり、ポイント履歴、NG設定・履歴、予約変更履歴は未移行である。現在残高だけを全履歴の代替にしてはいけない。
+- 旧会員行の生年月日4件、登録日時71件、電話65件と参照先台帳欠落顧客1件はpreview補完値を含み、多数の旧メール形式不正と `nameKana` の氏名コピーも含む。本番投入前に補完・修正・本人確認の方針が必要である。
+- 全店共通会員の統合、重複・欠損連絡先、退会／blacklist／店舗membership、通知同意の意味を決めていない。
+- V5はオプションと口コミを変換対象に含めたが、NG設定、ポイント履歴、チャット、精算、日報、削除履歴、非公開画像など、未対応domainの保存先または参照専用アーカイブ方針が未決である。
+- V4のリモートbackup、空DB・storage再作成、取込、全件突合、移行後backup復元、管理画面の限定browser確認は過去のリハーサルとして完了した。V5ではすべて再実施が必要である。
+- 公開画像105件はV5ローカルpackageで全件検証済みだが、preview storageへのcopy、DB参照とのlive突合、移行後backup復元は未実施である。非公開画像は対象外である。
 
 ## 絶対に守ること
 
@@ -110,7 +153,7 @@
 - 静的SQL参照から、少なくとも `girls`（キャスト）、`member`（会員）、`orders`（予約）、`yotei` / `yotei_data`（出勤）、`charge_info`（コース）、`options`（オプション）、`member_point`（ポイント）の候補を確認しました。
 - 旧構成は複数サイト・複数DBです。テーブル名が同じでも対象店舗が異なる可能性があるため、対象DB・サイト・店舗キーを承認するまで結合しません。
 
-したがって、最終移行の作業入力は旧リポジトリそのものでも2026-07-21の池袋V3 best-effort extractでもなく、本番担当者がcoordinated write pause中に取得する「schema-only dump、共有会員DBを含むlocked final extract、画像manifest、各SHA-256、cutoff時刻」です。秘密情報ファイルや旧パスワードはsnapshot packageから除外します。
+したがって、最終移行の作業入力は旧リポジトリそのものでも2026-07-28のV4／2026-08-14のV5 preview snapshotでもなく、本番担当者がcoordinated write pause中に取得する「schema-only dump、共有会員DBを含むlocked final extract、画像manifest、各SHA-256、cutoff時刻」です。秘密情報ファイルや旧パスワードはsnapshot packageから除外します。
 
 ## 移行前に決める事項
 
@@ -214,7 +257,7 @@ prepared Castの `image` / `images` は、manifestの `targetPath` に対応す�
 {
   "version": 1,
   "sourceKey": "approved-source-key",
-  "cutoffAt": "2026-07-21T03:07:35.000Z",
+  "cutoffAt": "2026-07-28T10:10:28.000Z",
   "migrationManifestSha256": "<店舗対応を含む移行manifestの小文字SHA-256>",
   "canonicalExportSha256": "<canonical JSONの小文字SHA-256>",
   "snapshotManifestSha256": "<検証済みsnapshot manifestの小文字SHA-256>",
@@ -325,13 +368,32 @@ pnpm migration:legacy:dry-run -- \
 
 preview専用Prisma adapterは実装済みです。検証済みpackage、移行manifest、control、環境・operator・DBの3者marker、`*_preview` DB名、DB側 `salon.environment=staging-preview` をすべて照合し、Serializable write transaction、旧ID mapping、受理したsnapshotと変換policyのprovenance台帳、全件再読込、完全一致rerunだけを許可します。Storeは勝手に作らず、事前配置済みの承認StoreがID・canonical slug・`Asia/Tokyo` timezoneを含む全fieldで一致する場合だけ参照します。provenance台帳とmappingはDB側でも更新・削除を禁止し、両者を外部キーで結合します。台帳導入前のmappingが残るDBには後付けせずmigrationを停止するため、そのpreview DBを再作成してください。
 
-汎用canonical v1経路の `migration:legacy:import-preview` と、今回使用したサニタイズ済み池袋V3限定経路の `preview:import-ikebukuro` は別です。後者は `StoreSettings`、preview専用 `Admin`、`OptionPrice`、`CastOptionSetting`、`AreaInfo`、`StationInfo`、ホテル関連、`ReservationOption`、`Review` も投入します。池袋V3限定経路は現場画面確認用であり、locked final extractを投入する本番切替経路として使用してはいけません。
+汎用canonical v1経路の `migration:legacy:import-preview` と、今回使用する池袋確認用snapshot schema v4経路の `preview:import-ikebukuro` は別です。後者は `StoreSettings`、preview専用 `Admin`、顧客、`OptionPrice`、`CastOptionSetting`、`AreaInfo`、`StationInfo`、ホテル関連、`ReservationOption`、`Review` も投入します。この限定経路はV4/V5の現場画面確認用であり、locked final extractを投入する本番切替経路として使用してはいけません。
+
+V5では、DBへ接続する前に次の非書込みCLIを実行します。snapshotと画像manifestは実行UID所有の `0600` JSON、`migration-data/` は実行UID所有の `0700` directoryに限定します。最初の承認時だけ `--write-control` を使い、以後は同じ引数位置を `--control` に替えて承認済みcontrolとの完全一致を要求します。成功reportにも氏名、電話、メール、画像元pathは出力しません。
+
+```bash
+pnpm preview:verify-ikebukuro -- \
+  --snapshot /app/migration-data/ikebukuro-preview-v5-20260814.json \
+  --image-manifest /app/migration-data/ikebukuro-preview-images-v5-20260814.json \
+  --image-source-root /app/migration-data/ikebukuro-preview-images-v5-20260814 \
+  --control /app/migration-data/ikebukuro-preview-v5-control-20260814.json \
+  --report /app/migration-data/ikebukuro-preview-v5-remote-verification.json \
+  --post-import-sql /app/migration-data/reconcile-ikebukuro-preview-v5-remote.sql \
+  --ack VERIFY_IKEBUKURO_V5_ARTIFACT_WITHOUT_DATABASE_WRITES
+```
+
+VPS runner imageにはこのCLIを同梱しますが、`.dockerignore` は `migration-data` を除外します。private artifactをimageへ焼き込まず、保守作業時だけ暗号化された転送元から `/app/migration-data` へ安全にmountまたはcopyし、所有者・権限を確認します。CLIは自動起動せず、DB URL・SSH・旧本番接続引数を受け付けません。
+
+生成されたSQLは、V5取込後にpreview DBへ到達できる保守用PostgreSQL clientから実行します。SQL自体が `ON_ERROR_STOP`、`REPEATABLE READ READ ONLY`、`salon.environment=staging-preview`、全model件数、migration名／checksum完全集合、外部キー／孤立行、主要aggregate、画像参照件数を検査し、成功時だけ `V5_FULL_DATABASE_RECONCILIATION_OK` を出して `ROLLBACK` します。SQLを手編集した場合は承認対象外とし、再生成します。
 
 preview DBは、この移行だけに使う破棄可能な専用DBでなければなりません。新規投入時は、承認済みの事前配置Storeだけが過不足なく存在し、インポーターが作成する6テーブル（`CoursePrice`、`Cast`、`Customer`、`CastSchedule`、`Reservation`、`CustomerPointHistory`）と、`LegacyMigrationMapping`、`LegacyMigrationRun` の件数がすべて0であることを要求します。完全一致rerun時は、Storeと6テーブルの行が計画どおり過不足なく存在し、mappingが計画件数と完全一致し、run台帳が当該sourceの完全一致する1件だけであることを要求します。別用途のdemo・seed行、計画外Store、mappingのない対象行、別sourceのmappingまたはrunが1件でもあれば停止し、既存DBを補正せず空から作り直します。
 
 このDB全体件数と内容の検査は、read-only preflight、advisory lock取得後のSerializable write transaction内で再度、さらに書込み完了後の同一transaction内で行います。検査間に行が増減した場合や、書込み後の件数・内容が計画と一致しない場合はtransaction全体を失敗させます。
 
-公開画像の検証・排他的copyも同じCLIへ統合済みです。2026-07-21には池袋のサニタイズ済みV3 snapshotを読み取り専用で取得し、ローカルの厳格変換、隔離previewへの再投入、件数・参照突合、代表browser smokeまで成功しました。一方、通常書込みを停止したlocked final extract、raw行との完全なset照合、共有会員DBを含む同一cutoff、店舗別・日別の金額突合、PII移行、画像byte copy、現場承認は未完了です。したがって、今回のpreview成功を本番切替可能と判定してはいけません。
+公開画像の検証・排他的copyも同じCLIへ統合済みです。2026-07-28のV4 snapshotと公開画像112件を空のリモートpreviewへ投入し、件数・aggregate・参照・画像checksumの全件突合で `FULL_DATABASE_RECONCILIATION_OK` を確認しました。移行後の暗号化DB・storage backupも隔離復元し、同じ全件突合と画像SHA一致を再確認しています。applicationはhealthyで、管理画面の顧客一覧・検索・詳細、QA顧客の完了予約10件、顧客指定timelineの氏名表示をbrowserで確認済みです。
+
+通常書込みを停止したlocked final extract、raw行との完全なset照合、共有会員DBを含む同一cutoff、店舗別・日別の金額突合、ポイント・NG・予約変更履歴、非公開画像、公開年齢確認、顧客・キャストlogin、現場承認は未完了です。したがって、V4 preview成功を本番切替可能と判定してはいけません。
 
 現場担当者が実施する確認項目と証跡は、[`PREVIEW_UAT_CHECKLIST.md`](./PREVIEW_UAT_CHECKLIST.md) に記録します。このランブックの技術ゲートと、同チェックリストの画面・業務確認の両方が必要です。
 
@@ -347,12 +409,12 @@ OUTBOUND_DELIVERY_MODE=disabled
 PREVIEW_ACCESS_GATE_TOKEN=<32文字以上のpreview専用ランダム値>
 PREVIEW_TARGET_ID=<preview DB専用の20文字以上のランダムmarker>
 # 任意。日付、またはタイムゾーン付きISO timestampだけを設定する。
-PREVIEW_SNAPSHOT_CUTOFF=2026-07-21T12:07:35+09:00
+PREVIEW_SNAPSHOT_CUTOFF=2026-08-14T19:31:10+09:00
 ```
 
 `PREVIEW_ACCESS_GATE_TOKEN` はブラウザ、URL、Cookie、クライアントJavaScriptへ渡しません。これは利用者認証ではなく、公開reverse proxyから正しいpreview applicationへ到達したことを確認する内部tokenです。reverse proxyはブラウザから届いた同名headerを採用せず、Next.jsへ転送する際に `x-preview-access-gate-token` をサーバー側の値で必ず上書きします。値が完全一致しない直接アクセスは、公開ページやログイン処理より前に汎用404で拒否されます。
 
-2026-07-21の池袋V3確認環境は、現場確認時の入力負担を避けるためHTTP Basic Authを使用しません。公開HP、`/api/health`、公開用画像は認証なしで到達可能です。管理画面はapplicationの管理者ログインで保護します。この公開例外は、旧顧客PII・非公開画像・実credentialを含まず、外部送信を停止した今回のサニタイズ済みpreviewだけに適用します。PIIまたは非公開artifactを含む正式移行UATでは、公開前にidentity-aware proxyまたはVPNを必須にします。
+池袋V5は旧顧客PIIを含むため、従来のサニタイズ済みpreviewと同じ公開条件で配置してはいけません。公開HP、`/api/health`、公開用画像だけを認証なしで到達可能にし、管理画面、顧客画面、関連APIはapplication認証に加えてidentity-aware proxyまたはVPNの保護範囲へ入れます。外部送信は停止し、旧credential・非公開画像は配置しません。この保護を確認できない場合はV5をリモートへ投入しません。
 
 `PREVIEW_TARGET_ID` はDB側で独立に設定した `salon.target_id` と完全一致させ、DB側の `salon.environment` は `staging-preview` でなければなりません。preview投入adapterは、環境変数、operatorの明示確認、DBから読み取ったmarkerの3値とDB環境が一致するまでwrite transactionを開始しません。本番DBへこのmarkerを設定してはいけません。
 
@@ -366,9 +428,9 @@ marker file名は既定で `.legacy-preview-target.json` です。source rootと
 
 インポーターは画像0件の場合もtarget root・marker・全file inventoryを必ず検査します。初回はmarker以外のfileが0件、完全一致rerunはmarker以外が今回の画像planと完全一致する場合だけ許可します。予定外file、部分的な旧copy、通常file以外、symlink、inventory検査不能が一つでもあればDBへ接続せず終了コード `2` とし、そのpreview storage volumeを破棄して空から作り直します。
 
-画像の `/salon-uploads` はreverse proxyが直接配信するため、Next.js middlewareでは保護できません。HTTP Basic Authなしの池袋V3確認環境へ配置できるのは、公開承認済み画像だけです。非公開画像を扱う正式移行UATでは、HTML、API、`/salon-uploads` を同じidentity/VPN gatewayの認証範囲へ入れます。どちらの場合も、Next.js containerのport、画像volume、内部DBへ到達できる別hostnameをインターネットへ公開してはいけません。
+画像の `/salon-uploads` はreverse proxyが直接配信するため、Next.js middlewareでは保護できません。V5へ配置できるのは公開承認済み画像だけです。非公開画像を扱う正式移行UATでは、HTML、API、`/salon-uploads` を同じidentity/VPN gatewayの認証範囲へ入れます。どちらの場合も、Next.js containerのport、画像volume、内部DBへ到達できる別hostnameをインターネットへ公開してはいけません。
 
-画面確認の視認性を妨げる固定の確認環境バナーは表示しません。確認環境であることは、preview専用URL・DB・account、外部送信停止、`noindex, nofollow` と `/robots.txt` の全crawler拒否で識別します。合成データ環境は `[UAT]`、池袋V3実データpreviewは `[確認用]` の匿名化顧客とQA accountを使用し、移行マスタや予約へ `[UAT]` 操作確認データを残しません。`PREVIEW_SNAPSHOT_CUTOFF` は画面へ表示せず、投入reportと現場承認記録で照合します。`noindex` はアクセス制御ではなく、バナーやBasic Authがないことを本番切替済みまたは移行承認済みの根拠にしてはいけません。
+画面確認の視認性を妨げる固定の確認環境バナーは表示しません。確認環境であることは、preview専用URL・DB・account、外部送信停止、`noindex, nofollow` と `/robots.txt` の全crawler拒否で識別します。合成データ環境は `[UAT]`、池袋V5実データpreviewは `[確認用]` の旧顧客とQA accountを使用し、移行マスタや予約へ `[UAT]` 操作確認データを残しません。`PREVIEW_SNAPSHOT_CUTOFF` は画面へ表示せず、投入reportと現場承認記録で照合します。`noindex` はアクセス制御ではなく、identity-aware proxy、VPN、application認証の代替にもなりません。
 
 DB marker、preview専用Store、Prisma migration、外部送信停止を別担当者が確認した後、DB投入は次の明示コマンドでのみ実行します。秘密を引数へ渡さず、`DATABASE_URL` と `PREVIEW_TARGET_ID` はpreview専用環境変数から読みます。成功reportは件数とdigestだけで、氏名・連絡先・旧ID・path・credentialを出力しません。
 

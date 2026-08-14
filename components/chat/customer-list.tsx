@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @design_doc   Large migrated customer ledgers use bounded server-side chat search
+ * @related_to   /api/chat/customers and ChatPage deep links
+ * @known_issues Presence is displayed only when a real presence source becomes available
+ */
 import { useState, useEffect, useCallback } from 'react'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -11,6 +16,7 @@ import { toast } from '@/hooks/use-toast'
 import { isVipMember } from '@/lib/utils'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
+import { useStore } from '@/contexts/store-context'
 
 interface CustomerListProps {
   selectedCustomerId: string | undefined
@@ -18,6 +24,7 @@ interface CustomerListProps {
 }
 
 export function CustomerList({ selectedCustomerId, onSelectCustomer }: CustomerListProps) {
+  const { currentStore } = useStore()
   const [searchQuery, setSearchQuery] = useState('')
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
@@ -29,33 +36,60 @@ export function CustomerList({ selectedCustomerId, onSelectCustomer }: CustomerL
     return format(date, 'yyyy-MM-dd HH:mm', { locale: ja })
   }, [])
 
-  const fetchCustomers = useCallback(async () => {
-    try {
-      const response = await fetch('/api/chat/customers', {
-        credentials: 'include',
-        cache: 'no-store',
-      })
-      if (!response.ok) throw new Error('Failed to fetch customers')
+  const fetchCustomers = useCallback(
+    async (signal?: AbortSignal) => {
+      setLoading(true)
+      try {
+        const params = new URLSearchParams()
+        if (searchQuery.trim()) {
+          params.set('query', searchQuery.trim())
+        }
+        params.set('limit', '50')
+        params.set('storeId', currentStore.id)
 
-      const data = await response.json()
-      // SuccessResponse形式からデータを取得
-      const customerData = data.data || data
-      const normalized = Array.isArray(customerData) ? customerData : []
-      setCustomers(normalized)
-    } catch (error) {
-      console.error('Error fetching customers:', error)
-      toast({
-        title: 'エラー',
-        description: '顧客リストの取得に失敗しました',
-        variant: 'destructive',
-      })
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+        const response = await fetch(`/api/chat/customers?${params.toString()}`, {
+          credentials: 'include',
+          cache: 'no-store',
+          signal,
+        })
+        if (!response.ok) throw new Error('Failed to fetch customers')
+
+        const data = await response.json()
+        // SuccessResponse形式からデータを取得
+        const customerData = data.data || data
+        const normalized = Array.isArray(customerData) ? customerData : []
+        setCustomers(normalized)
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return
+        }
+        console.error('Error fetching customers:', error)
+        toast({
+          title: 'エラー',
+          description: '顧客リストの取得に失敗しました',
+          variant: 'destructive',
+        })
+      } finally {
+        if (!signal?.aborted) {
+          setLoading(false)
+        }
+      }
+    },
+    [currentStore.id, searchQuery]
+  )
 
   useEffect(() => {
-    fetchCustomers()
+    const controller = new AbortController()
+    setCustomers([])
+    setLoading(true)
+    const timeoutId = window.setTimeout(() => {
+      void fetchCustomers(controller.signal)
+    }, 250)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+      controller.abort()
+    }
   }, [fetchCustomers])
 
   useEffect(() => {
@@ -78,10 +112,6 @@ export function CustomerList({ selectedCustomerId, onSelectCustomer }: CustomerL
     }
   }, [])
 
-  const filteredCustomers = customers.filter((customer) =>
-    customer.name.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
   return (
     <div className="flex h-full w-[320px] flex-col border-r bg-gradient-to-b from-white to-gray-50/50 md:w-[360px]">
       {/* Header */}
@@ -89,7 +119,7 @@ export function CustomerList({ selectedCustomerId, onSelectCustomer }: CustomerL
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">チャット</h2>
           <Badge variant="secondary" className="text-xs">
-            {filteredCustomers.length}
+            {customers.length}
           </Badge>
         </div>
         <div className="relative">
@@ -111,7 +141,7 @@ export function CustomerList({ selectedCustomerId, onSelectCustomer }: CustomerL
           </div>
         ) : (
           <div className="p-2">
-            {filteredCustomers.map((customer) => (
+            {customers.map((customer) => (
               <button
                 key={customer.id}
                 className={`mb-2 w-full rounded-lg p-3 text-left transition-all duration-200 hover:shadow-sm ${

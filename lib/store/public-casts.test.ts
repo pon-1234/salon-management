@@ -56,7 +56,17 @@ describe('getPublicCastDetail', () => {
       passwordHash: 'private-password-hash',
       welfareExpenseRate: 10,
       castOptionSettings: [
-        { optionId: 'option-public', visibility: 'public' },
+        {
+          optionId: 'option-public',
+          visibility: 'public',
+          option: {
+            id: 'option-public',
+            name: '店舗実オプション',
+            description: '移行済み説明',
+            price: 2000,
+            note: '人気',
+          },
+        },
         { optionId: 'option-internal', visibility: 'internal' },
       ],
       reservations: [
@@ -80,6 +90,15 @@ describe('getPublicCastDetail', () => {
         name: 'Alice',
         availableOptions: ['option-public'],
         availableOptionSettings: [{ optionId: 'option-public', visibility: 'public' }],
+        availableOptionDetails: [
+          {
+            id: 'option-public',
+            name: '店舗実オプション',
+            description: '移行済み説明',
+            price: 2000,
+            note: '人気',
+          },
+        ],
       })
     )
     expect(detail).not.toHaveProperty('appointments')
@@ -97,8 +116,20 @@ describe('getPublicCastDetail', () => {
           id: true,
           name: true,
           castOptionSettings: {
-            where: { visibility: 'public' },
-            select: { optionId: true, visibility: true },
+            where: expect.objectContaining({ visibility: 'public' }),
+            select: {
+              optionId: true,
+              visibility: true,
+              option: {
+                select: {
+                  id: true,
+                  name: true,
+                  description: true,
+                  price: true,
+                  note: true,
+                },
+              },
+            },
           },
         }),
       })

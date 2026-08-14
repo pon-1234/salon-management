@@ -89,7 +89,13 @@ describe('GET /api/customer', () => {
     expect(db.customer.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         take: 26,
-        select: expect.objectContaining({ memberType: true }),
+        select: expect.objectContaining({
+          memberType: true,
+          accountStatus: true,
+          membershipStage: true,
+          lastLoginAt: true,
+          lastVisitAt: true,
+        }),
       })
     )
   })
@@ -106,6 +112,51 @@ describe('GET /api/customer', () => {
       expect.objectContaining({
         take: 26,
         skip: 50,
+      })
+    )
+  })
+
+  it('searches customer identity fields and uses deterministic pagination order', async () => {
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { id: 'admin-1', role: 'admin', permissions: ['customer:read'] },
+    } as any)
+    vi.mocked(db.customer.findMany).mockResolvedValueOnce([] as any)
+
+    await GET(
+      new NextRequest(
+        'http://localhost:3000/api/customer?query=%E6%97%A7%E5%AE%9F%E5%90%8D&limit=25'
+      )
+    )
+
+    expect(db.customer.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          OR: [
+            { id: { contains: '旧実名', mode: 'insensitive' } },
+            { name: { contains: '旧実名', mode: 'insensitive' } },
+            { nameKana: { contains: '旧実名', mode: 'insensitive' } },
+            { phone: { contains: '旧実名' } },
+            { email: { contains: '旧実名', mode: 'insensitive' } },
+          ],
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      })
+    )
+  })
+
+  it('normalizes a formatted phone in the general customer search', async () => {
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { id: 'admin-1', role: 'admin', permissions: ['customer:read'] },
+    } as any)
+    vi.mocked(db.customer.findMany).mockResolvedValueOnce([] as any)
+
+    await GET(new NextRequest('http://localhost:3000/api/customer?query=090-1234-5678&limit=25'))
+
+    expect(db.customer.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([{ phone: { contains: '09012345678' } }]),
+        }),
       })
     )
   })

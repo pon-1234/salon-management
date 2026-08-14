@@ -25,6 +25,7 @@ export type EditFormState = {
   storeMemo: string
   notes: string
   paymentMethod: PaymentMethod
+  paymentReference: string
   marketingChannel: string
   transportationFee: number
   additionalFee: number

@@ -1,7 +1,7 @@
 /**
  * @design_doc   Chat customers API endpoint
  * @related_to   Chat system, Customer management, Message model
- * @known_issues None
+ * @known_issues Customers visiting multiple stores retain one shared chat thread
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { db as prisma } from '@/lib/db'
@@ -9,11 +9,13 @@ import { requireAdmin } from '@/lib/auth/utils'
 import { handleApiError } from '@/lib/api/errors'
 import { SuccessResponses } from '@/lib/api/responses'
 import { buildChatPreview } from '@/lib/chat/attachments'
+import { isActiveChatStore, resolveCustomerChatScope } from '@/lib/chat/customer-store-scope'
 
 // Customer type for chat
 interface ChatCustomer {
   id: string
   name: string
+  phone: string
   lastMessage: string
   lastMessageTime: string
   avatar?: string
@@ -52,18 +54,34 @@ function formatTimestamp(timestamp: Date | string): string {
 
 // GET /api/chat/customers - Get chat customer list
 export async function GET(request: NextRequest) {
-  const authError = await requireAdmin()
+  const searchParams = request.nextUrl.searchParams
+  const storeId = searchParams.get('storeId')?.trim() ?? ''
+  const authError = await requireAdmin(storeId ? { storeId } : undefined)
   if (authError) return authError
 
-  const searchParams = request.nextUrl.searchParams
+  if (!storeId) {
+    return NextResponse.json({ error: 'storeId is required' }, { status: 400 })
+  }
+
+  if (!(await isActiveChatStore(prisma, storeId))) {
+    return NextResponse.json({ error: 'Store not found' }, { status: 404 })
+  }
+
   const id = searchParams.get('id')
+  const query = searchParams.get('query')?.trim().slice(0, 100) ?? ''
+  const requestedLimit = Number.parseInt(searchParams.get('limit') ?? '50', 10)
+  const limit = Number.isFinite(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 100) : 50
 
   try {
+    const customerStoreScope = await resolveCustomerChatScope(prisma, storeId)
+    const hasStoreScope = Object.keys(customerStoreScope).length > 0
+
     if (id) {
-      // Get specific customer
-      const customer = await prisma.customer.findUnique({
-        where: { id },
-      })
+      const customer = hasStoreScope
+        ? await prisma.customer.findFirst({
+            where: { id, ...customerStoreScope },
+          })
+        : await prisma.customer.findUnique({ where: { id } })
 
       if (!customer) {
         return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
@@ -86,14 +104,15 @@ export async function GET(request: NextRequest) {
       const chatCustomer: ChatCustomer = {
         id: customer.id,
         name: customer.name,
+        phone: customer.phone,
         lastMessage: lastMessage
           ? buildChatPreview(lastMessage.content, lastMessage.attachments)
           : '',
         lastMessageTime: lastMessage ? formatTimestamp(lastMessage.timestamp) : '',
-        avatar: `/avatars/customer${customer.id}.jpg`,
+        avatar: undefined,
         hasUnread: unreadCount > 0,
         unreadCount,
-        isOnline: false, // TODO: Implement real-time status
+        isOnline: false,
         lastSeen: undefined,
         memberType: customer.memberType,
         status: 'オフライン',
@@ -102,11 +121,34 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(chatCustomer)
     }
 
-    // Return all chat customers
-    const customers = await prisma.customer.findMany()
-    const messages = await prisma.message.findMany({
-      orderBy: { timestamp: 'desc' },
+    const nameSearch = query
+      ? {
+          OR: [
+            { name: { contains: query, mode: 'insensitive' as const } },
+            { nameKana: { contains: query, mode: 'insensitive' as const } },
+          ],
+        }
+      : null
+    const customers = await prisma.customer.findMany({
+      ...(nameSearch || hasStoreScope
+        ? {
+            where:
+              nameSearch && hasStoreScope
+                ? { AND: [customerStoreScope, nameSearch] }
+                : (nameSearch ?? customerStoreScope),
+          }
+        : {}),
+      orderBy: { updatedAt: 'desc' },
+      take: limit,
     })
+    const customerIds = customers.map((customer) => customer.id)
+    const messages =
+      customerIds.length > 0
+        ? await prisma.message.findMany({
+            where: { customerId: { in: customerIds } },
+            orderBy: { timestamp: 'desc' },
+          })
+        : []
 
     // Group messages by customer to get last message
     const lastMessageByCustomer = new Map<string, any>()
@@ -132,14 +174,15 @@ export async function GET(request: NextRequest) {
       return {
         id: customer.id,
         name: customer.name,
+        phone: customer.phone,
         lastMessage: lastMessage
           ? buildChatPreview(lastMessage.content, lastMessage.attachments)
           : '',
         lastMessageTime: lastMessage ? formatTimestamp(lastMessage.timestamp) : '',
-        avatar: `/avatars/customer${customer.id}.jpg`,
+        avatar: undefined,
         hasUnread: unreadCount > 0,
         unreadCount,
-        isOnline: false, // TODO: Implement real-time status
+        isOnline: false,
         lastSeen: undefined,
         memberType: customer.memberType,
         status: 'オフライン',

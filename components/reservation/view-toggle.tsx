@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Reservation timeline and list view terminology
+ * @related_to   ReservationPageContent
+ * @known_issues None
+ */
 'use client'
 
 import { Button } from '@/components/ui/button'
@@ -25,7 +30,7 @@ export function ViewToggle({ view, onViewChange }: ViewToggleProps) {
         onClick={() => onViewChange('list')}
       >
         <LayoutList className="mr-2 h-4 w-4" />
-        台帳
+        予約一覧
       </Button>
     </div>
   )

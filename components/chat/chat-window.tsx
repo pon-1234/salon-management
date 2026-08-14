@@ -1,17 +1,24 @@
 'use client'
 
+/**
+ * @design_doc   Store-scoped administrative customer and cast conversation window
+ * @related_to   Admin chat API, participant APIs, and realtime revision context
+ * @known_issues Customer identities visiting multiple stores retain one shared chat thread
+ */
 import { useState, useRef, useEffect, useCallback } from 'react'
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Send, Check, CheckCheck, ImagePlus } from 'lucide-react'
-import { Message } from '@/lib/types/chat'
+import type { CastChatEntry, Customer, Message } from '@/lib/types/chat'
 import { toast } from '@/hooks/use-toast'
 import { useChatAttachments } from '@/hooks/use-chat-attachments'
 import { ChatAttachmentPreviewList } from '@/components/chat/chat-attachment-previews'
 import { ChatAttachmentGallery } from '@/components/chat/chat-attachment-gallery'
 import { useRealtimeRevision } from '@/contexts/realtime-context'
+import { useStore } from '@/contexts/store-context'
 
 interface ChatWindowProps {
   participantType: 'customer' | 'cast'
@@ -19,14 +26,20 @@ interface ChatWindowProps {
 }
 
 export function ChatWindow({ participantType, participantId }: ChatWindowProps) {
+  const { currentStore } = useStore()
+  const conversationKey = `${currentStore.id}:${participantType}:${participantId ?? ''}`
   const realtimeRevision = useRealtimeRevision()
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
-  const [participant, setParticipant] = useState<any>(null)
+  const [isSending, setIsSending] = useState(false)
+  const [participant, setParticipant] = useState<Customer | CastChatEntry | null>(null)
   const [loading, setLoading] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const sendPendingRef = useRef(false)
+  const activeConversationRef = useRef(conversationKey)
+  activeConversationRef.current = conversationKey
   const {
     drafts: attachmentDrafts,
     addFiles,
@@ -37,7 +50,7 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
   } = useChatAttachments(5)
 
   const markMessagesAsRead = useCallback(
-    async (messageList: Message[]) => {
+    async (messageList: Message[], signal?: AbortSignal) => {
       if (!participantId) return messageList
 
       const targetSender = participantType === 'customer' ? 'customer' : 'cast'
@@ -48,17 +61,25 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
       if (unreadMessages.length === 0) return messageList
 
       try {
-        await Promise.all(
+        const responses = await Promise.all(
           unreadMessages.map((message) =>
             fetch('/api/chat', {
               method: 'PUT',
+              signal,
               headers: {
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify({ id: message.id, readStatus: '既読' }),
+              body: JSON.stringify({
+                storeId: currentStore.id,
+                id: message.id,
+                readStatus: '既読',
+              }),
             })
           )
         )
+        if (responses.some((response) => !response.ok)) {
+          throw new Error('Failed to mark messages as read')
+        }
 
         if (typeof window !== 'undefined') {
           window.dispatchEvent(
@@ -77,84 +98,112 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
             : message
         )
       } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return messageList
+        }
         console.error('Error marking messages as read:', error)
         return messageList
       }
     },
-    [participantId, participantType]
+    [currentStore.id, participantId, participantType]
   )
 
-  const fetchMessages = useCallback(async () => {
-    if (!participantId) return
+  const fetchMessages = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!participantId) return
 
-    setLoading(true)
-    try {
-      const queryParam =
-        participantType === 'customer' ? `customerId=${participantId}` : `castId=${participantId}`
-      const response = await fetch(`/api/chat?${queryParam}`, {
-        credentials: 'include',
-      })
-      if (!response.ok) throw new Error('Failed to fetch messages')
+      setLoading(true)
+      try {
+        const params = new URLSearchParams({ storeId: currentStore.id })
+        params.set(participantType === 'customer' ? 'customerId' : 'castId', participantId)
+        const response = await fetch(`/api/chat?${params.toString()}`, {
+          credentials: 'include',
+          signal,
+        })
+        if (!response.ok) throw new Error('Failed to fetch messages')
 
-      const data = await response.json()
-      const initialMessages = Array.isArray(data?.data)
-        ? data.data
-        : Array.isArray(data)
-          ? data
-          : []
-      const normalizedMessages: Message[] = (initialMessages as Message[]).map((message) => ({
-        ...message,
-        attachments: Array.isArray(message.attachments) ? message.attachments : [],
-      }))
-      const updatedMessages = await markMessagesAsRead(normalizedMessages)
-      setMessages(updatedMessages)
-    } catch (error) {
-      console.error('Error fetching messages:', error)
-      toast({
-        title: 'エラー',
-        description: 'メッセージの取得に失敗しました',
-        variant: 'destructive',
-      })
-    } finally {
-      setLoading(false)
-    }
-  }, [participantId, participantType, markMessagesAsRead])
+        const data = await response.json()
+        const initialMessages = Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data)
+            ? data
+            : []
+        const normalizedMessages: Message[] = (initialMessages as Message[]).map((message) => ({
+          ...message,
+          attachments: Array.isArray(message.attachments) ? message.attachments : [],
+        }))
+        const updatedMessages = await markMessagesAsRead(normalizedMessages, signal)
+        if (!signal?.aborted) {
+          setMessages(updatedMessages)
+        }
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return
+        }
+        console.error('Error fetching messages:', error)
+        toast({
+          title: 'エラー',
+          description: 'メッセージの取得に失敗しました',
+          variant: 'destructive',
+        })
+      } finally {
+        if (!signal?.aborted) {
+          setLoading(false)
+        }
+      }
+    },
+    [currentStore.id, participantId, participantType, markMessagesAsRead]
+  )
 
-  const fetchParticipant = useCallback(async () => {
-    if (!participantId) return
+  const fetchParticipant = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!participantId) return
 
-    try {
-      const endpoint =
-        participantType === 'customer'
-          ? `/api/chat/customers?id=${participantId}`
-          : `/api/chat/casts?id=${participantId}`
-      const response = await fetch(endpoint, {
-        credentials: 'include',
-      })
-      if (!response.ok) throw new Error('Failed to fetch participant')
+      try {
+        const params = new URLSearchParams({ id: participantId, storeId: currentStore.id })
+        const endpoint = `/api/chat/${participantType === 'customer' ? 'customers' : 'casts'}?${params.toString()}`
+        const response = await fetch(endpoint, {
+          credentials: 'include',
+          signal,
+        })
+        if (!response.ok) throw new Error('Failed to fetch participant')
 
-      const data = await response.json()
-      setParticipant(data?.data ?? data)
-    } catch (error) {
-      console.error('Error fetching participant:', error)
-    }
-  }, [participantId, participantType])
+        const data = await response.json()
+        if (!signal?.aborted) {
+          setParticipant(data?.data ?? data)
+        }
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return
+        }
+        console.error('Error fetching participant:', error)
+      }
+    },
+    [currentStore.id, participantId, participantType]
+  )
 
   useEffect(() => {
+    const controller = new AbortController()
+    setMessages([])
     if (participantId) {
-      void fetchMessages()
-    } else {
-      setMessages([])
+      void fetchMessages(controller.signal)
     }
+    return () => controller.abort()
   }, [participantId, fetchMessages, realtimeRevision])
 
   useEffect(() => {
+    const controller = new AbortController()
+    setParticipant(null)
     if (participantId) {
-      void fetchParticipant()
-    } else {
-      setParticipant(null)
+      void fetchParticipant(controller.signal)
     }
+    return () => controller.abort()
   }, [participantId, fetchParticipant])
+
+  useEffect(() => {
+    setNewMessage('')
+    reset()
+  }, [currentStore.id, participantId, participantType, reset])
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -164,7 +213,12 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
 
   const handleSendMessage = async () => {
     const trimmed = newMessage.trim()
-    if (!participantId || (trimmed.length === 0 && readyAttachments.length === 0)) return
+    if (
+      sendPendingRef.current ||
+      !participantId ||
+      (trimmed.length === 0 && readyAttachments.length === 0)
+    )
+      return
 
     if (hasUploading) {
       toast({
@@ -175,6 +229,9 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
       return
     }
 
+    sendPendingRef.current = true
+    setIsSending(true)
+    const sendConversationKey = conversationKey
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -182,6 +239,7 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          storeId: currentStore.id,
           customerId: participantType === 'customer' ? participantId : undefined,
           castId: participantType === 'cast' ? participantId : undefined,
           sender: 'staff',
@@ -195,15 +253,19 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
       const payload = await response.json()
       const createdMessage = (payload?.data ?? payload) as Message
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          ...createdMessage,
-          attachments: Array.isArray(createdMessage.attachments) ? createdMessage.attachments : [],
-        },
-      ])
-      setNewMessage('')
-      reset()
+      if (activeConversationRef.current === sendConversationKey) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            ...createdMessage,
+            attachments: Array.isArray(createdMessage.attachments)
+              ? createdMessage.attachments
+              : [],
+          },
+        ])
+        setNewMessage('')
+        reset()
+      }
     } catch (error) {
       console.error('Error sending message:', error)
       toast({
@@ -211,6 +273,16 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
         description: 'メッセージの送信に失敗しました',
         variant: 'destructive',
       })
+    } finally {
+      sendPendingRef.current = false
+      setIsSending(false)
+    }
+  }
+
+  const handleComposerKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault()
+      void handleSendMessage()
     }
   }
 
@@ -246,7 +318,8 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
   }
 
   const participantInitial = participant?.name?.[0] || 'G'
-  const canSend = (newMessage.trim().length > 0 || readyAttachments.length > 0) && !hasUploading
+  const canSend =
+    (newMessage.trim().length > 0 || readyAttachments.length > 0) && !hasUploading && !isSending
 
   return (
     <div className="flex flex-1 flex-col bg-gradient-to-b from-white to-gray-50/30">
@@ -354,7 +427,9 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
           <Textarea
             placeholder={`${participantType === 'customer' ? '顧客' : 'キャスト'}へメッセージを入力... (⌘/Ctrl + Enter で送信)`}
             value={newMessage}
+            disabled={isSending}
             onChange={(e) => setNewMessage(e.target.value)}
+            onKeyDown={handleComposerKeyDown}
             onFocus={() => setIsTyping(true)}
             onBlur={() => setIsTyping(false)}
             className="min-h-[60px] flex-1 resize-none"
@@ -382,7 +457,7 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
                 size="sm"
                 className="text-xs text-emerald-700"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={attachmentDrafts.length >= 5}
+                disabled={isSending || attachmentDrafts.length >= 5}
               >
                 <ImagePlus className="mr-2 h-4 w-4" />
                 画像を添付
@@ -391,7 +466,11 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
             </div>
             <div className="flex items-center gap-3">
               {isTyping && <div className="text-xs text-gray-400">入力中...</div>}
-              <Button onClick={handleSendMessage} disabled={!canSend}>
+              <Button
+                onClick={handleSendMessage}
+                disabled={!canSend}
+                aria-label={isSending ? '送信中' : 'メッセージを送信'}
+              >
                 <Send className="h-4 w-4" />
               </Button>
             </div>

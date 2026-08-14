@@ -628,7 +628,7 @@ describe('CastScheduleUseCases', () => {
       // Verify API calls
       expect(fetch).toHaveBeenCalledTimes(2)
       expect(fetch).toHaveBeenCalledWith(
-        '/api/cast?storeId=store-a',
+        '/api/cast?storeId=store-a&limit=100&offset=0',
         expect.objectContaining({ credentials: 'include', cache: 'no-store' })
       )
       expect(fetch).toHaveBeenCalledWith(
@@ -667,6 +667,45 @@ describe('CastScheduleUseCases', () => {
       // Verify stats
       expect(result.stats.totalCast).toBe(2)
       expect(result.stats.workingCast).toBe(2)
+    })
+
+    it('loads every cast page for the weekly attendance table', async () => {
+      const testDate = new Date('2026-08-10T00:00:00.000Z')
+      const firstPage = Array.from({ length: 100 }, (_, index) => ({
+        id: `cast-${index}`,
+        name: `Cast ${index}`,
+        nameKana: `cast ${index}`,
+        age: 25,
+        image: '/cast.jpg',
+      }))
+      const secondPage = [
+        { id: 'cast-100', name: 'Cast 100', age: 25, image: '/cast.jpg' },
+        { id: 'cast-101', name: 'Cast 101', age: 25, image: '/cast.jpg' },
+      ]
+
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, json: async () => firstPage })
+        .mockResolvedValueOnce({ ok: true, json: async () => secondPage })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) })
+
+      const result = await useCases.getWeeklySchedule({
+        date: testDate,
+        castFilter: 'all',
+        storeId: 'ikebukuro',
+      })
+
+      expect(result.entries).toHaveLength(102)
+      expect(fetch).toHaveBeenNthCalledWith(
+        1,
+        '/api/cast?storeId=ikebukuro&limit=100&offset=0',
+        expect.objectContaining({ credentials: 'include', cache: 'no-store' })
+      )
+      expect(fetch).toHaveBeenNthCalledWith(
+        2,
+        '/api/cast?storeId=ikebukuro&limit=100&offset=100',
+        expect.objectContaining({ credentials: 'include', cache: 'no-store' })
+      )
     })
 
     it('should surface API errors when production fallbacks are disabled', async () => {

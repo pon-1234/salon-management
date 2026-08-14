@@ -3,86 +3,126 @@
 /**
  * @design_doc   docs/LEGACY_DATA_MIGRATION_RUNBOOK.md read-only Ikebukuro field-preview extraction
  * @related_to   scripts/legacy-preview-import.ts consumes separately transformed preview artifacts
- * @known_issues The legacy source cannot provide a cross-table snapshot, so reconciliation is reported
+ * @known_issues The approved legacy tables use MyISAM, so final cutover requires a coordinated write pause
  */
 
 const LEGACY_CONFIG_PATH = '/home/nzuadtjn/gold-esthe.com_inc_master/jukunen_db_2016.inc';
 const EXPECTED_DATABASE = 'nzuadtjn_gold_master';
+const EXPECTED_CUSTOMER_DATABASE = 'nzuadtjn_primegb_master';
 const SHOP_NO = 5600;
+
+class LegacyPreviewExtractionException extends RuntimeException
+{
+}
 
 try {
     runExtractor();
 } catch (Throwable $error) {
-    file_put_contents('php://stderr', "Legacy preview extraction failed.\n");
+    $diagnostic =
+        getenv('LEGACY_PREVIEW_DIAGNOSTICS') === 'STAGE_ONLY' &&
+        $error instanceof LegacyPreviewExtractionException
+            ? ' at stage: ' . $error->getMessage()
+            : '';
+    file_put_contents('php://stderr', "Legacy preview extraction failed{$diagnostic}.\n");
     exit(1);
 }
 
 function runExtractor()
 {
-    date_default_timezone_set('Asia/Tokyo');
+    $pdo = null;
+    $transactionStarted = false;
+    $stage = 'configuration';
+    try {
+        date_default_timezone_set('Asia/Tokyo');
 
-    $scheduleFrom = readIsoDateEnvironment('LEGACY_PREVIEW_SCHEDULE_FROM');
-    $scheduleTo = readIsoDateEnvironment('LEGACY_PREVIEW_SCHEDULE_TO');
-    $reservationFrom = readIsoDateEnvironment('LEGACY_PREVIEW_RESERVATION_FROM');
+        $scheduleFrom = readIsoDateEnvironment('LEGACY_PREVIEW_SCHEDULE_FROM');
+        $scheduleTo = readIsoDateEnvironment('LEGACY_PREVIEW_SCHEDULE_TO');
+        $reservationFrom = readIsoDateEnvironment('LEGACY_PREVIEW_RESERVATION_FROM');
 
-    if ($scheduleFrom > $scheduleTo) {
-        throw new RuntimeException('Invalid schedule range.');
+        if ($scheduleFrom > $scheduleTo) {
+            throw new RuntimeException('Invalid schedule range.');
+        }
+
+        $connection = parseJukunenConnectionConfig(LEGACY_CONFIG_PATH);
+        if ($connection['database'] !== EXPECTED_DATABASE) {
+            throw new RuntimeException('Unexpected legacy database.');
+        }
+
+        $stage = 'connection';
+        $pdo = new PDO(
+            'mysql:host=' . $connection['host'] . ';dbname=' . $connection['database'] . ';charset=utf8mb4',
+            $connection['username'],
+            $connection['password'],
+            array(
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false,
+            )
+        );
+        $pdo->exec('SET SESSION TRANSACTION READ ONLY');
+        $pdo->exec('SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+
+        $stage = 'source-identity';
+        $readOnlyMode = $pdo->query('SELECT @@session.tx_read_only AS read_only_mode')->fetchColumn();
+        $selectedDatabase = $pdo->query('SELECT DATABASE() AS database_name')->fetchColumn();
+        if ((int) $readOnlyMode !== 1 || $selectedDatabase !== EXPECTED_DATABASE) {
+            throw new RuntimeException('Legacy source safety gate failed.');
+        }
+
+        $stage = 'transaction-start';
+        $pdo->exec('START TRANSACTION WITH CONSISTENT SNAPSHOT');
+        $transactionStarted = true;
+        $capturedAt = (new DateTimeImmutable('now', new DateTimeZone('Asia/Tokyo')))->format(DATE_ATOM);
+        $stage = 'dataset-extraction';
+        $queries = buildDatasetQueries($scheduleFrom, $scheduleTo, $reservationFrom);
+        $beforeCounts = collectCounts($pdo, $queries);
+        $rows = collectRows($pdo, $queries);
+        $afterCounts = collectCounts($pdo, $queries);
+
+        $snapshot = array(
+            'version' => 4,
+            'scope' => array(
+                'sourceDatabase' => EXPECTED_DATABASE,
+                'customerSourceDatabase' => EXPECTED_CUSTOMER_DATABASE,
+                'shopNo' => SHOP_NO,
+                'cutoffAt' => $capturedAt,
+                'scheduleFrom' => $scheduleFrom,
+                'scheduleTo' => $scheduleTo,
+                'reservationFrom' => $reservationFrom,
+                'consistency' => 'best-effort-read-only-count-checked',
+            ),
+            'beforeCounts' => canonicalizeDatasets($beforeCounts),
+            'afterCounts' => canonicalizeDatasets($afterCounts),
+            'rows' => canonicalizeDatasets($rows),
+        );
+
+        $stage = 'snapshot-encoding';
+        $json = json_encode(
+            $snapshot,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
+        );
+        if (!is_string($json)) {
+            throw new RuntimeException('Snapshot encoding failed.');
+        }
+
+        $stage = 'transaction-commit';
+        $pdo->exec('COMMIT');
+        $transactionStarted = false;
+        echo $json . "\n";
+    } catch (Throwable $error) {
+        if ($pdo instanceof PDO && $transactionStarted) {
+            try {
+                $pdo->exec('ROLLBACK');
+            } catch (Throwable $rollbackError) {
+                throw new LegacyPreviewExtractionException(
+                    'transaction-rollback',
+                    0,
+                    $rollbackError
+                );
+            }
+        }
+        throw new LegacyPreviewExtractionException($stage, 0, $error);
     }
-
-    $connection = parseJukunenConnectionConfig(LEGACY_CONFIG_PATH);
-    if ($connection['database'] !== EXPECTED_DATABASE) {
-        throw new RuntimeException('Unexpected legacy database.');
-    }
-
-    $pdo = new PDO(
-        'mysql:host=' . $connection['host'] . ';dbname=' . $connection['database'] . ';charset=utf8mb4',
-        $connection['username'],
-        $connection['password'],
-        array(
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES => false,
-        )
-    );
-    $pdo->exec('SET SESSION TRANSACTION READ ONLY');
-
-    $readOnlyMode = $pdo->query('SELECT @@session.tx_read_only AS read_only_mode')->fetchColumn();
-    $selectedDatabase = $pdo->query('SELECT DATABASE() AS database_name')->fetchColumn();
-    if ((int) $readOnlyMode !== 1 || $selectedDatabase !== EXPECTED_DATABASE) {
-        throw new RuntimeException('Legacy source safety gate failed.');
-    }
-
-    $queries = buildDatasetQueries($scheduleFrom, $scheduleTo, $reservationFrom);
-    $beforeCounts = collectCounts($pdo, $queries);
-    $rows = collectRows($pdo, $queries);
-    $afterCounts = collectCounts($pdo, $queries);
-
-    $capturedAt = (new DateTimeImmutable('now', new DateTimeZone('Asia/Tokyo')))->format(DATE_ATOM);
-    $snapshot = array(
-        'version' => 3,
-        'scope' => array(
-            'sourceDatabase' => EXPECTED_DATABASE,
-            'shopNo' => SHOP_NO,
-            'cutoffAt' => $capturedAt,
-            'scheduleFrom' => $scheduleFrom,
-            'scheduleTo' => $scheduleTo,
-            'reservationFrom' => $reservationFrom,
-            'consistency' => 'best-effort-read-only',
-        ),
-        'beforeCounts' => canonicalizeDatasets($beforeCounts),
-        'afterCounts' => canonicalizeDatasets($afterCounts),
-        'rows' => canonicalizeDatasets($rows),
-    );
-
-    $json = json_encode(
-        $snapshot,
-        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
-    );
-    if (!is_string($json)) {
-        throw new RuntimeException('Snapshot encoding failed.');
-    }
-
-    echo $json . "\n";
 }
 
 function readIsoDateEnvironment($name)
@@ -298,6 +338,11 @@ function buildDatasetQueries($scheduleFrom, $scheduleTo, $reservationFrom)
         ':reservationFrom' => $reservationFrom,
     );
     $reviewParameters = array(':shopNo' => SHOP_NO, ':activeShopNo' => SHOP_NO);
+    $customerParameters = array(
+        ':memberShopNo' => SHOP_NO,
+        ':memberOrderShopNo' => SHOP_NO,
+        ':memberReviewShopNo' => SHOP_NO,
+    );
     $areaParameters = array(
         ':stationShopNo' => SHOP_NO,
         ':orderShopNo' => SHOP_NO,
@@ -374,6 +419,11 @@ function buildDatasetQueries($scheduleFrom, $scheduleTo, $reservationFrom)
             'rows' => '/* dataset:userVoice */ SELECT v.serial, v.shop_no, v.mem_id, v.girl_no, v.order_no, v.add_date, v.h_lev, v.cm, v.lev FROM user_voice v WHERE v.shop_no = :shopNo AND v.lev = 1 AND v.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1) ORDER BY v.add_date, v.serial',
             'params' => $reviewParameters,
         ),
+        'members' => array(
+            'count' => 'SELECT COUNT(*) AS row_count FROM nzuadtjn_primegb_master.member m WHERE m.shop_no = :memberShopNo OR m.mem_id IN (SELECT DISTINCT o.mem_id FROM orders o WHERE o.shop_no = :memberOrderShopNo AND o.mem_id > 0) OR m.mem_id IN (SELECT DISTINCT v.mem_id FROM user_voice v WHERE v.shop_no = :memberReviewShopNo AND v.mem_id > 0)',
+            'rows' => '/* dataset:members */ SELECT m.mem_id, m.shop_no, m.name, m.tel, m.mail_ad, m.birth, m.age, m.point, m.lev_member, m.lev, m.lev_admin, m.flg_smail, m.regist_date, m.regist_date_new, m.login_date, m.deli_date FROM nzuadtjn_primegb_master.member m WHERE m.shop_no = :memberShopNo OR m.mem_id IN (SELECT DISTINCT o.mem_id FROM orders o WHERE o.shop_no = :memberOrderShopNo AND o.mem_id > 0) OR m.mem_id IN (SELECT DISTINCT v.mem_id FROM user_voice v WHERE v.shop_no = :memberReviewShopNo AND v.mem_id > 0) ORDER BY m.mem_id',
+            'params' => $customerParameters,
+        ),
     );
 }
 
@@ -392,6 +442,7 @@ function canonicalizeDatasets($datasets)
         'schedules' => $datasets['yotei'],
         'reservations' => $datasets['orders'],
         'reviews' => $datasets['userVoice'],
+        'customers' => $datasets['members'],
     );
 }
 

@@ -11,17 +11,44 @@ import { handleApiError, ErrorResponses } from '@/lib/api/errors'
 import { SuccessResponses } from '@/lib/api/responses'
 import { z } from 'zod'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
+import { parseScheduleDateTimeInJst } from '@/lib/cast-schedule/date-time'
+
+const dateKeySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+const scheduleTimeSchema = z.string().regex(/^(?:(?:[01]\d|2[0-3]):[0-5]\d|24:00)$/)
+
+const normalizeScheduleEndTime = (startTime: string, endTime: string): string =>
+  endTime === '00:00' && startTime !== '00:00' ? '24:00' : endTime
 
 // Validation schema for batch schedule update
 const batchScheduleSchema = z.object({
   castId: z.string(),
   schedules: z.array(
-    z.object({
-      date: z.string(),
-      status: z.enum(['working', 'holiday']),
-      startTime: z.string().optional(),
-      endTime: z.string().optional(),
-    })
+    z
+      .object({
+        date: dateKeySchema,
+        status: z.enum(['working', 'holiday']),
+        startTime: scheduleTimeSchema.optional(),
+        endTime: scheduleTimeSchema.optional(),
+      })
+      .superRefine((schedule, context) => {
+        if (schedule.status !== 'working') return
+        if (!schedule.startTime || !schedule.endTime) {
+          context.addIssue({ code: z.ZodIssueCode.custom, message: '勤務時間が必要です' })
+          return
+        }
+
+        const startTime = parseScheduleDateTimeInJst(schedule.date, schedule.startTime)
+        const endTime = parseScheduleDateTimeInJst(
+          schedule.date,
+          normalizeScheduleEndTime(schedule.startTime, schedule.endTime)
+        )
+        if (endTime <= startTime) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: '終了時間は開始時間より後にしてください',
+          })
+        }
+      })
   ),
 })
 
@@ -43,7 +70,7 @@ export async function POST(request: NextRequest) {
       const updatedSchedules = []
 
       for (const schedule of schedules) {
-        const date = new Date(schedule.date)
+        const date = parseScheduleDateTimeInJst(schedule.date, '00:00')
 
         // Check if schedule exists
         const existing = await tx.castSchedule.findUnique({
@@ -67,8 +94,11 @@ export async function POST(request: NextRequest) {
 
         // For working status, create or update
         if (schedule.startTime && schedule.endTime) {
-          const startTime = new Date(`${schedule.date}T${schedule.startTime}:00`)
-          const endTime = new Date(`${schedule.date}T${schedule.endTime}:00`)
+          const startTime = parseScheduleDateTimeInJst(schedule.date, schedule.startTime)
+          const endTime = parseScheduleDateTimeInJst(
+            schedule.date,
+            normalizeScheduleEndTime(schedule.startTime, schedule.endTime)
+          )
 
           if (existing) {
             // Update existing

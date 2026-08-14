@@ -172,7 +172,7 @@ describe('Middleware Authentication', () => {
   describe('Middleware Scope', () => {
     it('does not run against immutable Next.js assets', () => {
       expect(config.matcher).toContain(
-        '/((?!_next/static|_next/image|favicon.ico|robots.txt|images/|videos/).*)'
+        '/((?!_next/static|_next/image|salon-uploads/|favicon.ico|robots.txt|images/|videos/).*)'
       )
     })
 

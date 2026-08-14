@@ -1,3 +1,8 @@
+/**
+ * @design_doc   docs/LEGACY_GOLD_ADMIN_MIGRATION_INVENTORY.md customer management
+ * @related_to   CustomerRepository; GET /api/customer paginated response
+ * @known_issues None
+ */
 import { Customer, CustomerInsights } from './types'
 import { CustomerRepository } from './repository'
 import { resolveApiUrl } from '@/lib/http/base-url'
@@ -10,6 +15,17 @@ async function parseJson<T>(response: Response): Promise<T> {
   return payload?.data ?? payload
 }
 
+function readCustomerList(payload: unknown): unknown[] {
+  if (Array.isArray(payload)) {
+    return payload
+  }
+  if (payload && typeof payload === 'object' && 'items' in payload) {
+    const items = (payload as { items?: unknown }).items
+    return Array.isArray(items) ? items : []
+  }
+  return []
+}
+
 export class CustomerRepositoryImpl implements CustomerRepository {
   async getAll(): Promise<Customer[]> {
     const response = await fetch(resolveApiUrl(API_BASE_URL), {
@@ -18,8 +34,8 @@ export class CustomerRepositoryImpl implements CustomerRepository {
     if (!response.ok) {
       throw new Error('Failed to fetch customers')
     }
-    const payload = await parseJson<any[]>(response)
-    return Array.isArray(payload) ? payload.map(deserializeCustomer) : []
+    const payload = await parseJson<unknown>(response)
+    return readCustomerList(payload).map(deserializeCustomer)
   }
 
   async getById(id: string): Promise<Customer | null> {
@@ -41,6 +57,23 @@ export class CustomerRepositoryImpl implements CustomerRepository {
       exactMatches.find((customer) => normalizePhoneQuery(customer.phone) === normalizedTarget) ??
       null
     )
+  }
+
+  async search(query: string): Promise<Customer[]> {
+    const normalized = query.trim()
+    if (!normalized) {
+      return this.getAll()
+    }
+    const url = `${API_BASE_URL}?query=${encodeURIComponent(normalized)}&limit=50`
+    const response = await fetch(resolveApiUrl(url), {
+      credentials: 'include',
+      cache: 'no-store',
+    })
+    if (!response.ok) {
+      throw new Error('Failed to search customers')
+    }
+    const payload = await parseJson<unknown>(response)
+    return readCustomerList(payload).map(deserializeCustomer)
   }
 
   async searchByPhone(phone: string): Promise<Customer[]> {
@@ -72,8 +105,8 @@ export class CustomerRepositoryImpl implements CustomerRepository {
     return payload ? deserializeCustomer(payload) : null
   }
 
-  async getInsights(customerId: string): Promise<CustomerInsights> {
-    const url = `${API_BASE_URL}/insights?customerId=${encodeURIComponent(customerId)}`
+  async getInsights(customerId: string, storeId: string): Promise<CustomerInsights> {
+    const url = `${API_BASE_URL}/insights?customerId=${encodeURIComponent(customerId)}&storeId=${encodeURIComponent(storeId)}`
     const response = await fetch(resolveApiUrl(url), {
       credentials: 'include',
       cache: 'no-store',

@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest'
 import { PAYMENT_METHODS } from '@/lib/constants'
 
 import {
+  calculateReservationPriceBreakdown,
   formatCurrency,
   formatMinutes,
   normalizeMarketingChannelValue,
@@ -16,6 +17,38 @@ import {
 } from './reservation-dialog.utils'
 
 describe('reservation-dialog utils', () => {
+  describe('calculateReservationPriceBreakdown', () => {
+    it('combines course, options, designation, fees, discounts, and points through the canonical revenue calculator', () => {
+      expect(
+        calculateReservationPriceBreakdown({
+          selectedCoursePrice: 10_000,
+          fallbackCoursePrice: 9_000,
+          options: [{ price: 2_000, storeShare: 500, castShare: 1_500 }],
+          transportationFee: 500,
+          additionalFee: 300,
+          discountAmount: 100,
+          pointsUsed: 400,
+          designationFee: 1_000,
+          designation: { storeShare: 0, castShare: 1_000 },
+          welfareRate: 10,
+        })
+      ).toEqual({
+        basePrice: 10_000,
+        optionTotal: 2_000,
+        transportation: 500,
+        additional: 300,
+        designation: 1_000,
+        discount: 100,
+        pointsUsed: 400,
+        total: 13_300,
+        storeRevenue: 1_800,
+        staffRevenue: 11_500,
+        welfareExpense: 1_000,
+        welfareRate: 10,
+      })
+    })
+  })
+
   describe('toNumber', () => {
     it('parses numbers and currency-like strings without changing current invalid-string behavior', () => {
       expect(toNumber(1200)).toBe(1200)

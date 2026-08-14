@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Cast portal ranking and server-authorized performance presentation
+ * @related_to   CastPerformanceSnapshot and WorkPerformanceTab
+ * @known_issues Access ranking waits for an external analytics source
+ */
 'use client'
 
 import { useMemo } from 'react'
@@ -62,7 +67,11 @@ export function CastPerformanceContent({ initialData }: Props) {
         </TabsContent>
 
         <TabsContent value="performance" className="space-y-6">
-          <WorkPerformanceTab castId={initialData.cast.id} castName={initialData.cast.name} />
+          <WorkPerformanceTab
+            castId={initialData.cast.id}
+            castName={initialData.cast.name}
+            initialPerformance={initialData.performance}
+          />
         </TabsContent>
       </Tabs>
     </div>

@@ -337,6 +337,7 @@ class PrismaLegacyPreviewTransaction implements LegacyPreviewTransactionPort {
       select: {
         id: true,
         name: true,
+        displayOrder: true,
         duration: true,
         price: true,
         storeShare: true,

@@ -19,4 +19,28 @@ describe('payment status page', () => {
     expect(source).not.toContain('mockPayments')
     expect(source).not.toContain('txn_001')
   })
+
+  it('uses the server summary for the full filtered period and an exclusive next-day end bound', async () => {
+    const source = await readFile(
+      resolve(process.cwd(), 'app/(admin)/admin/analytics/payment-status/page.tsx'),
+      'utf8'
+    )
+
+    expect(source).toContain('endExclusive')
+    expect(source).toContain('startOfDay(addDays(endDate, 1))')
+    expect(source).toContain('<PaymentStatusTable payments={payments} summary={summary}')
+  })
+
+  it('returns to the first page whenever a filter value changes', async () => {
+    const source = await readFile(
+      resolve(process.cwd(), 'app/(admin)/admin/analytics/payment-status/page.tsx'),
+      'utf8'
+    )
+
+    expect(source).toContain('const handleStatusFilterChange')
+    expect(source).toContain('const handleProviderFilterChange')
+    expect(source).toContain('const handleStartDateChange')
+    expect(source).toContain('const handleEndDateChange')
+    expect(source.match(/setPage\(0\)/gu)).toHaveLength(4)
+  })
 })

@@ -6,7 +6,7 @@
  * @known_issues This large client page still needs the refactor plan proposed for admin cast surfaces
  */
 import { use, useState, useEffect, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { CastForm } from '@/components/cast/cast-form'
 import { CastDashboard } from '@/components/cast/cast-dashboard'
 import { Cast } from '@/lib/cast/types'
@@ -36,13 +36,28 @@ import { CastLineRegistrationPanel } from '@/components/cast/cast-line-registrat
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useStore } from '@/contexts/store-context'
 
+const CAST_MANAGE_TABS = new Set([
+  'overview',
+  'edit',
+  'sales',
+  'payment',
+  'settlement',
+  'performance',
+])
+
+function resolveCastManageTab(tab: string | null): string {
+  return tab && CAST_MANAGE_TABS.has(tab) ? tab : 'overview'
+}
+
 export default function CastManagePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
+  const searchParams = useSearchParams()
   const { currentStore } = useStore()
   const [cast, setCast] = useState<Cast | null>(null)
   const [id, setId] = useState<string>(resolvedParams.id ?? '')
   const [loading, setLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [activeTab, setActiveTab] = useState(() => resolveCastManageTab(searchParams.get('tab')))
   const router = useRouter()
   const castRepository = useMemo(
     () => new CastRepositoryImpl(undefined, currentStore.id),
@@ -53,6 +68,10 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
   useEffect(() => {
     setId(resolvedParams.id ?? '')
   }, [resolvedParams.id])
+
+  useEffect(() => {
+    setActiveTab(resolveCastManageTab(searchParams.get('tab')))
+  }, [searchParams])
 
   useEffect(() => {
     if (!id) return
@@ -223,7 +242,7 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
             />
           ) : (
             cast && (
-              <Tabs defaultValue="overview" className="space-y-6">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="border bg-white">
                   <TabsTrigger value="overview" className="data-[state=active]:bg-emerald-50">
                     <FileText className="mr-2 h-4 w-4" />
@@ -254,9 +273,8 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
                 <TabsContent value="overview" className="space-y-6">
                   <CastDashboard
                     cast={cast}
-                    onUpdate={(data) => {
-                      setCast((prev) => (prev ? { ...prev, ...data } : prev))
-                    }}
+                    onUpdate={(data) => void handleSubmit(data)}
+                    onRequestEdit={() => setActiveTab('edit')}
                   />
                   <CastLineRegistrationPanel
                     castId={cast.id}

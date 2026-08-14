@@ -43,6 +43,7 @@ COPY --from=builder /app/lib/preview-uat ./lib/preview-uat
 COPY --from=builder /app/scripts/setup-admin.ts ./scripts/setup-admin.ts
 COPY --from=builder /app/scripts/setup-preview-uat.ts ./scripts/setup-preview-uat.ts
 COPY --from=builder /app/scripts/import-gold-master-ikebukuro-preview.ts ./scripts/import-gold-master-ikebukuro-preview.ts
+COPY --from=builder /app/scripts/verify-gold-master-ikebukuro-preview.ts ./scripts/verify-gold-master-ikebukuro-preview.ts
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY --from=builder /app/package.json ./package.json
 COPY deploy/xserver-vps/entrypoint.sh /usr/local/bin/salon-entrypoint

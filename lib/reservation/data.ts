@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Reservation API client normalization and optional mock fallback boundary
+ * @related_to   ReservationRepositoryImpl, reservation API, Reservation
+ * @known_issues None
+ */
 import { Reservation } from '@/lib/types/reservation'
 import { resolveApiUrl } from '@/lib/http/base-url'
 import {
@@ -72,6 +77,7 @@ function normalizeReservation(entry: any): Reservation {
     discountAmount: entry.discountAmount ?? undefined,
     welfareExpense: entry.welfareExpense ?? undefined,
     paymentMethod: entry.paymentMethod ?? undefined,
+    paymentReference: entry.paymentReference ?? null,
     marketingChannel: entry.marketingChannel ?? undefined,
     storeRevenue: entry.storeRevenue ?? undefined,
     staffRevenue: entry.staffRevenue ?? undefined,
@@ -95,6 +101,8 @@ function normalizeReservation(entry: any): Reservation {
     locationMemo: entry.locationMemo ?? undefined,
     castCheckedInAt: entry.castCheckedInAt ? new Date(entry.castCheckedInAt) : undefined,
     castCheckedOutAt: entry.castCheckedOutAt ? new Date(entry.castCheckedOutAt) : undefined,
+    cancellationSource: entry.cancellationSource ?? null,
+    cancellationReason: entry.cancellationReason ?? null,
     options: Array.isArray(entry.options) ? entry.options : undefined,
   }
 }

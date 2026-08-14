@@ -17,6 +17,10 @@ model Customer {
   password                  String
   birthDate                 DateTime
   memberType                String                 @default("regular")
+  accountStatus             String                 @default("active")
+  membershipStage           String                 @default("regular")
+  lastLoginAt               DateTime?
+  lastVisitAt               DateTime?
   points                    Int                    @default(0)
   smsEnabled                Boolean                @default(false)
   emailNotificationEnabled  Boolean                @default(true)
@@ -38,6 +42,8 @@ model Customer {
   reviews                   Review[]
   messages                  Message[]
   paymentTransactions       PaymentTransaction[]
+
+  @@index([accountStatus])
 }
 
 model Store {
@@ -152,6 +158,7 @@ model Reservation {
   discountAmount      Int                            @default(0)
   welfareExpense      Int                            @default(0)
   paymentMethod       String?                        @default("現金")
+  paymentReference    String?
   marketingChannel    String?
   storeRevenue        Int?
   staffRevenue        Int?
@@ -175,6 +182,7 @@ model Reservation {
   castCheckedOutAt    DateTime?
   pointsUsed          Int                            @default(0)
   cancellationSource  CancellationSource?
+  cancellationReason  String?
   createdAt           DateTime                       @default(now())
   updatedAt           DateTime                       @updatedAt
   cast                Cast                           @relation(fields: [castId], references: [id])
@@ -223,11 +231,13 @@ model SettlementPaymentReservation {
   reservation   Reservation       @relation(fields: [reservationId], references: [id])
 
   @@id([paymentId, reservationId])
+  @@unique([reservationId], map: "SettlementPaymentReservation_reservationId_key")
 }
 
 model CoursePrice {
   id               String        @id @default(cuid())
   name             String
+  displayOrder     Int           @default(0)
   duration         Int
   price            Int
   storeShare       Int?

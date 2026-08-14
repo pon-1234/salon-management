@@ -12,56 +12,18 @@ import type {
   UploadOptions,
   UploadResult,
 } from './types'
+import {
+  detectBitmapFormat,
+  normalizeBitmapMimeType,
+  type DetectedBitmapFormat,
+} from './bitmap-format'
 
 interface LocalStorageOptions {
   root: string
   publicBaseUrl: string
 }
 
-interface DetectedBitmapFormat {
-  mimeType: 'image/gif' | 'image/jpeg' | 'image/png' | 'image/webp'
-  extension: 'gif' | 'jpg' | 'png' | 'webp'
-}
-
 const UNSUPPORTED_FILE_TYPE_MESSAGE = '対応していないファイル形式です'
-
-function startsWithBytes(contents: Buffer, signature: readonly number[]): boolean {
-  return (
-    contents.length >= signature.length &&
-    signature.every((byte, index) => contents[index] === byte)
-  )
-}
-
-function detectBitmapFormat(contents: Buffer): DetectedBitmapFormat | null {
-  if (startsWithBytes(contents, [0xff, 0xd8, 0xff])) {
-    return { mimeType: 'image/jpeg', extension: 'jpg' }
-  }
-
-  if (startsWithBytes(contents, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) {
-    return { mimeType: 'image/png', extension: 'png' }
-  }
-
-  if (
-    contents.length >= 16 &&
-    contents.toString('ascii', 0, 4) === 'RIFF' &&
-    contents.toString('ascii', 8, 12) === 'WEBP' &&
-    ['VP8 ', 'VP8L', 'VP8X'].includes(contents.toString('ascii', 12, 16))
-  ) {
-    return { mimeType: 'image/webp', extension: 'webp' }
-  }
-
-  const gifSignature = contents.toString('ascii', 0, 6)
-  if (gifSignature === 'GIF87a' || gifSignature === 'GIF89a') {
-    return { mimeType: 'image/gif', extension: 'gif' }
-  }
-
-  return null
-}
-
-function normalizeMimeType(mimeType: string): string {
-  const normalized = mimeType.trim().toLowerCase()
-  return normalized === 'image/jpg' ? 'image/jpeg' : normalized
-}
 
 function replaceExtension(filename: string, extension: DetectedBitmapFormat['extension']): string {
   const lastDot = filename.lastIndexOf('.')
@@ -119,8 +81,8 @@ export class LocalStorageService implements StorageService {
         `ファイルサイズが大きすぎます（最大${this.config.maxFileSize / 1024 / 1024}MB）`
       )
     }
-    const claimedMimeType = normalizeMimeType(file.type)
-    const allowedTypes = new Set(this.config.allowedTypes.map(normalizeMimeType))
+    const claimedMimeType = normalizeBitmapMimeType(file.type)
+    const allowedTypes = new Set(this.config.allowedTypes.map(normalizeBitmapMimeType))
     if (!allowedTypes.has(claimedMimeType)) {
       throw new Error(UNSUPPORTED_FILE_TYPE_MESSAGE)
     }

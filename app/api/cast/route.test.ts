@@ -37,7 +37,7 @@ describe('Cast API endpoints', () => {
 
   describe('GET /api/cast', () => {
     it('returns a JSON 404 when the requested store does not exist', async () => {
-      mockedDb.store.findUnique.mockResolvedValueOnce(null)
+      mockedDb.store.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(null)
 
       const response = await GET(
         new NextRequest('http://localhost:3000/api/cast?storeId=unknown-store')

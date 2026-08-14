@@ -37,13 +37,34 @@ describe('gold master Ikebukuro preview extractor', () => {
     })
   })
 
+  it('can report a stage-only diagnostic without exposing source errors', async () => {
+    const failure = await captureFailure({
+      LEGACY_PREVIEW_SCHEDULE_FROM: '2026-02-30',
+      LEGACY_PREVIEW_SCHEDULE_TO: '2026-08-16',
+      LEGACY_PREVIEW_RESERVATION_FROM: '2026-06-01',
+      LEGACY_PREVIEW_DIAGNOSTICS: 'STAGE_ONLY',
+    })
+
+    expect(failure).toEqual({
+      code: 1,
+      stdout: '',
+      stderr: 'Legacy preview extraction failed at stage: configuration.\n',
+    })
+  })
+
   it('constructs a fail-closed PDO connection from the legacy config and makes it read-only', () => {
     expect(source).toContain('/home/nzuadtjn/gold-esthe.com_inc_master/jukunen_db_2016.inc')
     expect(source).toContain("'nzuadtjn_gold_master'")
+    expect(source).toContain("'nzuadtjn_primegb_master'")
     expect(source).toContain('token_get_all')
     expect(source).toContain('new PDO(')
     expect(source).toContain('SET SESSION TRANSACTION READ ONLY')
     expect(source).toContain('SELECT @@session.tx_read_only AS read_only_mode')
+    expect(source).toContain('SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ')
+    expect(source).toContain('SET SESSION TRANSACTION READ ONLY')
+    expect(source).toContain("START TRANSACTION WITH CONSISTENT SNAPSHOT'")
+    expect(source).toContain("$pdo->exec('COMMIT')")
+    expect(source).toContain("$pdo->exec('ROLLBACK')")
     expect(source).not.toMatch(/(?:password|username)\s*=\s*['"][^'"]+['"]/i)
     expect(source).toContain("file_put_contents('php://stderr'")
     expect(source).not.toMatch(/\bSTD(?:OUT|ERR)\b/u)
@@ -100,6 +121,11 @@ describe('gold master Ikebukuro preview extractor', () => {
     )
     expect(source).toContain('v.lev = 1')
     expect(source).toContain('v.mem_id')
+    expect(source).toContain(
+      'm.mem_id, m.shop_no, m.name, m.tel, m.mail_ad, m.birth, m.age, m.point'
+    )
+    expect(source).toContain('FROM nzuadtjn_primegb_master.member m')
+    expect(source).not.toMatch(/\bm\.(?:pass|mem_cm|mem_cm2|login_id|mobile_no)\b/i)
 
     const orderProjection = extractProjection(source, 'orders', 'orders o')
     expect(orderProjection).toContain('o.mem_id')
@@ -108,11 +134,11 @@ describe('gold master Ikebukuro preview extractor', () => {
     )
   })
 
-  it('emits a versioned best-effort snapshot with explicit rows and count reconciliation', () => {
-    expect(source).toContain("'version' => 3")
+  it('emits a versioned non-atomic live preview with explicit rows and count reconciliation', () => {
+    expect(source).toContain("'version' => 4")
     expect(source).toContain("'sourceDatabase' => EXPECTED_DATABASE")
     expect(source).toContain("'shopNo' => SHOP_NO")
-    expect(source).toContain("'consistency' => 'best-effort-read-only'")
+    expect(source).toContain("'consistency' => 'best-effort-read-only-count-checked'")
     expect(source).toContain("'beforeCounts' => canonicalizeDatasets($beforeCounts)")
     expect(source).toContain("'afterCounts' => canonicalizeDatasets($afterCounts)")
     expect(source).toContain("'rows' => canonicalizeDatasets($rows)")
@@ -123,6 +149,7 @@ describe('gold master Ikebukuro preview extractor', () => {
     expect(source).toContain("'stations' => $datasets['stationList']")
     expect(source).toContain("'hotelGroups' => $datasets['hotelGroup']")
     expect(source).toContain("'hotels' => $datasets['hotelList']")
+    expect(source).toContain("'customers' => $datasets['members']")
   })
 })
 

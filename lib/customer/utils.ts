@@ -1,4 +1,17 @@
-import { Customer, NgCastEntry } from './types'
+/**
+ * @design_doc   Customer API serialization and identity normalization
+ * @related_to   CustomerRepositoryImpl; Customer detail reservation relations
+ * @known_issues None
+ */
+import {
+  Customer,
+  CustomerUsageRecord,
+  NgCastEntry,
+  type CustomerAccountStatus,
+  type CustomerMembershipStage,
+} from './types'
+import { RESERVATION_STATUS, type ReservationStatus } from '@/lib/constants'
+import type { Reservation } from '@/lib/types/reservation'
 
 export function calculateAge(birthDate: Date): number {
   const today = new Date()
@@ -57,6 +70,127 @@ function toOptionalDate(value: unknown): Date | undefined {
   return undefined
 }
 
+function toReservationStatus(value: unknown): ReservationStatus | null {
+  return Object.values(RESERVATION_STATUS).includes(value as ReservationStatus)
+    ? (value as ReservationStatus)
+    : null
+}
+
+function toCustomerAccountStatus(value: unknown): CustomerAccountStatus {
+  const statuses: CustomerAccountStatus[] = ['pending', 'active', 'withdrawn', 'blocked', 'unknown']
+  return statuses.includes(value as CustomerAccountStatus)
+    ? (value as CustomerAccountStatus)
+    : 'active'
+}
+
+function toCustomerMembershipStage(value: unknown): CustomerMembershipStage {
+  const stages: CustomerMembershipStage[] = [
+    'regular',
+    'silver',
+    'gold',
+    'platinum',
+    'god',
+    'unknown',
+  ]
+  return stages.includes(value as CustomerMembershipStage)
+    ? (value as CustomerMembershipStage)
+    : 'regular'
+}
+
+function deserializeReservation(raw: any): Reservation | null {
+  const id = typeof raw?.id === 'string' ? raw.id : ''
+  const customerId = typeof raw?.customerId === 'string' ? raw.customerId : ''
+  const storeId = typeof raw?.storeId === 'string' ? raw.storeId : ''
+  const startTime = toOptionalDate(raw?.startTime)
+  const endTime = toOptionalDate(raw?.endTime)
+  const status = toReservationStatus(raw?.status)
+  if (!id || !customerId || !storeId || !startTime || !endTime || !status) {
+    return null
+  }
+
+  const castId = typeof raw?.castId === 'string' ? raw.castId : ''
+  const courseId = typeof raw?.courseId === 'string' ? raw.courseId : ''
+  const createdAt = toDate(raw?.createdAt, startTime)
+  const updatedAt = toDate(raw?.updatedAt, createdAt)
+
+  return {
+    id,
+    customerId,
+    staffId: castId,
+    castId: castId || undefined,
+    serviceId: courseId,
+    courseId: courseId || undefined,
+    startTime,
+    endTime,
+    status,
+    price: typeof raw?.price === 'number' ? raw.price : 0,
+    storeId,
+    notes: typeof raw?.notes === 'string' ? raw.notes : undefined,
+    storeMemo: typeof raw?.storeMemo === 'string' ? raw.storeMemo : undefined,
+    staffName: typeof raw?.cast?.name === 'string' ? raw.cast.name : undefined,
+    serviceName: typeof raw?.course?.name === 'string' ? raw.course.name : undefined,
+    designationType:
+      typeof raw?.designationType === 'string' ? raw.designationType : raw?.designationType,
+    designationFee: typeof raw?.designationFee === 'number' ? raw.designationFee : undefined,
+    transportationFee:
+      typeof raw?.transportationFee === 'number' ? raw.transportationFee : undefined,
+    additionalFee: typeof raw?.additionalFee === 'number' ? raw.additionalFee : undefined,
+    discountAmount: typeof raw?.discountAmount === 'number' ? raw.discountAmount : undefined,
+    welfareExpense: typeof raw?.welfareExpense === 'number' ? raw.welfareExpense : undefined,
+    storeRevenue: typeof raw?.storeRevenue === 'number' ? raw.storeRevenue : undefined,
+    staffRevenue: typeof raw?.staffRevenue === 'number' ? raw.staffRevenue : undefined,
+    paymentMethod: typeof raw?.paymentMethod === 'string' ? raw.paymentMethod : undefined,
+    marketingChannel: typeof raw?.marketingChannel === 'string' ? raw.marketingChannel : undefined,
+    areaId: typeof raw?.areaId === 'string' ? raw.areaId : null,
+    areaName: typeof raw?.area?.name === 'string' ? raw.area.name : undefined,
+    areaPrefecture: typeof raw?.area?.prefecture === 'string' ? raw.area.prefecture : undefined,
+    areaCity: typeof raw?.area?.city === 'string' ? raw.area.city : undefined,
+    stationId: typeof raw?.stationId === 'string' ? raw.stationId : null,
+    stationName: typeof raw?.station?.name === 'string' ? raw.station.name : undefined,
+    hotelId: typeof raw?.hotelId === 'string' ? raw.hotelId : null,
+    hotelName: typeof raw?.hotelName === 'string' ? raw.hotelName : null,
+    hotelExpense: typeof raw?.hotelExpense === 'number' ? raw.hotelExpense : undefined,
+    roomNumber: typeof raw?.roomNumber === 'string' ? raw.roomNumber : null,
+    locationMemo: typeof raw?.locationMemo === 'string' ? raw.locationMemo : undefined,
+    pointsUsed: typeof raw?.pointsUsed === 'number' ? raw.pointsUsed : undefined,
+    options: Array.isArray(raw?.options) ? raw.options : undefined,
+    createdAt,
+    updatedAt,
+  }
+}
+
+export function partitionCustomerReservationHistory(reservations: Reservation[]): {
+  activeReservations: Reservation[]
+  usageHistory: CustomerUsageRecord[]
+} {
+  const activeReservations: Reservation[] = []
+  const usageHistory: CustomerUsageRecord[] = []
+
+  for (const reservation of reservations) {
+    if (reservation.status !== 'completed' && reservation.status !== 'cancelled') {
+      activeReservations.push(reservation)
+      continue
+    }
+    usageHistory.push({
+      id: reservation.id,
+      date: reservation.startTime,
+      serviceName: reservation.serviceName ?? 'コース情報なし',
+      staffName: reservation.staffName ?? '担当キャスト未設定',
+      amount: reservation.price,
+      status: reservation.status,
+    })
+  }
+
+  return { activeReservations, usageHistory }
+}
+
+export function findCustomerReservationByUsageRecordId(
+  reservations: Reservation[],
+  usageRecordId: string
+): Reservation | null {
+  return reservations.find((reservation) => reservation.id === usageRecordId) ?? null
+}
+
 export function deserializeCustomer(raw: any): Customer {
   const createdAt = toDate(raw?.createdAt, new Date())
   const birthDate = toDate(raw?.birthDate, new Date())
@@ -65,8 +199,8 @@ export function deserializeCustomer(raw: any): Customer {
   const registrationDate =
     toOptionalDate(raw?.registrationDate) ??
     (raw?.registrationDate === null ? undefined : createdAt)
-  const lastLoginDate = toOptionalDate(raw?.lastLoginDate)
-  const lastVisitDate = toOptionalDate(raw?.lastVisitDate)
+  const lastLoginDate = toOptionalDate(raw?.lastLoginAt ?? raw?.lastLoginDate)
+  const lastVisitDate = toOptionalDate(raw?.lastVisitAt ?? raw?.lastVisitDate)
 
   const ngCasts: NgCastEntry[] = Array.isArray(raw?.ngCasts)
     ? raw.ngCasts.map((entry: any) => ({
@@ -83,6 +217,13 @@ export function deserializeCustomer(raw: any): Customer {
     raw?.emailNotificationEnabled === undefined ? true : Boolean(raw.emailNotificationEnabled)
   const phoneVerified = Boolean(raw?.phoneVerified)
   const phoneVerifiedAt = toOptionalDate(raw?.phoneVerifiedAt)
+  const reservations = Array.isArray(raw?.reservations)
+    ? raw.reservations
+        .map(deserializeReservation)
+        .filter(
+          (reservation: Reservation | null): reservation is Reservation => reservation !== null
+        )
+    : []
 
   const normalized: Customer = {
     id: raw?.id ?? '',
@@ -94,6 +235,8 @@ export function deserializeCustomer(raw: any): Customer {
     birthDate,
     age: typeof raw?.age === 'number' ? raw.age : calculateAge(birthDate),
     memberType: raw?.memberType === 'vip' ? 'vip' : 'regular',
+    accountStatus: toCustomerAccountStatus(raw?.accountStatus),
+    membershipStage: toCustomerMembershipStage(raw?.membershipStage),
     smsEnabled,
     emailNotificationEnabled,
     phoneVerified,
@@ -108,6 +251,7 @@ export function deserializeCustomer(raw: any): Customer {
     image: raw?.image ?? undefined,
     visitCount: raw?.visitCount ?? undefined,
     lastVisit: toOptionalDate(raw?.lastVisit),
+    reservations,
     createdAt,
     updatedAt,
   }

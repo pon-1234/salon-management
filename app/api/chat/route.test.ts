@@ -23,11 +23,19 @@ vi.mock('@/lib/db', () => ({
   db: {
     message: {
       findMany: vi.fn(),
+      findFirst: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
     },
     cast: {
-      findUnique: vi.fn(),
+      findFirst: vi.fn(),
+    },
+    customer: {
+      findFirst: vi.fn(),
+    },
+    store: {
+      count: vi.fn(),
+      findFirst: vi.fn(),
     },
   },
 }))
@@ -60,11 +68,14 @@ describe('Chat API', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(castNotificationService.sendChatMessageNotification).mockResolvedValue(undefined)
+    vi.mocked(prisma.customer.findFirst).mockResolvedValue({ id: 'customer1' } as never)
+    vi.mocked(prisma.store.count).mockResolvedValue(1)
+    vi.mocked(prisma.store.findFirst).mockResolvedValue({ id: 'store-a' } as never)
   })
 
   describe('GET /api/chat', () => {
     it('should fetch messages for a specific customer from database', async () => {
-      const mockSession = { user: { role: 'admin' } }
+      const mockSession = { user: { role: 'admin', adminRole: 'super_admin' } }
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
       const mockMessages = [
@@ -86,7 +97,9 @@ describe('Chat API', () => {
 
       vi.mocked(prisma.message.findMany).mockResolvedValue(mockMessages)
 
-      const request = new NextRequest('http://localhost/api/chat?customerId=customer1')
+      const request = new NextRequest(
+        'http://localhost/api/chat?customerId=customer1&storeId=store-a'
+      )
       const response = await GET(request)
       const data = await response.json()
 
@@ -98,10 +111,11 @@ describe('Chat API', () => {
     })
 
     it('should notify cast via LINE when sending a message to a cast', async () => {
-      const mockSession = { user: { role: 'admin' } }
+      const mockSession = { user: { role: 'admin', adminRole: 'super_admin' } }
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
       const newMessage = {
+        storeId: 'store-a',
         castId: 'cast-123',
         sender: 'staff' as const,
         content: '本日の出勤確認をお願いします。',
@@ -120,7 +134,7 @@ describe('Chat API', () => {
         updatedAt: new Date('2024-01-01T13:00:00.000Z'),
       }
 
-      vi.mocked(prisma.cast.findUnique).mockResolvedValue({
+      vi.mocked(prisma.cast.findFirst).mockResolvedValue({
         id: 'cast-123',
         name: '高橋 えみり',
         lineUserId: 'U123456789',
@@ -135,8 +149,8 @@ describe('Chat API', () => {
       const response = await POST(request)
       expect(response.status).toBe(201)
 
-      expect(prisma.cast.findUnique).toHaveBeenCalledWith({
-        where: { id: 'cast-123' },
+      expect(prisma.cast.findFirst).toHaveBeenCalledWith({
+        where: { id: 'cast-123', storeId: 'store-a' },
         select: {
           id: true,
           name: true,
@@ -159,56 +173,15 @@ describe('Chat API', () => {
       })
     })
 
-    it('should fetch all messages grouped by customer when no customerId provided', async () => {
-      const mockSession = { user: { role: 'admin' } }
+    it('should reject a bulk message read when no participant is provided', async () => {
+      const mockSession = { user: { role: 'admin', adminRole: 'super_admin' } }
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
-      const mockMessages = [
-        {
-          id: '1',
-          castId: null,
-          customerId: 'customer1',
-          sender: 'customer',
-          content: 'Hello',
-          timestamp: new Date('2024-01-01T10:00:00.000Z'),
-          readStatus: '既読',
-          isReservationInfo: false,
-          reservationInfo: null,
-          attachments: [],
-          createdAt: new Date('2024-01-01T10:00:00.000Z'),
-          updatedAt: new Date('2024-01-01T10:00:00.000Z'),
-        },
-        {
-          id: '2',
-          castId: null,
-          customerId: 'customer2',
-          sender: 'customer',
-          content: 'Hi',
-          timestamp: new Date('2024-01-01T11:00:00.000Z'),
-          readStatus: '未読',
-          isReservationInfo: false,
-          reservationInfo: null,
-          attachments: [],
-          createdAt: new Date('2024-01-01T11:00:00.000Z'),
-          updatedAt: new Date('2024-01-01T11:00:00.000Z'),
-        },
-      ]
-
-      vi.mocked(prisma.message.findMany).mockResolvedValue(mockMessages)
-
-      const request = new NextRequest('http://localhost/api/chat')
+      const request = new NextRequest('http://localhost/api/chat?storeId=store-a')
       const response = await GET(request)
-      const data = await response.json()
 
-      expect(prisma.message.findMany).toHaveBeenCalledWith({
-        orderBy: { timestamp: 'asc' },
-      })
-      expect(data).toEqual({
-        data: {
-          customer1: [toJSON(mockMessages[0])],
-          customer2: [toJSON(mockMessages[1])],
-        },
-      })
+      expect(response.status).toBe(400)
+      expect(prisma.message.findMany).not.toHaveBeenCalled()
     })
 
     it('should return 401 if not authenticated as admin', async () => {
@@ -224,10 +197,11 @@ describe('Chat API', () => {
 
   describe('POST /api/chat', () => {
     it('should create a new message in database', async () => {
-      const mockSession = { user: { role: 'admin' } }
+      const mockSession = { user: { role: 'admin', adminRole: 'super_admin' } }
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
       const newMessage = {
+        storeId: 'store-a',
         customerId: 'customer1',
         sender: 'staff' as const,
         content: 'How can I help you?',
@@ -280,15 +254,16 @@ describe('Chat API', () => {
         message: 'メッセージが送信されました',
       })
 
-      expect(prisma.cast.findUnique).not.toHaveBeenCalled()
+      expect(prisma.cast.findFirst).not.toHaveBeenCalled()
       expect(castNotificationService.sendChatMessageNotification).not.toHaveBeenCalled()
     })
 
     it('should create message with reservation info when provided', async () => {
-      const mockSession = { user: { role: 'admin' } }
+      const mockSession = { user: { role: 'admin', adminRole: 'super_admin' } }
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
       const newMessage = {
+        storeId: 'store-a',
         customerId: 'customer1',
         sender: 'staff' as const,
         content: 'Reservation confirmed',
@@ -331,7 +306,7 @@ describe('Chat API', () => {
     })
 
     it('should return 400 for invalid request body', async () => {
-      const mockSession = { user: { role: 'admin' } }
+      const mockSession = { user: { role: 'admin', adminRole: 'super_admin' } }
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
       const invalidMessage = {
@@ -354,7 +329,7 @@ describe('Chat API', () => {
 
   describe('PUT /api/chat', () => {
     it('should update message read status in database', async () => {
-      const mockSession = { user: { role: 'admin' } }
+      const mockSession = { user: { role: 'admin', adminRole: 'super_admin' } }
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
       const updatedMessage = {
@@ -372,11 +347,12 @@ describe('Chat API', () => {
         updatedAt: new Date('2024-01-01T12:00:00.000Z'),
       }
 
+      vi.mocked(prisma.message.findFirst).mockResolvedValue({ id: 'msg123' } as never)
       vi.mocked(prisma.message.update).mockResolvedValue(updatedMessage)
 
       const request = new NextRequest('http://localhost/api/chat', {
         method: 'PUT',
-        body: JSON.stringify({ id: 'msg123', readStatus: '既読' }),
+        body: JSON.stringify({ storeId: 'store-a', id: 'msg123', readStatus: '既読' }),
       })
 
       const response = await PUT(request)
@@ -393,7 +369,7 @@ describe('Chat API', () => {
     })
 
     it('should return 404 if message not found', async () => {
-      const mockSession = { user: { role: 'admin' } }
+      const mockSession = { user: { role: 'admin', adminRole: 'super_admin' } }
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
       vi.mocked(prisma.message.update).mockRejectedValue(
@@ -402,10 +378,15 @@ describe('Chat API', () => {
           clientVersion: '5.0.0',
         })
       )
+      vi.mocked(prisma.message.findFirst).mockResolvedValue({ id: 'nonexistent' } as never)
 
       const request = new NextRequest('http://localhost/api/chat', {
         method: 'PUT',
-        body: JSON.stringify({ id: 'nonexistent', readStatus: '既読' }),
+        body: JSON.stringify({
+          storeId: 'store-a',
+          id: 'nonexistent',
+          readStatus: '既読',
+        }),
       })
 
       const response = await PUT(request)

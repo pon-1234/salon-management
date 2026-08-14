@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Administrative customer registration and reservation return flow
+ * @related_to   POST /api/admin/customers; CustomerSelectionDialog
+ * @known_issues Customers are global because the current schema has no customer-store ownership
+ */
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -8,13 +13,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   Form,
   FormControl,
@@ -41,7 +39,6 @@ const phoneSchema = z
   }, '電話番号は10〜11桁の数字で入力してください')
 
 const formSchema = z.object({
-  store: z.string().min(1, '登録店舗を選択してください'),
   name: z.string().min(1, '名前は必須です'),
   phone: phoneSchema,
   email: z.string().email('正しいメールアドレスを入力してください').optional().or(z.literal('')),
@@ -56,7 +53,6 @@ export function NewCustomerContent() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      store: '',
       name: '',
       phone: '',
       email: '',
@@ -76,6 +72,7 @@ export function NewCustomerContent() {
       const response = await fetch('/api/admin/customers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           name: data.name,
           phone: normalizedPhone,
@@ -88,7 +85,17 @@ export function NewCustomerContent() {
         throw new Error(payload.error ?? '顧客の登録に失敗しました')
       }
 
-      router.push(`/admin/customers/${payload.customer.id}`)
+      const customerId = payload?.customer?.id
+      if (typeof customerId !== 'string' || customerId.length === 0) {
+        throw new Error('顧客登録の応答を確認できませんでした')
+      }
+
+      const encodedCustomerId = encodeURIComponent(customerId)
+      if (searchParams.get('returnTo') === 'reservation') {
+        router.push(`/admin/reservation?customerId=${encodedCustomerId}`)
+      } else {
+        router.push(`/admin/customers/${encodedCustomerId}`)
+      }
     } catch (error) {
       console.error('Failed to create customer:', error)
       form.setError('root', {
@@ -114,32 +121,6 @@ export function NewCustomerContent() {
               <CardDescription>必須項目のみ入力してください</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <FormField
-                control={form.control}
-                name="store"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium">
-                      登録店舗 <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="店舗を選択してください" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="ikebukuro">金の玉クラブ(池袋)</SelectItem>
-                        <SelectItem value="shinjuku">金の玉クラブ(新宿)</SelectItem>
-                        <SelectItem value="shibuya">金の玉クラブ(渋谷)</SelectItem>
-                        <SelectItem value="ginza">金の玉クラブ(銀座)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               <FormField
                 control={form.control}
                 name="name"
@@ -211,7 +192,11 @@ export function NewCustomerContent() {
           </Card>
 
           {form.formState.errors.root && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <div
+              role="alert"
+              aria-label="顧客登録エラー"
+              className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+            >
               {form.formState.errors.root.message}
             </div>
           )}
@@ -220,8 +205,12 @@ export function NewCustomerContent() {
             <Button type="button" variant="outline" onClick={() => router.back()}>
               キャンセル
             </Button>
-            <Button type="submit" className="bg-emerald-600 px-8 text-white hover:bg-emerald-700">
-              登録
+            <Button
+              type="submit"
+              disabled={form.formState.isSubmitting}
+              className="bg-emerald-600 px-8 text-white hover:bg-emerald-700"
+            >
+              {form.formState.isSubmitting ? '登録中…' : '登録'}
             </Button>
           </div>
         </form>

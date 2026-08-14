@@ -24,8 +24,6 @@ interface ReservationListProps {
   limit?: number
   showViewMore?: boolean
   onOpenReservation?: (reservation: ReservationData) => void
-  onMakeModifiable?: (reservationId: string) => Promise<void> | void
-  updatingReservationId?: string | null
 }
 
 export function ReservationList({
@@ -33,23 +31,8 @@ export function ReservationList({
   limit,
   showViewMore = false,
   onOpenReservation,
-  onMakeModifiable,
-  updatingReservationId,
 }: ReservationListProps) {
   const displayReservations = limit ? reservations.slice(0, limit) : reservations
-
-  const getRankColor = (rank: string) => {
-    switch (rank) {
-      case 'ゴールド':
-        return 'bg-gray-600 text-white'
-      case 'シルバー':
-        return 'bg-gray-400 text-white'
-      case 'ブロンズ':
-        return 'bg-orange-400 text-white'
-      default:
-        return 'bg-gray-100'
-    }
-  }
 
   const statusMeta = useMemo(
     () =>
@@ -164,20 +147,6 @@ export function ReservationList({
                 <TableCell>
                   <div className="flex flex-wrap items-center gap-2">
                     {renderStatusBadge(reservation.status, reservation.bookingStatus)}
-                    {reservation.status === 'confirmed' && onMakeModifiable && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-6 whitespace-nowrap px-2 text-xs"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          void onMakeModifiable(reservation.id)
-                        }}
-                        disabled={Boolean(updatingReservationId)}
-                      >
-                        {updatingReservationId === reservation.id ? '変更中…' : '修正可能にする'}
-                      </Button>
-                    )}
                   </div>
                 </TableCell>
               </TableRow>

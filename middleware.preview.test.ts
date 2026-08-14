@@ -25,7 +25,7 @@ vi.mock('next-auth/jwt', () => ({
 }))
 
 import { getToken } from 'next-auth/jwt'
-import { middleware } from './middleware'
+import { config, middleware } from './middleware'
 
 const ACCESS_TOKEN = 'preview-access-gate-token-at-least-32-characters'
 
@@ -103,6 +103,12 @@ describe('preview ingress gate', () => {
     expect(healthResponse.headers.get('x-middleware-next')).toBe('1')
     expect(nestedResponse.status).toBe(404)
     expect(getToken).not.toHaveBeenCalled()
+  })
+
+  it('keeps local image delivery outside middleware so the headerless Next optimizer can read it', () => {
+    expect(config.matcher).toEqual([
+      '/((?!_next/static|_next/image|salon-uploads/|favicon.ico|robots.txt|images/|videos/).*)',
+    ])
   })
 
   it('does not add the preview gate in live mode', async () => {
