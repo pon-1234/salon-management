@@ -5,7 +5,7 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 
-import { warmBrowserJourneyRoute } from '../e2e/global-setup'
+import { warmBrowserJourneyMutation, warmBrowserJourneyRoute } from '../e2e/global-setup'
 
 function response(ok: boolean, status: number) {
   return {
@@ -26,6 +26,15 @@ describe('Playwright browser-journey route warmup', () => {
     expect(get).toHaveBeenCalledTimes(2)
     expect(get).toHaveBeenNthCalledWith(1, '/ikebukuro/booking', { timeout: 120_000 })
     expect(get).toHaveBeenNthCalledWith(2, '/ikebukuro/booking', { timeout: 120_000 })
+  })
+
+  it('warms the age-verification mutation with a bounded POST request', async () => {
+    const post = vi.fn().mockResolvedValue(response(true, 204))
+
+    await warmBrowserJourneyMutation({ post }, '/api/age-verification')
+
+    expect(post).toHaveBeenCalledOnce()
+    expect(post).toHaveBeenCalledWith('/api/age-verification', { timeout: 120_000 })
   })
 
   it('fails immediately on a non-success response without retrying', async () => {

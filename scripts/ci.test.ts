@@ -31,6 +31,8 @@ describe('CI production build environment', () => {
     expect(productionBuildIndex).toBeGreaterThan(browserJourneyIndex)
     expect(playwrightConfig).toContain('pnpm exec next dev')
     expect(playwrightConfig).toContain("globalSetup: './e2e/global-setup.ts'")
+    expect(playwrightConfig).toContain('timeout: 60_000')
     expect(globalSetup).toContain('/ikebukuro/age-verification')
+    expect(globalSetup).toContain("'/api/age-verification'")
   })
 })

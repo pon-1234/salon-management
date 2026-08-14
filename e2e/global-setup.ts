@@ -15,24 +15,32 @@ const E2E_ROUTES = [
 const ROUTE_WARMUP_TIMEOUT_MS = 120_000
 const ROUTE_WARMUP_TRANSPORT_ATTEMPTS = 3
 
-interface BrowserJourneyRequestContext {
-  get: (
-    path: string,
-    options: { timeout: number }
-  ) => Promise<{ ok: () => boolean; status: () => number }>
+interface BrowserJourneyResponse {
+  ok: () => boolean
+  status: () => number
 }
 
-/**
- * Warms one cold route with a CI-sized timeout and bounded retries for transport failures only.
- */
-export async function warmBrowserJourneyRoute(
-  context: BrowserJourneyRequestContext,
+interface BrowserJourneyRequestContext {
+  get: (path: string, options: { timeout: number }) => Promise<BrowserJourneyResponse>
+}
+
+interface BrowserJourneyMutationContext {
+  post: (path: string, options: { timeout: number }) => Promise<BrowserJourneyResponse>
+}
+
+type BrowserJourneyRequest = (
+  path: string,
+  options: { timeout: number }
+) => Promise<BrowserJourneyResponse>
+
+async function warmBrowserJourneyRequest(
+  request: BrowserJourneyRequest,
   path: string
 ): Promise<void> {
   for (let attempt = 1; attempt <= ROUTE_WARMUP_TRANSPORT_ATTEMPTS; attempt += 1) {
-    let response: Awaited<ReturnType<BrowserJourneyRequestContext['get']>>
+    let response: BrowserJourneyResponse
     try {
-      response = await context.get(path, { timeout: ROUTE_WARMUP_TIMEOUT_MS })
+      response = await request(path, { timeout: ROUTE_WARMUP_TIMEOUT_MS })
     } catch {
       if (attempt === ROUTE_WARMUP_TRANSPORT_ATTEMPTS) {
         throw new Error(
@@ -47,6 +55,29 @@ export async function warmBrowserJourneyRoute(
     }
     return
   }
+}
+
+/**
+ * Warms one cold route with a CI-sized timeout and bounded retries for transport failures only.
+ */
+export async function warmBrowserJourneyRoute(
+  context: BrowserJourneyRequestContext,
+  path: string
+): Promise<void> {
+  await warmBrowserJourneyRequest((requestPath, options) => context.get(requestPath, options), path)
+}
+
+/**
+ * Warms one state-changing route needed by the browser journey without weakening response checks.
+ */
+export async function warmBrowserJourneyMutation(
+  context: BrowserJourneyMutationContext,
+  path: string
+): Promise<void> {
+  await warmBrowserJourneyRequest(
+    (requestPath, options) => context.post(requestPath, options),
+    path
+  )
 }
 
 export default async function warmBrowserJourneyRoutes(config: FullConfig): Promise<void> {
@@ -66,6 +97,7 @@ export default async function warmBrowserJourneyRoutes(config: FullConfig): Prom
     for (const path of E2E_ROUTES) {
       await warmBrowserJourneyRoute(context, path)
     }
+    await warmBrowserJourneyMutation(context, '/api/age-verification')
   } finally {
     await context.dispose()
   }

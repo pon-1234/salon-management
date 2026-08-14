@@ -1,3 +1,8 @@
+/**
+ * @design_doc   docs/IKEBUKURO_FIELD_UAT_MANUAL.md
+ * @related_to   StoreContext selects the active administrative store; chat APIs enforce that scope
+ * @known_issues None
+ */
 'use client'
 
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
@@ -164,7 +169,11 @@ function deriveReservationsNotifications(
     })
 }
 
-function deriveChatNotifications(entries: CastChatEntry[]): ChatNotification[] {
+function deriveChatNotifications(
+  entries: CastChatEntry[],
+  storeId: string,
+  storeName: string
+): ChatNotification[] {
   return entries
     .filter((entry) => entry.hasUnread && entry.unreadCount > 0)
     .map((entry) => {
@@ -175,8 +184,8 @@ function deriveChatNotifications(entries: CastChatEntry[]): ChatNotification[] {
 
       return {
         id: buildNotificationId(['chat', entry.id]),
-        storeId: 'chat',
-        storeName: 'スタッフチャット',
+        storeId,
+        storeName,
         type: 'chat' as const,
         message,
         details: {
@@ -189,6 +198,12 @@ function deriveChatNotifications(entries: CastChatEntry[]): ChatNotification[] {
         createdAt: new Date().toISOString(),
       } satisfies ChatNotification
     })
+}
+
+function isAbortError(error: unknown): boolean {
+  return (
+    typeof error === 'object' && error !== null && 'name' in error && error.name === 'AbortError'
+  )
 }
 
 function mergeNotifications(
@@ -246,6 +261,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     readIdsRef.current = readIds
   }, [readIds])
+
+  useEffect(() => {
+    const storeId = currentStore?.id
+    setNotifications((prev) => {
+      const scoped = prev.filter((notification) => notification.storeId === storeId)
+      return scoped.length === prev.length ? prev : scoped
+    })
+  }, [currentStore?.id])
 
   useEffect(() => {
     if (readIds.size === 0) {
@@ -339,12 +362,21 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     let isMounted = true
+    const controller = new AbortController()
+    const storeId = currentStore?.id
+    const storeName = currentStore?.displayName
 
     const hydrateFromChat = async () => {
+      if (!storeId || !storeName) {
+        return
+      }
+
       try {
-        const response = await fetch('/api/chat/casts', {
+        const params = new URLSearchParams({ storeId })
+        const response = await fetch(`/api/chat/casts?${params.toString()}`, {
           credentials: 'include',
           cache: 'no-store',
+          signal: controller.signal,
         })
         if (!response.ok) {
           throw new Error(`Failed to fetch chat notifications: ${response.status}`)
@@ -353,12 +385,19 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         const data = Array.isArray(payload?.data) ? payload.data : payload
         if (!Array.isArray(data) || !isMounted) return
 
-        const chatNotifications = deriveChatNotifications(data as CastChatEntry[])
+        const chatNotifications = deriveChatNotifications(
+          data as CastChatEntry[],
+          storeId,
+          storeName
+        )
         setNotifications((prev) => {
           const others = prev.filter((notification) => notification.type !== 'chat')
           return mergeNotifications(others, chatNotifications, readIdsRef.current)
         })
       } catch (error) {
+        if (!isMounted || isAbortError(error)) {
+          return
+        }
         console.warn('[NotificationProvider] failed to load chat notifications', error)
       }
     }
@@ -385,11 +424,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     return () => {
       isMounted = false
+      controller.abort()
       if (typeof window !== 'undefined') {
         window.removeEventListener('chat:messagesRead', handleMessagesRead as EventListener)
       }
     }
-  }, [realtimeRevision])
+  }, [currentStore?.id, currentStore?.displayName, realtimeRevision])
 
   const addNotification = useCallback((notification: AdminNotification) => {
     setNotifications((prev) => mergeNotifications(prev, [notification], readIdsRef.current))

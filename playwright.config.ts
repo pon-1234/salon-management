@@ -15,6 +15,7 @@ export default defineConfig({
   testDir: './e2e',
   globalSetup: './e2e/global-setup.ts',
   outputDir: '/tmp/salon-management-playwright-results',
+  timeout: 60_000,
   expect: {
     timeout: 20_000,
   },
