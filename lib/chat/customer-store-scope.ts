@@ -1,15 +1,9 @@
 /**
  * @design_doc   Customer chat visibility while customer identities remain globally unique
  * @related_to   Administrative customer chat list and store-scoped broadcast
- * @known_issues A customer visiting multiple stores still has one shared chat thread
+ * @known_issues Multi-store customers remain unavailable until messages carry a store identity
  */
 import type { Prisma } from '@prisma/client'
-
-interface CustomerScopeDatabase {
-  store: {
-    count(args: { where: { isActive: boolean } }): Promise<number>
-  }
-}
 
 interface ActiveStoreDatabase {
   store: {
@@ -32,22 +26,18 @@ export async function isActiveChatStore(
 }
 
 /**
- * The migrated Ikebukuro deployment has one store and no persisted customer-store key, so every
- * migrated customer belongs to that sole store. Once multiple stores are active, fail closed and
- * derive membership only from a reservation in the selected store.
+ * Customer chat visibility always follows the persisted customer-store assignment. A customer
+ * must have an assignment to the selected store and no assignment to any other store because
+ * messages do not yet carry their own store identity.
  */
-export async function resolveCustomerChatScope(
-  database: CustomerScopeDatabase,
+export function resolveCustomerChatScope(
+  _database: unknown,
   storeId: string
 ): Promise<Prisma.CustomerWhereInput> {
-  const activeStoreCount = await database.store.count({ where: { isActive: true } })
-  if (activeStoreCount === 1) {
-    return {}
-  }
-
-  return {
-    reservations: {
+  return Promise.resolve({
+    storeAssignments: {
       some: { storeId },
+      every: { storeId },
     },
-  }
+  })
 }

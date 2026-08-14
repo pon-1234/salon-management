@@ -1,7 +1,7 @@
 /**
  * @design_doc   Store-scoped customer registration with mandatory email ownership verification
  * @related_to   verify-email/send, verify-email/confirm, and customer credentials login
- * @known_issues Customer-to-store membership awaits an approved multi-store ownership model
+ * @known_issues None
  */
 import { randomBytes } from 'crypto'
 import bcrypt from 'bcryptjs'
@@ -11,6 +11,10 @@ import { normalizeCustomerEmail, parseSafeStoreSlug } from '@/lib/auth/customer-
 import { isBcryptSafePassword } from '@/lib/auth/password-policy'
 import { hashBearerToken } from '@/lib/auth/recovery-token'
 import { env } from '@/lib/config/env'
+import {
+  getCustomerPhoneIdentityVariants,
+  normalizeWritableCustomerPhoneIdentity,
+} from '@/lib/customer/utils'
 import { db } from '@/lib/db'
 import { emailClient } from '@/lib/email/client'
 import { escapeHtmlText } from '@/lib/email/html'
@@ -26,17 +30,21 @@ const registerPayloadSchema = z
       .string()
       .min(8)
       .refine(isBcryptSafePassword, 'パスワードは改行を含めず72バイト以内で入力してください'),
-    birthDate: z.union([z.string().datetime(), z.string().min(1), z.null()]).optional(),
+    birthDate: z
+      .string()
+      .trim()
+      .refine((value) => {
+        const timestamp = Date.parse(value)
+        return Number.isFinite(timestamp) && timestamp <= Date.now()
+      })
+      .nullable()
+      .optional(),
     smsNotifications: z.boolean().optional(),
     storeId: z.string().trim().min(1).max(100),
   })
   .strict()
 
 const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000
-
-function sanitizePhone(phone: string): string {
-  return phone.replace(/\D/g, '')
-}
 
 function getErrorType(error: unknown): string {
   return error instanceof Error ? error.name : 'UnknownError'
@@ -105,7 +113,7 @@ export async function POST(request: Request) {
 
     const data = parsed.data
     const email = normalizeCustomerEmail(data.email)
-    const normalizedPhone = sanitizePhone(data.phone)
+    const normalizedPhone = normalizeWritableCustomerPhoneIdentity(data.phone)
 
     try {
       const rateLimitDecision = consumeCustomerEmailRateLimit('register', request.headers, email)
@@ -116,19 +124,16 @@ export async function POST(request: Request) {
       return rateLimitResponse('limiter-failure', 60)
     }
 
-    if (normalizedPhone.length < 10 || normalizedPhone.length > 11) {
-      return NextResponse.json(
-        { error: '電話番号は数字のみで10〜11桁で入力してください' },
-        { status: 400 }
-      )
+    if (!normalizedPhone) {
+      return NextResponse.json({ error: '日本の電話番号を確認してください' }, { status: 400 })
     }
 
     const store = await db.store.findFirst({
       where: { id: data.storeId, isActive: true },
-      select: { slug: true },
+      select: { id: true, slug: true },
     })
     const storeSlug = parseSafeStoreSlug(store?.slug)
-    if (!storeSlug) {
+    if (!store || !storeSlug) {
       return NextResponse.json({ error: '有効な店舗を選択してください' }, { status: 400 })
     }
 
@@ -143,7 +148,10 @@ export async function POST(request: Request) {
       )
     }
 
-    const existingPhone = await db.customer.findFirst({ where: { phone: normalizedPhone } })
+    const existingPhone = await db.customer.findFirst({
+      where: { phone: { in: getCustomerPhoneIdentityVariants(normalizedPhone) } },
+      select: { id: true },
+    })
     if (existingPhone) {
       return NextResponse.json(
         { error: 'この電話番号は既に登録されています', code: 'PHONE_EXISTS' },
@@ -152,13 +160,7 @@ export async function POST(request: Request) {
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 12)
-    let birthDate = new Date('1970-01-01T00:00:00Z')
-    if (typeof data.birthDate === 'string' && data.birthDate.length > 0) {
-      const parsedBirthDate = new Date(data.birthDate)
-      if (!Number.isNaN(parsedBirthDate.getTime())) {
-        birthDate = parsedBirthDate
-      }
-    }
+    const birthDate = typeof data.birthDate === 'string' ? new Date(data.birthDate) : null
 
     const verificationToken = randomBytes(32).toString('hex')
     const verificationTokenHash = hashBearerToken(verificationToken)
@@ -166,7 +168,7 @@ export async function POST(request: Request) {
     const customer = await db.customer.create({
       data: {
         name: data.nickname,
-        nameKana: data.nickname,
+        nameKana: null,
         email,
         phone: normalizedPhone,
         password: hashedPassword,
@@ -177,6 +179,9 @@ export async function POST(request: Request) {
         emailVerified: false,
         emailVerificationToken: verificationTokenHash,
         emailVerificationExpiry,
+        storeAssignments: {
+          create: { storeId: store.id },
+        },
       },
       select: {
         id: true,

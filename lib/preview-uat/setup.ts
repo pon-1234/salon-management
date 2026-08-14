@@ -10,6 +10,7 @@ export const PREVIEW_UAT_ACKNOWLEDGEMENT = 'CREATE_SYNTHETIC_UAT_DATA_IN_EMPTY_I
 
 export const PREVIEW_UAT_EMPTY_TABLES = [
   'Customer',
+  'CustomerStoreAssignment',
   'Store',
   'Cast',
   'NgCastEntry',
@@ -69,6 +70,7 @@ export interface PreviewUatFixture {
   admins: Prisma.AdminCreateManyInput[]
   adminStoreAssignments: Prisma.AdminStoreAssignmentCreateManyInput[]
   customers: Prisma.CustomerCreateManyInput[]
+  customerStoreAssignments: Prisma.CustomerStoreAssignmentCreateManyInput[]
   courses: Prisma.CoursePriceCreateManyInput[]
   options: Prisma.OptionPriceCreateManyInput[]
   areas: Prisma.AreaInfoCreateManyInput[]
@@ -381,6 +383,7 @@ export function buildPreviewUatFixture({
         updatedAt: createdAt,
       },
     ],
+    customerStoreAssignments: [{ customerId: 'uat-customer', storeId: IKEBUKURO_STORE_ID }],
     courses: [
       course('uat-course-ikebukuro', IKEBUKURO_STORE_ID, '[UAT] 池袋60分', 60, 10_000),
       course('uat-course-osaka', OSAKA_STORE_ID, '[UAT] 大阪90分', 90, 12_000),

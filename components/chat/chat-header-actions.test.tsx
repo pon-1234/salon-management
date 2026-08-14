@@ -13,7 +13,7 @@ import type { CastChatEntry, Customer } from '@/lib/types/chat'
 const customer = {
   id: 'customer-1',
   name: '山田 太郎',
-  phone: '090-1234-5678',
+  phone: '+819012345678',
   lastMessage: '',
   lastMessageTime: '',
   hasUnread: false,
@@ -39,7 +39,7 @@ describe('chat participant header actions', () => {
 
     expect(screen.getByRole('link', { name: '山田 太郎へ電話' })).toHaveAttribute(
       'href',
-      'tel:09012345678'
+      'tel:+819012345678'
     )
   })
 

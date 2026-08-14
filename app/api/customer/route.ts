@@ -1,7 +1,7 @@
 /**
  * @design_doc   Customer API endpoints for CRUD operations
  * @related_to   CustomerRepository, Customer type, Prisma Customer model
- * @known_issues Customers remain global until the cross-store ownership policy is approved
+ * @known_issues Generic full-profile creation remains separate from store-specific intake
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
@@ -11,15 +11,193 @@ import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import logger from '@/lib/logger'
 import { customers as mockCustomers } from '@/lib/customer/data'
-import { isValidPhoneInput, normalizePhoneQuery } from '@/lib/customer/utils'
+import {
+  getCustomerPhoneIdentityVariants,
+  getCustomerPhoneSearchFragments,
+  isSameCustomerPhone,
+  isValidPhoneInput,
+  normalizeWritableCustomerPhoneIdentity,
+} from '@/lib/customer/utils'
 import { env } from '@/lib/config/env'
 import { hasPermission } from '@/lib/auth/permissions'
+import { canAdminAccessStore } from '@/lib/auth/store-access'
 import { isBcryptSafePassword } from '@/lib/auth/password-policy'
 import { sanitizeResponseData } from '@/lib/http/sanitize-response'
-import { sanitizeCustomerSelfResponse } from '@/lib/http/customer-dto'
+import {
+  sanitizeCustomerAdminDetailResponse,
+  sanitizeCustomerSelfResponse,
+} from '@/lib/http/customer-dto'
+import { ensureStoreId, resolveStoreId } from '@/lib/store/server'
 
 const SALT_ROUNDS = 10
 const INVALID_REQUEST = { error: 'Invalid request' }
+
+const CUSTOMER_DETAIL_PUBLIC_CAST_SELECT = {
+  id: true,
+  name: true,
+  age: true,
+  height: true,
+  bust: true,
+  waist: true,
+  hip: true,
+  type: true,
+  image: true,
+  images: true,
+  description: true,
+  publicProfile: true,
+  netReservation: true,
+  requestAttendanceEnabled: true,
+  specialDesignationFee: true,
+  regularDesignationFee: true,
+  panelDesignationRank: true,
+  regularDesignationRank: true,
+  workStatus: true,
+  availableOptions: true,
+  storeId: true,
+} as const
+
+const CUSTOMER_DETAIL_RESERVATION_BASE_SELECT = {
+  id: true,
+  customerId: true,
+  castId: true,
+  courseId: true,
+  startTime: true,
+  endTime: true,
+  status: true,
+  price: true,
+  storeId: true,
+  designationType: true,
+  designationFee: true,
+  transportationFee: true,
+  additionalFee: true,
+  discountAmount: true,
+  paymentMethod: true,
+  areaId: true,
+  stationId: true,
+  hotelName: true,
+  roomNumber: true,
+  locationMemo: true,
+  notes: true,
+  pointsUsed: true,
+  cancellationSource: true,
+  modifiableUntil: true,
+  createdAt: true,
+  updatedAt: true,
+} as const
+
+const CUSTOMER_DETAIL_RESERVATION_OPERATION_SELECT = {
+  settlementStatus: true,
+  welfareExpense: true,
+  paymentReference: true,
+  marketingChannel: true,
+  storeRevenue: true,
+  staffRevenue: true,
+  hotelId: true,
+  hotelExpense: true,
+  entryMemo: true,
+  entryReceivedAt: true,
+  entryReceivedBy: true,
+  entryNotifiedAt: true,
+  entryConfirmedAt: true,
+  entryReminderSentAt: true,
+  storeMemo: true,
+  castCheckedInAt: true,
+  castCheckedOutAt: true,
+  cancellationReason: true,
+} as const
+
+function buildCustomerDetailSelect(
+  includeReservations: boolean,
+  includeReservationOperations: boolean,
+  storeId?: string
+) {
+  return {
+    id: true,
+    name: true,
+    nameKana: true,
+    phone: true,
+    email: true,
+    birthDate: true,
+    memberType: true,
+    accountStatus: true,
+    membershipStage: true,
+    lastLoginAt: true,
+    lastVisitAt: true,
+    points: true,
+    smsEnabled: true,
+    emailNotificationEnabled: true,
+    emailVerified: true,
+    phoneVerified: true,
+    phoneVerifiedAt: true,
+    createdAt: true,
+    updatedAt: true,
+    ngCasts: {
+      ...(storeId ? { where: { cast: { storeId } } } : {}),
+      select: {
+        castId: true,
+        assignedAt: true,
+        notes: true,
+        assignedBy: true,
+        cast: { select: CUSTOMER_DETAIL_PUBLIC_CAST_SELECT },
+      },
+    },
+    ...(includeReservations
+      ? {
+          reservations: {
+            ...(storeId ? { where: { storeId } } : {}),
+            select: {
+              ...CUSTOMER_DETAIL_RESERVATION_BASE_SELECT,
+              ...(includeReservationOperations ? CUSTOMER_DETAIL_RESERVATION_OPERATION_SELECT : {}),
+              cast: { select: CUSTOMER_DETAIL_PUBLIC_CAST_SELECT },
+              course: {
+                select: {
+                  id: true,
+                  name: true,
+                  duration: true,
+                  price: true,
+                  description: true,
+                },
+              },
+              options: {
+                select: {
+                  id: true,
+                  optionId: true,
+                  optionName: true,
+                  optionPrice: true,
+                  option: {
+                    select: {
+                      id: true,
+                      name: true,
+                      description: true,
+                      price: true,
+                      duration: true,
+                      category: true,
+                      note: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        }
+      : {}),
+    reviews: {
+      ...(storeId ? { where: { cast: { storeId } } } : {}),
+      select: {
+        id: true,
+        castId: true,
+        reservationId: true,
+        rating: true,
+        comment: true,
+        status: true,
+        publishedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        cast: { select: CUSTOMER_DETAIL_PUBLIC_CAST_SELECT },
+      },
+    },
+  } as const
+}
 
 const customerIdSchema = z.string().trim().min(1).max(191)
 const nameSchema = z.string().trim().min(1).max(100)
@@ -33,8 +211,14 @@ const phoneSchema = z
   .string()
   .trim()
   .refine(isValidPhoneInput)
-  .transform(normalizePhoneQuery)
-  .refine((phone) => phone.length >= 10 && phone.length <= 11)
+  .transform((phone, context) => {
+    const canonical = normalizeWritableCustomerPhoneIdentity(phone)
+    if (!canonical) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: 'Invalid phone number' })
+      return z.NEVER
+    }
+    return canonical
+  })
 const passwordSchema = z.string().min(8).refine(isBcryptSafePassword)
 const birthDateSchema = z
   .string()
@@ -114,6 +298,18 @@ function sanitizeCustomerForRole(customer: any, role: string | undefined) {
   return role === 'customer' ? sanitizeCustomerSelfResponse(customer) : sanitizeCustomer(customer)
 }
 
+function sanitizeCustomerDetailForRole(
+  customer: any,
+  role: string | undefined,
+  includeAdminReservations: boolean
+) {
+  return role === 'customer'
+    ? sanitizeCustomerSelfResponse(customer)
+    : sanitizeCustomerAdminDetailResponse(customer, {
+        includeReservationOperations: includeAdminReservations,
+      })
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const id = searchParams.get('id')
@@ -132,6 +328,23 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
   }
 
+  let adminStoreId: string | undefined
+  if (isAdmin && session) {
+    try {
+      adminStoreId = await ensureStoreId(await resolveStoreId(request))
+    } catch (error) {
+      logger.warn(
+        { errorType: error instanceof Error ? error.name : 'UnknownError' },
+        'Invalid customer store scope'
+      )
+      return NextResponse.json({ error: '店舗を確認してください' }, { status: 400 })
+    }
+
+    if (!canAdminAccessStore(session.user, adminStoreId)) {
+      return NextResponse.json({ error: 'この店舗を操作する権限がありません' }, { status: 403 })
+    }
+  }
+
   try {
     if (id) {
       if (!session) {
@@ -143,38 +356,36 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
 
+      const includeAdminReservations =
+        isAdmin && hasPermission(session.user.permissions ?? [], 'reservation:read')
+      const includeSelfReservations = session.user.role === 'customer' && id === sessionCustomerId
+
+      if (isAdmin && adminStoreId) {
+        const assignment = await db.customerStoreAssignment.findUnique({
+          where: { customerId_storeId: { customerId: id, storeId: adminStoreId } },
+          select: { customerId: true },
+        })
+        if (!assignment) {
+          return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
+        }
+      }
+
       const customer = await db.customer.findUnique({
         where: { id },
-        include: {
-          ngCasts: {
-            include: {
-              cast: true,
-            },
-          },
-          reservations: {
-            include: {
-              cast: true,
-              course: true,
-              options: {
-                include: {
-                  option: true,
-                },
-              },
-            },
-          },
-          reviews: {
-            include: {
-              cast: true,
-            },
-          },
-        },
+        select: buildCustomerDetailSelect(
+          includeAdminReservations || includeSelfReservations,
+          includeAdminReservations,
+          adminStoreId
+        ),
       })
 
       if (!customer) {
         return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
       }
 
-      return NextResponse.json(sanitizeCustomerForRole(customer, session.user.role))
+      return NextResponse.json(
+        sanitizeCustomerDetailForRole(customer, session.user.role, includeAdminReservations)
+      )
     }
 
     if (phoneQuery) {
@@ -184,17 +395,19 @@ export async function GET(request: NextRequest) {
       if (!isAdmin) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
+      if (!adminStoreId) {
+        return NextResponse.json({ error: 'この店舗を操作する権限がありません' }, { status: 403 })
+      }
 
-      const normalizedPhone = phoneQuery.replace(/\D/g, '')
-      if (!normalizedPhone) {
-        return NextResponse.json([])
+      const exactPhoneIdentities = getCustomerPhoneIdentityVariants(phoneQuery)
+      if (exactPhoneIdentities.length === 0) {
+        return NextResponse.json({ error: 'Invalid phone number' }, { status: 400 })
       }
 
       const customers = await db.customer.findMany({
         where: {
-          phone: {
-            contains: normalizedPhone,
-          },
+          phone: { in: exactPhoneIdentities },
+          storeAssignments: { some: { storeId: adminStoreId } },
         },
         orderBy: {
           createdAt: 'desc',
@@ -230,28 +443,32 @@ export async function GET(request: NextRequest) {
     if (!isAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
+    if (!adminStoreId) {
+      return NextResponse.json({ error: 'この店舗を操作する権限がありません' }, { status: 403 })
+    }
 
     if (customerQuery.length > 100) {
       return NextResponse.json(INVALID_REQUEST, { status: 400 })
     }
 
-    const normalizedCustomerPhone = normalizePhoneQuery(customerQuery)
-    const phoneSearchQuery =
-      normalizedCustomerPhone.length >= 3 ? normalizedCustomerPhone : customerQuery
+    const phoneSearchFragments = getCustomerPhoneSearchFragments(customerQuery)
+    const phoneSearchQueries =
+      phoneSearchFragments.length > 0 ? phoneSearchFragments : [customerQuery]
     const customers = await db.customer.findMany({
-      ...(customerQuery
-        ? {
-            where: {
+      where: {
+        storeAssignments: { some: { storeId: adminStoreId } },
+        ...(customerQuery
+          ? {
               OR: [
                 { id: { contains: customerQuery, mode: 'insensitive' as const } },
                 { name: { contains: customerQuery, mode: 'insensitive' as const } },
                 { nameKana: { contains: customerQuery, mode: 'insensitive' as const } },
-                { phone: { contains: phoneSearchQuery } },
+                ...phoneSearchQueries.map((phone) => ({ phone: { contains: phone } })),
                 { email: { contains: customerQuery, mode: 'insensitive' as const } },
               ],
-            },
-          }
-        : {}),
+            }
+          : {}),
+      },
       orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
       take: take + 1,
       skip,
@@ -280,7 +497,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     logger.error({ err: error }, 'Error fetching customer data')
-    if (!env.featureFlags.useMockFallbacks) {
+    if (isAdmin || !env.featureFlags.useMockFallbacks) {
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 
@@ -297,7 +514,13 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
       }
 
-      return NextResponse.json(sanitizeCustomerForRole(fallback, session.user.role))
+      return NextResponse.json(
+        sanitizeCustomerDetailForRole(
+          fallback,
+          session.user.role,
+          isAdmin && hasPermission(session.user.permissions ?? [], 'reservation:read')
+        )
+      )
     }
 
     if (phoneQuery) {
@@ -307,12 +530,12 @@ export async function GET(request: NextRequest) {
       if (!isAdmin) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
-      const normalizedPhone = normalizePhoneQuery(phoneQuery)
-      if (!normalizedPhone) {
-        return NextResponse.json([])
+      const exactPhoneIdentities = getCustomerPhoneIdentityVariants(phoneQuery)
+      if (exactPhoneIdentities.length === 0) {
+        return NextResponse.json({ error: 'Invalid phone number' }, { status: 400 })
       }
       const matches = mockCustomers.filter((customer) =>
-        normalizePhoneQuery(customer.phone).includes(normalizedPhone)
+        isSameCustomerPhone(customer.phone, phoneQuery)
       )
       return NextResponse.json(matches.slice(0, take).map(sanitizeCustomer))
     }
@@ -341,6 +564,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
     }
 
+    let storeId: string
+    try {
+      storeId = await ensureStoreId(await resolveStoreId(request))
+    } catch (error) {
+      logger.warn(
+        { errorType: error instanceof Error ? error.name : 'UnknownError' },
+        'Invalid customer creation store scope'
+      )
+      return NextResponse.json({ error: '店舗を確認してください' }, { status: 400 })
+    }
+    if (!canAdminAccessStore(session.user, storeId)) {
+      return NextResponse.json({ error: 'この店舗を操作する権限がありません' }, { status: 403 })
+    }
+
     let body: unknown
     try {
       body = await request.json()
@@ -358,6 +595,13 @@ export async function POST(request: NextRequest) {
     }
 
     const { password, ...customerData } = parsed.data
+    const existingPhone = await db.customer.findFirst({
+      where: { phone: { in: getCustomerPhoneIdentityVariants(customerData.phone) } },
+      select: { id: true },
+    })
+    if (existingPhone) {
+      return NextResponse.json({ error: 'Email or phone already exists' }, { status: 409 })
+    }
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS)
 
     const newCustomer = await db.customer.create({
@@ -365,6 +609,9 @@ export async function POST(request: NextRequest) {
         ...customerData,
         password: hashedPassword,
         points: 0,
+        storeAssignments: {
+          create: { storeId },
+        },
       },
       include: {
         ngCasts: {
@@ -411,6 +658,23 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
     }
 
+    let adminStoreId: string | undefined
+    if (isAdmin) {
+      try {
+        adminStoreId = await ensureStoreId(await resolveStoreId(request))
+      } catch (error) {
+        logger.warn(
+          { errorType: error instanceof Error ? error.name : 'UnknownError' },
+          'Invalid customer update store scope'
+        )
+        return NextResponse.json({ error: '店舗を確認してください' }, { status: 400 })
+      }
+
+      if (!canAdminAccessStore(session.user, adminStoreId)) {
+        return NextResponse.json({ error: 'この店舗を操作する権限がありません' }, { status: 403 })
+      }
+    }
+
     let body: unknown
     try {
       body = await request.json()
@@ -440,15 +704,6 @@ export async function PUT(request: NextRequest) {
           emailVerificationExpiry: null,
         })
       }
-      if (Object.prototype.hasOwnProperty.call(updates, 'phone')) {
-        Object.assign(normalizedUpdates, {
-          phoneVerified: false,
-          phoneVerifiedAt: null,
-          phoneVerificationCode: null,
-          phoneVerificationExpiry: null,
-          phoneVerificationAttempts: 0,
-        })
-      }
     } else {
       const target = customerUpdateTargetSchema.safeParse(body)
       if (!target.success) {
@@ -468,30 +723,65 @@ export async function PUT(request: NextRequest) {
       normalizedUpdates = updates
     }
 
+    if (isAdmin && adminStoreId) {
+      const assignment = await db.customerStoreAssignment.findUnique({
+        where: { customerId_storeId: { customerId: id, storeId: adminStoreId } },
+        select: { customerId: true },
+      })
+      if (!assignment) {
+        return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
+      }
+    }
+
+    if (typeof normalizedUpdates.phone === 'string') {
+      const currentCustomer = await db.customer.findUnique({
+        where: { id },
+        select: { phone: true },
+      })
+      if (
+        !currentCustomer ||
+        !isSameCustomerPhone(currentCustomer.phone, normalizedUpdates.phone)
+      ) {
+        Object.assign(normalizedUpdates, {
+          phoneVerified: false,
+          phoneVerifiedAt: null,
+          phoneVerificationCode: null,
+          phoneVerificationExpiry: null,
+          phoneVerificationAttempts: 0,
+        })
+      }
+
+      const existingPhone = await db.customer.findFirst({
+        where: {
+          id: { not: id },
+          phone: { in: getCustomerPhoneIdentityVariants(normalizedUpdates.phone) },
+        },
+        select: { id: true },
+      })
+      if (existingPhone) {
+        return NextResponse.json({ error: 'Email or phone already exists' }, { status: 409 })
+      }
+    }
+
+    const includeAdminReservations =
+      isAdmin && hasPermission(session.user.permissions ?? [], 'reservation:read')
+    const includeSelfReservations = session.user.role === 'customer' && id === sessionCustomerId
     const updatedCustomer = await db.customer.update({
-      where: { id },
-      data: normalizedUpdates,
-      include: {
-        ngCasts: {
-          include: {
-            cast: true,
-          },
-        },
-        reservations: {
-          include: {
-            cast: true,
-            course: true,
-          },
-        },
-        reviews: {
-          include: {
-            cast: true,
-          },
-        },
+      where: {
+        id,
+        ...(adminStoreId ? { storeAssignments: { some: { storeId: adminStoreId } } } : {}),
       },
+      data: normalizedUpdates,
+      select: buildCustomerDetailSelect(
+        includeAdminReservations || includeSelfReservations,
+        includeAdminReservations,
+        adminStoreId
+      ),
     })
 
-    return NextResponse.json(sanitizeCustomerForRole(updatedCustomer, session.user.role))
+    return NextResponse.json(
+      sanitizeCustomerDetailForRole(updatedCustomer, session.user.role, includeAdminReservations)
+    )
   } catch (error: unknown) {
     const context = databaseErrorContext(error)
     logger.error(context, 'Error updating customer')

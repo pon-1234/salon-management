@@ -15,6 +15,20 @@ const mocks = vi.hoisted(() => ({
   getWeeklySchedule: vi.fn(),
   toast: vi.fn(),
   dialogSavePayload: { status: 'confirmed', notes: '更新後メモ' } as Record<string, unknown>,
+  currentStore: {
+    id: 'ikebukuro',
+    slug: 'ikebukuro',
+    name: '池袋店',
+    displayName: '池袋店',
+  },
+  permissions: [
+    'dashboard:view',
+    'analytics:read',
+    'reservation:create',
+    'reservation:update',
+    'customer:read',
+    'customer:create',
+  ],
 }))
 
 vi.mock('next-auth/react', () => ({
@@ -23,7 +37,7 @@ vi.mock('next-auth/react', () => ({
       user: {
         id: 'admin-1',
         role: 'admin',
-        permissions: ['dashboard:view', 'analytics:read', 'reservation:update'],
+        permissions: mocks.permissions,
       },
     },
     status: 'authenticated',
@@ -32,12 +46,7 @@ vi.mock('next-auth/react', () => ({
 
 vi.mock('@/contexts/store-context', () => ({
   useStore: () => ({
-    currentStore: {
-      id: 'ikebukuro',
-      slug: 'ikebukuro',
-      name: '池袋店',
-      displayName: '池袋店',
-    },
+    currentStore: mocks.currentStore,
   }),
 }))
 
@@ -166,6 +175,20 @@ describe('DashboardPage field operations', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.dialogSavePayload = { status: 'confirmed', notes: '更新後メモ' }
+    mocks.permissions = [
+      'dashboard:view',
+      'analytics:read',
+      'reservation:create',
+      'reservation:update',
+      'customer:read',
+      'customer:create',
+    ]
+    mocks.currentStore = {
+      id: 'ikebukuro',
+      slug: 'ikebukuro',
+      name: '池袋店',
+      displayName: '池袋店',
+    }
     mocks.getAllReservations.mockResolvedValue([])
     mocks.getWeeklySchedule.mockResolvedValue(weeklySchedule())
     vi.unstubAllGlobals()
@@ -308,7 +331,7 @@ describe('DashboardPage field operations', () => {
         {
           id: 'legacy-customer-member-100448',
           name: '電話検索顧客',
-          phone: '09012345678',
+          phone: '+819012345678',
         },
       ],
     })
@@ -327,8 +350,86 @@ describe('DashboardPage field operations', () => {
       'href',
       '/admin/customers/legacy-customer-member-100448'
     )
+    expect(screen.getByText('090-1234-5678')).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/customer?phone=09012345678&limit=10',
+      '/api/customer?phone=09012345678&limit=10&storeId=ikebukuro',
+      expect.objectContaining({ credentials: 'include', cache: 'no-store' })
+    )
+  })
+
+  it('keeps a legacy non-writable phone searchable when an existing customer owns it', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          id: 'legacy-customer-invalid-phone',
+          name: '旧番号顧客',
+          phone: '+81901234567',
+        },
+      ],
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    render(<DashboardPage />)
+
+    await user.type(await screen.findByRole('textbox', { name: '電話番号' }), '090-123-4567')
+    await user.click(screen.getByRole('button', { name: '電話番号で顧客を検索' }))
+
+    expect(await screen.findByRole('link', { name: '旧番号顧客の顧客詳細を見る' })).toHaveAttribute(
+      'href',
+      '/admin/customers/legacy-customer-invalid-phone'
+    )
+    expect(screen.getByText('0901234567')).toBeInTheDocument()
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/customer?phone=0901234567&limit=10&storeId=ikebukuro',
+      expect.objectContaining({ credentials: 'include', cache: 'no-store' })
+    )
+  })
+
+  it('keeps an exact migrated non-Japanese numeric phone searchable without offering registration', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          id: 'legacy-customer-foreign-phone',
+          name: '旧国際番号顧客',
+          phone: '6512345678',
+        },
+      ],
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    render(<DashboardPage />)
+
+    await user.type(await screen.findByRole('textbox', { name: '電話番号' }), '65-1234-5678')
+    await user.click(screen.getByRole('button', { name: '電話番号で顧客を検索' }))
+
+    expect(
+      await screen.findByRole('link', { name: '旧国際番号顧客の顧客詳細を見る' })
+    ).toHaveAttribute('href', '/admin/customers/legacy-customer-foreign-phone')
+    expect(screen.queryByRole('link', { name: 'この番号で新規顧客を登録' })).not.toBeInTheDocument()
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/customer?phone=6512345678&limit=10&storeId=ikebukuro',
+      expect.objectContaining({ credentials: 'include', cache: 'no-store' })
+    )
+  })
+
+  it('does not offer new registration when an unmatched legacy phone is not writable', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [],
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    render(<DashboardPage />)
+
+    await user.type(await screen.findByRole('textbox', { name: '電話番号' }), '090-123-4567')
+    await user.click(screen.getByRole('button', { name: '電話番号で顧客を検索' }))
+
+    expect(await screen.findByText('該当する顧客が見つかりませんでした。')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'この番号で新規顧客を登録' })).not.toBeInTheDocument()
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/customer?phone=0901234567&limit=10&storeId=ikebukuro',
       expect.objectContaining({ credentials: 'include', cache: 'no-store' })
     )
   })
@@ -378,6 +479,173 @@ describe('DashboardPage field operations', () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
     expect(screen.queryByText('該当する顧客が見つかりませんでした。')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'この番号で新規顧客を登録' })).not.toBeInTheDocument()
+  })
+
+  it('clears phone lookup state and ignores the old response after a store switch', async () => {
+    const user = userEvent.setup()
+    let resolveSearch: ((response: Response) => void) | undefined
+    const fetchMock = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveSearch = resolve
+        })
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const { rerender } = render(<DashboardPage />)
+
+    const phoneInput = await screen.findByRole('textbox', { name: '電話番号' })
+    await user.type(phoneInput, '090-1234-5678')
+    await user.click(screen.getByRole('button', { name: '電話番号で顧客を検索' }))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+
+    mocks.currentStore = {
+      id: 'shinjuku',
+      slug: 'shinjuku',
+      name: '新宿店',
+      displayName: '新宿店',
+    }
+    rerender(<DashboardPage />)
+
+    await waitFor(() => expect(screen.getByRole('textbox', { name: '電話番号' })).toHaveValue(''))
+
+    resolveSearch?.({
+      ok: true,
+      json: async () => [
+        {
+          id: 'ikebukuro-customer',
+          name: '池袋の顧客',
+          phone: '+819012345678',
+        },
+      ],
+    } as Response)
+
+    await waitFor(() => expect(screen.queryByText('池袋の顧客')).not.toBeInTheDocument())
+    expect(screen.queryByText('該当する顧客が見つかりませんでした。')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'この番号で新規顧客を登録' })).not.toBeInTheDocument()
+  })
+
+  it('does not submit a partial phone to the exact customer identity endpoint', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    render(<DashboardPage />)
+
+    await user.type(await screen.findByRole('textbox', { name: '電話番号' }), '090123456')
+    await user.click(screen.getByRole('button', { name: '電話番号で顧客を検索' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('電話番号を10〜11桁で入力してください。')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('hides customer lookup and phone search without customer:read permission', async () => {
+    mocks.permissions = [
+      'dashboard:view',
+      'analytics:read',
+      'reservation:create',
+      'reservation:update',
+      'customer:create',
+    ]
+
+    render(<DashboardPage />)
+
+    await screen.findByText('予約受付')
+    expect(screen.queryByRole('button', { name: '予約作成' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '顧客検索' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: '電話番号' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '電話番号で顧客を検索' })).not.toBeInTheDocument()
+  })
+
+  it('allows customer lookup but hides new registration without customer:create permission', async () => {
+    mocks.permissions = [
+      'dashboard:view',
+      'analytics:read',
+      'reservation:create',
+      'reservation:update',
+      'customer:read',
+    ]
+    const user = userEvent.setup()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [],
+      })
+    )
+
+    render(<DashboardPage />)
+
+    await user.type(await screen.findByRole('textbox', { name: '電話番号' }), '090-1234-5678')
+    await user.click(screen.getByRole('button', { name: '電話番号で顧客を検索' }))
+
+    expect(await screen.findByText('該当する顧客が見つかりませんでした。')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'この番号で新規顧客を登録' })).not.toBeInTheDocument()
+  })
+
+  it('keeps customer lookup but hides every reservation creation route without reservation:create', async () => {
+    mocks.permissions = [
+      'dashboard:view',
+      'analytics:read',
+      'reservation:update',
+      'customer:read',
+      'customer:create',
+    ]
+    const user = userEvent.setup()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [
+          {
+            id: 'legacy-customer-member-100448',
+            name: '閲覧専用顧客',
+            phone: '+819012345678',
+          },
+        ],
+      })
+    )
+
+    render(<DashboardPage />)
+
+    expect(await screen.findByRole('button', { name: '顧客検索' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '予約作成' })).not.toBeInTheDocument()
+    expect(screen.queryByText('新規予約')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '顧客検索' }))
+    expect(screen.getByTestId('customer-dialog-lookup')).toBeInTheDocument()
+    expect(screen.queryByTestId('customer-dialog-reservation')).not.toBeInTheDocument()
+
+    await user.type(screen.getByRole('textbox', { name: '電話番号' }), '090-1234-5678')
+    await user.click(screen.getByRole('button', { name: '電話番号で顧客を検索' }))
+
+    expect(await screen.findByText('閲覧専用顧客')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '閲覧専用顧客の顧客詳細を見る' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: '閲覧専用顧客で予約を作成' })).not.toBeInTheDocument()
+  })
+
+  it('does not offer reservation-return customer registration without reservation:create', async () => {
+    mocks.permissions = [
+      'dashboard:view',
+      'analytics:read',
+      'reservation:update',
+      'customer:read',
+      'customer:create',
+    ]
+    const user = userEvent.setup()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [],
+      })
+    )
+
+    render(<DashboardPage />)
+
+    await user.type(await screen.findByRole('textbox', { name: '電話番号' }), '090-1234-5678')
+    await user.click(screen.getByRole('button', { name: '電話番号で顧客を検索' }))
+
+    expect(await screen.findByText('該当する顧客が見つかりませんでした。')).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'この番号で新規顧客を登録' })).not.toBeInTheDocument()
   })
 })

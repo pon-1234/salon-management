@@ -1,24 +1,32 @@
 /**
  * @design_doc   Administrative customer creation boundary
  * @related_to   requireAdmin, Prisma Customer, admin customer creation form
- * @known_issues Customer-to-store ownership and required profile fields await migration policy
+ * @known_issues None
  */
-import { randomBytes } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
-import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import logger from '@/lib/logger'
 import { requireAdmin } from '@/lib/auth/utils'
-import { isValidPhoneInput, normalizePhoneNumber, normalizePhoneQuery } from '@/lib/customer/utils'
+import {
+  getCustomerPhoneIdentityVariants,
+  isValidPhoneInput,
+  normalizeWritableCustomerPhoneIdentity,
+} from '@/lib/customer/utils'
 import { ensureStoreId, resolveStoreId } from '@/lib/store/server'
 
 const phoneSchema = z
   .string()
   .trim()
   .refine(isValidPhoneInput)
-  .transform(normalizePhoneQuery)
-  .refine((phone) => phone.length >= 10 && phone.length <= 11)
+  .transform((phone, context) => {
+    const canonical = normalizeWritableCustomerPhoneIdentity(phone)
+    if (!canonical) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: '電話番号を確認してください' })
+      return z.NEVER
+    }
+    return canonical
+  })
 
 const payloadSchema = z
   .object({
@@ -34,14 +42,6 @@ const payloadSchema = z
   })
   .strict()
 
-function buildPlaceholderEmail(phone: string) {
-  return `${phone}@phone.local`
-}
-
-function generateTemporaryPassword() {
-  return randomBytes(32).toString('base64url')
-}
-
 function databaseErrorCode(error: unknown): string | undefined {
   return typeof error === 'object' &&
     error !== null &&
@@ -53,9 +53,12 @@ function databaseErrorCode(error: unknown): string | undefined {
 
 export async function POST(request: NextRequest) {
   try {
-    const storeId = await ensureStoreId(await resolveStoreId(request))
-    const authError = await requireAdmin({ permissions: 'customer:create', storeId })
+    const authError = await requireAdmin({ permissions: 'customer:create' })
     if (authError) return authError
+
+    const storeId = await ensureStoreId(await resolveStoreId(request))
+    const storeAuthError = await requireAdmin({ permissions: 'customer:create', storeId })
+    if (storeAuthError) return storeAuthError
 
     const body = await request.json()
     const parsed = payloadSchema.safeParse(body)
@@ -65,41 +68,41 @@ export async function POST(request: NextRequest) {
     }
 
     const data = parsed.data
-    const normalizedPhone = normalizePhoneNumber(data.phone)
+    const normalizedPhone = data.phone
+    const phoneIdentities = getCustomerPhoneIdentityVariants(normalizedPhone)
 
-    if (!normalizedPhone) {
-      return NextResponse.json({ error: '電話番号を入力してください' }, { status: 400 })
-    }
-
-    const existingPhone = await db.customer.findFirst({ where: { phone: normalizedPhone } })
+    const existingPhone = await db.customer.findFirst({
+      where: { phone: { in: phoneIdentities } },
+    })
     if (existingPhone) {
       return NextResponse.json({ error: 'この電話番号は既に登録されています' }, { status: 409 })
     }
 
-    const email = data.email || buildPlaceholderEmail(normalizedPhone)
-    const existingEmail = await db.customer.findUnique({ where: { email } })
-    if (existingEmail) {
-      return NextResponse.json(
-        { error: 'このメールアドレスは既に登録されています' },
-        { status: 409 }
-      )
+    if (data.email) {
+      const existingEmail = await db.customer.findUnique({ where: { email: data.email } })
+      if (existingEmail) {
+        return NextResponse.json(
+          { error: 'このメールアドレスは既に登録されています' },
+          { status: 409 }
+        )
+      }
     }
-
-    const password = generateTemporaryPassword()
-    const hashedPassword = await bcrypt.hash(password, 10)
 
     const customer = await db.customer.create({
       data: {
         name: data.name,
-        nameKana: data.name,
+        nameKana: null,
         phone: normalizedPhone,
-        email,
-        password: hashedPassword,
-        birthDate: new Date('1970-01-01T00:00:00Z'),
+        email: data.email ?? null,
+        password: null,
+        birthDate: null,
         memberType: 'regular',
         points: 0,
         smsEnabled: false,
         emailNotificationEnabled: false,
+        storeAssignments: {
+          create: { storeId },
+        },
       },
       select: {
         id: true,

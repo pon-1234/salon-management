@@ -49,7 +49,7 @@ const createdCustomer = {
   id: 'customer-1',
   name: 'Test <User>',
   email: 'customer@example.com',
-  phone: '09012345678',
+  phone: '+819012345678',
   createdAt: new Date('2026-07-20T00:00:00Z'),
 }
 
@@ -66,7 +66,7 @@ describe('POST /api/auth/register', () => {
     process.env.NEXTAUTH_URL = 'http://localhost:3000'
     refreshEnv()
     vi.mocked(consumeCustomerEmailRateLimit).mockReturnValue({ allowed: true })
-    vi.mocked(db.store.findFirst).mockResolvedValue({ slug: 'ikebukuro' } as never)
+    vi.mocked(db.store.findFirst).mockResolvedValue({ id: 'store-1', slug: 'ikebukuro' } as never)
     vi.mocked(db.customer.findFirst).mockResolvedValue(null)
     vi.mocked(db.customer.create).mockResolvedValue(createdCustomer as never)
     vi.mocked(db.customer.updateMany).mockResolvedValue({ count: 1 })
@@ -83,7 +83,7 @@ describe('POST /api/auth/register', () => {
     )
     expect(db.store.findFirst).toHaveBeenCalledWith({
       where: { id: 'store-1', isActive: true },
-      select: { slug: true },
+      select: { id: true, slug: true },
     })
     expect(consumeCustomerEmailRateLimit).toHaveBeenCalledWith(
       'register',
@@ -94,11 +94,17 @@ describe('POST /api/auth/register', () => {
       where: { email: { equals: 'customer@example.com', mode: 'insensitive' } },
       select: { id: true },
     })
+    expect(db.customer.findFirst).toHaveBeenCalledWith({
+      where: { phone: { in: ['+819012345678', '09012345678', '819012345678'] } },
+      select: { id: true },
+    })
 
     const createData = vi.mocked(db.customer.create).mock.calls[0][0].data
     expect(createData.email).toBe('customer@example.com')
+    expect(createData.phone).toBe('+819012345678')
     expect(createData.emailVerified).toBe(false)
     expect(createData.emailVerificationExpiry).toBeInstanceOf(Date)
+    expect(createData.storeAssignments).toEqual({ create: { storeId: 'store-1' } })
     const delivery = vi.mocked(emailClient.send).mock.calls[0][0]
     expect(delivery).toEqual(
       expect.objectContaining({
@@ -114,6 +120,26 @@ describe('POST /api/auth/register', () => {
     expect(delivery.body).toContain('Test &lt;User&gt;')
     expect(delivery.body).not.toContain('Test <User>')
   })
+
+  it('keeps profile fields that were not supplied genuinely unset', async () => {
+    const response = await POST(requestFor({ ...registration, birthDate: undefined }))
+
+    expect(response.status).toBe(201)
+    const createData = vi.mocked(db.customer.create).mock.calls[0][0].data
+    expect(createData.nameKana).toBeNull()
+    expect(createData.birthDate).toBeNull()
+    expect(createData.storeAssignments).toEqual({ create: { storeId: 'store-1' } })
+  })
+
+  it.each(['not-a-date', '2999-01-01'])(
+    'rejects an invalid optional birth date instead of fabricating one: %s',
+    async (birthDate) => {
+      const response = await POST(requestFor({ ...registration, birthDate }))
+
+      expect(response.status).toBe(400)
+      expect(db.customer.create).not.toHaveBeenCalled()
+    }
+  )
 
   it.each([undefined, '', 'missing-store'])(
     'rejects a missing or inactive store: %s',
@@ -149,6 +175,40 @@ describe('POST /api/auth/register', () => {
     expect(response.status).toBe(409)
     expect(data.code).toBe('EMAIL_EXISTS')
     expect(db.customer.create).not.toHaveBeenCalled()
+  })
+
+  it('rejects a migrated E.164 phone when registration uses national format', async () => {
+    vi.mocked(db.customer.findFirst)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: 'legacy-customer' } as never)
+
+    const response = await POST(requestFor(registration))
+    const data = await response.json()
+
+    expect(response.status).toBe(409)
+    expect(data.code).toBe('PHONE_EXISTS')
+    expect(db.customer.findFirst).toHaveBeenNthCalledWith(2, {
+      where: { phone: { in: ['+819012345678', '09012345678', '819012345678'] } },
+      select: { id: true },
+    })
+    expect(db.customer.create).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    '090-123-4567',
+    '050-123-4567',
+    '03-1234-56789',
+    '0120-1234-567',
+    '0570-1234-567',
+    '0800-123-456',
+  ])('rejects a structurally recognizable but non-writable Japanese phone: %s', async (phone) => {
+    const response = await POST(requestFor({ ...registration, phone }))
+
+    expect(response.status).toBe(400)
+    expect(db.store.findFirst).not.toHaveBeenCalled()
+    expect(db.customer.findFirst).not.toHaveBeenCalled()
+    expect(db.customer.create).not.toHaveBeenCalled()
+    expect(emailClient.send).not.toHaveBeenCalled()
   })
 
   it('keeps the account recoverable and reports an email delivery failure honestly', async () => {

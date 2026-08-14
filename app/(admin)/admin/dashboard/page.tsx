@@ -66,10 +66,16 @@ import {
 } from 'recharts'
 import { useSession } from 'next-auth/react'
 import { hasPermission } from '@/lib/auth/permissions'
+import {
+  formatPhoneNumber,
+  getCustomerPhoneIdentityVariants,
+  normalizeWritableCustomerPhoneIdentity,
+} from '@/lib/customer/utils'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from '@/hooks/use-toast'
 import { CastScheduleUseCases } from '@/lib/cast-schedule/usecases'
 import type { WeeklySchedule } from '@/lib/cast-schedule/old-types'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import {
   fetchAllDashboardReservations,
   getDashboardQueryWindow,
@@ -280,6 +286,10 @@ export default function DashboardPage() {
   const canViewAnalytics = hasPermission(grantedPermissions, 'analytics:read')
   const canViewFinancials = canViewAnalytics || hasPermission(grantedPermissions, 'dashboard:view')
   const canUpdateReservations = hasPermission(grantedPermissions, 'reservation:update')
+  const canReadCustomers = hasPermission(grantedPermissions, 'customer:read')
+  const canCreateReservation =
+    canReadCustomers && hasPermission(grantedPermissions, 'reservation:create')
+  const canCreateCustomers = hasPermission(grantedPermissions, 'customer:create')
 
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule | null>(null)
@@ -296,11 +306,21 @@ export default function DashboardPage() {
   const [lastSearchedPhone, setLastSearchedPhone] = useState<string | null>(null)
   const phoneSearchRequestIdRef = useRef(0)
   const canRegisterSearchedPhone =
+    canCreateReservation &&
+    canCreateCustomers &&
     phoneSearchStatus === 'ready' &&
     phoneResults.length === 0 &&
     lastSearchedPhone !== null &&
-    lastSearchedPhone.length >= 10 &&
-    lastSearchedPhone.length <= 11
+    normalizeWritableCustomerPhoneIdentity(lastSearchedPhone) !== null
+
+  useEffect(() => {
+    phoneSearchRequestIdRef.current += 1
+    setPhoneQuery('')
+    setPhoneResults([])
+    setPhoneSearchStatus('idle')
+    setPhoneSearchMessage(null)
+    setLastSearchedPhone(null)
+  }, [currentStore.id])
 
   useEffect(() => {
     if (status === 'loading') {
@@ -420,12 +440,13 @@ export default function DashboardPage() {
   const handlePhoneSearch = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const requestId = ++phoneSearchRequestIdRef.current
-    const normalizedPhone = phoneQuery.replace(/\D/g, '')
+    const phoneIdentities = getCustomerPhoneIdentityVariants(phoneQuery)
+    const normalizedPhone = phoneIdentities[1] ?? phoneIdentities[0]
 
-    if (normalizedPhone.length < 3) {
+    if (!normalizedPhone) {
       setPhoneResults([])
       setPhoneSearchStatus('error')
-      setPhoneSearchMessage('電話番号を3桁以上入力してください。')
+      setPhoneSearchMessage('電話番号を10〜11桁で入力してください。')
       setLastSearchedPhone(null)
       return
     }
@@ -436,7 +457,10 @@ export default function DashboardPage() {
 
     try {
       const response = await fetch(
-        `/api/customer?phone=${encodeURIComponent(normalizedPhone)}&limit=10`,
+        buildStoreScopedEndpoint(
+          `/api/customer?phone=${encodeURIComponent(normalizedPhone)}&limit=10`,
+          currentStore.id
+        ),
         { credentials: 'include', cache: 'no-store' }
       )
       if (requestId !== phoneSearchRequestIdRef.current) {
@@ -746,120 +770,130 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="grid gap-3 sm:grid-cols-2">
-              <Button
-                type="button"
-                size="lg"
-                className="h-12 text-base"
-                onClick={() => setCustomerDialogMode('reservation')}
-              >
-                <Calendar className="mr-2 h-5 w-5" />
-                予約作成
-              </Button>
-              <Button
-                type="button"
-                size="lg"
-                variant="outline"
-                className="h-12 text-base"
-                onClick={() => setCustomerDialogMode('lookup')}
-              >
-                <Search className="mr-2 h-5 w-5" />
-                顧客検索
-              </Button>
-            </div>
-
-            <form className="space-y-2 border-t pt-4" onSubmit={handlePhoneSearch}>
-              <Label htmlFor="dashboard-phone-search">電話番号</Label>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <div className="relative flex-1">
-                  <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="dashboard-phone-search"
-                    type="tel"
-                    inputMode="tel"
-                    autoComplete="tel"
-                    value={phoneQuery}
-                    onChange={(event) => {
-                      phoneSearchRequestIdRef.current += 1
-                      setPhoneQuery(event.target.value)
-                      setPhoneResults([])
-                      setPhoneSearchStatus('idle')
-                      setPhoneSearchMessage(null)
-                      setLastSearchedPhone(null)
-                    }}
-                    placeholder="090-1234-5678"
-                    className="pl-9"
-                  />
-                </div>
+              {canCreateReservation ? (
                 <Button
-                  type="submit"
-                  variant="secondary"
-                  disabled={phoneSearchStatus === 'loading'}
+                  type="button"
+                  size="lg"
+                  className="h-12 text-base"
+                  onClick={() => setCustomerDialogMode('reservation')}
                 >
-                  {phoneSearchStatus === 'loading' ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Search className="mr-2 h-4 w-4" />
-                  )}
-                  電話番号で顧客を検索
-                </Button>
-              </div>
-
-              {phoneSearchMessage && (
-                <p
-                  role={phoneSearchStatus === 'error' ? 'alert' : 'status'}
-                  className={cn(
-                    'text-sm',
-                    phoneSearchStatus === 'error' ? 'text-destructive' : 'text-muted-foreground'
-                  )}
-                >
-                  {phoneSearchMessage}
-                </p>
-              )}
-
-              {canRegisterSearchedPhone ? (
-                <Button asChild>
-                  <Link
-                    href={`/admin/customers/new?returnTo=reservation&phone=${encodeURIComponent(lastSearchedPhone)}&store=${encodeURIComponent(currentStore.slug)}`}
-                  >
-                    この番号で新規顧客を登録
-                  </Link>
+                  <Calendar className="mr-2 h-5 w-5" />
+                  予約作成
                 </Button>
               ) : null}
+              {canReadCustomers ? (
+                <Button
+                  type="button"
+                  size="lg"
+                  variant="outline"
+                  className="h-12 text-base"
+                  onClick={() => setCustomerDialogMode('lookup')}
+                >
+                  <Search className="mr-2 h-5 w-5" />
+                  顧客検索
+                </Button>
+              ) : null}
+            </div>
 
-              {phoneResults.length > 0 && (
-                <div className="space-y-2 pt-2">
-                  {phoneResults.map((customer) => (
-                    <div
-                      key={customer.id}
-                      className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                      <div>
-                        <p className="font-medium">{customer.name}</p>
-                        <p className="text-sm text-muted-foreground">{customer.phone}</p>
-                      </div>
-                      <div className="flex flex-col gap-2 sm:flex-row">
-                        <Button size="sm" variant="outline" asChild>
-                          <Link
-                            href={`/admin/customers/${encodeURIComponent(customer.id)}`}
-                            aria-label={`${customer.name}の顧客詳細を見る`}
-                          >
-                            顧客詳細を見る
-                          </Link>
-                        </Button>
-                        <Button size="sm" asChild>
-                          <Link
-                            href={`/admin/reservation?customerId=${encodeURIComponent(customer.id)}`}
-                            aria-label={`${customer.name}で予約を作成`}
-                          >
-                            この顧客で予約
-                          </Link>
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+            {canReadCustomers ? (
+              <form className="space-y-2 border-t pt-4" onSubmit={handlePhoneSearch}>
+                <Label htmlFor="dashboard-phone-search">電話番号</Label>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <div className="relative flex-1">
+                    <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="dashboard-phone-search"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      value={phoneQuery}
+                      onChange={(event) => {
+                        phoneSearchRequestIdRef.current += 1
+                        setPhoneQuery(event.target.value)
+                        setPhoneResults([])
+                        setPhoneSearchStatus('idle')
+                        setPhoneSearchMessage(null)
+                        setLastSearchedPhone(null)
+                      }}
+                      placeholder="090-1234-5678"
+                      className="pl-9"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    variant="secondary"
+                    disabled={phoneSearchStatus === 'loading'}
+                  >
+                    {phoneSearchStatus === 'loading' ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Search className="mr-2 h-4 w-4" />
+                    )}
+                    電話番号で顧客を検索
+                  </Button>
                 </div>
-              )}
-            </form>
+
+                {phoneSearchMessage && (
+                  <p
+                    role={phoneSearchStatus === 'error' ? 'alert' : 'status'}
+                    className={cn(
+                      'text-sm',
+                      phoneSearchStatus === 'error' ? 'text-destructive' : 'text-muted-foreground'
+                    )}
+                  >
+                    {phoneSearchMessage}
+                  </p>
+                )}
+
+                {canRegisterSearchedPhone ? (
+                  <Button asChild>
+                    <Link
+                      href={`/admin/customers/new?returnTo=reservation&phone=${encodeURIComponent(lastSearchedPhone)}&store=${encodeURIComponent(currentStore.slug)}`}
+                    >
+                      この番号で新規顧客を登録
+                    </Link>
+                  </Button>
+                ) : null}
+
+                {phoneResults.length > 0 && (
+                  <div className="space-y-2 pt-2">
+                    {phoneResults.map((customer) => (
+                      <div
+                        key={customer.id}
+                        className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div>
+                          <p className="font-medium">{customer.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatPhoneNumber(customer.phone)}
+                          </p>
+                        </div>
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <Button size="sm" variant="outline" asChild>
+                            <Link
+                              href={`/admin/customers/${encodeURIComponent(customer.id)}`}
+                              aria-label={`${customer.name}の顧客詳細を見る`}
+                            >
+                              顧客詳細を見る
+                            </Link>
+                          </Button>
+                          {canCreateReservation ? (
+                            <Button size="sm" asChild>
+                              <Link
+                                href={`/admin/reservation?customerId=${encodeURIComponent(customer.id)}`}
+                                aria-label={`${customer.name}で予約を作成`}
+                              >
+                                この顧客で予約
+                              </Link>
+                            </Button>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </form>
+            ) : null}
           </CardContent>
         </Card>
 
@@ -1086,25 +1120,27 @@ export default function DashboardPage() {
 
       {/* クイックアクション */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Card className="cursor-pointer transition-shadow hover:shadow-lg">
-          <CardContent className="p-6">
-            <div
-              onClick={() => setCustomerDialogMode('reservation')}
-              className="flex cursor-pointer items-center justify-between"
-            >
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg bg-blue-100 p-3">
-                  <Calendar className="h-6 w-6 text-blue-600" />
+        {canCreateReservation ? (
+          <Card className="cursor-pointer transition-shadow hover:shadow-lg">
+            <CardContent className="p-6">
+              <div
+                onClick={() => setCustomerDialogMode('reservation')}
+                className="flex cursor-pointer items-center justify-between"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="rounded-lg bg-blue-100 p-3">
+                    <Calendar className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium">新規予約</p>
+                    <p className="text-sm text-muted-foreground">予約を作成</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium">新規予約</p>
-                  <p className="text-sm text-muted-foreground">予約を作成</p>
-                </div>
+                <ArrowUpRight className="h-5 w-5 text-muted-foreground" />
               </div>
-              <ArrowUpRight className="h-5 w-5 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        ) : null}
 
         <Card className="cursor-pointer transition-shadow hover:shadow-lg">
           <CardContent className="p-6">
@@ -1238,13 +1274,15 @@ export default function DashboardPage() {
         onSave={canUpdateReservations ? handleReservationSave : undefined}
       />
 
-      <CustomerSelectionDialog
-        open={customerDialogMode !== null}
-        mode={customerDialogMode ?? 'reservation'}
-        onOpenChange={(open) => {
-          if (!open) setCustomerDialogMode(null)
-        }}
-      />
+      {canReadCustomers && (customerDialogMode !== 'reservation' || canCreateReservation) ? (
+        <CustomerSelectionDialog
+          open={customerDialogMode !== null}
+          mode={customerDialogMode ?? 'reservation'}
+          onOpenChange={(open) => {
+            if (!open) setCustomerDialogMode(null)
+          }}
+        />
+      ) : null}
     </div>
   )
 }

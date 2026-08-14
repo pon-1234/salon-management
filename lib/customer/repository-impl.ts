@@ -6,7 +6,8 @@
 import { Customer, CustomerInsights } from './types'
 import { CustomerRepository } from './repository'
 import { resolveApiUrl } from '@/lib/http/base-url'
-import { deserializeCustomer, normalizePhoneQuery } from './utils'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
+import { deserializeCustomer, getCustomerPhoneIdentityVariants, isSameCustomerPhone } from './utils'
 
 const API_BASE_URL = '/api/customer'
 
@@ -27,8 +28,14 @@ function readCustomerList(payload: unknown): unknown[] {
 }
 
 export class CustomerRepositoryImpl implements CustomerRepository {
+  constructor(private readonly storeId?: string) {}
+
+  private endpoint(path: string): string {
+    return resolveApiUrl(this.storeId ? buildStoreScopedEndpoint(path, this.storeId) : path)
+  }
+
   async getAll(): Promise<Customer[]> {
-    const response = await fetch(resolveApiUrl(API_BASE_URL), {
+    const response = await fetch(this.endpoint(API_BASE_URL), {
       credentials: 'include',
     })
     if (!response.ok) {
@@ -39,7 +46,7 @@ export class CustomerRepositoryImpl implements CustomerRepository {
   }
 
   async getById(id: string): Promise<Customer | null> {
-    const response = await fetch(resolveApiUrl(`${API_BASE_URL}?id=${id}`), {
+    const response = await fetch(this.endpoint(`${API_BASE_URL}?id=${id}`), {
       credentials: 'include',
     })
     if (!response.ok) {
@@ -52,11 +59,7 @@ export class CustomerRepositoryImpl implements CustomerRepository {
 
   async getCustomerByPhone(phone: string): Promise<Customer | null> {
     const exactMatches = await this.searchByPhone(phone)
-    const normalizedTarget = normalizePhoneQuery(phone)
-    return (
-      exactMatches.find((customer) => normalizePhoneQuery(customer.phone) === normalizedTarget) ??
-      null
-    )
+    return exactMatches.find((customer) => isSameCustomerPhone(customer.phone, phone)) ?? null
   }
 
   async search(query: string): Promise<Customer[]> {
@@ -65,7 +68,7 @@ export class CustomerRepositoryImpl implements CustomerRepository {
       return this.getAll()
     }
     const url = `${API_BASE_URL}?query=${encodeURIComponent(normalized)}&limit=50`
-    const response = await fetch(resolveApiUrl(url), {
+    const response = await fetch(this.endpoint(url), {
       credentials: 'include',
       cache: 'no-store',
     })
@@ -77,12 +80,13 @@ export class CustomerRepositoryImpl implements CustomerRepository {
   }
 
   async searchByPhone(phone: string): Promise<Customer[]> {
-    const normalized = normalizePhoneQuery(phone)
+    const phoneIdentities = getCustomerPhoneIdentityVariants(phone)
+    const normalized = phoneIdentities[1] ?? phoneIdentities[0]
     if (!normalized) {
       return []
     }
     const url = `${API_BASE_URL}?phone=${encodeURIComponent(normalized)}`
-    const response = await fetch(resolveApiUrl(url), {
+    const response = await fetch(this.endpoint(url), {
       credentials: 'include',
     })
     if (!response.ok) {
@@ -118,7 +122,7 @@ export class CustomerRepositoryImpl implements CustomerRepository {
   }
 
   async create(data: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>): Promise<Customer> {
-    const response = await fetch(resolveApiUrl(API_BASE_URL), {
+    const response = await fetch(this.endpoint(API_BASE_URL), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -132,7 +136,7 @@ export class CustomerRepositoryImpl implements CustomerRepository {
   }
 
   async update(id: string, data: Partial<Customer>): Promise<Customer | null> {
-    const response = await fetch(resolveApiUrl(API_BASE_URL), {
+    const response = await fetch(this.endpoint(API_BASE_URL), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -146,7 +150,7 @@ export class CustomerRepositoryImpl implements CustomerRepository {
   }
 
   async delete(id: string): Promise<boolean> {
-    const response = await fetch(resolveApiUrl(`${API_BASE_URL}?id=${id}`), {
+    const response = await fetch(this.endpoint(`${API_BASE_URL}?id=${id}`), {
       method: 'DELETE',
       credentials: 'include',
     })

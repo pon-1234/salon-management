@@ -714,6 +714,45 @@ describe('Reservation API - Modifiable Status', () => {
   })
 
   describe('POST endpoint validation and conflicts', () => {
+    it('rejects a customer without membership in the reservation store', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          id: 'admin-1',
+          role: 'admin',
+          permissions: ['reservation:create'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+      vi.mocked(db.customer.findUnique).mockResolvedValueOnce(null)
+
+      const response = await POST(
+        new NextRequest('http://localhost/api/reservation?storeId=ikebukuro', {
+          method: 'POST',
+          body: JSON.stringify({
+            customerId: 'cust-123',
+            castId: 'cast-123',
+            courseId: 'course-123',
+            startTime: '2099-07-04T18:00:00+09:00',
+            endTime: '2099-07-04T19:00:00+09:00',
+          }),
+        })
+      )
+
+      expect(response.status).toBe(400)
+      expect(db.customer.findUnique).toHaveBeenCalledWith({
+        where: {
+          id: 'cust-123',
+          storeAssignments: { some: { storeId: 'ikebukuro' } },
+        },
+        include: {
+          ngCasts: {
+            select: { castId: true, assignedBy: true },
+          },
+        },
+      })
+      expect(db.$transaction).not.toHaveBeenCalled()
+    })
+
     it('rejects a reservation whose start time is outside a 30-minute boundary', async () => {
       vi.mocked(getServerSession).mockResolvedValue({
         user: {

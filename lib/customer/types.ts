@@ -22,8 +22,8 @@ export interface Customer extends BaseEntity {
   phone: string
   email: string
   password: string
-  birthDate: Date
-  age: number
+  birthDate?: Date
+  age?: number
   memberType: 'regular' | 'vip'
   accountStatus: CustomerAccountStatus
   membershipStage: CustomerMembershipStage

@@ -379,6 +379,15 @@ function snapshot(): GoldMasterIkebukuroSnapshotV4 {
 }
 
 describe('buildGoldMasterPreviewFixture', () => {
+  it('assigns every migrated Ikebukuro customer to the Ikebukuro store', () => {
+    const fixture = buildGoldMasterPreviewFixture(snapshot(), { passwordHashes, resolveImageUrl })
+
+    expect(fixture.customerStoreAssignments).toEqual([
+      { customerId: 'legacy-customer-member-1234', storeId: 'uat-ikebukuro' },
+      { customerId: 'legacy-customer-member-2345', storeId: 'uat-ikebukuro' },
+    ])
+  })
+
   it('projects the exact legacy photo slots at the canonical snapshot cutoff', () => {
     expect(projectGoldMasterPreviewImages(snapshot())).toEqual({
       cutoffAt: '2026-07-20T04:00:00.000Z',
@@ -655,6 +664,15 @@ describe('buildGoldMasterPreviewFixture', () => {
     expect(phones[0]).toBe('09012345678')
     expect(phones[1]).toMatch(/^\d{11}$/u)
     expect(new Set(phones).size).toBe(phones.length)
+  })
+
+  it('preserves the approved national-format phone representation in the audited fixture', () => {
+    const fixture = buildGoldMasterPreviewFixture(snapshot(), {
+      passwordHashes,
+      resolveImageUrl,
+    })
+
+    expect(fixture.customers.map(({ phone }) => phone)).toEqual(['09012345678', '08022223333'])
   })
 
   it('converts legacy 24-29 hour schedule notation to the following JST day', () => {

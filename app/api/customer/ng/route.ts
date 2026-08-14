@@ -1,9 +1,14 @@
+/**
+ * @design_doc   Store-scoped customer NG-cast authorization boundary
+ * @related_to   requireAdmin, CustomerStoreAssignment, Cast.storeId, NgCastEntry
+ * @known_issues None
+ */
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { z } from 'zod'
-import { authOptions } from '@/lib/auth/config'
+import { requireAdmin } from '@/lib/auth/utils'
 import { db } from '@/lib/db'
 import logger from '@/lib/logger'
+import { ensureStoreId, resolveStoreId } from '@/lib/store/server'
 
 const assignmentSourceSchema = z.enum(['customer', 'cast', 'staff'])
 
@@ -14,18 +19,74 @@ const upsertSchema = z.object({
   assignedBy: assignmentSourceSchema.optional(),
 })
 
+const entrySelect = {
+  customerId: true,
+  castId: true,
+  assignedAt: true,
+  notes: true,
+  assignedBy: true,
+} as const
+
+async function isCustomerAssignedToStore(customerId: string, storeId: string) {
+  const assignment = await db.customerStoreAssignment.findUnique({
+    where: { customerId_storeId: { customerId, storeId } },
+    select: { customerId: true },
+  })
+  return assignment !== null
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const authError = await requireAdmin({ permissions: 'customer:read' })
+    if (authError) return authError
+
+    const storeId = await ensureStoreId(await resolveStoreId(request))
+    const storeAuthError = await requireAdmin({ permissions: 'customer:read', storeId })
+    if (storeAuthError) return storeAuthError
+
+    const customerId = request.nextUrl.searchParams.get('customerId')
+    if (!customerId) {
+      return NextResponse.json({ error: 'customerId is required' }, { status: 400 })
+    }
+    if (!(await isCustomerAssignedToStore(customerId, storeId))) {
+      return NextResponse.json({ error: 'Customer not found in this store' }, { status: 404 })
+    }
+
+    const entries = await db.ngCastEntry.findMany({
+      where: { customerId, cast: { storeId } },
+      orderBy: { assignedAt: 'desc' },
+      select: entrySelect,
+    })
+
+    return NextResponse.json({ data: entries })
+  } catch (error) {
+    logger.error({ err: error }, 'Failed to load NG cast entries')
+    return NextResponse.json({ error: 'Failed to load NG settings' }, { status: 500 })
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
-    }
-    if (session.user?.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
+    const authError = await requireAdmin({ permissions: 'customer:update' })
+    if (authError) return authError
+
+    const storeId = await ensureStoreId(await resolveStoreId(request))
+    const storeAuthError = await requireAdmin({ permissions: 'customer:update', storeId })
+    if (storeAuthError) return storeAuthError
 
     const payload = await request.json()
     const data = upsertSchema.parse(payload)
+    if (!(await isCustomerAssignedToStore(data.customerId, storeId))) {
+      return NextResponse.json({ error: 'Customer not found in this store' }, { status: 404 })
+    }
+    const cast = await db.cast.findFirst({
+      where: { id: data.castId, storeId },
+      select: { id: true },
+    })
+    if (!cast) {
+      return NextResponse.json({ error: 'Cast not found in this store' }, { status: 404 })
+    }
+
     const entry = await db.ngCastEntry.upsert({
       where: {
         customerId_castId: {
@@ -43,13 +104,7 @@ export async function POST(request: NextRequest) {
         notes: data.notes ?? null,
         assignedBy: data.assignedBy ?? 'staff',
       },
-      select: {
-        customerId: true,
-        castId: true,
-        assignedAt: true,
-        notes: true,
-        assignedBy: true,
-      },
+      select: entrySelect,
     })
 
     return NextResponse.json({ data: entry })
@@ -67,13 +122,12 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
-    }
-    if (session.user?.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
+    const authError = await requireAdmin({ permissions: 'customer:update' })
+    if (authError) return authError
+
+    const storeId = await ensureStoreId(await resolveStoreId(request))
+    const storeAuthError = await requireAdmin({ permissions: 'customer:update', storeId })
+    if (storeAuthError) return storeAuthError
 
     const searchParams = request.nextUrl.searchParams
     const customerId = searchParams.get('customerId')
@@ -82,21 +136,19 @@ export async function DELETE(request: NextRequest) {
     if (!customerId || !castId) {
       return NextResponse.json({ error: 'customerId and castId are required' }, { status: 400 })
     }
+    if (!(await isCustomerAssignedToStore(customerId, storeId))) {
+      return NextResponse.json({ error: 'Customer not found in this store' }, { status: 404 })
+    }
 
-    try {
-      await db.ngCastEntry.delete({
-        where: {
-          customerId_castId: {
-            customerId,
-            castId,
-          },
-        },
-      })
-    } catch (dbError: any) {
-      if (dbError?.code === 'P2025') {
-        return NextResponse.json({ error: 'NG entry not found' }, { status: 404 })
-      }
-      throw dbError
+    const result = await db.ngCastEntry.deleteMany({
+      where: {
+        customerId,
+        castId,
+        cast: { storeId },
+      },
+    })
+    if (result.count === 0) {
+      return NextResponse.json({ error: 'NG entry not found' }, { status: 404 })
     }
 
     return NextResponse.json({ success: true })

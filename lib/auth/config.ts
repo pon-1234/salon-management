@@ -197,6 +197,11 @@ export const authOptions: NextAuthOptions = {
               return null
             }
 
+            if (!customer.password) {
+              recordLoginAttempt(rateLimitIdentifier, false)
+              return null
+            }
+
             const isPasswordValid = await bcrypt.compare(credentials.password, customer.password)
 
             if (!isPasswordValid) {
@@ -213,7 +218,7 @@ export const authOptions: NextAuthOptions = {
 
             return {
               id: customer.id,
-              email: customer.email,
+              email: customer.email ?? normalizedEmail,
               name: customer.name || 'Customer',
               role: 'customer',
             } as User

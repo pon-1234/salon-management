@@ -21,6 +21,11 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Customer } from '@/lib/customer/types'
 import { TableSkeleton } from '@/components/ui/page-loading'
+import { useSession } from 'next-auth/react'
+import { hasPermission } from '@/lib/auth/permissions'
+import { formatPhoneNumber } from '@/lib/customer/utils'
+import { useStore } from '@/contexts/store-context'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 
 const PAGE_SIZE = 25
 
@@ -42,6 +47,11 @@ const membershipStageLabels: Record<Customer['membershipStage'], string> = {
 }
 
 export default function CustomerListPage() {
+  const { data: session, status } = useSession()
+  const { currentStore } = useStore()
+  const grantedPermissions = session?.user?.permissions ?? []
+  const canReadCustomers = hasPermission(grantedPermissions, 'customer:read')
+  const canCreateCustomers = hasPermission(grantedPermissions, 'customer:create')
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
@@ -52,17 +62,30 @@ export default function CustomerListPage() {
   const [reloadAttempt, setReloadAttempt] = useState(0)
 
   useEffect(() => {
+    if (status !== 'authenticated' || !canReadCustomers) {
+      return
+    }
+
+    const controller = new AbortController()
+    let active = true
+    setCustomers([])
+    setHasMore(false)
+    setLoading(true)
+    setErrorMessage(null)
+
     const fetchCustomers = async () => {
-      setLoading(true)
-      setErrorMessage(null)
       try {
         const offset = page * PAGE_SIZE
         const queryParameter = query ? `&query=${encodeURIComponent(query)}` : ''
         const response = await fetch(
-          `/api/customer?limit=${PAGE_SIZE}&offset=${offset}${queryParameter}`,
+          buildStoreScopedEndpoint(
+            `/api/customer?limit=${PAGE_SIZE}&offset=${offset}${queryParameter}`,
+            currentStore.id
+          ),
           {
             credentials: 'include',
             cache: 'no-store',
+            signal: controller.signal,
           }
         )
 
@@ -71,23 +94,52 @@ export default function CustomerListPage() {
         }
 
         const data = await response.json()
+        if (!active) {
+          return
+        }
         setCustomers(data.items ?? [])
         setHasMore(Boolean(data.hasMore))
       } catch (error) {
+        if (!active) {
+          return
+        }
         console.error('Failed to load customers:', error)
         setErrorMessage('顧客一覧を取得できませんでした。通信状態を確認して再試行してください。')
       } finally {
-        setLoading(false)
+        if (active) {
+          setLoading(false)
+        }
       }
     }
 
-    fetchCustomers()
-  }, [page, query, reloadAttempt])
+    void fetchCustomers()
+
+    return () => {
+      active = false
+      controller.abort()
+    }
+  }, [page, query, reloadAttempt, status, canReadCustomers, currentStore.id])
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setPage(0)
     setQuery(searchInput.trim())
+  }
+
+  if (status === 'loading') {
+    return <div className="p-6 text-sm text-muted-foreground">権限を確認しています...</div>
+  }
+
+  if (!canReadCustomers) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <main className="mx-auto max-w-6xl p-6">
+          <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-4 text-red-700">
+            顧客情報の閲覧権限がありません。管理者にお問い合わせください。
+          </div>
+        </main>
+      </div>
+    )
   }
 
   return (
@@ -98,9 +150,11 @@ export default function CustomerListPage() {
             <h1 className="text-2xl font-bold">顧客一覧</h1>
             <p className="text-sm text-muted-foreground">登録されている顧客情報を確認できます。</p>
           </div>
-          <Link href="/admin/customers/new">
-            <Button>新規顧客を追加</Button>
-          </Link>
+          {canCreateCustomers ? (
+            <Link href="/admin/customers/new">
+              <Button>新規顧客を追加</Button>
+            </Link>
+          ) : null}
         </div>
 
         <form className="mb-4 flex gap-2" onSubmit={handleSearch}>
@@ -156,7 +210,7 @@ export default function CustomerListPage() {
                   {customers.map((customer) => (
                     <TableRow key={customer.id}>
                       <TableCell className="font-medium">{customer.name}</TableCell>
-                      <TableCell>{customer.phone}</TableCell>
+                      <TableCell>{formatPhoneNumber(customer.phone)}</TableCell>
                       <TableCell>{customer.email}</TableCell>
                       <TableCell>
                         <Badge variant={customer.memberType === 'vip' ? 'default' : 'secondary'}>

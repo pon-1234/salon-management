@@ -9,6 +9,8 @@ import { getServerSession } from 'next-auth'
 import { GET } from './route'
 import { db } from '@/lib/db'
 import { getExpiringPoints } from '@/lib/point/utils'
+import { canAdminAccessStore } from '@/lib/auth/store-access'
+import { ensureStoreId, resolveStoreId } from '@/lib/store/server'
 
 vi.mock('next-auth', () => ({
   getServerSession: vi.fn(),
@@ -30,6 +32,12 @@ vi.mock('@/lib/point/utils', () => ({
   getExpiringPoints: vi.fn(),
 }))
 
+vi.mock('@/lib/auth/store-access', () => ({ canAdminAccessStore: vi.fn() }))
+vi.mock('@/lib/store/server', () => ({
+  ensureStoreId: vi.fn(),
+  resolveStoreId: vi.fn(),
+}))
+
 vi.mock('@/lib/logger', () => ({
   default: {
     error: vi.fn(),
@@ -41,6 +49,9 @@ vi.mock('@/lib/logger', () => ({
 describe('GET /api/customer/points/balance', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(resolveStoreId).mockResolvedValue('ikebukuro')
+    vi.mocked(ensureStoreId).mockResolvedValue('store-ikebukuro')
+    vi.mocked(canAdminAccessStore).mockReturnValue(true)
   })
 
   it('returns balance for admin viewing another customer', async () => {
@@ -64,6 +75,13 @@ describe('GET /api/customer/points/balance', () => {
     expect(data.balance).toBe(5000)
     expect(data.expiringPoints.amount).toBe(1000)
     expect(getExpiringPoints).toHaveBeenCalled()
+    expect(db.customer.findUnique).toHaveBeenCalledWith({
+      where: {
+        id: 'cust-1',
+        storeAssignments: { some: { storeId: 'store-ikebukuro' } },
+      },
+      select: { points: true },
+    })
   })
 
   it('rejects an admin without customer:read permission', async () => {

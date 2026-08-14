@@ -441,6 +441,14 @@ class PrismaLegacyPreviewTransaction implements LegacyPreviewTransactionPort {
     })
     if (!row) return null
     const { password, birthDate, createdAt, updatedAt, ...projection } = row
+    if (
+      typeof projection.nameKana !== 'string' ||
+      typeof projection.email !== 'string' ||
+      typeof password !== 'string' ||
+      birthDate === null
+    ) {
+      throw new Error('[legacy preview persistence] INCOMPLETE_CUSTOMER_PROFILE')
+    }
     return {
       projection: {
         entity: 'customers',

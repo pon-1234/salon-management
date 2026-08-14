@@ -432,7 +432,10 @@ export async function POST(request: NextRequest) {
     const [castRecord, customerRecord, courseRecord, storeSettings] = await Promise.all([
       db.cast.findFirst({ where: { id: reservationData.castId, storeId } }),
       db.customer.findUnique({
-        where: { id: targetCustomerId },
+        where: {
+          id: targetCustomerId,
+          storeAssignments: { some: { storeId } },
+        },
         include: {
           ngCasts: {
             select: { castId: true, assignedBy: true },

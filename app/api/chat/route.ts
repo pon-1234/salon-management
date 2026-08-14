@@ -1,7 +1,7 @@
 /**
  * @design_doc   Chat API endpoints for admin-customer messaging
  * @related_to   Chat components, Customer type, Message model
- * @known_issues Customer identities visiting multiple stores retain one shared chat thread
+ * @known_issues Multi-store customers remain unavailable until messages carry a store identity
  */
 import { NextRequest } from 'next/server'
 import { db as prisma } from '@/lib/db'
@@ -37,7 +37,18 @@ async function findVisibleCustomer(customerId: string, storeId: string) {
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const storeId = searchParams.get('storeId')?.trim() ?? ''
-  const authError = await requireAdmin(storeId ? { storeId } : undefined)
+  const customerId = searchParams.get('customerId')
+  const castId = searchParams.get('castId')
+  const participantPermission =
+    Boolean(customerId) !== Boolean(castId)
+      ? customerId
+        ? 'customer:read'
+        : 'cast:read'
+      : undefined
+  const authError = await requireAdmin({
+    ...(participantPermission ? { permissions: participantPermission } : {}),
+    ...(storeId ? { storeId } : {}),
+  })
   if (authError) return authError
 
   if (!storeId) {
@@ -47,9 +58,6 @@ export async function GET(request: NextRequest) {
   if (!(await isActiveChatStore(prisma, storeId))) {
     return ErrorResponses.notFound('店舗')
   }
-
-  const customerId = searchParams.get('customerId')
-  const castId = searchParams.get('castId')
 
   try {
     if (Boolean(customerId) === Boolean(castId)) {
@@ -117,7 +125,10 @@ export async function POST(request: NextRequest) {
       reservationInfo,
     } = chatMessageSchema.parse(body)
 
-    const storeAuthError = await requireAdmin({ storeId })
+    const storeAuthError = await requireAdmin({
+      permissions: customerId ? 'customer:read' : 'cast:read',
+      storeId,
+    })
     if (storeAuthError) return storeAuthError
 
     if (!(await isActiveChatStore(prisma, storeId))) {
@@ -226,11 +237,26 @@ export async function PUT(request: NextRequest) {
         sender: { in: ['customer', 'cast'] },
         OR: [{ cast: { is: { storeId } } }, { customer: { is: customerStoreScope } }],
       },
-      select: { id: true },
+      select: { id: true, customerId: true, castId: true },
     })
     if (!visibleMessage) {
       return ErrorResponses.notFound('メッセージ')
     }
+
+    const participantPermission = visibleMessage.customerId
+      ? 'customer:read'
+      : visibleMessage.castId
+        ? 'cast:read'
+        : null
+    if (!participantPermission) {
+      return ErrorResponses.notFound('メッセージ')
+    }
+
+    const participantAuthError = await requireAdmin({
+      permissions: participantPermission,
+      storeId,
+    })
+    if (participantAuthError) return participantAuthError
 
     // Update message in database
     const updatedMessage = await prisma.message.update({

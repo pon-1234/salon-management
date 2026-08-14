@@ -124,6 +124,16 @@ describe('buildGoldMasterPostImportSql', () => {
     expect(sql).toContain('c."id" IS NULL')
     expect(sql).toContain('LEFT JOIN "Reservation" r')
     expect(sql).toContain('r."id" IS NULL')
+    expect(sql).toContain('FROM "CustomerStoreAssignment" assignment')
+    expect(sql).toContain("'customer assignment relation mismatch'")
+    expect(sql).toContain('HAVING count(assignment."storeId") <> 1')
+    expect(sql).toContain("'customer assignment coverage mismatch'")
+    expect(sql).toContain('assignment."storeId" = r."storeId"')
+    expect(sql).toContain("'reservation customer store assignment mismatch'")
+    expect(sql).toContain(
+      '"nameKana" IS NULL OR "email" IS NULL OR "password" IS NULL OR "birthDate" IS NULL'
+    )
+    expect(sql).toContain("'imported customer required profile mismatch'")
     expect(sql).toContain('FROM "HotelSettings"')
     expect(sql).toContain('WHERE NOT "isActive"')
     expect(sql).toContain("'active hotel count mismatch'")

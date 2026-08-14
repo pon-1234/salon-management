@@ -9,6 +9,7 @@ import { POST } from './route'
 import { requireAdmin } from '@/lib/auth/utils'
 import { db } from '@/lib/db'
 import { addPointTransaction } from '@/lib/point/utils'
+import { ensureStoreId, resolveStoreId } from '@/lib/store/server'
 
 vi.mock('@/lib/auth/utils', () => ({
   requireAdmin: vi.fn(),
@@ -17,7 +18,13 @@ vi.mock('@/lib/auth/utils', () => ({
 vi.mock('@/lib/db', () => ({
   db: {
     $transaction: vi.fn((callback: any) => callback({})),
+    customerStoreAssignment: { findUnique: vi.fn() },
   },
+}))
+
+vi.mock('@/lib/store/server', () => ({
+  ensureStoreId: vi.fn(),
+  resolveStoreId: vi.fn(),
 }))
 
 vi.mock('@/lib/point/utils', () => ({
@@ -37,6 +44,11 @@ describe('POST /api/customer/points/adjust', () => {
     vi.clearAllMocks()
     vi.mocked(requireAdmin).mockResolvedValue(null as any)
     vi.mocked(addPointTransaction).mockResolvedValue(undefined)
+    vi.mocked(resolveStoreId).mockResolvedValue('ikebukuro')
+    vi.mocked(ensureStoreId).mockResolvedValue('store-ikebukuro')
+    vi.mocked(db.customerStoreAssignment.findUnique).mockResolvedValue({
+      customerId: 'cust-1',
+    } as any)
   })
 
   it('adjusts points when admin provides valid payload', async () => {
@@ -60,7 +72,26 @@ describe('POST /api/customer/points/adjust', () => {
       expect.anything()
     )
     expect(db.$transaction).toHaveBeenCalled()
-    expect(requireAdmin).toHaveBeenCalledWith({ permissions: 'customer:update' })
+    expect(requireAdmin).toHaveBeenNthCalledWith(1, { permissions: 'customer:update' })
+    expect(requireAdmin).toHaveBeenNthCalledWith(2, {
+      permissions: 'customer:update',
+      storeId: 'store-ikebukuro',
+    })
+  })
+
+  it('rejects an adjustment for a customer outside the selected store', async () => {
+    vi.mocked(db.customerStoreAssignment.findUnique).mockResolvedValueOnce(null)
+
+    const response = await POST(
+      new NextRequest('http://localhost:3000/api/customer/points/adjust?storeId=ikebukuro', {
+        method: 'POST',
+        body: JSON.stringify({ customerId: 'cust-1', amount: 100, reason: 'Store correction' }),
+      })
+    )
+
+    expect(response.status).toBe(404)
+    expect(db.$transaction).not.toHaveBeenCalled()
+    expect(addPointTransaction).not.toHaveBeenCalled()
   })
 
   it('returns validation error when payload invalid', async () => {

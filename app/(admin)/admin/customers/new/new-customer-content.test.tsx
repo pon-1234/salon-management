@@ -12,6 +12,15 @@ const push = vi.fn()
 const back = vi.fn()
 const switchStore = vi.fn()
 let searchParams = new URLSearchParams()
+const authState = vi.hoisted(() => ({
+  status: 'authenticated',
+  session: {
+    user: {
+      role: 'admin',
+      permissions: ['customer:read', 'customer:create', 'reservation:create'],
+    },
+  } as any,
+}))
 const storeContextState = vi.hoisted(() => {
   const ikebukuroStore = {
     id: 'legacy-store-ikebukuro',
@@ -37,6 +46,10 @@ const storeContextState = vi.hoisted(() => {
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push, back }),
   useSearchParams: () => searchParams,
+}))
+
+vi.mock('next-auth/react', () => ({
+  useSession: () => ({ data: authState.session, status: authState.status }),
 }))
 
 vi.mock('@/contexts/store-context', () => ({
@@ -66,6 +79,13 @@ describe('NewCustomerContent', () => {
       storeContextState.shinjukuStore,
     ]
     global.fetch = vi.fn()
+    authState.status = 'authenticated'
+    authState.session = {
+      user: {
+        role: 'admin',
+        permissions: ['customer:read', 'customer:create', 'reservation:create'],
+      },
+    }
   })
 
   it('creates a customer with only the persisted required fields and returns to reservation intake', async () => {
@@ -100,7 +120,7 @@ describe('NewCustomerContent', () => {
       credentials: 'include',
       body: JSON.stringify({
         name: '予約 太郎',
-        phone: '09012345678',
+        phone: '+819012345678',
       }),
     })
     expect(push).toHaveBeenCalledWith(
@@ -110,12 +130,129 @@ describe('NewCustomerContent', () => {
     expect(switchStore.mock.invocationCallOrder[0]).toBeLessThan(push.mock.invocationCallOrder[0])
   })
 
+  it('falls back to customer details when reservation:create is missing from a crafted return URL', async () => {
+    authState.session = {
+      user: { role: 'admin', permissions: ['customer:read', 'customer:create'] },
+    }
+    searchParams = new URLSearchParams('returnTo=reservation&phone=09012345678&store=ikebukuro')
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        customer: {
+          id: 'customer/read-only',
+          name: '閲覧 登録',
+          phone: '+819012345678',
+        },
+      }),
+    } as Response)
+
+    render(<NewCustomerContent />)
+
+    expect(screen.getByText(/登録すると顧客詳細へ進みます/)).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText(/名前/), { target: { value: '閲覧 登録' } })
+    fireEvent.click(screen.getByRole('button', { name: '登録' }))
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
+    expect(push).toHaveBeenCalledWith('/admin/customers/customer%2Fread-only?store=ikebukuro')
+    expect(push).not.toHaveBeenCalledWith(
+      '/admin/reservation?customerId=customer%2Fread-only&store=ikebukuro'
+    )
+  })
+
   it('keeps the full form for customer creation that did not start from a phone lookup', () => {
     render(<NewCustomerContent />)
 
     expect(screen.getByLabelText(/名前/)).toBeInTheDocument()
     expect(screen.getByLabelText(/電話番号/)).toBeInTheDocument()
     expect(screen.getByLabelText(/メールアドレス/)).toBeInTheDocument()
+  })
+
+  it.each(['090-123-4567', '0120-1234-567'])(
+    'rejects a non-writable phone before submitting the full form: %s',
+    async (phone) => {
+      render(<NewCustomerContent />)
+
+      fireEvent.change(screen.getByLabelText(/名前/), { target: { value: '入力確認' } })
+      fireEvent.change(screen.getByLabelText(/電話番号/), { target: { value: phone } })
+      fireEvent.click(screen.getByRole('button', { name: '登録' }))
+
+      expect(await screen.findByText('有効な日本国内の電話番号を入力してください')).toBeVisible()
+      expect(fetch).not.toHaveBeenCalled()
+    }
+  )
+
+  it('submits the full form in its requested authorized store and opens customer details', async () => {
+    searchParams = new URLSearchParams('store=shinjuku')
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        customer: {
+          id: 'customer/normal 1',
+          name: '通常 登録',
+          phone: '+819012345678',
+          email: 'normal@example.com',
+        },
+      }),
+    } as Response)
+
+    render(<NewCustomerContent />)
+
+    fireEvent.change(screen.getByLabelText(/名前/), { target: { value: '通常 登録' } })
+    fireEvent.change(screen.getByLabelText(/メールアドレス/), {
+      target: { value: 'normal@example.com' },
+    })
+    fireEvent.change(screen.getByLabelText(/電話番号/), {
+      target: { value: '090-1234-5678' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '登録' }))
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
+    expect(fetch).toHaveBeenCalledWith('/api/admin/customers?storeId=legacy-store-shinjuku', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        name: '通常 登録',
+        phone: '+819012345678',
+        email: 'normal@example.com',
+      }),
+    })
+    expect(switchStore).toHaveBeenCalledWith('shinjuku')
+    expect(push).toHaveBeenCalledWith('/admin/customers/customer%2Fnormal%201?store=shinjuku')
+    expect(switchStore.mock.invocationCallOrder[0]).toBeLessThan(push.mock.invocationCallOrder[0])
+  })
+
+  it('submits optional international trunk notation as one canonical phone identity', async () => {
+    searchParams = new URLSearchParams('store=shinjuku')
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        customer: {
+          id: 'fixed-line-customer',
+          name: '固定 電話',
+          phone: '+81312345678',
+        },
+      }),
+    } as Response)
+
+    render(<NewCustomerContent />)
+
+    fireEvent.change(screen.getByLabelText(/名前/), { target: { value: '固定 電話' } })
+    fireEvent.change(screen.getByLabelText(/電話番号/), {
+      target: { value: '+81 (0)3-1234-5678' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '登録' }))
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
+    expect(fetch).toHaveBeenCalledWith('/api/admin/customers?storeId=legacy-store-shinjuku', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        name: '固定 電話',
+        phone: '+81312345678',
+      }),
+    })
   })
 
   it('does not enter name-only mode for an incomplete phone query', () => {
@@ -135,6 +272,18 @@ describe('NewCustomerContent', () => {
 
     expect(screen.getByText('池袋店')).toBeInTheDocument()
     expect(screen.queryByText('新宿店')).not.toBeInTheDocument()
+  })
+
+  it('keeps an E.164 phone intake in name-only Ikebukuro mode', () => {
+    searchParams = new URLSearchParams('returnTo=reservation&phone=%2B819012345678&store=shinjuku')
+
+    render(<NewCustomerContent />)
+
+    expect(screen.getByText('池袋店')).toBeInTheDocument()
+    expect(screen.getByText('090-1234-5678')).toBeInTheDocument()
+    expect(screen.queryByText('新宿店')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/電話番号/)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/メールアドレス/)).not.toBeInTheDocument()
   })
 
   it('blocks phone-intake registration when Ikebukuro is outside the operator scope', () => {
@@ -172,5 +321,17 @@ describe('NewCustomerContent', () => {
       'この電話番号は既に登録されています'
     )
     expect(push).not.toHaveBeenCalled()
+  })
+
+  it('does not expose direct customer creation without customer:create permission', () => {
+    authState.session = {
+      user: { role: 'admin', permissions: ['customer:read'] },
+    }
+
+    render(<NewCustomerContent />)
+
+    expect(screen.getByRole('alert')).toHaveTextContent('顧客登録の権限がありません')
+    expect(screen.queryByRole('button', { name: '登録' })).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/名前/)).not.toBeInTheDocument()
   })
 })

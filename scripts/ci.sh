@@ -23,6 +23,9 @@ pnpm test run
 echo "📊 Checking test coverage..."
 pnpm test:coverage
 
+echo "🎭 Running browser journeys..."
+pnpm test:e2e
+
 echo "🏗️  Building application..."
 env \
   DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build \
@@ -31,8 +34,5 @@ env \
   STORAGE_ROOT=/tmp/salon-build-storage \
   STORAGE_PUBLIC_BASE_URL=https://build.invalid/salon-uploads \
   pnpm build
-
-echo "🎭 Running browser journeys..."
-pnpm test:e2e
 
 echo "✅ All CI checks passed!"

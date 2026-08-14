@@ -12,7 +12,7 @@ import { Customer } from '@/lib/types/chat'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { isVipMember } from '@/lib/utils'
-import { normalizePhoneQuery } from '@/lib/customer/utils'
+import { getCustomerPhoneTelHref } from '@/lib/customer/utils'
 
 interface CustomerHeaderProps {
   customer?: Customer
@@ -79,10 +79,7 @@ export function CustomerHeader({ customer }: CustomerHeaderProps) {
             size="sm"
             className="text-gray-600 hover:bg-emerald-50 hover:text-emerald-600"
           >
-            <a
-              href={`tel:${normalizePhoneQuery(customer.phone)}`}
-              aria-label={`${customer.name}へ電話`}
-            >
+            <a href={getCustomerPhoneTelHref(customer.phone)} aria-label={`${customer.name}へ電話`}>
               <Phone className="h-4 w-4" />
             </a>
           </Button>

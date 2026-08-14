@@ -12,6 +12,7 @@ import {
   buildJstDayQueryRange,
   getActiveReservationData,
   indexSchedulesForJstDay,
+  acceptStoreScopedResponse,
   loadReservationsForJstDay,
 } from './reservation-page-content'
 import type { ReservationData } from '@/lib/types/reservation'
@@ -33,6 +34,27 @@ const reservation = (id: string): Reservation =>
   }) as Reservation
 
 describe('reservation timeline data loading', () => {
+  it('accepts an empty result for the active store so the previous customer list is cleared', () => {
+    const activeRequest = { storeId: 'ikebukuro', generation: 2 }
+
+    expect(acceptStoreScopedResponse(activeRequest, activeRequest, [])).toEqual([])
+  })
+
+  it('rejects delayed cast and reservation results from an older store request generation', () => {
+    const staleRequest = { storeId: 'ikebukuro', generation: 3 }
+
+    expect(
+      acceptStoreScopedResponse(staleRequest, { storeId: 'shinjuku', generation: 4 }, [
+        { id: 'ikebukuro-cast' },
+      ])
+    ).toBeUndefined()
+    expect(
+      acceptStoreScopedResponse(staleRequest, { storeId: 'ikebukuro', generation: 4 }, [
+        { id: 'older-reservation' },
+      ])
+    ).toBeUndefined()
+  })
+
   it('keeps a confirmed update visible while removing a cancelled update immediately', () => {
     const confirmed = {
       id: 'reservation-1',

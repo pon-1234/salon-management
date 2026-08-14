@@ -31,6 +31,7 @@ function transaction(overrides: Record<string, unknown> = {}) {
     admin: { createMany: createMany() },
     adminStoreAssignment: { createMany: createMany() },
     customer: { createMany: createMany() },
+    customerStoreAssignment: { createMany: createMany() },
     coursePrice: { createMany: createMany() },
     optionPrice: { createMany: createMany() },
     areaInfo: { createMany: createMany() },
@@ -105,6 +106,9 @@ describe('createPrismaPreviewUatDatabase', () => {
     expect(mocked.tx.$queryRaw).toHaveBeenCalledOnce()
     expect(mocked.tx.$queryRawUnsafe).toHaveBeenCalledOnce()
     expect(mocked.tx.store.createMany).toHaveBeenCalledWith({ data: fixture.stores })
+    expect(mocked.tx.customerStoreAssignment.createMany).toHaveBeenCalledWith({
+      data: fixture.customerStoreAssignments,
+    })
     expect(mocked.tx.areaInfo.createMany).toHaveBeenCalledWith({ data: fixture.areas })
     expect(mocked.tx.stationInfo.createMany).toHaveBeenCalledWith({ data: fixture.stations })
     expect(mocked.tx.hotelSettings.createMany).toHaveBeenCalledWith({ data: fixture.hotels })
@@ -125,6 +129,12 @@ describe('createPrismaPreviewUatDatabase', () => {
       mocked.tx.hotelServiceArea.createMany.mock.invocationCallOrder[0]
     )
     expect(mocked.tx.hotelServiceArea.createMany.mock.invocationCallOrder[0]).toBeLessThan(
+      mocked.tx.reservation.createMany.mock.invocationCallOrder[0]
+    )
+    expect(mocked.tx.customer.createMany.mock.invocationCallOrder[0]).toBeLessThan(
+      mocked.tx.customerStoreAssignment.createMany.mock.invocationCallOrder[0]
+    )
+    expect(mocked.tx.customerStoreAssignment.createMany.mock.invocationCallOrder[0]).toBeLessThan(
       mocked.tx.reservation.createMany.mock.invocationCallOrder[0]
     )
     expect(mocked.tx.reservation.createMany.mock.invocationCallOrder[0]).toBeLessThan(

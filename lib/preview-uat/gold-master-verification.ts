@@ -40,6 +40,7 @@ const FIXTURE_PASSWORD_CLASSES = {
 
 const MODEL_FIXTURE_KEYS: Record<PreviewUatEmptyTable, keyof PreviewUatFixture | null> = {
   Customer: 'customers',
+  CustomerStoreAssignment: 'customerStoreAssignments',
   Store: 'stores',
   Cast: 'casts',
   NgCastEntry: null,

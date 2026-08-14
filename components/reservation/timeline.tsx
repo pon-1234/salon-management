@@ -51,6 +51,7 @@ interface TimelineProps {
   onReservationCreated?: (reservationId?: string) => void
   businessHours: BusinessHoursRange
   optionCatalog?: StaffOptionCatalogEntry[]
+  canCreateReservation: boolean
 }
 
 interface AvailableSlot {
@@ -70,6 +71,7 @@ export function Timeline({
   onReservationCreated,
   businessHours,
   optionCatalog = [],
+  canCreateReservation,
 }: TimelineProps) {
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null)
   const [selectedStaff, setSelectedStaff] = useState<Cast | null>(null)
@@ -308,6 +310,10 @@ export function Timeline({
   }
 
   const handleTimeSlotClick = (slot: AvailableSlot, selectedTime: Date) => {
+    if (!canCreateReservation) {
+      return
+    }
+
     const effectiveDuration = Math.max(
       differenceInMinutes(slot.endTime, selectedTime),
       MIN_BOOKING_DURATION_MINUTES
@@ -528,7 +534,7 @@ export function Timeline({
                 {safeMap(getAvailableSlots(member), (slot, index) => {
                   if (slot.duration < MIN_BOOKING_DURATION_MINUTES) return null
                   const selectableTimes = buildSelectableStartTimes(slot)
-                  const disabled = !selectedCustomer
+                  const disabled = !selectedCustomer || !canCreateReservation
 
                   return (
                     <div
@@ -568,7 +574,11 @@ export function Timeline({
                           })}
                         </div>
                         {disabled && (
-                          <span className="mt-1 text-xs text-gray-400">顧客を選択してください</span>
+                          <span className="mt-1 text-xs text-gray-400">
+                            {canCreateReservation
+                              ? '顧客を選択してください'
+                              : '予約作成権限がありません'}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -604,7 +614,7 @@ export function Timeline({
       </ScrollArea>
 
       <QuickBookingDialog
-        open={!!selectedSlot}
+        open={canCreateReservation && !!selectedSlot}
         onOpenChange={(open) => !open && setSelectedSlot(null)}
         selectedStaff={
           selectedSlot

@@ -168,6 +168,45 @@ ${expectedMigrations}
   END IF;
 
   SELECT count(*) INTO actual
+  FROM "CustomerStoreAssignment" assignment
+  LEFT JOIN "Customer" customer ON customer."id" = assignment."customerId"
+  LEFT JOIN "Store" store ON store."id" = assignment."storeId"
+  WHERE customer."id" IS NULL OR store."id" IS NULL;
+  IF actual <> 0 THEN
+    RAISE EXCEPTION 'customer assignment relation mismatch';
+  END IF;
+
+  SELECT count(*) INTO actual
+  FROM (
+    SELECT customer."id"
+    FROM "Customer" customer
+    LEFT JOIN "CustomerStoreAssignment" assignment
+      ON assignment."customerId" = customer."id"
+    GROUP BY customer."id"
+    HAVING count(assignment."storeId") <> 1
+  ) uncovered_customer;
+  IF actual <> 0 THEN
+    RAISE EXCEPTION 'customer assignment coverage mismatch';
+  END IF;
+
+  SELECT count(*) INTO actual
+  FROM "Reservation" r
+  LEFT JOIN "CustomerStoreAssignment" assignment
+    ON assignment."customerId" = r."customerId"
+   AND assignment."storeId" = r."storeId"
+  WHERE assignment."customerId" IS NULL;
+  IF actual <> 0 THEN
+    RAISE EXCEPTION 'reservation customer store assignment mismatch';
+  END IF;
+
+  SELECT count(*) INTO actual
+  FROM "Customer"
+  WHERE "nameKana" IS NULL OR "email" IS NULL OR "password" IS NULL OR "birthDate" IS NULL;
+  IF actual <> 0 THEN
+    RAISE EXCEPTION 'imported customer required profile mismatch';
+  END IF;
+
+  SELECT count(*) INTO actual
   FROM "Customer"
   WHERE "email" <> lower("email")
      OR "phone" !~ '^[0-9]{10,11}$'

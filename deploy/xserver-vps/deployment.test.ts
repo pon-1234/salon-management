@@ -139,7 +139,8 @@ describe('XServer VPS deployment artifacts', () => {
     )
 
     expect(manual).toContain('`[UAT]` 専用データだけ')
-    expect(manual).toMatch(/`000`.*月日.*時分/u)
+    expect(manual).toMatch(/`090`.*月日.*時分/u)
+    expect(manual).not.toMatch(/`000`.*月日.*時分/u)
     expect(manual).toMatch(/新規顧客.*予約.*変更.*キャンセル/u)
     expect(manual).toMatch(/キャンセル理由/u)
     expect(manual).toMatch(/コピー済み.*変更・削除し(?:ない|ません)/u)

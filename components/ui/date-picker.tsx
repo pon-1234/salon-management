@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Shared optional date-field control contract
+ * @related_to   Calendar and administrative customer profile forms
+ * @known_issues None
+ */
 'use client'
 
 import * as React from 'react'
@@ -9,7 +14,7 @@ import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 interface DatePickerProps {
-  selected: Date
+  selected?: Date
   onSelect: (date: Date | undefined) => void
 }
 
@@ -25,7 +30,7 @@ export function DatePicker({ selected, onSelect }: DatePickerProps) {
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {selected ? format(selected, 'PPP') : <span>Pick a date</span>}
+          {selected ? format(selected, 'PPP') : <span>日付を選択</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0">

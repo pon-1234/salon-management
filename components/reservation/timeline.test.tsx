@@ -10,8 +10,14 @@ import type { ReservationData } from '@/lib/types/reservation'
 import type { Customer } from '@/lib/customer/types'
 import { Timeline } from './timeline'
 
+const quickBookingDialogMock = vi.hoisted(() =>
+  vi.fn(({ open }: { open: boolean }) =>
+    open ? <div data-testid="quick-booking-dialog">予約入力</div> : null
+  )
+)
+
 vi.mock('./quick-booking-dialog', () => ({
-  QuickBookingDialog: () => null,
+  QuickBookingDialog: quickBookingDialogMock,
 }))
 
 const staffDialogMock = vi.hoisted(() => vi.fn(() => null))
@@ -113,11 +119,13 @@ const staff: (Cast & { appointments: Appointment[] })[] = [
 describe('Timeline appointment cards', () => {
   beforeEach(() => {
     staffDialogMock.mockClear()
+    quickBookingDialogMock.mockClear()
   })
 
   it('keeps the time axis and horizontal scrollbar inside a viewport-height timeline', () => {
     render(
       <Timeline
+        canCreateReservation
         staff={staff}
         selectedDate={new Date('2030-07-21T00:00:00+09:00')}
         selectedCustomer={null}
@@ -147,6 +155,7 @@ describe('Timeline appointment cards', () => {
 
     render(
       <Timeline
+        canCreateReservation
         staff={rankedStaff}
         selectedDate={new Date('2030-07-21T00:00:00+09:00')}
         selectedCustomer={null}
@@ -170,6 +179,7 @@ describe('Timeline appointment cards', () => {
 
     render(
       <Timeline
+        canCreateReservation
         staff={staff}
         selectedDate={new Date('2030-07-21T00:00:00+09:00')}
         selectedCustomer={null}
@@ -201,6 +211,7 @@ describe('Timeline appointment cards', () => {
 
     render(
       <Timeline
+        canCreateReservation
         staff={staff}
         selectedDate={new Date('2030-07-21T00:00:00+09:00')}
         selectedCustomer={null}
@@ -250,6 +261,7 @@ describe('Timeline appointment cards', () => {
 
     render(
       <Timeline
+        canCreateReservation
         staff={midnightStaff}
         selectedDate={new Date('2030-07-21T00:00:00+09:00')}
         selectedCustomer={selectedCustomer}
@@ -289,6 +301,7 @@ describe('Timeline appointment cards', () => {
 
     render(
       <Timeline
+        canCreateReservation
         staff={pastStaff}
         selectedDate={new Date('2020-07-21T00:00:00+09:00')}
         selectedCustomer={selectedCustomer}
@@ -304,5 +317,57 @@ describe('Timeline appointment cards', () => {
     )
 
     expect(screen.queryByRole('button', { name: '14:00' })).not.toBeInTheDocument()
+  })
+
+  it('keeps existing reservations readable but disables empty-slot booking without create permission', () => {
+    const selectedCustomer = {
+      id: 'customer-1',
+      name: '確認顧客',
+      ngCasts: [],
+      ngCastIds: [],
+    } as unknown as Customer
+    const setSelectedAppointment = vi.fn()
+    const readOnlyStaff = [
+      {
+        ...staff[0],
+        workStart: startTime,
+        workEnd: endTime,
+      },
+      {
+        ...staff[0],
+        id: 'cast-available',
+        name: '空きキャスト',
+        appointments: [],
+        workStart: new Date('2030-07-21T14:00:00+09:00'),
+        workEnd: new Date('2030-07-21T15:00:00+09:00'),
+      },
+    ]
+
+    render(
+      <Timeline
+        canCreateReservation={false}
+        staff={readOnlyStaff}
+        selectedDate={new Date('2030-07-21T00:00:00+09:00')}
+        selectedCustomer={selectedCustomer}
+        setSelectedAppointment={setSelectedAppointment}
+        reservations={[reservation]}
+        businessHours={{
+          startMinutes: 10 * 60,
+          endMinutes: 24 * 60,
+          startLabel: '10:00',
+          endLabel: '24:00',
+        }}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /\[確認用\] 旧顧客 #104168/ }))
+    expect(setSelectedAppointment).toHaveBeenCalledWith(reservation)
+    expect(screen.getByRole('button', { name: '14:00' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: '14:00' }))
+    expect(screen.queryByTestId('quick-booking-dialog')).not.toBeInTheDocument()
+    expect(quickBookingDialogMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ open: false }),
+      undefined
+    )
   })
 })

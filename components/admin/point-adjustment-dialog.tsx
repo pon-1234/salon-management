@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @design_doc   Customer point adjustment store isolation
+ * @related_to   POST /api/customer/points/adjust and administrator customer detail
+ * @known_issues None
+ */
 import { useState, type ReactNode } from 'react'
 import * as z from 'zod'
 import { useForm } from 'react-hook-form'
@@ -24,6 +29,8 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/hooks/use-toast'
+import { useStore } from '@/contexts/store-context'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 
 const adjustmentSchema = z.object({
   amount: z.coerce
@@ -48,6 +55,7 @@ export function PointAdjustmentDialog({
   trigger,
   onAdjusted,
 }: PointAdjustmentDialogProps) {
+  const { currentStore } = useStore()
   const [open, setOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const form = useForm<AdjustmentFormValues>({
@@ -61,18 +69,21 @@ export function PointAdjustmentDialog({
   const handleSubmit = async (values: AdjustmentFormValues) => {
     setSubmitting(true)
     try {
-      const response = await fetch('/api/customer/points/adjust', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          customerId,
-          amount: values.amount,
-          reason: values.reason,
-        }),
-      })
+      const response = await fetch(
+        buildStoreScopedEndpoint('/api/customer/points/adjust', currentStore.id),
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            customerId,
+            amount: values.amount,
+            reason: values.reason,
+          }),
+        }
+      )
 
       if (!response.ok) {
         throw new Error('ポイント調整に失敗しました')

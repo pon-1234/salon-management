@@ -75,7 +75,9 @@ describe('Chat API', () => {
 
   describe('GET /api/chat', () => {
     it('should fetch messages for a specific customer from database', async () => {
-      const mockSession = { user: { role: 'admin', adminRole: 'super_admin' } }
+      const mockSession = {
+        user: { role: 'admin', adminRole: 'super_admin', permissions: ['*'] },
+      }
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
       const mockMessages = [
@@ -111,7 +113,9 @@ describe('Chat API', () => {
     })
 
     it('should notify cast via LINE when sending a message to a cast', async () => {
-      const mockSession = { user: { role: 'admin', adminRole: 'super_admin' } }
+      const mockSession = {
+        user: { role: 'admin', adminRole: 'super_admin', permissions: ['*'] },
+      }
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
       const newMessage = {
@@ -174,7 +178,9 @@ describe('Chat API', () => {
     })
 
     it('should reject a bulk message read when no participant is provided', async () => {
-      const mockSession = { user: { role: 'admin', adminRole: 'super_admin' } }
+      const mockSession = {
+        user: { role: 'admin', adminRole: 'super_admin', permissions: ['*'] },
+      }
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
       const request = new NextRequest('http://localhost/api/chat?storeId=store-a')
@@ -197,7 +203,9 @@ describe('Chat API', () => {
 
   describe('POST /api/chat', () => {
     it('should create a new message in database', async () => {
-      const mockSession = { user: { role: 'admin', adminRole: 'super_admin' } }
+      const mockSession = {
+        user: { role: 'admin', adminRole: 'super_admin', permissions: ['*'] },
+      }
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
       const newMessage = {
@@ -259,7 +267,9 @@ describe('Chat API', () => {
     })
 
     it('should create message with reservation info when provided', async () => {
-      const mockSession = { user: { role: 'admin', adminRole: 'super_admin' } }
+      const mockSession = {
+        user: { role: 'admin', adminRole: 'super_admin', permissions: ['*'] },
+      }
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
       const newMessage = {
@@ -306,7 +316,9 @@ describe('Chat API', () => {
     })
 
     it('should return 400 for invalid request body', async () => {
-      const mockSession = { user: { role: 'admin', adminRole: 'super_admin' } }
+      const mockSession = {
+        user: { role: 'admin', adminRole: 'super_admin', permissions: ['*'] },
+      }
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
       const invalidMessage = {
@@ -329,7 +341,9 @@ describe('Chat API', () => {
 
   describe('PUT /api/chat', () => {
     it('should update message read status in database', async () => {
-      const mockSession = { user: { role: 'admin', adminRole: 'super_admin' } }
+      const mockSession = {
+        user: { role: 'admin', adminRole: 'super_admin', permissions: ['*'] },
+      }
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
       const updatedMessage = {
@@ -347,7 +361,11 @@ describe('Chat API', () => {
         updatedAt: new Date('2024-01-01T12:00:00.000Z'),
       }
 
-      vi.mocked(prisma.message.findFirst).mockResolvedValue({ id: 'msg123' } as never)
+      vi.mocked(prisma.message.findFirst).mockResolvedValue({
+        id: 'msg123',
+        customerId: 'customer1',
+        castId: null,
+      } as never)
       vi.mocked(prisma.message.update).mockResolvedValue(updatedMessage)
 
       const request = new NextRequest('http://localhost/api/chat', {
@@ -369,7 +387,9 @@ describe('Chat API', () => {
     })
 
     it('should return 404 if message not found', async () => {
-      const mockSession = { user: { role: 'admin', adminRole: 'super_admin' } }
+      const mockSession = {
+        user: { role: 'admin', adminRole: 'super_admin', permissions: ['*'] },
+      }
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
       vi.mocked(prisma.message.update).mockRejectedValue(
@@ -378,7 +398,11 @@ describe('Chat API', () => {
           clientVersion: '5.0.0',
         })
       )
-      vi.mocked(prisma.message.findFirst).mockResolvedValue({ id: 'nonexistent' } as never)
+      vi.mocked(prisma.message.findFirst).mockResolvedValue({
+        id: 'nonexistent',
+        customerId: 'customer1',
+        castId: null,
+      } as never)
 
       const request = new NextRequest('http://localhost/api/chat', {
         method: 'PUT',

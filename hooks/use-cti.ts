@@ -7,6 +7,8 @@
  */
 import { useState, useCallback } from 'react'
 import type { Customer } from '@/lib/customer/types'
+import { useStore } from '@/contexts/store-context'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 
 export interface IncomingCall {
   id: string
@@ -16,20 +18,27 @@ export interface IncomingCall {
 }
 
 export function useCTI() {
+  const { currentStore } = useStore()
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null)
 
   // 電話番号から顧客を検索
-  const findCustomerByPhone = useCallback(async (phoneNumber: string): Promise<Customer | null> => {
-    const response = await fetch(
-      `/api/customer/by-phone/${encodeURIComponent(phoneNumber.replace(/[-\s]/g, ''))}`,
-      { credentials: 'include', cache: 'no-store' }
-    )
-    if (response.status === 404) return null
-    if (!response.ok) {
-      throw new Error(`Customer lookup failed: ${response.status}`)
-    }
-    return response.json() as Promise<Customer>
-  }, [])
+  const findCustomerByPhone = useCallback(
+    async (phoneNumber: string): Promise<Customer | null> => {
+      const response = await fetch(
+        buildStoreScopedEndpoint(
+          `/api/customer/by-phone/${encodeURIComponent(phoneNumber.replace(/[-\s]/g, ''))}`,
+          currentStore.id
+        ),
+        { credentials: 'include', cache: 'no-store' }
+      )
+      if (response.status === 404) return null
+      if (!response.ok) {
+        throw new Error(`Customer lookup failed: ${response.status}`)
+      }
+      return response.json() as Promise<Customer>
+    },
+    [currentStore.id]
+  )
 
   // 着信表示
   const showIncomingCall = useCallback(

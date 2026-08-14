@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
     const escapedResetUrl = escapeHtmlText(resetUrl.toString())
     try {
       const delivery = await emailClient.send({
-        to: customer.email,
+        to: email,
         subject: 'パスワードリセットのご案内',
         body: `
           <h2>パスワードリセット</h2>

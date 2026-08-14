@@ -38,7 +38,10 @@ function formatTimestamp(timestamp: Date | string): string {
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const storeId = searchParams.get('storeId')?.trim() ?? ''
-  const authError = await requireAdmin(storeId ? { storeId } : undefined)
+  const authError = await requireAdmin({
+    permissions: 'cast:read',
+    ...(storeId ? { storeId } : {}),
+  })
   if (authError) return authError
 
   if (!storeId) {

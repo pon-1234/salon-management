@@ -1,7 +1,7 @@
 /**
  * @design_doc   Chat customers API endpoint
  * @related_to   Chat system, Customer management, Message model
- * @known_issues Customers visiting multiple stores retain one shared chat thread
+ * @known_issues Multi-store customers remain unavailable until messages carry a store identity
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { db as prisma } from '@/lib/db'
@@ -56,7 +56,10 @@ function formatTimestamp(timestamp: Date | string): string {
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const storeId = searchParams.get('storeId')?.trim() ?? ''
-  const authError = await requireAdmin(storeId ? { storeId } : undefined)
+  const authError = await requireAdmin({
+    permissions: 'customer:read',
+    ...(storeId ? { storeId } : {}),
+  })
   if (authError) return authError
 
   if (!storeId) {
@@ -74,14 +77,11 @@ export async function GET(request: NextRequest) {
 
   try {
     const customerStoreScope = await resolveCustomerChatScope(prisma, storeId)
-    const hasStoreScope = Object.keys(customerStoreScope).length > 0
 
     if (id) {
-      const customer = hasStoreScope
-        ? await prisma.customer.findFirst({
-            where: { id, ...customerStoreScope },
-          })
-        : await prisma.customer.findUnique({ where: { id } })
+      const customer = await prisma.customer.findFirst({
+        where: { id, ...customerStoreScope },
+      })
 
       if (!customer) {
         return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
@@ -130,14 +130,7 @@ export async function GET(request: NextRequest) {
         }
       : null
     const customers = await prisma.customer.findMany({
-      ...(nameSearch || hasStoreScope
-        ? {
-            where:
-              nameSearch && hasStoreScope
-                ? { AND: [customerStoreScope, nameSearch] }
-                : (nameSearch ?? customerStoreScope),
-          }
-        : {}),
+      where: nameSearch ? { AND: [customerStoreScope, nameSearch] } : customerStoreScope,
       orderBy: { updatedAt: 'desc' },
       take: limit,
     })

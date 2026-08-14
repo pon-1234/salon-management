@@ -49,7 +49,10 @@ function normalizeCupValue(raw: string) {
 export async function GET(request: NextRequest) {
   try {
     const storeId = await ensureStoreId(await resolveStoreId(request))
-    const authError = await requireAdmin({ permissions: 'customer:read', storeId })
+    const authError = await requireAdmin({
+      permissions: ['customer:read', 'reservation:read'],
+      storeId,
+    })
     if (authError) return authError
 
     const customerId = request.nextUrl.searchParams.get('customerId')

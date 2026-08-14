@@ -183,6 +183,9 @@ describe('buildPreviewUatFixture', () => {
         points: 1000,
       }),
     ])
+    expect(fixture.customerStoreAssignments).toEqual([
+      { customerId: 'uat-customer', storeId: 'uat-ikebukuro' },
+    ])
     expect(fixture.courses).toHaveLength(2)
     expect(fixture.options).toHaveLength(2)
     expect(fixture.areas).toHaveLength(2)

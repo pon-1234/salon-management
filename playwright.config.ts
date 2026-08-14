@@ -13,6 +13,7 @@ const databaseURL =
 
 export default defineConfig({
   testDir: './e2e',
+  globalSetup: './e2e/global-setup.ts',
   outputDir: '/tmp/salon-management-playwright-results',
   expect: {
     timeout: 20_000,

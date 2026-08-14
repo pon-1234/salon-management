@@ -9,39 +9,40 @@ datasource db {
 }
 
 model Customer {
-  id                        String                 @id @default(cuid())
+  id                        String                    @id @default(cuid())
   name                      String
-  nameKana                  String
-  phone                     String                 @unique
-  email                     String                 @unique
-  password                  String
-  birthDate                 DateTime
-  memberType                String                 @default("regular")
-  accountStatus             String                 @default("active")
-  membershipStage           String                 @default("regular")
+  nameKana                  String?
+  phone                     String                    @unique
+  email                     String?                   @unique
+  password                  String?
+  birthDate                 DateTime?
+  memberType                String                    @default("regular")
+  accountStatus             String                    @default("active")
+  membershipStage           String                    @default("regular")
   lastLoginAt               DateTime?
   lastVisitAt               DateTime?
-  points                    Int                    @default(0)
-  smsEnabled                Boolean                @default(false)
-  emailNotificationEnabled  Boolean                @default(true)
-  createdAt                 DateTime               @default(now())
-  updatedAt                 DateTime               @updatedAt
+  points                    Int                       @default(0)
+  smsEnabled                Boolean                   @default(false)
+  emailNotificationEnabled  Boolean                   @default(true)
+  createdAt                 DateTime                  @default(now())
+  updatedAt                 DateTime                  @updatedAt
   resetToken                String?
   resetTokenExpiry          DateTime?
-  emailVerified             Boolean                @default(false)
+  emailVerified             Boolean                   @default(false)
   emailVerificationToken    String?
   emailVerificationExpiry   DateTime?
-  phoneVerified             Boolean                @default(false)
+  phoneVerified             Boolean                   @default(false)
   phoneVerifiedAt           DateTime?
   phoneVerificationCode     String?
   phoneVerificationExpiry   DateTime?
-  phoneVerificationAttempts Int                    @default(0)
+  phoneVerificationAttempts Int                       @default(0)
   ngCasts                   NgCastEntry[]
   pointHistory              CustomerPointHistory[]
   reservations              Reservation[]
   reviews                   Review[]
   messages                  Message[]
   paymentTransactions       PaymentTransaction[]
+  storeAssignments          CustomerStoreAssignment[]
 
   @@index([accountStatus])
 }
@@ -69,6 +70,7 @@ model Store {
   eventBanners           StoreEventBanner[]
   settlementPayments     SettlementPayment[]
   adminAssignments       AdminStoreAssignment[]
+  customerAssignments    CustomerStoreAssignment[]
   lineRegistrationTokens CastLineRegistrationToken[]
   hotelSettings          HotelSettings[]
 }
@@ -461,6 +463,17 @@ model AdminStoreAssignment {
   store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
   @@id([adminId, storeId])
+  @@index([storeId])
+}
+
+model CustomerStoreAssignment {
+  customerId String
+  storeId    String
+  createdAt  DateTime @default(now())
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  store      Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@id([customerId, storeId])
   @@index([storeId])
 }
 

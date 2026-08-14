@@ -32,12 +32,7 @@ import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import {
-  normalizePhoneNumber,
-  normalizePhoneQuery,
-  formatPhoneNumber,
-  isValidPhoneInput,
-} from '@/lib/customer/utils'
+import { isValidPhoneInput, normalizeWritableCustomerPhoneIdentity } from '@/lib/customer/utils'
 import { normalizeCustomerEmail } from '@/lib/auth/customer-auth'
 import { isBcryptSafePassword } from '@/lib/auth/password-policy'
 
@@ -54,10 +49,10 @@ const registerSchema = z
       .string()
       .min(1, '電話番号を入力してください')
       .refine(isValidPhoneInput, '数字とハイフンのみ入力してください')
-      .refine((value) => {
-        const digits = normalizePhoneQuery(value)
-        return digits.length >= 10 && digits.length <= 11
-      }, '電話番号は10〜11桁の数字で入力してください'),
+      .refine(
+        (value) => normalizeWritableCustomerPhoneIdentity(value) !== null,
+        '有効な日本国内の電話番号を入力してください'
+      ),
     password: z
       .string()
       .min(8, 'パスワードは8文字以上で入力してください')
@@ -123,6 +118,10 @@ export function RegisterForm({ store }: RegisterFormProps) {
 
     try {
       const normalizedEmail = normalizeCustomerEmail(data.email)
+      const normalizedPhone = normalizeWritableCustomerPhoneIdentity(data.phone)
+      if (!normalizedPhone) {
+        throw new Error('有効な日本国内の電話番号を入力してください')
+      }
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
@@ -131,7 +130,7 @@ export function RegisterForm({ store }: RegisterFormProps) {
         body: JSON.stringify({
           nickname: data.nickname,
           email: normalizedEmail,
-          phone: normalizePhoneNumber(data.phone),
+          phone: normalizedPhone,
           password: data.password,
           birthDate: data.birthDate,
           smsNotifications: data.smsNotifications,

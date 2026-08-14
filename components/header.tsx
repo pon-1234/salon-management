@@ -66,6 +66,9 @@ export function Header() {
   const { data: session } = useSession()
   const { currentStore } = useStore()
   const canViewAnalytics = hasPermission(session?.user?.permissions ?? [], 'analytics:read')
+  const canReadCustomers = hasPermission(session?.user?.permissions ?? [], 'customer:read')
+  const canCreateReservation =
+    canReadCustomers && hasPermission(session?.user?.permissions ?? [], 'reservation:create')
   const [castList, setCastList] = useState<Cast[]>([])
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState('')
@@ -79,6 +82,11 @@ export function Header() {
   const [showCustomerLookup, setShowCustomerLookup] = useState(false)
 
   useEffect(() => {
+    const controller = new AbortController()
+    let active = true
+    setCastList([])
+    setValue('')
+
     const loadCasts = async () => {
       try {
         const response = await fetch(
@@ -86,19 +94,31 @@ export function Header() {
           {
             cache: 'no-store',
             credentials: 'include',
+            signal: controller.signal,
           }
         )
         if (!response.ok) {
           throw new Error(`Failed to fetch casts: ${response.status}`)
         }
         const payload = await response.json()
+        if (!active) {
+          return
+        }
         setCastList(normalizeCastList(payload))
       } catch (error) {
+        if (!active) {
+          return
+        }
         console.error('Failed to load casts:', error)
       }
     }
 
-    loadCasts()
+    void loadCasts()
+
+    return () => {
+      active = false
+      controller.abort()
+    }
   }, [currentStore.id])
 
   const handleNotificationSelect = useCallback(
@@ -151,36 +171,42 @@ export function Header() {
               <SheetTitle>管理メニュー</SheetTitle>
             </SheetHeader>
             <nav className="mt-6 grid gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                className="min-h-11 justify-start"
-                onClick={() => setShowCustomerSelection(true)}
-                aria-label="モバイル予約作成"
-              >
-                <Calendar className="mr-3 h-4 w-4" />
-                予約作成
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                className="min-h-11 justify-start"
-                onClick={() => setShowCustomerLookup(true)}
-                aria-label="モバイル顧客検索"
-              >
-                <Search className="mr-3 h-4 w-4" />
-                顧客検索
-              </Button>
-              {adminNavigationLinks.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-muted"
+              {canCreateReservation ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="min-h-11 justify-start"
+                  onClick={() => setShowCustomerSelection(true)}
+                  aria-label="モバイル予約作成"
                 >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </Link>
-              ))}
+                  <Calendar className="mr-3 h-4 w-4" />
+                  予約作成
+                </Button>
+              ) : null}
+              {canReadCustomers ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="min-h-11 justify-start"
+                  onClick={() => setShowCustomerLookup(true)}
+                  aria-label="モバイル顧客検索"
+                >
+                  <Search className="mr-3 h-4 w-4" />
+                  顧客検索
+                </Button>
+              ) : null}
+              {adminNavigationLinks
+                .filter((item) => item.href !== '/admin/customers' || canReadCustomers)
+                .map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-muted"
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.label}
+                  </Link>
+                ))}
               {canViewAnalytics && (
                 <>
                   <Link
@@ -216,25 +242,29 @@ export function Header() {
         {/* 店舗セレクター */}
         <StoreSelector />
 
-        <Button
-          type="button"
-          variant="ghost"
-          className="hidden h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2 xl:flex"
-          onClick={() => setShowCustomerSelection(true)}
-        >
-          <Calendar className="h-5 w-5" />
-          <span className="text-xs text-gray-600">予約作成</span>
-        </Button>
+        {canCreateReservation ? (
+          <Button
+            type="button"
+            variant="ghost"
+            className="hidden h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2 xl:flex"
+            onClick={() => setShowCustomerSelection(true)}
+          >
+            <Calendar className="h-5 w-5" />
+            <span className="text-xs text-gray-600">予約作成</span>
+          </Button>
+        ) : null}
 
-        <Button
-          type="button"
-          variant="ghost"
-          className="hidden h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2 xl:flex"
-          onClick={() => setShowCustomerLookup(true)}
-        >
-          <Search className="h-5 w-5" />
-          <span className="text-xs text-gray-600">顧客検索</span>
-        </Button>
+        {canReadCustomers ? (
+          <Button
+            type="button"
+            variant="ghost"
+            className="hidden h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2 xl:flex"
+            onClick={() => setShowCustomerLookup(true)}
+          >
+            <Search className="h-5 w-5" />
+            <span className="text-xs text-gray-600">顧客検索</span>
+          </Button>
+        ) : null}
 
         <Link href="/admin/reservation-list" className="hidden xl:block">
           <Button
@@ -410,15 +440,19 @@ export function Header() {
           onMarkAsRead={markAsRead}
           onNavigate={handleNavigateFromNotification}
         />
-        <CustomerSelectionDialog
-          open={showCustomerSelection}
-          onOpenChange={setShowCustomerSelection}
-        />
-        <CustomerSelectionDialog
-          open={showCustomerLookup}
-          onOpenChange={setShowCustomerLookup}
-          mode="lookup"
-        />
+        {canCreateReservation ? (
+          <CustomerSelectionDialog
+            open={showCustomerSelection}
+            onOpenChange={setShowCustomerSelection}
+          />
+        ) : null}
+        {canReadCustomers ? (
+          <CustomerSelectionDialog
+            open={showCustomerLookup}
+            onOpenChange={setShowCustomerLookup}
+            mode="lookup"
+          />
+        ) : null}
       </div>
     </>
   )

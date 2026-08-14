@@ -24,26 +24,141 @@ export function calculateAge(birthDate: Date): number {
 }
 
 export function normalizePhoneQuery(value: string): string {
-  return value.replace(/\D/g, '')
+  return value.normalize('NFKC').replace(/\D/g, '')
 }
 
 export function normalizePhoneNumber(value: string): string {
   return normalizePhoneQuery(value)
 }
 
+/**
+ * Canonical customer identity format. New customer records use Japanese E.164,
+ * while exact lookup variants keep historical national-format rows reachable.
+ */
+export function normalizeCustomerPhoneIdentity(value: string): string | null {
+  const normalized = value.normalize('NFKC').trim()
+  if (!normalized || !/^[0-9+()\-\sー－]+$/.test(normalized)) {
+    return null
+  }
+
+  const plusMatches = normalized.match(/\+/g) ?? []
+  if (plusMatches.length > 1 || (plusMatches.length === 1 && !normalized.startsWith('+'))) {
+    return null
+  }
+
+  if (normalized.startsWith('+81')) {
+    const internationalBody = normalized.slice(3)
+    const withoutOptionalTrunk = internationalBody.replace(/^\s*\(0\)\s*/, '')
+    const nationalNumber = withoutOptionalTrunk.replace(/\D/g, '')
+    if (!/^[1-9]\d{8,9}$/.test(nationalNumber)) {
+      return null
+    }
+    return `+81${nationalNumber}`
+  }
+
+  if (plusMatches.length > 0) {
+    return null
+  }
+
+  const digits = normalized.replace(/\D/g, '')
+  if (/^0[1-9]\d{8,9}$/.test(digits)) {
+    return `+81${digits.slice(1)}`
+  }
+  if (/^81[1-9]\d{8,9}$/.test(digits)) {
+    return `+${digits}`
+  }
+  return null
+}
+
+function isWritableJapaneseNationalPhone(value: string): boolean {
+  if (value.startsWith('0800')) {
+    return /^0800\d{7}$/.test(value)
+  }
+  if (/^(?:0120|0570)/.test(value)) {
+    return /^(?:0120|0570)\d{6}$/.test(value)
+  }
+  if (/^(?:050|060|070|080|090)/.test(value)) {
+    return /^(?:050|060|070|080|090)\d{8}$/.test(value)
+  }
+  return /^0[1-9]\d{8}$/.test(value)
+}
+
+/**
+ * Validates a newly persisted customer phone without narrowing legacy lookup compatibility.
+ */
+export function normalizeWritableCustomerPhoneIdentity(value: string): string | null {
+  const canonical = normalizeCustomerPhoneIdentity(value)
+  if (!canonical) {
+    return null
+  }
+  const national = `0${canonical.slice(3)}`
+  return isWritableJapaneseNationalPhone(national) ? canonical : null
+}
+
+export function getCustomerPhoneIdentityVariants(value: string): string[] {
+  const canonical = normalizeCustomerPhoneIdentity(value)
+  if (canonical) {
+    return [canonical, `0${canonical.slice(3)}`, canonical.slice(1)]
+  }
+
+  const normalized = value.normalize('NFKC').trim()
+  if (!normalized || !/^[0-9()\-\sー－]+$/.test(normalized)) {
+    return []
+  }
+  const digits = normalized.replace(/\D/g, '')
+  return /^[1-9]\d{9,10}$/.test(digits) ? [digits] : []
+}
+
+export function getCustomerPhoneSearchFragments(value: string): string[] {
+  const exactIdentities = getCustomerPhoneIdentityVariants(value)
+  if (exactIdentities.length > 0) {
+    return exactIdentities.length > 1 ? exactIdentities.slice(1) : exactIdentities
+  }
+
+  const digits = normalizePhoneQuery(value)
+  if (digits.length < 3) {
+    return []
+  }
+
+  const fragments = [digits]
+  if (/^0[1-9]/.test(digits)) {
+    fragments.push(`81${digits.slice(1)}`)
+  } else if (/^81[1-9]/.test(digits)) {
+    fragments.push(`0${digits.slice(2)}`)
+  }
+  return [...new Set(fragments)]
+}
+
+export function isSameCustomerPhone(left: string, right: string): boolean {
+  const leftIdentities = new Set(getCustomerPhoneIdentityVariants(left))
+  return getCustomerPhoneIdentityVariants(right).some((identity) => leftIdentities.has(identity))
+}
+
 export function isValidPhoneInput(value: string): boolean {
-  return /^[0-9+\-\sー－]+$/.test(value)
+  return /^[0-9+()\-\sー－]+$/.test(value.normalize('NFKC'))
+}
+
+export function getCustomerPhoneTelHref(value: string): string {
+  const canonical = normalizeCustomerPhoneIdentity(value)
+  return `tel:${canonical ?? normalizePhoneQuery(value)}`
 }
 
 export function formatPhoneNumber(value: string): string {
-  const digits = normalizePhoneNumber(value)
-  if (digits.length === 11) {
+  const canonical = normalizeCustomerPhoneIdentity(value)
+  const digits = canonical ? `0${canonical.slice(3)}` : normalizePhoneNumber(value)
+  if (/^0800\d{7}$/.test(digits)) {
+    return `${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`
+  }
+  if (/^(?:050|060|070|080|090)\d{8}$/.test(digits)) {
     return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`
   }
-  if (digits.length === 10) {
-    return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`
+  if (/^(?:0120|0570)\d{6}$/.test(digits)) {
+    return `${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`
   }
-  return value
+  if (/^(?:03|06)\d{8}$/.test(digits)) {
+    return `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6)}`
+  }
+  return digits || value
 }
 
 function toDate(value: unknown, fallback: Date): Date {
@@ -193,7 +308,7 @@ export function findCustomerReservationByUsageRecordId(
 
 export function deserializeCustomer(raw: any): Customer {
   const createdAt = toDate(raw?.createdAt, new Date())
-  const birthDate = toDate(raw?.birthDate, new Date())
+  const birthDate = toOptionalDate(raw?.birthDate)
   const updatedAt = toDate(raw?.updatedAt, createdAt)
 
   const registrationDate =
@@ -233,7 +348,7 @@ export function deserializeCustomer(raw: any): Customer {
     email: raw?.email ?? '',
     password: raw?.password ?? '',
     birthDate,
-    age: typeof raw?.age === 'number' ? raw.age : calculateAge(birthDate),
+    age: typeof raw?.age === 'number' ? raw.age : birthDate ? calculateAge(birthDate) : undefined,
     memberType: raw?.memberType === 'vip' ? 'vip' : 'regular',
     accountStatus: toCustomerAccountStatus(raw?.accountStatus),
     membershipStage: toCustomerMembershipStage(raw?.membershipStage),

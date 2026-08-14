@@ -46,13 +46,13 @@ describe('GET /api/customer/insights', () => {
     mocks.messageCount.mockResolvedValue(0)
   })
 
-  it('authorizes customer read access against the canonical assigned store', async () => {
+  it('requires both customer and reservation read access against the canonical assigned store', async () => {
     const response = await GET(request())
 
     expect(response.status).toBe(200)
     expect(mocks.ensureStoreId).toHaveBeenCalledWith('ikebukuro')
     expect(mocks.requireAdmin).toHaveBeenCalledWith({
-      permissions: 'customer:read',
+      permissions: ['customer:read', 'reservation:read'],
       storeId: 'uat-ikebukuro',
     })
     expect(mocks.reservationFindMany).toHaveBeenCalledWith(

@@ -1,7 +1,7 @@
 /**
  * @design_doc   Store-scoped administrative chat broadcast persistence
  * @related_to   ChatBroadcastDialog, Customer, Cast, and Message models
- * @known_issues Customers visiting multiple stores retain one shared chat thread
+ * @known_issues Multi-store customers remain unavailable until messages carry a store identity
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -35,7 +35,10 @@ export async function POST(request: NextRequest) {
   try {
     const payload = await request.json()
     const { storeId, target, content, attachments } = broadcastSchema.parse(payload)
-    const storeAuthError = await requireAdmin({ storeId })
+    const storeAuthError = await requireAdmin({
+      permissions: target === 'customers' ? 'customer:read' : 'cast:read',
+      storeId,
+    })
     if (storeAuthError) return storeAuthError
 
     if (!(await isActiveChatStore(db, storeId))) {
@@ -44,14 +47,10 @@ export async function POST(request: NextRequest) {
 
     const trimmedContent = (content ?? '').trim()
 
-    const customerStoreScope =
-      target === 'customers' ? await resolveCustomerChatScope(db, storeId) : null
     const recipients =
       target === 'customers'
         ? await db.customer.findMany({
-            ...(customerStoreScope && Object.keys(customerStoreScope).length > 0
-              ? { where: customerStoreScope }
-              : {}),
+            where: await resolveCustomerChatScope(db, storeId),
             select: { id: true },
           })
         : await db.cast.findMany({ where: { storeId }, select: { id: true } })

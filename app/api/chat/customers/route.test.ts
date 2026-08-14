@@ -55,7 +55,9 @@ describe('Chat Customers API', () => {
 
   describe('GET /api/chat/customers', () => {
     it('should fetch a bounded customer page with last message info from database', async () => {
-      const mockSession = { user: { role: 'admin', adminRole: 'super_admin' } }
+      const mockSession = {
+        user: { role: 'admin', adminRole: 'super_admin', permissions: ['*'] },
+      }
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
       const mockCustomers = [
@@ -147,6 +149,12 @@ describe('Chat Customers API', () => {
       const data = await response.json()
 
       expect(prisma.customer.findMany).toHaveBeenCalledWith({
+        where: {
+          storeAssignments: {
+            some: { storeId: 'store-a' },
+            every: { storeId: 'store-a' },
+          },
+        },
         orderBy: { updatedAt: 'desc' },
         take: 50,
       })
@@ -184,7 +192,7 @@ describe('Chat Customers API', () => {
 
     it('searches names and kana on the server with a capped limit', async () => {
       vi.mocked(getServerSession).mockResolvedValue({
-        user: { role: 'admin', adminRole: 'super_admin' },
+        user: { role: 'admin', adminRole: 'super_admin', permissions: ['*'] },
       })
       vi.mocked(prisma.customer.findMany).mockResolvedValue([])
       vi.mocked(prisma.message.findMany).mockResolvedValue([])
@@ -197,9 +205,19 @@ describe('Chat Customers API', () => {
       expect(response.status).toBe(200)
       expect(prisma.customer.findMany).toHaveBeenCalledWith({
         where: {
-          OR: [
-            { name: { contains: 'ヤマダ', mode: 'insensitive' } },
-            { nameKana: { contains: 'ヤマダ', mode: 'insensitive' } },
+          AND: [
+            {
+              storeAssignments: {
+                some: { storeId: 'store-a' },
+                every: { storeId: 'store-a' },
+              },
+            },
+            {
+              OR: [
+                { name: { contains: 'ヤマダ', mode: 'insensitive' } },
+                { nameKana: { contains: 'ヤマダ', mode: 'insensitive' } },
+              ],
+            },
           ],
         },
         orderBy: { updatedAt: 'desc' },
@@ -209,7 +227,9 @@ describe('Chat Customers API', () => {
     })
 
     it('should fetch specific customer by id', async () => {
-      const mockSession = { user: { role: 'admin', adminRole: 'super_admin' } }
+      const mockSession = {
+        user: { role: 'admin', adminRole: 'super_admin', permissions: ['*'] },
+      }
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
       const mockCustomer = {
@@ -252,7 +272,7 @@ describe('Chat Customers API', () => {
         updatedAt: tenMinutesAgo,
       }
 
-      vi.mocked(prisma.customer.findUnique).mockResolvedValue(mockCustomer)
+      vi.mocked(prisma.customer.findFirst).mockResolvedValue(mockCustomer)
       vi.mocked(prisma.message.findFirst).mockResolvedValue(mockLastMessage)
       vi.mocked(prisma.message.count).mockResolvedValue(0)
 
@@ -260,8 +280,14 @@ describe('Chat Customers API', () => {
       const response = await GET(request)
       const data = await response.json()
 
-      expect(prisma.customer.findUnique).toHaveBeenCalledWith({
-        where: { id: '1' },
+      expect(prisma.customer.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: '1',
+          storeAssignments: {
+            some: { storeId: 'store-a' },
+            every: { storeId: 'store-a' },
+          },
+        },
       })
       expect(prisma.message.findFirst).toHaveBeenCalledWith({
         where: { customerId: '1' },
@@ -288,10 +314,12 @@ describe('Chat Customers API', () => {
     })
 
     it('should return 404 if customer not found', async () => {
-      const mockSession = { user: { role: 'admin', adminRole: 'super_admin' } }
+      const mockSession = {
+        user: { role: 'admin', adminRole: 'super_admin', permissions: ['*'] },
+      }
       vi.mocked(getServerSession).mockResolvedValue(mockSession)
 
-      vi.mocked(prisma.customer.findUnique).mockResolvedValue(null)
+      vi.mocked(prisma.customer.findFirst).mockResolvedValue(null)
 
       const request = new NextRequest(
         'http://localhost/api/chat/customers?id=nonexistent&storeId=store-a'
@@ -300,6 +328,25 @@ describe('Chat Customers API', () => {
 
       expect(response.status).toBe(404)
       expect(await response.json()).toEqual({ error: 'Customer not found' })
+    })
+
+    it('rejects a store-assigned admin without customer:read before loading customer data', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          role: 'admin',
+          adminRole: 'staff',
+          permissions: ['cast:read'],
+          storeIds: ['store-a'],
+        },
+      })
+
+      const response = await GET(
+        new NextRequest('http://localhost/api/chat/customers?storeId=store-a')
+      )
+
+      expect(response.status).toBe(403)
+      expect(prisma.customer.findMany).not.toHaveBeenCalled()
+      expect(prisma.customer.findFirst).not.toHaveBeenCalled()
     })
 
     it('should return 401 if not authenticated as admin', async () => {

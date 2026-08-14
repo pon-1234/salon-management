@@ -329,6 +329,26 @@ describe('Auth Config', () => {
       expect(recordLoginAttempt).toHaveBeenCalledWith('customer:notfound@example.com', false)
     })
 
+    it('does not authenticate a name-only backoffice customer without a password', async () => {
+      const { db } = await import('@/lib/db')
+      vi.mocked(db.customer.findUnique).mockResolvedValueOnce({
+        id: 'name-only',
+        email: null,
+        password: null,
+        accountStatus: 'active',
+        emailVerified: false,
+      } as never)
+
+      const result = await authorize({
+        email: 'unregistered@example.com',
+        password: 'password',
+      })
+
+      expect(result).toBeNull()
+      expect(bcrypt.compare).not.toHaveBeenCalled()
+      expect(recordLoginAttempt).toHaveBeenCalledWith('customer:unregistered@example.com', false)
+    })
+
     it('normalizes customer email before rate limiting', async () => {
       const { db } = await import('@/lib/db')
       vi.mocked(db.customer.findUnique).mockResolvedValueOnce(null)

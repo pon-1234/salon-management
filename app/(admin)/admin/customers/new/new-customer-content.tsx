@@ -1,11 +1,12 @@
 /**
  * @design_doc   Administrative customer registration and reservation return flow
  * @related_to   POST /api/admin/customers; CustomerSelectionDialog
- * @known_issues Customers are global because the current schema has no customer-store ownership
+ * @known_issues None
  */
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
@@ -24,21 +25,23 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useStore } from '@/contexts/store-context'
 import {
-  normalizePhoneNumber,
+  getCustomerPhoneIdentityVariants,
   normalizePhoneQuery,
+  normalizeWritableCustomerPhoneIdentity,
   formatPhoneNumber,
   isValidPhoneInput,
 } from '@/lib/customer/utils'
 import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
+import { hasPermission } from '@/lib/auth/permissions'
 
 const phoneSchema = z
   .string()
   .min(1, '電話番号は必須です')
   .refine(isValidPhoneInput, '数字とハイフンのみ入力してください')
-  .refine((value) => {
-    const digits = normalizePhoneQuery(value)
-    return digits.length >= 10 && digits.length <= 11
-  }, '電話番号は10〜11桁の数字で入力してください')
+  .refine(
+    (value) => normalizeWritableCustomerPhoneIdentity(value) !== null,
+    '有効な日本国内の電話番号を入力してください'
+  )
 
 const formSchema = z.object({
   name: z.string().min(1, '名前は必須です'),
@@ -50,20 +53,30 @@ type FormData = z.infer<typeof formSchema>
 const IKEBUKURO_STORE_SLUG = 'ikebukuro'
 
 export function NewCustomerContent() {
+  const { data: session, status } = useSession()
   const searchParams = useSearchParams()
   const router = useRouter()
   const { currentStore, availableStores, switchStore } = useStore()
   const phoneFromQuery = searchParams.get('phone') ?? ''
-  const inheritedPhone = normalizePhoneQuery(phoneFromQuery)
-  const isPhoneIntake =
-    isValidPhoneInput(phoneFromQuery) && inheritedPhone.length >= 10 && inheritedPhone.length <= 11
+  const inheritedCanonicalPhone = normalizeWritableCustomerPhoneIdentity(phoneFromQuery)
+  const inheritedPhoneIdentities = inheritedCanonicalPhone
+    ? getCustomerPhoneIdentityVariants(inheritedCanonicalPhone)
+    : []
+  const inheritedPhone = inheritedPhoneIdentities[1] ?? normalizePhoneQuery(phoneFromQuery)
+  const isPhoneIntake = inheritedPhoneIdentities.length > 0
   const requestedStore = searchParams.get('store')
   const requestedRegistrationStore =
     availableStores.find((store) => store.id === requestedStore || store.slug === requestedStore) ??
     currentStore
   const ikebukuroStore = availableStores.find((store) => store.slug === IKEBUKURO_STORE_SLUG)
   const registrationStore = isPhoneIntake ? ikebukuroStore : requestedRegistrationStore
-  const returnsToReservation = searchParams.get('returnTo') === 'reservation'
+  const grantedPermissions = session?.user?.permissions ?? []
+  const canReturnToReservation =
+    session?.user?.role === 'admin' &&
+    hasPermission(grantedPermissions, 'customer:read') &&
+    hasPermission(grantedPermissions, 'reservation:create')
+  const returnsToReservation =
+    searchParams.get('returnTo') === 'reservation' && canReturnToReservation
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -81,13 +94,36 @@ export function NewCustomerContent() {
     }
   }, [inheritedPhone, isPhoneIntake, phoneFromQuery, setValue])
 
+  if (status === 'loading') {
+    return <div className="p-6 text-sm text-muted-foreground">権限を確認しています...</div>
+  }
+
+  if (
+    session?.user?.role !== 'admin' ||
+    !hasPermission(session.user.permissions ?? [], 'customer:create')
+  ) {
+    return (
+      <div className="mx-auto max-w-2xl p-6">
+        <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-4 text-red-700">
+          顧客登録の権限がありません。管理者にお問い合わせください。
+        </div>
+      </div>
+    )
+  }
+
   const onSubmit = async (data: FormData) => {
     if (!registrationStore) {
       form.setError('root', { message: '池袋店の利用権限を確認できません' })
       return
     }
 
-    const normalizedPhone = normalizePhoneNumber(isPhoneIntake ? inheritedPhone : data.phone)
+    const normalizedPhone = normalizeWritableCustomerPhoneIdentity(
+      isPhoneIntake ? inheritedPhone : data.phone
+    )
+    if (!normalizedPhone) {
+      form.setError('phone', { message: '有効な日本国内の電話番号を入力してください' })
+      return
+    }
     try {
       const response = await fetch(
         buildStoreScopedEndpoint('/api/admin/customers', registrationStore.id),
@@ -224,8 +260,7 @@ export function NewCustomerContent() {
                             {...field}
                             onBlur={(event) => {
                               field.onBlur()
-                              const normalized = normalizePhoneNumber(event.target.value)
-                              const formatted = formatPhoneNumber(normalized)
+                              const formatted = formatPhoneNumber(event.target.value)
                               form.setValue('phone', formatted, { shouldValidate: true })
                             }}
                           />

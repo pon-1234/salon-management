@@ -867,6 +867,11 @@ export function buildGoldMasterPreviewFixture(
       updatedAt: cutoffAt,
     })
   }
+  const customerStoreAssignments: PreviewUatFixture['customerStoreAssignments'] =
+    migratedCustomers.map(({ id }) => {
+      if (!id) throw new GoldMasterPreviewError()
+      return { customerId: id, storeId: STORE_ID }
+    })
   const reservationByLegacyId = new Map(
     snapshot.rows.reservations.map((row) => [row.serial, row] as const)
   )
@@ -948,6 +953,7 @@ export function buildGoldMasterPreviewFixture(
     ],
     adminStoreAssignments: [{ adminId: 'uat-admin-manager', storeId: STORE_ID }],
     customers: migratedCustomers,
+    customerStoreAssignments,
     courses: snapshot.rows.courses
       .sort((left, right) => left.sort - right.sort || left.id - right.id)
       .map((row) => ({

@@ -33,7 +33,9 @@ vi.mock('@/lib/db', () => ({
 
 describe('Chat Message Persistence', () => {
   it('should persist messages and retrieve them on subsequent requests', async () => {
-    const mockSession = { user: { role: 'admin', adminRole: 'super_admin' } }
+    const mockSession = {
+      user: { role: 'admin', adminRole: 'super_admin', permissions: ['*'] },
+    }
     vi.mocked(getServerSession).mockResolvedValue(mockSession)
     vi.mocked(prisma.store.count).mockResolvedValue(1)
     vi.mocked(prisma.store.findFirst).mockResolvedValue({ id: 'store-a' } as never)
@@ -104,7 +106,9 @@ describe('Chat Message Persistence', () => {
   })
 
   it('should handle multiple messages from different senders persistently', async () => {
-    const mockSession = { user: { role: 'admin', adminRole: 'super_admin' } }
+    const mockSession = {
+      user: { role: 'admin', adminRole: 'super_admin', permissions: ['*'] },
+    }
     vi.mocked(getServerSession).mockResolvedValue(mockSession)
     vi.mocked(prisma.store.count).mockResolvedValue(1)
     vi.mocked(prisma.store.findFirst).mockResolvedValue({ id: 'store-a' } as never)

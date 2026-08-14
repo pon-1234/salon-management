@@ -5,7 +5,7 @@
  * @related_to   ReservationDialog, ReservationRepositoryImpl, Timeline
  * @known_issues None
  */
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { DateNavigation } from '@/components/reservation/date-navigation'
@@ -48,6 +48,7 @@ import {
   filterAndSortTimelineCasts,
   type TimelineFilterOptions,
 } from '@/lib/reservation/timeline-filters'
+import { hasPermission } from '@/lib/auth/permissions'
 
 interface ScheduleEntry {
   castId: string
@@ -70,6 +71,26 @@ interface ReservationPageQuery {
 }
 
 type ReservationPageFetcher = (query: ReservationPageQuery) => Promise<Reservation[]>
+
+interface StoreRequestVersion {
+  storeId: string
+  generation: number
+}
+
+export function acceptStoreScopedResponse<T>(
+  requestVersion: StoreRequestVersion,
+  activeVersion: StoreRequestVersion,
+  response: T
+): T | undefined {
+  if (
+    requestVersion.storeId !== activeVersion.storeId ||
+    requestVersion.generation !== activeVersion.generation
+  ) {
+    return undefined
+  }
+
+  return response
+}
 
 export function buildCastListEndpoint(storeId: string): string {
   return `/api/cast?storeId=${encodeURIComponent(storeId)}&limit=${API_PAGE_SIZE}`
@@ -220,6 +241,15 @@ export function ReservationPageContent() {
   const [rawReservations, setRawReservations] = useState<Reservation[]>([])
   const [currentDayReservations, setCurrentDayReservations] = useState<ReservationData[]>([])
   const [businessHours, setBusinessHours] = useState<BusinessHoursRange>(DEFAULT_BUSINESS_HOURS)
+  const castRequestVersionRef = useRef<StoreRequestVersion>({
+    storeId: currentStore.id,
+    generation: 0,
+  })
+  const reservationRequestVersionRef = useRef<StoreRequestVersion>({
+    storeId: currentStore.id,
+    generation: 0,
+  })
+  const loadedCastStoreIdRef = useRef<string | null>(null)
   const { optionPrices } = usePricing(currentStore.id)
   const activeOptionCatalog = useMemo(
     () =>
@@ -239,7 +269,15 @@ export function ReservationPageContent() {
     [currentStore.id]
   )
   const { data: session } = useSession()
-  const customerUseCases = useMemo(() => new CustomerUseCases(new CustomerRepositoryImpl()), [])
+  const grantedPermissions = session?.user?.permissions ?? []
+  const canCreateReservation =
+    hasPermission(grantedPermissions, 'customer:read') &&
+    hasPermission(grantedPermissions, 'reservation:create')
+  const canUpdateReservation = hasPermission(grantedPermissions, 'reservation:update')
+  const customerUseCases = useMemo(
+    () => new CustomerUseCases(new CustomerRepositoryImpl(currentStore.id)),
+    [currentStore.id]
+  )
 
   const searchParams = useSearchParams()
   const customerId = searchParams.get('customerId')
@@ -248,11 +286,12 @@ export function ReservationPageContent() {
 
   useEffect(() => {
     let ignore = false
+    setCustomers(useMockFallbacks ? fallbackCustomers : [])
 
     const loadCustomers = async () => {
       try {
         const fetched = await customerUseCases.getAll()
-        if (!ignore && Array.isArray(fetched) && fetched.length > 0) {
+        if (!ignore && Array.isArray(fetched)) {
           setCustomers(fetched)
         }
       } catch (error) {
@@ -358,6 +397,15 @@ export function ReservationPageContent() {
   }, [currentStore.id])
 
   useEffect(() => {
+    const requestVersion = {
+      storeId: currentStore.id,
+      generation: castRequestVersionRef.current.generation + 1,
+    }
+    castRequestVersionRef.current = requestVersion
+    loadedCastStoreIdRef.current = null
+    setAllCasts([])
+    setCastData([])
+
     const loadCasts = async () => {
       try {
         const response = await fetch(buildCastListEndpoint(currentStore.id), {
@@ -369,21 +417,51 @@ export function ReservationPageContent() {
         }
         const payload = await response.json()
         const normalized = normalizeCastList(payload)
-        setAllCasts(normalized)
+        const currentCasts = acceptStoreScopedResponse(
+          requestVersion,
+          castRequestVersionRef.current,
+          normalized
+        )
+        if (currentCasts === undefined) {
+          return
+        }
+
+        loadedCastStoreIdRef.current = requestVersion.storeId
+        setAllCasts(currentCasts)
         setCastData([]) // wait for fetchData to populate based on schedules
       } catch (error) {
-        console.error('Failed to load cast data:', error)
+        if (acceptStoreScopedResponse(requestVersion, castRequestVersionRef.current, true)) {
+          console.error('Failed to load cast data:', error)
+        }
       }
     }
 
     loadCasts()
+
+    return () => {
+      if (acceptStoreScopedResponse(requestVersion, castRequestVersionRef.current, true)) {
+        castRequestVersionRef.current = {
+          storeId: requestVersion.storeId,
+          generation: requestVersion.generation + 1,
+        }
+        loadedCastStoreIdRef.current = null
+      }
+    }
   }, [currentStore.id])
 
   const fetchData = useCallback(async (): Promise<ReservationData[]> => {
-    if (allCasts.length === 0) {
-      setCastData([])
-      setCurrentDayReservations([])
-      setRawReservations([])
+    const requestVersion = {
+      storeId: currentStore.id,
+      generation: reservationRequestVersionRef.current.generation + 1,
+    }
+    reservationRequestVersionRef.current = requestVersion
+
+    if (allCasts.length === 0 || loadedCastStoreIdRef.current !== currentStore.id) {
+      if (acceptStoreScopedResponse(requestVersion, reservationRequestVersionRef.current, true)) {
+        setCastData([])
+        setCurrentDayReservations([])
+        setRawReservations([])
+      }
       return []
     }
 
@@ -397,9 +475,17 @@ export function ReservationPageContent() {
       startTime: new Date(reservation.startTime),
       endTime: new Date(reservation.endTime),
     })) as Reservation[]
-    setRawReservations(normalizedReservations)
+    const currentReservations = acceptStoreScopedResponse(
+      requestVersion,
+      reservationRequestVersionRef.current,
+      normalizedReservations
+    )
+    if (currentReservations === undefined) {
+      return []
+    }
+    setRawReservations(currentReservations)
 
-    const todaysReservationData = normalizedReservations
+    const todaysReservationData = currentReservations
       .filter((reservation) => formatDateKey(reservation.startTime) === selectedDateKey)
       .map((reservation) =>
         mapReservationToReservationData(reservation, { casts: allCasts, customers })
@@ -428,7 +514,13 @@ export function ReservationPageContent() {
         }
       }
     } catch (error) {
-      console.error('Failed to load schedule data:', error)
+      if (acceptStoreScopedResponse(requestVersion, reservationRequestVersionRef.current, true)) {
+        console.error('Failed to load schedule data:', error)
+      }
+    }
+
+    if (!acceptStoreScopedResponse(requestVersion, reservationRequestVersionRef.current, true)) {
+      return []
     }
 
     let updatedCastData: Cast[] = allCasts
@@ -493,7 +585,14 @@ export function ReservationPageContent() {
 
   useEffect(() => {
     fetchData()
-  }, [selectedDateKey, selectedCustomer, fetchData])
+
+    return () => {
+      reservationRequestVersionRef.current = {
+        storeId: currentStore.id,
+        generation: reservationRequestVersionRef.current.generation + 1,
+      }
+    }
+  }, [currentStore.id, fetchData, selectedCustomer, selectedDateKey])
 
   const handleRefresh = () => {
     fetchData()
@@ -596,6 +695,7 @@ export function ReservationPageContent() {
         onFilter={handleFilterDialogOpen}
         onCustomerSelect={handleCustomerSelection}
         selectedCustomer={selectedCustomer}
+        canCreateReservation={canCreateReservation}
       />
 
       <FilterDialog
@@ -617,6 +717,7 @@ export function ReservationPageContent() {
           onReservationCreated={handleRefresh}
           businessHours={businessHours}
           optionCatalog={activeOptionCatalog}
+          canCreateReservation={canCreateReservation}
         />
       ) : (
         <ReservationTable
@@ -631,7 +732,7 @@ export function ReservationPageContent() {
           onOpenChange={(open) => !open && setSelectedAppointment(null)}
           reservation={selectedAppointment}
           casts={allCasts}
-          onSave={handleReservationSave}
+          onSave={canUpdateReservation ? handleReservationSave : undefined}
         />
       )}
     </div>

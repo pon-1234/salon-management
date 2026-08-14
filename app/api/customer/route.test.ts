@@ -9,6 +9,8 @@ import { getServerSession } from 'next-auth'
 import { GET, POST, PUT, DELETE } from './route'
 import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
+import { canAdminAccessStore } from '@/lib/auth/store-access'
+import { ensureStoreId, resolveStoreId } from '@/lib/store/server'
 
 vi.mock('next-auth', () => ({
   getServerSession: vi.fn(),
@@ -23,12 +25,25 @@ vi.mock('@/lib/db', () => ({
   db: {
     customer: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       findMany: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
     },
+    customerStoreAssignment: {
+      findUnique: vi.fn(),
+    },
   },
+}))
+
+vi.mock('@/lib/auth/store-access', () => ({
+  canAdminAccessStore: vi.fn(),
+}))
+
+vi.mock('@/lib/store/server', () => ({
+  ensureStoreId: vi.fn(),
+  resolveStoreId: vi.fn(),
 }))
 
 // Mock bcryptjs
@@ -62,6 +77,13 @@ describe('GET /api/customer', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(getServerSession).mockResolvedValue(null as any)
+    vi.mocked(resolveStoreId).mockResolvedValue('ikebukuro')
+    vi.mocked(ensureStoreId).mockResolvedValue('store-ikebukuro')
+    vi.mocked(canAdminAccessStore).mockReturnValue(true)
+    vi.mocked(db.customerStoreAssignment.findUnique).mockResolvedValue({
+      customerId: 'customer1',
+      storeId: 'store-ikebukuro',
+    } as any)
   })
 
   it('preserves the persisted member type in the paginated admin list', async () => {
@@ -89,6 +111,9 @@ describe('GET /api/customer', () => {
     expect(db.customer.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         take: 26,
+        where: {
+          storeAssignments: { some: { storeId: 'store-ikebukuro' } },
+        },
         select: expect.objectContaining({
           memberType: true,
           accountStatus: true,
@@ -130,7 +155,8 @@ describe('GET /api/customer', () => {
 
     expect(db.customer.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: {
+        where: expect.objectContaining({
+          storeAssignments: { some: { storeId: 'store-ikebukuro' } },
           OR: [
             { id: { contains: '旧実名', mode: 'insensitive' } },
             { name: { contains: '旧実名', mode: 'insensitive' } },
@@ -138,7 +164,7 @@ describe('GET /api/customer', () => {
             { phone: { contains: '旧実名' } },
             { email: { contains: '旧実名', mode: 'insensitive' } },
           ],
-        },
+        }),
         orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
       })
     )
@@ -156,6 +182,26 @@ describe('GET /api/customer', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           OR: expect.arrayContaining([{ phone: { contains: '09012345678' } }]),
+        }),
+      })
+    )
+  })
+
+  it('searches both domestic and migrated international identities for a partial phone', async () => {
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { id: 'admin-1', role: 'admin', permissions: ['customer:read'] },
+    } as any)
+    vi.mocked(db.customer.findMany).mockResolvedValueOnce([] as any)
+
+    await GET(new NextRequest('http://localhost:3000/api/customer?query=0901&limit=25'))
+
+    expect(db.customer.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([
+            { phone: { contains: '0901' } },
+            { phone: { contains: '81901' } },
+          ]),
         }),
       })
     )
@@ -187,6 +233,212 @@ describe('GET /api/customer', () => {
 
     expect(response.status).toBe(403)
     expect(data.error).toBe('Forbidden')
+  })
+
+  it('does not select or return reservations to an admin with only customer:read', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'admin-1', role: 'admin', permissions: ['customer:read'] },
+    } as any)
+    vi.mocked(db.customer.findUnique).mockResolvedValueOnce({
+      id: 'customer1',
+      name: 'Test Customer',
+      nameKana: 'テストカスタマー',
+      phone: '09012345678',
+      email: 'test@example.com',
+      password: 'customer-password-hash',
+      birthDate: new Date('1990-01-01'),
+      memberType: 'regular',
+      accountStatus: 'active',
+      membershipStage: 'silver',
+      points: 100,
+      smsEnabled: true,
+      emailNotificationEnabled: false,
+      createdAt: new Date('2024-01-01'),
+      updatedAt: new Date('2024-02-01'),
+      ngCasts: [
+        {
+          castId: 'cast-1',
+          notes: '顧客詳細で必要なNG理由',
+          assignedBy: 'staff',
+          assignedAt: new Date('2024-01-02'),
+          cast: {
+            id: 'cast-1',
+            name: '公開キャスト名',
+            type: 'regular',
+            image: '/cast-1.jpg',
+            loginEmail: 'cast@example.com',
+            lineUserId: 'line-secret',
+            welfareExpenseRate: 10,
+            passwordHash: 'cast-password-hash',
+          },
+        },
+      ],
+      reservations: [
+        {
+          id: 'reservation-1',
+          customerId: 'customer1',
+          castId: 'cast-1',
+          courseId: 'course-1',
+          startTime: new Date('2024-01-03T10:00:00Z'),
+          endTime: new Date('2024-01-03T11:30:00Z'),
+          status: 'completed',
+          price: 30_000,
+          storeId: 'ikebukuro',
+          notes: '顧客詳細で必要な予約メモ',
+          welfareExpense: 1_000,
+          storeRevenue: 12_000,
+          staffRevenue: 18_000,
+          cast: {
+            id: 'cast-1',
+            name: '公開キャスト名',
+            loginEmail: 'cast@example.com',
+            lineUserId: 'line-secret',
+            welfareExpenseRate: 10,
+          },
+          course: {
+            id: 'course-1',
+            name: '90分',
+            duration: 90,
+            price: 30_000,
+            description: '公開コース',
+            storeShare: 12_000,
+            castShare: 18_000,
+          },
+          options: [
+            {
+              id: 'reservation-option-1',
+              optionId: 'option-1',
+              optionName: '公開オプション',
+              optionPrice: 3_000,
+              storeShare: 1_000,
+              castShare: 2_000,
+              option: {
+                id: 'option-1',
+                name: '公開オプション',
+                price: 3_000,
+                storeShare: 1_000,
+                castShare: 2_000,
+              },
+            },
+          ],
+        },
+      ],
+      reviews: [],
+    } as any)
+
+    const response = await GET(
+      new NextRequest('http://localhost:3000/api/customer?id=customer1', { method: 'GET' })
+    )
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data).toMatchObject({
+      id: 'customer1',
+      accountStatus: 'active',
+      membershipStage: 'silver',
+      ngCasts: [
+        {
+          castId: 'cast-1',
+          notes: '顧客詳細で必要なNG理由',
+          assignedBy: 'staff',
+          cast: { id: 'cast-1', name: '公開キャスト名' },
+        },
+      ],
+    })
+    expect(data.reservations).toBeUndefined()
+    expect(JSON.stringify(data)).not.toMatch(
+      /customer-password-hash|cast-password-hash|cast@example\.com|line-secret|welfareExpenseRate|welfareExpense|storeRevenue|staffRevenue|storeShare|castShare/
+    )
+    expect(db.customer.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'customer1' },
+        select: expect.objectContaining({
+          ngCasts: expect.objectContaining({
+            where: { cast: { storeId: 'store-ikebukuro' } },
+          }),
+          reviews: expect.objectContaining({
+            where: { cast: { storeId: 'store-ikebukuro' } },
+          }),
+        }),
+      })
+    )
+    const detailSelect = vi.mocked(db.customer.findUnique).mock.calls[0]?.[0].select as any
+    expect(detailSelect.reservations).toBeUndefined()
+    expect(db.customerStoreAssignment.findUnique).toHaveBeenCalledWith({
+      where: {
+        customerId_storeId: {
+          customerId: 'customer1',
+          storeId: 'store-ikebukuro',
+        },
+      },
+      select: { customerId: true },
+    })
+  })
+
+  it('keeps reservation-read financial fields while hiding private cast fields', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: {
+        id: 'admin-1',
+        role: 'admin',
+        permissions: ['customer:read', 'reservation:read'],
+      },
+    } as any)
+    vi.mocked(db.customer.findUnique).mockResolvedValueOnce({
+      id: 'customer1',
+      name: 'Test Customer',
+      nameKana: 'テストカスタマー',
+      phone: '09012345678',
+      email: 'test@example.com',
+      birthDate: new Date('1990-01-01'),
+      memberType: 'regular',
+      accountStatus: 'active',
+      membershipStage: 'regular',
+      points: 100,
+      smsEnabled: false,
+      emailNotificationEnabled: true,
+      createdAt: new Date('2024-01-01'),
+      updatedAt: new Date('2024-02-01'),
+      ngCasts: [],
+      reservations: [
+        {
+          id: 'reservation-1',
+          customerId: 'customer1',
+          castId: 'cast-1',
+          courseId: 'course-1',
+          startTime: new Date('2024-01-03T10:00:00Z'),
+          endTime: new Date('2024-01-03T11:30:00Z'),
+          status: 'completed',
+          price: 30_000,
+          storeId: 'ikebukuro',
+          welfareExpense: 1_000,
+          storeRevenue: 12_000,
+          staffRevenue: 18_000,
+          cast: {
+            id: 'cast-1',
+            name: '公開キャスト名',
+            loginEmail: 'cast@example.com',
+            lineUserId: 'line-secret',
+            welfareExpenseRate: 10,
+          },
+          course: { id: 'course-1', name: '90分' },
+          options: [],
+        },
+      ],
+      reviews: [],
+    } as any)
+
+    const response = await GET(
+      new NextRequest('http://localhost:3000/api/customer?id=customer1', { method: 'GET' })
+    )
+    const data = await response.json()
+
+    expect(data.reservations[0]).toMatchObject({
+      welfareExpense: 1_000,
+      storeRevenue: 12_000,
+      staffRevenue: 18_000,
+      cast: { id: 'cast-1', name: '公開キャスト名' },
+    })
+    expect(JSON.stringify(data)).not.toMatch(/cast@example\.com|line-secret|welfareExpenseRate/)
   })
 
   it('should return customer data for authenticated customer', async () => {
@@ -303,7 +555,7 @@ describe('GET /api/customer', () => {
     expect(data.error).toBe('Forbidden')
   })
 
-  it('should allow admin to search customers by phone', async () => {
+  it('searches a complete phone by exact canonical and historical-national identities', async () => {
     const mockCustomer = {
       id: 'cust1',
       name: '検索対象',
@@ -322,7 +574,7 @@ describe('GET /api/customer', () => {
 
     vi.mocked(db.customer.findMany).mockResolvedValueOnce([mockCustomer] as any)
 
-    const request = new NextRequest('http://localhost:3000/api/customer?phone=090', {
+    const request = new NextRequest('http://localhost:3000/api/customer?phone=090-1234-5678', {
       method: 'GET',
     })
 
@@ -334,6 +586,63 @@ describe('GET /api/customer', () => {
     expect(data).toHaveLength(1)
     expect(data[0].id).toBe(mockCustomer.id)
     expect(data[0].password).toBeUndefined()
+    expect(db.customer.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          phone: {
+            in: ['+819012345678', '09012345678', '819012345678'],
+          },
+          storeAssignments: { some: { storeId: 'store-ikebukuro' } },
+        },
+      })
+    )
+  })
+
+  it('rejects an administrator outside the selected store before loading customers', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: {
+        id: 'admin',
+        role: 'admin',
+        permissions: ['customer:read'],
+        storeIds: ['store-ginza'],
+      },
+    } as any)
+    vi.mocked(canAdminAccessStore).mockReturnValueOnce(false)
+
+    const response = await GET(
+      new NextRequest('http://localhost:3000/api/customer?storeId=ikebukuro')
+    )
+
+    expect(response.status).toBe(403)
+    expect(db.customer.findMany).not.toHaveBeenCalled()
+    expect(db.customer.findUnique).not.toHaveBeenCalled()
+  })
+
+  it('does not reveal a customer detail without membership in the selected store', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'admin', role: 'admin', permissions: ['customer:read'] },
+    } as any)
+    vi.mocked(db.customerStoreAssignment.findUnique).mockResolvedValueOnce(null)
+
+    const response = await GET(
+      new NextRequest('http://localhost:3000/api/customer?id=customer1&storeId=store-ikebukuro')
+    )
+
+    expect(response.status).toBe(404)
+    expect(db.customer.findUnique).not.toHaveBeenCalled()
+  })
+
+  it('rejects a partial phone in the exact identity endpoint without querying customers', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'admin', role: 'admin', permissions: ['customer:read'] },
+    } as any)
+
+    const response = await GET(
+      new NextRequest('http://localhost:3000/api/customer?phone=090123456', { method: 'GET' })
+    )
+
+    expect(response.status).toBe(400)
+    expect(db.customer.findMany).not.toHaveBeenCalled()
   })
 
   it('rejects an admin without customer:read permission before loading customer data', async () => {
@@ -357,6 +666,9 @@ describe('POST /api/customer', () => {
     vi.mocked(getServerSession).mockResolvedValue({
       user: { id: 'admin1', role: 'admin', permissions: ['customer:create'] },
     } as any)
+    vi.mocked(resolveStoreId).mockResolvedValue('ikebukuro')
+    vi.mocked(ensureStoreId).mockResolvedValue('store-ikebukuro')
+    vi.mocked(canAdminAccessStore).mockReturnValue(true)
   })
 
   it('rejects unauthenticated customer creation', async () => {
@@ -440,6 +752,86 @@ describe('POST /api/customer', () => {
     expect(data.id).toBe('new-customer-id')
     expect(data.password).toBeUndefined()
     expect(vi.mocked(bcrypt.hash)).toHaveBeenCalledWith('password123', 10)
+    expect(db.customer.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          storeAssignments: { create: { storeId: 'store-ikebukuro' } },
+        }),
+      })
+    )
+  })
+
+  it('rejects generic creation outside the administrator selected store', async () => {
+    vi.mocked(canAdminAccessStore).mockReturnValueOnce(false)
+
+    const response = await POST(
+      new NextRequest('http://localhost:3000/api/customer?storeId=ginza', {
+        method: 'POST',
+        body: JSON.stringify({ password: 'password123' }),
+      })
+    )
+
+    expect(response.status).toBe(403)
+    expect(db.customer.findFirst).not.toHaveBeenCalled()
+    expect(db.customer.create).not.toHaveBeenCalled()
+  })
+
+  it('rejects a historical national-format duplicate before generic creation', async () => {
+    vi.mocked(db.customer.findFirst).mockResolvedValueOnce({ id: 'existing-customer' } as any)
+
+    const response = await POST(
+      new NextRequest('http://localhost:3000/api/customer', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: 'Duplicate Customer',
+          nameKana: 'デュプリケートカスタマー',
+          phone: '+81 90 1234 5678',
+          email: 'new-phone@example.com',
+          password: 'password123',
+          birthDate: '1995-05-05',
+        }),
+      })
+    )
+
+    expect(response.status).toBe(409)
+    expect(db.customer.findFirst).toHaveBeenCalledWith({
+      where: { phone: { in: ['+819012345678', '09012345678', '819012345678'] } },
+      select: { id: true },
+    })
+    expect(db.customer.create).not.toHaveBeenCalled()
+  })
+
+  it('normalizes optional trunk notation before generic creation', async () => {
+    const customerData = {
+      name: 'Fixed Line Customer',
+      nameKana: 'フィックスドラインカスタマー',
+      phone: '+81 (0)3-1234-5678',
+      email: 'fixed-line@example.com',
+      password: 'password123',
+      birthDate: '1995-05-05',
+    }
+    vi.mocked(bcrypt.hash).mockResolvedValueOnce('hashed-password' as any)
+    vi.mocked(db.customer.create).mockResolvedValueOnce({
+      id: 'fixed-line-customer',
+      ...customerData,
+      phone: '+81312345678',
+    } as any)
+
+    const response = await POST(
+      new NextRequest('http://localhost:3000/api/customer', {
+        method: 'POST',
+        body: JSON.stringify(customerData),
+      })
+    )
+
+    expect(response.status).toBe(201)
+    expect(db.customer.findFirst).toHaveBeenCalledWith({
+      where: { phone: { in: ['+81312345678', '0312345678', '81312345678'] } },
+      select: { id: true },
+    })
+    expect(db.customer.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ phone: '+81312345678' }) })
+    )
   })
 
   it('should require password field', async () => {
@@ -496,6 +888,13 @@ describe('PUT /api/customer', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(getServerSession).mockResolvedValue(null as any)
+    vi.mocked(resolveStoreId).mockResolvedValue('ikebukuro')
+    vi.mocked(ensureStoreId).mockResolvedValue('store-ikebukuro')
+    vi.mocked(canAdminAccessStore).mockReturnValue(true)
+    vi.mocked(db.customerStoreAssignment.findUnique).mockResolvedValue({
+      customerId: 'customer1',
+      storeId: 'store-ikebukuro',
+    } as any)
   })
 
   it('should require authentication', async () => {
@@ -643,7 +1042,10 @@ describe('PUT /api/customer', () => {
     expect(data.password).toBeUndefined()
     expect(db.customer.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 'customer1' },
+        where: expect.objectContaining({
+          id: 'customer1',
+          storeAssignments: { some: { storeId: 'store-ikebukuro' } },
+        }),
         data: expect.objectContaining({
           name: 'Updated Customer',
           email: 'updated@example.com',
@@ -653,6 +1055,74 @@ describe('PUT /api/customer', () => {
         }),
       })
     )
+    expect(db.customerStoreAssignment.findUnique).toHaveBeenCalledWith({
+      where: {
+        customerId_storeId: {
+          customerId: 'customer1',
+          storeId: 'store-ikebukuro',
+        },
+      },
+      select: { customerId: true },
+    })
+  })
+
+  it('does not select or return reservations after an admin update without reservation:read', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'admin1', role: 'admin', permissions: ['customer:update'] },
+    } as any)
+    vi.mocked(db.customer.update).mockResolvedValueOnce({
+      id: 'customer1',
+      name: 'Updated Customer',
+      password: 'hashed-secret',
+      reservations: [
+        {
+          id: 'reservation1',
+          price: 30000,
+          paymentReference: 'card-reference-secret',
+          storeRevenue: 20000,
+          cast: {
+            id: 'cast1',
+            name: 'Cast One',
+            loginEmail: 'cast-secret@example.com',
+            lineUserId: 'line-secret',
+          },
+        },
+      ],
+      ngCasts: [],
+      reviews: [],
+    } as any)
+
+    const response = await PUT(
+      new NextRequest('http://localhost:3000/api/customer?storeId=ikebukuro', {
+        method: 'PUT',
+        body: JSON.stringify({ id: 'customer1', name: 'Updated Customer' }),
+      })
+    )
+    const payload = await response.json()
+    const updateArgs = vi.mocked(db.customer.update).mock.calls[0]?.[0] as any
+
+    expect(response.status).toBe(200)
+    expect(updateArgs.include).toBeUndefined()
+    expect(updateArgs.select.reservations).toBeUndefined()
+    expect(payload.password).toBeUndefined()
+    expect(payload.reservations).toBeUndefined()
+  })
+
+  it('rejects an admin update when the customer is not assigned to the selected store', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'admin1', role: 'admin', permissions: ['customer:update'] },
+    } as any)
+    vi.mocked(db.customerStoreAssignment.findUnique).mockResolvedValueOnce(null)
+
+    const response = await PUT(
+      new NextRequest('http://localhost:3000/api/customer?storeId=ikebukuro', {
+        method: 'PUT',
+        body: JSON.stringify({ id: 'customer1', name: 'Cross Store Update' }),
+      })
+    )
+
+    expect(response.status).toBe(404)
+    expect(db.customer.update).not.toHaveBeenCalled()
   })
 
   it('rejects server-managed fields instead of passing them to Prisma', async () => {
@@ -713,7 +1183,7 @@ describe('PUT /api/customer', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           email: 'updated@example.com',
-          phone: '09012345678',
+          phone: '+819012345678',
           emailVerified: false,
           emailVerificationToken: null,
           emailVerificationExpiry: null,
@@ -725,6 +1195,57 @@ describe('PUT /api/customer', () => {
         }),
       })
     )
+  })
+
+  it('preserves phone verification when an admin submits the same phone identity in domestic notation', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'admin1', role: 'admin', permissions: ['customer:update'] },
+    } as any)
+    vi.mocked(db.customer.findUnique).mockResolvedValueOnce({
+      id: 'customer1',
+      phone: '+819012345678',
+    } as any)
+    vi.mocked(db.customer.update).mockResolvedValueOnce({ id: 'customer1' } as any)
+
+    const response = await PUT(
+      new NextRequest('http://localhost:3000/api/customer', {
+        method: 'PUT',
+        body: JSON.stringify({ id: 'customer1', phone: '090-1234-5678' }),
+      })
+    )
+
+    expect(response.status).toBe(200)
+    expect(db.customer.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {
+          phone: '+819012345678',
+        },
+      })
+    )
+  })
+
+  it('rejects a phone update that matches another historical identity format', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'admin1', role: 'admin', permissions: ['customer:update'] },
+    } as any)
+    vi.mocked(db.customer.findFirst).mockResolvedValueOnce({ id: 'other-customer' } as any)
+
+    const response = await PUT(
+      new NextRequest('http://localhost:3000/api/customer', {
+        method: 'PUT',
+        body: JSON.stringify({ id: 'customer1', phone: '090-1234-5678' }),
+      })
+    )
+
+    expect(response.status).toBe(409)
+    expect(db.customer.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: { not: 'customer1' },
+        phone: { in: ['+819012345678', '09012345678', '819012345678'] },
+      },
+      select: { id: true },
+    })
+    expect(db.customer.update).not.toHaveBeenCalled()
   })
 
   it('maps an email uniqueness conflict during update to 409', async () => {
@@ -900,6 +1421,34 @@ describe('Customer API - Validation Tests', () => {
     expect(db.customer.create).not.toHaveBeenCalled()
   })
 
+  it.each([
+    '090-123-4567',
+    '050-123-4567',
+    '03-1234-56789',
+    '0120-1234-567',
+    '0570-1234-567',
+    '0800-123-456',
+  ])('rejects a non-writable Japanese phone in POST before persistence: %s', async (phone) => {
+    const response = await POST(
+      new NextRequest('http://localhost:3000/api/customer', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: 'Invalid Phone',
+          nameKana: 'インバリッドフォン',
+          phone,
+          email: 'valid@example.com',
+          password: 'password123',
+          birthDate: '1995-05-05',
+        }),
+      })
+    )
+
+    expect(response.status).toBe(400)
+    expect(bcrypt.hash).not.toHaveBeenCalled()
+    expect(db.customer.findFirst).not.toHaveBeenCalled()
+    expect(db.customer.create).not.toHaveBeenCalled()
+  })
+
   it('should validate birthDate format', async () => {
     const invalidDateData = {
       name: 'Invalid Date',
@@ -950,7 +1499,7 @@ describe('Customer API - Validation Tests', () => {
         data: expect.objectContaining({
           name: 'New Customer',
           nameKana: 'ニューカスタマー',
-          phone: '09087654321',
+          phone: '+819087654321',
           email: 'new@example.com',
         }),
       })

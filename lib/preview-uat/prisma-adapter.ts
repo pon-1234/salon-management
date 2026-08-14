@@ -86,6 +86,9 @@ async function writeFixture(
   await createExact(fixture.customers.length, () =>
     transaction.customer.createMany({ data: fixture.customers })
   )
+  await createExact(fixture.customerStoreAssignments.length, () =>
+    transaction.customerStoreAssignment.createMany({ data: fixture.customerStoreAssignments })
+  )
   await createExact(fixture.courses.length, () =>
     transaction.coursePrice.createMany({ data: fixture.courses })
   )

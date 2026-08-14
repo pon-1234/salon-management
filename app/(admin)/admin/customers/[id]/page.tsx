@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -77,7 +78,9 @@ import {
   calculateAge,
   deserializeCustomer,
   findCustomerReservationByUsageRecordId,
-  normalizePhoneQuery,
+  formatPhoneNumber,
+  getCustomerPhoneTelHref,
+  isSameCustomerPhone,
   partitionCustomerReservationHistory,
 } from '@/lib/customer/utils'
 import { toast } from '@/hooks/use-toast'
@@ -89,11 +92,12 @@ import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import { normalizeCustomerEmail } from '@/lib/auth/customer-auth'
 import { isBcryptSafePassword } from '@/lib/auth/password-policy'
 import { partitionCustomerInsightMetrics } from './customer-insight-priority'
+import { hasPermission } from '@/lib/auth/permissions'
 
 const formSchema = z.object({
   name: z.string().min(1, '名前は必須です'),
   phone: z.string().min(1, '電話番号は必須です'),
-  email: z.string().email('有効なメールアドレスを入力してください'),
+  email: z.string().email('有効なメールアドレスを入力してください').or(z.literal('')),
   password: z
     .string()
     .refine(
@@ -101,14 +105,10 @@ const formSchema = z.object({
         password.length === 0 || (password.length >= 8 && isBcryptSafePassword(password)),
       '変更する場合は8文字以上、改行なし・72バイト以内で入力してください'
     ),
-  birthDate: z.date({
-    required_error: '生年月日を選択してください',
-  }),
+  birthDate: z.date().optional(),
   memberType: z.enum(['regular', 'vip']),
   smsEnabled: z.boolean(),
   points: z.number().min(0),
-  pointsToAdd: z.number().min(0).optional(),
-  pointsAmount: z.number().min(0).optional(),
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -196,6 +196,13 @@ function formatStoreScopedChatCount(count: number | null): string {
 
 export default function CustomerProfile() {
   const { currentStore } = useStore()
+  const { data: session } = useSession()
+  const grantedPermissions = session?.user?.permissions ?? []
+  const canCreateReservation =
+    hasPermission(grantedPermissions, 'customer:read') &&
+    hasPermission(grantedPermissions, 'reservation:create')
+  const canUpdateCustomer = hasPermission(grantedPermissions, 'customer:update')
+  const canUpdateReservation = hasPermission(grantedPermissions, 'reservation:update')
   const router = useRouter()
   const params = useParams<{ id: string }>()
   const idParam = params?.id
@@ -209,7 +216,6 @@ export default function CustomerProfile() {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [availableCasts, setAvailableCasts] = useState<Cast[]>([])
   const [isEditing, setIsEditing] = useState(false)
-  const [pointsInputEnabled, setPointsInputEnabled] = useState(false)
   const [ngCastDialogOpen, setNgCastDialogOpen] = useState(false)
   const [editingNgCast, setEditingNgCast] = useState<NgCastEntry | null>(null)
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
@@ -227,7 +233,10 @@ export default function CustomerProfile() {
     if (!id) return
     try {
       const response = await fetch(
-        `/api/customer/points?customerId=${encodeURIComponent(id)}&limit=100`,
+        buildStoreScopedEndpoint(
+          `/api/customer/points?customerId=${encodeURIComponent(id)}&limit=100`,
+          currentStore.id
+        ),
         {
           credentials: 'include',
           cache: 'no-store',
@@ -259,7 +268,7 @@ export default function CustomerProfile() {
         variant: 'destructive',
       })
     }
-  }, [id])
+  }, [currentStore.id, id])
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -271,8 +280,6 @@ export default function CustomerProfile() {
       memberType: 'regular',
       smsEnabled: false,
       points: 0,
-      pointsToAdd: 0,
-      pointsAmount: 0,
     },
   })
 
@@ -285,7 +292,7 @@ export default function CustomerProfile() {
 
     const fetchCustomerData = async () => {
       setLoadError(null)
-      const customerRepository = new CustomerRepositoryImpl()
+      const customerRepository = new CustomerRepositoryImpl(currentStore.id)
       const customerUseCases = new CustomerUseCases(customerRepository)
 
       try {
@@ -363,7 +370,7 @@ export default function CustomerProfile() {
     if (!id) return
     let ignore = false
 
-    const customerRepository = new CustomerRepositoryImpl()
+    const customerRepository = new CustomerRepositoryImpl(currentStore.id)
     const customerUseCases = new CustomerUseCases(customerRepository)
 
     const loadInsights = async () => {
@@ -417,7 +424,7 @@ export default function CustomerProfile() {
       throw new Error('顧客IDが指定されていません。')
     }
 
-    const customerRepository = new CustomerRepositoryImpl()
+    const customerRepository = new CustomerRepositoryImpl(currentStore.id)
     const customerUseCases = new CustomerUseCases(customerRepository)
     const fetchedCustomer = await customerUseCases.getById(id)
     if (!fetchedCustomer) {
@@ -432,9 +439,10 @@ export default function CustomerProfile() {
     setUsageHistory(customerHistory.usageHistory)
     setReservations(customerHistory.activeReservations)
     return normalizedCustomer
-  }, [id])
+  }, [currentStore.id, id])
 
   const handleBooking = () => {
+    if (!canCreateReservation) return
     router.push(`/admin/reservation?customerId=${encodeURIComponent(id)}`)
   }
 
@@ -495,21 +503,19 @@ export default function CustomerProfile() {
   }
 
   const handleSave = async (data: FormData) => {
-    if (!customer) return
+    if (!customer || !canUpdateCustomer) return
 
-    const customerRepository = new CustomerRepositoryImpl()
+    const customerRepository = new CustomerRepositoryImpl(currentStore.id)
     const customerUseCases = new CustomerUseCases(customerRepository)
 
     try {
       const updates: Partial<Customer> = {
         ...(data.name !== customer.name ? { name: data.name } : {}),
-        ...(normalizePhoneQuery(data.phone) !== normalizePhoneQuery(customer.phone)
-          ? { phone: data.phone }
-          : {}),
+        ...(!isSameCustomerPhone(data.phone, customer.phone) ? { phone: data.phone } : {}),
         ...(normalizeCustomerEmail(data.email) !== normalizeCustomerEmail(customer.email)
           ? { email: data.email }
           : {}),
-        ...(data.birthDate.getTime() !== customer.birthDate.getTime()
+        ...(data.birthDate && data.birthDate.getTime() !== customer.birthDate?.getTime()
           ? { birthDate: data.birthDate }
           : {}),
         ...(data.memberType !== customer.memberType ? { memberType: data.memberType } : {}),
@@ -567,18 +573,18 @@ export default function CustomerProfile() {
         memberType: customer.memberType,
         smsEnabled: customer.smsEnabled,
         points: customer.points,
-        pointsToAdd: 0,
-        pointsAmount: 0,
       })
     }
   }
 
   const handleAddNgCast = () => {
+    if (!canUpdateCustomer) return
     setEditingNgCast(null)
     setNgCastDialogOpen(true)
   }
 
   const handleEditNgCast = (ngCast: NgCastEntry) => {
+    if (!canUpdateCustomer) return
     setEditingNgCast(ngCast)
     setNgCastDialogOpen(true)
   }
@@ -591,9 +597,9 @@ export default function CustomerProfile() {
   })
 
   const handleSaveNgCast = async (ngCast: NgCastEntry) => {
-    if (!customer) return false
+    if (!customer || !canUpdateCustomer) return false
     try {
-      const response = await fetch('/api/customer/ng', {
+      const response = await fetch(buildStoreScopedEndpoint('/api/customer/ng', currentStore.id), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -646,11 +652,11 @@ export default function CustomerProfile() {
   }
 
   const handleRemoveNgCast = async (castId: string) => {
-    if (!customer) return
+    if (!customer || !canUpdateCustomer) return
 
     try {
       const response = await fetch(
-        `/api/customer/ng?customerId=${encodeURIComponent(customer.id)}&castId=${encodeURIComponent(castId)}`,
+        `${buildStoreScopedEndpoint('/api/customer/ng', currentStore.id)}&customerId=${encodeURIComponent(customer.id)}&castId=${encodeURIComponent(castId)}`,
         {
           method: 'DELETE',
           credentials: 'include',
@@ -810,7 +816,7 @@ export default function CustomerProfile() {
             会員ID: {customer.id}{' '}
             {customer.phone ? (
               <span className="ml-2">
-                TEL: <span className="font-semibold">{customer.phone}</span>
+                TEL: <span className="font-semibold">{formatPhoneNumber(customer.phone)}</span>
               </span>
             ) : null}
             {customer.email ? (
@@ -843,36 +849,44 @@ export default function CustomerProfile() {
           </div>
         </div>
         <div className="flex gap-3">
-          <Button
-            onClick={handleBooking}
-            className="bg-emerald-600 text-white hover:bg-emerald-700"
-          >
-            オーダー新規作成
-          </Button>
-          {!isEditing ? (
+          {canCreateReservation ? (
             <Button
-              onClick={() => setIsEditing(true)}
-              variant="outline"
-              className="flex items-center gap-2"
+              onClick={handleBooking}
+              className="bg-emerald-600 text-white hover:bg-emerald-700"
             >
-              <Edit3 className="h-4 w-4" />
-              編集
+              オーダー新規作成
             </Button>
-          ) : (
-            <div className="flex gap-2">
+          ) : null}
+          {canUpdateCustomer ? (
+            !isEditing ? (
               <Button
-                onClick={form.handleSubmit(handleSave)}
-                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700"
+                onClick={() => setIsEditing(true)}
+                variant="outline"
+                className="flex items-center gap-2"
               >
-                <Save className="h-4 w-4" />
-                保存
+                <Edit3 className="h-4 w-4" />
+                編集
               </Button>
-              <Button onClick={handleCancel} variant="outline" className="flex items-center gap-2">
-                <X className="h-4 w-4" />
-                キャンセル
-              </Button>
-            </div>
-          )}
+            ) : (
+              <div className="flex gap-2">
+                <Button
+                  onClick={form.handleSubmit(handleSave)}
+                  className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700"
+                >
+                  <Save className="h-4 w-4" />
+                  保存
+                </Button>
+                <Button
+                  onClick={handleCancel}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <X className="h-4 w-4" />
+                  キャンセル
+                </Button>
+              </div>
+            )
+          ) : null}
         </div>
       </section>
 
@@ -1100,7 +1114,7 @@ export default function CustomerProfile() {
                             </FormControl>
                             <Button asChild variant="destructive" className="shrink-0">
                               <a
-                                href={`tel:${normalizePhoneQuery(customer.phone)}`}
+                                href={getCustomerPhoneTelHref(customer.phone)}
                                 aria-label={`${customer.name}へ電話`}
                               >
                                 <Phone className="mr-2 h-4 w-4" />
@@ -1150,15 +1164,15 @@ export default function CustomerProfile() {
                       name="birthDate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">
-                            生年月日 <span className="text-red-500">*</span>
-                          </FormLabel>
+                          <FormLabel className="text-sm font-medium">生年月日</FormLabel>
                           <FormControl>
                             {isEditing ? (
                               <DatePicker selected={field.value} onSelect={field.onChange} />
                             ) : (
                               <Input
-                                value={field.value ? field.value.toLocaleDateString('ja-JP') : ''}
+                                value={
+                                  field.value ? field.value.toLocaleDateString('ja-JP') : '未登録'
+                                }
                                 disabled
                               />
                             )}
@@ -1238,7 +1252,7 @@ export default function CustomerProfile() {
                     <CardTitle className="text-lg font-semibold">ポイント情報</CardTitle>
                     <CardDescription>現在のポイント残高とポイント追加</CardDescription>
                   </div>
-                  {customer && (
+                  {canUpdateCustomer && customer && (
                     <PointAdjustmentDialog
                       customerId={customer.id}
                       customerName={customer.name}
@@ -1274,60 +1288,6 @@ export default function CustomerProfile() {
                       </FormItem>
                     )}
                   />
-
-                  {isEditing && (
-                    <>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          checked={pointsInputEnabled}
-                          onCheckedChange={setPointsInputEnabled}
-                        />
-                        <Label>ポイントを追加する</Label>
-                      </div>
-
-                      {pointsInputEnabled && (
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                          <FormField
-                            control={form.control}
-                            name="pointsAmount"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-sm font-medium">金額（円）</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type="number"
-                                    placeholder="1000"
-                                    {...field}
-                                    onChange={(e) => field.onChange(Number(e.target.value))}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="pointsToAdd"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-sm font-medium">ポイント</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type="number"
-                                    placeholder="100"
-                                    {...field}
-                                    onChange={(e) => field.onChange(Number(e.target.value))}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      )}
-                    </>
-                  )}
                 </CardContent>
               </Card>
 
@@ -1380,10 +1340,16 @@ export default function CustomerProfile() {
                 <h3 className="text-sm font-medium text-gray-700">
                   現在のNGキャスト ({customer?.ngCasts?.length || 0}件)
                 </h3>
-                <Button size="sm" onClick={handleAddNgCast} className="bg-red-600 hover:bg-red-700">
-                  <Plus className="mr-1 h-4 w-4" />
-                  NGキャスト追加
-                </Button>
+                {canUpdateCustomer ? (
+                  <Button
+                    size="sm"
+                    onClick={handleAddNgCast}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    <Plus className="mr-1 h-4 w-4" />
+                    NGキャスト追加
+                  </Button>
+                ) : null}
               </div>
 
               {/* 現在のNGキャスト一覧 */}
@@ -1430,7 +1396,7 @@ export default function CustomerProfile() {
                               </div>
                             </div>
                           </div>
-                          {isEditing && (
+                          {canUpdateCustomer && isEditing && (
                             <div className="ml-3 flex shrink-0 gap-2">
                               <Button
                                 size="sm"
@@ -1458,10 +1424,12 @@ export default function CustomerProfile() {
                   <UserX className="mx-auto mb-3 h-12 w-12 text-gray-300" />
                   <p className="mb-2 text-lg font-medium">NGキャストはありません</p>
                   <p className="text-sm">必要に応じてNGキャストを追加してください</p>
-                  <Button className="mt-4 bg-red-600 hover:bg-red-700" onClick={handleAddNgCast}>
-                    <Plus className="mr-1 h-4 w-4" />
-                    NGキャスト追加
-                  </Button>
+                  {canUpdateCustomer ? (
+                    <Button className="mt-4 bg-red-600 hover:bg-red-700" onClick={handleAddNgCast}>
+                      <Plus className="mr-1 h-4 w-4" />
+                      NGキャスト追加
+                    </Button>
+                  ) : null}
                 </div>
               )}
             </CardContent>
@@ -1648,14 +1616,16 @@ export default function CustomerProfile() {
       </Tabs>
 
       {/* NGキャストダイアログ */}
-      <NgCastDialog
-        open={ngCastDialogOpen}
-        onOpenChange={setNgCastDialogOpen}
-        availableCasts={availableCasts}
-        existingNgCasts={customer?.ngCasts || []}
-        editingNgCast={editingNgCast}
-        onSave={handleSaveNgCast}
-      />
+      {canUpdateCustomer ? (
+        <NgCastDialog
+          open={ngCastDialogOpen}
+          onOpenChange={setNgCastDialogOpen}
+          availableCasts={availableCasts}
+          existingNgCasts={customer?.ngCasts || []}
+          editingNgCast={editingNgCast}
+          onSave={handleSaveNgCast}
+        />
+      ) : null}
 
       {/* 予約詳細ダイアログ */}
       <ReservationDialog
@@ -1663,7 +1633,7 @@ export default function CustomerProfile() {
         onOpenChange={(open) => !open && setSelectedReservation(null)}
         reservation={selectedReservation ? convertToReservationData(selectedReservation) : null}
         casts={availableCasts}
-        onSave={handleReservationSave}
+        onSave={canUpdateReservation ? handleReservationSave : undefined}
       />
     </div>
   )

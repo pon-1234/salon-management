@@ -1,27 +1,34 @@
 /**
  * @design_doc   Customer chat visibility while customer identities remain globally unique
  * @related_to   Administrative customer chat list and store-scoped broadcast
- * @known_issues Per-store customer ownership requires the separately approved schema policy
+ * @known_issues Multi-store customers remain unavailable until messages carry a store identity
  */
 import { describe, expect, it, vi } from 'vitest'
 
 import { resolveCustomerChatScope } from './customer-store-scope'
 
 describe('resolveCustomerChatScope', () => {
-  it('keeps every migrated customer visible when the deployment has one active store', async () => {
+  it('uses CustomerStoreAssignment even when only one store is active', async () => {
     const count = vi.fn().mockResolvedValue(1)
 
-    await expect(resolveCustomerChatScope({ store: { count } }, 'uat-ikebukuro')).resolves.toEqual(
-      {}
-    )
-    expect(count).toHaveBeenCalledWith({ where: { isActive: true } })
+    await expect(resolveCustomerChatScope({ store: { count } }, 'uat-ikebukuro')).resolves.toEqual({
+      storeAssignments: {
+        some: { storeId: 'uat-ikebukuro' },
+        every: { storeId: 'uat-ikebukuro' },
+      },
+    })
+    expect(count).not.toHaveBeenCalled()
   })
 
-  it('limits customers to reservation-derived membership once multiple stores are active', async () => {
+  it('uses the same persisted assignment boundary when multiple stores are active', async () => {
     const count = vi.fn().mockResolvedValue(2)
 
     await expect(resolveCustomerChatScope({ store: { count } }, 'store-a')).resolves.toEqual({
-      reservations: { some: { storeId: 'store-a' } },
+      storeAssignments: {
+        some: { storeId: 'store-a' },
+        every: { storeId: 'store-a' },
+      },
     })
+    expect(count).not.toHaveBeenCalled()
   })
 })

@@ -177,6 +177,46 @@ describe('Prisma schema', () => {
     expect(schemaContent).toMatch(/adminAssignments\s+AdminStoreAssignment\[\]/)
   })
 
+  it('models multi-store customer assignments and backfills only evidenced or unambiguous membership', () => {
+    const customerModel = schemaContent.match(/model Customer \{[\s\S]*?\n\}/u)?.[0]
+    const storeModel = schemaContent.match(/model Store \{[\s\S]*?\n\}/u)?.[0]
+    const assignmentModel = schemaContent.match(
+      /model CustomerStoreAssignment \{[\s\S]*?\n\}/u
+    )?.[0]
+
+    expect(customerModel).toMatch(/storeAssignments\s+CustomerStoreAssignment\[\]/)
+    expect(storeModel).toMatch(/customerAssignments\s+CustomerStoreAssignment\[\]/)
+    expect(assignmentModel).toMatch(/customerId\s+String/)
+    expect(assignmentModel).toMatch(/storeId\s+String/)
+    expect(assignmentModel).toContain('@@id([customerId, storeId])')
+    expect(assignmentModel).toContain('@@index([storeId])')
+    expect(assignmentModel).toMatch(/onDelete: Cascade/)
+
+    const migration = readFileSync(
+      join(
+        process.cwd(),
+        'prisma',
+        'migrations',
+        '20260815010000_add_customer_store_assignments',
+        'migration.sql'
+      ),
+      'utf8'
+    )
+
+    expect(migration.trimStart()).toMatch(/^BEGIN;/u)
+    expect(migration).toContain('CREATE TABLE "CustomerStoreAssignment"')
+    expect(migration).toContain('PRIMARY KEY ("customerId", "storeId")')
+    expect(migration).toMatch(
+      /SELECT DISTINCT reservation\."customerId", reservation\."storeId"[\s\S]*FROM "Reservation" AS reservation/u
+    )
+    expect(migration).toContain('HAVING COUNT(*) = 1')
+    expect(migration).toContain('ON CONFLICT ("customerId", "storeId") DO NOTHING')
+    expect(migration).toContain('ON DELETE CASCADE ON UPDATE CASCADE')
+    expect(migration.trimEnd()).toMatch(/COMMIT;$/u)
+    expect(migration).not.toMatch(/UPDATE\s+"Customer"/iu)
+    expect(migration).not.toMatch(/DELETE\s+FROM\s+"Customer"/iu)
+  })
+
   it('prevents duplicate point events for the same reservation and event type', () => {
     expect(schemaContent).toContain(
       '@@unique([reservationId, type], map: "unique_reservation_point_event")'
