@@ -357,7 +357,11 @@ export async function POST(request: NextRequest) {
     if (session.user.role !== 'admin' && session.user.role !== 'customer') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
-    if (isAdmin && !hasPermission(session.user.permissions ?? [], 'reservation:create')) {
+    if (
+      isAdmin &&
+      (!hasPermission(session.user.permissions ?? [], 'reservation:create') ||
+        !hasPermission(session.user.permissions ?? [], 'customer:read'))
+    ) {
       return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
     }
     if (isAdmin && !canAdminAccessStore(session.user, storeId)) {

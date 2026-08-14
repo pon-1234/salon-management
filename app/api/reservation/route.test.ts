@@ -719,7 +719,7 @@ describe('Reservation API - Modifiable Status', () => {
         user: {
           id: 'admin-1',
           role: 'admin',
-          permissions: ['reservation:create'],
+          permissions: ['reservation:create', 'customer:read'],
           storeIds: ['ikebukuro'],
         },
       } as any)
@@ -758,7 +758,7 @@ describe('Reservation API - Modifiable Status', () => {
         user: {
           id: 'admin-1',
           role: 'admin',
-          permissions: ['reservation:create'],
+          permissions: ['reservation:create', 'customer:read'],
           storeIds: ['ikebukuro'],
         },
       } as any)
@@ -790,7 +790,7 @@ describe('Reservation API - Modifiable Status', () => {
         user: {
           id: 'admin-1',
           role: 'admin',
-          permissions: ['reservation:create'],
+          permissions: ['reservation:create', 'customer:read'],
           storeIds: ['ikebukuro'],
         },
       } as any)
@@ -821,7 +821,7 @@ describe('Reservation API - Modifiable Status', () => {
         user: {
           id: 'admin-1',
           role: 'admin',
-          permissions: ['reservation:create'],
+          permissions: ['reservation:create', 'customer:read'],
           storeIds: ['ikebukuro'],
         },
       } as any)
@@ -873,7 +873,7 @@ describe('Reservation API - Modifiable Status', () => {
         user: {
           id: 'admin-1',
           role: 'admin',
-          permissions: ['reservation:create'],
+          permissions: ['reservation:create', 'customer:read'],
           storeIds: ['ikebukuro'],
         },
       } as any)
@@ -930,7 +930,11 @@ describe('Reservation API - Modifiable Status', () => {
 
     it('rejects an admin without reservation:create permission before database mutation', async () => {
       vi.mocked(getServerSession).mockResolvedValue({
-        user: { id: 'staff-1', role: 'admin', permissions: ['reservation:read'] },
+        user: {
+          id: 'staff-1',
+          role: 'admin',
+          permissions: ['reservation:read', 'customer:read'],
+        },
       } as any)
 
       const request = new NextRequest('http://localhost/api/reservation', {
@@ -945,6 +949,34 @@ describe('Reservation API - Modifiable Status', () => {
       })
 
       const response = await POST(request)
+
+      expect(response.status).toBe(403)
+      expect(db.customer.findUnique).not.toHaveBeenCalled()
+      expect(db.$transaction).not.toHaveBeenCalled()
+    })
+
+    it('rejects an admin without customer:read before resolving the requested customer', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          id: 'staff-1',
+          role: 'admin',
+          permissions: ['reservation:create'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+
+      const response = await POST(
+        new NextRequest('http://localhost/api/reservation?storeId=ikebukuro', {
+          method: 'POST',
+          body: JSON.stringify({
+            customerId: 'cust-123',
+            castId: 'cast-123',
+            courseId: 'course-123',
+            startTime: '2099-07-04T18:00:00+09:00',
+            endTime: '2099-07-04T19:00:00+09:00',
+          }),
+        })
+      )
 
       expect(response.status).toBe(403)
       expect(db.customer.findUnique).not.toHaveBeenCalled()
@@ -980,7 +1012,7 @@ describe('Reservation API - Modifiable Status', () => {
         user: {
           id: 'admin-1',
           role: 'admin',
-          permissions: ['reservation:create'],
+          permissions: ['reservation:create', 'customer:read'],
           storeIds: ['ikebukuro'],
         },
       } as any)
@@ -1032,7 +1064,7 @@ describe('Reservation API - Modifiable Status', () => {
         user: {
           id: 'admin-1',
           role: 'admin',
-          permissions: ['reservation:create'],
+          permissions: ['reservation:create', 'customer:read'],
           storeIds: ['ikebukuro'],
         },
       } as any)
@@ -1085,7 +1117,7 @@ describe('Reservation API - Modifiable Status', () => {
         user: {
           id: 'admin-1',
           role: 'admin',
-          permissions: ['reservation:create'],
+          permissions: ['reservation:create', 'customer:read'],
           storeIds: ['ikebukuro'],
         },
       } as any)
@@ -1123,7 +1155,7 @@ describe('Reservation API - Modifiable Status', () => {
         user: {
           id: 'admin-1',
           role: 'admin',
-          permissions: ['reservation:create'],
+          permissions: ['reservation:create', 'customer:read'],
           storeIds: ['ikebukuro'],
         },
       } as any)
@@ -1188,7 +1220,7 @@ describe('Reservation API - Modifiable Status', () => {
         user: {
           id: 'admin-1',
           role: 'admin',
-          permissions: ['reservation:create'],
+          permissions: ['reservation:create', 'customer:read'],
           storeIds: ['ikebukuro'],
         },
       } as any)
@@ -1219,7 +1251,7 @@ describe('Reservation API - Modifiable Status', () => {
           user: {
             id: 'admin-1',
             role: 'admin',
-            permissions: ['reservation:create'],
+            permissions: ['reservation:create', 'customer:read'],
             storeIds: ['ikebukuro'],
           },
         } as any)
@@ -1448,7 +1480,7 @@ describe('Reservation API - Modifiable Status', () => {
           id: 'admin-1',
           role: 'admin',
           adminRole: 'manager',
-          permissions: ['reservation:create'],
+          permissions: ['reservation:create', 'customer:read'],
           storeIds: ['ikebukuro'],
         },
       } as any)
