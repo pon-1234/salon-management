@@ -25,7 +25,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, MessageCircle, Star, Lock } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import type { PublicReview, Review } from '@/lib/reviews/types'
-import { toPublicReview } from '@/lib/reviews/public'
+import { toPublicReview } from '@/lib/reviews/public-mapper'
 import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 
 interface EligibleReservation {
