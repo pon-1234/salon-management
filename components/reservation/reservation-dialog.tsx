@@ -649,7 +649,7 @@ export function ReservationDialog({
       setCustomerNgLoading(true)
       try {
         const response = await fetch(
-          `/api/customer?id=${encodeURIComponent(reservation.customerId)}`,
+          `/api/customer?id=${encodeURIComponent(reservation.customerId)}&storeId=${encodeURIComponent(currentStore.id)}`,
           {
             cache: 'no-store',
             credentials: 'include',
@@ -686,7 +686,7 @@ export function ReservationDialog({
       ignore = true
       controller.abort()
     }
-  }, [open, reservation?.customerId])
+  }, [currentStore.id, open, reservation?.customerId])
 
   const activeCastId = formState.castId || reservation?.staffId || ''
 

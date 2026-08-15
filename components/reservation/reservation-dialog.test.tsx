@@ -211,6 +211,35 @@ describe('ReservationDialog Edit Mode', () => {
     }
   })
 
+  it('scopes the customer lookup to the selected store when the dialog opens', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      const payload = url.startsWith('/api/cast') ? [] : { ngCasts: [] }
+      return new Response(JSON.stringify(payload), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(
+      <ReservationDialog
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        reservation={mockReservation}
+        onSave={mockOnSave}
+      />
+    )
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/customer?id=c1&storeId=ikebukuro', {
+        cache: 'no-store',
+        credentials: 'include',
+        signal: expect.any(AbortSignal),
+      })
+    })
+  })
+
   it('should toggle edit mode when edit button is clicked', () => {
     render(
       <ReservationDialog
