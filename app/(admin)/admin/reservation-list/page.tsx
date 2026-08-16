@@ -38,6 +38,8 @@ import { TableSkeleton } from '@/components/ui/page-loading'
 
 const ADJUSTING_STATUSES = new Set(['pending', 'tentative', 'modifiable'])
 const PAGE_SIZE = 25
+const WEEK_OVERVIEW_DAYS = 7
+const WEEK_OVERVIEW_PAGE_SIZE = 100
 const JST_TIMEZONE = 'Asia/Tokyo'
 type ReservationStatusFilter = 'active' | 'confirmed' | 'pending' | 'cancelled'
 
@@ -46,6 +48,11 @@ function getJstDayRange(date: Date): { start: Date; end: Date } {
   const start = zonedTimeToUtc(`${dateKey}T00:00:00`, JST_TIMEZONE)
 
   return { start, end: addDays(start, 1) }
+}
+
+function getJstWeekRange(date: Date): { start: Date; end: Date } {
+  const { start } = getJstDayRange(date)
+  return { start, end: addDays(start, WEEK_OVERVIEW_DAYS) }
 }
 
 function isWithinRange(date: Date, start: Date, end: Date): boolean {
@@ -57,6 +64,7 @@ export default function ReservationListPage() {
   const { currentStore } = useStore()
   const [selectedReservation, setSelectedReservation] = useState<ReservationData | null>(null)
   const [rawReservations, setRawReservations] = useState<Reservation[]>([])
+  const [weekReservations, setWeekReservations] = useState<Reservation[]>([])
   const [dailyReservations, setDailyReservations] = useState<ReservationData[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
@@ -124,9 +132,46 @@ export default function ReservationListPage() {
     }
   }, [currentStore.id, page, requestedStatus, selectedDate])
 
+  const fetchWeekOverview = useCallback(async () => {
+    try {
+      const { start, end } = getJstWeekRange(new Date())
+      const collected: Reservation[] = []
+      let offset = 0
+      while (true) {
+        const fetchedReservations = await getAllReservations({
+          limit: WEEK_OVERVIEW_PAGE_SIZE,
+          offset,
+          startDate: start.toISOString(),
+          endDate: end.toISOString(),
+          storeId: currentStore.id,
+          ...(requestedStatus ? { status: requestedStatus } : {}),
+        })
+        collected.push(
+          ...fetchedReservations.map(
+            (reservation) =>
+              ({
+                ...reservation,
+                startTime: new Date(reservation.startTime),
+                endTime: new Date(reservation.endTime),
+              }) as Reservation
+          )
+        )
+        if (fetchedReservations.length < WEEK_OVERVIEW_PAGE_SIZE) break
+        offset += WEEK_OVERVIEW_PAGE_SIZE
+      }
+      setWeekReservations(collected)
+    } catch (error) {
+      console.error('Error fetching reservation week overview:', error)
+    }
+  }, [currentStore.id, requestedStatus])
+
   useEffect(() => {
     fetchReservations()
   }, [fetchReservations])
+
+  useEffect(() => {
+    void fetchWeekOverview()
+  }, [fetchWeekOverview])
 
   useEffect(() => {
     updateDailyReservations(rawReservations, selectedDate)
@@ -176,10 +221,10 @@ export default function ReservationListPage() {
   const weekOverview = useMemo(() => {
     const baseDate = getJstDayRange(new Date()).start
 
-    return Array.from({ length: 7 }).map((_, index) => {
+    return Array.from({ length: WEEK_OVERVIEW_DAYS }).map((_, index) => {
       const date = addDays(baseDate, index)
       const { start, end } = getJstDayRange(date)
-      const dayReservations = rawReservations.filter(
+      const dayReservations = weekReservations.filter(
         (reservation) =>
           reservation.status !== 'cancelled' &&
           isWithinRange(new Date(reservation.startTime), start, end)
@@ -203,7 +248,7 @@ export default function ReservationListPage() {
         customerCount: uniqueCustomers.size,
       }
     })
-  }, [rawReservations])
+  }, [weekReservations])
 
   const handleDateChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value
@@ -355,7 +400,14 @@ export default function ReservationListPage() {
                 <SelectItem value="cancelled">キャンセル履歴</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={fetchReservations} disabled={loading}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                void fetchReservations()
+                void fetchWeekOverview()
+              }}
+              disabled={loading}
+            >
               再読込
             </Button>
           </div>
