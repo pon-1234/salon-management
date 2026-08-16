@@ -6,7 +6,7 @@
 
 判定: **現場確認開始可／正式本番切替はNo-Go**
 
-この文書は、クライアントから受け取った指摘を「修正済み」「現場確認」「仕様・移行データ待ち」に分けたものです。2026年8月15日10時台に最新版のCI、確認環境への反映、backup隔離復元、主要URLのブラウザ確認が完了したため、現場確認を開始できます。技術試験の合格だけで、操作性、会計結果、旧システムとの業務同等性を承認済みとは扱いません。現場確認は[池袋・新システム 現場確認マニュアル](./IKEBUKURO_FIELD_UAT_MANUAL.md)に沿って記録します。
+この文書は、クライアントから受け取った指摘を「修正済み」「現場確認」「仕様・移行データ待ち」に分けたものです。2026年8月16日17時台に会計・日報・入金画面の修正を確認環境へ反映したため、現場確認を開始できます。技術試験の合格だけで、操作性、会計結果、旧システムとの業務同等性を承認済みとは扱いません。現場確認は[池袋・新システム 現場確認マニュアル](./IKEBUKURO_FIELD_UAT_MANUAL.md)に沿って記録します。
 
 ## データ基準と現在地
 
@@ -18,14 +18,12 @@ schema18の管理証跡は、不変のV5取込候補を再現・照合できる�
 
 ## 最新リリース技術確認
 
-- **反映済みrelease**: `15a2c57bae042f04fd35c95b294b5c1deee01c34`（2026年8月15日10時台、日本時間）
-- **CI**: Prettier、ESLint、TypeScript、327 test files・2,648 tests、coverage gate、Playwright 2 tests、production build 77 pagesがすべて合格。
-- **直前backup**: `/opt/platinum-preview-backups/pre-app-15a2c57bae04-20260815T010113Z.dump.enc`、SHA-256 `ad539786a9470a9ccdfa3b011e2c567a33d4350e5f2cadaadcb8ff3b3e5bef45`。暗号化backupを一時的な隔離PostgreSQLへ完全復元し、元DBと全検査値が一致。
-- **可変な確認環境の復元照合**: 顧客13,314件、予約2,123件、キャスト35件、出勤241件、migration 18件、顧客店舗割当13,314件。孤立割当、池袋外割当、未割当顧客、予約店舗との不一致はすべて0件。
-- **画像・volume**: 公開画像105件と確認環境marker 1件の計106ファイル、9,794,419 bytesが配備前後で一致。preview DB・storage volumeとDB container IDも不変。
-- **ブラウザ**: 公開10画面、管理8画面、管理者・顧客・キャストログイン、予約一覧4件の詳細、顧客指定timeline、電話番号からの新規顧客画面を確認。HTTP 4xx/5xx、console error、page error、破損画像、エラー画面は0件。予約詳細の顧客APIとチャットのキャストAPIは池袋`storeId`付きで全件200。
-- **検索除外**: 公開・管理画面の`noindex`と`X-Robots-Tag`、`robots.txt`の全体拒否を確認。
-- **安全**: 確認環境は外部送信停止のpreview mode。旧本番のDB・アプリ・cron・backup・reverse proxyは変更していない。
+- **反映済みrelease**: `683c00cd9cc9d659c7e7303f0807c3fa2784904e`（2026年8月16日17時台、日本時間）
+- **CI**: Prettier、ESLint、TypeScript、334 test files・2,665 tests、coverage gate、Playwright 2 tests、production build 78 pagesがすべて合格。
+- **直前backup**: `/home/deploy/salon-preview-backups/pre-app-683c00cd9cc9-20260816T081628Z.dump`、SHA-256 `ad5d8620d0ce2186f3eed1df86b9643df83d5fae04f21dbeb443c9720296642d`。今回はアプリ更新のみで、隔離PostgreSQLへの復元は未実施。
+- **アプリrollback**: `/opt/salon-preview-rollbacks/20260816T081628Z-current`
+- **ブラウザ**: 公開年齢確認、管理ログイン、日報・入金処理・入金精算処理の未ログイン時307、`robots.txt` 全体拒否、`X-Robots-Tag: noindex, nofollow, noarchive` を確認。管理者ログイン後の操作確認は現場確認で行う。
+- **安全**: 確認環境は外部送信停止のpreview mode。旧本番、`salon-system`、Platinum、preview PostgreSQL volumeは変更していない。今回の再ビルドは `SALON_PREVIEW_APP_ROOT=/opt/salon-management-preview` を明示指定した。
 
 ## 環境・共通導線
 
