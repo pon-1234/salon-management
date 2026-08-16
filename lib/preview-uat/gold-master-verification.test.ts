@@ -275,6 +275,14 @@ describe('createGoldMasterPreviewVerificationControl', () => {
     expect(Object.keys(control.models).sort()).toEqual([...PREVIEW_UAT_EMPTY_TABLES].sort())
     expect(control.models.Customer.count).toBe(1)
     expect(control.models.Reservation.count).toBe(1)
+    expect(control.models.CastLedgerEntry.count).toBe(0)
+    expect(control.snapshot.sourceRowCounts).toEqual(
+      expect.objectContaining({
+        payments: 0,
+        withdrawals: 0,
+        welfareDeductions: 0,
+      })
+    )
     expect(control.models.NgCastEntry.count).toBe(0)
     expect(control.models.Reservation.fieldCount).toBeGreaterThan(30)
     expect(control.models.Reservation.canonicalSha256).toMatch(/^[a-f0-9]{64}$/u)

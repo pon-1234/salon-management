@@ -104,6 +104,23 @@ describe('XServer VPS deployment artifacts', () => {
     expect(entrypoint).not.toContain('import-gold-master-ikebukuro-preview.ts')
   })
 
+  it('packages the guarded Ikebukuro ledger importer without running it automatically', () => {
+    const dockerfile = readFileSync(join(deploymentDirectory, 'Dockerfile'), 'utf8')
+    const entrypoint = readFileSync(join(deploymentDirectory, 'entrypoint.sh'), 'utf8')
+    const packageJson = readFileSync(join(process.cwd(), 'package.json'), 'utf8')
+
+    expect(packageJson).toContain(
+      '"preview:import-ikebukuro-ledger": "tsx scripts/import-gold-master-ikebukuro-ledger.ts"'
+    )
+    expect(dockerfile).toContain('COPY --from=builder /app/lib/settlement ./lib/settlement')
+    expect(dockerfile).toContain(
+      'COPY --from=builder /app/scripts/import-gold-master-ikebukuro-ledger.ts ./scripts/import-gold-master-ikebukuro-ledger.ts'
+    )
+    expect(dockerfile).not.toMatch(/^RUN .*preview:import-ikebukuro-ledger/m)
+    expect(entrypoint).not.toContain('preview:import-ikebukuro-ledger')
+    expect(entrypoint).not.toContain('import-gold-master-ikebukuro-ledger.ts')
+  })
+
   it('packages the non-writing V5 verifier without running it automatically', () => {
     const dockerfile = readFileSync(join(deploymentDirectory, 'Dockerfile'), 'utf8')
     const entrypoint = readFileSync(join(deploymentDirectory, 'entrypoint.sh'), 'utf8')

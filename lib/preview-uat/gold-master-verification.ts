@@ -47,6 +47,7 @@ const MODEL_FIXTURE_KEYS: Record<PreviewUatEmptyTable, keyof PreviewUatFixture |
   Reservation: 'reservations',
   SettlementPayment: null,
   SettlementPaymentReservation: null,
+  CastLedgerEntry: 'castLedgerEntries',
   CoursePrice: 'courses',
   OptionPrice: 'options',
   CastOptionSetting: 'castOptionSettings',
@@ -87,9 +88,18 @@ const SOURCE_DATASETS = [
   'casts',
   'schedules',
   'reservations',
-  'reviews',
-  'customers',
-] as const
+    'reviews',
+    'customers',
+    'payments',
+    'withdrawals',
+    'welfareDeductions',
+  ] as const
+
+const OPTIONAL_SOURCE_DATASETS = new Set<(typeof SOURCE_DATASETS)[number]>([
+  'payments',
+  'withdrawals',
+  'welfareDeductions',
+])
 
 export interface GoldMasterPreviewMigrationVerification {
   name: string
@@ -603,10 +613,14 @@ function safeAdd(left: number, right: number): number {
 }
 
 function readSnapshotMetadata(input: unknown): RedactedSnapshotMetadata {
-  if (!isRecord(input) || input.version !== 4 || !isRecord(input.scope) || !isRecord(input.rows)) {
+  if (!isRecord(input) || input.version !== 4 || !isRecord(input.scope)) {
     throw new GoldMasterPreviewVerificationError()
   }
   const scope = input.scope
+  const snapshotRows = input.rows
+  if (!isRecord(snapshotRows)) {
+    throw new GoldMasterPreviewVerificationError()
+  }
   if (
     typeof scope.cutoffAt !== 'string' ||
     typeof scope.scheduleFrom !== 'string' ||
@@ -615,10 +629,26 @@ function readSnapshotMetadata(input: unknown): RedactedSnapshotMetadata {
   ) {
     throw new GoldMasterPreviewVerificationError()
   }
-  for (const dataset of SOURCE_DATASETS) {
-    if (!Array.isArray(input.rows[dataset])) throw new GoldMasterPreviewVerificationError()
+  const rows = Object.fromEntries(
+    SOURCE_DATASETS.map((dataset) => {
+      const value = snapshotRows[dataset]
+      if (value === undefined && OPTIONAL_SOURCE_DATASETS.has(dataset)) {
+        return [dataset, []]
+      }
+      if (!Array.isArray(value)) throw new GoldMasterPreviewVerificationError()
+      return [dataset, value]
+    })
+  ) as RedactedSnapshotMetadata['rows']
+  return {
+    version: 4,
+    scope: {
+      cutoffAt: scope.cutoffAt,
+      scheduleFrom: scope.scheduleFrom,
+      scheduleTo: scope.scheduleTo,
+      reservationFrom: scope.reservationFrom,
+    },
+    rows,
   }
-  return input as unknown as RedactedSnapshotMetadata
 }
 
 function canonicalDate(value: string | Date): string {

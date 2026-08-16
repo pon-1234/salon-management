@@ -9,6 +9,7 @@ import { zonedTimeToUtc } from 'date-fns-tz'
 import { z } from 'zod'
 
 import { mapLegacyOrderLevToStatus } from '@/lib/reservation/legacy-status'
+import { mapLegacyCastLedger } from '@/lib/settlement/legacy-ledger'
 import type { PreviewUatFixture } from './setup'
 import type {
   GoldMasterPreviewImageProjection,
@@ -56,6 +57,9 @@ const countsSchema = z
     reservations: nonNegativeInteger,
     reviews: nonNegativeInteger,
     customers: nonNegativeInteger,
+    payments: nonNegativeInteger.optional().default(0),
+    withdrawals: nonNegativeInteger.optional().default(0),
+    welfareDeductions: nonNegativeInteger.optional().default(0),
   })
   .strict()
 
@@ -68,6 +72,7 @@ const storeSchema = z
     eigyo: nullableText,
     mail_ad: nullableText,
     lev: integer,
+    girls_jikyu: zeroIfNull.optional().default(0),
   })
   .strict()
 
@@ -293,6 +298,34 @@ const customerSchema = z
   })
   .strict()
 
+const cashbookSchema = z
+  .object({
+    serial: nonNegativeInteger,
+    shop_no: integer,
+    nyu_date: dateTime,
+    nyu_month: z.string().min(1),
+    girl_no: nonNegativeInteger,
+    kin: integer,
+    kind: integer,
+    source_table: z
+      .string()
+      .regex(/^nyukin(?:_[0-9]{4})?$/u)
+      .optional(),
+    tanto_chk: zeroIfNull.optional().default(0),
+    cm: nullableText.optional().default(null),
+  })
+  .strict()
+
+const officePaySchema = z
+  .object({
+    serial: nonNegativeInteger,
+    shop_no: integer,
+    job_date: dateOnly,
+    girl_no: nonNegativeInteger,
+    kin: integer,
+  })
+  .strict()
+
 const snapshotSchema = z
   .object({
     version: z.literal(4),
@@ -325,6 +358,9 @@ const snapshotSchema = z
         reservations: z.array(reservationSchema),
         reviews: z.array(reviewSchema),
         customers: z.array(customerSchema),
+        payments: z.array(cashbookSchema).optional().default([]),
+        withdrawals: z.array(cashbookSchema).optional().default([]),
+        welfareDeductions: z.array(officePaySchema).optional().default([]),
       })
       .strict(),
   })
@@ -592,6 +628,9 @@ function assertSnapshotIntegrity(snapshot: z.output<typeof snapshotSchema>): voi
     reservations: snapshot.rows.reservations.length,
     reviews: snapshot.rows.reviews.length,
     customers: snapshot.rows.customers.length,
+    payments: snapshot.rows.payments.length,
+    withdrawals: snapshot.rows.withdrawals.length,
+    welfareDeductions: snapshot.rows.welfareDeductions.length,
   }
   for (const entity of Object.keys(snapshot.beforeCounts) as Array<
     keyof typeof snapshot.beforeCounts
@@ -911,6 +950,7 @@ export function buildGoldMasterPreviewFixture(
         businessDays: '年中無休',
         lastOrder: '23:00',
         welfareExpenseRate: 10,
+        hourlyGuaranteeAmount: store.girls_jikyu,
         marketingChannels: ['店リピート', '電話', '紹介', 'SNS', 'WEB', 'Heaven'],
         pointEarnRate: 1,
         pointExpirationMonths: 12,
@@ -1275,6 +1315,17 @@ export function buildGoldMasterPreviewFixture(
         ),
       ]),
     pointHistories: [],
+    castLedgerEntries: mapLegacyCastLedger({
+      importedCastIds: new Set(sortedCasts.map((row) => `legacy-cast-${row.girl_no}`)),
+      storeId: STORE_ID,
+      nyukin: snapshot.rows.payments,
+      shukkin: snapshot.rows.withdrawals,
+      officePay: snapshot.rows.welfareDeductions,
+    }).map((entry) => ({
+      ...entry,
+      createdAt: cutoffAt,
+      updatedAt: cutoffAt,
+    })),
     reviews: snapshot.rows.reviews
       .sort((left, right) => left.serial - right.serial)
       .map((row) => {

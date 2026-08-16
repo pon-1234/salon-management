@@ -1783,16 +1783,10 @@ export function ReservationDialog({
                             <Select
                               value={formState.stationId ?? UNASSIGNED_VALUE}
                               onValueChange={(value) => {
-                                const selectedStation = filteredStations.find(
-                                  (station) => station.id === value
-                                )
                                 setFormState((prev) => ({
                                   ...prev,
                                   stationId: value === UNASSIGNED_VALUE ? null : value,
-                                  transportationFee:
-                                    value === UNASSIGNED_VALUE
-                                      ? 0
-                                      : (selectedStation?.transportationFee ?? 0),
+                                  transportationFee: 0,
                                 }))
                               }}
                               disabled={filteredStations.length === 0}
@@ -1948,21 +1942,7 @@ export function ReservationDialog({
                               className="bg-gray-100"
                             />
                           </div>
-                          <div className="grid gap-3 sm:grid-cols-3">
-                            <div>
-                              <Label htmlFor="reservation-transportation">交通費</Label>
-                              <Input
-                                id="reservation-transportation"
-                                type="number"
-                                value={formState.transportationFee}
-                                readOnly
-                                disabled
-                                className="bg-gray-100"
-                              />
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                駅選択に応じて自動計算されます
-                              </p>
-                            </div>
+                          <div className="grid gap-3 sm:grid-cols-2">
                             <div>
                               <Label htmlFor="reservation-additional">追加料金</Label>
                               <Input
@@ -2094,10 +2074,6 @@ export function ReservationDialog({
                           <div className="flex items-center justify-between text-muted-foreground">
                             <span>集客チャネル</span>
                             <span>{reservation.marketingChannel || '未設定'}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-muted-foreground">
-                            <span>交通費</span>
-                            <span>{formatCurrency(reservation.transportationFee)}</span>
                           </div>
                           <div className="flex items-center justify-between text-muted-foreground">
                             <span>追加料金</span>
@@ -2779,10 +2755,6 @@ export function ReservationDialog({
                           <div className="flex items-center justify-between">
                             <dt>指名料</dt>
                             <dd>{formatCurrency(priceBreakdown.designation)}</dd>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <dt>交通費</dt>
-                            <dd>{formatCurrency(priceBreakdown.transportation)}</dd>
                           </div>
                           <div className="flex items-center justify-between">
                             <dt>追加料金</dt>

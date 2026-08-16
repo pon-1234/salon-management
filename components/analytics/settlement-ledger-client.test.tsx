@@ -14,6 +14,7 @@ vi.mock('@/contexts/store-context', () => ({
 
 const ledger = {
   month: '2026-08',
+  hourlyGuaranteeAmount: 5000,
   casts: [
     {
       castId: 'cast-1',
@@ -53,6 +54,20 @@ const ledger = {
       paidAt: '2026-08-15T15:00:00.000Z',
       notes: null,
       reservationIds: ['reservation-2'],
+    },
+  ],
+  legacyEntries: [
+    {
+      id: 'legacy-ledger-nyukin-11',
+      castId: 'cast-1',
+      castName: 'さら',
+      sourceTable: 'nyukin',
+      direction: 'inbound',
+      kind: 'cash',
+      amount: 18_000,
+      notes: '現金精算',
+      handledBy: '1',
+      occurredAt: '2026-08-10T03:00:00.000Z',
     },
   ],
 }
@@ -100,6 +115,11 @@ describe('SettlementLedgerClient', () => {
 
     expect(await screen.findByRole('heading', { name: '入金精算処理' })).toBeInTheDocument()
     expect(screen.getByText('さら')).toBeInTheDocument()
-    expect(screen.getByText('¥18,000')).toBeInTheDocument()
+    expect(screen.getAllByText('¥18,000').length).toBeGreaterThan(0)
+    expect(screen.getByText('旧台帳')).toBeInTheDocument()
+    expect(screen.getByText('さら / 入金 / 現金')).toBeInTheDocument()
+    expect(screen.getByText(/同じ店舗の年次入金は含みます/)).toBeInTheDocument()
+    expect(screen.queryByText(/年次アーカイブと別DBの保証実績は未取込/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '印刷' })).toBeInTheDocument()
   })
 })

@@ -17,6 +17,12 @@ vi.mock('@/lib/db', () => ({
     settlementPayment: {
       findMany: vi.fn(),
     },
+    castLedgerEntry: {
+      findMany: vi.fn(),
+    },
+    storeSettings: {
+      findUnique: vi.fn(),
+    },
   },
 }))
 
@@ -54,6 +60,23 @@ describe('getStoreSettlementLedger', () => {
         reservations: [{ reservationId: 'reservation-2' }],
       },
     ] as never)
+    vi.mocked(db.castLedgerEntry.findMany).mockResolvedValue([
+      {
+        id: 'legacy-ledger-nyukin-11',
+        castId: 'cast-1',
+        sourceTable: 'nyukin',
+        direction: 'inbound',
+        kind: 'cash',
+        amount: 18_000,
+        notes: '現金精算',
+        handledBy: '1',
+        occurredAt: new Date('2026-08-10T03:00:00.000Z'),
+        cast: { name: 'さら' },
+      },
+    ] as never)
+    vi.mocked(db.storeSettings.findUnique).mockResolvedValue({
+      hourlyGuaranteeAmount: 5000,
+    } as never)
   })
 
   it('groups completed reservations and payments for one JST month', async () => {
@@ -84,6 +107,13 @@ describe('getStoreSettlementLedger', () => {
     expect(ledger.payments[0]).toMatchObject({
       id: 'payment-1',
       castName: 'さら',
+      amount: 18_000,
+    })
+    expect(ledger.hourlyGuaranteeAmount).toBe(5000)
+    expect(ledger.legacyEntries[0]).toMatchObject({
+      id: 'legacy-ledger-nyukin-11',
+      sourceTable: 'nyukin',
+      direction: 'inbound',
       amount: 18_000,
     })
   })

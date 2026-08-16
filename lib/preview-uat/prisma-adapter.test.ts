@@ -48,6 +48,7 @@ function transaction(overrides: Record<string, unknown> = {}) {
     customerPointHistory: { createMany: createMany() },
     review: { createMany: createMany() },
     message: { createMany: createMany() },
+    castLedgerEntry: { createMany: createMany() },
     ...overrides,
   }
 }

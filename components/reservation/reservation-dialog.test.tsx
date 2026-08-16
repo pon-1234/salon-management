@@ -426,6 +426,8 @@ describe('ReservationDialog Edit Mode', () => {
 
     expect(await screen.findByText('料金プレビュー')).toBeInTheDocument()
     expect(screen.queryByText(/厚生費/)).not.toBeInTheDocument()
+    expect(screen.queryByText('交通費')).not.toBeInTheDocument()
+    expect(screen.queryByText(/配車/)).not.toBeInTheDocument()
   })
 
   it('should offer the modifiable status for confirmed reservations', async () => {

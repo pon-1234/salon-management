@@ -17,6 +17,7 @@ export const PREVIEW_UAT_EMPTY_TABLES = [
   'Reservation',
   'SettlementPayment',
   'SettlementPaymentReservation',
+  'CastLedgerEntry',
   'CoursePrice',
   'OptionPrice',
   'CastOptionSetting',
@@ -87,6 +88,7 @@ export interface PreviewUatFixture {
   pointHistories: Prisma.CustomerPointHistoryCreateManyInput[]
   reviews: Prisma.ReviewCreateManyInput[]
   messages: Prisma.MessageCreateManyInput[]
+  castLedgerEntries: Prisma.CastLedgerEntryCreateManyInput[]
 }
 
 export interface PreviewUatSetupSummary {
@@ -661,6 +663,7 @@ export function buildPreviewUatFixture({
         updatedAt: createdAt,
       },
     ],
+    castLedgerEntries: [],
   }
 }
 
@@ -744,6 +747,7 @@ function storeSettings(
     businessDays: '[UAT] 毎日',
     lastOrder: '23:00',
     welfareExpenseRate: 10,
+    hourlyGuaranteeAmount: 0,
     marketingChannels: ['[UAT] WEB'],
     pointEarnRate: 1,
     pointExpirationMonths: 12,

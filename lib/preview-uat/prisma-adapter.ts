@@ -137,6 +137,9 @@ async function writeFixture(
   await createExact(fixture.messages.length, () =>
     transaction.message.createMany({ data: fixture.messages })
   )
+  await createExact(fixture.castLedgerEntries.length, () =>
+    transaction.castLedgerEntry.createMany({ data: fixture.castLedgerEntries })
+  )
 
   return {
     stores: fixture.stores.length,

@@ -56,6 +56,9 @@ function snapshot(): GoldMasterIkebukuroSnapshotV4 {
       reservations: 1,
       reviews: 1,
       customers: 2,
+      payments: 1,
+      withdrawals: 1,
+      welfareDeductions: 1,
     },
     afterCounts: {
       stores: 1,
@@ -71,12 +74,16 @@ function snapshot(): GoldMasterIkebukuroSnapshotV4 {
       reservations: 1,
       reviews: 1,
       customers: 2,
+      payments: 1,
+      withdrawals: 1,
+      welfareDeductions: 1,
     },
     rows: {
       stores: [
         {
           shop_no: 5600,
           shop_name: '金の玉クラブ池袋店',
+          girls_jikyu: 5000,
           tel: '03-5931-5743',
           adress: null,
           eigyo: '10:00～24:00',
@@ -374,6 +381,41 @@ function snapshot(): GoldMasterIkebukuroSnapshotV4 {
           deli_date: null,
         },
       ],
+      payments: [
+        {
+          serial: 11,
+          shop_no: 5600,
+          nyu_date: '2026-07-20 12:00:00',
+          nyu_month: '2026-07-01',
+          girl_no: 56019,
+          kin: 18000,
+          kind: 0,
+          tanto_chk: 1,
+          cm: '現金精算',
+        },
+      ],
+      withdrawals: [
+        {
+          serial: 21,
+          shop_no: 5600,
+          nyu_date: '2026-07-21 15:00:00',
+          nyu_month: '2026-07-01',
+          girl_no: 56019,
+          kin: -3000,
+          kind: 0,
+          tanto_chk: 1,
+          cm: 'カード分',
+        },
+      ],
+      welfareDeductions: [
+        {
+          serial: 31,
+          shop_no: 5600,
+          job_date: '2026-07-20',
+          girl_no: 56019,
+          kin: 1800,
+        },
+      ],
     },
   }
 }
@@ -385,6 +427,37 @@ describe('buildGoldMasterPreviewFixture', () => {
     expect(fixture.customerStoreAssignments).toEqual([
       { customerId: 'legacy-customer-member-1234', storeId: 'uat-ikebukuro' },
       { customerId: 'legacy-customer-member-2345', storeId: 'uat-ikebukuro' },
+    ])
+  })
+
+  it('imports monthly nyukin, shukkin, and office_pay as a cast ledger without reservation links', () => {
+    const fixture = buildGoldMasterPreviewFixture(snapshot(), { passwordHashes, resolveImageUrl })
+
+    expect(fixture.storeSettings[0]).toEqual(
+      expect.objectContaining({ hourlyGuaranteeAmount: 5000 })
+    )
+    expect(fixture.castLedgerEntries).toEqual([
+      expect.objectContaining({
+        id: 'legacy-ledger-nyukin-11',
+        castId: 'legacy-cast-56019',
+        sourceTable: 'nyukin',
+        direction: 'inbound',
+        kind: 'cash',
+        amount: 18000,
+        businessMonth: '2026-07',
+      }),
+      expect.objectContaining({
+        id: 'legacy-ledger-shukkin-21',
+        sourceTable: 'shukkin',
+        direction: 'outbound',
+        amount: -3000,
+      }),
+      expect.objectContaining({
+        sourceTable: 'office_pay',
+        direction: 'deduction',
+        kind: 'welfare',
+        amount: 1800,
+      }),
     ])
   })
 

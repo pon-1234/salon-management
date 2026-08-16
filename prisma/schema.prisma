@@ -69,6 +69,7 @@ model Store {
   storeSettings          StoreSettings?
   eventBanners           StoreEventBanner[]
   settlementPayments     SettlementPayment[]
+  ledgerEntries          CastLedgerEntry[]
   adminAssignments       AdminStoreAssignment[]
   customerAssignments    CustomerStoreAssignment[]
   lineRegistrationTokens CastLineRegistrationToken[]
@@ -113,6 +114,7 @@ model Cast {
   lineLogs                 ReservationLineLog[]
   attendanceRequests       ReservationAttendanceRequest[]
   settlementPayments       SettlementPayment[]
+  ledgerEntries            CastLedgerEntry[]
   lineRegistrationToken    CastLineRegistrationToken?
   store                    Store                          @relation(fields: [storeId], references: [id])
 
@@ -224,6 +226,29 @@ model SettlementPayment {
 
   @@index([storeId])
   @@index([castId])
+}
+
+model CastLedgerEntry {
+  id            String   @id
+  storeId       String
+  castId        String
+  sourceTable   String
+  sourceKey     String
+  businessMonth String
+  occurredAt    DateTime
+  direction     String
+  kind          String
+  amount        Int
+  notes         String   @default("")
+  handledBy     String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  store         Store    @relation(fields: [storeId], references: [id])
+  cast          Cast     @relation(fields: [castId], references: [id])
+
+  @@unique([storeId, sourceTable, sourceKey])
+  @@index([storeId, businessMonth])
+  @@index([castId, businessMonth])
 }
 
 model SettlementPaymentReservation {
@@ -559,6 +584,7 @@ model StoreSettings {
   lastOrder             String
   parkingInfo           String?
   welfareExpenseRate    Decimal  @default(10)
+  hourlyGuaranteeAmount Int      @default(0)
   marketingChannels     String[] @default(["店リピート", "電話", "紹介", "SNS", "WEB", "Heaven"])
   pointEarnRate         Decimal  @default(1.0)
   pointExpirationMonths Int      @default(12)

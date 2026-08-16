@@ -133,7 +133,7 @@ artifactはGit管理対象外のprivate作業領域へ置きます。credential�
 - V5はオプションと口コミを変換対象に含めたが、NG設定、ポイント履歴、チャット、精算、日報、削除履歴、非公開画像など、未対応domainの保存先または参照専用アーカイブ方針が未決である。
 - V5のリモートbackup、空DB・storage再作成、取込、全件突合、移行後backup復元、主要画面確認は実施済みである。ただし現場担当者の業務・視認性確認と最終切替時の再実施は未完了である。
 - 公開画像105件はV5ローカルpackage、live preview storage、移行後backup復元先で全件一致した。非公開画像は対象外であり、正式移行の扱いは未決である。
-- V5では旧入金・精算履歴を取得しておらず、`SettlementPayment=0` である。画面と新規記録機能が動いても、旧精算実績の統合完了とは扱わない。
+- 旧入金は予約単位ではなく月次台帳である。`scripts/extract-gold-master-ikebukuro-preview.php` の `LEGACY_PREVIEW_EXTRACT_KIND=cast-ledger` が同じ店舗DB origin の `nyukin` / `shukkin` / `office_pay` と `shop_list.girls_jikyu` を読み取り専用抽出し、`pnpm preview:import-ikebukuro-ledger` が既存previewへ `CastLedgerEntry` と時給保証単価だけを足す。予約紐付けの `SettlementPayment` には押し込まない。未取込キャストの行は捨てる。同じ origin の年次表 `nyukin_YYYY` は現行 `nyukin` が空のため台帳抽出に含める。`shukkin_YYYY` はこのDBに存在しない。SK-DB の `girls_charge_out` 保証実績は、別 origin 契約が承認されるまで対象外。全件再取込はUAT行を消すため使わない。
 - V5の出勤は2026-08-01〜2026-09-30だけであり、それ以前の日報の勤務時間は完全にならない。旧媒体番号から姫予約へ分類する対応表と、手取り・店舗売上の正式配分規則も未承認である。
 
 ## 絶対に守ること

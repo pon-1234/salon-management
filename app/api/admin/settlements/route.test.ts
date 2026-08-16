@@ -33,8 +33,10 @@ describe('/api/admin/settlements', () => {
     vi.mocked(requireAdmin).mockResolvedValue(null)
     vi.mocked(getStoreSettlementLedger).mockResolvedValue({
       month: '2026-08',
+      hourlyGuaranteeAmount: 0,
       casts: [],
       payments: [],
+      legacyEntries: [],
     })
   })
 

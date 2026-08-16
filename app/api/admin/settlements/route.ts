@@ -1,7 +1,7 @@
 /**
  * @design_doc   Store-wide settlement ledger for payment and settlement processing screens
  * @related_to   getStoreSettlementLedger, requireAdmin
- * @known_issues Legacy settlement history is not imported
+ * @known_issues Yearly nyukin/shukkin archives and SK-DB guarantee rows stay outside this extract
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { formatInTimeZone } from 'date-fns-tz'

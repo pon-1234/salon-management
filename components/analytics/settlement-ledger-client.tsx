@@ -1,7 +1,7 @@
 /**
  * @design_doc   Store-wide payment and settlement processing screens
  * @related_to   GET /api/admin/settlements, POST /api/admin/cast/settlements
- * @known_issues Legacy settlement history is not imported
+ * @known_issues Yearly archive tables and SK-DB guarantee rows remain outside the current extract
  */
 'use client'
 
@@ -15,6 +15,21 @@ import type { StoreSettlementLedger } from '@/lib/settlement/store-ledger'
 import { PageLoading } from '@/components/ui/page-loading'
 
 const JST_TIME_ZONE = 'Asia/Tokyo'
+
+function legacyDirectionLabel(direction: string): string {
+  if (direction === 'inbound') return '入金'
+  if (direction === 'outbound') return '出金'
+  if (direction === 'deduction') return '控除'
+  return direction
+}
+
+function legacyKindLabel(kind: string): string {
+  if (kind === 'cash') return '現金'
+  if (kind === 'transfer') return '振込'
+  if (kind === 'payout') return '支払'
+  if (kind === 'welfare') return '厚生費'
+  return kind
+}
 
 export function SettlementLedgerClient({ mode }: { mode: 'payment' | 'settlement' }) {
   const { currentStore } = useStore()
@@ -104,7 +119,7 @@ export function SettlementLedgerClient({ mode }: { mode: 'payment' | 'settlement
   const description =
     mode === 'payment'
       ? '完了予約の入金を記録します。カード管理番号がある予約もここに表示されます。一部金額でも記録できます。'
-      : 'キャストごとの未精算・精算済みと、記録済みの入金を確認します。手取りはキャスト売上（厚生費反映済み）です。'
+      : 'キャストごとの未精算・精算済み、新規入金、旧システムの月次台帳（入金・出金・厚生費）を確認します。'
 
   return (
     <div className="container mx-auto space-y-6 py-6">
@@ -125,6 +140,9 @@ export function SettlementLedgerClient({ mode }: { mode: 'payment' | 'settlement
           </Button>
           <Button type="button" variant="outline" onClick={() => void fetchLedger()}>
             更新
+          </Button>
+          <Button type="button" variant="outline" onClick={() => window.print()}>
+            印刷
           </Button>
         </div>
       </div>
@@ -217,6 +235,33 @@ export function SettlementLedgerClient({ mode }: { mode: 'payment' | 'settlement
                 ))}
                 {ledger.payments.length === 0 ? (
                   <p className="text-muted-foreground">この月の入金記録はありません。</p>
+                ) : null}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>旧台帳</CardTitle>
+                <CardDescription>
+                  旧システムの入金・出金・厚生費です。時給保証単価は ¥
+                  {ledger.hourlyGuaranteeAmount.toLocaleString()}
+                  。同じ店舗の年次入金は含みます。別DBの保証実績は含みません。
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {ledger.legacyEntries.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="flex flex-wrap justify-between gap-2 border-b py-2"
+                  >
+                    <span>
+                      {entry.castName} / {legacyDirectionLabel(entry.direction)} /{' '}
+                      {legacyKindLabel(entry.kind)}
+                    </span>
+                    <span>¥{entry.amount.toLocaleString()}</span>
+                  </div>
+                ))}
+                {ledger.legacyEntries.length === 0 ? (
+                  <p className="text-muted-foreground">この月の旧台帳はありません。</p>
                 ) : null}
               </CardContent>
             </Card>

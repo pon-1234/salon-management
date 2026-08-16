@@ -1,7 +1,7 @@
 /**
  * @design_doc   Store-wide payment and settlement ledgers for Ikebukuro operations
  * @related_to   GET /api/admin/settlements, payment-processing and settlement-processing pages
- * @known_issues Legacy settlement history is not imported
+ * @known_issues Yearly nyukin/shukkin archives and SK-DB guarantee rows are outside this extract
  */
 import { db } from '@/lib/db'
 import { getJstMonthRange } from '@/lib/analytics/server/cast-performance'
@@ -46,10 +46,25 @@ export type StoreSettlementPaymentRow = {
   reservationIds: string[]
 }
 
+export type StoreLegacyLedgerRow = {
+  id: string
+  castId: string
+  castName: string
+  sourceTable: string
+  direction: string
+  kind: string
+  amount: number
+  notes: string
+  handledBy: string
+  occurredAt: string
+}
+
 export type StoreSettlementLedger = {
   month: string
+  hourlyGuaranteeAmount: number
   casts: StoreSettlementCastSummary[]
   payments: StoreSettlementPaymentRow[]
+  legacyEntries: StoreLegacyLedgerRow[]
 }
 
 export async function getStoreSettlementLedger(
@@ -60,7 +75,7 @@ export async function getStoreSettlementLedger(
   const { start, endExclusive } = getJstMonthRange(year, month)
   const monthKey = `${year}-${String(month).padStart(2, '0')}`
 
-  const [reservations, payments] = await Promise.all([
+  const [reservations, payments, legacyEntries, settings] = await Promise.all([
     db.reservation.findMany({
       where: {
         storeId,
@@ -108,6 +123,29 @@ export async function getStoreSettlementLedger(
         reservations: { select: { reservationId: true } },
       },
       orderBy: { paidAt: 'desc' },
+    }),
+    db.castLedgerEntry.findMany({
+      where: {
+        storeId,
+        businessMonth: monthKey,
+      },
+      select: {
+        id: true,
+        castId: true,
+        sourceTable: true,
+        direction: true,
+        kind: true,
+        amount: true,
+        notes: true,
+        handledBy: true,
+        occurredAt: true,
+        cast: { select: { name: true } },
+      },
+      orderBy: { occurredAt: 'asc' },
+    }),
+    db.storeSettings.findUnique({
+      where: { storeId },
+      select: { hourlyGuaranteeAmount: true },
     }),
   ])
 
@@ -162,9 +200,22 @@ export async function getStoreSettlementLedger(
 
   return {
     month: monthKey,
+    hourlyGuaranteeAmount: settings?.hourlyGuaranteeAmount ?? 0,
     casts: [...casts.values()].sort((left, right) =>
       left.castName.localeCompare(right.castName, 'ja')
     ),
+    legacyEntries: legacyEntries.map((entry) => ({
+      id: entry.id,
+      castId: entry.castId,
+      castName: entry.cast?.name ?? '未設定',
+      sourceTable: entry.sourceTable,
+      direction: entry.direction,
+      kind: entry.kind,
+      amount: entry.amount,
+      notes: entry.notes,
+      handledBy: entry.handledBy,
+      occurredAt: entry.occurredAt.toISOString(),
+    })),
     payments: payments.map((payment) => ({
       id: payment.id,
       castId: payment.castId,
