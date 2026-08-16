@@ -101,6 +101,17 @@ describe('ChatPage deep links', () => {
     vi.unstubAllGlobals()
   })
 
+  it('keeps the chat workspace inside the viewport so the composer stays reachable', () => {
+    render(<ChatPage />)
+
+    expect(screen.getByTestId('admin-chat-workspace')).toHaveClass(
+      'h-[calc(100dvh-5.5rem)]',
+      'min-h-0',
+      'overflow-hidden'
+    )
+    expect(screen.getByTestId('admin-chat-panes')).toHaveClass('min-h-0', 'overflow-hidden')
+  })
+
   it('hydrates and selects the customer requested by customerId', async () => {
     navigationState.query = `customerId=${encodeURIComponent(customer.id)}`
     vi.mocked(fetch).mockResolvedValue(mockResponse(customer))

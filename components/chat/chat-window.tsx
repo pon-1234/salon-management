@@ -289,7 +289,7 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
   if (!participantId) {
     const label = participantType === 'customer' ? '顧客' : 'キャスト'
     return (
-      <div className="flex flex-1 items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="flex min-h-0 flex-1 items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="text-center">
           <div className="mb-4 text-gray-400">
             <svg
@@ -322,8 +322,8 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
     (newMessage.trim().length > 0 || readyAttachments.length > 0) && !hasUploading && !isSending
 
   return (
-    <div className="flex flex-1 flex-col bg-gradient-to-b from-white to-gray-50/30">
-      <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-white to-gray-50/30">
+      <ScrollArea data-testid="chat-message-pane" className="min-h-0 flex-1 p-4" ref={scrollAreaRef}>
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="text-gray-500">読み込み中...</div>
@@ -422,59 +422,60 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
         )}
       </ScrollArea>
 
-      <div className="border-t bg-white/80 p-4 backdrop-blur-sm">
-        <div className="flex flex-col gap-3">
-          <Textarea
-            placeholder={`${participantType === 'customer' ? '顧客' : 'キャスト'}へメッセージを入力... (⌘/Ctrl + Enter で送信)`}
-            value={newMessage}
-            disabled={isSending}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={handleComposerKeyDown}
-            onFocus={() => setIsTyping(true)}
-            onBlur={() => setIsTyping(false)}
-            className="min-h-[60px] flex-1 resize-none"
-          />
+      <div data-testid="chat-composer" className="shrink-0 border-t bg-white p-3">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="shrink-0 text-emerald-700"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isSending || attachmentDrafts.length >= 5}
+              aria-label="画像を添付"
+            >
+              <ImagePlus className="h-5 w-5" />
+            </Button>
+            <Textarea
+              placeholder={`${participantType === 'customer' ? '顧客' : 'キャスト'}へメッセージを入力... (⌘/Ctrl + Enter で送信)`}
+              value={newMessage}
+              disabled={isSending}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={handleComposerKeyDown}
+              onFocus={() => setIsTyping(true)}
+              onBlur={() => setIsTyping(false)}
+              rows={1}
+              className="max-h-28 min-h-[44px] flex-1 resize-none"
+            />
+            <Button
+              onClick={handleSendMessage}
+              disabled={!canSend}
+              className="shrink-0"
+              aria-label={isSending ? '送信中' : 'メッセージを送信'}
+            >
+              <Send className="mr-1 h-4 w-4" />
+              送信
+            </Button>
+          </div>
           <ChatAttachmentPreviewList attachments={attachmentDrafts} onRemove={removeAttachment} />
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
-            <div className="flex items-center gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                accept="image/png,image/jpeg,image/webp"
-                multiple
-                onChange={(event) => {
-                  const { files } = event.target
-                  if (files?.length) {
-                    void addFiles(files)
-                    event.target.value = ''
-                  }
-                }}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="text-xs text-emerald-700"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isSending || attachmentDrafts.length >= 5}
-              >
-                <ImagePlus className="mr-2 h-4 w-4" />
-                画像を添付
-              </Button>
-              <span>{attachmentDrafts.length}/5 件</span>
-            </div>
-            <div className="flex items-center gap-3">
-              {isTyping && <div className="text-xs text-gray-400">入力中...</div>}
-              <Button
-                onClick={handleSendMessage}
-                disabled={!canSend}
-                aria-label={isSending ? '送信中' : 'メッセージを送信'}
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
+            <span>{attachmentDrafts.length}/5 件</span>
+            {isTyping ? <div className="text-xs text-gray-400">入力中...</div> : null}
           </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept="image/png,image/jpeg,image/webp"
+            multiple
+            onChange={(event) => {
+              const { files } = event.target
+              if (files?.length) {
+                void addFiles(files)
+                event.target.value = ''
+              }
+            }}
+          />
         </div>
       </div>
     </div>

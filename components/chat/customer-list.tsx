@@ -113,11 +113,14 @@ export function CustomerList({ selectedCustomerId, onSelectCustomer }: CustomerL
   }, [])
 
   return (
-    <div className="flex h-full w-[320px] flex-col border-r bg-gradient-to-b from-white to-gray-50/50 md:w-[360px]">
+    <div
+      data-testid="chat-customer-list"
+      className="flex h-full min-h-0 w-[280px] flex-col overflow-hidden border-r bg-gradient-to-b from-white to-gray-50/50 md:w-[320px]"
+    >
       {/* Header */}
-      <div className="border-b bg-white/80 p-4 backdrop-blur-sm">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">チャット</h2>
+      <div className="shrink-0 border-b bg-white/80 p-3 backdrop-blur-sm">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-base font-semibold text-gray-900">チャット</h2>
           <Badge variant="secondary" className="text-xs">
             {customers.length}
           </Badge>
@@ -134,29 +137,29 @@ export function CustomerList({ selectedCustomerId, onSelectCustomer }: CustomerL
       </div>
 
       {/* Customer List */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="min-h-0 flex-1">
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="text-gray-500">読み込み中...</div>
           </div>
         ) : (
-          <div className="p-2">
+          <div className="p-1.5">
             {customers.map((customer) => (
               <button
                 key={customer.id}
-                className={`mb-2 w-full rounded-lg p-3 text-left transition-all duration-200 hover:shadow-sm ${
+                className={`mb-1 w-full rounded-lg px-2 py-2 text-left transition-all duration-200 hover:shadow-sm ${
                   selectedCustomerId === customer.id
                     ? 'border border-emerald-200 bg-emerald-50 shadow-sm'
                     : 'hover:bg-white'
                 }`}
                 onClick={() => onSelectCustomer(customer)}
               >
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-2">
                   {/* Avatar with online indicator */}
                   <div className="relative">
-                    <Avatar className="h-12 w-12">
+                    <Avatar className="h-9 w-9">
                       <AvatarImage src={customer.avatar} alt={customer.name} />
-                      <AvatarFallback className="bg-gradient-to-br from-emerald-400 to-emerald-600 font-medium text-white">
+                      <AvatarFallback className="bg-gradient-to-br from-emerald-400 to-emerald-600 text-xs font-medium text-white">
                         {customer.name[0]}
                       </AvatarFallback>
                     </Avatar>
@@ -187,7 +190,7 @@ export function CustomerList({ selectedCustomerId, onSelectCustomer }: CustomerL
                       </div>
                     </div>
 
-                    <p className="line-clamp-2 text-sm leading-relaxed text-gray-600">
+                    <p className="line-clamp-1 text-sm leading-relaxed text-gray-600">
                       {customer.lastMessage}
                     </p>
 
