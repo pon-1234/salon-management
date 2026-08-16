@@ -45,7 +45,26 @@ describe('DailyReportPageClient', () => {
           totalSales: 12_000,
           totalCustomers: 1,
           totalWorkingHours: 8,
-          staffReports: [],
+          staffReports: [
+            {
+              staffId: 'cast-1',
+              staffName: 'さら',
+              workingHours: 8,
+              salesAmount: 12_000,
+              storeRevenue: 4_000,
+              staffRevenue: 8_000,
+              cashCount: 1,
+              cashAmount: 12_000,
+              cardCount: 0,
+              cardAmount: 0,
+              discountAmount: 500,
+              hotelExpense: 2_000,
+              welfareExpense: 800,
+              customerCount: 1,
+              designationCount: 1,
+              optionSales: 0,
+            },
+          ],
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       )
@@ -55,6 +74,9 @@ describe('DailyReportPageClient', () => {
     render(<DailyReportPageClient />)
 
     expect(await screen.findByText('日報: 2026-08-14')).toBeInTheDocument()
+    expect(screen.getByText('値引き')).toBeInTheDocument()
+    expect(screen.getByText('ホテル')).toBeInTheDocument()
+    expect(screen.getByText('厚生費')).toBeInTheDocument()
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringContaining('storeId=ikebukuro'),

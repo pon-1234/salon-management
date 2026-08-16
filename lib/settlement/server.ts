@@ -107,11 +107,12 @@ export async function upsertSettlementPayment(input: UpsertInput): Promise<Settl
       (sum, reservation) => sum + (reservation.staffRevenue ?? 0),
       0
     )
-    if (input.amount !== expectedAmount) {
+    if (input.amount > expectedAmount) {
       throw new SettlementValidationError(
-        'Settlement amount must equal selected reservation staff revenue'
+        'Settlement amount cannot exceed selected reservation staff revenue'
       )
     }
+    const settlementStatus = input.amount === expectedAmount ? 'settled' : 'partial'
 
     const paymentRecord = input.id
       ? await tx.settlementPayment.update({
@@ -167,7 +168,7 @@ export async function upsertSettlementPayment(input: UpsertInput): Promise<Settl
         castId: input.castId,
         storeId: input.storeId,
       },
-      data: { settlementStatus: 'settled' },
+      data: { settlementStatus },
     })
 
     return paymentRecord

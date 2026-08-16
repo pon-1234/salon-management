@@ -155,6 +155,7 @@ export function PaymentStatusTable({ payments, summary, className }: PaymentStat
               <TableHead>顧客ID</TableHead>
               <TableHead className="text-right">金額</TableHead>
               <TableHead>決済方法</TableHead>
+              <TableHead>管理番号</TableHead>
               <TableHead>プロバイダー</TableHead>
               <TableHead>ステータス</TableHead>
               <TableHead className="text-right">返金額</TableHead>
@@ -171,6 +172,7 @@ export function PaymentStatusTable({ payments, summary, className }: PaymentStat
                 <TableCell className="font-mono text-sm">{payment.customerId.slice(-8)}</TableCell>
                 <TableCell className="text-right">¥{payment.amount.toLocaleString()}</TableCell>
                 <TableCell>{getPaymentMethodLabel(payment.paymentMethod)}</TableCell>
+                <TableCell>{String(payment.metadata?.paymentReference ?? '-')}</TableCell>
                 <TableCell>{getProviderLabel(payment.provider)}</TableCell>
                 <TableCell>{getStatusBadge(payment.status)}</TableCell>
                 <TableCell className="text-right">
@@ -185,7 +187,7 @@ export function PaymentStatusTable({ payments, summary, className }: PaymentStat
             ))}
             {payments.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="py-8 text-center text-gray-500">
+                <TableCell colSpan={10} className="py-8 text-center text-gray-500">
                   支払い取引がありません
                 </TableCell>
               </TableRow>

@@ -15,6 +15,9 @@ const mockReservations = [
     endTime: new Date('2024-01-15T11:30:00'),
     price: 12000,
     designationType: 'regular',
+    paymentMethod: '現金',
+    storeRevenue: 4000,
+    staffRevenue: 8000,
     options: [{ optionPrice: 1000 }, { optionPrice: 2000 }],
   },
   {
@@ -24,6 +27,9 @@ const mockReservations = [
     endTime: new Date('2024-01-15T13:00:00'),
     price: 8000,
     designationType: 'none',
+    paymentMethod: 'カード',
+    storeRevenue: 3000,
+    staffRevenue: 5000,
     options: [],
   },
   {
@@ -33,6 +39,7 @@ const mockReservations = [
     endTime: new Date('2024-01-15T16:00:00'),
     price: 10000,
     designationType: 'special',
+    paymentMethod: '現金',
     options: [{ optionPrice: 500 }],
   },
 ]
@@ -59,7 +66,7 @@ describe('generateDailyReport', () => {
     vi.mocked(db.castSchedule.findMany).mockResolvedValue(mockSchedules as any)
   })
 
-  it('queries only completed reservations inside the half-open JST business day', async () => {
+  it('queries only completed reservations inside the half-open JST 05:30 business day', async () => {
     await generateDailyReport('2024-01-15', 'ikebukuro')
 
     expect(db.reservation.findMany).toHaveBeenCalledWith({
@@ -67,8 +74,8 @@ describe('generateDailyReport', () => {
         storeId: 'ikebukuro',
         status: 'completed',
         startTime: {
-          gte: new Date('2024-01-14T15:00:00.000Z'),
-          lt: new Date('2024-01-15T15:00:00.000Z'),
+          gte: new Date('2024-01-14T20:30:00.000Z'),
+          lt: new Date('2024-01-15T20:30:00.000Z'),
         },
       },
       include: {
@@ -79,14 +86,27 @@ describe('generateDailyReport', () => {
     expect(db.castSchedule.findMany).toHaveBeenCalledWith({
       where: {
         date: {
-          gte: new Date('2024-01-14T15:00:00.000Z'),
-          lt: new Date('2024-01-15T15:00:00.000Z'),
+          gte: new Date('2024-01-14T20:30:00.000Z'),
+          lt: new Date('2024-01-15T20:30:00.000Z'),
         },
         isAvailable: true,
         cast: { storeId: 'ikebukuro' },
       },
       include: { cast: true },
     })
+  })
+
+  it('assigns a 04:00 JST reservation to the previous business day', async () => {
+    await generateDailyReport('2024-01-15', 'ikebukuro')
+
+    const query = vi.mocked(db.reservation.findMany).mock.calls[0]?.[0] as {
+      where: { startTime: { gte: Date; lt: Date } }
+    }
+    const fourAmNextCalendarDay = new Date('2024-01-15T19:00:00.000Z')
+    expect(fourAmNextCalendarDay.getTime()).toBeGreaterThanOrEqual(
+      query.where.startTime.gte.getTime()
+    )
+    expect(fourAmNextCalendarDay.getTime()).toBeLessThan(query.where.startTime.lt.getTime())
   })
 
   it('should generate a daily report with valid structure', async () => {
@@ -170,6 +190,18 @@ describe('generateDailyReport', () => {
       expect(db.castSchedule.findMany).not.toHaveBeenCalled()
     }
   )
+
+  it('splits cash and card amounts the same way as the gold-esthe daily report', async () => {
+    const report = await generateDailyReport('2024-01-15')
+
+    expect(report.totalCashAmount).toBe(22000)
+    expect(report.totalCardAmount).toBe(8000)
+    expect(report.staffReports).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ staffId: 'cast-1', cashCount: 1, cardCount: 1 }),
+      ])
+    )
+  })
 
   it('uses scheduled hours instead of treating reservation duration as labor hours', async () => {
     const report = await generateDailyReport('2024-01-15')

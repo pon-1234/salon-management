@@ -41,6 +41,24 @@ describe('getCastSettlements', () => {
     )
   })
 
+  it('loads a requested JST month instead of the current month', async () => {
+    await getCastSettlements('cast-1', 'ikebukuro', { year: 2026, month: 7 })
+
+    expect(db.reservation.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          castId: 'cast-1',
+          storeId: 'ikebukuro',
+          status: 'completed',
+          startTime: {
+            gte: new Date('2026-06-30T15:00:00.000Z'),
+            lt: new Date('2026-07-31T15:00:00.000Z'),
+          },
+        },
+      })
+    )
+  })
+
   it('propagates database failures so the UI cannot mistake an error for no settlement data', async () => {
     vi.mocked(db.reservation.findMany).mockRejectedValue(new Error('database unavailable'))
 

@@ -128,8 +128,10 @@ export default function PaymentStatusPage() {
     <div className="container mx-auto space-y-6 py-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">決済ステータス管理</h1>
-          <p className="text-gray-600">決済取引の状況とパフォーマンスを確認できます</p>
+          <h1 className="text-2xl font-bold">決済状況</h1>
+          <p className="text-gray-600">
+            予約の現金・カード支払いと管理番号を確認できます。カード番号は保存しません。
+          </p>
         </div>
         <Button onClick={refreshData} disabled={loading}>
           {loading ? '読み込み中...' : '更新'}

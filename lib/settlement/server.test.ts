@@ -47,7 +47,7 @@ describe('upsertSettlementPayment', () => {
     expect(mockedDb.$transaction).not.toHaveBeenCalled()
   })
 
-  it('rejects a payment amount that differs from the selected completed reservation shares', async () => {
+  it('rejects a payment amount larger than the selected completed reservation shares', async () => {
     const tx = {
       settlementPayment: {
         create: vi.fn().mockResolvedValue({ id: 'payment-1' }),
@@ -76,14 +76,69 @@ describe('upsertSettlementPayment', () => {
       upsertSettlementPayment({
         castId: 'cast-1',
         storeId: 'store-1',
-        amount: 14000,
+        amount: 16000,
         method: 'cash',
         handledBy: 'admin-1',
         reservationIds: ['reservation-1'],
       })
-    ).rejects.toThrow('Settlement amount must equal selected reservation staff revenue')
+    ).rejects.toThrow('Settlement amount cannot exceed selected reservation staff revenue')
 
     expect(tx.settlementPayment.create).not.toHaveBeenCalled()
+  })
+
+  it('marks a smaller payment as a partial settlement', async () => {
+    const paymentRecord = {
+      id: 'payment-partial',
+      castId: 'cast-1',
+      storeId: 'store-1',
+      amount: 10000,
+      method: 'cash',
+      handledBy: 'admin-1',
+      paidAt: new Date('2026-08-15T03:00:00.000Z'),
+      notes: null,
+    }
+    const tx = {
+      settlementPayment: {
+        create: vi.fn().mockResolvedValue(paymentRecord),
+      },
+      settlementPaymentReservation: {
+        createMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      reservation: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'reservation-1',
+            status: 'completed',
+            settlementStatus: 'pending',
+            staffRevenue: 15000,
+            settlementPayments: [],
+          },
+        ]),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+    }
+    mockedDb.$transaction.mockImplementation(
+      async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)
+    )
+
+    await upsertSettlementPayment({
+      castId: 'cast-1',
+      storeId: 'store-1',
+      amount: 10000,
+      method: 'cash',
+      handledBy: 'admin-1',
+      paidAt: '2026-08-15T03:00:00.000Z',
+      reservationIds: ['reservation-1'],
+    })
+
+    expect(tx.reservation.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: { in: ['reservation-1'] },
+        castId: 'cast-1',
+        storeId: 'store-1',
+      },
+      data: { settlementStatus: 'partial' },
+    })
   })
 
   it('rejects non-completed or previously allocated reservations', async () => {

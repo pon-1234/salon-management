@@ -706,15 +706,29 @@ export async function getCastReservationDetail(
 
 export async function getCastSettlements(
   castId: string,
-  storeId: string
+  storeId: string,
+  month?: { year: number; month: number }
 ): Promise<CastSettlementsData> {
-  return loadCastSettlements(castId, storeId)
+  return loadCastSettlements(castId, storeId, month)
 }
 
-async function loadCastSettlements(castId: string, storeId: string): Promise<CastSettlementsData> {
+async function loadCastSettlements(
+  castId: string,
+  storeId: string,
+  month?: { year: number; month: number }
+): Promise<CastSettlementsData> {
   const now = new Date()
-  const monthStart = startOfMonthInTimeZone(now, DEFAULT_TIME_ZONE)
-  const monthEndExclusive = startOfMonthInTimeZone(addMonths(now, 1), DEFAULT_TIME_ZONE)
+  const zonedNow = utcToZonedTime(now, DEFAULT_TIME_ZONE)
+  const year = month?.year ?? zonedNow.getFullYear()
+  const monthNumber = month?.month ?? zonedNow.getMonth() + 1
+  const monthStart = startOfMonthInTimeZone(
+    zonedTimeToUtc(
+      `${year}-${String(monthNumber).padStart(2, '0')}-01T00:00:00`,
+      DEFAULT_TIME_ZONE
+    ),
+    DEFAULT_TIME_ZONE
+  )
+  const monthEndExclusive = startOfMonthInTimeZone(addMonths(monthStart, 1), DEFAULT_TIME_ZONE)
 
   const baseQuery = {
     where: {

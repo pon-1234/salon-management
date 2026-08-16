@@ -118,8 +118,11 @@ export function SalesManagementTab({ castId, castName }: SalesManagementTabProps
       setData(null)
 
       try {
+        const now = new Date()
+        const year = Number(formatInTimeZone(now, JST_TIMEZONE, 'yyyy'))
+        const month = Number(formatInTimeZone(now, JST_TIMEZONE, 'M'))
         const endpoint = buildStoreScopedEndpoint(
-          `/api/admin/cast/settlements?castId=${encodeURIComponent(castId)}`,
+          `/api/admin/cast/settlements?castId=${encodeURIComponent(castId)}&year=${year}&month=${month}`,
           currentStore.id
         )
         const response = await fetch(endpoint, { cache: 'no-store' })

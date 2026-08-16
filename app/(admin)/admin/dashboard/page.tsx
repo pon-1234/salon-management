@@ -733,12 +733,24 @@ export default function DashboardPage() {
 
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
           {canViewAnalytics && (
-            <Button variant="outline" asChild>
-              <Link href="/admin/analytics/daily-report" aria-label="業務日報を開く">
-                <FileText className="mr-2 h-4 w-4" />
-                業務日報
-              </Link>
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" asChild>
+                <Link href="/admin/analytics/daily-report" aria-label="業務日報を開く">
+                  <FileText className="mr-2 h-4 w-4" />
+                  日報
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/admin/analytics/payment-processing" aria-label="入金処理を開く">
+                  入金処理
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/admin/analytics/settlement-processing" aria-label="入金精算処理を開く">
+                  入金精算
+                </Link>
+              </Button>
+            </div>
           )}
           <Tabs
             value={selectedPeriod}

@@ -22,6 +22,8 @@ function settlementValidationMessage(message: string): string {
       '完了済み・未精算の予約のみ選択できます。',
     'Settlement amount must equal selected reservation staff revenue':
       '支払金額が対象予約のキャスト取り分合計と一致しません。',
+    'Settlement amount cannot exceed selected reservation staff revenue':
+      '支払金額が対象予約のキャスト取り分合計を超えています。',
   }
   return messages[message] ?? '精算内容が不正です。'
 }
@@ -46,7 +48,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'キャストが見つかりません' }, { status: 404 })
     }
 
-    const data = await getCastSettlements(castId, storeId)
+    const year = Number(request.nextUrl.searchParams.get('year'))
+    const month = Number(request.nextUrl.searchParams.get('month'))
+    const data =
+      Number.isInteger(year) && Number.isInteger(month) && month >= 1 && month <= 12
+        ? await getCastSettlements(castId, storeId, { year, month })
+        : await getCastSettlements(castId, storeId)
     return NextResponse.json(data)
   } catch (err) {
     logger.error({ err, castId }, 'Failed to load admin cast settlements')

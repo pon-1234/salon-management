@@ -6,6 +6,7 @@
 import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz'
 
 import { db } from '@/lib/db'
+import { resolveMarketingCategory } from '@/lib/reservation/legacy-status'
 import type {
   CastPerformanceCountAmount,
   CastPerformanceCourse,
@@ -67,11 +68,7 @@ function designationCategory(value: string | null): DesignationCategory {
 }
 
 function marketingCategory(value: string | null): MarketingCategory {
-  const normalized = value?.trim()
-  if (!normalized) return 'unclassified'
-  if (/姫|hime/i.test(normalized)) return 'princess'
-  if (/media\s*:\s*\d+/i.test(normalized)) return 'unclassified'
-  return 'other'
+  return resolveMarketingCategory(value)
 }
 
 function paymentCategory(value: string | null): PaymentCategory {

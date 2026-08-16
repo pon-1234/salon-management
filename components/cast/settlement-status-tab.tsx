@@ -43,7 +43,7 @@ export function SettlementStatusTab({ castId, storeId }: SettlementStatusTabProp
   const fetchData = useCallback(async () => {
     const response = await fetch(
       buildStoreScopedEndpoint(
-        `/api/admin/cast/settlements?castId=${encodeURIComponent(castId)}`,
+        `/api/admin/cast/settlements?castId=${encodeURIComponent(castId)}&year=${new Date().getFullYear()}&month=${new Date().getMonth() + 1}`,
         storeId
       ),
       { cache: 'no-store' }

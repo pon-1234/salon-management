@@ -77,6 +77,9 @@ export function DailyReportPageClient() {
   return (
     <div className="container mx-auto py-8">
       <h1 className="mb-4 text-2xl font-bold">日報</h1>
+      <p className="mb-4 text-sm text-muted-foreground">
+        営業日は5:30から翌5:30までです。完了予約の現金/カード、値引き、ホテル、厚生費、店舗売上、手取りと出勤時間を表示します。
+      </p>
       <div className="mb-6 flex flex-wrap items-end gap-2">
         <Button
           type="button"

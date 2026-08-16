@@ -49,6 +49,7 @@ import {
   type TimelineFilterOptions,
 } from '@/lib/reservation/timeline-filters'
 import { hasPermission } from '@/lib/auth/permissions'
+import { computeStoreCastRanks } from '@/lib/cast/rank'
 
 interface ScheduleEntry {
   castId: string
@@ -578,6 +579,23 @@ export function ReservationPageContent() {
         selectedCustomer.ngCasts?.map((ng) => ng.castId) || selectedCustomer.ngCastIds || []
       updatedCastData = updatedCastData.filter((member) => !ngCastIds.includes(member.id))
     }
+
+    const computedRanks = computeStoreCastRanks(
+      activeReservationData.map((reservation) => ({
+        castId: reservation.staffId ?? null,
+        castName: reservation.staff,
+        designationType: reservation.designation,
+      }))
+    )
+    updatedCastData = updatedCastData.map((member) => {
+      const computed = computedRanks.get(member.id)
+      if (!computed) return member
+      return {
+        ...member,
+        regularDesignationRank: member.regularDesignationRank || computed.regularDesignationRank,
+        panelDesignationRank: member.panelDesignationRank || computed.panelDesignationRank,
+      }
+    })
 
     setCastData(updatedCastData)
     return activeReservationData

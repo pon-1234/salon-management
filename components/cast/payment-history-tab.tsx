@@ -204,6 +204,9 @@ export function PaymentHistoryTab({ castId, storeId }: PaymentHistoryTabProps) {
 
   return (
     <div className="space-y-6">
+      <p className="text-sm text-muted-foreground">
+        入金記録は、対応済み予約の手取り（キャスト売上）を精算する操作です。対象予約を選ぶと金額が自動計算されます。一部金額でも記録でき、残額は未精算のまま残ります。店舗全体の一覧は「入金処理」「入金精算処理」からも開けます。
+      </p>
       {/* サマリーカード */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card>

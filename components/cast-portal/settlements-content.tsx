@@ -10,6 +10,7 @@ import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { ChevronDown, Loader2, PiggyBank, Receipt } from 'lucide-react'
 import type { CastSettlementsData } from '@/lib/cast-portal/types'
+import { resolveCastTakeHome } from '@/lib/reservation/take-home'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/use-toast'
@@ -59,16 +60,13 @@ export function CastSettlementsContent({ initialData }: { initialData: CastSettl
   const settlementStats = useMemo(() => {
     const records = data.days.flatMap((day) => day.records)
     const netSum = (targets: typeof records) =>
-      targets.reduce(
-        (sum, record) => sum + Math.max(record.staffRevenue - record.welfareExpense, 0),
-        0
-      )
+      targets.reduce((sum, record) => sum + resolveCastTakeHome(record), 0)
 
     const inProgress = records.filter((record) => record.settlementStatus !== 'settled')
     const settled = records.filter((record) => record.settlementStatus === 'settled')
 
     return {
-      takeHome: Math.max(data.summary.staffRevenue - data.summary.welfareExpense, 0),
+      takeHome: resolveCastTakeHome(data.summary),
       staffRevenue: data.summary.staffRevenue,
       welfareExpense: data.summary.welfareExpense,
       inProgressAmount: netSum(inProgress),
@@ -99,7 +97,7 @@ export function CastSettlementsContent({ initialData }: { initialData: CastSettl
             icon={PiggyBank}
             title="今月の手取り見込み"
             value={`¥${settlementStats.takeHome.toLocaleString()}`}
-            helper={`キャスト売上 ¥${settlementStats.staffRevenue.toLocaleString()} ／ 厚生費 ¥${settlementStats.welfareExpense.toLocaleString()}`}
+            helper={`厚生費 ¥${settlementStats.welfareExpense.toLocaleString()} は反映済み`}
           />
           <SummaryTile
             icon={Receipt}
@@ -171,10 +169,7 @@ function DayRow({
     const inProgress = day.records.filter((record) => record.settlementStatus !== 'settled')
     const settled = day.records.filter((record) => record.settlementStatus === 'settled')
     const netSum = (targets: typeof day.records) =>
-      targets.reduce(
-        (sum, record) => sum + Math.max(record.staffRevenue - record.welfareExpense, 0),
-        0
-      )
+      targets.reduce((sum, record) => sum + resolveCastTakeHome(record), 0)
 
     return {
       inProgressCount: inProgress.length,
@@ -454,14 +449,16 @@ function DayRow({
                   <span>¥{breakdown.staffSubtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between text-muted-foreground">
-                  <span>雑費 / 厚生費</span>
-                  <span>-¥{breakdown.welfareTotal.toLocaleString()}</span>
+                  <span>雑費 / 厚生費（反映済み）</span>
+                  <span>¥{breakdown.welfareTotal.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between font-semibold text-emerald-700">
                   <span>手取り</span>
                   <span>
                     ¥
-                    {Math.max(breakdown.staffSubtotal - breakdown.welfareTotal, 0).toLocaleString()}
+                    {resolveCastTakeHome({
+                      staffRevenue: breakdown.staffSubtotal,
+                    }).toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -470,11 +467,11 @@ function DayRow({
           <div className="space-y-2 rounded-md border border-dashed border-muted-foreground/40 bg-white/70 px-3 py-2">
             <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
               <span>予約ごとの精算状況</span>
-              <span className="text-xs">手取り = キャスト売上 - 厚生費</span>
+              <span className="text-xs">手取り = キャスト売上（厚生費反映済み）</span>
             </div>
             <div className="divide-y">
               {day.records.map((record) => {
-                const net = Math.max(record.staffRevenue - record.welfareExpense, 0)
+                const net = resolveCastTakeHome(record)
                 const style = settlementStatusStyles[record.settlementStatus ?? 'pending']
                 const label =
                   record.settlementStatus === 'settled'

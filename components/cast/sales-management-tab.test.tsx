@@ -68,9 +68,12 @@ describe('SalesManagementTab', () => {
     render(<SalesManagementTab castId="1" castName="池袋キャスト" />)
 
     expect(await screen.findByRole('heading', { name: '池袋キャストさんの売上管理' })).toBeVisible()
-    expect(fetch).toHaveBeenCalledWith('/api/admin/cast/settlements?castId=1&storeId=ikebukuro', {
-      cache: 'no-store',
-    })
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /\/api\/admin\/cast\/settlements\?castId=1&year=\d{4}&month=\d{1,2}&storeId=ikebukuro/
+      ),
+      { cache: 'no-store' }
+    )
     expect(fetch).toHaveBeenCalledTimes(1)
 
     const totalSales = screen.getAllByText('総売上')[0].closest('[data-slot="card"]')

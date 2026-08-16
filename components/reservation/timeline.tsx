@@ -562,9 +562,10 @@ export function Timeline({
                                 size="sm"
                                 variant="secondary"
                                 className={cn(
-                                  'rounded-full px-3 text-xs',
+                                  'h-8 w-8 rounded-full p-0 text-[11px]',
                                   disabled && 'cursor-not-allowed opacity-60'
                                 )}
+                                aria-label={`${label}の空き枠を選択`}
                                 onClick={() => handleTimeSlotClick(slot, startTime)}
                                 disabled={disabled}
                               >

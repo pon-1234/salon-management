@@ -8,6 +8,7 @@ import { addMinutes } from 'date-fns'
 import { zonedTimeToUtc } from 'date-fns-tz'
 import { z } from 'zod'
 
+import { mapLegacyOrderLevToStatus } from '@/lib/reservation/legacy-status'
 import type { PreviewUatFixture } from './setup'
 import type {
   GoldMasterPreviewImageProjection,
@@ -481,10 +482,11 @@ function resolveVerifiedImageUrl(
 }
 
 function reservationStatus(value: number): string {
-  if (value === 3) return 'completed'
-  if (value === 1 || value === 2) return 'confirmed'
-  if (value >= -2 && value <= 0) return 'pending'
-  throw new GoldMasterPreviewError()
+  try {
+    return mapLegacyOrderLevToStatus(value)
+  } catch {
+    throw new GoldMasterPreviewError()
+  }
 }
 
 function designationType(value: number, fee: number): string | null {

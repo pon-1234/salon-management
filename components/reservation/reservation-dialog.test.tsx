@@ -511,7 +511,7 @@ describe('ReservationDialog Edit Mode', () => {
       />
     )
 
-    expect(screen.getByText('修正可能')).toBeInTheDocument()
+    expect(screen.getByText('修正待ち')).toBeInTheDocument()
     expect(screen.getByText(/修正可能残り時間:/i)).toBeInTheDocument()
   })
 

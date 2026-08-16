@@ -30,6 +30,7 @@ import {
   validateReservationClaims,
 } from '@/lib/payment/api-boundary'
 import { canAdminAccessStore } from '@/lib/auth/store-access'
+import { toReservationPaymentLedgerRow } from '@/lib/payment/reservation-ledger'
 import type { Prisma } from '@prisma/client'
 import type {
   PaymentProviderType,
@@ -300,7 +301,14 @@ export async function GET(request: NextRequest) {
         ...(createdAt ? { createdAt } : {}),
       }
 
-      const [transactions, paymentGroups] = await Promise.all([
+      const reservationWhere: Prisma.ReservationWhereInput = {
+        storeId,
+        paymentMethod: { not: null },
+        status: { in: ['completed', 'cancelled', 'confirmed'] },
+        ...(createdAt ? { startTime: createdAt } : {}),
+      }
+
+      const [transactions, paymentGroups, reservations] = await Promise.all([
         db.paymentTransaction.findMany({
           where: paymentWhere,
           orderBy: { createdAt: 'desc' },
@@ -313,13 +321,50 @@ export async function GET(request: NextRequest) {
           _count: { _all: true },
           _sum: { amount: true, refundAmount: true },
         }),
+        offset === 0
+          ? db.reservation.findMany({
+              where: reservationWhere,
+              select: {
+                id: true,
+                customerId: true,
+                price: true,
+                paymentMethod: true,
+                paymentReference: true,
+                status: true,
+                startTime: true,
+                updatedAt: true,
+              },
+              orderBy: { startTime: 'desc' },
+              take: 200,
+            })
+          : Promise.resolve([]),
       ])
 
-      return NextResponse.json({
-        transactions: transactions.map((transaction) =>
+      const existingReservationIds = new Set(
+        transactions.map((transaction) => transaction.reservationId).filter(Boolean)
+      )
+      const ledgerRows = reservations
+        .filter((reservation) => !existingReservationIds.has(reservation.id))
+        .map(toReservationPaymentLedgerRow)
+      const publicTransactions = [
+        ...ledgerRows,
+        ...transactions.map((transaction) =>
           toPublicPaymentTransaction(transaction as PaymentTransaction)
         ),
-        summary: summarizePaymentGroups(paymentGroups),
+      ].slice(0, limit)
+      const summary = summarizePaymentGroups(paymentGroups)
+      for (const row of ledgerRows) {
+        summary.totalTransactions += 1
+        summary.totalAmount += row.amount
+        summary.statusCounts[row.status] += 1
+        if (row.status === 'completed') {
+          summary.completedAmount += row.amount
+        }
+      }
+
+      return NextResponse.json({
+        transactions: publicTransactions,
+        summary,
       })
     }
 

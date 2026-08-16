@@ -38,7 +38,7 @@ export function ReservationList({
     () =>
       ({
         confirmed: {
-          label: '確定済',
+          label: '確定',
           className: 'bg-emerald-100 text-emerald-700 border-emerald-200',
           dot: 'bg-emerald-500',
         },
@@ -63,7 +63,7 @@ export function ReservationList({
           dot: 'bg-sky-500',
         },
         completed: {
-          label: '完了',
+          label: '対応済み',
           className: 'bg-slate-200 text-slate-700 border-slate-300',
           dot: 'bg-slate-500',
         },
@@ -102,7 +102,7 @@ export function ReservationList({
               <TableHead className="w-[80px] whitespace-nowrap">NO.</TableHead>
               <TableHead className="w-[140px] whitespace-nowrap">お名前</TableHead>
               <TableHead className="whitespace-nowrap">日時指定</TableHead>
-              <TableHead className="whitespace-nowrap">担当キャスト</TableHead>
+              <TableHead className="whitespace-nowrap">キャスト</TableHead>
               <TableHead className="whitespace-nowrap">コース</TableHead>
               <TableHead className="w-[80px] whitespace-nowrap">IN</TableHead>
               <TableHead className="w-[80px] whitespace-nowrap">OUT</TableHead>
@@ -138,7 +138,7 @@ export function ReservationList({
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <span>{reservation.staff || '担当キャスト未設定'}</span>
+                    <span>{reservation.staff || 'キャスト未設定'}</span>
                   </div>
                 </TableCell>
                 <TableCell>{`${reservation.course}`}</TableCell>

@@ -276,9 +276,9 @@ describe('Timeline appointment cards', () => {
       />
     )
 
-    expect(screen.getByRole('button', { name: '14:00' })).toBeVisible()
-    expect(screen.getByRole('button', { name: '14:30' })).toBeVisible()
-    expect(screen.getByRole('button', { name: '23:30' })).toBeVisible()
+    expect(screen.getByRole('button', { name: '14:00の空き枠を選択' })).toBeVisible()
+    expect(screen.getByRole('button', { name: '14:30の空き枠を選択' })).toBeVisible()
+    expect(screen.getByRole('button', { name: '23:30の空き枠を選択' })).toBeVisible()
     expect(screen.queryByText('午前')).not.toBeInTheDocument()
     expect(screen.queryByText('午後')).not.toBeInTheDocument()
   })
@@ -316,7 +316,7 @@ describe('Timeline appointment cards', () => {
       />
     )
 
-    expect(screen.queryByRole('button', { name: '14:00' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '14:00の空き枠を選択' })).not.toBeInTheDocument()
   })
 
   it('keeps existing reservations readable but disables empty-slot booking without create permission', () => {
@@ -362,8 +362,8 @@ describe('Timeline appointment cards', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /\[確認用\] 旧顧客 #104168/ }))
     expect(setSelectedAppointment).toHaveBeenCalledWith(reservation)
-    expect(screen.getByRole('button', { name: '14:00' })).toBeDisabled()
-    fireEvent.click(screen.getByRole('button', { name: '14:00' }))
+    expect(screen.getByRole('button', { name: '14:00の空き枠を選択' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: '14:00の空き枠を選択' }))
     expect(screen.queryByTestId('quick-booking-dialog')).not.toBeInTheDocument()
     expect(quickBookingDialogMock).toHaveBeenLastCalledWith(
       expect.objectContaining({ open: false }),

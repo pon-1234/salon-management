@@ -984,7 +984,7 @@ export function QuickBookingDialog({
                   </div>
 
                   <div>
-                    <Label>担当キャスト</Label>
+                    <Label>キャスト</Label>
                     <Input
                       value={bookingDetails.staff || '未選択'}
                       readOnly
