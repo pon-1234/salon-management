@@ -341,6 +341,59 @@ describe('ReservationListPage interactions', () => {
     })
   })
 
+  it('shows weekly shortcut counts from the whole week before a day is selected', async () => {
+    const todayKey = formatInTimeZone(new Date(), JST_TIMEZONE, 'yyyy-MM-dd')
+    const todayStart = zonedTimeToUtc(`${todayKey}T00:00:00`, JST_TIMEZONE)
+    const laterDay = addDays(todayStart, 3)
+    const laterReservations = [
+      createReservation({
+        id: 'reservation-later-1',
+        customerName: '後日顧客1',
+        startTime: laterDay,
+      }),
+      createReservation({
+        id: 'reservation-later-2',
+        customerName: '後日顧客2',
+        startTime: laterDay,
+      }),
+    ]
+    const reservations = [confirmedReservation, ...laterReservations]
+    reservationDataMocks.getAllReservations.mockImplementation(async (params) => {
+      const rangeStart = params?.startDate ? new Date(params.startDate).getTime() : Number.NEGATIVE_INFINITY
+      const rangeEnd = params?.endDate ? new Date(params.endDate).getTime() : Number.POSITIVE_INFINITY
+      return reservations.filter((reservation) => {
+        const start = reservation.startTime.getTime()
+        return start >= rangeStart && start < rangeEnd
+      })
+    })
+
+    render(<ReservationListPage />)
+
+    expect(await screen.findByText('当日顧客')).toBeInTheDocument()
+    const laterLabel = formatInTimeZone(laterDay, JST_TIMEZONE, 'M/d(E)', { locale: ja })
+    const laterShortcut = screen
+      .getAllByRole('button')
+      .find((button) => button.textContent?.includes(laterLabel))
+    expect(laterShortcut).toHaveTextContent('2人')
+    expect(laterShortcut).toHaveTextContent('2件')
+    expect(screen.queryByText('後日顧客1')).not.toBeInTheDocument()
+
+    fireEvent.click(laterShortcut!)
+
+    expect(await screen.findByText('後日顧客1')).toBeInTheDocument()
+    expect(screen.getByText('後日顧客2')).toBeInTheDocument()
+    expect(screen.queryByText('当日顧客')).not.toBeInTheDocument()
+
+    const todayLabel = formatInTimeZone(todayStart, JST_TIMEZONE, 'M/d(E)', { locale: ja })
+    const todayShortcut = screen
+      .getAllByRole('button')
+      .find((button) => button.textContent?.includes(todayLabel))
+    expect(todayShortcut).toHaveTextContent('1人')
+    expect(todayShortcut).toHaveTextContent('1件')
+    expect(laterShortcut).toHaveTextContent('2人')
+    expect(laterShortcut).toHaveTextContent('2件')
+  })
+
   it('switches the displayed reservations with a weekly date shortcut', async () => {
     const todayKey = formatInTimeZone(new Date(), JST_TIMEZONE, 'yyyy-MM-dd')
     const todayStart = zonedTimeToUtc(`${todayKey}T00:00:00`, JST_TIMEZONE)
@@ -383,10 +436,15 @@ describe('ReservationListPage interactions', () => {
     render(<ReservationListPage />)
 
     const reloadButton = await screen.findByRole('button', { name: '再読込' })
-    await waitFor(() => expect(reservationDataMocks.getAllReservations).toHaveBeenCalledTimes(1))
+    await waitFor(() =>
+      expect(reservationDataMocks.getAllReservations.mock.calls.length).toBeGreaterThanOrEqual(2)
+    )
+    const callsAfterLoad = reservationDataMocks.getAllReservations.mock.calls.length
 
     fireEvent.click(reloadButton)
 
-    await waitFor(() => expect(reservationDataMocks.getAllReservations).toHaveBeenCalledTimes(2))
+    await waitFor(() =>
+      expect(reservationDataMocks.getAllReservations.mock.calls.length).toBe(callsAfterLoad + 2)
+    )
   })
 })
