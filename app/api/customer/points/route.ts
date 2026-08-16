@@ -1,7 +1,7 @@
 /**
  * @design_doc   Customer point-history access boundary
  * @related_to   CustomerPointHistory and customer:read permission
- * @known_issues Customer store ownership awaits the approved multi-store policy
+ * @known_issues None
  */
 'use server'
 
@@ -11,6 +11,8 @@ import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
 import logger from '@/lib/logger'
 import { hasPermission } from '@/lib/auth/permissions'
+import { canAdminAccessStore } from '@/lib/auth/store-access'
+import { ensureStoreId, resolveStoreId } from '@/lib/store/server'
 
 const HISTORY_TYPES = new Set(['earned', 'used', 'expired', 'adjusted'])
 
@@ -46,6 +48,26 @@ export async function GET(request: NextRequest) {
 
   if (!isAdmin && !isSelf) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  if (isAdmin) {
+    let storeId: string
+    try {
+      storeId = await ensureStoreId(await resolveStoreId(request))
+    } catch {
+      return NextResponse.json({ error: '店舗を確認してください' }, { status: 400 })
+    }
+    if (!canAdminAccessStore(session.user, storeId)) {
+      return NextResponse.json({ error: 'この店舗を操作する権限がありません' }, { status: 403 })
+    }
+
+    const assignment = await db.customerStoreAssignment.findUnique({
+      where: { customerId_storeId: { customerId, storeId } },
+      select: { customerId: true },
+    })
+    if (!assignment) {
+      return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
+    }
   }
 
   const filters: Record<string, unknown> = { customerId }

@@ -1,15 +1,28 @@
-'use client'
-
 /**
  * @design_doc   ui-improvement-instructions.md U-6 admin page header
- * @related_to   PageHeader: shared settings header; public pricing pages: eventual display surface
- * @known_issues This page remains a prepared UI shell
+ * @related_to   CourseInfoPage and OptionInfoPage persist the public pricing sources
+ * @known_issues Additional-fee persistence requires an approved store-scoped model
  */
+import NextLink from 'next/link'
 import { PageHeader } from '@/components/admin/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, CreditCard, Edit, PlusCircle } from 'lucide-react'
+import { ArrowLeft, BookOpen, CreditCard, Package } from 'lucide-react'
+
+const pricingSources = [
+  {
+    title: 'コース料金',
+    description: 'コース名・時間・料金・公開状態を編集します。',
+    href: '/admin/settings/course-info',
+    icon: BookOpen,
+  },
+  {
+    title: 'オプション料金',
+    description: 'オプション名・料金・公開範囲・売上配分を編集します。',
+    href: '/admin/settings/option-info',
+    icon: Package,
+  },
+] as const
 
 export default function HpPricingPage() {
   return (
@@ -17,72 +30,42 @@ export default function HpPricingPage() {
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 pb-12 pt-8">
         <PageHeader
           title="HP料金情報"
-          description="ホームページに掲載する料金表の構成を管理します。まずは下書きレイアウトを作成し、後から内容を更新できます。"
+          description="公開サイトに表示する料金データの編集先です。"
           backHref="/admin/settings"
           backLabel="設定一覧へ戻る"
           backIcon={ArrowLeft}
           icon={CreditCard}
         />
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>料金テーブル（準備中）</CardTitle>
-              <CardDescription>
-                ここにホームページ用の料金プランやオプション料金を配置します。後ほど実際のAPI/DBと接続して更新できます。
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center gap-4 rounded-md border border-dashed border-muted-foreground/30 py-12 text-center text-muted-foreground">
-              <CreditCard className="h-10 w-10 text-muted-foreground/60" />
-              <div>
-                <p className="text-base font-medium text-foreground">
-                  料金セクションを作成しましょう
-                </p>
-                <p className="text-sm">
-                  「コース」「オプション」「追加料金」などホームページに掲載するカテゴリーを決めたら、ここに入力欄を追加してください。
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                <Button disabled>
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  新しい料金ブロックを追加
-                </Button>
-                <Button variant="ghost" disabled>
-                  <Edit className="mr-2 h-4 w-4" />
-                  既存レイアウトを編集
-                </Button>
-              </div>
-              <small className="text-xs text-muted-foreground">
-                ※
-                現段階ではUIのみが用意されています。後ほど管理画面/APIと接続し実データを保存します。
-              </small>
-            </CardContent>
-          </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>料金データの編集</CardTitle>
+            <CardDescription>
+              公開サイトの料金は、この2つの実データから表示されます。変更内容は各編集画面で保存してください。
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-2">
+            {pricingSources.map((source) => {
+              const Icon = source.icon
+              return (
+                <div key={source.href} className="flex flex-col gap-4 rounded-lg border p-5">
+                  <div className="flex items-center gap-3">
+                    <Icon className="h-5 w-5 text-emerald-600" />
+                    <h2 className="font-semibold">{source.title}</h2>
+                  </div>
+                  <p className="flex-1 text-sm text-muted-foreground">{source.description}</p>
+                  <Button asChild>
+                    <NextLink href={source.href}>{source.title}を編集</NextLink>
+                  </Button>
+                </div>
+              )
+            })}
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>ヒント</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm text-muted-foreground">
-              <div>
-                <Badge variant="outline" className="mb-2">
-                  構成案
-                </Badge>
-                <p>
-                  「基本コース」「延長料金」「オプション」「各種割引」など、サイトでよく参照される順序を意識して構成しましょう。
-                </p>
-              </div>
-              <div>
-                <Badge variant="outline" className="mb-2">
-                  公開前チェック
-                </Badge>
-                <p>
-                  料金表は頻繁に変更されます。公開前に利用中の価格と差異がないか、担当スタッフとレビューするフローを準備することをおすすめします。
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <p className="text-sm text-muted-foreground">
+          保存後は公開ページの料金表示と予約画面の選択肢に反映されます。公開前に料金・時間・公開状態をご確認ください。
+        </p>
       </main>
     </div>
   )

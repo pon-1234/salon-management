@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { db } from '@/lib/db'
-import { normalizePhoneNumber } from '@/lib/customer/utils'
+import { normalizeWritableCustomerPhoneIdentity } from '@/lib/customer/utils'
 import { smsClient } from '@/lib/sms/client'
 import logger from '@/lib/logger'
 import {
@@ -36,8 +36,8 @@ export async function POST(_request: Request) {
       return NextResponse.json({ error: '顧客情報が見つかりません。' }, { status: 404 })
     }
 
-    const phone = normalizePhoneNumber(customer.phone)
-    if (phone.length < 10 || phone.length > 11) {
+    const phone = normalizeWritableCustomerPhoneIdentity(customer.phone)
+    if (!phone) {
       return NextResponse.json({ error: '登録電話番号を確認できません。' }, { status: 400 })
     }
 

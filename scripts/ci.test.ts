@@ -19,4 +19,20 @@ describe('CI production build environment', () => {
     expect(buildSection).toContain('STORAGE_PUBLIC_BASE_URL=https://build.invalid/salon-uploads')
     expect(buildSection).toContain('pnpm build')
   })
+
+  it('runs isolated browser journeys before creating the final production build', () => {
+    const script = readFileSync(join(process.cwd(), 'scripts', 'ci.sh'), 'utf8')
+    const playwrightConfig = readFileSync(join(process.cwd(), 'playwright.config.ts'), 'utf8')
+    const globalSetup = readFileSync(join(process.cwd(), 'e2e', 'global-setup.ts'), 'utf8')
+    const browserJourneyIndex = script.indexOf('pnpm test:e2e')
+    const productionBuildIndex = script.indexOf('pnpm build')
+
+    expect(browserJourneyIndex).toBeGreaterThan(-1)
+    expect(productionBuildIndex).toBeGreaterThan(browserJourneyIndex)
+    expect(playwrightConfig).toContain('pnpm exec next dev')
+    expect(playwrightConfig).toContain("globalSetup: './e2e/global-setup.ts'")
+    expect(playwrightConfig).toContain('timeout: 60_000')
+    expect(globalSetup).toContain('/ikebukuro/age-verification')
+    expect(globalSetup).toContain("'/api/age-verification'")
+  })
 })

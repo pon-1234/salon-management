@@ -177,6 +177,46 @@ describe('Prisma schema', () => {
     expect(schemaContent).toMatch(/adminAssignments\s+AdminStoreAssignment\[\]/)
   })
 
+  it('models multi-store customer assignments and backfills only evidenced or unambiguous membership', () => {
+    const customerModel = schemaContent.match(/model Customer \{[\s\S]*?\n\}/u)?.[0]
+    const storeModel = schemaContent.match(/model Store \{[\s\S]*?\n\}/u)?.[0]
+    const assignmentModel = schemaContent.match(
+      /model CustomerStoreAssignment \{[\s\S]*?\n\}/u
+    )?.[0]
+
+    expect(customerModel).toMatch(/storeAssignments\s+CustomerStoreAssignment\[\]/)
+    expect(storeModel).toMatch(/customerAssignments\s+CustomerStoreAssignment\[\]/)
+    expect(assignmentModel).toMatch(/customerId\s+String/)
+    expect(assignmentModel).toMatch(/storeId\s+String/)
+    expect(assignmentModel).toContain('@@id([customerId, storeId])')
+    expect(assignmentModel).toContain('@@index([storeId])')
+    expect(assignmentModel).toMatch(/onDelete: Cascade/)
+
+    const migration = readFileSync(
+      join(
+        process.cwd(),
+        'prisma',
+        'migrations',
+        '20260815010000_add_customer_store_assignments',
+        'migration.sql'
+      ),
+      'utf8'
+    )
+
+    expect(migration.trimStart()).toMatch(/^BEGIN;/u)
+    expect(migration).toContain('CREATE TABLE "CustomerStoreAssignment"')
+    expect(migration).toContain('PRIMARY KEY ("customerId", "storeId")')
+    expect(migration).toMatch(
+      /SELECT DISTINCT reservation\."customerId", reservation\."storeId"[\s\S]*FROM "Reservation" AS reservation/u
+    )
+    expect(migration).toContain('HAVING COUNT(*) = 1')
+    expect(migration).toContain('ON CONFLICT ("customerId", "storeId") DO NOTHING')
+    expect(migration).toContain('ON DELETE CASCADE ON UPDATE CASCADE')
+    expect(migration.trimEnd()).toMatch(/COMMIT;$/u)
+    expect(migration).not.toMatch(/UPDATE\s+"Customer"/iu)
+    expect(migration).not.toMatch(/DELETE\s+FROM\s+"Customer"/iu)
+  })
+
   it('prevents duplicate point events for the same reservation and event type', () => {
     expect(schemaContent).toContain(
       '@@unique([reservationId, type], map: "unique_reservation_point_event")'
@@ -271,5 +311,61 @@ describe('Prisma schema', () => {
     expect(migration.trimEnd()).toMatch(/COMMIT;$/)
     expect(migration).not.toMatch(/DELETE\s+FROM/i)
     expect(migration).not.toMatch(/UPDATE\s+"PaymentTransaction"/i)
+  })
+
+  it('allows each reservation to be allocated to only one settlement payment', () => {
+    const allocationModel = schemaContent.match(
+      /model SettlementPaymentReservation \{[\s\S]*?\n\}/u
+    )?.[0]
+    expect(allocationModel).toBeDefined()
+    expect(allocationModel).toContain(
+      '@@unique([reservationId], map: "SettlementPaymentReservation_reservationId_key")'
+    )
+
+    const migration = readFileSync(
+      join(
+        process.cwd(),
+        'prisma',
+        'migrations',
+        '20260814193000_enforce_settlement_allocation_integrity',
+        'migration.sql'
+      ),
+      'utf8'
+    )
+    expect(migration.trimStart()).toMatch(/^BEGIN;/u)
+    expect(migration).toContain(
+      'LOCK TABLE "SettlementPaymentReservation" IN SHARE ROW EXCLUSIVE MODE'
+    )
+    expect(migration).toContain('GROUP BY "reservationId"')
+    expect(migration).toContain('HAVING COUNT(*) > 1')
+    expect(migration).toContain('RAISE EXCEPTION')
+    expect(migration).toContain(
+      'CREATE UNIQUE INDEX "SettlementPaymentReservation_reservationId_key"'
+    )
+    expect(migration.trimEnd()).toMatch(/COMMIT;$/u)
+    expect(migration).not.toMatch(/DELETE\s+FROM/iu)
+    expect(migration).not.toMatch(/UPDATE\s+"SettlementPaymentReservation"/iu)
+  })
+
+  it('persists non-sensitive card references and free-text cancellation reasons', () => {
+    const reservationModel = schemaContent.match(/model Reservation \{[\s\S]*?\n\}/u)?.[0]
+    expect(reservationModel).toBeDefined()
+    expect(reservationModel).toMatch(/paymentReference\s+String\?/)
+    expect(reservationModel).toMatch(/cancellationReason\s+String\?/)
+
+    const migration = readFileSync(
+      join(
+        process.cwd(),
+        'prisma',
+        'migrations',
+        '20260814200000_add_reservation_payment_and_cancellation_details',
+        'migration.sql'
+      ),
+      'utf8'
+    )
+    expect(migration).toContain('ADD COLUMN "paymentReference" TEXT')
+    expect(migration).toContain('ADD COLUMN "cancellationReason" TEXT')
+    expect(migration).not.toMatch(/DROP\s+(?:TABLE|COLUMN)/iu)
+    expect(migration).not.toMatch(/DELETE\s+FROM/iu)
   })
 })

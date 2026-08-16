@@ -247,7 +247,9 @@ export default function HotelInfoPage() {
                         <div className="flex-1">
                           <div className="mb-2 flex items-center gap-3">
                             <h3 className="text-lg font-semibold">{hotel.hotelName}</h3>
-                            {hotel.area && <Badge variant="outline">{hotel.area}</Badge>}
+                            {hotel.area && (
+                              <Badge variant="outline">旧表示グループ: {hotel.area}</Badge>
+                            )}
                             {hotel.roomCount !== null && (
                               <Badge variant="secondary">{hotel.roomCount}室</Badge>
                             )}

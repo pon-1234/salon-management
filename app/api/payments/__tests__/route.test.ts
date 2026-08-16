@@ -28,10 +28,12 @@ vi.mock('@/lib/db', () => ({
   db: {
     reservation: {
       findUnique: vi.fn(),
+      findMany: vi.fn(),
     },
     paymentTransaction: {
       findFirst: vi.fn(),
       findMany: vi.fn(),
+      groupBy: vi.fn(),
     },
   },
 }))
@@ -87,7 +89,9 @@ describe('/api/payments', () => {
     vi.clearAllMocks()
     vi.mocked(getServerSession).mockResolvedValue(assignedAdmin as never)
     vi.mocked(db.reservation.findUnique).mockResolvedValue(reservation as never)
+    vi.mocked(db.reservation.findMany).mockResolvedValue([])
     vi.mocked(db.paymentTransaction.findFirst).mockResolvedValue(null)
+    vi.mocked(db.paymentTransaction.groupBy).mockResolvedValue([] as never)
     mockPaymentService.processPayment.mockResolvedValue({
       success: true,
       transaction: {
@@ -285,6 +289,13 @@ describe('/api/payments', () => {
           updatedAt: new Date('2026-07-20T00:00:00.000Z'),
         },
       ] as never)
+      vi.mocked(db.paymentTransaction.groupBy).mockResolvedValueOnce([
+        {
+          status: 'completed',
+          _count: { _all: 42 },
+          _sum: { amount: 504_000, refundAmount: null },
+        },
+      ] as never)
 
       const response = await GET(
         new NextRequest(
@@ -295,6 +306,20 @@ describe('/api/payments', () => {
 
       expect(response.status).toBe(200)
       expect(payload.transactions).toHaveLength(1)
+      expect(payload.summary).toEqual({
+        statusCounts: {
+          completed: 42,
+          pending: 0,
+          processing: 0,
+          failed: 0,
+          cancelled: 0,
+          refunded: 0,
+        },
+        completedAmount: 504_000,
+        refundedAmount: 0,
+        totalTransactions: 42,
+        totalAmount: 504_000,
+      })
       expect(db.paymentTransaction.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
@@ -305,6 +330,46 @@ describe('/api/payments', () => {
           skip: 25,
         })
       )
+      expect(db.paymentTransaction.groupBy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          by: ['status'],
+          where: expect.objectContaining({
+            reservation: { storeId: 'ginza' },
+            status: 'completed',
+          }),
+        })
+      )
+    })
+
+    it('includes completed card reservations that have no PaymentTransaction row', async () => {
+      vi.mocked(db.paymentTransaction.findMany).mockResolvedValueOnce([])
+      vi.mocked(db.paymentTransaction.groupBy).mockResolvedValueOnce([])
+      vi.mocked(db.reservation.findMany).mockResolvedValueOnce([
+        {
+          id: 'reservation-card-1',
+          customerId: 'customer-1',
+          price: 22_000,
+          paymentMethod: 'カード',
+          paymentReference: 'UAT-0815-1030',
+          status: 'completed',
+          startTime: new Date('2026-08-15T12:00:00.000Z'),
+          updatedAt: new Date('2026-08-15T13:00:00.000Z'),
+        },
+      ] as never)
+
+      const response = await GET(
+        new NextRequest('http://localhost:3000/api/payments?storeId=ginza&limit=25&offset=0')
+      )
+      const payload = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(payload.transactions[0]).toMatchObject({
+        id: 'reservation-payment:reservation-card-1',
+        paymentMethod: 'card',
+        amount: 22_000,
+        metadata: { paymentReference: 'UAT-0815-1030' },
+      })
+      expect(payload.summary.completedAmount).toBe(22_000)
     })
 
     it('rejects unauthenticated callers before validating filters', async () => {

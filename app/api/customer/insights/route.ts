@@ -1,10 +1,14 @@
+/**
+ * @design_doc   Store-scoped customer insight authorization boundary
+ * @related_to   requireAdmin, customer detail insights panel, store-scoped Reservation aggregates
+ * @known_issues Message has no storeId, so store-scoped chat counts return null
+ */
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth/config'
+import { requireAdmin } from '@/lib/auth/utils'
 import { db } from '@/lib/db'
 import logger from '@/lib/logger'
 import { ensureStoreId, resolveStoreId } from '@/lib/store/server'
-import { differenceInCalendarDays, startOfDay, subDays } from 'date-fns'
+import { differenceInCalendarDays } from 'date-fns'
 
 const MAX_CANCELLATION_LIMIT = 3
 
@@ -44,63 +48,33 @@ function normalizeCupValue(raw: string) {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
-    }
-    if (session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
+    const storeId = await ensureStoreId(await resolveStoreId(request))
+    const authError = await requireAdmin({
+      permissions: ['customer:read', 'reservation:read'],
+      storeId,
+    })
+    if (authError) return authError
 
     const customerId = request.nextUrl.searchParams.get('customerId')
     if (!customerId) {
       return NextResponse.json({ error: 'customerId is required' }, { status: 400 })
     }
 
-    const storeId = await ensureStoreId(await resolveStoreId(request))
-    const now = new Date()
-    const todayStart = startOfDay(now)
-    const yesterdayStart = subDays(todayStart, 1)
-
-    const [reservations, chatCountToday, chatCountYesterday, chatCountTotal] = await Promise.all([
-      db.reservation.findMany({
-        where: { storeId, customerId },
-        include: {
-          cast: {
-            select: {
-              name: true,
-              bust: true,
-              publicProfile: true,
-            },
+    const reservations = await db.reservation.findMany({
+      where: { storeId, customerId },
+      include: {
+        cast: {
+          select: {
+            name: true,
+            bust: true,
+            publicProfile: true,
           },
         },
-        orderBy: {
-          startTime: 'desc',
-        },
-      }),
-      db.message.count({
-        where: {
-          customerId,
-          timestamp: {
-            gte: todayStart,
-          },
-        },
-      }),
-      db.message.count({
-        where: {
-          customerId,
-          timestamp: {
-            gte: yesterdayStart,
-            lt: todayStart,
-          },
-        },
-      }),
-      db.message.count({
-        where: {
-          customerId,
-        },
-      }),
-    ])
+      },
+      orderBy: {
+        startTime: 'desc',
+      },
+    })
 
     const completedReservations = reservations.filter(
       (reservation) => reservation.status !== 'cancelled'
@@ -166,9 +140,9 @@ export async function GET(request: NextRequest) {
         averageIntervalDays,
         customerCancelCount,
         storeCancelCount,
-        chatCountToday,
-        chatCountYesterday,
-        chatCountTotal,
+        chatCountToday: null,
+        chatCountYesterday: null,
+        chatCountTotal: null,
         preferredBustCup,
         cancellationLimit: MAX_CANCELLATION_LIMIT,
       },

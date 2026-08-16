@@ -1,9 +1,32 @@
+/**
+ * @design_doc   Cast work performance backed by an accurate completed-reservation contract
+ * @related_to   CastPerformanceReport and the store-scoped cast-performance analytics API
+ * @known_issues Attendance hours are excluded because reservation dates are not attendance records
+ */
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { formatInTimeZone } from 'date-fns-tz'
+import {
+  AlertCircle,
+  Banknote,
+  CalendarDays,
+  CreditCard,
+  Heart,
+  HelpCircle,
+  Layers3,
+  Loader2,
+  ReceiptText,
+  Repeat2,
+  Sparkles,
+  TrendingUp,
+  UserPlus,
+} from 'lucide-react'
+
+import type { CastPerformanceReport } from '@/lib/types/cast-performance'
+import { useStore } from '@/contexts/store-context'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import {
   Table,
   TableBody,
@@ -12,398 +35,438 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Progress } from '@/components/ui/progress'
-import {
-  Clock,
-  Users,
-  CreditCard,
-  Banknote,
-  TrendingUp,
-  Target,
-  Calendar,
-  BarChart3,
-  Star,
-  UserPlus,
-  Repeat,
-} from 'lucide-react'
-import { WorkPerformance, MonthlyPerformanceSummary } from '@/lib/cast/types'
-import {
-  getWorkPerformancesByCast,
-  getMonthlyPerformanceSummary,
-  calculateDailyStats,
-} from '@/lib/cast/performance-data'
-import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
-import { ja } from 'date-fns/locale'
 
 interface WorkPerformanceTabProps {
   castId: string
   castName: string
+  initialPerformance?: CastPerformanceReport
 }
 
-export function WorkPerformanceTab({ castId, castName }: WorkPerformanceTabProps) {
-  const [performances] = useState<WorkPerformance[]>(getWorkPerformancesByCast(castId))
-  const [monthlyStats] = useState<MonthlyPerformanceSummary>(
-    getMonthlyPerformanceSummary(castId, 2025, 6)
-  )
-  const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month'>('week')
+const formatCurrency = (amount: number) => `¥${amount.toLocaleString()}`
+const JST_TIMEZONE = 'Asia/Tokyo'
 
-  // 期間別データ取得
-  const getPerformancesByPeriod = (period: 'week' | 'month') => {
-    const now = new Date()
-    const start = period === 'week' ? startOfWeek(now, { weekStartsOn: 1 }) : startOfMonth(now)
-    const end = period === 'week' ? endOfWeek(now, { weekStartsOn: 1 }) : endOfMonth(now)
+export function getJstYearMonth(date: Date): { year: number; month: number } {
+  return {
+    year: Number(formatInTimeZone(date, JST_TIMEZONE, 'yyyy')),
+    month: Number(formatInTimeZone(date, JST_TIMEZONE, 'M')),
+  }
+}
 
-    return performances.filter((p) => p.date >= start && p.date <= end)
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
+const isNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value)
+const isCount = (value: unknown): value is number =>
+  isNumber(value) && Number.isInteger(value) && value >= 0
+const isNullableNumber = (value: unknown): value is number | null =>
+  value === null || isNumber(value)
+
+const isCountAmount = (value: unknown) =>
+  isRecord(value) && isCount(value.count) && isNumber(value.amount)
+
+const isCoursePerformance = (value: unknown) =>
+  isRecord(value) &&
+  typeof value.id === 'string' &&
+  typeof value.name === 'string' &&
+  isCount(value.count) &&
+  isNumber(value.reservationSales)
+
+const isOptionPerformance = (value: unknown) =>
+  isRecord(value) &&
+  typeof value.id === 'string' &&
+  typeof value.name === 'string' &&
+  isCount(value.count) &&
+  isNumber(value.sales) &&
+  isNumber(value.selectionRate) &&
+  value.selectionRate >= 0 &&
+  value.selectionRate <= 100
+
+const isCastPerformanceReport = (value: unknown): value is CastPerformanceReport => {
+  if (
+    !isRecord(value) ||
+    !isRecord(value.cast) ||
+    typeof value.cast.id !== 'string' ||
+    typeof value.cast.name !== 'string' ||
+    !isRecord(value.period) ||
+    !isCount(value.period.year) ||
+    !isCount(value.period.month) ||
+    value.period.month < 1 ||
+    value.period.month > 12 ||
+    value.period.timeZone !== JST_TIMEZONE ||
+    !isCount(value.completedReservations) ||
+    !isCount(value.reservationDays) ||
+    !isNumber(value.totalSales) ||
+    !isNullableNumber(value.staffRevenue) ||
+    !isNullableNumber(value.storeRevenue) ||
+    !isRecord(value.missingRevenue) ||
+    !isCount(value.missingRevenue.staff) ||
+    !isCount(value.missingRevenue.store) ||
+    !isRecord(value.payments) ||
+    !isCountAmount(value.payments.cash) ||
+    !isCountAmount(value.payments.card) ||
+    !isCountAmount(value.payments.unclassified) ||
+    !isRecord(value.customers) ||
+    !isCount(value.customers.new) ||
+    !isCount(value.customers.storeRepeat) ||
+    !isCount(value.customers.returningRegular) ||
+    !isCount(value.customers.unclassified) ||
+    !isRecord(value.designations) ||
+    !isCount(value.designations.regular) ||
+    !isCount(value.designations.free) ||
+    !isCount(value.designations.none) ||
+    !isCount(value.designations.unclassified) ||
+    !isRecord(value.marketing) ||
+    !isCount(value.marketing.princess) ||
+    !isCount(value.marketing.other) ||
+    !isCount(value.marketing.unclassified) ||
+    !Array.isArray(value.courses) ||
+    !value.courses.every(isCoursePerformance) ||
+    !Array.isArray(value.options) ||
+    !value.options.every(isOptionPerformance)
+  ) {
+    return false
+  }
+  return true
+}
+
+export function WorkPerformanceTab({
+  castId,
+  castName,
+  initialPerformance,
+}: WorkPerformanceTabProps) {
+  if (initialPerformance) {
+    return <PerformanceLayout castName={castName} performance={initialPerformance} />
+  }
+  return <AdminPerformanceLoader castId={castId} castName={castName} />
+}
+
+function AdminPerformanceLoader({
+  castId,
+  castName,
+}: Omit<WorkPerformanceTabProps, 'initialPerformance'>) {
+  const { currentStore } = useStore()
+  const { year, month } = getJstYearMonth(new Date())
+  const [performance, setPerformance] = useState<CastPerformanceReport | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    let ignore = false
+
+    const load = async () => {
+      setIsLoading(true)
+      setError(null)
+      setPerformance(null)
+
+      try {
+        const endpoint = buildStoreScopedEndpoint(
+          `/api/analytics/cast-performance?castId=${encodeURIComponent(castId)}&year=${year}&month=${month}`,
+          currentStore.id
+        )
+        const response = await fetch(endpoint, { cache: 'no-store' })
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}))
+          throw new Error(payload.error ?? payload.message ?? '就業成績の取得に失敗しました。')
+        }
+
+        const payload: unknown = await response.json()
+        if (
+          !isCastPerformanceReport(payload) ||
+          payload.cast.id !== castId ||
+          payload.period.year !== year ||
+          payload.period.month !== month
+        ) {
+          throw new Error('就業成績の応答形式が不正です。')
+        }
+        if (!ignore) setPerformance(payload)
+      } catch (caught) {
+        if (!ignore) {
+          setError(caught instanceof Error ? caught.message : '就業成績の取得に失敗しました。')
+        }
+      } finally {
+        if (!ignore) setIsLoading(false)
+      }
+    }
+
+    void load()
+    return () => {
+      ignore = true
+    }
+  }, [castId, currentStore.id, month, year])
+
+  if (isLoading) {
+    return (
+      <StatusLayout castName={castName} year={year} month={month}>
+        <Loader2 className="h-4 w-4 animate-spin" />
+        就業成績を読み込んでいます...
+      </StatusLayout>
+    )
   }
 
-  const weekPerformances = getPerformancesByPeriod('week')
-  const monthPerformances = getPerformancesByPeriod('month')
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <PerformanceHeader castName={castName} year={year} month={month} />
+        <Card role="alert" className="border-destructive/40 bg-destructive/5">
+          <CardContent className="flex items-center gap-2 py-6 text-sm text-destructive">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            {error}
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
-  const weekStats = calculateDailyStats(weekPerformances)
-  const monthStatsCalc = calculateDailyStats(monthPerformances)
+  return performance ? (
+    <PerformanceLayout castName={castName} performance={performance} />
+  ) : (
+    <StatusLayout castName={castName} year={year} month={month}>
+      <HelpCircle className="h-4 w-4" />
+      今月の実績データはありません
+    </StatusLayout>
+  )
+}
 
+function PerformanceLayout({
+  castName,
+  performance,
+}: {
+  castName: string
+  performance: CastPerformanceReport
+}) {
   return (
     <div className="space-y-6">
-      {/* 期間選択タブ */}
-      <Tabs
-        value={selectedPeriod}
-        onValueChange={(value) => setSelectedPeriod(value as 'week' | 'month')}
-        className="space-y-6"
-      >
-        <TabsList>
-          <TabsTrigger value="week">今週</TabsTrigger>
-          <TabsTrigger value="month">今月</TabsTrigger>
-        </TabsList>
+      <PerformanceHeader
+        castName={castName}
+        year={performance.period.year}
+        month={performance.period.month}
+      />
 
-        <TabsContent value="week" className="space-y-6">
-          <PerformanceOverview
-            title="今週の成績"
-            period={
-              format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'M/d', { locale: ja }) +
-              ' - ' +
-              format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'M/d', { locale: ja })
-            }
-            stats={weekStats}
-          />
-          <PerformanceDetailTable performances={weekPerformances} />
-        </TabsContent>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <MetricCard
+          icon={ReceiptText}
+          label="完了予約"
+          value={`${performance.completedReservations.toLocaleString()}本`}
+        />
+        <MetricCard
+          icon={CalendarDays}
+          label="予約実績日"
+          value={`${performance.reservationDays.toLocaleString()}日`}
+        />
+        <MetricCard
+          icon={TrendingUp}
+          label="総売上"
+          value={formatCurrency(performance.totalSales)}
+        />
+        <MetricCard
+          icon={Sparkles}
+          label="キャスト売上"
+          value={formatKnownRevenue(performance.staffRevenue, performance.missingRevenue.staff)}
+        />
+      </div>
 
-        <TabsContent value="month" className="space-y-6">
-          <PerformanceOverview
-            title="今月の成績"
-            period={format(startOfMonth(new Date()), 'yyyy年M月', { locale: ja })}
-            stats={monthStatsCalc}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <BreakdownCard title="顧客区分">
+          <ValueRow icon={UserPlus} label="新規" value={performance.customers.new} />
+          <ValueRow icon={Repeat2} label="店リピ" value={performance.customers.storeRepeat} />
+          <ValueRow
+            icon={Sparkles}
+            label="本指名再来"
+            value={performance.customers.returningRegular}
           />
-          <MonthlyTargetProgress monthlyStats={monthlyStats} />
-          <PerformanceDetailTable performances={monthPerformances} />
-        </TabsContent>
-      </Tabs>
+          <ValueRow
+            icon={HelpCircle}
+            label="顧客未分類"
+            value={performance.customers.unclassified}
+          />
+        </BreakdownCard>
+
+        <BreakdownCard title="指名区分">
+          <ValueRow icon={Sparkles} label="本指名" value={performance.designations.regular} />
+          <ValueRow icon={Layers3} label="フリー指名" value={performance.designations.free} />
+          <ValueRow icon={ReceiptText} label="指名なし" value={performance.designations.none} />
+          <ValueRow
+            icon={HelpCircle}
+            label="指名未分類"
+            value={performance.designations.unclassified}
+          />
+        </BreakdownCard>
+
+        <BreakdownCard title="受付媒体">
+          <ValueRow icon={Heart} label="姫予約" value={performance.marketing.princess} />
+          <ValueRow icon={ReceiptText} label="その他" value={performance.marketing.other} />
+          <ValueRow
+            icon={HelpCircle}
+            label="媒体未分類"
+            value={performance.marketing.unclassified}
+          />
+          <p className="text-xs text-muted-foreground">
+            旧システムの media 番号だけでは媒体を推測せず、未分類として表示します。
+          </p>
+        </BreakdownCard>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <BreakdownCard title="決済方法">
+          <ValueRow
+            icon={Banknote}
+            label="現金"
+            value={performance.payments.cash.count}
+            helper={formatCurrency(performance.payments.cash.amount)}
+          />
+          <ValueRow
+            icon={CreditCard}
+            label="カード"
+            value={performance.payments.card.count}
+            helper={formatCurrency(performance.payments.card.amount)}
+          />
+          <ValueRow
+            icon={HelpCircle}
+            label="決済未分類"
+            value={performance.payments.unclassified.count}
+            helper={formatCurrency(performance.payments.unclassified.amount)}
+          />
+        </BreakdownCard>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">売上配分</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <RevenueValue
+              label="キャスト売上"
+              value={performance.staffRevenue}
+              missingCount={performance.missingRevenue.staff}
+            />
+            <RevenueValue
+              label="店舗売上"
+              value={performance.storeRevenue}
+              missingCount={performance.missingRevenue.store}
+            />
+          </CardContent>
+        </Card>
+      </div>
+
+      <CourseBreakdown performance={performance} />
+      <OptionBreakdown performance={performance} />
     </div>
   )
 }
 
-interface PerformanceOverviewProps {
-  title: string
-  period: string
-  stats: ReturnType<typeof calculateDailyStats>
-}
-
-function PerformanceOverview({ title, period, stats }: PerformanceOverviewProps) {
+function PerformanceHeader({
+  castName,
+  year,
+  month,
+}: {
+  castName: string
+  year: number
+  month: number
+}) {
   return (
-    <>
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold">{title}</h3>
-        <p className="text-sm text-gray-600">{period}</p>
-      </div>
-
-      {/* メインKPI */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Clock className="h-4 w-4 text-blue-600" />
-              <div>
-                <p className="text-sm font-medium text-gray-600">出勤日数</p>
-                <p className="text-2xl font-bold">{stats.totalWorkDays}日</p>
-                <p className="text-xs text-gray-500">
-                  平均 {stats.averageWorkHours.toFixed(1)}h/日
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Users className="h-4 w-4 text-green-600" />
-              <div>
-                <p className="text-sm font-medium text-gray-600">サービス数</p>
-                <p className="text-2xl font-bold">{stats.totalServiceCount}本</p>
-                <p className="text-xs text-gray-500">
-                  平均 {stats.averageServiceCount.toFixed(1)}本/日
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <TrendingUp className="h-4 w-4 text-orange-600" />
-              <div>
-                <p className="text-sm font-medium text-gray-600">売上金額</p>
-                <p className="text-2xl font-bold">¥{stats.totalRevenue.toLocaleString()}</p>
-                <p className="text-xs text-gray-500">
-                  平均 ¥{stats.averageRevenue.toLocaleString()}/日
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Target className="h-4 w-4 text-purple-600" />
-              <div>
-                <p className="text-sm font-medium text-gray-600">客単価</p>
-                <p className="text-2xl font-bold">¥{stats.averageServiceAmount.toLocaleString()}</p>
-                <p className="text-xs text-gray-500">
-                  リピート率 {stats.averageRepeatRate.toFixed(1)}%
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Repeat className="h-4 w-4 text-emerald-600" />
-              <div>
-                <p className="text-sm font-medium text-gray-600">店リピート</p>
-                <p className="text-2xl font-bold">{stats.totalStoreRepeats}件</p>
-                <p className="text-xs text-gray-500">
-                  店舗貢献率 {stats.storeRepeatRate.toFixed(1)}%
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 詳細指標 */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        {/* 決済方法別 */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <CreditCard className="h-4 w-4" />
-              決済方法別
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Banknote className="h-4 w-4 text-green-600" />
-                <span className="text-sm">現金</span>
-              </div>
-              <div className="text-right">
-                <div className="font-medium">{stats.totalCashCount}本</div>
-                <div className="text-sm text-gray-500">
-                  ¥{stats.totalCashAmount.toLocaleString()}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-blue-600" />
-                <span className="text-sm">カード</span>
-              </div>
-              <div className="text-right">
-                <div className="font-medium">{stats.totalCardCount}本</div>
-                <div className="text-sm text-gray-500">
-                  ¥{stats.totalCardAmount.toLocaleString()}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 顧客獲得 */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <UserPlus className="h-4 w-4" />
-              顧客獲得
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm">新規顧客</span>
-              <div className="text-right">
-                <div className="font-medium">{stats.totalNewCustomers}人</div>
-                <div className="text-sm text-gray-500">{stats.newCustomerRate.toFixed(1)}%</div>
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm">指名獲得</span>
-              <div className="text-right">
-                <div className="font-medium">{stats.totalDesignations}本</div>
-                <div className="text-sm text-gray-500">{stats.designationRate.toFixed(1)}%</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* パフォーマンス */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Star className="h-4 w-4" />
-              パフォーマンス
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <div className="mb-1 flex justify-between text-sm">
-                <span>リピート率</span>
-                <span>{stats.averageRepeatRate.toFixed(1)}%</span>
-              </div>
-              <Progress value={stats.averageRepeatRate} className="h-2" />
-            </div>
-            <div>
-              <div className="mb-1 flex justify-between text-sm">
-                <span>指名率</span>
-                <span>{stats.designationRate.toFixed(1)}%</span>
-              </div>
-              <Progress value={stats.designationRate} className="h-2" />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 店リピート */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Repeat className="h-4 w-4" />
-              店リピート
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm">貢献件数</span>
-              <div className="text-right">
-                <div className="font-medium">{stats.totalStoreRepeats}件</div>
-                <div className="text-sm text-gray-500">
-                  前回他キャスト→自店舗 {stats.storeRepeatRate.toFixed(1)}%
-                </div>
-              </div>
-            </div>
-            <p className="text-xs text-gray-500">
-              直前来店のキャストと異なる場合のみ前回キャストへ付与。二重付与防止済み。
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    </>
+    <div>
+      <h2 className="text-2xl font-bold">{castName}さんの就業成績</h2>
+      <p className="text-sm text-muted-foreground">
+        {year}年{month}月の完了予約実績
+      </p>
+    </div>
   )
 }
 
-interface MonthlyTargetProgressProps {
-  monthlyStats: MonthlyPerformanceSummary
-}
-
-function MonthlyTargetProgress({ monthlyStats }: MonthlyTargetProgressProps) {
-  // 目標値（例として設定）
-  const targets = {
-    workDays: 25,
-    serviceCount: 120,
-    revenue: 1800000,
-    designationRate: 70,
-    repeatRate: 70,
-    storeRepeatShare: 25,
-  }
-
-  const workDaysProgress = (monthlyStats.totalWorkDays / targets.workDays) * 100
-  const serviceProgress = (monthlyStats.totalServiceCount / targets.serviceCount) * 100
-  const revenueProgress = (monthlyStats.totalRevenue / targets.revenue) * 100
-  const designationProgress =
-    (((monthlyStats.totalDesignations / monthlyStats.totalServiceCount) * 100) /
-      targets.designationRate) *
-    100
-  const repeatProgress = (monthlyStats.averageRepeatRate / targets.repeatRate) * 100
-  const storeRepeatProgress = (monthlyStats.storeRepeatShare / targets.storeRepeatShare) * 100
-
+function CourseBreakdown({ performance }: { performance: CastPerformanceReport }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <BarChart3 className="h-5 w-5" />
-          月間目標達成状況
-        </CardTitle>
+        <CardTitle className="text-base">コース別実績</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
-            <div className="mb-2 flex justify-between text-sm">
-              <span>出勤日数</span>
-              <span>
-                {monthlyStats.totalWorkDays} / {targets.workDays}日
-              </span>
-            </div>
-            <Progress value={Math.min(workDaysProgress, 100)} className="h-2" />
-            <div className="mt-1 text-xs text-gray-500">{workDaysProgress.toFixed(1)}% 達成</div>
-          </div>
+      <CardContent>
+        {performance.courses.length === 0 ? (
+          <EmptyBreakdown>完了予約のコース実績はありません</EmptyBreakdown>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>コース</TableHead>
+                <TableHead className="text-right">本数</TableHead>
+                <TableHead className="text-right">予約売上</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {performance.courses.map((course) => (
+                <TableRow key={course.id}>
+                  <TableCell className="font-medium">{course.name}</TableCell>
+                  <TableCell className="text-right">{course.count.toLocaleString()}本</TableCell>
+                  <TableCell className="text-right">
+                    {formatCurrency(course.reservationSales)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
 
-          <div>
-            <div className="mb-2 flex justify-between text-sm">
-              <span>サービス数</span>
-              <span>
-                {monthlyStats.totalServiceCount} / {targets.serviceCount}本
-              </span>
-            </div>
-            <Progress value={Math.min(serviceProgress, 100)} className="h-2" />
-            <div className="mt-1 text-xs text-gray-500">{serviceProgress.toFixed(1)}% 達成</div>
-          </div>
+function OptionBreakdown({ performance }: { performance: CastPerformanceReport }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">オプション別実績</CardTitle>
+        <p className="text-xs text-muted-foreground">
+          選択率は当月の完了予約 {performance.completedReservations.toLocaleString()}{' '}
+          本に対する割合です。
+        </p>
+      </CardHeader>
+      <CardContent>
+        {performance.options.length === 0 ? (
+          <EmptyBreakdown>完了予約のオプション実績はありません</EmptyBreakdown>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>オプション</TableHead>
+                <TableHead className="text-right">本数</TableHead>
+                <TableHead className="text-right">選択率</TableHead>
+                <TableHead className="text-right">売上</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {performance.options.map((option) => (
+                <TableRow key={option.id}>
+                  <TableCell className="font-medium">{option.name}</TableCell>
+                  <TableCell className="text-right">{option.count.toLocaleString()}本</TableCell>
+                  <TableCell className="text-right">
+                    {option.selectionRate.toLocaleString()}%
+                  </TableCell>
+                  <TableCell className="text-right">{formatCurrency(option.sales)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
 
+function MetricCard({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof ReceiptText
+  label: string
+  value: string
+}) {
+  return (
+    <Card data-slot="card">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2">
+          <Icon className="h-4 w-4 text-primary" />
           <div>
-            <div className="mb-2 flex justify-between text-sm">
-              <span>売上金額</span>
-              <span>
-                ¥{monthlyStats.totalRevenue.toLocaleString()} / ¥{targets.revenue.toLocaleString()}
-              </span>
-            </div>
-            <Progress value={Math.min(revenueProgress, 100)} className="h-2" />
-            <div className="mt-1 text-xs text-gray-500">{revenueProgress.toFixed(1)}% 達成</div>
-          </div>
-
-          <div>
-            <div className="mb-2 flex justify-between text-sm">
-              <span>リピート率</span>
-              <span>
-                {monthlyStats.averageRepeatRate.toFixed(1)}% / {targets.repeatRate}%
-              </span>
-            </div>
-            <Progress value={Math.min(repeatProgress, 100)} className="h-2" />
-            <div className="mt-1 text-xs text-gray-500">{repeatProgress.toFixed(1)}% 達成</div>
-          </div>
-
-          <div>
-            <div className="mb-2 flex justify-between text-sm">
-              <span>店リピート貢献</span>
-              <span>
-                {monthlyStats.totalStoreRepeats}件 / 目標比 {targets.storeRepeatShare}%
-              </span>
-            </div>
-            <Progress value={Math.min(storeRepeatProgress, 100)} className="h-2" />
-            <div className="mt-1 text-xs text-gray-500">
-              {storeRepeatProgress.toFixed(1)}% 達成（店舗シェア{' '}
-              {monthlyStats.storeRepeatShare.toFixed(1)}%）
-            </div>
+            <p className="text-sm font-medium text-muted-foreground">{label}</p>
+            <p className="text-2xl font-bold">{value}</p>
           </div>
         </div>
       </CardContent>
@@ -411,106 +474,86 @@ function MonthlyTargetProgress({ monthlyStats }: MonthlyTargetProgressProps) {
   )
 }
 
-interface PerformanceDetailTableProps {
-  performances: WorkPerformance[]
-}
-
-function PerformanceDetailTable({ performances }: PerformanceDetailTableProps) {
+function BreakdownCard({ title, children }: { title: string; children: ReactNode }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>日別詳細成績</CardTitle>
+        <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>日付</TableHead>
-              <TableHead>時間</TableHead>
-              <TableHead>現金本数</TableHead>
-              <TableHead>現金金額</TableHead>
-              <TableHead>カード本数</TableHead>
-              <TableHead>カード金額</TableHead>
-              <TableHead>合計本数</TableHead>
-              <TableHead>新規</TableHead>
-              <TableHead>指名</TableHead>
-              <TableHead>店リピート</TableHead>
-              <TableHead>リピート率</TableHead>
-              <TableHead>合計金額</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {performances.map((performance) => (
-              <TableRow key={performance.id}>
-                <TableCell>
-                  <div className="text-sm">
-                    <div>{format(performance.date, 'M/d(E)', { locale: ja })}</div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="text-xs">
-                    {performance.workHours}h
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-center">
-                  <div className="font-medium">{performance.cashCount}</div>
-                </TableCell>
-                <TableCell className="text-right">
-                  ¥{performance.cashAmount.toLocaleString()}
-                </TableCell>
-                <TableCell className="text-center">
-                  <div className="font-medium">{performance.cardCount}</div>
-                </TableCell>
-                <TableCell className="text-right">
-                  ¥{performance.cardAmount.toLocaleString()}
-                </TableCell>
-                <TableCell className="text-center font-medium">{performance.totalCount}</TableCell>
-                <TableCell className="text-center">
-                  <div className="text-sm">
-                    <div>フリー: {performance.newFreeCount}</div>
-                    <div>パネル: {performance.newPanelCount}</div>
-                  </div>
-                </TableCell>
-                <TableCell className="text-center">
-                  <div className="text-sm">
-                    <div>本指名: {performance.regularDesignationCount}</div>
-                    <div>合計: {performance.totalDesignationCount}</div>
-                  </div>
-                </TableCell>
-                <TableCell className="text-center">
-                  <Badge variant="secondary" className="text-xs">
-                    {performance.storeRepeatCount}件
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-center">
-                  <Badge
-                    variant={
-                      performance.repeatRate >= 70
-                        ? 'default'
-                        : performance.repeatRate >= 50
-                          ? 'secondary'
-                          : 'destructive'
-                    }
-                    className="text-xs"
-                  >
-                    {performance.repeatRate}%
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right font-medium">
-                  ¥{performance.totalAmount.toLocaleString()}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-
-        {performances.length === 0 && (
-          <div className="py-8 text-center text-gray-500">
-            <Calendar className="mx-auto mb-2 h-12 w-12 text-gray-300" />
-            該当期間のデータがありません
-          </div>
-        )}
-      </CardContent>
+      <CardContent className="space-y-4">{children}</CardContent>
     </Card>
   )
+}
+
+function ValueRow({
+  icon: Icon,
+  label,
+  value,
+  helper,
+}: {
+  icon: typeof ReceiptText
+  label: string
+  value: number
+  helper?: string
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2 text-sm">
+        <Icon className="h-4 w-4 text-muted-foreground" />
+        <span>{label}</span>
+      </div>
+      <div className="text-right">
+        <span className="font-medium">{value.toLocaleString()}本</span>
+        {helper ? <div className="text-xs text-muted-foreground">{helper}</div> : null}
+      </div>
+    </div>
+  )
+}
+
+function formatKnownRevenue(value: number | null, missingCount: number): string {
+  return value === null ? `未集計（${missingCount}件）` : formatCurrency(value)
+}
+
+function RevenueValue({
+  label,
+  value,
+  missingCount,
+}: {
+  label: string
+  value: number | null
+  missingCount: number
+}) {
+  return (
+    <div>
+      <div className="text-sm text-muted-foreground">{label}</div>
+      <div className="text-xl font-semibold">{formatKnownRevenue(value, missingCount)}</div>
+    </div>
+  )
+}
+
+function StatusLayout({
+  castName,
+  year,
+  month,
+  children,
+}: {
+  castName: string
+  year: number
+  month: number
+  children: ReactNode
+}) {
+  return (
+    <div className="space-y-6">
+      <PerformanceHeader castName={castName} year={year} month={month} />
+      <Card>
+        <CardContent className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+          {children}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function EmptyBreakdown({ children }: { children: ReactNode }) {
+  return <div className="py-8 text-center text-sm text-muted-foreground">{children}</div>
 }

@@ -13,6 +13,8 @@ import { db } from '@/lib/db'
 import { getExpiringPoints } from '@/lib/point/utils'
 import logger from '@/lib/logger'
 import { hasPermission } from '@/lib/auth/permissions'
+import { canAdminAccessStore } from '@/lib/auth/store-access'
+import { ensureStoreId, resolveStoreId } from '@/lib/store/server'
 
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -34,9 +36,24 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
+  let adminStoreId: string | undefined
+  if (isAdmin) {
+    try {
+      adminStoreId = await ensureStoreId(await resolveStoreId(request))
+    } catch {
+      return NextResponse.json({ error: '店舗を確認してください' }, { status: 400 })
+    }
+    if (!canAdminAccessStore(session.user, adminStoreId)) {
+      return NextResponse.json({ error: 'この店舗を操作する権限がありません' }, { status: 403 })
+    }
+  }
+
   try {
     const customer = await db.customer.findUnique({
-      where: { id: customerId },
+      where: {
+        id: customerId,
+        ...(adminStoreId ? { storeAssignments: { some: { storeId: adminStoreId } } } : {}),
+      },
       select: { points: true },
     })
 

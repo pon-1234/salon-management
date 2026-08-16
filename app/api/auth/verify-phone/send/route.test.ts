@@ -53,7 +53,7 @@ describe('POST /api/auth/verify-phone/send', () => {
     } as never)
     vi.mocked(db.customer.findUnique).mockResolvedValue({
       id: 'customer-1',
-      phone: '09012345678',
+      phone: '+819012345678',
     } as never)
     vi.mocked(smsClient.send).mockResolvedValue({ success: true, id: 'sms-1' })
     vi.mocked(db.customer.update).mockResolvedValue({} as never)
@@ -67,7 +67,7 @@ describe('POST /api/auth/verify-phone/send', () => {
 
     expect(response.status).toBe(200)
     expect(smsClient.send).toHaveBeenCalledWith({
-      to: '09012345678',
+      to: '+819012345678',
       message: expect.stringContaining('123456'),
     })
     expect(vi.mocked(smsClient.send).mock.invocationCallOrder[0]).toBeLessThan(
@@ -82,6 +82,33 @@ describe('POST /api/auth/verify-phone/send', () => {
       },
     })
   })
+
+  it.each(['0901234567', '0501234567', '03123456789', '01201234567', '05701234567', '0800123456'])(
+    'rejects a legacy lookup-compatible but non-deliverable phone before SMS: %s',
+    async (phone) => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: { id: 'customer-1', role: 'customer' },
+      } as never)
+      vi.mocked(db.customer.findUnique).mockResolvedValue({
+        id: 'customer-1',
+        phone,
+      } as never)
+
+      const response = await POST(
+        new NextRequest('http://localhost/api/auth/verify-phone/send', {
+          method: 'POST',
+          body: JSON.stringify({}),
+        })
+      )
+
+      expect(response.status).toBe(400)
+      await expect(response.json()).resolves.toEqual({
+        error: '登録電話番号を確認できません。',
+      })
+      expect(smsClient.send).not.toHaveBeenCalled()
+      expect(db.customer.update).not.toHaveBeenCalled()
+    }
+  )
 
   it('does not leave a usable database code when SMS delivery fails', async () => {
     vi.mocked(getServerSession).mockResolvedValue({

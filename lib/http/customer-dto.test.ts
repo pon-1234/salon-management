@@ -4,7 +4,11 @@
  * @known_issues None currently
  */
 import { describe, expect, it } from 'vitest'
-import { sanitizeCustomerReservationResponse, sanitizeCustomerSelfResponse } from './customer-dto'
+import {
+  sanitizeCustomerAdminDetailResponse,
+  sanitizeCustomerReservationResponse,
+  sanitizeCustomerSelfResponse,
+} from './customer-dto'
 
 const internalReservation = {
   id: 'reservation-1',
@@ -154,5 +158,22 @@ describe('sanitizeCustomerSelfResponse', () => {
     expect(JSON.stringify(result)).not.toMatch(
       /password-secret|reset-secret|654321|internalRiskScore|staff-only note|moderationMemo|loginEmail|lineUserId|welfareExpenseRate|storeRevenue|staffRevenue|storeShare|castShare/
     )
+  })
+})
+
+describe('sanitizeCustomerAdminDetailResponse', () => {
+  it('omits the reservation relation when reservation access was not authorized', () => {
+    const result = sanitizeCustomerAdminDetailResponse(
+      {
+        id: 'customer-1',
+        name: '顧客',
+        phone: '09012345678',
+        reservations: [internalReservation],
+      },
+      { includeReservationOperations: false }
+    )
+
+    expect(result).toMatchObject({ id: 'customer-1', name: '顧客', phone: '09012345678' })
+    expect(result).not.toHaveProperty('reservations')
   })
 })

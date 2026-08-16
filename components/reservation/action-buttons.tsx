@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Admin reservation timeline creation controls
+ * @related_to   CustomerSelectionDialog and ReservationPageContent
+ * @known_issues None
+ */
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { RefreshCw, Filter, UserPlus, UserMinus } from 'lucide-react'
@@ -9,6 +14,7 @@ interface ActionButtonsProps {
   onFilter: () => void
   onCustomerSelect: (customer: Customer | null) => void
   selectedCustomer: Customer | null
+  canCreateReservation: boolean
 }
 
 export function ActionButtons({
@@ -16,6 +22,7 @@ export function ActionButtons({
   onFilter,
   onCustomerSelect,
   selectedCustomer,
+  canCreateReservation,
 }: ActionButtonsProps) {
   const [showCustomerDialog, setShowCustomerDialog] = useState(false)
 
@@ -35,21 +42,23 @@ export function ActionButtons({
             <UserMinus className="mr-2 h-4 w-4" />
             顧客選択を解除
           </Button>
-        ) : (
+        ) : canCreateReservation ? (
           <Button onClick={() => setShowCustomerDialog(true)} variant="outline" size="sm">
             <UserPlus className="mr-2 h-4 w-4" />
             この顧客で予約を取る
           </Button>
-        )}
+        ) : null}
       </div>
-      <CustomerSelectionDialog
-        open={showCustomerDialog}
-        onOpenChange={setShowCustomerDialog}
-        onSelectCustomer={(customer) => {
-          onCustomerSelect(customer)
-          setShowCustomerDialog(false)
-        }}
-      />
+      {canCreateReservation ? (
+        <CustomerSelectionDialog
+          open={showCustomerDialog}
+          onOpenChange={setShowCustomerDialog}
+          onSelectCustomer={(customer) => {
+            onCustomerSelect(customer)
+            setShowCustomerDialog(false)
+          }}
+        />
+      ) : null}
     </div>
   )
 }

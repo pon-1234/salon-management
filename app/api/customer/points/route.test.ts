@@ -8,6 +8,8 @@ import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { GET } from './route'
 import { db } from '@/lib/db'
+import { canAdminAccessStore } from '@/lib/auth/store-access'
+import { ensureStoreId, resolveStoreId } from '@/lib/store/server'
 
 vi.mock('next-auth', () => ({
   getServerSession: vi.fn(),
@@ -23,7 +25,14 @@ vi.mock('@/lib/db', () => ({
       findMany: vi.fn(),
       count: vi.fn(),
     },
+    customerStoreAssignment: { findUnique: vi.fn() },
   },
+}))
+
+vi.mock('@/lib/auth/store-access', () => ({ canAdminAccessStore: vi.fn() }))
+vi.mock('@/lib/store/server', () => ({
+  ensureStoreId: vi.fn(),
+  resolveStoreId: vi.fn(),
 }))
 
 vi.mock('@/lib/logger', () => ({
@@ -37,6 +46,12 @@ vi.mock('@/lib/logger', () => ({
 describe('GET /api/customer/points', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(resolveStoreId).mockResolvedValue('ikebukuro')
+    vi.mocked(ensureStoreId).mockResolvedValue('store-ikebukuro')
+    vi.mocked(canAdminAccessStore).mockReturnValue(true)
+    vi.mocked(db.customerStoreAssignment.findUnique).mockResolvedValue({
+      customerId: 'cust-1',
+    } as any)
   })
 
   it('allows admin users to view any customer history', async () => {
@@ -72,6 +87,28 @@ describe('GET /api/customer/points', () => {
     expect(Array.isArray(data.data)).toBe(true)
     expect(data.pagination.total).toBe(1)
     expect(db.customerPointHistory.findMany).toHaveBeenCalled()
+    expect(db.customerStoreAssignment.findUnique).toHaveBeenCalledWith({
+      where: {
+        customerId_storeId: { customerId: 'cust-1', storeId: 'store-ikebukuro' },
+      },
+      select: { customerId: true },
+    })
+  })
+
+  it('does not reveal another store customer history to an administrator', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: 'admin', role: 'admin', permissions: ['customer:read'] },
+    } as any)
+    vi.mocked(db.customerStoreAssignment.findUnique).mockResolvedValueOnce(null)
+
+    const response = await GET(
+      new NextRequest(
+        'http://localhost:3000/api/customer/points?customerId=cust-1&storeId=ikebukuro'
+      )
+    )
+
+    expect(response.status).toBe(404)
+    expect(db.customerPointHistory.findMany).not.toHaveBeenCalled()
   })
 
   it('rejects an admin without customer:read permission', async () => {

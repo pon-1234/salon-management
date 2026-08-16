@@ -24,6 +24,7 @@ declare module 'next-auth' {
       permissions?: string[]
       storeId?: string
       storeIds?: string[]
+      storeSlugs?: string[]
       image?: string | null
     }
   }
@@ -37,6 +38,7 @@ declare module 'next-auth' {
     permissions?: string[]
     storeId?: string
     storeIds?: string[]
+    storeSlugs?: string[]
     image?: string | null
   }
 }
@@ -49,6 +51,7 @@ declare module 'next-auth/jwt' {
     permissions?: string[]
     storeId?: string
     storeIds?: string[]
+    storeSlugs?: string[]
     image?: string | null
   }
 }
@@ -83,7 +86,10 @@ export const authOptions: NextAuthOptions = {
             where: { email },
             include: {
               storeAssignments: {
-                select: { storeId: true },
+                select: {
+                  storeId: true,
+                  store: { select: { slug: true } },
+                },
                 orderBy: { storeId: 'asc' },
               },
             },
@@ -136,6 +142,9 @@ export const authOptions: NextAuthOptions = {
             storeIds: Array.isArray(admin.storeAssignments)
               ? admin.storeAssignments.map((assignment) => assignment.storeId)
               : [],
+            storeSlugs: Array.isArray(admin.storeAssignments)
+              ? admin.storeAssignments.map((assignment) => assignment.store.slug)
+              : [],
           } as User
         } catch (error) {
           logger.error('Error during admin authentication:', error)
@@ -183,6 +192,16 @@ export const authOptions: NextAuthOptions = {
 
         if (customer) {
           try {
+            if (customer.accountStatus !== 'active') {
+              recordLoginAttempt(rateLimitIdentifier, false)
+              return null
+            }
+
+            if (!customer.password) {
+              recordLoginAttempt(rateLimitIdentifier, false)
+              return null
+            }
+
             const isPasswordValid = await bcrypt.compare(credentials.password, customer.password)
 
             if (!isPasswordValid) {
@@ -199,7 +218,7 @@ export const authOptions: NextAuthOptions = {
 
             return {
               id: customer.id,
-              email: customer.email,
+              email: customer.email ?? normalizedEmail,
               name: customer.name || 'Customer',
               role: 'customer',
             } as User
@@ -294,6 +313,9 @@ export const authOptions: NextAuthOptions = {
         if (user.storeIds) {
           token.storeIds = user.storeIds
         }
+        if (user.storeSlugs) {
+          token.storeSlugs = user.storeSlugs
+        }
       }
       return token
     },
@@ -312,6 +334,9 @@ export const authOptions: NextAuthOptions = {
         }
         if (token.storeIds) {
           session.user.storeIds = token.storeIds
+        }
+        if (token.storeSlugs) {
+          session.user.storeSlugs = token.storeSlugs
         }
       }
       return session

@@ -17,6 +17,10 @@ const serviceMocks = vi.hoisted(() => ({
   getReviewStatsForStore: vi.fn(),
 }))
 
+const storeServerMocks = vi.hoisted(() => ({
+  ensureStoreId: vi.fn(),
+}))
+
 const mockSearchReviews = serviceMocks.searchReviews
 const mockGetReviewById = serviceMocks.getReviewById
 const mockCreateReview = serviceMocks.createReview
@@ -62,6 +66,14 @@ vi.mock('@/lib/reviews/service', () => ({
   ReviewServiceError: MockReviewServiceError,
 }))
 
+vi.mock('@/lib/store/server', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/store/server')>()
+  return {
+    ...actual,
+    ensureStoreId: storeServerMocks.ensureStoreId,
+  }
+})
+
 vi.mock('@/lib/logger', () => ({
   default: {
     error: vi.fn(),
@@ -70,7 +82,8 @@ vi.mock('@/lib/logger', () => ({
 
 describe('Review API', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
+    storeServerMocks.ensureStoreId.mockImplementation((storeId: string) => Promise.resolve(storeId))
   })
 
   describe('GET /api/review', () => {
@@ -122,6 +135,31 @@ describe('Review API', () => {
       expect(mockGetReviewById).not.toHaveBeenCalled()
     })
 
+    it('requires storeId when listing public reviews', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce(null)
+
+      const response = await GET(new NextRequest('http://localhost:3000/api/review'))
+
+      expect(response.status).toBe(400)
+      expect((await response.json()).error).toBe('storeId is required')
+      expect(mockSearchReviews).not.toHaveBeenCalled()
+      expect(mockGetReviewStatsForStore).not.toHaveBeenCalled()
+    })
+
+    it('returns 404 instead of 500 when the production hostname resolves to an unknown store', async () => {
+      storeServerMocks.ensureStoreId.mockRejectedValueOnce(new Error('Unknown store: salon'))
+      vi.mocked(getServerSession).mockResolvedValueOnce(null)
+
+      const response = await GET(
+        new NextRequest('https://salon.c-platinum.com/api/review', { method: 'GET' })
+      )
+
+      expect(response.status).toBe(404)
+      expect(await response.json()).toEqual({ error: 'Unknown store' })
+      expect(mockSearchReviews).not.toHaveBeenCalled()
+      expect(mockGetReviewById).not.toHaveBeenCalled()
+    })
+
     it('keeps identity fields for the customer who owns the review', async () => {
       const review = {
         id: 'review-1',
@@ -147,7 +185,12 @@ describe('Review API', () => {
 
     it('rejects an admin who is not assigned to the requested store', async () => {
       vi.mocked(getServerSession).mockResolvedValueOnce({
-        user: { id: 'admin-1', role: 'admin', storeIds: ['store-2'] },
+        user: {
+          id: 'admin-1',
+          role: 'admin',
+          permissions: ['customer:read'],
+          storeIds: ['store-2'],
+        },
       } as any)
 
       const response = await GET(
@@ -156,6 +199,74 @@ describe('Review API', () => {
 
       expect(response.status).toBe(403)
       expect(mockSearchReviews).not.toHaveBeenCalled()
+    })
+
+    it('rejects an assigned admin without customer:read before loading review data', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: { id: 'admin-1', role: 'admin', permissions: [], storeIds: ['store-1'] },
+      } as any)
+
+      const response = await GET(
+        new NextRequest('http://localhost:3000/api/review?storeId=store-1&status=all')
+      )
+
+      expect(response.status).toBe(403)
+      expect(mockSearchReviews).not.toHaveBeenCalled()
+      expect(mockGetReviewById).not.toHaveBeenCalled()
+    })
+
+    it('canonicalizes a store slug before admin access and list service calls', async () => {
+      const stats = {
+        totalReviews: 0,
+        averageRating: 0,
+        ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+        popularTags: [],
+      }
+      storeServerMocks.ensureStoreId.mockResolvedValueOnce('uat-ikebukuro')
+      mockSearchReviews.mockResolvedValueOnce([])
+      mockGetReviewStatsForStore.mockResolvedValueOnce(stats)
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: {
+          id: 'admin-1',
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['customer:read'],
+          storeIds: ['uat-ikebukuro'],
+        },
+      } as any)
+
+      const response = await GET(
+        new NextRequest('http://localhost:3000/api/review?store=ikebukuro&stats=true&status=all')
+      )
+
+      expect(response.status).toBe(200)
+      expect(storeServerMocks.ensureStoreId).toHaveBeenCalledWith('ikebukuro')
+      expect(mockSearchReviews).toHaveBeenCalledWith(
+        expect.objectContaining({ storeId: 'uat-ikebukuro' })
+      )
+      expect(mockGetReviewStatsForStore).toHaveBeenCalledWith('uat-ikebukuro', undefined)
+    })
+
+    it('canonicalizes a store slug before fetching a review by id', async () => {
+      storeServerMocks.ensureStoreId.mockResolvedValueOnce('uat-ikebukuro')
+      mockGetReviewById.mockResolvedValueOnce({
+        id: 'review-1',
+        storeId: 'uat-ikebukuro',
+        reservationId: 'reservation-1',
+        customerId: 'customer-1',
+        customerName: '山田 花子',
+        customerAlias: '山***',
+        status: 'published',
+      })
+      vi.mocked(getServerSession).mockResolvedValueOnce(null)
+
+      const response = await GET(
+        new NextRequest('http://localhost:3000/api/review?id=review-1&storeId=ikebukuro')
+      )
+
+      expect(response.status).toBe(200)
+      expect(storeServerMocks.ensureStoreId).toHaveBeenCalledWith('ikebukuro')
+      expect(mockGetReviewById).toHaveBeenCalledWith('review-1', 'uat-ikebukuro')
     })
 
     it('filters to published reviews for unauthenticated audience', async () => {
@@ -241,9 +352,12 @@ describe('Review API', () => {
         user: { id: 'customer-1', role: 'customer' },
       } as any)
 
-      const request = new NextRequest('http://localhost:3000/api/review?customerId=customer-2', {
-        method: 'GET',
-      })
+      const request = new NextRequest(
+        'http://localhost:3000/api/review?storeId=store-1&customerId=customer-2',
+        {
+          method: 'GET',
+        }
+      )
 
       const response = await GET(request)
       const data = await response.json()
@@ -301,6 +415,64 @@ describe('Review API', () => {
         actorId: 'customer-1',
         actorRole: 'customer',
       })
+    })
+
+    it('canonicalizes a store slug before admin access and review creation', async () => {
+      storeServerMocks.ensureStoreId.mockResolvedValueOnce('uat-ikebukuro')
+      mockCreateReview.mockResolvedValueOnce({ id: 'review-123' })
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: {
+          id: 'admin-1',
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['customer:update'],
+          storeIds: ['uat-ikebukuro'],
+        },
+      } as any)
+
+      const response = await POST(
+        new NextRequest('http://localhost:3000/api/review', {
+          method: 'POST',
+          headers: { 'x-store-id': 'ikebukuro' },
+          body: JSON.stringify({
+            reservationId: 'reservation-1',
+            rating: 5,
+            comment: 'Great',
+          }),
+        })
+      )
+
+      expect(response.status).toBe(201)
+      expect(storeServerMocks.ensureStoreId).toHaveBeenCalledWith('ikebukuro')
+      expect(mockCreateReview).toHaveBeenCalledWith(
+        expect.objectContaining({ storeId: 'uat-ikebukuro', actorRole: 'admin' })
+      )
+    })
+
+    it('rejects an assigned admin without review moderation permission before creation', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: {
+          id: 'admin-1',
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['customer:read'],
+          storeIds: ['store-1'],
+        },
+      } as any)
+
+      const response = await POST(
+        new NextRequest('http://localhost:3000/api/review?storeId=store-1', {
+          method: 'POST',
+          body: JSON.stringify({
+            reservationId: 'reservation-1',
+            rating: 5,
+            comment: 'Great',
+          }),
+        })
+      )
+
+      expect(response.status).toBe(403)
+      expect(mockCreateReview).not.toHaveBeenCalled()
     })
 
     it('requires storeId before creating a review', async () => {
@@ -382,6 +554,55 @@ describe('Review API', () => {
       })
     })
 
+    it('canonicalizes a store slug before admin access and review update', async () => {
+      storeServerMocks.ensureStoreId.mockResolvedValueOnce('uat-ikebukuro')
+      mockUpdateReview.mockResolvedValueOnce({ id: 'review-1', rating: 4 })
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: {
+          id: 'admin-1',
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['customer:update'],
+          storeIds: ['uat-ikebukuro'],
+        },
+      } as any)
+
+      const response = await PUT(
+        new NextRequest('http://localhost:3000/api/review?store=ikebukuro', {
+          method: 'PUT',
+          body: JSON.stringify({ id: 'review-1', rating: 4 }),
+        })
+      )
+
+      expect(response.status).toBe(200)
+      expect(storeServerMocks.ensureStoreId).toHaveBeenCalledWith('ikebukuro')
+      expect(mockUpdateReview).toHaveBeenCalledWith(
+        expect.objectContaining({ storeId: 'uat-ikebukuro', actorRole: 'admin' })
+      )
+    })
+
+    it('rejects an assigned admin without review moderation permission before update', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: {
+          id: 'admin-1',
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['customer:read'],
+          storeIds: ['store-1'],
+        },
+      } as any)
+
+      const response = await PUT(
+        new NextRequest('http://localhost:3000/api/review?storeId=store-1', {
+          method: 'PUT',
+          body: JSON.stringify({ id: 'review-1', rating: 4 }),
+        })
+      )
+
+      expect(response.status).toBe(403)
+      expect(mockUpdateReview).not.toHaveBeenCalled()
+    })
+
     it('returns service error mapping', async () => {
       vi.mocked(getServerSession).mockResolvedValueOnce({
         user: { id: 'customer-1', role: 'customer' },
@@ -426,7 +647,12 @@ describe('Review API', () => {
   describe('DELETE /api/review', () => {
     it('deletes review for admin user', async () => {
       vi.mocked(getServerSession).mockResolvedValueOnce({
-        user: { id: 'admin-1', role: 'admin', adminRole: 'super_admin' },
+        user: {
+          id: 'admin-1',
+          role: 'admin',
+          adminRole: 'super_admin',
+          permissions: ['customer:update'],
+        },
       } as any)
       mockDeleteReview.mockResolvedValueOnce(undefined)
 
@@ -448,9 +674,83 @@ describe('Review API', () => {
       })
     })
 
+    it('canonicalizes a store slug before admin access and review deletion', async () => {
+      storeServerMocks.ensureStoreId.mockResolvedValueOnce('uat-ikebukuro')
+      mockDeleteReview.mockResolvedValueOnce(undefined)
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: {
+          id: 'admin-1',
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['customer:update'],
+          storeIds: ['uat-ikebukuro'],
+        },
+      } as any)
+
+      const response = await DELETE(
+        new NextRequest('http://localhost:3000/api/review?id=review-1', {
+          method: 'DELETE',
+          headers: { 'x-store-id': 'ikebukuro' },
+        })
+      )
+
+      expect(response.status).toBe(204)
+      expect(storeServerMocks.ensureStoreId).toHaveBeenCalledWith('ikebukuro')
+      expect(mockDeleteReview).toHaveBeenCalledWith(
+        expect.objectContaining({ storeId: 'uat-ikebukuro', actorRole: 'admin' })
+      )
+    })
+
+    it('rejects an assigned admin without review moderation permission before deletion', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: {
+          id: 'admin-1',
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['customer:read'],
+          storeIds: ['store-1'],
+        },
+      } as any)
+
+      const response = await DELETE(
+        new NextRequest('http://localhost:3000/api/review?id=review-1&storeId=store-1', {
+          method: 'DELETE',
+        })
+      )
+
+      expect(response.status).toBe(403)
+      expect(mockDeleteReview).not.toHaveBeenCalled()
+    })
+
+    it('keeps customer-owned deletion independent of admin moderation permission', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: { id: 'customer-1', role: 'customer' },
+      } as any)
+      mockDeleteReview.mockResolvedValueOnce(undefined)
+
+      const response = await DELETE(
+        new NextRequest('http://localhost:3000/api/review?id=review-1&storeId=store-1', {
+          method: 'DELETE',
+        })
+      )
+
+      expect(response.status).toBe(204)
+      expect(mockDeleteReview).toHaveBeenCalledWith({
+        id: 'review-1',
+        storeId: 'store-1',
+        actorId: 'customer-1',
+        actorRole: 'customer',
+      })
+    })
+
     it('maps delete errors appropriately', async () => {
       vi.mocked(getServerSession).mockResolvedValueOnce({
-        user: { id: 'admin-1', role: 'admin', adminRole: 'super_admin' },
+        user: {
+          id: 'admin-1',
+          role: 'admin',
+          adminRole: 'super_admin',
+          permissions: ['customer:update'],
+        },
       } as any)
       mockDeleteReview.mockRejectedValueOnce(
         new MockReviewServiceError('REVIEW_NOT_FOUND', 'Missing review')
@@ -472,7 +772,12 @@ describe('Review API', () => {
 
     it('requires storeId before deleting a review', async () => {
       vi.mocked(getServerSession).mockResolvedValueOnce({
-        user: { id: 'admin-1', role: 'admin', adminRole: 'super_admin' },
+        user: {
+          id: 'admin-1',
+          role: 'admin',
+          adminRole: 'super_admin',
+          permissions: ['customer:update'],
+        },
       } as any)
 
       const response = await DELETE(

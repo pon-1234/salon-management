@@ -29,11 +29,22 @@ import {
 } from '@/lib/reservation/confirmation-chat'
 import { sanitizeReservationCreationInput } from '@/lib/reservation/creation-policy'
 import {
+  normalizeCancellationReason,
+  normalizePaymentReference,
+} from '@/lib/reservation/financial-reference'
+import { resolveCancellationSourceUpdate } from '@/lib/reservation/cancellation-source'
+import {
   ReservationLocationError,
   resolveReservationLocation,
 } from '@/lib/reservation/location-integrity'
 import { ReservationHotelError, resolveReservationHotel } from '@/lib/reservation/hotel-integrity'
 import { canAdminAccessStore } from '@/lib/auth/store-access'
+import { isReservationStartBoundary } from '@/lib/reservation/time-boundary'
+import { reservationStartBoundaryErrorResponse } from '@/lib/reservation/time-boundary-response'
+import {
+  InvalidOptionSelectionError,
+  invalidOptionSelectionResponse,
+} from '@/lib/reservation/option-selection-error'
 import {
   formatCurrency,
   formatDesignation,
@@ -76,23 +87,6 @@ const NON_NEGATIVE_FINANCIAL_UPDATE_FIELDS = [
 // The customer UI directs every post-booking change to the store; cancellation uses DELETE.
 // Keep this deny-by-default allowlist explicit so future customer-editable fields require review.
 const CUSTOMER_RESERVATION_UPDATE_FIELDS = new Set<string>()
-
-class InvalidOptionSelectionError extends Error {
-  constructor(readonly missingOptions: string[]) {
-    super('Invalid option selection')
-    this.name = 'InvalidOptionSelectionError'
-  }
-}
-
-function invalidOptionSelectionResponse(error: InvalidOptionSelectionError) {
-  return NextResponse.json(
-    {
-      error: '選択されたオプションが存在しません。',
-      missingOptions: error.missingOptions,
-    },
-    { status: 400 }
-  )
-}
 
 async function sendReservationConfirmedChatMessage(
   reservation: any,
@@ -278,16 +272,26 @@ export async function GET(request: NextRequest) {
 
     // フィルタリング
     const castId = searchParams.get('castId')
+    const customerId = searchParams.get('customerId')
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
     const status = searchParams.get('status')
 
     if (castId) where.castId = castId
-    if (status) where.status = status
+    if (isAdmin && customerId) where.customerId = customerId
+    if (status) {
+      if (status === 'active') {
+        where.status = { not: 'cancelled' }
+      } else if (status === 'adjusting') {
+        where.status = { in: ['pending', 'tentative', 'modifiable'] }
+      } else {
+        where.status = status
+      }
+    }
     if (startDate && endDate) {
       where.startTime = {
         gte: new Date(startDate),
-        lte: new Date(endDate),
+        lt: new Date(endDate),
       }
     }
 
@@ -353,7 +357,11 @@ export async function POST(request: NextRequest) {
     if (session.user.role !== 'admin' && session.user.role !== 'customer') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
-    if (isAdmin && !hasPermission(session.user.permissions ?? [], 'reservation:create')) {
+    if (
+      isAdmin &&
+      (!hasPermission(session.user.permissions ?? [], 'reservation:create') ||
+        !hasPermission(session.user.permissions ?? [], 'customer:read'))
+    ) {
       return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
     }
     if (isAdmin && !canAdminAccessStore(session.user, storeId)) {
@@ -414,6 +422,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid date format' }, { status: 400 })
     }
 
+    if (!isReservationStartBoundary(startTime)) return reservationStartBoundaryErrorResponse()
+
     if (endTime <= startTime) {
       return NextResponse.json({ error: 'End time must be after start time' }, { status: 400 })
     }
@@ -426,7 +436,10 @@ export async function POST(request: NextRequest) {
     const [castRecord, customerRecord, courseRecord, storeSettings] = await Promise.all([
       db.cast.findFirst({ where: { id: reservationData.castId, storeId } }),
       db.customer.findUnique({
-        where: { id: targetCustomerId },
+        where: {
+          id: targetCustomerId,
+          storeAssignments: { some: { storeId } },
+        },
         include: {
           ngCasts: {
             select: { castId: true, assignedBy: true },
@@ -580,6 +593,20 @@ export async function POST(request: NextRequest) {
       paymentMethodToPersist = normalized
     }
 
+    let paymentReferenceToPersist: string | null = null
+    if (isAdmin && paymentMethodToPersist === PAYMENT_METHODS.CARD) {
+      try {
+        paymentReferenceToPersist = normalizePaymentReference(reservationData.paymentReference)
+      } catch {
+        return NextResponse.json(
+          {
+            error: 'カード決済の管理番号を入力してください。カード番号は入力しないでください。',
+          },
+          { status: 400 }
+        )
+      }
+    }
+
     // 事前の空き状況チェック（早期リターン）
     const preflightAvailability = await checkCastAvailability(
       storeId,
@@ -701,6 +728,10 @@ export async function POST(request: NextRequest) {
 
         const revenueInputBase = {
           basePrice: Number(courseRecord.price ?? 0),
+          course: {
+            storeShare: courseRecord.storeShare,
+            castShare: courseRecord.castShare,
+          },
           options: optionsToCreate.map((option) => ({
             price: option.optionPrice,
             storeShare: option.storeShare ?? undefined,
@@ -734,32 +765,8 @@ export async function POST(request: NextRequest) {
               })
             : baseRevenue
 
-        const providedStoreRevenue =
-          typeof reservationData.storeRevenue === 'number' &&
-          Number.isFinite(reservationData.storeRevenue)
-            ? reservationData.storeRevenue
-            : null
-
-        let storeRevenue =
-          providedStoreRevenue !== null
-            ? Math.max(providedStoreRevenue, revenue.storeRevenue)
-            : revenue.storeRevenue
-
-        if (storeRevenue > revenue.total) {
-          storeRevenue = revenue.total
-        }
-
-        let staffRevenue =
-          typeof reservationData.staffRevenue === 'number' &&
-          Number.isFinite(reservationData.staffRevenue)
-            ? reservationData.staffRevenue
-            : revenue.staffRevenue
-
-        if (providedStoreRevenue !== null && providedStoreRevenue < revenue.storeRevenue) {
-          staffRevenue = Math.max(revenue.total - storeRevenue, 0)
-        } else if (!Number.isFinite(staffRevenue) || staffRevenue < 0) {
-          staffRevenue = Math.max(revenue.total - storeRevenue, 0)
-        }
+        const storeRevenue = Math.min(revenue.storeRevenue, revenue.total)
+        const staffRevenue = revenue.staffRevenue
 
         const createdReservation = await tx.reservation.create({
           data: {
@@ -768,7 +775,7 @@ export async function POST(request: NextRequest) {
             courseId: reservationData.courseId,
             storeId,
             status: reservationData.status ?? 'pending',
-            price: reservationData.price ?? revenue.total,
+            price: revenue.total,
             designationType: reservationData.designationType ?? null,
             designationFee: designationAmount,
             transportationFee: reservationData.transportationFee ?? 0,
@@ -776,6 +783,7 @@ export async function POST(request: NextRequest) {
             discountAmount: manualDiscountAmount,
             pointsUsed: pointsToUse,
             paymentMethod: paymentMethodToPersist,
+            paymentReference: paymentReferenceToPersist,
             marketingChannel: reservationData.marketingChannel ?? null,
             areaId: resolvedAreaId,
             stationId: resolvedStationId,
@@ -925,6 +933,29 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    const cancellationSourceResolution = resolveCancellationSourceUpdate(
+      updates,
+      isAdmin ? 'store' : 'customer'
+    )
+    if (!cancellationSourceResolution.ok) {
+      return NextResponse.json(
+        { error: 'キャンセル元は店舗または顧客を指定してください。' },
+        { status: 400 }
+      )
+    }
+    const cancellationSourceToPersist = cancellationSourceResolution.value
+
+    let cancellationReasonToPersist: string | null | undefined
+    if (isAdmin && updates.status === 'cancelled') {
+      try {
+        cancellationReasonToPersist = normalizeCancellationReason(updates.cancellationReason)
+      } catch {
+        return NextResponse.json({ error: 'キャンセル理由を入力してください。' }, { status: 400 })
+      }
+    } else if (updates.status && updates.status !== 'cancelled') {
+      cancellationReasonToPersist = null
+    }
+
     const existingReservation = await db.reservation.findUnique({
       where: { id },
       include: {
@@ -959,12 +990,16 @@ export async function PUT(request: NextRequest) {
     }
     const normalizedStoreId = storeId?.trim().toLowerCase()
     const storeIdParam = request.nextUrl.searchParams.get('storeId')
-    if (
-      storeIdParam &&
-      normalizedStoreId &&
-      storeIdParam.trim().toLowerCase() !== normalizedStoreId
-    ) {
-      return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
+    if (storeIdParam && normalizedStoreId) {
+      let requestedCanonicalStoreId: string
+      try {
+        requestedCanonicalStoreId = await ensureStoreId(storeIdParam)
+      } catch {
+        return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
+      }
+      if (requestedCanonicalStoreId !== normalizedStoreId) {
+        return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
+      }
     }
 
     // Check if reservation is modifiable
@@ -1003,6 +1038,30 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    const nextPaymentMethod = requestedPaymentMethod ?? previousPaymentNormalized
+    let nextPaymentReference = existingReservation.paymentReference ?? null
+    if (nextPaymentMethod === PAYMENT_METHODS.CASH) {
+      nextPaymentReference = null
+    } else if (Object.prototype.hasOwnProperty.call(updates, 'paymentReference')) {
+      try {
+        nextPaymentReference = normalizePaymentReference(updates.paymentReference)
+      } catch {
+        return NextResponse.json(
+          {
+            error: 'カード決済の管理番号を入力してください。カード番号は入力しないでください。',
+          },
+          { status: 400 }
+        )
+      }
+    } else if (requestedPaymentMethod === PAYMENT_METHODS.CARD && !nextPaymentReference) {
+      return NextResponse.json(
+        {
+          error: 'カード決済の管理番号を入力してください。カード番号は入力しないでください。',
+        },
+        { status: 400 }
+      )
+    }
+
     const hasRequestedStartTime = Boolean(updates.startTime)
     const hasRequestedEndTime = Boolean(updates.endTime)
     const requestedStartTime = hasRequestedStartTime ? new Date(updates.startTime) : null
@@ -1032,6 +1091,10 @@ export async function PUT(request: NextRequest) {
       requestedEndTime !== null &&
       requestedEndTime.getTime() !== existingReservation.endTime.getTime()
     const changesTime = startTimeChanged || endTimeChanged
+
+    if (startTimeChanged && !isReservationStartBoundary(nextStartTime))
+      return reservationStartBoundaryErrorResponse()
+
     const changesAssignmentOrTime = castChanged || changesTime
     const nextCastId = castChanged ? updates.castId : existingReservation.castId
 
@@ -1192,8 +1255,6 @@ export async function PUT(request: NextRequest) {
 
       let effectiveCast = previousReservation.cast ?? null
       let effectiveCourse = previousReservation.course ?? null
-      let nextPaymentMethod = requestedPaymentMethod ?? previousPaymentNormalized
-
       // 予約を更新
       const updateData: Record<string, unknown> = {}
 
@@ -1206,13 +1267,12 @@ export async function PUT(request: NextRequest) {
             ? new Date(Date.now() + DEFAULT_VALUES.MODIFICATION_TIMEOUT_MINUTES * 60 * 1000)
             : null
       }
-      if ('cancellationSource' in updates) {
-        updateData.cancellationSource =
-          updates.status === 'cancelled' ? (updates.cancellationSource ?? null) : null
-      } else if (updates.status && updates.status !== 'cancelled') {
-        updateData.cancellationSource = null
+      if (cancellationSourceToPersist !== undefined) {
+        updateData.cancellationSource = cancellationSourceToPersist
       }
-      if (typeof updates.price === 'number') updateData.price = updates.price
+      if (cancellationReasonToPersist !== undefined) {
+        updateData.cancellationReason = cancellationReasonToPersist
+      }
       if ('designationType' in updates) updateData.designationType = updates.designationType ?? null
       if (typeof updates.designationFee === 'number')
         updateData.designationFee = updates.designationFee
@@ -1245,13 +1305,6 @@ export async function PUT(request: NextRequest) {
       if ('locationMemo' in updates) updateData.locationMemo = updates.locationMemo ?? null
       if ('notes' in updates) updateData.notes = updates.notes ?? null
       if ('storeMemo' in updates) updateData.storeMemo = updates.storeMemo ?? null
-      if ('storeRevenue' in updates && typeof updates.storeRevenue === 'number') {
-        updateData.storeRevenue = updates.storeRevenue
-      }
-      if ('staffRevenue' in updates && typeof updates.staffRevenue === 'number') {
-        updateData.staffRevenue = updates.staffRevenue
-      }
-
       if (startTimeChanged) {
         updateData.startTime = nextStartTime
       }
@@ -1297,6 +1350,9 @@ export async function PUT(request: NextRequest) {
 
       if (updates.paymentMethod !== undefined) {
         updateData.paymentMethod = nextPaymentMethod
+        updateData.paymentReference = nextPaymentReference
+      } else if (Object.prototype.hasOwnProperty.call(updates, 'paymentReference')) {
+        updateData.paymentReference = nextPaymentReference
       }
 
       if (shouldRecalculateRevenue) {
@@ -1377,6 +1433,11 @@ export async function PUT(request: NextRequest) {
 
         const revenueInputBase = {
           basePrice: baseCoursePrice,
+          course: {
+            storeShare:
+              effectiveCourse?.storeShare ?? previousReservation.course?.storeShare ?? null,
+            castShare: effectiveCourse?.castShare ?? previousReservation.course?.castShare ?? null,
+          },
           options: currentOptionShares,
           designation:
             designationAmount > 0
@@ -1400,39 +1461,9 @@ export async function PUT(request: NextRequest) {
               })
             : calculateReservationRevenue(revenueInputBase)
 
-        const providedStoreRevenue =
-          typeof updates.storeRevenue === 'number' && Number.isFinite(updates.storeRevenue)
-            ? updates.storeRevenue
-            : null
-
-        let storeRevenue =
-          providedStoreRevenue !== null
-            ? Math.max(providedStoreRevenue, revenue.storeRevenue)
-            : revenue.storeRevenue
-
-        if (storeRevenue > revenue.total) {
-          storeRevenue = revenue.total
-        }
-
-        const providedStaffRevenue =
-          typeof updates.staffRevenue === 'number' && Number.isFinite(updates.staffRevenue)
-            ? updates.staffRevenue
-            : null
-        let staffRevenue =
-          providedStaffRevenue !== null ? providedStaffRevenue : revenue.staffRevenue
-
-        if (providedStoreRevenue !== null && providedStoreRevenue < revenue.storeRevenue) {
-          staffRevenue = Math.max(revenue.total - storeRevenue, 0)
-        } else if (!Number.isFinite(staffRevenue) || staffRevenue < 0) {
-          staffRevenue = Math.max(revenue.total - storeRevenue, 0)
-        }
-
-        if (typeof updates.price !== 'number') {
-          updateData.price = revenue.total
-        }
-
-        updateData.storeRevenue = storeRevenue
-        updateData.staffRevenue = staffRevenue
+        updateData.price = revenue.total
+        updateData.storeRevenue = Math.min(revenue.storeRevenue, revenue.total)
+        updateData.staffRevenue = revenue.staffRevenue
         updateData.welfareExpense = revenue.welfareExpense
       }
 

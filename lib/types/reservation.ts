@@ -34,6 +34,7 @@ export interface Reservation extends BaseEntity {
   storeRevenue?: number
   staffRevenue?: number
   paymentMethod?: string
+  paymentReference?: string | null
   marketingChannel?: string
   areaId?: string | null
   areaName?: string
@@ -56,6 +57,7 @@ export interface Reservation extends BaseEntity {
   castCheckedInAt?: Date | null
   castCheckedOutAt?: Date | null
   cancellationSource?: 'customer' | 'store' | null
+  cancellationReason?: string | null
   options?: Array<{
     id?: string
     reservationId?: string
@@ -106,6 +108,7 @@ export interface ReservationData {
   options: Record<string, boolean>
   transportationFee: number
   paymentMethod: string
+  paymentReference?: string | null
   discount: string
   additionalFee: number
   discountAmount?: number
@@ -140,6 +143,8 @@ export interface ReservationData {
   castCheckedInAt?: Date | null
   castCheckedOutAt?: Date | null
   pointsUsed?: number
+  cancellationSource?: 'customer' | 'store' | null
+  cancellationReason?: string | null
 }
 
 export interface ReservationUpdatePayload {
@@ -149,6 +154,7 @@ export interface ReservationUpdatePayload {
   courseId?: string
   status?: ReservationStatus
   cancellationSource?: 'customer' | 'store' | null
+  cancellationReason?: string | null
   notes?: string
   storeMemo?: string
   price?: number
@@ -161,6 +167,7 @@ export interface ReservationUpdatePayload {
   storeRevenue?: number
   staffRevenue?: number
   paymentMethod?: string
+  paymentReference?: string | null
   marketingChannel?: string
   areaId?: string | null
   stationId?: string | null
@@ -177,6 +184,7 @@ export interface ReservationUpdatePayload {
 export interface ReservationStatusUpdatePayload {
   status: ReservationStatus
   cancellationSource?: 'customer' | 'store' | null
+  cancellationReason?: string | null
 }
 
 export type ReservationSavePayload = ReservationUpdatePayload | ReservationStatusUpdatePayload

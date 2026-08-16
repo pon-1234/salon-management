@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Selected-customer context for reservation creation
+ * @related_to   ActionButtons and ReservationPageContent
+ * @known_issues None
+ */
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { InfoIcon } from 'lucide-react'
 
@@ -21,7 +26,7 @@ export function InfoBar({ selectedCustomer }: InfoBarProps) {
     <Alert className="border-yellow-200 bg-yellow-50 text-yellow-800">
       <AlertDescription className="flex items-center">
         <InfoIcon className="mr-2 h-4 w-4" />
-        顧客が未選択です。『この顧客で予約を取る』ボタンから顧客を選択すると、簡単予約が可能になります。
+        顧客が未選択です。『この顧客で予約を取る』ボタンから顧客を選択すると、予約作成ができます。
       </AlertDescription>
     </Alert>
   )

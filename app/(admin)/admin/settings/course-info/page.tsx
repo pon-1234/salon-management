@@ -28,7 +28,7 @@ import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { getPricingUseCases } from '@/lib/pricing'
 import type { CoursePrice } from '@/lib/pricing/types'
 import { useStore } from '@/contexts/store-context'
-import { ArrowLeft, BookOpen, Clock, DollarSign, Edit, Plus, RefreshCw, Trash2 } from 'lucide-react'
+import { ArrowLeft, BookOpen, Clock, DollarSign, Edit, Plus, Trash2 } from 'lucide-react'
 
 const DEFAULT_STORE_RATIO = 0.6
 
@@ -87,7 +87,6 @@ export default function CourseInfoPage() {
   const { currentStore } = useStore()
   const [courses, setCourses] = useState<CoursePrice[]>([])
   const [loading, setLoading] = useState(true)
-  const [syncing, setSyncing] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingCourse, setEditingCourse] = useState<CoursePrice | null>(null)
   const [formData, setFormData] = useState<CourseFormState>({
@@ -123,25 +122,6 @@ export default function CourseInfoPage() {
   useEffect(() => {
     loadCourses()
   }, [loadCourses])
-
-  const handleSync = async () => {
-    try {
-      setSyncing(true)
-      await pricingUseCases.syncPricing(currentStore.id)
-      toast({
-        title: '同期完了',
-        description: '料金情報が全店舗に同期されました',
-      })
-    } catch (error) {
-      toast({
-        title: 'エラー',
-        description: '同期に失敗しました',
-        variant: 'destructive',
-      })
-    } finally {
-      setSyncing(false)
-    }
-  }
 
   const openCreateDialog = () => {
     setEditingCourse(null)
@@ -293,16 +273,10 @@ export default function CourseInfoPage() {
             backIcon={ArrowLeft}
             icon={BookOpen}
             actions={
-              <>
-                <Button onClick={handleSync} variant="outline" disabled={syncing}>
-                  <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-                  全店舗に同期
-                </Button>
-                <Button onClick={openCreateDialog} className="bg-emerald-600 hover:bg-emerald-700">
-                  <Plus className="mr-2 h-4 w-4" />
-                  新規コース追加
-                </Button>
-              </>
+              <Button onClick={openCreateDialog} className="bg-emerald-600 hover:bg-emerald-700">
+                <Plus className="mr-2 h-4 w-4" />
+                新規コース追加
+              </Button>
             }
           />
 

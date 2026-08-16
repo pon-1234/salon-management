@@ -48,6 +48,7 @@ export interface BookingDetails {
   additionalFee: number
   discountAmount: number
   paymentMethod: string
+  paymentReference: string
   locationMemo: string
   notes: string
 }
@@ -141,4 +142,8 @@ export function getCastAvailableOptions(
     const resolvedOptionId = resolveOptionId(option.id)
     return allowedIds.has(option.id) || allowedIds.has(resolvedOptionId)
   })
+}
+
+export function getUniqueSelectedOptionIds(optionIds: readonly string[]): string[] {
+  return Array.from(new Set(optionIds))
 }

@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge'
 import type { PublicCastSchedule, PublicScheduleDay } from '@/lib/store/public-schedule'
 import { cn } from '@/lib/utils'
 import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
+import { ceilReservationStartDate } from '@/lib/reservation/time-boundary'
 
 const SLOT_MINUTES = 30
 
@@ -44,7 +45,7 @@ interface CastTimelineModalProps {
   onSelectSlot: (castId: string, slotIso: string) => void
 }
 
-function buildTimelineSlots(entry: PublicCastSchedule): TimelineSlot[] {
+export function buildTimelineSlots(entry: PublicCastSchedule): TimelineSlot[] {
   if (!entry.startTime || !entry.endTime) {
     return []
   }
@@ -59,10 +60,15 @@ function buildTimelineSlots(entry: PublicCastSchedule): TimelineSlot[] {
   const now = new Date()
   const reservations = Array.isArray(entry.reservations) ? entry.reservations : []
   const slots: TimelineSlot[] = []
+  const alignedStart = ceilReservationStartDate(start)
 
-  for (let ts = start.getTime(); ts < end.getTime(); ts += SLOT_MINUTES * 60 * 1000) {
+  for (
+    let ts = alignedStart.getTime();
+    ts + SLOT_MINUTES * 60 * 1000 <= end.getTime();
+    ts += SLOT_MINUTES * 60 * 1000
+  ) {
     const slotStart = new Date(ts)
-    const slotEnd = new Date(Math.min(ts + SLOT_MINUTES * 60 * 1000, end.getTime()))
+    const slotEnd = new Date(ts + SLOT_MINUTES * 60 * 1000)
     const hasReservation = reservations.some((reservation) => {
       const resStart = new Date(reservation.startTime)
       const resEnd = new Date(reservation.endTime)

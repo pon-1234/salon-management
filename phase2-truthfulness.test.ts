@@ -47,14 +47,23 @@ describe('phase 2 truthfulness contracts', () => {
     expect(dashboard).toContain("method: 'PUT'")
   })
 
-  it.each(['hp-pricing', 'mutual-links', 'templates'])(
-    'marks the placeholder %s setting as coming soon',
+  it('links HP pricing to persisted course and option management', async () => {
+    const settings = await read('app/(admin)/admin/settings/page.tsx')
+    const hpPricing = settings.match(/id: 'hp-pricing'[\s\S]*?\n    },/)?.[0]
+    const page = await read('app/(admin)/admin/settings/hp-pricing/page.tsx')
+
+    expect(hpPricing).toContain("status: 'available'")
+    expect(hpPricing).toContain("href: '/admin/settings/hp-pricing'")
+    expect(page).toContain("href: '/admin/settings/course-info'")
+    expect(page).toContain("href: '/admin/settings/option-info'")
+  })
+
+  it.each(['mutual-links', 'templates'])(
+    'omits the unavailable %s setting from the management menu',
     async (id) => {
       const source = await read('app/(admin)/admin/settings/page.tsx')
-      const item = source.match(new RegExp(`id: '${id}'[\\s\\S]*?\\n    },`))?.[0]
 
-      expect(item).toContain("status: 'coming-soon'")
-      expect(item).not.toContain('href:')
+      expect(source).not.toContain(`id: '${id}'`)
     }
   )
 

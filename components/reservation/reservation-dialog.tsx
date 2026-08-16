@@ -95,13 +95,21 @@ import { usePricing } from '@/hooks/use-pricing'
 import { useLocations } from '@/hooks/use-locations'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useStore } from '@/contexts/store-context'
-import { calculateReservationRevenue } from '@/lib/reservation/revenue'
+import { normalizePaymentReference } from '@/lib/reservation/financial-reference'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { zonedTimeToUtc } from 'date-fns-tz'
 import { CastTimelineModal } from '@/components/reservation/cast-timeline-modal'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import {
+  isReservationStartBoundary,
+  RESERVATION_START_STEP_SECONDS,
+} from '@/lib/reservation/time-boundary'
+import {
+  DiscardReservationEditDialog,
+  ReservationCancellationDialog,
+} from '@/components/reservation/reservation-cancellation-dialog'
 import {
   PAYMENT_METHOD_OPTIONS,
+  calculateReservationPriceBreakdown,
   formatCurrency,
   formatMinutes,
   normalizeMarketingChannelValue,
@@ -151,6 +159,7 @@ export function ReservationDialog({
     storeMemo: '',
     notes: '',
     paymentMethod: PAYMENT_METHODS.CASH,
+    paymentReference: '',
     marketingChannel: DEFAULT_MARKETING_CHANNELS[0] ?? 'WEB',
     transportationFee: 0,
     additionalFee: 0,
@@ -227,10 +236,12 @@ export function ReservationDialog({
     ReservationStatus | 'completed' | null
   >(null)
   const [cancelReason, setCancelReason] = useState<'customer' | 'store'>('customer')
+  const [cancellationReason, setCancellationReason] = useState('')
   const handleCancelReasonDialogToggle = (open: boolean) => {
     setCancelReasonDialogOpen(open)
     if (!open) {
       setPendingStatusChange(null)
+      setCancellationReason('')
     }
   }
 
@@ -493,7 +504,10 @@ export function ReservationDialog({
   const performStatusUpdate = useCallback(
     async (
       nextStatus: ReservationStatus | 'completed',
-      options?: { cancellationSource?: 'customer' | 'store' }
+      options?: {
+        cancellationSource?: 'customer' | 'store'
+        cancellationReason?: string
+      }
     ) => {
       if (!reservation) {
         return
@@ -509,6 +523,9 @@ export function ReservationDialog({
           status: nextStatus as ReservationStatus,
           ...(options?.cancellationSource
             ? { cancellationSource: options.cancellationSource }
+            : {}),
+          ...(options?.cancellationReason
+            ? { cancellationReason: options.cancellationReason }
             : {}),
         }
         await onSave(reservation.id, statusPayload)
@@ -537,6 +554,7 @@ export function ReservationDialog({
       if (nextStatus === 'cancelled') {
         setPendingStatusChange(nextStatus)
         setCancelReason('customer')
+        setCancellationReason('')
         setCancelReasonDialogOpen(true)
         return
       }
@@ -549,10 +567,13 @@ export function ReservationDialog({
     if (!pendingStatusChange) {
       return
     }
-    await performStatusUpdate(pendingStatusChange, { cancellationSource: cancelReason })
+    await performStatusUpdate(pendingStatusChange, {
+      cancellationSource: cancelReason,
+      cancellationReason: cancellationReason.trim(),
+    })
     setCancelReasonDialogOpen(false)
     setPendingStatusChange(null)
-  }, [cancelReason, pendingStatusChange, performStatusUpdate])
+  }, [cancelReason, cancellationReason, pendingStatusChange, performStatusUpdate])
 
   useEffect(() => {
     if (casts && casts.length > 0) {
@@ -628,7 +649,7 @@ export function ReservationDialog({
       setCustomerNgLoading(true)
       try {
         const response = await fetch(
-          `/api/customer?id=${encodeURIComponent(reservation.customerId)}`,
+          `/api/customer?id=${encodeURIComponent(reservation.customerId)}&storeId=${encodeURIComponent(currentStore.id)}`,
           {
             cache: 'no-store',
             credentials: 'include',
@@ -665,7 +686,7 @@ export function ReservationDialog({
       ignore = true
       controller.abort()
     }
-  }, [open, reservation?.customerId])
+  }, [currentStore.id, open, reservation?.customerId])
 
   const activeCastId = formState.castId || reservation?.staffId || ''
 
@@ -1096,54 +1117,18 @@ export function ReservationDialog({
   ])
 
   const priceBreakdown = useMemo(() => {
-    const fallbackCoursePrice = reservation?.price ?? 0
-    const basePrice = selectedCourse
-      ? toNumber(selectedCourse.price, fallbackCoursePrice)
-      : toNumber(fallbackCoursePrice, 0)
-
-    const transportation = toNumber(formState.transportationFee, 0)
-    const additional = toNumber(formState.additionalFee, 0)
-    const discount = Math.max(toNumber(formState.discountAmount, 0), 0)
-    const pointsUsed = Math.max(toNumber(reservation?.pointsUsed, 0), 0)
-    const designationAmount = Math.max(toNumber(formState.designationFee, 0), 0)
-
-    const effectiveDesignation = selectedDesignation || reservationDesignation
-
-    const revenue = calculateReservationRevenue({
-      basePrice,
-      options: selectedOptionDetails.map((option) => ({
-        price: toNumber(option.price, 0),
-        storeShare: option.storeShare ?? undefined,
-        castShare: option.castShare ?? undefined,
-      })),
-      designation:
-        designationAmount > 0
-          ? {
-              amount: designationAmount,
-              storeShare: effectiveDesignation?.storeShare ?? 0,
-              castShare: effectiveDesignation?.castShare ?? designationAmount,
-            }
-          : null,
-      transportationFee: transportation,
-      additionalFee: additional,
-      discountAmount: discount + pointsUsed,
+    return calculateReservationPriceBreakdown({
+      selectedCoursePrice: selectedCourse?.price,
+      fallbackCoursePrice: reservation?.price,
+      options: selectedOptionDetails,
+      transportationFee: formState.transportationFee,
+      additionalFee: formState.additionalFee,
+      discountAmount: formState.discountAmount,
+      pointsUsed: reservation?.pointsUsed,
+      designationFee: formState.designationFee,
+      designation: selectedDesignation || reservationDesignation,
       welfareRate,
     })
-
-    return {
-      basePrice,
-      optionTotal: revenue.optionsTotal,
-      transportation: revenue.transportationFee,
-      additional: revenue.additionalFee,
-      designation: designationAmount,
-      discount,
-      pointsUsed,
-      total: revenue.total,
-      storeRevenue: revenue.storeRevenue,
-      staffRevenue: revenue.staffRevenue,
-      welfareExpense: revenue.welfareExpense,
-      welfareRate: revenue.welfareRate,
-    }
   }, [
     selectedCourse,
     reservation?.price,
@@ -1172,6 +1157,7 @@ export function ReservationDialog({
         storeMemo: reservation.storeMemo || '',
         notes: reservation.notes || '',
         paymentMethod: normalizePaymentMethodValue(reservation.paymentMethod),
+        paymentReference: reservation.paymentReference ?? '',
         marketingChannel: normalizeMarketingChannelValue(
           reservation.marketingChannel,
           marketingChannelOptions
@@ -1287,6 +1273,7 @@ export function ReservationDialog({
       storeMemo: reservation.storeMemo || '',
       notes: reservation.notes || '',
       paymentMethod: normalizePaymentMethodValue(reservation.paymentMethod),
+      paymentReference: reservation.paymentReference ?? '',
       marketingChannel: normalizeMarketingChannelValue(
         reservation.marketingChannel,
         marketingChannelOptions
@@ -1410,6 +1397,15 @@ export function ReservationDialog({
       return
     }
 
+    const startInputChanged =
+      formState.date !== format(reservation.startTime, 'yyyy-MM-dd') ||
+      formState.startTime !== format(reservation.startTime, 'HH:mm')
+
+    if (startInputChanged && !isReservationStartBoundary(enteredStart)) {
+      setValidationError('開始時間の分は00分または30分を指定してください。')
+      return
+    }
+
     const castId = formState.castId || reservation.staffId || ''
     if (!castId) {
       setValidationError('担当キャストを選択してください。')
@@ -1424,9 +1420,6 @@ export function ReservationDialog({
     const optionsChanged =
       originalOptionIds.length !== selectedOptionIds.length ||
       originalOptionIds.some((optionId, index) => optionId !== selectedOptionIds[index])
-    const startInputChanged =
-      formState.date !== format(reservation.startTime, 'yyyy-MM-dd') ||
-      formState.startTime !== format(reservation.startTime, 'HH:mm')
     const start = startInputChanged ? enteredStart : new Date(reservation.startTime)
     const durationMinutes =
       effectiveDurationMinutes > 0 ? effectiveDurationMinutes : reservationDurationMinutes
@@ -1451,6 +1444,19 @@ export function ReservationDialog({
       : toNumber(reservation.designationFee, 0)
     const paymentMethodChanged =
       formState.paymentMethod !== normalizePaymentMethodValue(reservation.paymentMethod)
+    let paymentReferenceToSave: string | null = null
+    if (formState.paymentMethod === PAYMENT_METHODS.CARD) {
+      try {
+        paymentReferenceToSave = normalizePaymentReference(formState.paymentReference)
+      } catch {
+        setValidationError(
+          'カード決済の管理番号を入力してください。カード番号は入力しないでください。'
+        )
+        return
+      }
+    }
+    const paymentReferenceChanged =
+      paymentReferenceToSave !== (reservation.paymentReference ?? null)
 
     if (selectedCast?.workStart && selectedCast?.workEnd) {
       const workStart = new Date(start)
@@ -1497,6 +1503,9 @@ export function ReservationDialog({
       }
       if (paymentMethodChanged) {
         updatePayload.paymentMethod = formState.paymentMethod
+      }
+      if (paymentMethodChanged || paymentReferenceChanged) {
+        updatePayload.paymentReference = paymentReferenceToSave
       }
       if (optionsChanged) {
         updatePayload.options = formState.optionIds
@@ -1549,6 +1558,11 @@ export function ReservationDialog({
                 {statusMeta.description && (
                   <p className="mt-1 text-xs text-muted-foreground">{statusMeta.description}</p>
                 )}
+                {status === 'cancelled' && reservation.cancellationReason ? (
+                  <p className="mt-1 text-sm font-medium text-red-700">
+                    キャンセル理由: {reservation.cancellationReason}
+                  </p>
+                ) : null}
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <DropdownMenu>
@@ -1690,6 +1704,7 @@ export function ReservationDialog({
                             <Input
                               id="reservation-start-time"
                               type="time"
+                              step={RESERVATION_START_STEP_SECONDS}
                               value={formState.startTime}
                               onChange={(event) =>
                                 setFormState((prev) => ({ ...prev, startTime: event.target.value }))
@@ -1768,16 +1783,10 @@ export function ReservationDialog({
                             <Select
                               value={formState.stationId ?? UNASSIGNED_VALUE}
                               onValueChange={(value) => {
-                                const selectedStation = filteredStations.find(
-                                  (station) => station.id === value
-                                )
                                 setFormState((prev) => ({
                                   ...prev,
                                   stationId: value === UNASSIGNED_VALUE ? null : value,
-                                  transportationFee:
-                                    value === UNASSIGNED_VALUE
-                                      ? 0
-                                      : (selectedStation?.transportationFee ?? 0),
+                                  transportationFee: 0,
                                 }))
                               }}
                               disabled={filteredStations.length === 0}
@@ -1933,21 +1942,7 @@ export function ReservationDialog({
                               className="bg-gray-100"
                             />
                           </div>
-                          <div className="grid gap-3 sm:grid-cols-3">
-                            <div>
-                              <Label htmlFor="reservation-transportation">交通費</Label>
-                              <Input
-                                id="reservation-transportation"
-                                type="number"
-                                value={formState.transportationFee}
-                                readOnly
-                                disabled
-                                className="bg-gray-100"
-                              />
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                駅選択に応じて自動計算されます
-                              </p>
-                            </div>
+                          <div className="grid gap-3 sm:grid-cols-2">
                             <div>
                               <Label htmlFor="reservation-additional">追加料金</Label>
                               <Input
@@ -1986,6 +1981,8 @@ export function ReservationDialog({
                                   setFormState((prev) => ({
                                     ...prev,
                                     paymentMethod: value as PaymentMethod,
+                                    paymentReference:
+                                      value === PAYMENT_METHODS.CARD ? prev.paymentReference : '',
                                   }))
                                 }
                               >
@@ -2022,6 +2019,24 @@ export function ReservationDialog({
                               </Select>
                             </div>
                           </div>
+                          {formState.paymentMethod === PAYMENT_METHODS.CARD ? (
+                            <div>
+                              <Label htmlFor="reservation-payment-reference">カード管理番号</Label>
+                              <Input
+                                id="reservation-payment-reference"
+                                value={formState.paymentReference}
+                                onChange={(event) =>
+                                  setFormState((prev) => ({
+                                    ...prev,
+                                    paymentReference: event.target.value,
+                                  }))
+                                }
+                                maxLength={100}
+                                autoComplete="off"
+                                placeholder="決済伝票の管理番号（カード番号は入力しない）"
+                              />
+                            </div>
+                          ) : null}
                         </div>
                       ) : (
                         <div className="space-y-2">
@@ -2049,13 +2064,16 @@ export function ReservationDialog({
                                 : '未設定'}
                             </span>
                           </div>
+                          {normalizePaymentMethodValue(reservation.paymentMethod) ===
+                          PAYMENT_METHODS.CARD ? (
+                            <div className="flex items-center justify-between text-muted-foreground">
+                              <span>カード管理番号</span>
+                              <span>{reservation.paymentReference || '未登録'}</span>
+                            </div>
+                          ) : null}
                           <div className="flex items-center justify-between text-muted-foreground">
                             <span>集客チャネル</span>
                             <span>{reservation.marketingChannel || '未設定'}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-muted-foreground">
-                            <span>交通費</span>
-                            <span>{formatCurrency(reservation.transportationFee)}</span>
                           </div>
                           <div className="flex items-center justify-between text-muted-foreground">
                             <span>追加料金</span>
@@ -2083,7 +2101,7 @@ export function ReservationDialog({
 
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">担当キャスト</CardTitle>
+                      <CardTitle className="text-sm font-medium">キャスト</CardTitle>
                       <User className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent className="space-y-3 text-sm">
@@ -2739,10 +2757,6 @@ export function ReservationDialog({
                             <dd>{formatCurrency(priceBreakdown.designation)}</dd>
                           </div>
                           <div className="flex items-center justify-between">
-                            <dt>交通費</dt>
-                            <dd>{formatCurrency(priceBreakdown.transportation)}</dd>
-                          </div>
-                          <div className="flex items-center justify-between">
                             <dt>追加料金</dt>
                             <dd>{formatCurrency(priceBreakdown.additional)}</dd>
                           </div>
@@ -2756,15 +2770,6 @@ export function ReservationDialog({
                             <div className="flex items-center justify-between text-red-600">
                               <dt>ポイント利用</dt>
                               <dd>-{formatCurrency(priceBreakdown.pointsUsed)}</dd>
-                            </div>
-                          )}
-                          {priceBreakdown.welfareExpense > 0 && (
-                            <div className="flex items-center justify-between text-sm text-muted-foreground">
-                              <dt>
-                                厚生費（{priceBreakdown.welfareRate.toFixed(1).replace(/\.0$/, '')}
-                                %）
-                              </dt>
-                              <dd>{formatCurrency(priceBreakdown.welfareExpense)}</dd>
                             </div>
                           )}
                         </dl>
@@ -2926,61 +2931,22 @@ export function ReservationDialog({
           </div>
         </DialogContent>
       </Dialog>
-      <AlertDialog open={discardEditConfirmOpen} onOpenChange={setDiscardEditConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>編集内容を破棄しますか？</AlertDialogTitle>
-            <AlertDialogDescription>
-              保存していない予約の編集内容があります。閉じると変更は破棄されます。
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>戻る</AlertDialogCancel>
-            <AlertDialogAction onClick={closeDialogWithoutSaving}>破棄する</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      <AlertDialog open={cancelReasonDialogOpen} onOpenChange={handleCancelReasonDialogToggle}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>キャンセル理由を選択</AlertDialogTitle>
-            <AlertDialogDescription>
-              電話・Webどちらの都合でキャンセルになったかを選択してください。
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <RadioGroup
-            value={cancelReason}
-            onValueChange={(value) =>
-              setCancelReason((value as 'customer' | 'store') ?? 'customer')
-            }
-            className="space-y-2"
-          >
-            <div className="flex items-center gap-3 rounded-md border p-3">
-              <RadioGroupItem value="customer" id="cancel-reason-customer" />
-              <Label htmlFor="cancel-reason-customer" className="space-y-1">
-                <div className="font-medium">顧客都合</div>
-                <p className="text-xs text-muted-foreground">お客様からのキャンセル連絡</p>
-              </Label>
-            </div>
-            <div className="flex items-center gap-3 rounded-md border p-3">
-              <RadioGroupItem value="store" id="cancel-reason-store" />
-              <Label htmlFor="cancel-reason-store" className="space-y-1">
-                <div className="font-medium">店舗都合</div>
-                <p className="text-xs text-muted-foreground">キャスト体調不良・遅延など店舗起因</p>
-              </Label>
-            </div>
-          </RadioGroup>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={statusUpdating}>戻る</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmCancellation}
-              disabled={statusUpdating || !pendingStatusChange}
-            >
-              {statusUpdating ? '処理中…' : '確定してキャンセル'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DiscardReservationEditDialog
+        open={discardEditConfirmOpen}
+        onOpenChange={setDiscardEditConfirmOpen}
+        onDiscard={closeDialogWithoutSaving}
+      />
+      <ReservationCancellationDialog
+        open={cancelReasonDialogOpen}
+        onOpenChange={handleCancelReasonDialogToggle}
+        source={cancelReason}
+        onSourceChange={setCancelReason}
+        reason={cancellationReason}
+        onReasonChange={setCancellationReason}
+        isSubmitting={statusUpdating}
+        canConfirm={Boolean(pendingStatusChange) && cancellationReason.trim().length > 0}
+        onConfirm={handleConfirmCancellation}
+      />
 
       <CastTimelineModal
         open={isCastTimelineOpen}

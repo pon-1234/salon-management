@@ -5,7 +5,7 @@
  * @related_to   ReservationDialog, ReservationRepositoryImpl, Timeline
  * @known_issues None
  */
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { DateNavigation } from '@/components/reservation/date-navigation'
@@ -13,7 +13,7 @@ import { ActionButtons } from '@/components/reservation/action-buttons'
 import { Timeline } from '@/components/reservation/timeline'
 import { ReservationList } from '@/components/reservation/reservation-list'
 import { ViewToggle } from '@/components/reservation/view-toggle'
-import { FilterDialog, FilterOptions } from '@/components/reservation/filter-dialog'
+import { FilterDialog } from '@/components/reservation/filter-dialog'
 import { Cast, Appointment } from '@/lib/cast/types'
 import { getAllReservations } from '@/lib/reservation/data'
 import { ReservationTable } from '@/components/reservation/reservation-table'
@@ -42,17 +42,189 @@ import {
   minutesToIsoInJst,
 } from '@/lib/settings/business-hours'
 import { useStore } from '@/contexts/store-context'
+import { usePricing } from '@/hooks/use-pricing'
+import {
+  DEFAULT_TIMELINE_FILTERS,
+  filterAndSortTimelineCasts,
+  type TimelineFilterOptions,
+} from '@/lib/reservation/timeline-filters'
+import { hasPermission } from '@/lib/auth/permissions'
+import { computeStoreCastRanks } from '@/lib/cast/rank'
 
 interface ScheduleEntry {
   castId: string
+  date?: string | Date
   startTime?: string
   endTime?: string
   isAvailable?: boolean
 }
 
 const JST_TIMEZONE = 'Asia/Tokyo'
+const API_PAGE_SIZE = 100
 const formatDateKey = (date: Date) => formatInTimeZone(date, JST_TIMEZONE, 'yyyy-MM-dd')
-const toUtcIsoString = (isoString: string) => zonedTimeToUtc(isoString, JST_TIMEZONE).toISOString()
+
+interface ReservationPageQuery {
+  storeId: string
+  startDate: string
+  endDate: string
+  limit: number
+  offset: number
+}
+
+type ReservationPageFetcher = (query: ReservationPageQuery) => Promise<Reservation[]>
+
+interface StoreRequestVersion {
+  storeId: string
+  generation: number
+}
+
+export function acceptStoreScopedResponse<T>(
+  requestVersion: StoreRequestVersion,
+  activeVersion: StoreRequestVersion,
+  response: T
+): T | undefined {
+  if (
+    requestVersion.storeId !== activeVersion.storeId ||
+    requestVersion.generation !== activeVersion.generation
+  ) {
+    return undefined
+  }
+
+  return response
+}
+
+export function buildCastListEndpoint(storeId: string): string {
+  return `/api/cast?storeId=${encodeURIComponent(storeId)}&limit=${API_PAGE_SIZE}`
+}
+
+export function buildJstDayQueryRange(dateKey: string): {
+  startDate: string
+  endDate: string
+} {
+  const start = zonedTimeToUtc(`${dateKey}T00:00:00`, JST_TIMEZONE)
+  const nextDayStart = zonedTimeToUtc(minutesToIsoInJst(dateKey, 24 * 60), JST_TIMEZONE)
+
+  return {
+    startDate: start.toISOString(),
+    endDate: new Date(nextDayStart.getTime() - 1).toISOString(),
+  }
+}
+
+export async function loadReservationsForJstDay({
+  storeId,
+  dateKey,
+  fetchPage,
+}: {
+  storeId: string
+  dateKey: string
+  fetchPage: ReservationPageFetcher
+}): Promise<Reservation[]> {
+  const range = buildJstDayQueryRange(dateKey)
+  const reservations: Reservation[] = []
+
+  for (let offset = 0; ; offset += API_PAGE_SIZE) {
+    const page = await fetchPage({
+      storeId,
+      ...range,
+      limit: API_PAGE_SIZE,
+      offset,
+    })
+    reservations.push(...page)
+
+    if (page.length < API_PAGE_SIZE) {
+      return reservations
+    }
+  }
+}
+
+export function indexSchedulesForJstDay(
+  schedules: ScheduleEntry[],
+  dateKey: string
+): Map<string, ScheduleEntry> {
+  const schedulesByCast = new Map<string, ScheduleEntry>()
+
+  for (const entry of schedules) {
+    if (!entry.date || formatDateKey(new Date(entry.date)) !== dateKey) {
+      continue
+    }
+    schedulesByCast.set(entry.castId, entry)
+  }
+
+  return schedulesByCast
+}
+
+export function getActiveReservationData(reservations: ReservationData[]): ReservationData[] {
+  return reservations.filter((reservation) => reservation.status !== 'cancelled')
+}
+
+export function applyReservationUpdate(
+  reservations: ReservationData[],
+  updatedReservation: ReservationData
+): ReservationData[] {
+  if (updatedReservation.status === 'cancelled') {
+    return reservations.filter((reservation) => reservation.id !== updatedReservation.id)
+  }
+
+  const existingIndex = reservations.findIndex(
+    (reservation) => reservation.id === updatedReservation.id
+  )
+  if (existingIndex === -1) {
+    return [...reservations, updatedReservation]
+  }
+
+  return reservations.map((reservation) =>
+    reservation.id === updatedReservation.id ? updatedReservation : reservation
+  )
+}
+
+function toTimelineAppointmentStatus(status?: Reservation['status'] | string) {
+  const normalized = typeof status === 'string' ? status : ''
+  return normalized === 'pending' || normalized === 'tentative' || normalized === 'provisional'
+    ? 'provisional'
+    : 'confirmed'
+}
+
+function mapReservationDataToAppointment(reservation: ReservationData): Appointment {
+  return {
+    id: reservation.id,
+    customerId: reservation.customerId,
+    serviceId: reservation.serviceId || '',
+    staffId: reservation.staffId || '',
+    serviceName: reservation.course || '未設定',
+    startTime: reservation.startTime,
+    endTime: reservation.endTime,
+    customerName: reservation.customerName,
+    customerPhone: reservation.phoneNumber || '未登録',
+    customerEmail: reservation.email || '',
+    reservationTime: reservation.time,
+    status: toTimelineAppointmentStatus(reservation.status),
+    location: reservation.location,
+    price: reservation.totalPayment,
+  }
+}
+
+export function applyReservationUpdateToCasts(
+  casts: Cast[],
+  updatedReservation: ReservationData
+): Cast[] {
+  const withoutExisting = casts.map((member) => ({
+    ...member,
+    appointments: member.appointments.filter(
+      (appointment) => appointment.id !== updatedReservation.id
+    ),
+  }))
+
+  if (updatedReservation.status === 'cancelled' || !updatedReservation.staffId) {
+    return withoutExisting
+  }
+
+  const appointment = mapReservationDataToAppointment(updatedReservation)
+  return withoutExisting.map((member) =>
+    member.id === updatedReservation.staffId
+      ? { ...member, appointments: [...member.appointments, appointment] }
+      : member
+  )
+}
 
 export function ReservationPageContent() {
   const useMockFallbacks = shouldUseMockFallbacks()
@@ -62,37 +234,65 @@ export function ReservationPageContent() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [view, setView] = useState<'timeline' | 'list'>('timeline')
   const [filterDialogOpen, setFilterDialogOpen] = useState(false)
+  const [timelineFilters, setTimelineFilters] =
+    useState<TimelineFilterOptions>(DEFAULT_TIMELINE_FILTERS)
   const [selectedAppointment, setSelectedAppointment] = useState<ReservationData | null>(null)
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [customers, setCustomers] = useState<Customer[]>(useMockFallbacks ? fallbackCustomers : [])
   const [rawReservations, setRawReservations] = useState<Reservation[]>([])
   const [currentDayReservations, setCurrentDayReservations] = useState<ReservationData[]>([])
   const [businessHours, setBusinessHours] = useState<BusinessHoursRange>(DEFAULT_BUSINESS_HOURS)
+  const castRequestVersionRef = useRef<StoreRequestVersion>({
+    storeId: currentStore.id,
+    generation: 0,
+  })
+  const reservationRequestVersionRef = useRef<StoreRequestVersion>({
+    storeId: currentStore.id,
+    generation: 0,
+  })
+  const loadedCastStoreIdRef = useRef<string | null>(null)
+  const { optionPrices } = usePricing(currentStore.id)
+  const activeOptionCatalog = useMemo(
+    () =>
+      optionPrices
+        .filter((option) => option.isActive && !option.archivedAt)
+        .sort((left, right) => left.displayOrder - right.displayOrder)
+        .map((option) => ({
+          id: option.id,
+          name: option.name,
+          price: option.price,
+          note: option.note,
+        })),
+    [optionPrices]
+  )
   const reservationRepository = useMemo(
     () => new ReservationRepositoryImpl(undefined, currentStore.id),
     [currentStore.id]
   )
   const { data: session } = useSession()
-  const customerUseCases = useMemo(() => new CustomerUseCases(new CustomerRepositoryImpl()), [])
+  const grantedPermissions = session?.user?.permissions ?? []
+  const canCreateReservation =
+    hasPermission(grantedPermissions, 'customer:read') &&
+    hasPermission(grantedPermissions, 'reservation:create')
+  const canUpdateReservation = hasPermission(grantedPermissions, 'reservation:update')
+  const customerUseCases = useMemo(
+    () => new CustomerUseCases(new CustomerRepositoryImpl(currentStore.id)),
+    [currentStore.id]
+  )
 
   const searchParams = useSearchParams()
   const customerId = searchParams.get('customerId')
 
   const selectedDateKey = useMemo(() => formatDateKey(selectedDate), [selectedDate])
-  const toAppointmentStatus = useCallback((status?: Reservation['status'] | string) => {
-    const normalized = typeof status === 'string' ? status : ''
-    return normalized === 'pending' || normalized === 'tentative' || normalized === 'provisional'
-      ? 'provisional'
-      : 'confirmed'
-  }, [])
 
   useEffect(() => {
     let ignore = false
+    setCustomers(useMockFallbacks ? fallbackCustomers : [])
 
     const loadCustomers = async () => {
       try {
         const fetched = await customerUseCases.getAll()
-        if (!ignore && Array.isArray(fetched) && fetched.length > 0) {
+        if (!ignore && Array.isArray(fetched)) {
           setCustomers(fetched)
         }
       } catch (error) {
@@ -198,9 +398,18 @@ export function ReservationPageContent() {
   }, [currentStore.id])
 
   useEffect(() => {
+    const requestVersion = {
+      storeId: currentStore.id,
+      generation: castRequestVersionRef.current.generation + 1,
+    }
+    castRequestVersionRef.current = requestVersion
+    loadedCastStoreIdRef.current = null
+    setAllCasts([])
+    setCastData([])
+
     const loadCasts = async () => {
       try {
-        const response = await fetch(`/api/cast?storeId=${encodeURIComponent(currentStore.id)}`, {
+        const response = await fetch(buildCastListEndpoint(currentStore.id), {
           cache: 'no-store',
           credentials: 'include',
         })
@@ -209,44 +418,86 @@ export function ReservationPageContent() {
         }
         const payload = await response.json()
         const normalized = normalizeCastList(payload)
-        setAllCasts(normalized)
+        const currentCasts = acceptStoreScopedResponse(
+          requestVersion,
+          castRequestVersionRef.current,
+          normalized
+        )
+        if (currentCasts === undefined) {
+          return
+        }
+
+        loadedCastStoreIdRef.current = requestVersion.storeId
+        setAllCasts(currentCasts)
         setCastData([]) // wait for fetchData to populate based on schedules
       } catch (error) {
-        console.error('Failed to load cast data:', error)
+        if (acceptStoreScopedResponse(requestVersion, castRequestVersionRef.current, true)) {
+          console.error('Failed to load cast data:', error)
+        }
       }
     }
 
     loadCasts()
+
+    return () => {
+      if (acceptStoreScopedResponse(requestVersion, castRequestVersionRef.current, true)) {
+        castRequestVersionRef.current = {
+          storeId: requestVersion.storeId,
+          generation: requestVersion.generation + 1,
+        }
+        loadedCastStoreIdRef.current = null
+      }
+    }
   }, [currentStore.id])
 
   const fetchData = useCallback(async (): Promise<ReservationData[]> => {
-    if (allCasts.length === 0) {
-      setCastData([])
-      setCurrentDayReservations([])
-      setRawReservations([])
+    const requestVersion = {
+      storeId: currentStore.id,
+      generation: reservationRequestVersionRef.current.generation + 1,
+    }
+    reservationRequestVersionRef.current = requestVersion
+
+    if (allCasts.length === 0 || loadedCastStoreIdRef.current !== currentStore.id) {
+      if (acceptStoreScopedResponse(requestVersion, reservationRequestVersionRef.current, true)) {
+        setCastData([])
+        setCurrentDayReservations([])
+        setRawReservations([])
+      }
       return []
     }
 
-    const allReservations = await getAllReservations({ storeId: currentStore.id })
+    const allReservations = await loadReservationsForJstDay({
+      storeId: currentStore.id,
+      dateKey: selectedDateKey,
+      fetchPage: getAllReservations,
+    })
     const normalizedReservations = allReservations.map((reservation) => ({
       ...reservation,
       startTime: new Date(reservation.startTime),
       endTime: new Date(reservation.endTime),
     })) as Reservation[]
-    setRawReservations(normalizedReservations)
+    const currentReservations = acceptStoreScopedResponse(
+      requestVersion,
+      reservationRequestVersionRef.current,
+      normalizedReservations
+    )
+    if (currentReservations === undefined) {
+      return []
+    }
+    setRawReservations(currentReservations)
 
-    const todaysReservationData = normalizedReservations
+    const todaysReservationData = currentReservations
       .filter((reservation) => formatDateKey(reservation.startTime) === selectedDateKey)
       .map((reservation) =>
         mapReservationToReservationData(reservation, { casts: allCasts, customers })
       )
-    setCurrentDayReservations(todaysReservationData)
+    const activeReservationData = getActiveReservationData(todaysReservationData)
+    setCurrentDayReservations(activeReservationData)
 
     let schedulesByCast = new Map<string, ScheduleEntry>()
     try {
-      const scheduleStartUtc = toUtcIsoString(`${selectedDateKey}T00:00:00`)
-      const scheduleEndLocal = minutesToIsoInJst(selectedDateKey, businessHours.endMinutes)
-      const scheduleEndUtc = toUtcIsoString(scheduleEndLocal)
+      const { startDate: scheduleStartUtc, endDate: scheduleEndUtc } =
+        buildJstDayQueryRange(selectedDateKey)
 
       const response = await fetch(
         `/api/cast-schedule?startDate=${scheduleStartUtc}&endDate=${scheduleEndUtc}&storeId=${encodeURIComponent(currentStore.id)}`,
@@ -260,13 +511,17 @@ export function ReservationPageContent() {
         const payload = await response.json()
         const data = Array.isArray(payload?.data) ? payload.data : payload
         if (Array.isArray(data)) {
-          data.forEach((entry: ScheduleEntry) => {
-            schedulesByCast.set(entry.castId, entry)
-          })
+          schedulesByCast = indexSchedulesForJstDay(data, selectedDateKey)
         }
       }
     } catch (error) {
-      console.error('Failed to load schedule data:', error)
+      if (acceptStoreScopedResponse(requestVersion, reservationRequestVersionRef.current, true)) {
+        console.error('Failed to load schedule data:', error)
+      }
+    }
+
+    if (!acceptStoreScopedResponse(requestVersion, reservationRequestVersionRef.current, true)) {
+      return []
     }
 
     let updatedCastData: Cast[] = allCasts
@@ -285,10 +540,8 @@ export function ReservationPageContent() {
             Boolean(scheduleEntry.startTime && scheduleEntry.endTime)
           : Boolean(workStart && workEnd)
 
-        const appointments: Appointment[] = todaysReservationData
-          .filter(
-            (reservation) => reservation.staffId === member.id && reservation.status !== 'cancelled'
-          )
+        const appointments: Appointment[] = activeReservationData
+          .filter((reservation) => reservation.staffId === member.id)
           .map((reservation) => ({
             id: reservation.id,
             customerId: reservation.customerId,
@@ -301,7 +554,7 @@ export function ReservationPageContent() {
             customerPhone: reservation.phoneNumber || '未登録',
             customerEmail: reservation.email || '',
             reservationTime: reservation.time,
-            status: toAppointmentStatus(reservation.status),
+            status: toTimelineAppointmentStatus(reservation.status),
             location: reservation.location,
             price: reservation.totalPayment,
           }))
@@ -327,21 +580,37 @@ export function ReservationPageContent() {
       updatedCastData = updatedCastData.filter((member) => !ngCastIds.includes(member.id))
     }
 
+    const computedRanks = computeStoreCastRanks(
+      activeReservationData.map((reservation) => ({
+        castId: reservation.staffId ?? null,
+        castName: reservation.staff,
+        designationType: reservation.designation,
+      }))
+    )
+    updatedCastData = updatedCastData.map((member) => {
+      const computed = computedRanks.get(member.id)
+      if (!computed) return member
+      return {
+        ...member,
+        regularDesignationRank: member.regularDesignationRank || computed.regularDesignationRank,
+        panelDesignationRank: member.panelDesignationRank || computed.panelDesignationRank,
+      }
+    })
+
     setCastData(updatedCastData)
-    return todaysReservationData
-  }, [
-    allCasts,
-    selectedDateKey,
-    selectedCustomer,
-    customers,
-    businessHours,
-    currentStore.id,
-    toAppointmentStatus,
-  ])
+    return activeReservationData
+  }, [allCasts, selectedDateKey, selectedCustomer, customers, currentStore.id])
 
   useEffect(() => {
     fetchData()
-  }, [selectedDateKey, selectedCustomer, fetchData])
+
+    return () => {
+      reservationRequestVersionRef.current = {
+        storeId: currentStore.id,
+        generation: reservationRequestVersionRef.current.generation + 1,
+      }
+    }
+  }, [currentStore.id, fetchData, selectedCustomer, selectedDateKey])
 
   const handleRefresh = () => {
     fetchData()
@@ -363,13 +632,28 @@ export function ReservationPageContent() {
     try {
       const updatePayload: ReservationApiUpdatePayload = { ...payload }
 
-      await reservationRepository.update(reservationId, updatePayload)
+      const updatedReservation = await reservationRepository.update(reservationId, updatePayload)
+      const normalizedUpdated = {
+        ...updatedReservation,
+        startTime: new Date(updatedReservation.startTime),
+        endTime: new Date(updatedReservation.endTime),
+        modifiableUntil: updatedReservation.modifiableUntil
+          ? new Date(updatedReservation.modifiableUntil)
+          : undefined,
+      } as Reservation
+      const updatedData = mapReservationToReservationData(normalizedUpdated, {
+        casts: allCasts,
+        customers,
+      })
 
-      const updatedReservations = await fetchData()
-      const refreshed = updatedReservations.find((entry) => entry.id === reservationId)
-      if (refreshed) {
-        setSelectedAppointment(refreshed)
-      }
+      setRawReservations((current) =>
+        current.map((reservation) =>
+          reservation.id === reservationId ? normalizedUpdated : reservation
+        )
+      )
+      setCurrentDayReservations((current) => applyReservationUpdate(current, updatedData))
+      setCastData((current) => applyReservationUpdateToCasts(current, updatedData))
+      setSelectedAppointment(updatedData.status === 'cancelled' ? null : updatedData)
 
       toast({
         title: '予約を更新しました',
@@ -386,92 +670,18 @@ export function ReservationPageContent() {
     }
   }
 
-  const handleFilter = (filters: FilterOptions) => {
-    if (allCasts.length === 0) return
-    let filtered = [...allCasts]
-
-    if (selectedCustomer) {
-      const ngCastIds =
-        selectedCustomer.ngCasts?.map((ng) => ng.castId) || selectedCustomer.ngCastIds || []
-      filtered = filtered.filter((staff) => !ngCastIds.includes(staff.id))
-    }
-
-    if (filters.workStatus !== 'すべて') {
-      filtered = filtered.filter((staff) => staff.workStatus === filters.workStatus)
-    }
-
-    if (filters.name) {
-      const searchTerm = filters.name.toLowerCase()
-      filtered = filtered.filter(
-        (staff) =>
-          staff.name.toLowerCase().includes(searchTerm) ||
-          staff.nameKana.toLowerCase().includes(searchTerm)
-      )
-    }
-
-    if (filters.ageRange) {
-      const [min, max] = filters.ageRange.split('-').map((num) => parseInt(num))
-      filtered = filtered.filter((staff) => {
-        if (filters.ageRange.includes('以上')) {
-          return staff.age >= min
-        }
-        return staff.age >= min && staff.age <= (max || min)
-      })
-    }
-
-    if (filters.heightRange) {
-      const [min, max] = filters.heightRange.split('-').map((num) => parseInt(num))
-      filtered = filtered.filter((staff) => {
-        if (filters.heightRange.includes('以上')) {
-          return staff.height >= min
-        }
-        if (filters.heightRange.includes('以下')) {
-          return staff.height <= min
-        }
-        return staff.height >= min && staff.height <= (max || min)
-      })
-    }
-
-    if (filters.bustSize) {
-      filtered = filtered.filter((staff) => {
-        if (filters.bustSize.includes('以上')) {
-          return staff.bust >= filters.bustSize.replace('以上', '')
-        }
-        return staff.bust === filters.bustSize
-      })
-    }
-
-    if (filters.waistRange) {
-      const [min, max] = filters.waistRange.split('-').map((num) => parseInt(num))
-      filtered = filtered.filter((staff) => {
-        if (filters.waistRange.includes('以上')) {
-          return staff.waist >= min
-        }
-        if (filters.waistRange.includes('以下')) {
-          return staff.waist <= min
-        }
-        return staff.waist >= min && staff.waist <= (max || min)
-      })
-    }
-
-    if (filters.type) {
-      filtered = filtered.filter((staff) => staff.type === filters.type)
-    }
-
-    setCastData(filtered)
-  }
+  const visibleCastData = useMemo(
+    () => filterAndSortTimelineCasts(castData, timelineFilters),
+    [castData, timelineFilters]
+  )
 
   const handleFilterDialogOpen = () => {
     setFilterDialogOpen(true)
   }
 
-  const handleFilterDialogClose = () => {
+  const handleFilterDialogApply = (filters: TimelineFilterOptions) => {
+    setTimelineFilters(filters)
     setFilterDialogOpen(false)
-  }
-
-  const handleFilterDialogApply = (filters: FilterOptions) => {
-    handleFilter(filters)
-    handleFilterDialogClose()
   }
 
   const handleCustomerSelection = (customer: Customer | null) => {
@@ -491,7 +701,7 @@ export function ReservationPageContent() {
     }
   }
 
-  const allAppointments = currentDayReservations
+  const allAppointments = getActiveReservationData(currentDayReservations)
 
   return (
     <div className="min-h-screen bg-white">
@@ -503,23 +713,29 @@ export function ReservationPageContent() {
         onFilter={handleFilterDialogOpen}
         onCustomerSelect={handleCustomerSelection}
         selectedCustomer={selectedCustomer}
+        canCreateReservation={canCreateReservation}
       />
 
       <FilterDialog
         open={filterDialogOpen}
         onOpenChange={setFilterDialogOpen}
         onApplyFilters={handleFilterDialogApply}
+        filters={timelineFilters}
+        selectedDate={selectedDate}
+        options={activeOptionCatalog.map(({ id, name }) => ({ id, name }))}
       />
 
       {view === 'timeline' ? (
         <Timeline
-          staff={castData}
+          staff={visibleCastData}
           selectedDate={selectedDate}
           selectedCustomer={selectedCustomer}
           setSelectedAppointment={setSelectedAppointment}
           reservations={currentDayReservations}
           onReservationCreated={handleRefresh}
           businessHours={businessHours}
+          optionCatalog={activeOptionCatalog}
+          canCreateReservation={canCreateReservation}
         />
       ) : (
         <ReservationTable
@@ -534,7 +750,7 @@ export function ReservationPageContent() {
           onOpenChange={(open) => !open && setSelectedAppointment(null)}
           reservation={selectedAppointment}
           casts={allCasts}
-          onSave={handleReservationSave}
+          onSave={canUpdateReservation ? handleReservationSave : undefined}
         />
       )}
     </div>

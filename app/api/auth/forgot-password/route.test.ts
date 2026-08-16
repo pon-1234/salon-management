@@ -47,6 +47,10 @@ vi.mock('crypto', async () => {
 })
 
 const customerPhoneVerificationFields = {
+  accountStatus: 'active',
+  membershipStage: 'regular',
+  lastLoginAt: null,
+  lastVisitAt: null,
   phoneVerified: false,
   phoneVerifiedAt: null,
   phoneVerificationCode: null,
@@ -147,6 +151,29 @@ describe('POST /api/auth/forgot-password', () => {
         resetTokenExpiry: expect.any(Date),
       },
     })
+  })
+
+  it('uses the validated request identity instead of a nullable stored email value', async () => {
+    vi.mocked(db.customer.findUnique).mockResolvedValue({
+      id: 'nullable-email-row',
+      name: 'Incomplete Customer',
+      email: null,
+    } as never)
+    vi.mocked(db.customer.update).mockResolvedValue({ id: 'nullable-email-row' } as never)
+    vi.mocked(db.customer.updateMany).mockResolvedValue({ count: 1 })
+    vi.mocked(emailClient.send).mockResolvedValue({ success: true })
+
+    const response = await POST(
+      new NextRequest('http://localhost/api/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email: '  Recovery@Example.COM ', storeId: 'store-1' }),
+      })
+    )
+
+    expect(response.status).toBe(200)
+    expect(emailClient.send).toHaveBeenCalledWith(
+      expect.objectContaining({ to: 'recovery@example.com' })
+    )
   })
 
   it('should return success even for non-existent email (security)', async () => {

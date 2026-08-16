@@ -309,16 +309,42 @@ export async function executeLegacyPreviewImageImport(
   safety: LegacyPreviewImageSafetyInput,
   io: LegacyPreviewImageImportIo
 ): Promise<LegacyPreviewImageImportReport> {
-  const emptyReport = report(plan.files.length)
   if (!isValidPlan(plan)) {
+    const emptyReport = report(plan.files.length)
     emptyReport.issues.push(
       issue('INVALID_INPUT', '$.plan', 'The image import plan failed its integrity check.')
     )
     return emptyReport
   }
+  return executeVerifiedImageFiles(plan.files, safety, io)
+}
 
+/** Copies one standalone manifest after validating its schema and approved source identity. */
+export async function executeVerifiedLegacyPreviewImageCopy(
+  manifestInput: unknown,
+  expectedSourceKey: string,
+  safety: LegacyPreviewImageSafetyInput,
+  io: LegacyPreviewImageImportIo
+): Promise<LegacyPreviewImageImportReport> {
+  const validation = validateLegacyImageManifest(manifestInput, expectedSourceKey)
+  if (!validation.success) {
+    const rejected = report(0)
+    rejected.issues.push(
+      issue('INVALID_INPUT', '$.manifest', 'The image manifest failed its integrity check.')
+    )
+    return rejected
+  }
+  return executeVerifiedImageFiles(validation.data.files, safety, io)
+}
+
+async function executeVerifiedImageFiles(
+  files: LegacyPublicImageManifestEntry[],
+  safety: LegacyPreviewImageSafetyInput,
+  io: LegacyPreviewImageImportIo
+): Promise<LegacyPreviewImageImportReport> {
+  const emptyReport = report(files.length)
   const targetPreflight = await preflightLegacyPreviewImageTarget(
-    plan.files.map(({ targetPath }) => targetPath),
+    files.map(({ targetPath }) => targetPath),
     safety,
     io
   )
@@ -328,7 +354,7 @@ export async function executeLegacyPreviewImageImport(
   }
 
   let verifiedByteCount = 0
-  for (const [fileIndex, file] of plan.files.entries()) {
+  for (const [fileIndex, file] of files.entries()) {
     let inspection: LegacyImageInspection
     try {
       inspection = await io.inspectSource(file)
@@ -353,7 +379,7 @@ export async function executeLegacyPreviewImageImport(
 
   const filesToCreate: LegacyPublicImageManifestEntry[] = []
   let reusedFileCount = 0
-  for (const [fileIndex, file] of plan.files.entries()) {
+  for (const [fileIndex, file] of files.entries()) {
     let inspection: LegacyImageInspection | null
     try {
       inspection = await io.inspectTarget(file)
@@ -408,7 +434,7 @@ export async function executeLegacyPreviewImageImport(
     try {
       const copied = await io.copyExclusive(file)
       created.push(file)
-      const copyIssue = validateInspection(copied, file, 'COPY', plan.files.indexOf(file))
+      const copyIssue = validateInspection(copied, file, 'COPY', files.indexOf(file))
       if (copyIssue) {
         emptyReport.issues.push(copyIssue)
         break
@@ -457,7 +483,7 @@ export async function executeLegacyPreviewImageImport(
 
   return {
     success: true,
-    plannedFileCount: plan.files.length,
+    plannedFileCount: files.length,
     verifiedByteCount,
     createdFileCount: created.length,
     reusedFileCount,

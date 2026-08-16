@@ -18,9 +18,22 @@ export interface SafeImageProps extends Omit<ImageProps, 'alt' | 'height' | 'onE
   width?: number
 }
 
+const isReverseProxiedSalonUpload = (src: ImageProps['src']): boolean =>
+  typeof src === 'string' && src.startsWith('/salon-uploads/')
+
 export const SafeImage = forwardRef<HTMLImageElement, SafeImageProps>(
   (
-    { alt, fallbackSrc = DEFAULT_IMAGE_FALLBACK, height = 800, onError, width = 1200, ...props },
+    {
+      alt,
+      fallbackSrc = DEFAULT_IMAGE_FALLBACK,
+      fill,
+      height = 800,
+      onError,
+      src,
+      unoptimized,
+      width = 1200,
+      ...props
+    },
     ref
   ) => {
     const handleError = (event: SyntheticEvent<HTMLImageElement>) => {
@@ -36,8 +49,33 @@ export const SafeImage = forwardRef<HTMLImageElement, SafeImageProps>(
       image.removeAttribute('srcset')
     }
 
+    const bypassOptimizer = unoptimized || isReverseProxiedSalonUpload(src)
+
+    if (fill) {
+      return (
+        <Image
+          ref={ref}
+          {...props}
+          alt={alt}
+          fill
+          src={src}
+          unoptimized={bypassOptimizer}
+          onError={handleError}
+        />
+      )
+    }
+
     return (
-      <Image ref={ref} {...props} alt={alt} height={height} width={width} onError={handleError} />
+      <Image
+        ref={ref}
+        {...props}
+        alt={alt}
+        height={height}
+        src={src}
+        unoptimized={bypassOptimizer}
+        width={width}
+        onError={handleError}
+      />
     )
   }
 )

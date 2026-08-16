@@ -7,28 +7,36 @@ import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 
 const DEFAULT_STORE_ID = 'ikebukuro'
-const storeCache = new Map<string, boolean>()
+const storeCache = new Map<string, string>()
 
-async function storeExists(storeId: string): Promise<boolean> {
-  if (!storeId) {
-    return false
+async function resolveCanonicalStoreId(storeIdOrSlug: string): Promise<string | null> {
+  if (!storeIdOrSlug) {
+    return null
   }
 
-  if (storeCache.has(storeId)) {
-    return storeCache.get(storeId) ?? false
+  if (storeCache.has(storeIdOrSlug)) {
+    return storeCache.get(storeIdOrSlug) ?? null
   }
 
-  const store = await db.store.findUnique({
-    where: { id: storeId },
+  const storeById = await db.store.findUnique({
+    where: { id: storeIdOrSlug },
     select: { id: true },
   })
 
-  if (store) {
-    storeCache.set(storeId, true)
-    return true
+  if (storeById) {
+    storeCache.set(storeIdOrSlug, storeIdOrSlug)
+    return storeIdOrSlug
   }
 
-  return false
+  const storeBySlug = await db.store.findUnique({
+    where: { slug: storeIdOrSlug },
+    select: { id: true },
+  })
+  const canonicalId = storeBySlug?.id ?? null
+  if (canonicalId) {
+    storeCache.set(storeIdOrSlug, canonicalId)
+  }
+  return canonicalId
 }
 
 function extractStoreCandidate(request: NextRequest): string | null {
@@ -71,15 +79,17 @@ export async function resolveStoreId(request: NextRequest): Promise<string | nul
 export async function ensureStoreId(storeId?: string | null): Promise<string> {
   const normalized = storeId?.trim().toLowerCase()
   if (normalized) {
-    if (await storeExists(normalized)) {
-      return normalized
+    const canonicalId = await resolveCanonicalStoreId(normalized)
+    if (canonicalId) {
+      return canonicalId
     }
 
     throw new Error(`Unknown store: ${normalized}`)
   }
 
-  if (await storeExists(DEFAULT_STORE_ID)) {
-    return DEFAULT_STORE_ID
+  const defaultStoreId = await resolveCanonicalStoreId(DEFAULT_STORE_ID)
+  if (defaultStoreId) {
+    return defaultStoreId
   }
 
   throw new Error('Default store is not configured')

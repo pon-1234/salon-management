@@ -51,6 +51,14 @@ export interface PaymentTransaction extends BaseEntity {
   refundAmount?: number
 }
 
+export interface PaymentTransactionSummary {
+  statusCounts: Record<PaymentStatus, number>
+  completedAmount: number
+  refundedAmount: number
+  totalTransactions: number
+  totalAmount: number
+}
+
 // Payment processing request
 export interface ProcessPaymentRequest {
   reservationId: string

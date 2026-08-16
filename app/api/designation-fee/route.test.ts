@@ -92,7 +92,7 @@ describe('designation-fee production reads', () => {
   })
 
   it('returns a JSON 404 when the requested store does not exist', async () => {
-    vi.mocked(db.store.findUnique).mockResolvedValueOnce(null)
+    vi.mocked(db.store.findUnique).mockResolvedValueOnce(null).mockResolvedValueOnce(null)
 
     const response = await GET(
       new NextRequest('http://localhost/api/designation-fee?storeId=unknown-store')

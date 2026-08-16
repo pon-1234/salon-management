@@ -9,35 +9,42 @@ datasource db {
 }
 
 model Customer {
-  id                        String                 @id @default(cuid())
+  id                        String                    @id @default(cuid())
   name                      String
-  nameKana                  String
-  phone                     String                 @unique
-  email                     String                 @unique
-  password                  String
-  birthDate                 DateTime
-  memberType                String                 @default("regular")
-  points                    Int                    @default(0)
-  smsEnabled                Boolean                @default(false)
-  emailNotificationEnabled  Boolean                @default(true)
-  createdAt                 DateTime               @default(now())
-  updatedAt                 DateTime               @updatedAt
+  nameKana                  String?
+  phone                     String                    @unique
+  email                     String?                   @unique
+  password                  String?
+  birthDate                 DateTime?
+  memberType                String                    @default("regular")
+  accountStatus             String                    @default("active")
+  membershipStage           String                    @default("regular")
+  lastLoginAt               DateTime?
+  lastVisitAt               DateTime?
+  points                    Int                       @default(0)
+  smsEnabled                Boolean                   @default(false)
+  emailNotificationEnabled  Boolean                   @default(true)
+  createdAt                 DateTime                  @default(now())
+  updatedAt                 DateTime                  @updatedAt
   resetToken                String?
   resetTokenExpiry          DateTime?
-  emailVerified             Boolean                @default(false)
+  emailVerified             Boolean                   @default(false)
   emailVerificationToken    String?
   emailVerificationExpiry   DateTime?
-  phoneVerified             Boolean                @default(false)
+  phoneVerified             Boolean                   @default(false)
   phoneVerifiedAt           DateTime?
   phoneVerificationCode     String?
   phoneVerificationExpiry   DateTime?
-  phoneVerificationAttempts Int                    @default(0)
+  phoneVerificationAttempts Int                       @default(0)
   ngCasts                   NgCastEntry[]
   pointHistory              CustomerPointHistory[]
   reservations              Reservation[]
   reviews                   Review[]
   messages                  Message[]
   paymentTransactions       PaymentTransaction[]
+  storeAssignments          CustomerStoreAssignment[]
+
+  @@index([accountStatus])
 }
 
 model Store {
@@ -62,7 +69,9 @@ model Store {
   storeSettings          StoreSettings?
   eventBanners           StoreEventBanner[]
   settlementPayments     SettlementPayment[]
+  ledgerEntries          CastLedgerEntry[]
   adminAssignments       AdminStoreAssignment[]
+  customerAssignments    CustomerStoreAssignment[]
   lineRegistrationTokens CastLineRegistrationToken[]
   hotelSettings          HotelSettings[]
 }
@@ -105,6 +114,7 @@ model Cast {
   lineLogs                 ReservationLineLog[]
   attendanceRequests       ReservationAttendanceRequest[]
   settlementPayments       SettlementPayment[]
+  ledgerEntries            CastLedgerEntry[]
   lineRegistrationToken    CastLineRegistrationToken?
   store                    Store                          @relation(fields: [storeId], references: [id])
 
@@ -152,6 +162,7 @@ model Reservation {
   discountAmount      Int                            @default(0)
   welfareExpense      Int                            @default(0)
   paymentMethod       String?                        @default("現金")
+  paymentReference    String?
   marketingChannel    String?
   storeRevenue        Int?
   staffRevenue        Int?
@@ -175,6 +186,7 @@ model Reservation {
   castCheckedOutAt    DateTime?
   pointsUsed          Int                            @default(0)
   cancellationSource  CancellationSource?
+  cancellationReason  String?
   createdAt           DateTime                       @default(now())
   updatedAt           DateTime                       @updatedAt
   cast                Cast                           @relation(fields: [castId], references: [id])
@@ -216,6 +228,29 @@ model SettlementPayment {
   @@index([castId])
 }
 
+model CastLedgerEntry {
+  id            String   @id
+  storeId       String
+  castId        String
+  sourceTable   String
+  sourceKey     String
+  businessMonth String
+  occurredAt    DateTime
+  direction     String
+  kind          String
+  amount        Int
+  notes         String   @default("")
+  handledBy     String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  store         Store    @relation(fields: [storeId], references: [id])
+  cast          Cast     @relation(fields: [castId], references: [id])
+
+  @@unique([storeId, sourceTable, sourceKey])
+  @@index([storeId, businessMonth])
+  @@index([castId, businessMonth])
+}
+
 model SettlementPaymentReservation {
   paymentId     String
   reservationId String
@@ -223,11 +258,13 @@ model SettlementPaymentReservation {
   reservation   Reservation       @relation(fields: [reservationId], references: [id])
 
   @@id([paymentId, reservationId])
+  @@unique([reservationId], map: "SettlementPaymentReservation_reservationId_key")
 }
 
 model CoursePrice {
   id               String        @id @default(cuid())
   name             String
+  displayOrder     Int           @default(0)
   duration         Int
   price            Int
   storeShare       Int?
@@ -454,6 +491,17 @@ model AdminStoreAssignment {
   @@index([storeId])
 }
 
+model CustomerStoreAssignment {
+  customerId String
+  storeId    String
+  createdAt  DateTime @default(now())
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  store      Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@id([customerId, storeId])
+  @@index([storeId])
+}
+
 model Message {
   id                String    @id @default(cuid())
   customerId        String?
@@ -536,6 +584,7 @@ model StoreSettings {
   lastOrder             String
   parkingInfo           String?
   welfareExpenseRate    Decimal  @default(10)
+  hourlyGuaranteeAmount Int      @default(0)
   marketingChannels     String[] @default(["店リピート", "電話", "紹介", "SNS", "WEB", "Heaven"])
   pointEarnRate         Decimal  @default(1.0)
   pointExpirationMonths Int      @default(12)

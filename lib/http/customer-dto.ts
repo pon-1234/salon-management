@@ -1,6 +1,6 @@
 /**
- * @design_doc   Customer-facing API response boundaries
- * @related_to   Reservation API and Customer API customer-role responses
+ * @design_doc   Customer API response boundaries
+ * @related_to   Reservation API and Customer API customer/admin detail responses
  * @known_issues None currently
  */
 
@@ -30,6 +30,14 @@ const CUSTOMER_FIELDS = [
   'lastVisit',
 ] as const
 
+const ADMIN_CUSTOMER_DETAIL_FIELDS = [
+  ...CUSTOMER_FIELDS,
+  'accountStatus',
+  'membershipStage',
+  'lastLoginAt',
+  'lastVisitAt',
+] as const
+
 const RESERVATION_FIELDS = [
   'id',
   'customerId',
@@ -57,6 +65,28 @@ const RESERVATION_FIELDS = [
   'modifiableUntil',
   'createdAt',
   'updatedAt',
+] as const
+
+const ADMIN_RESERVATION_OPERATION_FIELDS = [
+  ...RESERVATION_FIELDS,
+  'settlementStatus',
+  'welfareExpense',
+  'paymentReference',
+  'marketingChannel',
+  'storeRevenue',
+  'staffRevenue',
+  'hotelId',
+  'hotelExpense',
+  'entryMemo',
+  'entryReceivedAt',
+  'entryReceivedBy',
+  'entryNotifiedAt',
+  'entryConfirmedAt',
+  'entryReminderSentAt',
+  'storeMemo',
+  'castCheckedInAt',
+  'castCheckedOutAt',
+  'cancellationReason',
 ] as const
 
 const PUBLIC_CAST_FIELDS = [
@@ -107,6 +137,7 @@ const STATION_FIELDS = [
   'description',
 ] as const
 const NG_CAST_FIELDS = ['castId', 'assignedAt'] as const
+const ADMIN_NG_CAST_FIELDS = [...NG_CAST_FIELDS, 'notes', 'assignedBy'] as const
 const REVIEW_FIELDS = [
   'id',
   'castId',
@@ -179,13 +210,16 @@ function sanitizeReservationOption(value: unknown): UnknownRecord | null {
   return result
 }
 
-function sanitizeReservation(value: unknown): UnknownRecord | null {
+function sanitizeReservationWithFields(
+  value: unknown,
+  fields: readonly string[]
+): UnknownRecord | null {
   const source = asRecord(value)
   if (!source) {
     return null
   }
 
-  const result = pick(source, RESERVATION_FIELDS)
+  const result = pick(source, fields)
   assignRelation(result, source, 'customer', sanitizeCustomerSummary)
   assignRelation(result, source, 'cast', sanitizePublicCast)
   assignRelation(result, source, 'course', sanitizeCourse)
@@ -207,6 +241,10 @@ function sanitizeReservation(value: unknown): UnknownRecord | null {
   return result
 }
 
+function sanitizeReservation(value: unknown): UnknownRecord | null {
+  return sanitizeReservationWithFields(value, RESERVATION_FIELDS)
+}
+
 /**
  * Converts one reservation or a reservation list to the explicit customer-facing contract.
  */
@@ -225,6 +263,16 @@ function sanitizeNgCast(value: unknown): UnknownRecord | null {
     return null
   }
   const result = pick(source, NG_CAST_FIELDS)
+  assignRelation(result, source, 'cast', sanitizePublicCast)
+  return result
+}
+
+function sanitizeAdminNgCast(value: unknown): UnknownRecord | null {
+  const source = asRecord(value)
+  if (!source) {
+    return null
+  }
+  const result = pick(source, ADMIN_NG_CAST_FIELDS)
   assignRelation(result, source, 'cast', sanitizePublicCast)
   return result
 }
@@ -256,6 +304,41 @@ export function sanitizeCustomerSelfResponse<T>(value: T): T {
   }
   if (Array.isArray(source.reservations)) {
     result.reservations = sanitizeCustomerReservationResponse(source.reservations)
+  }
+  if (Array.isArray(source.reviews)) {
+    result.reviews = source.reviews
+      .map(sanitizeReview)
+      .filter((review): review is UnknownRecord => review !== null)
+  }
+
+  return result as T
+}
+
+/**
+ * Converts an administrative customer detail record to an explicit allowlist. Reservation
+ * relations are included only when the caller already passed reservation authorization.
+ */
+export function sanitizeCustomerAdminDetailResponse<T>(
+  value: T,
+  options: { includeReservationOperations: boolean }
+): T {
+  const source = asRecord(value)
+  if (!source) {
+    return value
+  }
+
+  const result = pick(source, ADMIN_CUSTOMER_DETAIL_FIELDS)
+  if (Array.isArray(source.ngCasts)) {
+    result.ngCasts = source.ngCasts
+      .map(sanitizeAdminNgCast)
+      .filter((entry): entry is UnknownRecord => entry !== null)
+  }
+  if (options.includeReservationOperations && Array.isArray(source.reservations)) {
+    result.reservations = source.reservations
+      .map((reservation) =>
+        sanitizeReservationWithFields(reservation, ADMIN_RESERVATION_OPERATION_FIELDS)
+      )
+      .filter((reservation): reservation is UnknownRecord => reservation !== null)
   }
   if (Array.isArray(source.reviews)) {
     result.reviews = source.reviews

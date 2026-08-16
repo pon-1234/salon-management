@@ -123,4 +123,27 @@ describe('event banner settings route', () => {
     expect(response.status).toBe(200)
     expect(mocks.bannerCreateMany).not.toHaveBeenCalled()
   })
+
+  it('allows staff to persist deletion of the final banner', async () => {
+    mocks.bannerFindMany
+      .mockResolvedValueOnce([
+        {
+          id: 'banner-a',
+          storeId: 'store-a',
+          title: 'Banner',
+          imageUrl: '/banner.jpg',
+          displayOrder: 0,
+          isActive: true,
+        },
+      ])
+      .mockResolvedValueOnce([])
+
+    const response = await PUT(request('PUT', { banners: [] }))
+
+    expect(response.status).toBe(200)
+    expect(mocks.txBannerDeleteMany).toHaveBeenCalledWith({
+      where: { storeId: 'store-a', id: { in: ['banner-a'] } },
+    })
+    await expect(response.json()).resolves.toMatchObject({ data: [] })
+  })
 })

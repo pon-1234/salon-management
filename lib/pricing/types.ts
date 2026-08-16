@@ -3,6 +3,7 @@ import { BaseEntity } from '../shared'
 // Course pricing model
 export interface CoursePrice extends BaseEntity {
   name: string
+  displayOrder?: number
   description?: string | null
   duration: number
   price: number

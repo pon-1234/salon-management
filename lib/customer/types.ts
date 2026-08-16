@@ -1,4 +1,13 @@
+/**
+ * @design_doc   docs/LEGACY_DATA_MIGRATION_RUNBOOK.md customer data verification
+ * @related_to   CustomerRepository and customer admin pages consume these domain records
+ * @known_issues Point-event history is separate; store-scoped chat counts remain unavailable
+ */
 import { BaseEntity } from '../shared'
+import type { Reservation } from '../types/reservation'
+
+export type CustomerAccountStatus = 'pending' | 'active' | 'withdrawn' | 'blocked' | 'unknown'
+export type CustomerMembershipStage = 'regular' | 'silver' | 'gold' | 'platinum' | 'god' | 'unknown'
 
 export interface NgCastEntry {
   castId: string
@@ -13,9 +22,11 @@ export interface Customer extends BaseEntity {
   phone: string
   email: string
   password: string
-  birthDate: Date
-  age: number
+  birthDate?: Date
+  age?: number
   memberType: 'regular' | 'vip'
+  accountStatus: CustomerAccountStatus
+  membershipStage: CustomerMembershipStage
   smsEnabled: boolean
   emailNotificationEnabled: boolean
   phoneVerified?: boolean
@@ -30,6 +41,7 @@ export interface Customer extends BaseEntity {
   image?: string
   visitCount?: number
   lastVisit?: Date
+  reservations?: Reservation[]
 }
 
 export interface CustomerUsageRecord {
@@ -62,9 +74,9 @@ export interface CustomerInsights {
   averageIntervalDays: number | null
   customerCancelCount: number
   storeCancelCount: number
-  chatCountToday: number
-  chatCountYesterday: number
-  chatCountTotal: number
+  chatCountToday: number | null
+  chatCountYesterday: number | null
+  chatCountTotal: number | null
   preferredBustCup: string | null
   cancellationLimit: number
 }

@@ -5,7 +5,12 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 
+import type { LegacyPreviewImageImportIo } from '@/lib/migration/legacy/preview-image-import'
 import type { PreviewUatDatabase } from '@/lib/preview-uat/setup'
+import {
+  GOLD_MASTER_IMAGE_SOURCE_KEY,
+  type PreparedGoldMasterPreviewImages,
+} from '@/lib/preview-uat/gold-master-images'
 import {
   GOLD_MASTER_PREVIEW_ACKNOWLEDGEMENT,
   runGoldMasterPreviewImport,
@@ -24,21 +29,66 @@ const environment = {
   PREVIEW_UAT_ADMIN_PASSWORD: passwords.admin,
   PREVIEW_UAT_CUSTOMER_PASSWORD: passwords.customer,
   PREVIEW_UAT_CAST_PASSWORD: passwords.cast,
+  PREVIEW_IMAGE_TARGET_ROOT: '/srv/salon-preview-storage/images',
 }
 const snapshotPath = '/private/ikebukuro-preview.json'
-const argv = ['--snapshot', snapshotPath, '--ack', GOLD_MASTER_PREVIEW_ACKNOWLEDGEMENT]
+const imageManifestPath = '/private/ikebukuro-preview-images.json'
+const imageSourceRoot = '/private/ikebukuro-preview-images'
+const imageTargetRoot = '/srv/salon-preview-storage/images'
+const argv = [
+  '--snapshot',
+  snapshotPath,
+  '--image-manifest',
+  imageManifestPath,
+  '--image-source-root',
+  imageSourceRoot,
+  '--image-target-root',
+  imageTargetRoot,
+  '--ack',
+  GOLD_MASTER_PREVIEW_ACKNOWLEDGEMENT,
+]
+
+const imagePlan = {
+  version: 1 as const,
+  sourceKey: GOLD_MASTER_IMAGE_SOURCE_KEY,
+  capturedAt: '2026-07-20T04:00:00.000Z',
+  files: [],
+}
+const preparedImages: PreparedGoldMasterPreviewImages = {
+  plan: imagePlan,
+  resolveImageUrl: () => {
+    throw new Error('The importer test snapshot has no image references.')
+  },
+}
+const imageIo = {} as LegacyPreviewImageImportIo
+const imageDependencies = {
+  readImageManifest: vi.fn(async () => imagePlan),
+  prepareImages: vi.fn(() => preparedImages),
+  createImageFilesystem: vi.fn(() => imageIo),
+  copyImages: vi.fn(async () => ({
+    success: true,
+    plannedFileCount: 0,
+    verifiedByteCount: 0,
+    createdFileCount: 0,
+    reusedFileCount: 0,
+    rolledBackFileCount: 0,
+    issues: [],
+  })),
+  generateDisabledPassword: vi.fn(() => 'unpublished-disabled-customer-secret'),
+}
 
 function snapshot() {
   return {
-    version: 3,
+    version: 4,
     scope: {
       sourceDatabase: 'nzuadtjn_gold_master',
+      customerSourceDatabase: 'nzuadtjn_primegb_master',
       shopNo: 5600,
       cutoffAt: '2026-07-20T04:00:00+00:00',
       scheduleFrom: '2026-07-20',
       scheduleTo: '2026-08-09',
       reservationFrom: '2026-04-21',
-      consistency: 'best-effort-read-only',
+      consistency: 'best-effort-read-only-count-checked',
     },
     beforeCounts: {
       stores: 1,
@@ -51,8 +101,9 @@ function snapshot() {
       hotels: 0,
       casts: 1,
       schedules: 0,
-      reservations: 0,
+      reservations: 1,
       reviews: 0,
+      customers: 1,
     },
     afterCounts: {
       stores: 1,
@@ -65,8 +116,9 @@ function snapshot() {
       hotels: 0,
       casts: 1,
       schedules: 0,
-      reservations: 0,
+      reservations: 1,
       reviews: 0,
+      customers: 1,
     },
     rows: {
       stores: [
@@ -141,8 +193,62 @@ function snapshot() {
         },
       ],
       schedules: [],
-      reservations: [],
+      reservations: [
+        {
+          serial: 7001,
+          shop_no: 5600,
+          girl_no: 56019,
+          deli_date: '2026-07-20',
+          mem_id: 1234,
+          time_h: 20,
+          time_m: 0,
+          course: 2,
+          course_time: 80,
+          course_kin: 21000,
+          course2_kin: 0,
+          course3_kin: 0,
+          simei_kind: 0,
+          simei_kin: 0,
+          koutu: 0,
+          hotel_kin: 0,
+          nebiki_kin: 0,
+          nebiki_kin_point: 0,
+          total: 21000,
+          ara: 10000,
+          girl_pay: 11000,
+          lev: 3,
+          nyu_date: '2026-07-20 10:00:00',
+          pay_kind: 1,
+          media: 1,
+          options: '',
+          options_free: '',
+          pref_no: 0,
+          city_no: 0,
+          station_no: 0,
+          place_h_no: 0,
+        },
+      ],
       reviews: [],
+      customers: [
+        {
+          mem_id: 1234,
+          shop_no: 5600,
+          name: '旧顧客',
+          tel: '09012345678',
+          mail_ad: 'legacy@example.com',
+          birth: '1985-04-03',
+          age: 41,
+          point: 100,
+          lev_member: 1,
+          lev: 1,
+          lev_admin: 0,
+          flg_smail: 0,
+          regist_date: '2020-05-06 12:34:56',
+          regist_date_new: '2020-05-06',
+          login_date: null,
+          deli_date: '2026-07-20',
+        },
+      ],
     },
   }
 }
@@ -180,6 +286,7 @@ describe('runGoldMasterPreviewImport', () => {
 
     await expect(
       runGoldMasterPreviewImport([], environment, {
+        ...imageDependencies,
         readSnapshot,
         createDatabase,
         hashPassword: vi.fn(),
@@ -199,12 +306,16 @@ describe('runGoldMasterPreviewImport', () => {
     const target = database()
     const writeOutput = vi.fn()
     const writeError = vi.fn()
+    const hashPassword = vi.fn(async (password: string) => `hash:${password}`)
+    const generateDisabledPassword = vi.fn(() => 'unpublished-disabled-customer-secret')
 
     await expect(
       runGoldMasterPreviewImport(argv, environment, {
+        ...imageDependencies,
+        generateDisabledPassword,
         readSnapshot: vi.fn(async () => snapshot()),
         createDatabase: vi.fn(() => target),
-        hashPassword: vi.fn(async (password: string) => `hash:${password}`),
+        hashPassword,
         writeOutput,
         writeError,
       })
@@ -221,9 +332,11 @@ describe('runGoldMasterPreviewImport', () => {
       })
     )
     expect(target.disconnect).toHaveBeenCalledOnce()
+    expect(generateDisabledPassword).toHaveBeenCalledOnce()
+    expect(hashPassword).toHaveBeenCalledWith('unpublished-disabled-customer-secret')
     expect(writeError).not.toHaveBeenCalled()
     expect(writeOutput).toHaveBeenCalledWith(
-      'Gold master preview imported: stores=1 admins=2 customers=1 casts=1 reservations=0 options=0 areas=0 stations=0 hotels=0 hotelServiceAreas=0 hotelRates=0 reservationOptions=0'
+      'Gold master preview imported: stores=1 admins=2 customers=1 casts=1 reservations=1 options=0 areas=0 stations=0 hotels=0 hotelServiceAreas=0 hotelRates=0 reservationOptions=0 images=0 imageBytes=0'
     )
     const output = JSON.stringify(writeOutput.mock.calls)
     for (const secret of [...Object.values(passwords), 'db-secret']) {
@@ -236,6 +349,7 @@ describe('runGoldMasterPreviewImport', () => {
 
     await expect(
       runGoldMasterPreviewImport(['--', ...argv], environment, {
+        ...imageDependencies,
         readSnapshot: vi.fn(async () => snapshot()),
         createDatabase: vi.fn(() => target),
         hashPassword: vi.fn(async (password: string) => `hash:${password}`),
@@ -256,6 +370,7 @@ describe('runGoldMasterPreviewImport', () => {
 
     await expect(
       runGoldMasterPreviewImport(argv, environment, {
+        ...imageDependencies,
         readSnapshot: vi.fn(async () => snapshot()),
         createDatabase: vi.fn(() => target),
         hashPassword: vi.fn(async (password: string) => `hash:${password}`),
@@ -270,5 +385,41 @@ describe('runGoldMasterPreviewImport', () => {
     )
     expect(JSON.stringify(writeError.mock.calls)).not.toContain(passwords.customer)
     expect(JSON.stringify(writeError.mock.calls)).not.toContain('db-secret')
+  })
+
+  it('refuses to construct Prisma when verified image copying fails', async () => {
+    const createDatabase = vi.fn(() => database())
+    const writeError = vi.fn()
+
+    await expect(
+      runGoldMasterPreviewImport(argv, environment, {
+        ...imageDependencies,
+        copyImages: vi.fn(async () => ({
+          success: false,
+          plannedFileCount: 1,
+          verifiedByteCount: 0,
+          createdFileCount: 0,
+          reusedFileCount: 0,
+          rolledBackFileCount: 0,
+          issues: [
+            {
+              code: 'SOURCE_VERIFICATION_MISMATCH' as const,
+              path: '$.files[0]',
+              message: 'redacted',
+            },
+          ],
+        })),
+        readSnapshot: vi.fn(async () => snapshot()),
+        createDatabase,
+        hashPassword: vi.fn(async (password: string) => `hash:${password}`),
+        writeOutput: vi.fn(),
+        writeError,
+      })
+    ).resolves.toBe(1)
+
+    expect(createDatabase).not.toHaveBeenCalled()
+    expect(writeError).toHaveBeenCalledWith(
+      'Gold master preview import failed: GOLD_MASTER_PREVIEW_IMAGE_IMPORT_FAILED'
+    )
   })
 })

@@ -17,9 +17,19 @@ const navigation = [
     icon: Calendar,
   },
   {
-    name: '業務日報',
+    name: '日報',
     href: '/admin/analytics/daily-report',
     icon: CalendarDays,
+  },
+  {
+    name: '入金処理',
+    href: '/admin/analytics/payment-processing',
+    icon: BarChart3,
+  },
+  {
+    name: '入金精算処理',
+    href: '/admin/analytics/settlement-processing',
+    icon: BarChart3,
   },
   {
     name: '月次レポート',

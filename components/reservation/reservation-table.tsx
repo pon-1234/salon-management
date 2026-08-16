@@ -1,7 +1,12 @@
+/**
+ * @design_doc   Reservation list presentation and shared image-loading boundary
+ * @related_to   SafeImage renders staff photos served by application or reverse-proxy storage
+ * @known_issues None
+ */
 'use client'
 
-import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
+import { SafeImage } from '@/components/ui/safe-image'
 import {
   Table,
   TableBody,
@@ -110,7 +115,7 @@ export function ReservationTable({ reservations, onOpenReservation }: Reservatio
         </TableHeader>
         <TableBody>
           {reservations.map((reservation, index) => (
-            <TableRow key={index} onClick={() => handleOpenReservation(reservation)}>
+            <TableRow key={reservation.id} onClick={() => handleOpenReservation(reservation)}>
               <TableCell className="whitespace-nowrap font-medium">
                 {(index + 1).toString().padStart(4, '0')}
               </TableCell>
@@ -131,7 +136,7 @@ export function ReservationTable({ reservations, onOpenReservation }: Reservatio
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
-                  <Image
+                  <SafeImage
                     src={reservation.staffImage}
                     alt={reservation.staff}
                     width={40}
@@ -154,7 +159,15 @@ export function ReservationTable({ reservations, onOpenReservation }: Reservatio
                 </div>
               </TableCell>
               <TableCell className="text-right">
-                <Button variant="ghost" size="icon" aria-label="予約操作メニューを開く">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="予約詳細を開く"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    handleOpenReservation(reservation)
+                  }}
+                >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </TableCell>

@@ -206,6 +206,7 @@ describe('Auth Config', () => {
         adminRole: 'super_admin',
         permissions: ['manage_users', 'manage_settings'],
         storeIds: [],
+        storeSlugs: [],
       })
 
       expect(db.admin.update).toHaveBeenCalledWith({
@@ -225,7 +226,10 @@ describe('Auth Config', () => {
         role: 'manager',
         isActive: true,
         permissions: JSON.stringify(['reservation:*']),
-        storeAssignments: [{ storeId: 'ginza' }, { storeId: 'shinjuku' }],
+        storeAssignments: [
+          { storeId: 'store-ginza', store: { slug: 'ginza' } },
+          { storeId: 'store-shinjuku', store: { slug: 'shinjuku' } },
+        ],
         createdAt: new Date(),
         updatedAt: new Date(),
         lastLogin: null,
@@ -243,7 +247,8 @@ describe('Auth Config', () => {
       expect(result).toEqual(
         expect.objectContaining({
           adminRole: 'manager',
-          storeIds: ['ginza', 'shinjuku'],
+          storeIds: ['store-ginza', 'store-shinjuku'],
+          storeSlugs: ['ginza', 'shinjuku'],
         })
       )
     })
@@ -324,6 +329,26 @@ describe('Auth Config', () => {
       expect(recordLoginAttempt).toHaveBeenCalledWith('customer:notfound@example.com', false)
     })
 
+    it('does not authenticate a name-only backoffice customer without a password', async () => {
+      const { db } = await import('@/lib/db')
+      vi.mocked(db.customer.findUnique).mockResolvedValueOnce({
+        id: 'name-only',
+        email: null,
+        password: null,
+        accountStatus: 'active',
+        emailVerified: false,
+      } as never)
+
+      const result = await authorize({
+        email: 'unregistered@example.com',
+        password: 'password',
+      })
+
+      expect(result).toBeNull()
+      expect(bcrypt.compare).not.toHaveBeenCalled()
+      expect(recordLoginAttempt).toHaveBeenCalledWith('customer:unregistered@example.com', false)
+    })
+
     it('normalizes customer email before rate limiting', async () => {
       const { db } = await import('@/lib/db')
       vi.mocked(db.customer.findUnique).mockResolvedValueOnce(null)
@@ -367,6 +392,10 @@ describe('Auth Config', () => {
         nameKana: 'カスタマーネーム',
 
         memberType: 'regular',
+        accountStatus: 'active',
+        membershipStage: 'regular',
+        lastLoginAt: null,
+        lastVisitAt: null,
 
         points: 0,
         smsEnabled: true,
@@ -401,6 +430,48 @@ describe('Auth Config', () => {
       expect(recordLoginAttempt).toHaveBeenCalledWith('customer:customer@example.com', true)
     })
 
+    it('does not authenticate a blocked legacy customer even with valid credentials', async () => {
+      const { db } = await import('@/lib/db')
+      vi.mocked(db.customer.findUnique).mockResolvedValueOnce({
+        id: 'blocked',
+        email: 'blocked@example.com',
+        name: 'Blocked Customer',
+        password: 'hashedpassword',
+        phone: '09012345678',
+        birthDate: new Date(),
+        nameKana: 'ブロック',
+        memberType: 'regular',
+        accountStatus: 'blocked',
+        membershipStage: 'regular',
+        lastLoginAt: null,
+        lastVisitAt: null,
+        points: 0,
+        smsEnabled: false,
+        emailNotificationEnabled: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        resetToken: null,
+        resetTokenExpiry: null,
+        emailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationExpiry: null,
+        phoneVerified: false,
+        phoneVerifiedAt: null,
+        phoneVerificationCode: null,
+        phoneVerificationExpiry: null,
+        phoneVerificationAttempts: 0,
+      })
+      vi.mocked(bcrypt.compare).mockResolvedValueOnce(true as never)
+
+      const result = await authorize({
+        email: 'blocked@example.com',
+        password: 'correctpassword',
+      })
+
+      expect(result).toBeNull()
+      expect(recordLoginAttempt).toHaveBeenCalledWith('customer:blocked@example.com', false)
+    })
+
     it('should use default name if customer name is null', async () => {
       const { db } = await import('@/lib/db')
       vi.mocked(db.customer.findUnique).mockResolvedValueOnce({
@@ -414,6 +485,10 @@ describe('Auth Config', () => {
         nameKana: 'カスタマーネーム',
 
         memberType: 'regular',
+        accountStatus: 'active',
+        membershipStage: 'regular',
+        lastLoginAt: null,
+        lastVisitAt: null,
 
         points: 0,
         smsEnabled: true,
@@ -487,6 +562,7 @@ describe('Auth Config', () => {
         adminRole: 'super_admin',
         permissions: ['manage_users'],
         storeIds: ['ginza'],
+        storeSlugs: ['ginza-slug'],
       }
 
       const result = await authOptions.callbacks!.jwt!({
@@ -502,6 +578,7 @@ describe('Auth Config', () => {
         adminRole: 'super_admin',
         permissions: ['manage_users'],
         storeIds: ['ginza'],
+        storeSlugs: ['ginza-slug'],
       })
     })
 
@@ -534,6 +611,7 @@ describe('Auth Config', () => {
         adminRole: 'super_admin',
         permissions: ['manage_users'],
         storeIds: ['ginza'],
+        storeSlugs: ['ginza-slug'],
       }
 
       const result = await authOptions.callbacks!.session!({
@@ -552,6 +630,7 @@ describe('Auth Config', () => {
         adminRole: 'super_admin',
         permissions: ['manage_users'],
         storeIds: ['ginza'],
+        storeSlugs: ['ginza-slug'],
       })
     })
   })

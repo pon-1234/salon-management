@@ -6,7 +6,6 @@
 
 'use client'
 
-import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -17,59 +16,16 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { PaymentTransaction } from '@/lib/payment/types'
+import type { PaymentTransaction, PaymentTransactionSummary } from '@/lib/payment/types'
 
 interface PaymentStatusTableProps {
   payments: PaymentTransaction[]
+  summary: PaymentTransactionSummary
   className?: string
 }
 
-export function PaymentStatusTable({ payments, className }: PaymentStatusTableProps) {
-  const [statusCounts, setStatusCounts] = useState({
-    completed: 0,
-    pending: 0,
-    failed: 0,
-    refunded: 0,
-    cancelled: 0,
-    processing: 0,
-  })
-
-  const [totals, setTotals] = useState({
-    completedAmount: 0,
-    refundedAmount: 0,
-    totalTransactions: 0,
-    totalAmount: 0,
-  })
-
-  useEffect(() => {
-    const counts = payments.reduce(
-      (acc, payment) => {
-        acc[payment.status as keyof typeof acc] = (acc[payment.status as keyof typeof acc] || 0) + 1
-        return acc
-      },
-      { completed: 0, pending: 0, failed: 0, refunded: 0, cancelled: 0, processing: 0 }
-    )
-
-    const amounts = payments.reduce(
-      (acc, payment) => {
-        acc.totalTransactions += 1
-        acc.totalAmount += payment.amount
-
-        if (payment.status === 'completed') {
-          acc.completedAmount += payment.amount
-        }
-        if (payment.status === 'refunded' && payment.refundAmount) {
-          acc.refundedAmount += payment.refundAmount
-        }
-
-        return acc
-      },
-      { completedAmount: 0, refundedAmount: 0, totalTransactions: 0, totalAmount: 0 }
-    )
-
-    setStatusCounts(counts)
-    setTotals(amounts)
-  }, [payments])
+export function PaymentStatusTable({ payments, summary, className }: PaymentStatusTableProps) {
+  const { statusCounts } = summary
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -164,25 +120,25 @@ export function PaymentStatusTable({ payments, className }: PaymentStatusTablePr
       {/* Amount Summary */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <div className="rounded-lg bg-gray-50 p-3 text-center">
-          <div className="text-lg font-bold">¥{totals.totalAmount.toLocaleString()}</div>
+          <div className="text-lg font-bold">¥{summary.totalAmount.toLocaleString()}</div>
           <div className="text-sm text-gray-600">総取引額</div>
         </div>
         <div className="rounded-lg bg-green-50 p-3 text-center">
           <div className="text-lg font-bold text-green-800">
-            ¥{totals.completedAmount.toLocaleString()}
+            ¥{summary.completedAmount.toLocaleString()}
           </div>
           <div className="text-sm text-green-600">完了取引額</div>
         </div>
         <div className="rounded-lg bg-purple-50 p-3 text-center">
           <div className="text-lg font-bold text-purple-800">
-            ¥{totals.refundedAmount.toLocaleString()}
+            ¥{summary.refundedAmount.toLocaleString()}
           </div>
           <div className="text-sm text-purple-600">返金額</div>
         </div>
         <div className="rounded-lg bg-blue-50 p-3 text-center">
           <div className="text-lg font-bold text-blue-800">
-            {totals.totalTransactions > 0
-              ? Math.round(totals.completedAmount / totals.totalTransactions).toLocaleString()
+            {summary.totalTransactions > 0
+              ? Math.round(summary.totalAmount / summary.totalTransactions).toLocaleString()
               : 0}
           </div>
           <div className="text-sm text-blue-600">平均取引額</div>
@@ -199,6 +155,7 @@ export function PaymentStatusTable({ payments, className }: PaymentStatusTablePr
               <TableHead>顧客ID</TableHead>
               <TableHead className="text-right">金額</TableHead>
               <TableHead>決済方法</TableHead>
+              <TableHead>管理番号</TableHead>
               <TableHead>プロバイダー</TableHead>
               <TableHead>ステータス</TableHead>
               <TableHead className="text-right">返金額</TableHead>
@@ -215,6 +172,7 @@ export function PaymentStatusTable({ payments, className }: PaymentStatusTablePr
                 <TableCell className="font-mono text-sm">{payment.customerId.slice(-8)}</TableCell>
                 <TableCell className="text-right">¥{payment.amount.toLocaleString()}</TableCell>
                 <TableCell>{getPaymentMethodLabel(payment.paymentMethod)}</TableCell>
+                <TableCell>{String(payment.metadata?.paymentReference ?? '-')}</TableCell>
                 <TableCell>{getProviderLabel(payment.provider)}</TableCell>
                 <TableCell>{getStatusBadge(payment.status)}</TableCell>
                 <TableCell className="text-right">
@@ -229,7 +187,7 @@ export function PaymentStatusTable({ payments, className }: PaymentStatusTablePr
             ))}
             {payments.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="py-8 text-center text-gray-500">
+                <TableCell colSpan={10} className="py-8 text-center text-gray-500">
                   支払い取引がありません
                 </TableCell>
               </TableRow>

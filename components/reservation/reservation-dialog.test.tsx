@@ -211,6 +211,35 @@ describe('ReservationDialog Edit Mode', () => {
     }
   })
 
+  it('scopes the customer lookup to the selected store when the dialog opens', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      const payload = url.startsWith('/api/cast') ? [] : { ngCasts: [] }
+      return new Response(JSON.stringify(payload), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(
+      <ReservationDialog
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        reservation={mockReservation}
+        onSave={mockOnSave}
+      />
+    )
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/customer?id=c1&storeId=ikebukuro', {
+        cache: 'no-store',
+        credentials: 'include',
+        signal: expect.any(AbortSignal),
+      })
+    })
+  })
+
   it('should toggle edit mode when edit button is clicked', () => {
     render(
       <ReservationDialog
@@ -322,6 +351,11 @@ describe('ReservationDialog Edit Mode', () => {
       expect(screen.getByText(/キャンセル理由を選択/)).toBeInTheDocument()
     })
 
+    const confirmCancellation = screen.getByRole('button', { name: /確定してキャンセル/ })
+    expect(confirmCancellation).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('キャンセル理由詳細'), {
+      target: { value: 'お客様の予定変更のため' },
+    })
     fireEvent.click(screen.getByRole('button', { name: /確定してキャンセル/ }))
 
     // onSave should be called with updated status
@@ -329,8 +363,71 @@ describe('ReservationDialog Edit Mode', () => {
       expect(mockOnSave).toHaveBeenCalledWith(mockReservation.id, {
         status: 'cancelled',
         cancellationSource: 'customer',
+        cancellationReason: 'お客様の予定変更のため',
       })
     })
+  })
+
+  it('edits and displays the card receipt management reference without exposing a card number field', async () => {
+    const cardReservation: ReservationData = {
+      ...mockReservation,
+      serviceId: 'course-1',
+      designation: 'なし',
+      designationFee: '0円',
+      options: {},
+      paymentMethod: 'クレジットカード',
+      paymentReference: 'IK-2026-00421',
+    }
+
+    render(
+      <ReservationDialog
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        reservation={cardReservation}
+        onSave={mockOnSave}
+      />
+    )
+
+    expect(screen.getByText('IK-2026-00421')).toBeInTheDocument()
+    expect(screen.queryByLabelText('カード番号')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /編集/i }))
+    const referenceInput = screen.getByLabelText('カード管理番号')
+    fireEvent.change(referenceInput, { target: { value: 'IK-2026-00422' } })
+    fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalledWith(
+        cardReservation.id,
+        expect.objectContaining({ paymentReference: 'IK-2026-00422' })
+      )
+    })
+  })
+
+  it('does not label any amount as welfare expense in the editable price breakdown', async () => {
+    const pricedReservation: ReservationData = {
+      ...mockReservation,
+      serviceId: 'course-1',
+    }
+
+    render(
+      <ReservationDialog
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        reservation={pricedReservation}
+        onSave={mockOnSave}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /編集/i }))
+    fireEvent.mouseDown(screen.getByRole('tab', { name: /詳細/i }), {
+      button: 0,
+      ctrlKey: false,
+    })
+
+    expect(await screen.findByText('料金プレビュー')).toBeInTheDocument()
+    expect(screen.queryByText(/厚生費/)).not.toBeInTheDocument()
+    expect(screen.queryByText('交通費')).not.toBeInTheDocument()
+    expect(screen.queryByText(/配車/)).not.toBeInTheDocument()
   })
 
   it('should offer the modifiable status for confirmed reservations', async () => {
@@ -416,7 +513,7 @@ describe('ReservationDialog Edit Mode', () => {
       />
     )
 
-    expect(screen.getByText('修正可能')).toBeInTheDocument()
+    expect(screen.getByText('修正待ち')).toBeInTheDocument()
     expect(screen.getByText(/修正可能残り時間:/i)).toBeInTheDocument()
   })
 
@@ -635,8 +732,8 @@ describe('ReservationDialog Edit Mode', () => {
       course: '旧イベント90分',
       options: {},
       paymentMethod: 'cash',
-      startTime: new Date('2024-01-20T14:00:00'),
-      endTime: new Date('2024-01-20T15:30:00'),
+      startTime: new Date('2024-01-20T14:10:00'),
+      endTime: new Date('2024-01-20T15:40:00'),
     }
 
     render(
@@ -656,6 +753,37 @@ describe('ReservationDialog Edit Mode', () => {
     expect(savedPayload).not.toHaveProperty('courseId')
     expect(savedPayload).not.toHaveProperty('paymentMethod')
     expect(savedPayload.endTime).toEqual(legacyCourseReservation.endTime)
+  })
+
+  it('uses a 30-minute input step and rejects an off-boundary edited start time', async () => {
+    const futureReservation: ReservationData = {
+      ...mockReservation,
+      startTime: new Date('2099-01-20T14:00:00'),
+      endTime: new Date('2099-01-20T16:00:00'),
+    }
+
+    render(
+      <ReservationDialog
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        reservation={futureReservation}
+        onSave={mockOnSave}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /編集/i }))
+    const startTimeInput = screen.getByLabelText('開始時間')
+    expect(startTimeInput).toHaveAttribute('step', '1800')
+
+    fireEvent.change(startTimeInput, { target: { value: '14:10' } })
+    fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('開始時間の分は00分または30分を指定してください。')
+      ).toBeInTheDocument()
+    )
+    expect(mockOnSave).not.toHaveBeenCalled()
   })
 
   it('preserves an existing station and transportation fee when it is absent from current options', async () => {

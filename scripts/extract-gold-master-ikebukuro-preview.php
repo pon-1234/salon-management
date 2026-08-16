@@ -3,86 +3,168 @@
 /**
  * @design_doc   docs/LEGACY_DATA_MIGRATION_RUNBOOK.md read-only Ikebukuro field-preview extraction
  * @related_to   scripts/legacy-preview-import.ts consumes separately transformed preview artifacts
- * @known_issues The legacy source cannot provide a cross-table snapshot, so reconciliation is reported
+ * @known_issues The approved legacy tables use MyISAM, so final cutover requires a coordinated write pause
  */
 
 const LEGACY_CONFIG_PATH = '/home/nzuadtjn/gold-esthe.com_inc_master/jukunen_db_2016.inc';
 const EXPECTED_DATABASE = 'nzuadtjn_gold_master';
+const EXPECTED_CUSTOMER_DATABASE = 'nzuadtjn_primegb_master';
 const SHOP_NO = 5600;
+
+class LegacyPreviewExtractionException extends RuntimeException
+{
+}
 
 try {
     runExtractor();
 } catch (Throwable $error) {
-    file_put_contents('php://stderr', "Legacy preview extraction failed.\n");
+    $diagnostic =
+        getenv('LEGACY_PREVIEW_DIAGNOSTICS') === 'STAGE_ONLY' &&
+        $error instanceof LegacyPreviewExtractionException
+            ? ' at stage: ' . $error->getMessage()
+            : '';
+    file_put_contents('php://stderr', "Legacy preview extraction failed{$diagnostic}.\n");
     exit(1);
 }
 
 function runExtractor()
 {
-    date_default_timezone_set('Asia/Tokyo');
+    $pdo = null;
+    $transactionStarted = false;
+    $stage = 'configuration';
+    try {
+        date_default_timezone_set('Asia/Tokyo');
 
-    $scheduleFrom = readIsoDateEnvironment('LEGACY_PREVIEW_SCHEDULE_FROM');
-    $scheduleTo = readIsoDateEnvironment('LEGACY_PREVIEW_SCHEDULE_TO');
-    $reservationFrom = readIsoDateEnvironment('LEGACY_PREVIEW_RESERVATION_FROM');
+        $extractKind = getenv('LEGACY_PREVIEW_EXTRACT_KIND');
+        if ($extractKind === false || $extractKind === '') {
+            $extractKind = 'gold-master-v4';
+        }
+        if ($extractKind !== 'gold-master-v4' && $extractKind !== 'cast-ledger') {
+            throw new RuntimeException('Invalid extraction kind.');
+        }
 
-    if ($scheduleFrom > $scheduleTo) {
-        throw new RuntimeException('Invalid schedule range.');
+        $scheduleFrom = null;
+        $scheduleTo = null;
+        $reservationFrom = null;
+        $ledgerFrom = null;
+        if ($extractKind === 'cast-ledger') {
+            $ledgerFrom = readIsoDateEnvironment('LEGACY_PREVIEW_LEDGER_FROM');
+        } else {
+            $scheduleFrom = readIsoDateEnvironment('LEGACY_PREVIEW_SCHEDULE_FROM');
+            $scheduleTo = readIsoDateEnvironment('LEGACY_PREVIEW_SCHEDULE_TO');
+            $reservationFrom = readIsoDateEnvironment('LEGACY_PREVIEW_RESERVATION_FROM');
+            if ($scheduleFrom > $scheduleTo) {
+                throw new RuntimeException('Invalid schedule range.');
+            }
+        }
+
+        $connection = parseJukunenConnectionConfig(LEGACY_CONFIG_PATH);
+        if ($connection['database'] !== EXPECTED_DATABASE) {
+            throw new RuntimeException('Unexpected legacy database.');
+        }
+
+        $stage = 'connection';
+        $pdo = new PDO(
+            'mysql:host=' . $connection['host'] . ';dbname=' . $connection['database'] . ';charset=utf8mb4',
+            $connection['username'],
+            $connection['password'],
+            array(
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false,
+            )
+        );
+        $pdo->exec('SET SESSION TRANSACTION READ ONLY');
+        $pdo->exec('SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+
+        $stage = 'source-identity';
+        $readOnlyMode = $pdo->query('SELECT @@session.tx_read_only AS read_only_mode')->fetchColumn();
+        $selectedDatabase = $pdo->query('SELECT DATABASE() AS database_name')->fetchColumn();
+        if ((int) $readOnlyMode !== 1 || $selectedDatabase !== EXPECTED_DATABASE) {
+            throw new RuntimeException('Legacy source safety gate failed.');
+        }
+
+        $stage = 'transaction-start';
+        $pdo->exec('START TRANSACTION WITH CONSISTENT SNAPSHOT');
+        $transactionStarted = true;
+        $capturedAt = (new DateTimeImmutable('now', new DateTimeZone('Asia/Tokyo')))->format(DATE_ATOM);
+        if (getenv('LEGACY_PREVIEW_DIAGNOSTICS') === 'SCHEMA_ONLY') {
+            $stage = 'schema-only';
+            $tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
+            $matched = array();
+            foreach ($tables as $table) {
+                if (
+                    !is_string($table) ||
+                    !preg_match('/^(office_pay|nyukin|shukkin|shop_list|nyukin_[0-9]{4}|shukkin_[0-9]{4})$/D', $table)
+                ) {
+                    continue;
+                }
+                $matched[] = $table;
+            }
+            echo json_encode($matched, JSON_UNESCAPED_SLASHES) . "\n";
+            $pdo->exec('COMMIT');
+            $transactionStarted = false;
+            return;
+        }
+
+        $stage = 'dataset-extraction';
+        $queries =
+            $extractKind === 'cast-ledger'
+                ? buildLedgerDatasetQueries($pdo, $ledgerFrom)
+                : buildDatasetQueries($scheduleFrom, $scheduleTo, $reservationFrom);
+        $beforeCounts = collectCounts($pdo, $queries);
+        $rows = collectRows($pdo, $queries);
+        $afterCounts = collectCounts($pdo, $queries);
+        $snapshot =
+            $extractKind === 'cast-ledger'
+                ? buildLedgerSnapshot($capturedAt, $ledgerFrom, $beforeCounts, $afterCounts, $rows)
+                : array(
+                    'version' => 4,
+                    'scope' => array(
+                        'sourceDatabase' => EXPECTED_DATABASE,
+                        'customerSourceDatabase' => EXPECTED_CUSTOMER_DATABASE,
+                        'shopNo' => SHOP_NO,
+                        'cutoffAt' => $capturedAt,
+                        'scheduleFrom' => $scheduleFrom,
+                        'scheduleTo' => $scheduleTo,
+                        'reservationFrom' => $reservationFrom,
+                        'consistency' => 'best-effort-read-only-count-checked',
+                    ),
+                    'beforeCounts' => canonicalizeDatasets($beforeCounts),
+                    'afterCounts' => canonicalizeDatasets($afterCounts),
+                    'rows' => canonicalizeDatasets($rows),
+                );
+
+        $stage = 'snapshot-encoding';
+        $json = json_encode(
+            $snapshot,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
+        );
+        if (!is_string($json)) {
+            throw new RuntimeException('Snapshot encoding failed.');
+        }
+
+        $stage = 'transaction-commit';
+        $pdo->exec('COMMIT');
+        $transactionStarted = false;
+        echo $json . "\n";
+    } catch (Throwable $error) {
+        if ($pdo instanceof PDO && $transactionStarted) {
+            try {
+                $pdo->exec('ROLLBACK');
+            } catch (Throwable $rollbackError) {
+                throw new LegacyPreviewExtractionException(
+                    'transaction-rollback',
+                    0,
+                    $rollbackError
+                );
+            }
+        }
+        if ($error instanceof LegacyPreviewExtractionException) {
+            throw $error;
+        }
+        throw new LegacyPreviewExtractionException($stage, 0, $error);
     }
-
-    $connection = parseJukunenConnectionConfig(LEGACY_CONFIG_PATH);
-    if ($connection['database'] !== EXPECTED_DATABASE) {
-        throw new RuntimeException('Unexpected legacy database.');
-    }
-
-    $pdo = new PDO(
-        'mysql:host=' . $connection['host'] . ';dbname=' . $connection['database'] . ';charset=utf8mb4',
-        $connection['username'],
-        $connection['password'],
-        array(
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES => false,
-        )
-    );
-    $pdo->exec('SET SESSION TRANSACTION READ ONLY');
-
-    $readOnlyMode = $pdo->query('SELECT @@session.tx_read_only AS read_only_mode')->fetchColumn();
-    $selectedDatabase = $pdo->query('SELECT DATABASE() AS database_name')->fetchColumn();
-    if ((int) $readOnlyMode !== 1 || $selectedDatabase !== EXPECTED_DATABASE) {
-        throw new RuntimeException('Legacy source safety gate failed.');
-    }
-
-    $queries = buildDatasetQueries($scheduleFrom, $scheduleTo, $reservationFrom);
-    $beforeCounts = collectCounts($pdo, $queries);
-    $rows = collectRows($pdo, $queries);
-    $afterCounts = collectCounts($pdo, $queries);
-
-    $capturedAt = (new DateTimeImmutable('now', new DateTimeZone('Asia/Tokyo')))->format(DATE_ATOM);
-    $snapshot = array(
-        'version' => 3,
-        'scope' => array(
-            'sourceDatabase' => EXPECTED_DATABASE,
-            'shopNo' => SHOP_NO,
-            'cutoffAt' => $capturedAt,
-            'scheduleFrom' => $scheduleFrom,
-            'scheduleTo' => $scheduleTo,
-            'reservationFrom' => $reservationFrom,
-            'consistency' => 'best-effort-read-only',
-        ),
-        'beforeCounts' => canonicalizeDatasets($beforeCounts),
-        'afterCounts' => canonicalizeDatasets($afterCounts),
-        'rows' => canonicalizeDatasets($rows),
-    );
-
-    $json = json_encode(
-        $snapshot,
-        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
-    );
-    if (!is_string($json)) {
-        throw new RuntimeException('Snapshot encoding failed.');
-    }
-
-    echo $json . "\n";
 }
 
 function readIsoDateEnvironment($name)
@@ -296,8 +378,19 @@ function buildDatasetQueries($scheduleFrom, $scheduleTo, $reservationFrom)
         ':shopNo' => SHOP_NO,
         ':activeShopNo' => SHOP_NO,
         ':reservationFrom' => $reservationFrom,
+        ':reservationFromMonth' => $reservationFrom,
+    );
+    $officePayParameters = array(
+        ':shopNo' => SHOP_NO,
+        ':activeShopNo' => SHOP_NO,
+        ':reservationFrom' => $reservationFrom,
     );
     $reviewParameters = array(':shopNo' => SHOP_NO, ':activeShopNo' => SHOP_NO);
+    $customerParameters = array(
+        ':memberShopNo' => SHOP_NO,
+        ':memberOrderShopNo' => SHOP_NO,
+        ':memberReviewShopNo' => SHOP_NO,
+    );
     $areaParameters = array(
         ':stationShopNo' => SHOP_NO,
         ':orderShopNo' => SHOP_NO,
@@ -316,7 +409,7 @@ function buildDatasetQueries($scheduleFrom, $scheduleTo, $reservationFrom)
     return array(
         'shopList' => array(
             'count' => 'SELECT COUNT(*) AS row_count FROM shop_list WHERE shop_no = :shopNo',
-            'rows' => '/* dataset:shopList */ SELECT shop_no, shop_name, tel, adress, eigyo, mail_ad, lev FROM shop_list WHERE shop_no = :shopNo ORDER BY shop_no',
+            'rows' => '/* dataset:shopList */ SELECT shop_no, shop_name, tel, adress, eigyo, mail_ad, lev, girls_jikyu FROM shop_list WHERE shop_no = :shopNo ORDER BY shop_no',
             'params' => $shopParameters,
         ),
         'chargeInfo' => array(
@@ -374,6 +467,182 @@ function buildDatasetQueries($scheduleFrom, $scheduleTo, $reservationFrom)
             'rows' => '/* dataset:userVoice */ SELECT v.serial, v.shop_no, v.mem_id, v.girl_no, v.order_no, v.add_date, v.h_lev, v.cm, v.lev FROM user_voice v WHERE v.shop_no = :shopNo AND v.lev = 1 AND v.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1) ORDER BY v.add_date, v.serial',
             'params' => $reviewParameters,
         ),
+        'members' => array(
+            'count' => 'SELECT COUNT(*) AS row_count FROM nzuadtjn_primegb_master.member m WHERE m.shop_no = :memberShopNo OR m.mem_id IN (SELECT DISTINCT o.mem_id FROM orders o WHERE o.shop_no = :memberOrderShopNo AND o.mem_id > 0) OR m.mem_id IN (SELECT DISTINCT v.mem_id FROM user_voice v WHERE v.shop_no = :memberReviewShopNo AND v.mem_id > 0)',
+            'rows' => '/* dataset:members */ SELECT m.mem_id, m.shop_no, m.name, m.tel, m.mail_ad, m.birth, m.age, m.point, m.lev_member, m.lev, m.lev_admin, m.flg_smail, m.regist_date, m.regist_date_new, m.login_date, m.deli_date FROM nzuadtjn_primegb_master.member m WHERE m.shop_no = :memberShopNo OR m.mem_id IN (SELECT DISTINCT o.mem_id FROM orders o WHERE o.shop_no = :memberOrderShopNo AND o.mem_id > 0) OR m.mem_id IN (SELECT DISTINCT v.mem_id FROM user_voice v WHERE v.shop_no = :memberReviewShopNo AND v.mem_id > 0) ORDER BY m.mem_id',
+            'params' => $customerParameters,
+        ),
+        'nyukin' => array(
+            'count' => 'SELECT COUNT(*) AS row_count FROM nyukin n WHERE n.shop_no = :shopNo AND n.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1) AND (n.nyu_date >= :reservationFrom OR n.nyu_month >= :reservationFromMonth)',
+            'rows' => '/* dataset:nyukin */ SELECT n.serial, n.shop_no, n.nyu_date, n.nyu_month, n.girl_no, n.kin, n.kind FROM nyukin n WHERE n.shop_no = :shopNo AND n.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1) AND (n.nyu_date >= :reservationFrom OR n.nyu_month >= :reservationFromMonth) ORDER BY n.nyu_date, n.serial',
+            'params' => $reservationParameters,
+        ),
+        'shukkin' => array(
+            'count' => 'SELECT COUNT(*) AS row_count FROM shukkin s WHERE s.shop_no = :shopNo AND s.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1) AND (s.nyu_date >= :reservationFrom OR s.nyu_month >= :reservationFromMonth)',
+            'rows' => '/* dataset:shukkin */ SELECT s.serial, s.shop_no, s.nyu_date, s.nyu_month, s.girl_no, s.kin, s.kind FROM shukkin s WHERE s.shop_no = :shopNo AND s.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1) AND (s.nyu_date >= :reservationFrom OR s.nyu_month >= :reservationFromMonth) ORDER BY s.nyu_date, s.serial',
+            'params' => $reservationParameters,
+        ),
+        'officePay' => array(
+            'count' => 'SELECT COUNT(*) AS row_count FROM office_pay p WHERE p.shop_no = :shopNo AND p.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1) AND p.job_date >= :reservationFrom',
+            'rows' => '/* dataset:officePay */ SELECT p.serial, p.shop_no, p.job_date, p.girl_no, p.kin FROM office_pay p WHERE p.shop_no = :shopNo AND p.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1) AND p.job_date >= :reservationFrom ORDER BY p.job_date, p.girl_no',
+            'params' => $officePayParameters,
+        ),
+    );
+}
+
+function cashbookTableExists($pdo, $tableName)
+{
+    if (!preg_match('/^(nyukin|shukkin)(?:_[0-9]{4})?$/D', $tableName)) {
+        throw new RuntimeException('Unexpected cashbook table.');
+    }
+    $statement = $pdo->prepare(
+        'SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = :tableName'
+    );
+    $statement->bindValue(':tableName', $tableName, PDO::PARAM_STR);
+    $statement->execute();
+    return (int) $statement->fetchColumn() === 1;
+}
+
+function tagCashbookSourceTable($rows, $tableName)
+{
+    $tagged = array();
+    foreach ($rows as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $row['source_table'] = $tableName;
+        $tagged[] = $row;
+    }
+    return $tagged;
+}
+
+function mergeLedgerPayments($rows)
+{
+    $payments = tagCashbookSourceTable(
+        isset($rows['nyukin']) && is_array($rows['nyukin']) ? $rows['nyukin'] : array(),
+        'nyukin'
+    );
+    foreach ($rows as $dataset => $value) {
+        if (!preg_match('/^nyukin_[0-9]{4}$/D', $dataset) || !is_array($value)) {
+            continue;
+        }
+        $payments = array_merge($payments, tagCashbookSourceTable($value, $dataset));
+    }
+    return $payments;
+}
+
+function buildLedgerDatasetQueries($pdo, $ledgerFrom)
+{
+    $shopParameters = array(':shopNo' => SHOP_NO);
+    $ledgerParameters = array(
+        ':shopNo' => SHOP_NO,
+        ':activeShopNo' => SHOP_NO,
+        ':reservationFrom' => $ledgerFrom,
+        ':reservationFromMonth' => $ledgerFrom,
+    );
+    $officePayParameters = array(
+        ':shopNo' => SHOP_NO,
+        ':activeShopNo' => SHOP_NO,
+        ':reservationFrom' => $ledgerFrom,
+    );
+
+    $queries = array(
+        'shopGuarantee' => array(
+            'count' => 'SELECT COUNT(*) AS row_count FROM shop_list WHERE shop_no = :shopNo',
+            'rows' => '/* dataset:shopGuarantee */ SELECT shop_no, girls_jikyu FROM shop_list WHERE shop_no = :shopNo ORDER BY shop_no',
+            'params' => $shopParameters,
+        ),
+        'nyukin' => array(
+            'count' => 'SELECT COUNT(*) AS row_count FROM nyukin n WHERE n.shop_no = :shopNo AND n.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1) AND (n.nyu_date >= :reservationFrom OR n.nyu_month >= :reservationFromMonth)',
+            'rows' => '/* dataset:nyukin */ SELECT n.serial, n.shop_no, n.nyu_date, n.nyu_month, n.girl_no, n.kin, n.kind FROM nyukin n WHERE n.shop_no = :shopNo AND n.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1) AND (n.nyu_date >= :reservationFrom OR n.nyu_month >= :reservationFromMonth) ORDER BY n.nyu_date, n.serial',
+            'params' => $ledgerParameters,
+        ),
+        'shukkin' => array(
+            'count' => 'SELECT COUNT(*) AS row_count FROM shukkin s WHERE s.shop_no = :shopNo AND s.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1) AND (s.nyu_date >= :reservationFrom OR s.nyu_month >= :reservationFromMonth)',
+            'rows' => '/* dataset:shukkin */ SELECT s.serial, s.shop_no, s.nyu_date, s.nyu_month, s.girl_no, s.kin, s.kind FROM shukkin s WHERE s.shop_no = :shopNo AND s.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1) AND (s.nyu_date >= :reservationFrom OR s.nyu_month >= :reservationFromMonth) ORDER BY s.nyu_date, s.serial',
+            'params' => $ledgerParameters,
+        ),
+        'officePay' => array(
+            'count' => 'SELECT COUNT(*) AS row_count FROM office_pay p WHERE p.shop_no = :shopNo AND p.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1) AND p.job_date >= :reservationFrom',
+            'rows' => '/* dataset:officePay */ SELECT p.serial, p.shop_no, p.job_date, p.girl_no, p.kin FROM office_pay p WHERE p.shop_no = :shopNo AND p.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1) AND p.job_date >= :reservationFrom ORDER BY p.job_date, p.girl_no',
+            'params' => $officePayParameters,
+        ),
+    );
+
+    $fromYear = (int) substr($ledgerFrom, 0, 4);
+    $toYear = (int) (new DateTimeImmutable('now', new DateTimeZone('Asia/Tokyo')))->format('Y');
+    for ($year = $fromYear; $year <= $toYear; $year++) {
+        $tableName = 'nyukin_' . $year;
+        if (!cashbookTableExists($pdo, $tableName)) {
+            continue;
+        }
+        $quotedTable = '`' . $tableName . '`';
+        $queries[$tableName] = array(
+            'count' =>
+                'SELECT COUNT(*) AS row_count FROM ' .
+                $quotedTable .
+                ' n WHERE n.shop_no = :shopNo AND n.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1) AND (n.nyu_date >= :reservationFrom OR n.nyu_month >= :reservationFromMonth)',
+            'rows' =>
+                '/* dataset:' .
+                $tableName .
+                ' */ SELECT n.serial, n.shop_no, n.nyu_date, n.nyu_month, n.girl_no, n.kin, n.kind FROM ' .
+                $quotedTable .
+                ' n WHERE n.shop_no = :shopNo AND n.girl_no IN (SELECT g.girl_no FROM girls g WHERE g.shop_no = :activeShopNo AND g.lev = 2 AND g.lev_admin != 1) AND (n.nyu_date >= :reservationFrom OR n.nyu_month >= :reservationFromMonth) ORDER BY n.nyu_date, n.serial',
+            'params' => $ledgerParameters,
+        );
+    }
+
+    return $queries;
+}
+
+function canonicalizeLedgerDatasets($datasets)
+{
+    $payments = (int) $datasets['nyukin'];
+    foreach ($datasets as $dataset => $value) {
+        if (preg_match('/^nyukin_[0-9]{4}$/D', $dataset)) {
+            $payments += (int) $value;
+        }
+    }
+
+    return array(
+        'stores' => $datasets['shopGuarantee'],
+        'payments' => $payments,
+        'withdrawals' => $datasets['shukkin'],
+        'welfareDeductions' => $datasets['officePay'],
+    );
+}
+
+function buildLedgerSnapshot($capturedAt, $ledgerFrom, $beforeCounts, $afterCounts, $rows)
+{
+    if (!isset($rows['shopGuarantee']) || count($rows['shopGuarantee']) !== 1) {
+        throw new RuntimeException('Unexpected shop guarantee row count.');
+    }
+    $store = $rows['shopGuarantee'][0];
+    if (!isset($store['shop_no'], $store['girls_jikyu'])) {
+        throw new RuntimeException('Unexpected shop guarantee projection.');
+    }
+
+    return array(
+        'version' => 1,
+        'kind' => 'ikebukuro-cast-ledger',
+        'scope' => array(
+            'sourceDatabase' => EXPECTED_DATABASE,
+            'shopNo' => SHOP_NO,
+            'cutoffAt' => $capturedAt,
+            'ledgerFrom' => $ledgerFrom,
+            'consistency' => 'best-effort-read-only-count-checked',
+        ),
+        'beforeCounts' => canonicalizeLedgerDatasets($beforeCounts),
+        'afterCounts' => canonicalizeLedgerDatasets($afterCounts),
+        'store' => array(
+            'shop_no' => (int) $store['shop_no'],
+            'girls_jikyu' => (int) $store['girls_jikyu'],
+        ),
+        'rows' => array(
+            'payments' => mergeLedgerPayments($rows),
+            'withdrawals' => $rows['shukkin'],
+            'welfareDeductions' => $rows['officePay'],
+        ),
     );
 }
 
@@ -392,6 +661,10 @@ function canonicalizeDatasets($datasets)
         'schedules' => $datasets['yotei'],
         'reservations' => $datasets['orders'],
         'reviews' => $datasets['userVoice'],
+        'customers' => $datasets['members'],
+        'payments' => $datasets['nyukin'],
+        'withdrawals' => $datasets['shukkin'],
+        'welfareDeductions' => $datasets['officePay'],
     );
 }
 
@@ -399,8 +672,12 @@ function collectCounts($pdo, $queries)
 {
     $counts = array();
     foreach ($queries as $dataset => $query) {
-        $statement = prepareAndExecute($pdo, $query['count'], $query['params']);
-        $counts[$dataset] = (int) $statement->fetchColumn();
+        try {
+            $statement = prepareAndExecute($pdo, $query['count'], $query['params']);
+            $counts[$dataset] = (int) $statement->fetchColumn();
+        } catch (Throwable $error) {
+            throw new LegacyPreviewExtractionException('dataset-count-' . $dataset, 0, $error);
+        }
     }
     return $counts;
 }
@@ -409,8 +686,12 @@ function collectRows($pdo, $queries)
 {
     $rows = array();
     foreach ($queries as $dataset => $query) {
-        $statement = prepareAndExecute($pdo, $query['rows'], $query['params']);
-        $rows[$dataset] = $statement->fetchAll(PDO::FETCH_ASSOC);
+        try {
+            $statement = prepareAndExecute($pdo, $query['rows'], $query['params']);
+            $rows[$dataset] = $statement->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Throwable $error) {
+            throw new LegacyPreviewExtractionException('dataset-rows-' . $dataset, 0, $error);
+        }
     }
     return $rows;
 }

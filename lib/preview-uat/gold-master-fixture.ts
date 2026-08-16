@@ -8,14 +8,21 @@ import { addMinutes } from 'date-fns'
 import { zonedTimeToUtc } from 'date-fns-tz'
 import { z } from 'zod'
 
+import { mapLegacyOrderLevToStatus } from '@/lib/reservation/legacy-status'
+import { mapLegacyCastLedger } from '@/lib/settlement/legacy-ledger'
 import type { PreviewUatFixture } from './setup'
+import type {
+  GoldMasterPreviewImageProjection,
+  GoldMasterPreviewImageReference,
+} from './gold-master-images'
 
 const STORE_ID = 'uat-ikebukuro'
 const STORE_SLUG = 'ikebukuro'
 const SOURCE_DATABASE = 'nzuadtjn_gold_master'
+const CUSTOMER_SOURCE_DATABASE = 'nzuadtjn_primegb_master'
 const SHOP_NO = 5600
 const TIME_ZONE = 'Asia/Tokyo'
-const LEGACY_IMAGE_BASE = 'https://gold-esthe.com/ikebukuro/img_girls/5600'
+const CANONICAL_IMAGE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._~-]*$/u
 
 const integer = z
   .union([z.number().int(), z.string().regex(/^-?[0-9]+$/u)])
@@ -23,6 +30,7 @@ const integer = z
   .refine(Number.isSafeInteger)
 const nonNegativeInteger = integer.refine((value) => value >= 0)
 const positiveInteger = integer.refine((value) => value > 0)
+const nullableInteger = integer.nullable()
 const nullableText = z.string().nullable()
 const emptyIfNull = z
   .string()
@@ -48,6 +56,10 @@ const countsSchema = z
     schedules: nonNegativeInteger,
     reservations: nonNegativeInteger,
     reviews: nonNegativeInteger,
+    customers: nonNegativeInteger,
+    payments: nonNegativeInteger.optional().default(0),
+    withdrawals: nonNegativeInteger.optional().default(0),
+    welfareDeductions: nonNegativeInteger.optional().default(0),
   })
   .strict()
 
@@ -60,6 +72,7 @@ const storeSchema = z
     eigyo: nullableText,
     mail_ad: nullableText,
     lev: integer,
+    girls_jikyu: zeroIfNull.optional().default(0),
   })
   .strict()
 
@@ -264,18 +277,68 @@ const reviewSchema = z
   })
   .strict()
 
+const customerSchema = z
+  .object({
+    mem_id: positiveInteger,
+    shop_no: nullableInteger,
+    name: nullableText,
+    tel: nullableText,
+    mail_ad: nullableText,
+    birth: nullableText,
+    age: nonNegativeInteger,
+    point: integer,
+    lev_member: nonNegativeInteger,
+    lev: integer,
+    lev_admin: integer,
+    flg_smail: integer,
+    regist_date: nullableText,
+    regist_date_new: nullableText,
+    login_date: nullableText,
+    deli_date: nullableText,
+  })
+  .strict()
+
+const cashbookSchema = z
+  .object({
+    serial: nonNegativeInteger,
+    shop_no: integer,
+    nyu_date: dateTime,
+    nyu_month: z.string().min(1),
+    girl_no: nonNegativeInteger,
+    kin: integer,
+    kind: integer,
+    source_table: z
+      .string()
+      .regex(/^nyukin(?:_[0-9]{4})?$/u)
+      .optional(),
+    tanto_chk: zeroIfNull.optional().default(0),
+    cm: nullableText.optional().default(null),
+  })
+  .strict()
+
+const officePaySchema = z
+  .object({
+    serial: nonNegativeInteger,
+    shop_no: integer,
+    job_date: dateOnly,
+    girl_no: nonNegativeInteger,
+    kin: integer,
+  })
+  .strict()
+
 const snapshotSchema = z
   .object({
-    version: z.literal(3),
+    version: z.literal(4),
     scope: z
       .object({
         sourceDatabase: z.literal(SOURCE_DATABASE),
+        customerSourceDatabase: z.literal(CUSTOMER_SOURCE_DATABASE),
         shopNo: z.literal(SHOP_NO),
         cutoffAt: dateTime,
         scheduleFrom: dateOnly,
         scheduleTo: dateOnly,
         reservationFrom: dateOnly,
-        consistency: z.literal('best-effort-read-only'),
+        consistency: z.literal('best-effort-read-only-count-checked'),
       })
       .strict(),
     beforeCounts: countsSchema,
@@ -294,19 +357,25 @@ const snapshotSchema = z
         schedules: z.array(scheduleSchema),
         reservations: z.array(reservationSchema),
         reviews: z.array(reviewSchema),
+        customers: z.array(customerSchema),
+        payments: z.array(cashbookSchema).optional().default([]),
+        withdrawals: z.array(cashbookSchema).optional().default([]),
+        welfareDeductions: z.array(officePaySchema).optional().default([]),
       })
       .strict(),
   })
   .strict()
 
-export type GoldMasterIkebukuroSnapshotV3 = z.input<typeof snapshotSchema>
+export type GoldMasterIkebukuroSnapshotV4 = z.input<typeof snapshotSchema>
 
 interface GoldMasterPreviewFixtureInput {
   passwordHashes: {
     admin: string
     customer: string
+    customerDisabled: string
     cast: string
   }
+  resolveImageUrl(reference: GoldMasterPreviewImageReference): string
 }
 
 export class GoldMasterPreviewError extends Error {
@@ -345,6 +414,82 @@ function customerId(key: string): string {
   return `legacy-customer-${key}`
 }
 
+function parseCustomerBirthDate(value: string | null, age: number, cutoffAt: Date): Date {
+  const normalized = value?.trim() ?? ''
+  if (/^\d{4}-\d{2}-\d{2}$/u.test(normalized) && normalized !== '0000-00-00') {
+    const parsed = new Date(`${normalized}T00:00:00.000Z`)
+    if (!Number.isNaN(parsed.getTime()) && parsed.toISOString().startsWith(normalized)) {
+      return parsed
+    }
+  }
+
+  const fallbackYear = age > 0 ? cutoffAt.getUTCFullYear() - age : 1990
+  return new Date(`${fallbackYear}-01-01T00:00:00.000Z`)
+}
+
+function parseOptionalCustomerDate(value: string | null): Date | null {
+  const normalized = value?.trim() ?? ''
+  if (normalized === '' || normalized.startsWith('0000-00-00')) {
+    return null
+  }
+  try {
+    return parseLegacyDateTime(normalized)
+  } catch {
+    return null
+  }
+}
+
+function allocateUniqueContact(
+  preferred: string | null,
+  fallback: (attempt: number) => string,
+  used: Set<string>
+): string {
+  const normalized = preferred?.trim() ?? ''
+  if (normalized !== '' && !used.has(normalized)) {
+    used.add(normalized)
+    return normalized
+  }
+
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const candidate = fallback(attempt)
+    if (!used.has(candidate)) {
+      used.add(candidate)
+      return candidate
+    }
+  }
+  throw new GoldMasterPreviewError()
+}
+
+function fallbackCustomerPhone(memId: number, attempt: number): string {
+  const prefix = String(99 - attempt).padStart(2, '0')
+  return `0${prefix}${String(memId).padStart(8, '0').slice(-8)}`
+}
+
+function normalizeCustomerPhone(value: string | null): string | null {
+  const digits = value?.replace(/\D/gu, '') ?? ''
+  return /^\d{10,11}$/u.test(digits) ? digits : null
+}
+
+function customerAccountStatus(level: number): string {
+  if (level === 0) return 'pending'
+  if (level >= 1 && level <= 3) return 'active'
+  if (level === 4) return 'withdrawn'
+  if (level === 5) return 'blocked'
+  throw new GoldMasterPreviewError()
+}
+
+function customerMembershipStage(level: number): string {
+  const stages = ['unknown', 'regular', 'silver', 'gold', 'platinum', 'god'] as const
+  const stage = stages[level]
+  if (!stage || stage === 'unknown') throw new GoldMasterPreviewError()
+  return stage
+}
+
+function fallbackCustomerEmail(memId: number, attempt: number): string {
+  const suffix = attempt === 0 ? '' : `-${attempt}`
+  return `legacy-customer-${memId}${suffix}@preview-uat.invalid`
+}
+
 function normalizeBusinessHours(value: string | null): string {
   const normalized = value
     ?.trim()
@@ -353,15 +498,31 @@ function normalizeBusinessHours(value: string | null): string {
   return normalized || '10:00-24:00'
 }
 
-function buildImageUrl(girlNo: number, fileName: string): string {
-  return `${LEGACY_IMAGE_BASE}/${girlNo}/${encodeURIComponent(fileName)}`
+function resolveVerifiedImageUrl(
+  reference: GoldMasterPreviewImageReference,
+  resolveImageUrl: GoldMasterPreviewFixtureInput['resolveImageUrl']
+): string {
+  const resolved = resolveImageUrl(reference)
+  const prefix = '/salon-uploads/casts/'
+  const targetPath = resolved.startsWith(prefix) ? resolved.slice(prefix.length) : ''
+  const segments = targetPath.split('/')
+  if (
+    !targetPath ||
+    segments.some((segment) => !CANONICAL_IMAGE_SEGMENT.test(segment)) ||
+    resolved.includes('?') ||
+    resolved.includes('#')
+  ) {
+    throw new GoldMasterPreviewError()
+  }
+  return resolved
 }
 
 function reservationStatus(value: number): string {
-  if (value === 3) return 'completed'
-  if (value === 1 || value === 2) return 'confirmed'
-  if (value >= -2 && value <= 0) return 'pending'
-  throw new GoldMasterPreviewError()
+  try {
+    return mapLegacyOrderLevToStatus(value)
+  } catch {
+    throw new GoldMasterPreviewError()
+  }
 }
 
 function designationType(value: number, fee: number): string | null {
@@ -466,6 +627,10 @@ function assertSnapshotIntegrity(snapshot: z.output<typeof snapshotSchema>): voi
     schedules: snapshot.rows.schedules.length,
     reservations: snapshot.rows.reservations.length,
     reviews: snapshot.rows.reviews.length,
+    customers: snapshot.rows.customers.length,
+    payments: snapshot.rows.payments.length,
+    withdrawals: snapshot.rows.withdrawals.length,
+    welfareDeductions: snapshot.rows.welfareDeductions.length,
   }
   for (const entity of Object.keys(snapshot.beforeCounts) as Array<
     keyof typeof snapshot.beforeCounts
@@ -495,6 +660,7 @@ function assertSnapshotIntegrity(snapshot: z.output<typeof snapshotSchema>): voi
   snapshot.rows.casts.forEach(({ girl_no }) => addUnique(`cast:${girl_no}`))
   snapshot.rows.reservations.forEach(({ serial }) => addUnique(`reservation:${serial}`))
   snapshot.rows.reviews.forEach(({ serial }) => addUnique(`review:${serial}`))
+  snapshot.rows.customers.forEach(({ mem_id }) => addUnique(`customer:${mem_id}`))
 
   const castIds = new Set(snapshot.rows.casts.map(({ girl_no }) => girl_no))
   const courseIds = new Set(snapshot.rows.courses.map(({ id }) => id))
@@ -578,18 +744,41 @@ function assertSnapshotIntegrity(snapshot: z.output<typeof snapshotSchema>): voi
   if (scopedRows.some((row) => row.shop_no !== SHOP_NO)) throw new GoldMasterPreviewError()
 }
 
-/** Maps a strict, sanitized legacy snapshot into one deterministic isolated-preview fixture. */
-export function buildGoldMasterPreviewFixture(
-  input: unknown,
-  { passwordHashes }: GoldMasterPreviewFixtureInput
-): PreviewUatFixture {
-  let snapshot: z.output<typeof snapshotSchema>
+function parseGoldMasterSnapshot(input: unknown): z.output<typeof snapshotSchema> {
   try {
-    snapshot = snapshotSchema.parse(input)
+    const snapshot = snapshotSchema.parse(input)
     assertSnapshotIntegrity(snapshot)
+    return snapshot
   } catch {
     throw new GoldMasterPreviewError()
   }
+}
+
+/** Projects the exact public photo fields used to build the verified image package. */
+export function projectGoldMasterPreviewImages(input: unknown): GoldMasterPreviewImageProjection {
+  const snapshot = parseGoldMasterSnapshot(input)
+  const references = [...snapshot.rows.casts]
+    .sort((left, right) => left.girl_no - right.girl_no)
+    .flatMap((row) =>
+      Array.from({ length: 15 }).flatMap((_, photoIndex) => {
+        const fileName = row[`photo_${photoIndex + 1}` as keyof typeof row]
+        return typeof fileName === 'string' && fileName.trim().length > 0
+          ? [{ girlNo: row.girl_no, slot: photoIndex + 1, fileName }]
+          : []
+      })
+    )
+  return {
+    cutoffAt: parseLegacyDateTime(snapshot.scope.cutoffAt).toISOString(),
+    references,
+  }
+}
+
+/** Maps a strict, sanitized legacy snapshot into one deterministic isolated-preview fixture. */
+export function buildGoldMasterPreviewFixture(
+  input: unknown,
+  { passwordHashes, resolveImageUrl }: GoldMasterPreviewFixtureInput
+): PreviewUatFixture {
+  const snapshot = parseGoldMasterSnapshot(input)
 
   const cutoffAt = parseLegacyDateTime(snapshot.scope.cutoffAt)
   const store = snapshot.rows.stores[0]
@@ -614,14 +803,116 @@ export function buildGoldMasterPreviewFixture(
   const sortedCasts = [...snapshot.rows.casts].sort(
     (left, right) => right.access_count - left.access_count || left.girl_no - right.girl_no
   )
-  const customerKeys = new Set<string>()
-  snapshot.rows.reservations.forEach((row) =>
-    customerKeys.add(customerKey(row.mem_id, `reservation-${row.serial}`))
+  const customerRows = [...snapshot.rows.customers].sort(
+    (left, right) => left.mem_id - right.mem_id
   )
-  snapshot.rows.reviews.forEach((row) =>
-    customerKeys.add(customerKey(row.mem_id, `review-${row.serial}`))
-  )
-  const orderedCustomerKeys = [...customerKeys].sort((left, right) => left.localeCompare(right))
+  const customerRowsByMemId = new Map(customerRows.map((row) => [row.mem_id, row] as const))
+  const referencedCustomerIds = new Set<number>()
+  const reservationCountByCustomer = new Map<number, number>()
+  snapshot.rows.reservations.forEach((row) => {
+    if (row.mem_id <= 0) return
+    referencedCustomerIds.add(row.mem_id)
+    reservationCountByCustomer.set(
+      row.mem_id,
+      (reservationCountByCustomer.get(row.mem_id) ?? 0) + 1
+    )
+  })
+  snapshot.rows.reviews.forEach((row) => {
+    if (row.mem_id > 0) referencedCustomerIds.add(row.mem_id)
+  })
+  const qaCustomerRow = customerRows
+    .filter((row) => (reservationCountByCustomer.get(row.mem_id) ?? 0) > 0)
+    .sort(
+      (left, right) =>
+        (reservationCountByCustomer.get(right.mem_id) ?? 0) -
+          (reservationCountByCustomer.get(left.mem_id) ?? 0) || left.mem_id - right.mem_id
+    )[0]
+  if (!qaCustomerRow) throw new GoldMasterPreviewError()
+
+  const usedPhones = new Set<string>()
+  const usedEmails = new Set<string>(['customer@preview-uat.invalid'])
+  const migratedCustomers: PreviewUatFixture['customers'] = customerRows.map((row) => {
+    const isQaCustomer = row.mem_id === qaCustomerRow.mem_id
+    const registeredAt =
+      parseOptionalCustomerDate(row.regist_date) ??
+      parseOptionalCustomerDate(row.regist_date_new) ??
+      cutoffAt
+    const phone = allocateUniqueContact(
+      normalizeCustomerPhone(row.tel),
+      (attempt) => fallbackCustomerPhone(row.mem_id, attempt),
+      usedPhones
+    )
+    const email = isQaCustomer
+      ? 'customer@preview-uat.invalid'
+      : allocateUniqueContact(
+          row.mail_ad?.trim().toLowerCase() ?? null,
+          (attempt) => fallbackCustomerEmail(row.mem_id, attempt),
+          usedEmails
+        )
+
+    return {
+      id: customerId(`member-${row.mem_id}`),
+      name: `[確認用] ${row.name?.trim() || `旧顧客 #${row.mem_id}`}`,
+      nameKana: row.name?.trim() || `旧顧客 ${row.mem_id}`,
+      phone,
+      email,
+      password: isQaCustomer ? passwordHashes.customer : passwordHashes.customerDisabled,
+      birthDate: parseCustomerBirthDate(row.birth, row.age, cutoffAt),
+      memberType: row.lev === 2 ? 'vip' : 'regular',
+      accountStatus: customerAccountStatus(row.lev),
+      membershipStage: customerMembershipStage(row.lev_member),
+      lastLoginAt: parseOptionalCustomerDate(row.login_date),
+      lastVisitAt: parseOptionalCustomerDate(row.deli_date),
+      points: row.point,
+      smsEnabled: false,
+      emailNotificationEnabled: false,
+      emailVerified: isQaCustomer,
+      phoneVerified: false,
+      phoneVerificationAttempts: 0,
+      createdAt: registeredAt,
+      updatedAt: cutoffAt,
+    }
+  })
+  const missingReferencedCustomerIds = [...referencedCustomerIds]
+    .filter((memId) => !customerRowsByMemId.has(memId))
+    .sort((left, right) => left - right)
+  for (const memId of missingReferencedCustomerIds) {
+    migratedCustomers.push({
+      id: customerId(`member-${memId}`),
+      name: `[確認用] 旧顧客 #${memId}`,
+      nameKana: `旧顧客 ${memId}`,
+      phone: allocateUniqueContact(
+        null,
+        (attempt) => fallbackCustomerPhone(memId, attempt),
+        usedPhones
+      ),
+      email: allocateUniqueContact(
+        null,
+        (attempt) => fallbackCustomerEmail(memId, attempt),
+        usedEmails
+      ),
+      password: passwordHashes.customerDisabled,
+      birthDate: new Date('1990-01-01T00:00:00.000Z'),
+      memberType: 'regular',
+      accountStatus: 'unknown',
+      membershipStage: 'regular',
+      lastLoginAt: null,
+      lastVisitAt: null,
+      points: 0,
+      smsEnabled: false,
+      emailNotificationEnabled: false,
+      emailVerified: false,
+      phoneVerified: false,
+      phoneVerificationAttempts: 0,
+      createdAt: cutoffAt,
+      updatedAt: cutoffAt,
+    })
+  }
+  const customerStoreAssignments: PreviewUatFixture['customerStoreAssignments'] =
+    migratedCustomers.map(({ id }) => {
+      if (!id) throw new GoldMasterPreviewError()
+      return { customerId: id, storeId: STORE_ID }
+    })
   const reservationByLegacyId = new Map(
     snapshot.rows.reservations.map((row) => [row.serial, row] as const)
   )
@@ -659,6 +950,7 @@ export function buildGoldMasterPreviewFixture(
         businessDays: '年中無休',
         lastOrder: '23:00',
         welfareExpenseRate: 10,
+        hourlyGuaranteeAmount: store.girls_jikyu,
         marketingChannels: ['店リピート', '電話', '紹介', 'SNS', 'WEB', 'Heaven'],
         pointEarnRate: 1,
         pointExpirationMonths: 12,
@@ -702,50 +994,15 @@ export function buildGoldMasterPreviewFixture(
       },
     ],
     adminStoreAssignments: [{ adminId: 'uat-admin-manager', storeId: STORE_ID }],
-    customers: [
-      {
-        id: 'uat-customer',
-        name: '[確認用] 操作確認顧客',
-        nameKana: 'カクニンヨウ ソウサカクニンコキャク',
-        phone: '00000000002',
-        email: 'customer@preview-uat.invalid',
-        password: passwordHashes.customer,
-        birthDate: new Date('1990-01-01T00:00:00.000Z'),
-        memberType: 'regular',
-        points: 0,
-        smsEnabled: false,
-        emailNotificationEnabled: false,
-        emailVerified: true,
-        phoneVerified: false,
-        phoneVerificationAttempts: 0,
-        createdAt: cutoffAt,
-        updatedAt: cutoffAt,
-      },
-      ...orderedCustomerKeys.map((key, index) => ({
-        id: customerId(key),
-        name: `[確認用] 旧顧客 #${key.replace('member-', '')}`,
-        nameKana: 'カクニンヨウ キュウコキャク',
-        phone: `099${String(index + 1).padStart(8, '0')}`,
-        email: `legacy-customer-${String(index + 1).padStart(6, '0')}@preview-uat.invalid`,
-        password: passwordHashes.customer,
-        birthDate: new Date('1990-01-01T00:00:00.000Z'),
-        memberType: 'legacy-preview-anonymized',
-        points: 0,
-        smsEnabled: false,
-        emailNotificationEnabled: false,
-        emailVerified: false,
-        phoneVerified: false,
-        phoneVerificationAttempts: 0,
-        createdAt: cutoffAt,
-        updatedAt: cutoffAt,
-      })),
-    ],
+    customers: migratedCustomers,
+    customerStoreAssignments,
     courses: snapshot.rows.courses
       .sort((left, right) => left.sort - right.sort || left.id - right.id)
       .map((row) => ({
         id: `legacy-course-${row.id}`,
         storeId: STORE_ID,
         name: row.charge_name_admin.trim() || row.charge_name,
+        displayOrder: row.sort,
         duration: row.charge_min,
         price: row.charge_kin,
         storeShare: Math.max(0, row.charge_kin - row.charge_ara),
@@ -890,10 +1147,16 @@ export function buildGoldMasterPreviewFixture(
     casts: sortedCasts.map((row, index) => {
       const photos = Array.from(
         { length: 15 },
-        (_, photoIndex) => row[`photo_${photoIndex + 1}` as keyof typeof row]
+        (_, photoIndex) =>
+          [photoIndex + 1, row[`photo_${photoIndex + 1}` as keyof typeof row]] as const
       )
-        .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
-        .map((fileName) => buildImageUrl(row.girl_no, fileName))
+        .filter(
+          (entry): entry is readonly [number, string] =>
+            typeof entry[1] === 'string' && entry[1].trim().length > 0
+        )
+        .map(([slot, fileName]) =>
+          resolveVerifiedImageUrl({ girlNo: row.girl_no, slot, fileName }, resolveImageUrl)
+        )
       const profileLines = [
         row.profile_catch,
         row.profile_cm,
@@ -993,7 +1256,9 @@ export function buildGoldMasterPreviewFixture(
           startTime,
           endTime,
           status,
-          settlementStatus: status === 'completed' ? 'completed' : 'pending',
+          // Legacy payment-allocation history is not part of this snapshot. A completed
+          // service must remain payable until an explicit SettlementPayment is recorded.
+          settlementStatus: 'pending',
           price: row.total,
           storeId: STORE_ID,
           designationType: designationType(row.simei_kind, row.simei_kin),
@@ -1050,6 +1315,17 @@ export function buildGoldMasterPreviewFixture(
         ),
       ]),
     pointHistories: [],
+    castLedgerEntries: mapLegacyCastLedger({
+      importedCastIds: new Set(sortedCasts.map((row) => `legacy-cast-${row.girl_no}`)),
+      storeId: STORE_ID,
+      nyukin: snapshot.rows.payments,
+      shukkin: snapshot.rows.withdrawals,
+      officePay: snapshot.rows.welfareDeductions,
+    }).map((entry) => ({
+      ...entry,
+      createdAt: cutoffAt,
+      updatedAt: cutoffAt,
+    })),
     reviews: snapshot.rows.reviews
       .sort((left, right) => left.serial - right.serial)
       .map((row) => {

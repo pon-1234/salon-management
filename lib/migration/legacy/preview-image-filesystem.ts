@@ -40,6 +40,42 @@ interface CreatedFileIdentity {
   sizeBytes: number
 }
 
+export interface LegacyPreviewImageSourcePackageInspection {
+  inventory: string[]
+  files: Array<{ sourcePath: string; inspection: LegacyImageInspection }>
+}
+
+/** Reads and fingerprints a complete private source package without creating target files. */
+export async function inspectLegacyPreviewImageSourcePackage(
+  sourceRootInput: string,
+  files: readonly { sourcePath: string }[]
+): Promise<LegacyPreviewImageSourcePackageInspection> {
+  const configuredSourceRoot = validateConfiguredRoot(sourceRootInput)
+  const sourceRoot = await verifyRoot(configuredSourceRoot)
+  const inventory = (await listTargetFiles(sourceRoot, sourceRoot)).sort((left, right) =>
+    left.localeCompare(right, 'en')
+  )
+  const inspections = [] as LegacyPreviewImageSourcePackageInspection['files']
+  for (const file of files) {
+    inspections.push({
+      sourcePath: file.sourcePath,
+      inspection: await inspectExistingFile(sourceRoot, file.sourcePath),
+    })
+  }
+  const finalRoot = await verifyRoot(configuredSourceRoot)
+  const finalInventory = (await listTargetFiles(finalRoot, finalRoot)).sort((left, right) =>
+    left.localeCompare(right, 'en')
+  )
+  if (
+    finalRoot !== sourceRoot ||
+    inventory.length !== finalInventory.length ||
+    inventory.some((entry, index) => entry !== finalInventory[index])
+  ) {
+    throw new LegacyPreviewImageFilesystemError()
+  }
+  return { inventory, files: inspections }
+}
+
 export function createLegacyPreviewImageFilesystemIo(
   options: LegacyPreviewImageFilesystemOptions
 ): LegacyPreviewImageImportIo {

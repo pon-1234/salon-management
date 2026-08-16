@@ -100,6 +100,7 @@ export interface LegacyPreviewAggregateCounts {
 interface CourseProjection {
   id: string
   name: string
+  displayOrder: number
   duration: number
   price: number
   storeShare: number | null
@@ -582,6 +583,7 @@ function buildPlan(prepared: PreparedLegacyPreviewImport): LegacyPreviewPlan {
         data: {
           id,
           name: record.name,
+          displayOrder: 0,
           duration: record.duration,
           price: record.price,
           storeShare: record.storeShare,

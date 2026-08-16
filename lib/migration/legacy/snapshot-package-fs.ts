@@ -7,7 +7,7 @@ import { createHash, type Hash } from 'node:crypto'
 import { constants, type Stats } from 'node:fs'
 import { lstat, open, realpath } from 'node:fs/promises'
 import { isAbsolute, parse, relative, resolve, sep } from 'node:path'
-import { Readable } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
 import { TextDecoder } from 'node:util'
 import { createGunzip } from 'node:zlib'
 
@@ -330,15 +330,17 @@ async function streamFileInspection(
     const hash = createHash('sha256')
     const byteCounter = { value: 0 }
     const source = handle.createReadStream({ autoClose: false })
-    const hashingStream = Readable.from(hashRawChunks(source, hash, byteCounter))
+    const hashChunks = (chunks: AsyncIterable<unknown>): AsyncGenerator<Buffer> =>
+      hashRawChunks(chunks, hash, byteCounter)
     const shouldCountRows = kind === 'table'
-    const contentStream =
-      shouldCountRows && absolutePath.endsWith('.gz')
-        ? hashingStream.pipe(createGunzip())
-        : hashingStream
-    const rowCount = shouldCountRows
-      ? await countNonblankRows(contentStream)
-      : await drain(contentStream)
+    let rowCount: number | void
+    if (shouldCountRows && absolutePath.endsWith('.gz')) {
+      rowCount = await pipeline(source, hashChunks, createGunzip(), countNonblankRows)
+    } else if (shouldCountRows) {
+      rowCount = await pipeline(source, hashChunks, countNonblankRows)
+    } else {
+      rowCount = await pipeline(source, hashChunks, drain)
+    }
 
     if (byteCounter.value !== openedStats.size) throw packageFilesystemError()
     return {

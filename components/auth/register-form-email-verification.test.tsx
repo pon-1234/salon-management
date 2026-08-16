@@ -60,6 +60,22 @@ describe('RegisterForm email verification recovery', () => {
     expect(screen.queryByText(/お気に入りキャストの登録/)).not.toBeInTheDocument()
   })
 
+  it('rejects a short mobile number before public registration is submitted', async () => {
+    const user = userEvent.setup()
+
+    render(<RegisterForm store={store} />)
+    await user.type(screen.getByLabelText('ニックネーム'), 'Test User')
+    await user.type(screen.getByLabelText('メールアドレス'), 'customer@example.com')
+    await user.type(screen.getByLabelText('電話番号'), '090-123-4567')
+    await user.type(screen.getByLabelText('パスワード'), 'password123')
+    await user.type(screen.getByLabelText('パスワード（確認）'), 'password123')
+    await user.click(screen.getByRole('checkbox', { name: /利用規約/ }))
+    await user.click(screen.getByRole('button', { name: '会員登録' }))
+
+    expect(await screen.findByText('有効な日本国内の電話番号を入力してください')).toBeVisible()
+    expect(global.fetch).not.toHaveBeenCalled()
+  })
+
   it('recognizes a created account with failed delivery and offers a store-scoped resend', async () => {
     const user = userEvent.setup()
     vi.mocked(global.fetch)
@@ -81,7 +97,7 @@ describe('RegisterForm email verification recovery', () => {
     render(<RegisterForm store={store} />)
     await user.type(screen.getByLabelText('ニックネーム'), 'Test User')
     await user.type(screen.getByLabelText('メールアドレス'), '  Customer@Example.COM  ')
-    await user.type(screen.getByLabelText('電話番号'), '090-1234-5678')
+    await user.type(screen.getByLabelText('電話番号'), '+81 (0)3-1234-5678')
     await user.type(screen.getByLabelText('パスワード'), 'password123')
     await user.type(screen.getByLabelText('パスワード（確認）'), 'password123')
     await user.click(screen.getByRole('checkbox', { name: /利用規約/ }))
@@ -95,7 +111,7 @@ describe('RegisterForm email verification recovery', () => {
         body: JSON.stringify({
           nickname: 'Test User',
           email: 'customer@example.com',
-          phone: '09012345678',
+          phone: '+81312345678',
           password: 'password123',
           smsNotifications: false,
           storeId: 'store-1',

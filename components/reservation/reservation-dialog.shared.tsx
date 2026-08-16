@@ -25,6 +25,7 @@ export type EditFormState = {
   storeMemo: string
   notes: string
   paymentMethod: PaymentMethod
+  paymentReference: string
   marketingChannel: string
   transportationFee: number
   additionalFee: number
@@ -58,12 +59,12 @@ const statusColorMap: Record<string, string> = {
 }
 
 const statusTextMap: Record<string, string> = {
-  confirmed: '確定済',
+  confirmed: '確定',
   pending: '仮予約',
   tentative: '仮予約',
   cancelled: 'キャンセル',
-  modifiable: '修正可能',
-  completed: '完了',
+  modifiable: '修正待ち',
+  completed: '対応済み',
 }
 
 export const STATUS_OPTIONS: Array<{
@@ -74,12 +75,13 @@ export const STATUS_OPTIONS: Array<{
   {
     value: 'pending',
     label: '仮予約',
-    description: '顧客からの問い合わせ段階。スケジュールを押さえておきたい場合に使用します。',
+    description:
+      '旧システムの仮予約・ネット予約・事前予約（lev -2〜0）。スケジュールを押さえる段階です。',
   },
   {
     value: 'confirmed',
     label: '確定',
-    description: '顧客・スタッフ双方の確認が取れた状態です。',
+    description: '旧システムの当日予約・確定済（lev 1〜2）。顧客・店舗双方の確認が取れた状態です。',
   },
   {
     value: 'modifiable',
@@ -89,12 +91,12 @@ export const STATUS_OPTIONS: Array<{
   {
     value: 'cancelled',
     label: 'キャンセル',
-    description: '顧客キャンセル・トラブル等で予約を取り消す場合に使用します。',
+    description: '旧システムの削除オーダー。顧客キャンセル・トラブル等で取り消す場合に使用します。',
   },
   {
     value: 'completed',
     label: '対応済み',
-    description: '施術が完了しレポート作成などのフォローのみ残っている際に使用します。',
+    description: '旧システムの終了（lev 3）。施術完了後の入金・日報対象です。',
   },
 ]
 

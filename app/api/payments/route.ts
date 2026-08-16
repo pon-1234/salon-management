@@ -30,7 +30,14 @@ import {
   validateReservationClaims,
 } from '@/lib/payment/api-boundary'
 import { canAdminAccessStore } from '@/lib/auth/store-access'
-import type { PaymentProviderType, PaymentStatus, PaymentTransaction } from '@/lib/payment/types'
+import { toReservationPaymentLedgerRow } from '@/lib/payment/reservation-ledger'
+import type { Prisma } from '@prisma/client'
+import type {
+  PaymentProviderType,
+  PaymentStatus,
+  PaymentTransaction,
+  PaymentTransactionSummary,
+} from '@/lib/payment/types'
 
 const paymentService = getPaymentService()
 const PAYMENT_STATUSES = new Set<PaymentStatus>([
@@ -42,6 +49,48 @@ const PAYMENT_STATUSES = new Set<PaymentStatus>([
   'refunded',
 ])
 const PAYMENT_PROVIDERS = new Set<PaymentProviderType>(['manual', 'bank_transfer', 'cash'])
+
+function summarizePaymentGroups(
+  groups: Array<{
+    status: string
+    _count: { _all: number }
+    _sum: { amount: number | null; refundAmount: number | null }
+  }>
+): PaymentTransactionSummary {
+  const summary: PaymentTransactionSummary = {
+    statusCounts: {
+      completed: 0,
+      pending: 0,
+      processing: 0,
+      failed: 0,
+      cancelled: 0,
+      refunded: 0,
+    },
+    completedAmount: 0,
+    refundedAmount: 0,
+    totalTransactions: 0,
+    totalAmount: 0,
+  }
+
+  for (const group of groups) {
+    const count = group._count._all
+    const amount = group._sum.amount ?? 0
+    summary.totalTransactions += count
+    summary.totalAmount += amount
+
+    if (PAYMENT_STATUSES.has(group.status as PaymentStatus)) {
+      summary.statusCounts[group.status as PaymentStatus] = count
+    }
+    if (group.status === 'completed') {
+      summary.completedAmount += amount
+    }
+    if (group.status === 'refunded') {
+      summary.refundedAmount += group._sum.refundAmount ?? 0
+    }
+  }
+
+  return summary
+}
 
 function authenticationRequired() {
   return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
@@ -233,34 +282,89 @@ export async function GET(request: NextRequest) {
         startDate && endDate
           ? {
               gte: new Date(startDate),
-              lte: new Date(endDate),
+              lt: new Date(endDate),
             }
           : undefined
       if (
         createdAt &&
-        (Number.isNaN(createdAt.gte.getTime()) || Number.isNaN(createdAt.lte.getTime()))
+        (Number.isNaN(createdAt.gte.getTime()) || Number.isNaN(createdAt.lt.getTime()))
       ) {
         return NextResponse.json({ error: 'Invalid payment date range' }, { status: 400 })
       }
 
-      const transactions = await db.paymentTransaction.findMany({
-        where: {
-          reservation: { storeId },
-          reservationId: { not: null },
-          customerId: { not: null },
-          ...(status ? { status } : {}),
-          ...(provider ? { provider } : {}),
-          ...(createdAt ? { createdAt } : {}),
-        },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        skip: offset,
-      })
+      const paymentWhere: Prisma.PaymentTransactionWhereInput = {
+        reservation: { storeId },
+        reservationId: { not: null },
+        customerId: { not: null },
+        ...(status ? { status } : {}),
+        ...(provider ? { provider } : {}),
+        ...(createdAt ? { createdAt } : {}),
+      }
 
-      return NextResponse.json({
-        transactions: transactions.map((transaction) =>
+      const reservationWhere: Prisma.ReservationWhereInput = {
+        storeId,
+        paymentMethod: { not: null },
+        status: { in: ['completed', 'cancelled', 'confirmed'] },
+        ...(createdAt ? { startTime: createdAt } : {}),
+      }
+
+      const [transactions, paymentGroups, reservations] = await Promise.all([
+        db.paymentTransaction.findMany({
+          where: paymentWhere,
+          orderBy: { createdAt: 'desc' },
+          take: limit,
+          skip: offset,
+        }),
+        db.paymentTransaction.groupBy({
+          by: ['status'],
+          where: paymentWhere,
+          _count: { _all: true },
+          _sum: { amount: true, refundAmount: true },
+        }),
+        offset === 0
+          ? db.reservation.findMany({
+              where: reservationWhere,
+              select: {
+                id: true,
+                customerId: true,
+                price: true,
+                paymentMethod: true,
+                paymentReference: true,
+                status: true,
+                startTime: true,
+                updatedAt: true,
+              },
+              orderBy: { startTime: 'desc' },
+              take: 200,
+            })
+          : Promise.resolve([]),
+      ])
+
+      const existingReservationIds = new Set(
+        transactions.map((transaction) => transaction.reservationId).filter(Boolean)
+      )
+      const ledgerRows = reservations
+        .filter((reservation) => !existingReservationIds.has(reservation.id))
+        .map(toReservationPaymentLedgerRow)
+      const publicTransactions = [
+        ...ledgerRows,
+        ...transactions.map((transaction) =>
           toPublicPaymentTransaction(transaction as PaymentTransaction)
         ),
+      ].slice(0, limit)
+      const summary = summarizePaymentGroups(paymentGroups)
+      for (const row of ledgerRows) {
+        summary.totalTransactions += 1
+        summary.totalAmount += row.amount
+        summary.statusCounts[row.status] += 1
+        if (row.status === 'completed') {
+          summary.completedAmount += row.amount
+        }
+      }
+
+      return NextResponse.json({
+        transactions: publicTransactions,
+        summary,
       })
     }
 

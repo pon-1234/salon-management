@@ -1,12 +1,15 @@
+/**
+ * @design_doc   Client operational review: cast list actions must navigate to real workflows
+ * @related_to   CastManagePage: receives deep links for sales, payments, and settlements
+ * @known_issues Cast contact details are not part of the current Cast domain model
+ */
 import { Cast } from '@/lib/cast/types'
 import { FALLBACK_IMAGE } from '@/lib/cast/mapper'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { SafeImage } from '@/components/ui/safe-image'
-import { Phone, Mail } from 'lucide-react'
 import Link from 'next/link'
-import { format } from 'date-fns'
 
 interface CastListViewProps {
   casts: Cast[]
@@ -88,16 +91,19 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
                 <div className="text-gray-500">
                   {member.age}歳 | {member.height}cm | {member.type}
                 </div>
-                <div className="text-gray-500">入金処理 (今月) (先月)</div>
               </div>
-              <div className="mt-2 flex gap-2">
-                <Button size="sm" variant="destructive" className="h-8">
-                  <Phone className="mr-2 h-4 w-4" />
-                  電話をかける
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" className="h-8" asChild>
+                  <Link href={`/admin/cast/manage/${member.id}?tab=sales`}>売上管理</Link>
                 </Button>
-                <Button size="sm" variant="secondary" className="h-8">
-                  <Mail className="mr-2 h-4 w-4" />
-                  業務連絡
+                <Button size="sm" variant="outline" className="h-8" asChild>
+                  <Link href={`/admin/cast/manage/${member.id}?tab=payment`}>入金履歴</Link>
+                </Button>
+                <Button size="sm" variant="outline" className="h-8" asChild>
+                  <Link href={`/admin/cast/manage/${member.id}?tab=settlement`}>精算状況</Link>
+                </Button>
+                <Button size="sm" variant="outline" className="h-8" asChild>
+                  <Link href={`/admin/cast/manage/${member.id}?tab=performance`}>就業成績</Link>
                 </Button>
               </div>
             </div>

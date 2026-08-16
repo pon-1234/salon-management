@@ -1,9 +1,16 @@
+/**
+ * @design_doc   Server-authorized cast portal queries and projections
+ * @related_to   Cast portal route handlers, pages, and transport contracts
+ * @known_issues Access ranking remains unavailable until an external source is integrated
+ */
 import { db } from '@/lib/db'
 import logger from '@/lib/logger'
 import { ensureStoreId } from '@/lib/store/server'
+import { getCastPerformanceReport } from '@/lib/analytics/server/cast-performance'
 import {
   addDays,
   addMinutes,
+  addMonths,
   differenceInCalendarDays,
   endOfDay,
   endOfMonth,
@@ -15,7 +22,7 @@ import {
   startOfMonth,
 } from 'date-fns'
 import { ja } from 'date-fns/locale'
-import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz'
+import { formatInTimeZone, utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz'
 import type {
   CastAttendanceRequestSummary,
   CastAttendanceState,
@@ -529,6 +536,18 @@ export async function getCastPerformanceSnapshot(
     throw new Error('Cast not found or access denied')
   }
 
+  const performanceYear = Number(formatInTimeZone(now, DEFAULT_TIME_ZONE, 'yyyy'))
+  const performanceMonth = Number(formatInTimeZone(now, DEFAULT_TIME_ZONE, 'M'))
+  const performance = await getCastPerformanceReport(
+    performanceYear,
+    performanceMonth,
+    castId,
+    storeId
+  )
+  if (!performance) {
+    throw new Error('Cast not found or access denied')
+  }
+
   const castIds = casts.map((entry) => entry.id)
   const totalCounts = buildCountMap(totalRows)
   const regularCounts = buildCountMap(regularRows)
@@ -559,6 +578,7 @@ export async function getCastPerformanceSnapshot(
       rank: null,
       count: null,
     },
+    performance,
   }
 }
 
@@ -686,43 +706,38 @@ export async function getCastReservationDetail(
 
 export async function getCastSettlements(
   castId: string,
-  storeId: string
+  storeId: string,
+  month?: { year: number; month: number }
 ): Promise<CastSettlementsData> {
-  try {
-    return await loadCastSettlements(castId, storeId)
-  } catch (err) {
-    logger.error(
-      { err, castId, storeId },
-      'Failed to load cast settlements; returning empty dataset'
-    )
-    return {
-      summary: {
-        month: format(startOfMonth(new Date()), 'yyyy-MM'),
-        totalRevenue: 0,
-        staffRevenue: 0,
-        storeRevenue: 0,
-        welfareExpense: 0,
-        completedCount: 0,
-        pendingCount: 0,
-      },
-      days: [],
-    }
-  }
+  return loadCastSettlements(castId, storeId, month)
 }
 
-async function loadCastSettlements(castId: string, storeId: string): Promise<CastSettlementsData> {
+async function loadCastSettlements(
+  castId: string,
+  storeId: string,
+  month?: { year: number; month: number }
+): Promise<CastSettlementsData> {
   const now = new Date()
-  const monthStart = startOfMonth(now)
-  const monthEnd = endOfMonth(now)
+  const zonedNow = utcToZonedTime(now, DEFAULT_TIME_ZONE)
+  const year = month?.year ?? zonedNow.getFullYear()
+  const monthNumber = month?.month ?? zonedNow.getMonth() + 1
+  const monthStart = startOfMonthInTimeZone(
+    zonedTimeToUtc(
+      `${year}-${String(monthNumber).padStart(2, '0')}-01T00:00:00`,
+      DEFAULT_TIME_ZONE
+    ),
+    DEFAULT_TIME_ZONE
+  )
+  const monthEndExclusive = startOfMonthInTimeZone(addMonths(monthStart, 1), DEFAULT_TIME_ZONE)
 
-  // 2026-01: 一部環境で新カラム/リレーションが未適用の場合があるため段階的にフォールバック
   const baseQuery = {
     where: {
       castId,
       storeId,
+      status: 'completed',
       startTime: {
         gte: monthStart,
-        lte: monthEnd,
+        lt: monthEndExclusive,
       },
     },
     orderBy: {
@@ -730,122 +745,40 @@ async function loadCastSettlements(castId: string, storeId: string): Promise<Cas
     },
   }
 
-  const querySteps = [
-    {
-      label: 'extended',
-      select: {
-        id: true,
-        startTime: true,
-        status: true,
-        settlementStatus: true,
-        price: true,
-        staffRevenue: true,
-        storeRevenue: true,
-        welfareExpense: true,
-        designationType: true,
-        designationFee: true,
-        transportationFee: true,
-        additionalFee: true,
-        discountAmount: true,
-        course: {
-          select: {
-            name: true,
-            duration: true,
-          },
-        },
-        castCheckedOutAt: true,
-        options: {
-          select: {
-            optionId: true,
-            optionName: true,
-            optionPrice: true,
-            storeShare: true,
-            castShare: true,
-          },
-        },
-      },
-    },
-    {
-      label: 'legacy',
-      select: {
-        id: true,
-        startTime: true,
-        status: true,
-        price: true,
-        course: {
-          select: {
-            name: true,
-            duration: true,
-          },
-        },
-        options: {
-          select: {
-            optionId: true,
-            optionName: true,
-            optionPrice: true,
-          },
-        },
-      },
-    },
-    {
-      label: 'minimal',
-      select: {
-        id: true,
-        startTime: true,
-        status: true,
-        price: true,
-      },
-    },
-  ] as const
-
-  let reservations: SettlementReservationRow[] = []
-  for (const step of querySteps) {
-    try {
-      reservations = await db.reservation.findMany({
-        ...baseQuery,
-        select: step.select,
-      })
-      break
-    } catch (err) {
-      logger.error(
-        { err, castId, storeId, step: step.label },
-        'Failed to load settlement records; retrying fallback'
-      )
-    }
-  }
-
-  const reservationIds = reservations.map((reservation) => reservation.id).filter(Boolean)
-  const reservationOptionsMap = new Map<string, SettlementReservationOptionRow[]>()
-
-  if (reservationIds.length > 0) {
-    try {
-      const optionRows = await db.reservationOption.findMany({
-        where: { reservationId: { in: reservationIds } },
+  const reservations: SettlementReservationRow[] = await db.reservation.findMany({
+    ...baseQuery,
+    select: {
+      id: true,
+      startTime: true,
+      status: true,
+      settlementStatus: true,
+      price: true,
+      staffRevenue: true,
+      storeRevenue: true,
+      welfareExpense: true,
+      designationType: true,
+      designationFee: true,
+      transportationFee: true,
+      additionalFee: true,
+      discountAmount: true,
+      course: {
         select: {
-          reservationId: true,
+          name: true,
+          duration: true,
+        },
+      },
+      castCheckedOutAt: true,
+      options: {
+        select: {
           optionId: true,
           optionName: true,
           optionPrice: true,
           storeShare: true,
           castShare: true,
         },
-      })
-
-      optionRows.forEach((row) => {
-        const current = reservationOptionsMap.get(row.reservationId) ?? []
-        current.push({
-          optionId: row.optionId,
-          optionName: row.optionName,
-          optionPrice: row.optionPrice,
-          storeShare: row.storeShare ?? null,
-          castShare: row.castShare ?? null,
-        })
-        reservationOptionsMap.set(row.reservationId, current)
-      })
-    } catch (err) {
-      logger.error({ err, castId, storeId }, 'Failed to load reservation options for settlements')
-    }
-  }
+      },
+    },
+  })
 
   const summary = reservations.reduce(
     (acc, reservation) => {
@@ -885,10 +818,7 @@ async function loadCastSettlements(castId: string, storeId: string): Promise<Cas
       dailyMap.set(dateKey, day)
     }
 
-    const rawOptions =
-      Array.isArray(reservation.options) && reservation.options.length > 0
-        ? reservation.options
-        : (reservationOptionsMap.get(reservation.id) ?? [])
+    const rawOptions = Array.isArray(reservation.options) ? reservation.options : []
 
     const record: CastSettlementRecordDetail = {
       id: reservation.id,
@@ -939,7 +869,7 @@ async function loadCastSettlements(castId: string, storeId: string): Promise<Cas
 
   return {
     summary: {
-      month: format(monthStart, 'yyyy-MM'),
+      month: format(utcToZonedTime(monthStart, DEFAULT_TIME_ZONE), 'yyyy-MM'),
       totalRevenue: summary.totalRevenue,
       staffRevenue: summary.staffRevenue,
       storeRevenue: summary.storeRevenue,

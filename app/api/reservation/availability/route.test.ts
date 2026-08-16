@@ -1,12 +1,24 @@
 /**
- * @design_doc   Tests for reservation availability check API
- * @related_to   reservation/route.ts, ReservationRepository, Prisma Reservation model
+ * @design_doc   Public slot listing and administrator-only reservation conflict checks
+ * @related_to   reservation/route.ts, requireAdmin, canonical store resolver
  * @known_issues None currently
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { GET } from './route'
 import { db } from '@/lib/db'
+
+const authMocks = vi.hoisted(() => ({
+  requireAdmin: vi.fn(),
+}))
+
+const storeResolverMocks = vi.hoisted(() => ({
+  resolveStoreId: vi.fn(),
+  ensureStoreId: vi.fn(),
+}))
+
+vi.mock('@/lib/auth/utils', () => authMocks)
+vi.mock('@/lib/store/server', () => storeResolverMocks)
 
 // Mock the database
 vi.mock('@/lib/db', () => ({
@@ -38,6 +50,13 @@ vi.mock('@/lib/logger', () => ({
 describe('GET /api/reservation/availability', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    authMocks.requireAdmin.mockResolvedValue(null)
+    storeResolverMocks.resolveStoreId.mockImplementation((request: NextRequest) =>
+      Promise.resolve(request.nextUrl.searchParams.get('storeId')?.trim().toLowerCase() ?? null)
+    )
+    storeResolverMocks.ensureStoreId.mockImplementation((storeId: string) =>
+      Promise.resolve(storeId)
+    )
     vi.mocked(db.cast.findMany).mockImplementation((({ where }: any) =>
       Promise.resolve(where.id.in.map((id: string) => ({ id })))) as any)
     vi.mocked(db.storeSettings.findFirst).mockResolvedValue({
@@ -114,6 +133,38 @@ describe('GET /api/reservation/availability', () => {
       select: { businessHours: true },
     })
     expect(db.castSchedule.findFirst).toHaveBeenCalled()
+  })
+
+  it('lists public slots with the canonical store id resolved from a slug', async () => {
+    storeResolverMocks.ensureStoreId.mockResolvedValue('uat-ikebukuro')
+    vi.mocked(db.cast.findUnique).mockResolvedValue({
+      id: 'cast1',
+      name: 'Test Cast',
+      storeId: 'uat-ikebukuro',
+      netReservation: true,
+    } as any)
+    vi.mocked(db.reservation.findMany).mockResolvedValue([])
+
+    const request = new NextRequest(
+      'http://localhost:3000/api/reservation/availability?storeId=ikebukuro&castId=cast1&date=2025-07-10&duration=60'
+    )
+
+    const response = await GET(request)
+
+    expect(response.status).toBe(200)
+    expect(storeResolverMocks.resolveStoreId).toHaveBeenCalledWith(request)
+    expect(storeResolverMocks.ensureStoreId).toHaveBeenCalledWith('ikebukuro')
+    expect(authMocks.requireAdmin).not.toHaveBeenCalled()
+    expect(db.storeSettings.findUnique).toHaveBeenCalledWith({
+      where: { storeId: 'uat-ikebukuro' },
+      select: { businessHours: true },
+    })
+    expect(db.reservation.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ storeId: 'uat-ikebukuro' }) })
+    )
+    expect(storeResolverMocks.ensureStoreId.mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(db.cast.findUnique).mock.invocationCallOrder[0]
+    )
   })
 
   it('returns no slots when the cast has disabled web reservations', async () => {
@@ -213,6 +264,74 @@ describe('GET /api/reservation/availability', () => {
     expect(db.reservation.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ storeId: 'store-1', castId: 'cast1' }),
+      })
+    )
+    expect(authMocks.requireAdmin).toHaveBeenCalledWith({
+      permissions: 'reservation:read',
+      storeId: 'store-1',
+    })
+  })
+
+  it('rejects unauthenticated conflict checks before querying reservation data', async () => {
+    authMocks.requireAdmin.mockResolvedValue(
+      NextResponse.json({ error: '認証が必要です' }, { status: 401 })
+    )
+    const request = new NextRequest(
+      'http://localhost:3000/api/reservation/availability?mode=check&storeId=store-1&castId=cast1&startTime=2025-07-10T10:30:00&endTime=2025-07-10T11:30:00'
+    )
+
+    const response = await GET(request)
+
+    expect(response.status).toBe(401)
+    expect(authMocks.requireAdmin).toHaveBeenCalledWith({
+      permissions: 'reservation:read',
+      storeId: 'store-1',
+    })
+    expect(db.cast.findMany).not.toHaveBeenCalled()
+    expect(db.reservation.findMany).not.toHaveBeenCalled()
+  })
+
+  it('rejects conflict checks for an admin without access to the canonical store', async () => {
+    storeResolverMocks.ensureStoreId.mockResolvedValue('uat-ikebukuro')
+    authMocks.requireAdmin.mockResolvedValue(
+      NextResponse.json({ error: 'この店舗を操作する権限がありません' }, { status: 403 })
+    )
+    const request = new NextRequest(
+      'http://localhost:3000/api/reservation/availability?mode=check&storeId=ikebukuro&castId=cast1&startTime=2025-07-10T10:30:00&endTime=2025-07-10T11:30:00'
+    )
+
+    const response = await GET(request)
+
+    expect(response.status).toBe(403)
+    expect(authMocks.requireAdmin).toHaveBeenCalledWith({
+      permissions: 'reservation:read',
+      storeId: 'uat-ikebukuro',
+    })
+    expect(db.cast.findMany).not.toHaveBeenCalled()
+    expect(db.reservation.findMany).not.toHaveBeenCalled()
+  })
+
+  it('uses the canonical store id for every conflict query', async () => {
+    storeResolverMocks.ensureStoreId.mockResolvedValue('uat-ikebukuro')
+    vi.mocked(db.reservation.findMany).mockResolvedValue([])
+    const request = new NextRequest(
+      'http://localhost:3000/api/reservation/availability?mode=check&storeId=ikebukuro&castId=cast1&startTime=2025-07-10T10:30:00&endTime=2025-07-10T11:30:00'
+    )
+
+    const response = await GET(request)
+
+    expect(response.status).toBe(200)
+    expect(authMocks.requireAdmin).toHaveBeenCalledWith({
+      permissions: 'reservation:read',
+      storeId: 'uat-ikebukuro',
+    })
+    expect(db.cast.findMany).toHaveBeenCalledWith({
+      where: { id: { in: ['cast1'] }, storeId: 'uat-ikebukuro' },
+      select: { id: true },
+    })
+    expect(db.reservation.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ storeId: 'uat-ikebukuro', castId: 'cast1' }),
       })
     )
   })

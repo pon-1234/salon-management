@@ -4,9 +4,13 @@
  * @known_issues None
  */
 import { fireEvent, render, screen } from '@testing-library/react'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { ReservationData } from '@/lib/types/reservation'
 import { ReservationList } from './reservation-list'
+
+const source = readFileSync(join(__dirname, 'reservation-list.tsx'), 'utf8')
 
 const createReservation = (id: string, status: string, customerName: string): ReservationData => ({
   id,
@@ -61,53 +65,17 @@ describe('ReservationList interactions', () => {
     expect(onOpenReservation).toHaveBeenCalledWith(confirmed)
   })
 
-  it('runs the confirmed quick action without opening the row', () => {
+  it('opens confirmed reservations directly without the legacy modifiable-status step', () => {
     const onOpenReservation = vi.fn()
-    const onMakeModifiable = vi.fn()
 
     render(
-      <ReservationList
-        reservations={[confirmed, pending]}
-        onOpenReservation={onOpenReservation}
-        onMakeModifiable={onMakeModifiable}
-      />
+      <ReservationList reservations={[confirmed, pending]} onOpenReservation={onOpenReservation} />
     )
 
-    fireEvent.click(screen.getByRole('button', { name: '修正可能にする' }))
+    fireEvent.click(screen.getByText(/確定顧客/))
 
-    expect(onMakeModifiable).toHaveBeenCalledWith(confirmed.id)
-    expect(onOpenReservation).not.toHaveBeenCalled()
-    expect(screen.getAllByRole('button', { name: '修正可能にする' })).toHaveLength(1)
-  })
-
-  it('hides an unavailable quick action and shows its loading state', () => {
-    const { rerender } = render(<ReservationList reservations={[confirmed]} />)
-
+    expect(onOpenReservation).toHaveBeenCalledWith(confirmed)
     expect(screen.queryByRole('button', { name: '修正可能にする' })).not.toBeInTheDocument()
-
-    rerender(
-      <ReservationList
-        reservations={[confirmed]}
-        onMakeModifiable={vi.fn()}
-        updatingReservationId={confirmed.id}
-      />
-    )
-
-    expect(screen.getByRole('button', { name: '変更中…' })).toBeDisabled()
-  })
-
-  it('disables every quick action while one reservation is updating', () => {
-    const secondConfirmed = createReservation('confirmed-second', 'confirmed', '確定顧客2')
-
-    render(
-      <ReservationList
-        reservations={[confirmed, secondConfirmed]}
-        onMakeModifiable={vi.fn()}
-        updatingReservationId={confirmed.id}
-      />
-    )
-
-    expect(screen.getByRole('button', { name: '変更中…' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: '修正可能にする' })).toBeDisabled()
+    expect(source).not.toContain('onMakeModifiable')
   })
 })

@@ -4,17 +4,26 @@
  * @known_issues None
  */
 import { fireEvent, render, screen, within } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Appointment, Cast } from '@/lib/cast/types'
 import type { ReservationData } from '@/lib/types/reservation'
+import type { Customer } from '@/lib/customer/types'
 import { Timeline } from './timeline'
 
+const quickBookingDialogMock = vi.hoisted(() =>
+  vi.fn(({ open }: { open: boolean }) =>
+    open ? <div data-testid="quick-booking-dialog">予約入力</div> : null
+  )
+)
+
 vi.mock('./quick-booking-dialog', () => ({
-  QuickBookingDialog: () => null,
+  QuickBookingDialog: quickBookingDialogMock,
 }))
 
+const staffDialogMock = vi.hoisted(() => vi.fn(() => null))
+
 vi.mock('@/components/cast/cast-dialog', () => ({
-  StaffDialog: () => null,
+  StaffDialog: staffDialogMock,
 }))
 
 const startTime = new Date('2030-07-21T18:30:00+09:00')
@@ -108,11 +117,101 @@ const staff: (Cast & { appointments: Appointment[] })[] = [
 ]
 
 describe('Timeline appointment cards', () => {
+  beforeEach(() => {
+    staffDialogMock.mockClear()
+    quickBookingDialogMock.mockClear()
+  })
+
+  it('keeps the time axis and horizontal scrollbar inside a viewport-height timeline', () => {
+    render(
+      <Timeline
+        canCreateReservation
+        staff={staff}
+        selectedDate={new Date('2030-07-21T00:00:00+09:00')}
+        selectedCustomer={null}
+        setSelectedAppointment={vi.fn()}
+        reservations={[reservation]}
+        businessHours={{
+          startMinutes: 10 * 60,
+          endMinutes: 24 * 60,
+          startLabel: '10:00',
+          endLabel: '24:00',
+        }}
+      />
+    )
+
+    expect(screen.getByTestId('reservation-timeline-scroll')).toHaveClass('h-[calc(100vh-14rem)]')
+    expect(screen.getByTestId('timeline-time-header')).toHaveClass('sticky', 'top-0')
+  })
+
+  it('shows both operational ranks beside the cast name', () => {
+    const rankedStaff = [
+      {
+        ...staff[0],
+        regularDesignationRank: 2,
+        panelDesignationRank: 3,
+      },
+    ]
+
+    render(
+      <Timeline
+        canCreateReservation
+        staff={rankedStaff}
+        selectedDate={new Date('2030-07-21T00:00:00+09:00')}
+        selectedCustomer={null}
+        setSelectedAppointment={vi.fn()}
+        reservations={[reservation]}
+        businessHours={{
+          startMinutes: 10 * 60,
+          endMinutes: 24 * 60,
+          startLabel: '10:00',
+          endLabel: '24:00',
+        }}
+      />
+    )
+
+    expect(screen.getByText('本指名 2位')).toBeInTheDocument()
+    expect(screen.getByText('パネル 3位')).toBeInTheDocument()
+  })
+
+  it('passes the store option catalog to the selected cast detail', () => {
+    const optionCatalog = [{ id: 'option-aroma', name: 'アロマ追加', price: 1_000, note: '確認用' }]
+
+    render(
+      <Timeline
+        canCreateReservation
+        staff={staff}
+        selectedDate={new Date('2030-07-21T00:00:00+09:00')}
+        selectedCustomer={null}
+        setSelectedAppointment={vi.fn()}
+        reservations={[reservation]}
+        optionCatalog={optionCatalog}
+        businessHours={{
+          startMinutes: 10 * 60,
+          endMinutes: 24 * 60,
+          startLabel: '10:00',
+          endLabel: '24:00',
+        }}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /さら/ }))
+
+    expect(staffDialogMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        optionCatalog,
+        staff: expect.objectContaining({ id: staff[0].id }),
+      }),
+      undefined
+    )
+  })
+
   it('keeps a legacy customer name readable and opens the matching reservation', () => {
     const setSelectedAppointment = vi.fn()
 
     render(
       <Timeline
+        canCreateReservation
         staff={staff}
         selectedDate={new Date('2030-07-21T00:00:00+09:00')}
         selectedCustomer={null}
@@ -142,5 +241,133 @@ describe('Timeline appointment cards', () => {
     fireEvent.click(appointmentButton)
 
     expect(setSelectedAppointment).toHaveBeenCalledWith(reservation)
+  })
+
+  it('preserves a midnight shift end and offers starts every 30 minutes', () => {
+    const selectedCustomer = {
+      id: 'customer-1',
+      name: '確認顧客',
+      ngCasts: [],
+      ngCastIds: [],
+    } as unknown as Customer
+    const midnightStaff = [
+      {
+        ...staff[0],
+        appointments: [],
+        workStart: new Date('2030-07-21T14:00:00+09:00'),
+        workEnd: new Date('2030-07-22T00:00:00+09:00'),
+      },
+    ]
+
+    render(
+      <Timeline
+        canCreateReservation
+        staff={midnightStaff}
+        selectedDate={new Date('2030-07-21T00:00:00+09:00')}
+        selectedCustomer={selectedCustomer}
+        setSelectedAppointment={vi.fn()}
+        reservations={[]}
+        businessHours={{
+          startMinutes: 10 * 60,
+          endMinutes: 24 * 60,
+          startLabel: '10:00',
+          endLabel: '24:00',
+        }}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: '14:00の空き枠を選択' })).toBeVisible()
+    expect(screen.getByRole('button', { name: '14:30の空き枠を選択' })).toBeVisible()
+    expect(screen.getByRole('button', { name: '23:30の空き枠を選択' })).toBeVisible()
+    expect(screen.queryByText('午前')).not.toBeInTheDocument()
+    expect(screen.queryByText('午後')).not.toBeInTheDocument()
+  })
+
+  it('does not offer selectable starts for a past day', () => {
+    const selectedCustomer = {
+      id: 'customer-1',
+      name: '確認顧客',
+      ngCasts: [],
+      ngCastIds: [],
+    } as unknown as Customer
+    const pastStaff = [
+      {
+        ...staff[0],
+        appointments: [],
+        workStart: new Date('2020-07-21T14:00:00+09:00'),
+        workEnd: new Date('2020-07-21T22:00:00+09:00'),
+      },
+    ]
+
+    render(
+      <Timeline
+        canCreateReservation
+        staff={pastStaff}
+        selectedDate={new Date('2020-07-21T00:00:00+09:00')}
+        selectedCustomer={selectedCustomer}
+        setSelectedAppointment={vi.fn()}
+        reservations={[]}
+        businessHours={{
+          startMinutes: 10 * 60,
+          endMinutes: 24 * 60,
+          startLabel: '10:00',
+          endLabel: '24:00',
+        }}
+      />
+    )
+
+    expect(screen.queryByRole('button', { name: '14:00の空き枠を選択' })).not.toBeInTheDocument()
+  })
+
+  it('keeps existing reservations readable but disables empty-slot booking without create permission', () => {
+    const selectedCustomer = {
+      id: 'customer-1',
+      name: '確認顧客',
+      ngCasts: [],
+      ngCastIds: [],
+    } as unknown as Customer
+    const setSelectedAppointment = vi.fn()
+    const readOnlyStaff = [
+      {
+        ...staff[0],
+        workStart: startTime,
+        workEnd: endTime,
+      },
+      {
+        ...staff[0],
+        id: 'cast-available',
+        name: '空きキャスト',
+        appointments: [],
+        workStart: new Date('2030-07-21T14:00:00+09:00'),
+        workEnd: new Date('2030-07-21T15:00:00+09:00'),
+      },
+    ]
+
+    render(
+      <Timeline
+        canCreateReservation={false}
+        staff={readOnlyStaff}
+        selectedDate={new Date('2030-07-21T00:00:00+09:00')}
+        selectedCustomer={selectedCustomer}
+        setSelectedAppointment={setSelectedAppointment}
+        reservations={[reservation]}
+        businessHours={{
+          startMinutes: 10 * 60,
+          endMinutes: 24 * 60,
+          startLabel: '10:00',
+          endLabel: '24:00',
+        }}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /\[確認用\] 旧顧客 #104168/ }))
+    expect(setSelectedAppointment).toHaveBeenCalledWith(reservation)
+    expect(screen.getByRole('button', { name: '14:00の空き枠を選択' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: '14:00の空き枠を選択' }))
+    expect(screen.queryByTestId('quick-booking-dialog')).not.toBeInTheDocument()
+    expect(quickBookingDialogMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ open: false }),
+      undefined
+    )
   })
 })

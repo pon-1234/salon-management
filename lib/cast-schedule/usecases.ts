@@ -24,6 +24,7 @@ import { schedulePermissions } from './permissions'
 import { shouldUseMockFallbacks } from '@/lib/config/feature-flags'
 
 const DEFAULT_TIME_ZONE = 'Asia/Tokyo'
+const CAST_PAGE_SIZE = 100
 
 // Utility function for parsing time from ISO string
 function parseTimeFromISO(isoString: string): string {
@@ -59,16 +60,27 @@ export class CastScheduleUseCases {
         cache: 'no-store',
       }
 
-      // Fetch cast data
-      const castResponse = await fetch(
-        `/api/cast?storeId=${encodeURIComponent(filters.storeId)}`,
-        requestOptions
-      )
-      if (!castResponse.ok) {
-        throw new Error('Failed to fetch cast data')
+      // Fetch every cast page so the weekly table never silently stops at the API default.
+      const casts: any[] = []
+      for (let offset = 0; ; offset += CAST_PAGE_SIZE) {
+        const castParams = new URLSearchParams({
+          storeId: filters.storeId,
+          limit: String(CAST_PAGE_SIZE),
+          offset: String(offset),
+        })
+        const castResponse = await fetch(`/api/cast?${castParams.toString()}`, requestOptions)
+        if (!castResponse.ok) {
+          throw new Error('Failed to fetch cast data')
+        }
+        const castPayload = await castResponse.json()
+        const castPage = Array.isArray(castPayload?.data) ? castPayload.data : castPayload
+        const normalizedPage = Array.isArray(castPage) ? castPage : []
+        casts.push(...normalizedPage)
+
+        if (normalizedPage.length < CAST_PAGE_SIZE) {
+          break
+        }
       }
-      const castPayload = await castResponse.json()
-      const casts = Array.isArray(castPayload?.data) ? castPayload.data : castPayload
 
       // Fetch schedule data for the week
       const scheduleParams = new URLSearchParams({

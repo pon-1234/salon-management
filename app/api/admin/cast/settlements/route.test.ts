@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth/utils'
 import { getCastSettlements } from '@/lib/cast-portal/server'
 import { db } from '@/lib/db'
-import { upsertSettlementPayment } from '@/lib/settlement/server'
+import { SettlementValidationError, upsertSettlementPayment } from '@/lib/settlement/server'
 import { GET, POST } from './route'
 
 vi.mock('@/lib/auth/utils', () => ({
@@ -22,6 +22,7 @@ vi.mock('@/lib/cast-portal/server', () => ({
 
 vi.mock('@/lib/settlement/server', () => ({
   upsertSettlementPayment: vi.fn(),
+  SettlementValidationError: class SettlementValidationError extends Error {},
 }))
 
 vi.mock('@/lib/db', () => ({
@@ -129,5 +130,33 @@ describe('/api/admin/cast/settlements', () => {
     expect(response.status).toBe(403)
     expect(db.cast.findFirst).not.toHaveBeenCalled()
     expect(upsertSettlementPayment).not.toHaveBeenCalled()
+  })
+
+  it('returns a visible validation error instead of a 500 for an invalid settlement amount', async () => {
+    vi.mocked(db.reservation.findMany).mockResolvedValueOnce([{ id: 'reservation-1' }] as any)
+    vi.mocked(upsertSettlementPayment).mockRejectedValueOnce(
+      new SettlementValidationError(
+        'Settlement amount must equal selected reservation staff revenue'
+      )
+    )
+
+    const response = await POST(
+      new NextRequest('http://localhost:3000/api/admin/cast/settlements?storeId=ginza', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          castId: 'cast-1',
+          amount: 100,
+          method: '現金精算',
+          handledBy: '管理者',
+          reservationIds: ['reservation-1'],
+        }),
+      })
+    )
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({
+      error: '支払金額が対象予約のキャスト取り分合計と一致しません。',
+    })
   })
 })

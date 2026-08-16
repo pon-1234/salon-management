@@ -11,6 +11,13 @@ const headerSource = readFileSync(join(__dirname, 'header.tsx'), 'utf8')
 const storeSelectorSource = readFileSync(join(__dirname, 'store', 'store-selector.tsx'), 'utf8')
 
 describe('admin header navigation', () => {
+  it('exposes a direct daily report link without replacing the existing analytics link', () => {
+    expect(headerSource.match(/href="\/admin\/analytics\/daily-report"/g)).toHaveLength(2)
+    expect(headerSource.match(/href="\/admin\/analytics\/daily-sales"/g)).toHaveLength(2)
+    expect(headerSource).toContain('>日報<')
+    expect(headerSource).toContain('>集計<')
+  })
+
   it('does not expose the redundant global search link', () => {
     expect(headerSource).not.toContain("href: '/admin/search'")
     expect(headerSource).not.toContain('href="/admin/search"')

@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Public pricing fixtures and fallback guidance for booking and pricing pages
+ * @related_to   public-pricing.ts and StoreBookingContent customer-facing payment guidance
+ * @known_issues Fixture data is used only when an explicitly enabled mock fallback is required
+ */
 import { CoursePrice, OptionPrice, AdditionalFee } from './types'
 
 // Default course pricing data
@@ -237,7 +242,7 @@ export const defaultPricingNotes = [
   '料金は全て税込価格です',
   'オプションを付け足すことで、普段とは違うより刺激的＆さらに濃厚な施術をお楽しみ頂けます',
   'セラピストにより可能オプションが違いますのでお問い合わせください',
-  'お支払いは現金のみとなります',
+  'お支払いは現金・クレジットカードに対応しています',
   'キャンセル料: 当日キャンセルは料金の50%',
-  'ご予約は10分単位で承ります',
+  'ご予約は30分単位で承ります',
 ]

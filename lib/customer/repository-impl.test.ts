@@ -44,7 +44,11 @@ describe('CustomerRepositoryImpl', () => {
   it('getAll returns deserialized customers', async () => {
     mockFetch({
       ok: true,
-      json: async () => [rawCustomer],
+      json: async () => ({
+        items: [rawCustomer],
+        limit: 10,
+        hasMore: false,
+      }),
     })
 
     const customers = await repository.getAll()
@@ -63,6 +67,23 @@ describe('CustomerRepositoryImpl', () => {
     expect(fetch).toHaveBeenCalledWith('/api/customer?id=cust_1', { credentials: 'include' })
     expect(customer).not.toBeNull()
     expectCustomer(customer!)
+  })
+
+  it('carries the selected store through administrative customer reads and updates', async () => {
+    repository = new CustomerRepositoryImpl('store-ikebukuro')
+    mockFetch({ ok: true, json: async () => rawCustomer })
+
+    await repository.getById('cust_1')
+    await repository.update('cust_1', { name: '更新 太郎' })
+
+    expect(fetch).toHaveBeenNthCalledWith(1, '/api/customer?id=cust_1&storeId=store-ikebukuro', {
+      credentials: 'include',
+    })
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      '/api/customer?storeId=store-ikebukuro',
+      expect.objectContaining({ method: 'PUT' })
+    )
   })
 
   it('getById returns null on 404', async () => {
@@ -89,6 +110,43 @@ describe('CustomerRepositoryImpl', () => {
     expectCustomer(customers[0])
   })
 
+  it('normalizes a full-width phone before using the exact identity endpoint', async () => {
+    mockFetch({
+      ok: true,
+      json: async () => [rawCustomer],
+    })
+
+    const customers = await repository.searchByPhone('０９０－１２３４－５６７８')
+
+    expect(fetch).toHaveBeenCalledWith('/api/customer?phone=09012345678', {
+      credentials: 'include',
+    })
+    expect(customers).toHaveLength(1)
+  })
+
+  it('search queries the paginated customer endpoint and returns matching customers', async () => {
+    mockFetch({
+      ok: true,
+      json: async () => ({
+        items: [rawCustomer],
+        limit: 50,
+        hasMore: false,
+      }),
+    })
+
+    const customers = await repository.search('山田 太郎')
+
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/customer?query=%E5%B1%B1%E7%94%B0%20%E5%A4%AA%E9%83%8E&limit=50',
+      {
+        credentials: 'include',
+        cache: 'no-store',
+      }
+    )
+    expect(customers).toHaveLength(1)
+    expectCustomer(customers[0])
+  })
+
   it('getCustomerByPhone returns first exact match', async () => {
     mockFetch({
       ok: true,
@@ -100,6 +158,18 @@ describe('CustomerRepositoryImpl', () => {
     expectCustomer(customer!)
   })
 
+  it('treats a migrated E.164 result as the same exact domestic phone identity', async () => {
+    mockFetch({
+      ok: true,
+      json: async () => [{ ...rawCustomer, phone: '+819012345678' }],
+    })
+
+    const customer = await repository.getCustomerByPhone('090-1234-5678')
+
+    expect(customer).not.toBeNull()
+    expect(customer?.id).toBe(rawCustomer.id)
+  })
+
   it('getCustomerByPhone returns null when not found', async () => {
     mockFetch({
       ok: true,
@@ -108,6 +178,23 @@ describe('CustomerRepositoryImpl', () => {
 
     const customer = await repository.getCustomerByPhone('0000000000')
     expect(customer).toBeNull()
+  })
+
+  it('getInsights includes the current store scope', async () => {
+    mockFetch({
+      ok: true,
+      json: async () => ({ totalVisits: 0 }),
+    })
+
+    await repository.getInsights('customer/1', 'uat-ikebukuro')
+
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/customer/insights?customerId=customer%2F1&storeId=uat-ikebukuro',
+      {
+        credentials: 'include',
+        cache: 'no-store',
+      }
+    )
   })
 
   it('create returns created customer', async () => {

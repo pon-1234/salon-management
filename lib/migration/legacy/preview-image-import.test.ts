@@ -15,6 +15,7 @@ import { LEGACY_PREVIEW_ACKNOWLEDGEMENT } from './preview-safety'
 import * as legacyMigration from './index'
 import {
   executeLegacyPreviewImageImport,
+  executeVerifiedLegacyPreviewImageCopy,
   prepareLegacyPreviewImageImport,
   type LegacyPreviewImageImportIo,
   type LegacyPreviewImageSafetyInput,
@@ -189,6 +190,9 @@ describe('prepareLegacyPreviewImageImport', () => {
   it('is exposed through the legacy migration public boundary', () => {
     expect(legacyMigration.prepareLegacyPreviewImageImport).toBe(prepareLegacyPreviewImageImport)
     expect(legacyMigration.executeLegacyPreviewImageImport).toBe(executeLegacyPreviewImageImport)
+    expect(legacyMigration.executeVerifiedLegacyPreviewImageCopy).toBe(
+      executeVerifiedLegacyPreviewImageCopy
+    )
     expect(legacyMigration.createLegacyPreviewImageFilesystemIo).toBeTypeOf('function')
   })
 
@@ -337,6 +341,27 @@ describe('prepareLegacyPreviewImageImport', () => {
 })
 
 describe('executeLegacyPreviewImageImport', () => {
+  it('copies a standalone validated manifest without requiring canonical-row preparation', async () => {
+    const io = createIo()
+
+    const result = await executeVerifiedLegacyPreviewImageCopy(
+      createManifest(),
+      'gold-main',
+      safety,
+      io
+    )
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        success: true,
+        plannedFileCount: 2,
+        createdFileCount: 2,
+        reusedFileCount: 0,
+      })
+    )
+    expect(io.copyExclusive).toHaveBeenCalledTimes(2)
+  })
+
   it('verifies all sources, then exclusively creates missing targets', async () => {
     const preparation = prepareLegacyPreviewImageImport(createPrepared(), createManifest())
     if (!preparation.success) throw new Error('Expected image plan')

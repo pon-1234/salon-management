@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Admin chat customer context and actionable contact controls
+ * @related_to   Customer chat API and customer detail page
+ * @known_issues Presence is displayed only when a real presence source becomes available
+ */
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -7,6 +12,7 @@ import { Customer } from '@/lib/types/chat'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { isVipMember } from '@/lib/utils'
+import { getCustomerPhoneTelHref } from '@/lib/customer/utils'
 
 interface CustomerHeaderProps {
   customer?: Customer
@@ -66,24 +72,30 @@ export function CustomerHeader({ customer }: CustomerHeaderProps) {
 
       {/* Action Buttons */}
       <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-gray-600 hover:bg-emerald-50 hover:text-emerald-600"
-        >
-          <Phone className="h-4 w-4" />
-        </Button>
-
-        <Link href={`/admin/customers/${customer.id}`}>
+        {customer.phone && (
           <Button
+            asChild
             variant="ghost"
             size="sm"
             className="text-gray-600 hover:bg-emerald-50 hover:text-emerald-600"
           >
+            <a href={getCustomerPhoneTelHref(customer.phone)} aria-label={`${customer.name}へ電話`}>
+              <Phone className="h-4 w-4" />
+            </a>
+          </Button>
+        )}
+
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className="text-gray-600 hover:bg-emerald-50 hover:text-emerald-600"
+        >
+          <Link href={`/admin/customers/${customer.id}`} aria-label={`${customer.name}の詳細`}>
             <UserCircle className="mr-2 h-4 w-4" />
             詳細
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     </div>
   )

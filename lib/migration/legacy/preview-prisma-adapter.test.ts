@@ -237,6 +237,51 @@ describe('createPrismaLegacyPreviewPersistence', () => {
       if ('count' in model) expect(model.count).toHaveBeenCalledWith()
     }
   })
+
+  it('fails closed when a legacy customer readback is missing a required imported profile field', async () => {
+    const transaction = {
+      customer: {
+        findUnique: vi.fn(async () => ({
+          id: 'legacy-customer-1',
+          name: 'Legacy Customer',
+          nameKana: null,
+          phone: '09012345678',
+          email: null,
+          password: null,
+          birthDate: null,
+          memberType: 'regular',
+          points: 0,
+          smsEnabled: false,
+          emailNotificationEnabled: false,
+          resetToken: null,
+          resetTokenExpiry: null,
+          emailVerified: false,
+          emailVerificationToken: null,
+          emailVerificationExpiry: null,
+          phoneVerified: false,
+          phoneVerifiedAt: null,
+          phoneVerificationCode: null,
+          phoneVerificationExpiry: null,
+          phoneVerificationAttempts: 0,
+          createdAt: new Date('2026-08-14T00:00:00.000Z'),
+          updatedAt: new Date('2026-08-14T00:00:00.000Z'),
+        })),
+      },
+    }
+    const client = {
+      $transaction: async (operation: (value: object) => Promise<unknown>) =>
+        operation(transaction),
+    }
+    const persistence = createPrismaLegacyPreviewPersistence(
+      client as unknown as Parameters<typeof createPrismaLegacyPreviewPersistence>[0]
+    )
+
+    await expect(
+      persistence.withSerializableTransaction((port) =>
+        port.readTarget('customers', 'legacy-customer-1')
+      )
+    ).rejects.toThrow('[legacy preview persistence] INCOMPLETE_CUSTOMER_PROFILE')
+  })
 })
 
 function sqlText(value: unknown): string {

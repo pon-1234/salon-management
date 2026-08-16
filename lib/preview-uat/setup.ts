@@ -10,12 +10,14 @@ export const PREVIEW_UAT_ACKNOWLEDGEMENT = 'CREATE_SYNTHETIC_UAT_DATA_IN_EMPTY_I
 
 export const PREVIEW_UAT_EMPTY_TABLES = [
   'Customer',
+  'CustomerStoreAssignment',
   'Store',
   'Cast',
   'NgCastEntry',
   'Reservation',
   'SettlementPayment',
   'SettlementPaymentReservation',
+  'CastLedgerEntry',
   'CoursePrice',
   'OptionPrice',
   'CastOptionSetting',
@@ -69,6 +71,7 @@ export interface PreviewUatFixture {
   admins: Prisma.AdminCreateManyInput[]
   adminStoreAssignments: Prisma.AdminStoreAssignmentCreateManyInput[]
   customers: Prisma.CustomerCreateManyInput[]
+  customerStoreAssignments: Prisma.CustomerStoreAssignmentCreateManyInput[]
   courses: Prisma.CoursePriceCreateManyInput[]
   options: Prisma.OptionPriceCreateManyInput[]
   areas: Prisma.AreaInfoCreateManyInput[]
@@ -85,6 +88,7 @@ export interface PreviewUatFixture {
   pointHistories: Prisma.CustomerPointHistoryCreateManyInput[]
   reviews: Prisma.ReviewCreateManyInput[]
   messages: Prisma.MessageCreateManyInput[]
+  castLedgerEntries: Prisma.CastLedgerEntryCreateManyInput[]
 }
 
 export interface PreviewUatSetupSummary {
@@ -381,6 +385,7 @@ export function buildPreviewUatFixture({
         updatedAt: createdAt,
       },
     ],
+    customerStoreAssignments: [{ customerId: 'uat-customer', storeId: IKEBUKURO_STORE_ID }],
     courses: [
       course('uat-course-ikebukuro', IKEBUKURO_STORE_ID, '[UAT] 池袋60分', 60, 10_000),
       course('uat-course-osaka', OSAKA_STORE_ID, '[UAT] 大阪90分', 90, 12_000),
@@ -658,6 +663,7 @@ export function buildPreviewUatFixture({
         updatedAt: createdAt,
       },
     ],
+    castLedgerEntries: [],
   }
 }
 
@@ -741,6 +747,7 @@ function storeSettings(
     businessDays: '[UAT] 毎日',
     lastOrder: '23:00',
     welfareExpenseRate: 10,
+    hourlyGuaranteeAmount: 0,
     marketingChannels: ['[UAT] WEB'],
     pointEarnRate: 1,
     pointExpirationMonths: 12,

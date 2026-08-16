@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { env } from '@/lib/config/env'
-import { canAdminAccessStore } from '@/lib/auth/store-access'
+import { canAdminAccessStoreIdentifier } from '@/lib/auth/store-access'
 import {
   AGE_VERIFICATION_COOKIE,
   AGE_VERIFICATION_COOKIE_VALUE,
@@ -22,6 +22,7 @@ const storeCustomerAuthPattern = /^\/[^/]+\/(?:login|register)(?:\/|$)/
 const publicApiRoutes = ['/api/age-verification', '/api/health', '/api/line/webhook']
 const publicPostApiRoutes = ['/api/request-attendance']
 const publicReadApiPrefixes = ['/api/course', '/api/option']
+const publicReadApiRoutes = ['/api/store-schedule', '/api/review']
 const storeScopedApiPrefixes = [
   '/api/admin/cast/settlements',
   '/api/analytics',
@@ -67,6 +68,7 @@ function extractStoreContext(request: NextRequest): string | null {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const isStoreCastAuthRoute = storeCastLoginPattern.test(pathname)
 
   if (
     env.runtimeMode === 'preview' &&
@@ -94,6 +96,7 @@ export async function middleware(request: NextRequest) {
   const storefrontSlug = getStorefrontSlug(pathname)
   if (
     storefrontSlug &&
+    !isStoreCastAuthRoute &&
     !isAgeVerificationPath(pathname, storefrontSlug) &&
     request.cookies.get(AGE_VERIFICATION_COOKIE)?.value !== AGE_VERIFICATION_COOKIE_VALUE
   ) {
@@ -108,10 +111,16 @@ export async function middleware(request: NextRequest) {
   }
 
   const isApiRoute = pathname.startsWith('/api')
+  const isPublicAvailabilityRead =
+    pathname === '/api/reservation/availability' &&
+    request.method === 'GET' &&
+    request.nextUrl.searchParams.get('mode') !== 'check'
   const isPublicReadApiRoute =
     isApiRoute &&
     request.method === 'GET' &&
-    publicReadApiPrefixes.some((route) => matchesApiPrefix(pathname, route))
+    (publicReadApiPrefixes.some((route) => matchesApiPrefix(pathname, route)) ||
+      publicReadApiRoutes.includes(pathname) ||
+      isPublicAvailabilityRead)
   const isPublicApiRoute =
     isApiRoute &&
     (matchesApiPrefix(pathname, '/api/public') ||
@@ -123,8 +132,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  const isStoreCastAuthRoute = storeCastLoginPattern.test(pathname)
   const isStoreCustomerAuthRoute = storeCustomerAuthPattern.test(pathname)
+  const isCastLoginRoute = isExactOrChild(pathname, '/cast/login') || isStoreCastAuthRoute
   const isAuthRoute =
     authRoutes.some((route) => isExactOrChild(pathname, route)) ||
     isStoreCastAuthRoute ||
@@ -152,6 +161,13 @@ export async function middleware(request: NextRequest) {
     }
 
     if (token) {
+      // NextAuth uses one session cookie for every credentials provider. Let a user who is
+      // signed in under another role reach the cast form so a successful cast sign-in can
+      // replace that JWT. An existing cast session still follows the dashboard redirect below.
+      if (isCastLoginRoute && token.role !== 'cast') {
+        return NextResponse.next()
+      }
+
       if (token.role === 'admin' && isAdminRoute) {
         return NextResponse.redirect(new URL('/admin/dashboard', request.url))
       }
@@ -182,7 +198,7 @@ export async function middleware(request: NextRequest) {
     if (!storeId) {
       return NextResponse.json({ error: '店舗を明示してください' }, { status: 400 })
     }
-    if (!canAdminAccessStore(token, storeId)) {
+    if (!canAdminAccessStoreIdentifier(token, storeId)) {
       return NextResponse.json({ error: 'この店舗を操作する権限がありません' }, { status: 403 })
     }
   }
@@ -274,5 +290,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|robots.txt|images/|videos/).*)'],
+  matcher: [
+    '/((?!_next/static|_next/image|salon-uploads/|favicon.ico|robots.txt|images/|videos/).*)',
+  ],
 }

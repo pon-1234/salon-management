@@ -1,9 +1,9 @@
 'use client'
 
 /**
- * @design_doc   ui-improvement-instructions.md U-4 destructive confirmation dialogs
- * @related_to   ConfirmDialog: replaces native confirm for designation fee deletion
- * @known_issues Existing designation fee behavior is unchanged
+ * @design_doc   docs/PREVIEW_UAT_CHECKLIST.md management settings write-operation checks
+ * @related_to   Designation fee API persists the reservation designation catalog
+ * @known_issues None
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { PageHeader } from '@/components/admin/page-header'
@@ -24,7 +24,7 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { ArrowLeft, Pencil, Trash2, Plus } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { DEFAULT_DESIGNATION_FEES, normalizeDesignationShares } from '@/lib/designation/fees'
+import { normalizeDesignationShares } from '@/lib/designation/fees'
 import {
   createDesignationFee,
   deleteDesignationFee,
@@ -38,7 +38,7 @@ import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 export default function DesignationFeesPage() {
   const { toast } = useToast()
   const { currentStore } = useStore()
-  const [fees, setFees] = useState<DesignationFee[]>(DEFAULT_DESIGNATION_FEES)
+  const [fees, setFees] = useState<DesignationFee[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingFee, setEditingFee] = useState<DesignationFee | null>(null)
@@ -58,18 +58,15 @@ export default function DesignationFeesPage() {
       const data = await getDesignationFees({
         includeInactive: true,
         storeId: currentStore.id,
+        surfaceErrors: true,
       })
-      if (Array.isArray(data) && data.length > 0) {
-        setFees(data.sort((a, b) => a.sortOrder - b.sortOrder))
-      } else {
-        setFees(DEFAULT_DESIGNATION_FEES)
-      }
+      setFees(data.sort((a, b) => a.sortOrder - b.sortOrder))
     } catch (error) {
       console.error('Failed to load designation fees:', error)
-      setFees(DEFAULT_DESIGNATION_FEES)
+      setFees([])
       toast({
         title: '読み込みエラー',
-        description: '指名料の取得に失敗したため、デフォルト値を表示しています。',
+        description: '指名料を取得できませんでした。再読み込みしてください。',
         variant: 'destructive',
       })
     } finally {
@@ -257,6 +254,13 @@ export default function DesignationFeesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {!loading && orderedFees.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                      指名料が登録されていません。「新規項目追加」から登録してください。
+                    </TableCell>
+                  </TableRow>
+                )}
                 {orderedFees.map((fee) => (
                   <TableRow key={fee.id}>
                     <TableCell className="font-mono text-sm text-muted-foreground">

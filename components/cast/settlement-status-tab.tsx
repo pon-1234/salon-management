@@ -28,6 +28,12 @@ const settlementStatusStyles = {
   settled: 'border-emerald-200 bg-emerald-50 text-emerald-700',
 } as const
 
+const settlementStatusLabels = {
+  pending: '未精算',
+  partial: '一部精算',
+  settled: '精算済み',
+} as const
+
 export function SettlementStatusTab({ castId, storeId }: SettlementStatusTabProps) {
   const [data, setData] = useState<CastSettlementsData | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -37,7 +43,7 @@ export function SettlementStatusTab({ castId, storeId }: SettlementStatusTabProp
   const fetchData = useCallback(async () => {
     const response = await fetch(
       buildStoreScopedEndpoint(
-        `/api/admin/cast/settlements?castId=${encodeURIComponent(castId)}`,
+        `/api/admin/cast/settlements?castId=${encodeURIComponent(castId)}&year=${new Date().getFullYear()}&month=${new Date().getMonth() + 1}`,
         storeId
       ),
       { cache: 'no-store' }
@@ -88,22 +94,21 @@ export function SettlementStatusTab({ castId, storeId }: SettlementStatusTabProp
     if (!data) return null
 
     const records = data.days.flatMap((day) => day.records)
-    const netSum = (targets: typeof records) =>
-      targets.reduce(
-        (sum, record) => sum + Math.max(record.staffRevenue - record.welfareExpense, 0),
-        0
-      )
-
-    const inProgress = records.filter((record) => record.settlementStatus !== 'settled')
+    const staffRevenueSum = (targets: typeof records) =>
+      targets.reduce((sum, record) => sum + record.staffRevenue, 0)
+    const pending = records.filter((record) => (record.settlementStatus ?? 'pending') === 'pending')
+    const partial = records.filter((record) => record.settlementStatus === 'partial')
     const settled = records.filter((record) => record.settlementStatus === 'settled')
 
     return {
-      takeHome: Math.max(data.summary.staffRevenue - data.summary.welfareExpense, 0),
+      takeHome: data.summary.staffRevenue,
       staffRevenue: data.summary.staffRevenue,
       welfareExpense: data.summary.welfareExpense,
-      inProgressAmount: netSum(inProgress),
-      settledAmount: netSum(settled),
-      inProgressCount: inProgress.length,
+      pendingAmount: staffRevenueSum(pending),
+      partialAmount: staffRevenueSum(partial),
+      settledAmount: staffRevenueSum(settled),
+      pendingCount: pending.length,
+      partialCount: partial.length,
       settledCount: settled.length,
     }
   }, [data])
@@ -111,7 +116,13 @@ export function SettlementStatusTab({ castId, storeId }: SettlementStatusTabProp
   if (!data) {
     return (
       <Card>
-        <CardContent className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+        <CardContent
+          role={error ? 'alert' : undefined}
+          className={cn(
+            'flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground',
+            error && 'text-destructive'
+          )}
+        >
           {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
           {error ?? '精算情報を読み込み中...'}
         </CardContent>
@@ -133,6 +144,7 @@ export function SettlementStatusTab({ castId, storeId }: SettlementStatusTabProp
           size="sm"
           onClick={() =>
             startTransition(async () => {
+              setError(null)
               try {
                 const payload = await fetchData()
                 setData(payload)
@@ -148,20 +160,36 @@ export function SettlementStatusTab({ castId, storeId }: SettlementStatusTabProp
         </Button>
       </div>
 
+      {error ? (
+        <div
+          role="alert"
+          className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+        >
+          {error}
+        </div>
+      ) : null}
+
       {settlementStats ? (
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <SummaryTile
             icon={PiggyBank}
             title="今月の手取り見込み"
             value={`¥${settlementStats.takeHome.toLocaleString()}`}
-            helper={`キャスト売上 ¥${settlementStats.staffRevenue.toLocaleString()} ／ 厚生費 ¥${settlementStats.welfareExpense.toLocaleString()}`}
+            helper={`厚生費 ¥${settlementStats.welfareExpense.toLocaleString()} は反映済み`}
           />
           <SummaryTile
             icon={Receipt}
-            title="未精算・一部"
-            value={`¥${settlementStats.inProgressAmount.toLocaleString()}`}
-            helper={`件数 ${settlementStats.inProgressCount} 件`}
+            title="未精算"
+            value={`¥${settlementStats.pendingAmount.toLocaleString()}`}
+            helper={`件数 ${settlementStats.pendingCount} 件`}
             tone="warning"
+          />
+          <SummaryTile
+            icon={Receipt}
+            title="一部精算"
+            value={`¥${settlementStats.partialAmount.toLocaleString()}`}
+            helper={`件数 ${settlementStats.partialCount} 件`}
+            tone="info"
           />
           <SummaryTile
             icon={Receipt}
@@ -223,19 +251,16 @@ function DayRow({
     [day.date]
   )
   const dayStatus = useMemo(() => {
-    const inProgress = day.records.filter((record) => record.settlementStatus !== 'settled')
+    const pending = day.records.filter(
+      (record) => (record.settlementStatus ?? 'pending') === 'pending'
+    )
+    const partial = day.records.filter((record) => record.settlementStatus === 'partial')
     const settled = day.records.filter((record) => record.settlementStatus === 'settled')
-    const netSum = (targets: typeof day.records) =>
-      targets.reduce(
-        (sum, record) => sum + Math.max(record.staffRevenue - record.welfareExpense, 0),
-        0
-      )
 
     return {
-      inProgressCount: inProgress.length,
+      pendingCount: pending.length,
+      partialCount: partial.length,
       settledCount: settled.length,
-      inProgressAmount: netSum(inProgress),
-      settledAmount: netSum(settled),
     }
   }, [day])
   const courseSummary = useMemo(() => {
@@ -385,7 +410,10 @@ function DayRow({
         <span className="text-right text-muted-foreground">{day.reservationCount} 件</span>
         <span className="flex items-center justify-end gap-2">
           <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
-            未/一部 {dayStatus.inProgressCount}件
+            未精算 {dayStatus.pendingCount}件
+          </Badge>
+          <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700">
+            一部 {dayStatus.partialCount}件
           </Badge>
           <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700">
             済 {dayStatus.settledCount}件
@@ -429,13 +457,13 @@ function DayRow({
                 <p className="text-lg font-semibold">¥{breakdown.staffSubtotal.toLocaleString()}</p>
               </div>
               <div className="rounded border border-dashed px-3 py-2">
-                <p className="text-xs text-muted-foreground">雑費 / 厚生費</p>
-                <p className="text-lg font-semibold">-¥{breakdown.welfareTotal.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">雑費 / 厚生費（反映済み）</p>
+                <p className="text-lg font-semibold">¥{breakdown.welfareTotal.toLocaleString()}</p>
               </div>
               <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 sm:col-span-2 lg:col-span-3">
                 <p className="text-xs text-emerald-700">手取り</p>
                 <p className="text-2xl font-bold text-emerald-700">
-                  ¥{Math.max(breakdown.staffSubtotal - breakdown.welfareTotal, 0).toLocaleString()}
+                  ¥{breakdown.staffSubtotal.toLocaleString()}
                 </p>
               </div>
             </div>
@@ -509,15 +537,12 @@ function DayRow({
                   <span>¥{breakdown.staffSubtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between text-muted-foreground">
-                  <span>雑費 / 厚生費</span>
-                  <span>-¥{breakdown.welfareTotal.toLocaleString()}</span>
+                  <span>雑費 / 厚生費（取り分に反映済み）</span>
+                  <span>¥{breakdown.welfareTotal.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between font-semibold text-emerald-700">
                   <span>手取り</span>
-                  <span>
-                    ¥
-                    {Math.max(breakdown.staffSubtotal - breakdown.welfareTotal, 0).toLocaleString()}
-                  </span>
+                  <span>¥{breakdown.staffSubtotal.toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -525,18 +550,13 @@ function DayRow({
           <div className="space-y-2 rounded-md border border-dashed border-muted-foreground/40 bg-white/70 px-3 py-2">
             <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
               <span>予約ごとの精算状況</span>
-              <span className="text-xs">手取り = キャスト売上 - 厚生費</span>
+              <span className="text-xs">キャスト売上は厚生費反映済みの最終取り分です</span>
             </div>
             <div className="divide-y">
               {day.records.map((record) => {
-                const net = Math.max(record.staffRevenue - record.welfareExpense, 0)
-                const style = settlementStatusStyles[record.settlementStatus ?? 'pending']
-                const label =
-                  record.settlementStatus === 'settled'
-                    ? '精算済み'
-                    : record.settlementStatus === 'partial'
-                      ? '一部精算'
-                      : '未精算'
+                const status = record.settlementStatus ?? 'pending'
+                const style = settlementStatusStyles[status]
+                const label = settlementStatusLabels[status]
 
                 return (
                   <div key={record.id} className="flex flex-wrap items-center gap-3 py-2 text-sm">
@@ -556,7 +576,9 @@ function DayRow({
                       {label}
                     </Badge>
                     <div className="ml-auto text-right">
-                      <div className="font-semibold text-foreground">¥{net.toLocaleString()}</div>
+                      <div className="font-semibold text-foreground">
+                        ¥{record.staffRevenue.toLocaleString()}
+                      </div>
                       <div className="text-xs text-muted-foreground">手取り</div>
                     </div>
                   </div>
@@ -581,21 +603,23 @@ function SummaryTile({
   title: string
   value: string
   helper?: string
-  tone?: 'default' | 'success' | 'warning'
+  tone?: 'default' | 'success' | 'warning' | 'info'
 }) {
   const toneStyle = {
     default: 'border-primary/10 bg-white',
     success: 'border-emerald-200 bg-emerald-50/60',
     warning: 'border-amber-200 bg-amber-50/60',
+    info: 'border-blue-200 bg-blue-50/60',
   }[tone]
   const iconStyle = {
     default: 'text-primary',
     success: 'text-emerald-600',
     warning: 'text-amber-600',
+    info: 'text-blue-600',
   }[tone]
 
   return (
-    <Card className={`border ${toneStyle}`}>
+    <Card role="group" aria-label={title} className={`border ${toneStyle}`}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
         <Icon className={`h-4 w-4 ${iconStyle}`} />

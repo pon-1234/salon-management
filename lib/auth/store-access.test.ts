@@ -4,7 +4,7 @@
  * @known_issues Customer cross-store membership is a separate migration decision
  */
 import { describe, expect, it } from 'vitest'
-import { canAdminAccessStore } from './store-access'
+import { canAdminAccessStore, canAdminAccessStoreIdentifier } from './store-access'
 
 describe('canAdminAccessStore', () => {
   it('allows a super administrator to access every store', () => {
@@ -28,6 +28,35 @@ describe('canAdminAccessStore', () => {
         'ginza'
       )
     ).toBe(true)
+  })
+
+  it('allows middleware to recognize an assigned store by its registered slug', () => {
+    expect(
+      canAdminAccessStoreIdentifier(
+        {
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:*'],
+          storeIds: ['uat-ikebukuro'],
+          storeSlugs: ['ikebukuro'],
+        },
+        'ikebukuro'
+      )
+    ).toBe(true)
+  })
+
+  it('keeps canonical handler authorization limited to assigned IDs', () => {
+    const user = {
+      role: 'admin',
+      adminRole: 'manager',
+      permissions: ['reservation:*'],
+      storeIds: ['store-a'],
+      storeSlugs: ['shared'],
+    }
+
+    expect(canAdminAccessStoreIdentifier(user, 'shared')).toBe(true)
+    expect(canAdminAccessStore(user, 'shared')).toBe(false)
+    expect(canAdminAccessStore(user, 'store-a')).toBe(true)
   })
 
   it('denies a manager access to an unassigned store', () => {

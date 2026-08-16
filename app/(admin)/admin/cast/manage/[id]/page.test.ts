@@ -17,4 +17,11 @@ describe('CastManagePage LINE registration integration', () => {
     expect(source).toContain('storeId={currentStore.id}')
     expect(source).toContain('isLinked={Boolean(cast.lineUserId)}')
   })
+
+  it('opens an explicitly linked operational tab', () => {
+    expect(source).toContain('useSearchParams')
+    expect(source).toContain("searchParams.get('tab')")
+    expect(source).toContain('value={activeTab}')
+    expect(source).toContain('onValueChange={setActiveTab}')
+  })
 })

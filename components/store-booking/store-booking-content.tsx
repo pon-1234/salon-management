@@ -57,6 +57,7 @@ import { PAYMENT_METHODS } from '@/lib/constants'
 import { toast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import type { PublicCastProfile } from '@/lib/store/public-casts'
+import { ceilReservationStartDate } from '@/lib/reservation/time-boundary'
 
 const JST_TIMEZONE = 'Asia/Tokyo'
 const STEP_MINUTES = 30
@@ -122,7 +123,7 @@ const getInitialCourseId = (courseList: CourseSummary[]) => {
   return courseList.find((course) => course.enableWebBooking !== false)?.id ?? ''
 }
 
-const buildTimeSlotChoices = (
+export const buildTimeSlotChoices = (
   ranges: TimeSlotRange[],
   durationMinutes: number
 ): TimeSlotChoice[] => {
@@ -140,7 +141,7 @@ const buildTimeSlotChoices = (
     .sort((a, b) => a.start.getTime() - b.start.getTime())
     .forEach((range) => {
       for (
-        let start = range.start.getTime();
+        let start = ceilReservationStartDate(range.start).getTime();
         start + durationMinutes * 60000 <= range.end.getTime();
         start += STEP_MINUTES * 60000
       ) {

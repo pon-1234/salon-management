@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @design_doc   Store-scoped administrative cast chat navigation
+ * @related_to   /api/chat/casts and ChatWindow
+ * @known_issues Presence remains offline until a real presence source is introduced
+ */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -8,6 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Search } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import type { CastChatEntry } from '@/lib/types/chat'
+import { useStore } from '@/contexts/store-context'
 
 interface CastListProps {
   selectedCastId?: string
@@ -15,36 +21,51 @@ interface CastListProps {
 }
 
 export function CastList({ selectedCastId, onSelectCast }: CastListProps) {
+  const { currentStore } = useStore()
   const [casts, setCasts] = useState<CastChatEntry[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
 
-  const fetchCasts = useCallback(async () => {
-    try {
-      const response = await fetch('/api/chat/casts', {
-        credentials: 'include',
-        cache: 'no-store',
-      })
-      if (!response.ok) {
-        throw new Error(`Failed to fetch casts: ${response.status}`)
+  const fetchCasts = useCallback(
+    async (signal?: AbortSignal) => {
+      setCasts([])
+      setLoading(true)
+      try {
+        const params = new URLSearchParams({ storeId: currentStore.id })
+        const response = await fetch(`/api/chat/casts?${params.toString()}`, {
+          credentials: 'include',
+          cache: 'no-store',
+          signal,
+        })
+        if (!response.ok) {
+          throw new Error(`Failed to fetch casts: ${response.status}`)
+        }
+        const payload = await response.json()
+        const data = Array.isArray(payload?.data) ? payload.data : payload
+        setCasts(Array.isArray(data) ? data : [])
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return
+        }
+        console.error('Failed to load cast chat list:', error)
+        toast({
+          title: 'エラー',
+          description: 'キャスト一覧の取得に失敗しました',
+          variant: 'destructive',
+        })
+      } finally {
+        if (!signal?.aborted) {
+          setLoading(false)
+        }
       }
-      const payload = await response.json()
-      const data = Array.isArray(payload?.data) ? payload.data : payload
-      setCasts(Array.isArray(data) ? data : [])
-    } catch (error) {
-      console.error('Failed to load cast chat list:', error)
-      toast({
-        title: 'エラー',
-        description: 'キャスト一覧の取得に失敗しました',
-        variant: 'destructive',
-      })
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+    },
+    [currentStore.id]
+  )
 
   useEffect(() => {
-    fetchCasts()
+    const controller = new AbortController()
+    void fetchCasts(controller.signal)
+    return () => controller.abort()
   }, [fetchCasts])
 
   useEffect(() => {

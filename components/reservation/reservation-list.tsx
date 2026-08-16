@@ -24,8 +24,6 @@ interface ReservationListProps {
   limit?: number
   showViewMore?: boolean
   onOpenReservation?: (reservation: ReservationData) => void
-  onMakeModifiable?: (reservationId: string) => Promise<void> | void
-  updatingReservationId?: string | null
 }
 
 export function ReservationList({
@@ -33,29 +31,14 @@ export function ReservationList({
   limit,
   showViewMore = false,
   onOpenReservation,
-  onMakeModifiable,
-  updatingReservationId,
 }: ReservationListProps) {
   const displayReservations = limit ? reservations.slice(0, limit) : reservations
-
-  const getRankColor = (rank: string) => {
-    switch (rank) {
-      case 'ゴールド':
-        return 'bg-gray-600 text-white'
-      case 'シルバー':
-        return 'bg-gray-400 text-white'
-      case 'ブロンズ':
-        return 'bg-orange-400 text-white'
-      default:
-        return 'bg-gray-100'
-    }
-  }
 
   const statusMeta = useMemo(
     () =>
       ({
         confirmed: {
-          label: '確定済',
+          label: '確定',
           className: 'bg-emerald-100 text-emerald-700 border-emerald-200',
           dot: 'bg-emerald-500',
         },
@@ -80,7 +63,7 @@ export function ReservationList({
           dot: 'bg-sky-500',
         },
         completed: {
-          label: '完了',
+          label: '対応済み',
           className: 'bg-slate-200 text-slate-700 border-slate-300',
           dot: 'bg-slate-500',
         },
@@ -119,7 +102,7 @@ export function ReservationList({
               <TableHead className="w-[80px] whitespace-nowrap">NO.</TableHead>
               <TableHead className="w-[140px] whitespace-nowrap">お名前</TableHead>
               <TableHead className="whitespace-nowrap">日時指定</TableHead>
-              <TableHead className="whitespace-nowrap">担当キャスト</TableHead>
+              <TableHead className="whitespace-nowrap">キャスト</TableHead>
               <TableHead className="whitespace-nowrap">コース</TableHead>
               <TableHead className="w-[80px] whitespace-nowrap">IN</TableHead>
               <TableHead className="w-[80px] whitespace-nowrap">OUT</TableHead>
@@ -155,7 +138,7 @@ export function ReservationList({
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <span>{reservation.staff || '担当キャスト未設定'}</span>
+                    <span>{reservation.staff || 'キャスト未設定'}</span>
                   </div>
                 </TableCell>
                 <TableCell>{`${reservation.course}`}</TableCell>
@@ -164,20 +147,6 @@ export function ReservationList({
                 <TableCell>
                   <div className="flex flex-wrap items-center gap-2">
                     {renderStatusBadge(reservation.status, reservation.bookingStatus)}
-                    {reservation.status === 'confirmed' && onMakeModifiable && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-6 whitespace-nowrap px-2 text-xs"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          void onMakeModifiable(reservation.id)
-                        }}
-                        disabled={Boolean(updatingReservationId)}
-                      >
-                        {updatingReservationId === reservation.id ? '変更中…' : '修正可能にする'}
-                      </Button>
-                    )}
                   </div>
                 </TableCell>
               </TableRow>

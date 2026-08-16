@@ -36,6 +36,29 @@ describe('ensureStoreId', () => {
     expect(storeMocks.upsert).not.toHaveBeenCalled()
   })
 
+  it('resolves a public store slug to its canonical database id', async () => {
+    storeMocks.findUnique.mockImplementation(
+      ({ where }: { where: { id?: string; slug?: string } }) => {
+        if (where.slug === 'ikebukuro') {
+          return Promise.resolve({ id: 'uat-ikebukuro' })
+        }
+
+        return Promise.resolve(null)
+      }
+    )
+    const ensureStoreId = await loadEnsureStoreId()
+
+    await expect(ensureStoreId('ikebukuro')).resolves.toBe('uat-ikebukuro')
+    expect(storeMocks.findUnique).toHaveBeenNthCalledWith(1, {
+      where: { id: 'ikebukuro' },
+      select: { id: true },
+    })
+    expect(storeMocks.findUnique).toHaveBeenNthCalledWith(2, {
+      where: { slug: 'ikebukuro' },
+      select: { id: true },
+    })
+  })
+
   it('rejects an unknown explicit store instead of silently using the default store', async () => {
     storeMocks.findUnique.mockImplementation(({ where }: { where: { id: string } }) =>
       Promise.resolve(where.id === 'ikebukuro' ? { id: 'ikebukuro' } : null)
@@ -43,7 +66,11 @@ describe('ensureStoreId', () => {
     const ensureStoreId = await loadEnsureStoreId()
 
     await expect(ensureStoreId('missing-store')).rejects.toThrow('Unknown store: missing-store')
-    expect(storeMocks.findUnique).toHaveBeenCalledTimes(1)
+    expect(storeMocks.findUnique).toHaveBeenCalledTimes(2)
+    expect(storeMocks.findUnique).toHaveBeenLastCalledWith({
+      where: { slug: 'missing-store' },
+      select: { id: true },
+    })
     expect(storeMocks.upsert).not.toHaveBeenCalled()
   })
 

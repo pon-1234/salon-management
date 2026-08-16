@@ -50,6 +50,14 @@ function buildCoursePayload(data: any, mode: 'create' | 'update') {
     payload.description = ''
   }
 
+  if (data.displayOrder !== undefined) {
+    const displayOrder = normalizeNumber(data.displayOrder, NaN)
+    if (!Number.isFinite(displayOrder) || displayOrder < 0) {
+      throw new Error('INVALID_DISPLAY_ORDER')
+    }
+    payload.displayOrder = displayOrder
+  }
+
   if (data.duration !== undefined) {
     const duration = normalizeNumber(data.duration, NaN)
     if (!Number.isFinite(duration) || duration <= 0) {
@@ -188,9 +196,7 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: {
-        duration: 'asc',
-      },
+      orderBy: [{ displayOrder: 'asc' }, { duration: 'asc' }],
     })
 
     if (isAdmin) {
@@ -393,6 +399,7 @@ export async function PUT(request: NextRequest) {
 
       const baseCourseData = {
         name: existingCourse.name,
+        displayOrder: existingCourse.displayOrder,
         description: existingCourse.description,
         duration: existingCourse.duration,
         price: existingCourse.price,

@@ -1,12 +1,18 @@
+/**
+ * @design_doc   docs/LEGACY_DATA_MIGRATION_RUNBOOK.md customer data verification
+ * @related_to   CustomerUseCases delegates customer queries to CustomerRepository
+ * @known_issues None
+ */
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest'
 import { CustomerUseCases } from './usecases'
 import { CustomerRepository } from './repository'
-import { Customer } from './types'
+import { Customer, CustomerInsights } from './types'
 
 // Mock CustomerRepository
 const mockCustomerRepository: CustomerRepository = {
   getById: vi.fn(),
   getAll: vi.fn(),
+  search: vi.fn(),
   create: vi.fn(),
   update: vi.fn(),
   delete: vi.fn(),
@@ -118,10 +124,23 @@ describe('CustomerUseCases', () => {
     })
   })
 
+  describe('search', () => {
+    it("should call repository's general search and return customers", async () => {
+      const query = '確認 太郎'
+      const customers: Partial<Customer>[] = [{ id: 'cust1', name: query }]
+      ;(mockCustomerRepository.search as Mock).mockResolvedValue(customers as Customer[])
+
+      const result = await customerUseCases.search(query)
+
+      expect(mockCustomerRepository.search).toHaveBeenCalledWith(query)
+      expect(result).toEqual(customers)
+    })
+  })
+
   describe('getInsights', () => {
     it("should call repository's getInsights and return insights", async () => {
       const customerId = 'cust1'
-      const insights = {
+      const insights: CustomerInsights = {
         lastVisitDate: null,
         lastCastName: null,
         totalVisits: 0,
@@ -130,17 +149,17 @@ describe('CustomerUseCases', () => {
         averageIntervalDays: null,
         customerCancelCount: 0,
         storeCancelCount: 0,
-        chatCountToday: 0,
-        chatCountYesterday: 0,
-        chatCountTotal: 0,
+        chatCountToday: null,
+        chatCountYesterday: null,
+        chatCountTotal: null,
         preferredBustCup: null,
         cancellationLimit: 3,
       }
       ;(mockCustomerRepository.getInsights as Mock).mockResolvedValue(insights)
 
-      const result = await customerUseCases.getInsights(customerId)
+      const result = await customerUseCases.getInsights(customerId, 'uat-ikebukuro')
 
-      expect(mockCustomerRepository.getInsights).toHaveBeenCalledWith(customerId)
+      expect(mockCustomerRepository.getInsights).toHaveBeenCalledWith(customerId, 'uat-ikebukuro')
       expect(result).toEqual(insights)
     })
   })

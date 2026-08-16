@@ -35,4 +35,10 @@ describe('getDesignationFees fallback policy', () => {
 
     expect(result.length).toBeGreaterThan(0)
   })
+
+  it('surfaces fetch failures to management screens that request strict reads', async () => {
+    await expect(
+      getDesignationFees({ storeId: 'store-a', includeInactive: true, surfaceErrors: true })
+    ).rejects.toThrow('network unavailable')
+  })
 })

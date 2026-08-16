@@ -1,3 +1,8 @@
+/**
+ * @design_doc   Reservation API client normalization and fallback contract
+ * @related_to   reservation/data.ts, Reservation, reservation API
+ * @known_issues None
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   getAllReservations,
@@ -91,6 +96,37 @@ describe('reservation data (API-backed)', () => {
     expect(result).toHaveLength(2)
     expect(result[0].customerName).toBe('山田太郎')
     expect(result[0].startTime).toBeInstanceOf(Date)
+  })
+
+  it('preserves payment and cancellation audit fields from the API', async () => {
+    const fetchMock = vi.mocked(fetch)
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = input.toString()
+      if (url.includes('/api/reservation')) {
+        return jsonResponse([
+          {
+            ...mockReservations[0],
+            paymentMethod: 'クレジットカード',
+            paymentReference: 'IK-2026-00421',
+            cancellationSource: 'store',
+            cancellationReason: '店舗設備不良のため',
+          },
+        ])
+      }
+      if (url.includes('cust_1')) {
+        return jsonResponse({ id: 'cust_1', name: '山田太郎' })
+      }
+      return jsonResponse({}, { ok: false, status: 404, statusText: 'Not Found' })
+    })
+
+    const [result] = await getAllReservations()
+
+    expect(result).toMatchObject({
+      paymentMethod: 'クレジットカード',
+      paymentReference: 'IK-2026-00421',
+      cancellationSource: 'store',
+      cancellationReason: '店舗設備不良のため',
+    })
   })
 
   it('falls back to mock data when API fails', async () => {

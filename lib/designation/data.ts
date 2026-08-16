@@ -11,6 +11,7 @@ import type { DesignationFee, DesignationFeeInput } from './types'
 type FetchOptions = {
   includeInactive?: boolean
   storeId?: string
+  surfaceErrors?: boolean
 }
 
 async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
@@ -63,6 +64,9 @@ export async function getDesignationFees(options: FetchOptions = {}): Promise<De
       ? result.map(mapDesignationFee).sort((a, b) => a.sortOrder - b.sortOrder)
       : []
   } catch (error) {
+    if (options.surfaceErrors) {
+      throw error
+    }
     if (!shouldUseMockFallbacks()) {
       return []
     }

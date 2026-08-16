@@ -51,4 +51,20 @@ describe('findScheduleValidationError', () => {
       )
     ).toBeNull()
   })
+
+  it('accepts midnight as the following-day end of a working shift', () => {
+    expect(
+      findScheduleValidationError(
+        {
+          '2026-07-27': {
+            status: '出勤予定',
+            startTime: '14:00',
+            endTime: '00:00',
+          },
+        },
+        ['出勤予定'],
+        formatDate
+      )
+    ).toBeNull()
+  })
 })

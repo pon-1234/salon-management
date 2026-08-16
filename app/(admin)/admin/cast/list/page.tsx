@@ -2,8 +2,8 @@
 
 /**
  * @design_doc   docs/SYSTEM_AUDIT_2026-07-26.md K-2, K-3
- * @related_to   CastRepositoryImpl: bounded lightweight cast list requests
- * @known_issues Filters apply to the current page
+ * @related_to   CastRepositoryImpl: loads the complete store-scoped cast list
+ * @known_issues None currently
  */
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { CastListView } from '@/components/cast/cast-list-view'
@@ -12,23 +12,56 @@ import { CastRepositoryImpl } from '@/lib/cast/repository-impl'
 import { toast } from '@/hooks/use-toast'
 import { CastListActionButtons } from '@/components/cast/cast-list-action-buttons'
 import { CastListViewToggle } from '@/components/cast/cast-list-view-toggle'
-import { CastListInfoBar } from '@/components/cast/cast-list-info-bar'
 import { useStore } from '@/contexts/store-context'
-import { Button } from '@/components/ui/button'
 import { TableSkeleton } from '@/components/ui/page-loading'
 
-const PAGE_SIZE = 25
+const KANA_ROWS: Record<string, string[]> = {
+  あ: ['あ', 'い', 'う', 'え', 'お'],
+  か: ['か', 'き', 'く', 'け', 'こ'],
+  さ: ['さ', 'し', 'す', 'せ', 'そ'],
+  た: ['た', 'ち', 'つ', 'て', 'と'],
+  な: ['な', 'に', 'ぬ', 'ね', 'の'],
+  は: ['は', 'ひ', 'ふ', 'へ', 'ほ'],
+  ま: ['ま', 'み', 'む', 'め', 'も'],
+  や: ['や', 'ゆ', 'よ'],
+  ら: ['ら', 'り', 'る', 'れ', 'ろ'],
+  わ: ['わ', 'を', 'ん'],
+}
+
+function normalizeKana(value: string): string {
+  return value
+    .normalize('NFKD')
+    .replace(/[\u3099\u309a]/g, '')
+    .replace(/[ァ-ヶ]/g, (character) => String.fromCharCode(character.charCodeAt(0) - 0x60))
+    .replace(
+      /[ぁぃぅぇぉ]/g,
+      (character) => ({ ぁ: 'あ', ぃ: 'い', ぅ: 'う', ぇ: 'え', ぉ: 'お' })[character] ?? character
+    )
+    .replace(/[ゃゅょ]/g, (character) => ({ ゃ: 'や', ゅ: 'ゆ', ょ: 'よ' })[character] ?? character)
+}
+
+function matchesKanaFilter(nameKana: string, kanaFilter: string): boolean {
+  if (kanaFilter === '全') {
+    return true
+  }
+
+  const firstCharacter = normalizeKana(nameKana.trim()).charAt(0)
+  const knownCharacters = Object.values(KANA_ROWS).flat()
+  if (kanaFilter === 'その他') {
+    return firstCharacter.length > 0 && !knownCharacters.includes(firstCharacter)
+  }
+
+  return (KANA_ROWS[kanaFilter] ?? []).includes(firstCharacter)
+}
 
 export default function CastListPage() {
   const { currentStore } = useStore()
-  const [castList, setCastList] = useState<Cast[]>([])
   const [allCasts, setAllCasts] = useState<Cast[]>([])
   const [view, setView] = useState<'grid' | 'list'>('grid')
-  const [workStatus, setWorkStatus] = useState('就業中(公開)')
+  const [workStatus, setWorkStatus] = useState('all')
+  const [kanaFilter, setKanaFilter] = useState('全')
   const [nameSearch, setNameSearch] = useState('')
   const [loading, setLoading] = useState(true)
-  const [page, setPage] = useState(0)
-  const [hasMore, setHasMore] = useState(false)
   const castRepository = useMemo(
     () => new CastRepositoryImpl(undefined, currentStore.id),
     [currentStore.id]
@@ -42,12 +75,18 @@ export default function CastListPage() {
   const fetchCasts = useCallback(async () => {
     setLoading(true)
     try {
-      const offset = page * PAGE_SIZE
-      const casts = await castRepository.getAll({ limit: PAGE_SIZE + 1, offset })
-      setHasMore(casts.length > PAGE_SIZE)
-      const pageCasts = casts.slice(0, PAGE_SIZE)
-      setAllCasts(pageCasts)
-      setCastList(pageCasts)
+      const pageSize = 100
+      let offset = 0
+      const casts: Cast[] = []
+      let page: Cast[]
+
+      do {
+        page = await castRepository.getAll({ limit: 100, offset })
+        casts.push(...page)
+        offset += page.length
+      } while (page.length === pageSize)
+
+      setAllCasts(casts)
     } catch (error) {
       console.error('Error fetching casts:', error)
       toast({
@@ -58,17 +97,21 @@ export default function CastListPage() {
     } finally {
       setLoading(false)
     }
-  }, [castRepository, page])
+  }, [castRepository])
 
   useEffect(() => {
     fetchCasts()
   }, [fetchCasts])
 
-  const filteredCasts = castList.filter((cast) => {
+  const filteredCasts = allCasts.filter((cast) => {
+    const normalizedSearch = nameSearch.trim().toLocaleLowerCase('ja-JP')
     const matchesName =
-      cast.name.toLowerCase().includes(nameSearch.toLowerCase()) ||
-      cast.nameKana.toLowerCase().includes(nameSearch.toLowerCase())
-    return matchesName
+      normalizedSearch.length === 0 ||
+      cast.name.toLocaleLowerCase('ja-JP').includes(normalizedSearch) ||
+      cast.nameKana.toLocaleLowerCase('ja-JP').includes(normalizedSearch)
+    const matchesWorkStatus = workStatus === 'all' || cast.workStatus === workStatus
+
+    return matchesName && matchesWorkStatus && matchesKanaFilter(cast.nameKana, kanaFilter)
   })
 
   const handleRefresh = () => {
@@ -76,65 +119,15 @@ export default function CastListPage() {
   }
 
   const handleFilterCharacter = (char: string) => {
-    if (char === '全') {
-      setCastList(allCasts)
-      return
-    }
-
-    const aRow = ['あ', 'い', 'う', 'え', 'お']
-    const kaRow = ['か', 'き', 'く', 'け', 'こ']
-    const saRow = ['さ', 'し', 'す', 'せ', 'そ']
-    const taRow = ['た', 'ち', 'つ', 'て', 'と']
-    const naRow = ['な', 'に', 'ぬ', 'ね', 'の']
-    const haRow = ['は', 'ひ', 'ふ', 'へ', 'ほ']
-    const maRow = ['ま', 'み', 'む', 'め', 'も']
-    const yaRow = ['や', 'ゆ', 'よ']
-    const raRow = ['ら', 'り', 'る', 'れ', 'ろ']
-    const waRow = ['わ', 'を', 'ん']
-
-    const rowMap: Record<string, string[]> = {
-      あ: aRow,
-      か: kaRow,
-      さ: saRow,
-      た: taRow,
-      な: naRow,
-      は: haRow,
-      ま: maRow,
-      や: yaRow,
-      ら: raRow,
-      わ: waRow,
-    }
-
-    if (char === 'その他') {
-      const filtered = allCasts.filter((cast) => {
-        const firstChar = cast.nameKana.charAt(0)
-        const isOther = !Object.values(rowMap).some((row) => row.includes(firstChar))
-        return isOther
-      })
-      setCastList(filtered)
-      return
-    }
-
-    const targetRow = rowMap[char] || []
-    const filtered = allCasts.filter((cast) => {
-      const firstChar = cast.nameKana.charAt(0)
-      return targetRow.includes(firstChar)
-    })
-    setCastList(filtered)
-  }
-
-  const handleFilter = () => {
-    // Filter logic can be implemented here
+    setKanaFilter(char)
   }
 
   return (
     <div className="min-h-screen bg-white">
-      <CastListInfoBar />
       <CastListViewToggle view={view} onViewChange={setView} />
       <CastListActionButtons
         onRefresh={handleRefresh}
         onFilterCharacter={handleFilterCharacter}
-        onFilter={handleFilter}
         nameSearch={nameSearch}
         onNameSearchChange={setNameSearch}
         workStatus={workStatus}
@@ -145,18 +138,7 @@ export default function CastListPage() {
         {loading ? (
           <TableSkeleton rows={6} columns={4} label="キャスト一覧を読み込んでいます" />
         ) : (
-          <>
-            <CastListView casts={filteredCasts} view={view} />
-            <div className="mt-4 flex items-center justify-end gap-3">
-              <Button variant="outline" disabled={page === 0} onClick={() => setPage(page - 1)}>
-                前へ
-              </Button>
-              <span className="text-sm text-muted-foreground">{page + 1}ページ</span>
-              <Button variant="outline" disabled={!hasMore} onClick={() => setPage(page + 1)}>
-                次へ
-              </Button>
-            </div>
-          </>
+          <CastListView casts={filteredCasts} view={view} />
         )}
       </main>
     </div>

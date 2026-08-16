@@ -28,4 +28,15 @@ describe('SafeImage adoption', () => {
 
     expect(offenders).toEqual([])
   })
+
+  it('routes every application Next.js image through SafeImage so proxy-backed uploads bypass optimization', () => {
+    const root = process.cwd()
+    const offenders = [resolve(root, 'app'), resolve(root, 'components')]
+      .flatMap(listTsxFiles)
+      .map((file) => relative(root, file))
+      .filter((file) => !file.endsWith('.test.tsx') && file !== 'components/ui/safe-image.tsx')
+      .filter((file) => readFileSync(resolve(root, file), 'utf8').includes('next/image'))
+
+    expect(offenders).toEqual([])
+  })
 })

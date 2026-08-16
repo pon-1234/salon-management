@@ -37,13 +37,34 @@ describe('gold master Ikebukuro preview extractor', () => {
     })
   })
 
+  it('can report a stage-only diagnostic without exposing source errors', async () => {
+    const failure = await captureFailure({
+      LEGACY_PREVIEW_SCHEDULE_FROM: '2026-02-30',
+      LEGACY_PREVIEW_SCHEDULE_TO: '2026-08-16',
+      LEGACY_PREVIEW_RESERVATION_FROM: '2026-06-01',
+      LEGACY_PREVIEW_DIAGNOSTICS: 'STAGE_ONLY',
+    })
+
+    expect(failure).toEqual({
+      code: 1,
+      stdout: '',
+      stderr: 'Legacy preview extraction failed at stage: configuration.\n',
+    })
+  })
+
   it('constructs a fail-closed PDO connection from the legacy config and makes it read-only', () => {
     expect(source).toContain('/home/nzuadtjn/gold-esthe.com_inc_master/jukunen_db_2016.inc')
     expect(source).toContain("'nzuadtjn_gold_master'")
+    expect(source).toContain("'nzuadtjn_primegb_master'")
     expect(source).toContain('token_get_all')
     expect(source).toContain('new PDO(')
     expect(source).toContain('SET SESSION TRANSACTION READ ONLY')
     expect(source).toContain('SELECT @@session.tx_read_only AS read_only_mode')
+    expect(source).toContain('SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ')
+    expect(source).toContain('SET SESSION TRANSACTION READ ONLY')
+    expect(source).toContain("START TRANSACTION WITH CONSISTENT SNAPSHOT'")
+    expect(source).toContain("$pdo->exec('COMMIT')")
+    expect(source).toContain("$pdo->exec('ROLLBACK')")
     expect(source).not.toMatch(/(?:password|username)\s*=\s*['"][^'"]+['"]/i)
     expect(source).toContain("file_put_contents('php://stderr'")
     expect(source).not.toMatch(/\bSTD(?:OUT|ERR)\b/u)
@@ -55,7 +76,9 @@ describe('gold master Ikebukuro preview extractor', () => {
       /\b(?:INSERT|UPDATE|DELETE|REPLACE|DROP|ALTER|TRUNCATE|CREATE|LOCK)\b/i
     )
 
-    expect(source).toContain('shop_no, shop_name, tel, adress, eigyo, mail_ad, lev FROM shop_list')
+    expect(source).toContain(
+      'shop_no, shop_name, tel, adress, eigyo, mail_ad, lev, girls_jikyu FROM shop_list'
+    )
     expect(source).toContain(
       'id, sort, charge_name, charge_name_admin, charge_kin, charge_ara, charge_min, flg_show, flg_web FROM charge_info'
     )
@@ -100,6 +123,30 @@ describe('gold master Ikebukuro preview extractor', () => {
     )
     expect(source).toContain('v.lev = 1')
     expect(source).toContain('v.mem_id')
+    expect(source).toContain(
+      'm.mem_id, m.shop_no, m.name, m.tel, m.mail_ad, m.birth, m.age, m.point'
+    )
+    expect(source).toContain('FROM nzuadtjn_primegb_master.member m')
+    expect(source).not.toMatch(/\bm\.(?:pass|mem_cm|mem_cm2|login_id|mobile_no)\b/i)
+    expect(source).toContain(
+      'n.serial, n.shop_no, n.nyu_date, n.nyu_month, n.girl_no, n.kin, n.kind FROM nyukin n'
+    )
+    expect(source).toContain(
+      's.serial, s.shop_no, s.nyu_date, s.nyu_month, s.girl_no, s.kin, s.kind FROM shukkin s'
+    )
+    expect(source).not.toMatch(/\bn\.(?:tanto_chk|cm)\b/u)
+    expect(source).toContain('p.serial, p.shop_no, p.job_date, p.girl_no, p.kin FROM office_pay p')
+    expect(source).toContain("'params' => $officePayParameters")
+    expect(source).toContain(
+      'n.nyu_date >= :reservationFrom OR n.nyu_month >= :reservationFromMonth'
+    )
+    expect(source).toContain(
+      's.nyu_date >= :reservationFrom OR s.nyu_month >= :reservationFromMonth'
+    )
+    expect(source).not.toMatch(/:reservationFrom OR [ns]\.nyu_month >= :reservationFrom\b/u)
+    expect(source).toContain('p.job_date >= :reservationFrom')
+    expect(source).toContain("':reservationFromMonth' => $ledgerFrom")
+    expect(source).toContain("':reservationFromMonth' => $reservationFrom")
 
     const orderProjection = extractProjection(source, 'orders', 'orders o')
     expect(orderProjection).toContain('o.mem_id')
@@ -108,11 +155,11 @@ describe('gold master Ikebukuro preview extractor', () => {
     )
   })
 
-  it('emits a versioned best-effort snapshot with explicit rows and count reconciliation', () => {
-    expect(source).toContain("'version' => 3")
+  it('emits a versioned non-atomic live preview with explicit rows and count reconciliation', () => {
+    expect(source).toContain("'version' => 4")
     expect(source).toContain("'sourceDatabase' => EXPECTED_DATABASE")
     expect(source).toContain("'shopNo' => SHOP_NO")
-    expect(source).toContain("'consistency' => 'best-effort-read-only'")
+    expect(source).toContain("'consistency' => 'best-effort-read-only-count-checked'")
     expect(source).toContain("'beforeCounts' => canonicalizeDatasets($beforeCounts)")
     expect(source).toContain("'afterCounts' => canonicalizeDatasets($afterCounts)")
     expect(source).toContain("'rows' => canonicalizeDatasets($rows)")
@@ -123,6 +170,36 @@ describe('gold master Ikebukuro preview extractor', () => {
     expect(source).toContain("'stations' => $datasets['stationList']")
     expect(source).toContain("'hotelGroups' => $datasets['hotelGroup']")
     expect(source).toContain("'hotels' => $datasets['hotelList']")
+    expect(source).toContain("'customers' => $datasets['members']")
+    expect(source).toContain("'payments' => $datasets['nyukin']")
+    expect(source).toContain("'withdrawals' => $datasets['shukkin']")
+    expect(source).toContain("'welfareDeductions' => $datasets['officePay']")
+    expect(source).toContain("dataset-count-")
+    expect(source).toContain("dataset-rows-")
+    expect(source).toContain("SCHEMA_ONLY")
+    expect(source).toContain('SHOW TABLES')
+    expect(source).toContain('nyukin_[0-9]{4}')
+    expect(source).toContain('information_schema.tables')
+    expect(source).toContain('mergeLedgerPayments')
+  })
+
+  it('can emit a cast-ledger snapshot without customer or reservation datasets', async () => {
+    expect(source).toContain("LEGACY_PREVIEW_EXTRACT_KIND")
+    expect(source).toContain("'kind' => 'ikebukuro-cast-ledger'")
+    expect(source).toContain('LEGACY_PREVIEW_LEDGER_FROM')
+    expect(source).toContain('/* dataset:shopGuarantee */ SELECT shop_no, girls_jikyu FROM shop_list')
+    expect(source).not.toMatch(/dataset:shopGuarantee[\s\S]*tel, adress, eigyo, mail_ad/)
+
+    const failure = await captureFailure({
+      LEGACY_PREVIEW_EXTRACT_KIND: 'cast-ledger',
+      LEGACY_PREVIEW_LEDGER_FROM: '2026-02-30',
+      LEGACY_PREVIEW_DIAGNOSTICS: 'STAGE_ONLY',
+    })
+    expect(failure).toEqual({
+      code: 1,
+      stdout: '',
+      stderr: 'Legacy preview extraction failed at stage: configuration.\n',
+    })
   })
 })
 
