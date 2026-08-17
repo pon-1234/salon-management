@@ -57,7 +57,14 @@ describe('runGoldMasterLedgerImport', () => {
     const writeOutput = vi.fn()
     const writeError = vi.fn()
     const code = await runGoldMasterLedgerImport(
-      ['--snapshot', snapshotPath, '--store-id', 'uat-ikebukuro', '--ack', IKEBUKURO_LEDGER_ACKNOWLEDGEMENT],
+      [
+        '--snapshot',
+        snapshotPath,
+        '--store-id',
+        'uat-ikebukuro',
+        '--ack',
+        IKEBUKURO_LEDGER_ACKNOWLEDGEMENT,
+      ],
       environment,
       {
         readSnapshot: async () => snapshot,
@@ -104,7 +111,14 @@ describe('runGoldMasterLedgerImport', () => {
   it('rejects a non-preview runtime before reading the snapshot', async () => {
     const readSnapshot = vi.fn()
     const code = await runGoldMasterLedgerImport(
-      ['--snapshot', snapshotPath, '--store-id', 'uat-ikebukuro', '--ack', IKEBUKURO_LEDGER_ACKNOWLEDGEMENT],
+      [
+        '--snapshot',
+        snapshotPath,
+        '--store-id',
+        'uat-ikebukuro',
+        '--ack',
+        IKEBUKURO_LEDGER_ACKNOWLEDGEMENT,
+      ],
       { ...environment, APP_RUNTIME_MODE: 'production' },
       {
         readSnapshot,

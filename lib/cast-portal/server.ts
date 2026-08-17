@@ -6,11 +6,10 @@
 import { db } from '@/lib/db'
 import logger from '@/lib/logger'
 import { ensureStoreId } from '@/lib/store/server'
-import { getCastPerformanceReport } from '@/lib/analytics/server/cast-performance'
+import { getCastPerformanceReport, getJstMonthRange } from '@/lib/analytics/server/cast-performance'
 import {
   addDays,
   addMinutes,
-  addMonths,
   differenceInCalendarDays,
   endOfDay,
   endOfMonth,
@@ -721,14 +720,7 @@ async function loadCastSettlements(
   const zonedNow = utcToZonedTime(now, DEFAULT_TIME_ZONE)
   const year = month?.year ?? zonedNow.getFullYear()
   const monthNumber = month?.month ?? zonedNow.getMonth() + 1
-  const monthStart = startOfMonthInTimeZone(
-    zonedTimeToUtc(
-      `${year}-${String(monthNumber).padStart(2, '0')}-01T00:00:00`,
-      DEFAULT_TIME_ZONE
-    ),
-    DEFAULT_TIME_ZONE
-  )
-  const monthEndExclusive = startOfMonthInTimeZone(addMonths(monthStart, 1), DEFAULT_TIME_ZONE)
+  const { start: monthStart, endExclusive: monthEndExclusive } = getJstMonthRange(year, monthNumber)
 
   const baseQuery = {
     where: {

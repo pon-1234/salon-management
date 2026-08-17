@@ -126,8 +126,11 @@ export default function ChatPage() {
 
   return (
     <>
-      <div className="flex h-full flex-col">
-        <div className="flex flex-wrap gap-2 border-b bg-white px-4 py-2">
+      <div
+        data-testid="admin-chat-workspace"
+        className="flex h-[calc(100dvh-5.5rem)] min-h-0 flex-col overflow-hidden"
+      >
+        <div className="flex shrink-0 flex-wrap gap-2 border-b bg-white px-4 py-2">
           <Button
             variant={activePane === 'customer' ? 'default' : 'ghost'}
             size="sm"
@@ -163,16 +166,16 @@ export default function ChatPage() {
           </div>
         ) : null}
 
-        <div className="flex h-full flex-1">
+        <div data-testid="admin-chat-panes" className="flex min-h-0 flex-1 overflow-hidden">
           <div
-            className={`transition-all duration-300 ${
+            className={`min-h-0 ${
               activePane === 'customer'
                 ? selectedCustomer
-                  ? 'hidden md:block'
-                  : 'block'
+                  ? 'hidden md:flex'
+                  : 'flex'
                 : selectedCast
-                  ? 'hidden md:block'
-                  : 'block'
+                  ? 'hidden md:flex'
+                  : 'flex'
             }`}
           >
             {activePane === 'customer' ? (
@@ -197,7 +200,7 @@ export default function ChatPage() {
           </div>
 
           <div
-            className={`flex flex-1 flex-col rounded-l-lg border border-gray-200 bg-white shadow-sm ${
+            className={`min-h-0 flex-1 flex-col overflow-hidden rounded-l-lg border border-gray-200 bg-white shadow-sm ${
               (activePane === 'customer' && !selectedCustomer) ||
               (activePane === 'cast' && !selectedCast)
                 ? 'hidden md:flex'
@@ -205,9 +208,13 @@ export default function ChatPage() {
             }`}
           >
             {activePane === 'customer' ? (
-              <CustomerHeader customer={selectedCustomer || undefined} />
+              <div className="shrink-0">
+                <CustomerHeader customer={selectedCustomer || undefined} />
+              </div>
             ) : (
-              <CastHeader cast={selectedCast || undefined} />
+              <div className="shrink-0">
+                <CastHeader cast={selectedCast || undefined} />
+              </div>
             )}
             <ChatWindow
               participantType={activePane}
