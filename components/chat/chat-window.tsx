@@ -323,7 +323,11 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-white to-gray-50/30">
-      <ScrollArea data-testid="chat-message-pane" className="min-h-0 flex-1 p-4" ref={scrollAreaRef}>
+      <ScrollArea
+        data-testid="chat-message-pane"
+        className="min-h-0 flex-1 p-4"
+        ref={scrollAreaRef}
+      >
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="text-gray-500">読み込み中...</div>

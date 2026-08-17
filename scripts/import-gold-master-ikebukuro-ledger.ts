@@ -10,10 +10,7 @@ import { Prisma, PrismaClient } from '@prisma/client'
 
 import { readPrivateLegacyJsonText } from '@/lib/migration/legacy/private-json-file'
 import { parseStrictJson } from '@/lib/migration/legacy/strict-json'
-import {
-  PreviewUatSetupError,
-  assertPreviewUatTargetIdentity,
-} from '@/lib/preview-uat/setup'
+import { PreviewUatSetupError, assertPreviewUatTargetIdentity } from '@/lib/preview-uat/setup'
 import {
   IKEBUKURO_LEDGER_ACKNOWLEDGEMENT,
   applyLegacyCastLedgerSnapshot,
@@ -32,9 +29,7 @@ export interface GoldMasterLedgerImportDependencies {
   readSnapshot(path: string): Promise<unknown>
   createClient(databaseUrl: string): {
     $queryRaw<T>(query: Prisma.Sql): Promise<T>
-    $transaction<T>(
-      operation: (transaction: Prisma.TransactionClient) => Promise<T>
-    ): Promise<T>
+    $transaction<T>(operation: (transaction: Prisma.TransactionClient) => Promise<T>): Promise<T>
     $disconnect(): Promise<void>
   }
   writeOutput(message: string): void
@@ -77,7 +72,10 @@ function parseArguments(argv: string[]): { snapshotPath: string; storeId: string
   return { snapshotPath: normalized[1], storeId: STORE_ID }
 }
 
-function parseDatabaseUrl(databaseUrl: string | undefined): { databaseUrl: string; databaseName: string } {
+function parseDatabaseUrl(databaseUrl: string | undefined): {
+  databaseUrl: string
+  databaseName: string
+} {
   if (!databaseUrl || databaseUrl.trim() !== databaseUrl) throw new GoldMasterLedgerConfigError()
   try {
     const parsed = new URL(databaseUrl)

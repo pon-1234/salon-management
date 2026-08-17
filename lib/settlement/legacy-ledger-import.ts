@@ -7,8 +7,7 @@ import { z } from 'zod'
 
 import { mapLegacyCastLedger } from './legacy-ledger'
 
-export const IKEBUKURO_LEDGER_ACKNOWLEDGEMENT =
-  'IMPORT_IKEBUKURO_CAST_LEDGER_INTO_ISOLATED_PREVIEW'
+export const IKEBUKURO_LEDGER_ACKNOWLEDGEMENT = 'IMPORT_IKEBUKURO_CAST_LEDGER_INTO_ISOLATED_PREVIEW'
 
 const integer = z
   .union([z.number().int(), z.string().regex(/^-?[0-9]+$/u)])
@@ -122,9 +121,7 @@ export async function applyLegacyCastLedgerSnapshot(input: {
   importedCastIds: Set<string>
   acknowledgement: string
   write: {
-    createLedgerEntries(
-      entries: ReturnType<typeof mapLegacyCastLedger>
-    ): Promise<number>
+    createLedgerEntries(entries: ReturnType<typeof mapLegacyCastLedger>): Promise<number>
     updateHourlyGuarantee(storeId: string, amount: number): Promise<void>
   }
 }): Promise<{

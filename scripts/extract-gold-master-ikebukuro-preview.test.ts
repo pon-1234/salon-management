@@ -174,9 +174,9 @@ describe('gold master Ikebukuro preview extractor', () => {
     expect(source).toContain("'payments' => $datasets['nyukin']")
     expect(source).toContain("'withdrawals' => $datasets['shukkin']")
     expect(source).toContain("'welfareDeductions' => $datasets['officePay']")
-    expect(source).toContain("dataset-count-")
-    expect(source).toContain("dataset-rows-")
-    expect(source).toContain("SCHEMA_ONLY")
+    expect(source).toContain('dataset-count-')
+    expect(source).toContain('dataset-rows-')
+    expect(source).toContain('SCHEMA_ONLY')
     expect(source).toContain('SHOW TABLES')
     expect(source).toContain('nyukin_[0-9]{4}')
     expect(source).toContain('information_schema.tables')
@@ -184,10 +184,12 @@ describe('gold master Ikebukuro preview extractor', () => {
   })
 
   it('can emit a cast-ledger snapshot without customer or reservation datasets', async () => {
-    expect(source).toContain("LEGACY_PREVIEW_EXTRACT_KIND")
+    expect(source).toContain('LEGACY_PREVIEW_EXTRACT_KIND')
     expect(source).toContain("'kind' => 'ikebukuro-cast-ledger'")
     expect(source).toContain('LEGACY_PREVIEW_LEDGER_FROM')
-    expect(source).toContain('/* dataset:shopGuarantee */ SELECT shop_no, girls_jikyu FROM shop_list')
+    expect(source).toContain(
+      '/* dataset:shopGuarantee */ SELECT shop_no, girls_jikyu FROM shop_list'
+    )
     expect(source).not.toMatch(/dataset:shopGuarantee[\s\S]*tel, adress, eigyo, mail_ad/)
 
     const failure = await captureFailure({

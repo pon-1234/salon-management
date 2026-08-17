@@ -359,8 +359,12 @@ describe('ReservationListPage interactions', () => {
     ]
     const reservations = [confirmedReservation, ...laterReservations]
     reservationDataMocks.getAllReservations.mockImplementation(async (params) => {
-      const rangeStart = params?.startDate ? new Date(params.startDate).getTime() : Number.NEGATIVE_INFINITY
-      const rangeEnd = params?.endDate ? new Date(params.endDate).getTime() : Number.POSITIVE_INFINITY
+      const rangeStart = params?.startDate
+        ? new Date(params.startDate).getTime()
+        : Number.NEGATIVE_INFINITY
+      const rangeEnd = params?.endDate
+        ? new Date(params.endDate).getTime()
+        : Number.POSITIVE_INFINITY
       return reservations.filter((reservation) => {
         const start = reservation.startTime.getTime()
         return start >= rangeStart && start < rangeEnd

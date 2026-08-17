@@ -88,12 +88,12 @@ const SOURCE_DATASETS = [
   'casts',
   'schedules',
   'reservations',
-    'reviews',
-    'customers',
-    'payments',
-    'withdrawals',
-    'welfareDeductions',
-  ] as const
+  'reviews',
+  'customers',
+  'payments',
+  'withdrawals',
+  'welfareDeductions',
+] as const
 
 const OPTIONAL_SOURCE_DATASETS = new Set<(typeof SOURCE_DATASETS)[number]>([
   'payments',
