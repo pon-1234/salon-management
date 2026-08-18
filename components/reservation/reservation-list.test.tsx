@@ -78,4 +78,21 @@ describe('ReservationList interactions', () => {
     expect(screen.queryByRole('button', { name: '修正可能にする' })).not.toBeInTheDocument()
     expect(source).not.toContain('onMakeModifiable')
   })
+
+  it('uses Japanese column labels instead of English ops jargon', () => {
+    render(<ReservationList reservations={[confirmed]} />)
+
+    expect(screen.getByRole('columnheader', { name: '番号' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: '開始' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: '終了' })).toBeInTheDocument()
+    expect(screen.queryByRole('columnheader', { name: 'NO.' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('columnheader', { name: 'IN' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('columnheader', { name: 'OUT' })).not.toBeInTheDocument()
+  })
+
+  it('shows an empty state when there are no reservations', () => {
+    render(<ReservationList reservations={[]} />)
+
+    expect(screen.getByText('この日の予約はありません。')).toBeInTheDocument()
+  })
 })

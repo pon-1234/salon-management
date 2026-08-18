@@ -101,13 +101,13 @@ export function ReservationTable({ reservations, onOpenReservation }: Reservatio
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[80px] whitespace-nowrap">NO.</TableHead>
+            <TableHead className="w-[80px] whitespace-nowrap">番号</TableHead>
             <TableHead className="w-[160px] whitespace-nowrap">お名前</TableHead>
             <TableHead className="w-[160px] whitespace-nowrap">日時指定</TableHead>
-            <TableHead className="w-[160px] whitespace-nowrap">女性</TableHead>
+            <TableHead className="w-[160px] whitespace-nowrap">キャスト</TableHead>
             <TableHead className="w-[160px] whitespace-nowrap">コース</TableHead>
-            <TableHead className="w-[80px] whitespace-nowrap">IN</TableHead>
-            <TableHead className="w-[80px] whitespace-nowrap">OUT</TableHead>
+            <TableHead className="w-[80px] whitespace-nowrap">開始</TableHead>
+            <TableHead className="w-[80px] whitespace-nowrap">終了</TableHead>
             <TableHead className="w-[130px] whitespace-nowrap">ステータス</TableHead>
             <TableHead className="w-[200px]">詳細</TableHead>
             <TableHead className="w-[80px] text-right">操作</TableHead>

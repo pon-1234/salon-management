@@ -41,7 +41,7 @@ describe('ChatWindow composer layout', () => {
     render(<ChatWindow participantType="customer" participantId="customer-1" />)
 
     expect(await screen.findByTestId('chat-composer')).toHaveClass('shrink-0')
-    expect(screen.getByTestId('chat-message-pane')).toHaveClass('min-h-0', 'flex-1')
+    expect(screen.getByTestId('chat-message-pane')).toHaveClass('min-h-0', 'flex-1', 'overflow-y-auto')
     expect(
       screen.getByPlaceholderText('顧客へメッセージを入力... (⌘/Ctrl + Enter で送信)')
     ).toBeInTheDocument()

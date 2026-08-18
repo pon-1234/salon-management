@@ -45,16 +45,28 @@ const columns: TableColumn[] = [
 ]
 
 export function DailyReportTable({ report }: DailyReportTableProps) {
+  const kpis = [
+    { label: '総売上', value: `¥${formatCurrency(report.totalSales)}` },
+    { label: '現金', value: `¥${formatCurrency(report.totalCashAmount ?? 0)}` },
+    { label: 'カード', value: `¥${formatCurrency(report.totalCardAmount ?? 0)}` },
+    { label: '店舗売上', value: `¥${formatCurrency(report.totalStoreRevenue ?? 0)}` },
+    { label: '手取り', value: `¥${formatCurrency(report.totalStaffRevenue ?? 0)}` },
+    { label: '総客数', value: String(report.totalCustomers) },
+    { label: '総労働時間', value: `${report.totalWorkingHours}時間` },
+  ]
+
   const summary = (
-    <>
-      <p>総売上: ¥{formatCurrency(report.totalSales)}</p>
-      <p>現金: ¥{formatCurrency(report.totalCashAmount ?? 0)}</p>
-      <p>カード: ¥{formatCurrency(report.totalCardAmount ?? 0)}</p>
-      <p>店舗売上: ¥{formatCurrency(report.totalStoreRevenue ?? 0)}</p>
-      <p>手取り: ¥{formatCurrency(report.totalStaffRevenue ?? 0)}</p>
-      <p>総客数: {report.totalCustomers}</p>
-      <p>総労働時間: {report.totalWorkingHours}時間</p>
-    </>
+    <div
+      data-testid="daily-report-kpis"
+      className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7"
+    >
+      {kpis.map((kpi) => (
+        <div key={kpi.label} className="rounded-lg border bg-white px-3 py-2">
+          <p className="text-xs text-muted-foreground">{kpi.label}</p>
+          <p className="text-sm font-semibold tabular-nums">{kpi.value}</p>
+        </div>
+      ))}
+    </div>
   )
 
   return (

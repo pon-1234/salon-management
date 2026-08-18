@@ -15,6 +15,7 @@ import {
   MessageSquare,
   Calendar,
   CalendarDays,
+  CalendarRange,
   Users,
   Clock,
   Settings,
@@ -37,7 +38,7 @@ import { NotificationList } from '@/components/notification-list'
 import { NotificationDetailDialog } from '@/components/notification-detail-dialog'
 import Link from 'next/link'
 import { useState, useCallback, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Cast } from '@/lib/cast/types'
@@ -53,6 +54,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 
 const adminNavigationLinks = [
   { href: '/admin/dashboard', label: 'ホーム', icon: Home },
+  { href: '/admin/reservation', label: '予約表', icon: CalendarRange },
   { href: '/admin/reservation-list', label: '予約一覧', icon: ListChecks },
   { href: '/admin/chat', label: 'チャット', icon: MessageSquare },
   { href: '/admin/cast/list', label: 'キャスト', icon: Users },
@@ -61,6 +63,46 @@ const adminNavigationLinks = [
   { href: '/admin/reviews', label: '口コミ', icon: Star },
   { href: '/admin/settings', label: '設定', icon: Settings },
 ]
+
+function isAdminNavActive(pathname: string, href: string) {
+  if (href === '/admin/dashboard') {
+    return pathname === '/admin/dashboard' || pathname === '/admin'
+  }
+  if (href === '/admin/reservation') {
+    return pathname === '/admin/reservation' || pathname.startsWith('/admin/reservation/')
+  }
+  return pathname === href || pathname.startsWith(`${href}/`)
+}
+
+function HeaderNavLink({
+  href,
+  label,
+  icon: Icon,
+  pathname,
+}: {
+  href: string
+  label: string
+  icon: typeof Home
+  pathname: string
+}) {
+  const isActive = isAdminNavActive(pathname, href)
+  return (
+    <Link href={href} aria-current={isActive ? 'page' : undefined} className="hidden xl:block">
+      <Button
+        variant="ghost"
+        className={cn(
+          'flex h-auto shrink-0 flex-col items-center gap-0.5 px-2 py-1.5',
+          isActive && 'bg-emerald-50 text-emerald-800'
+        )}
+      >
+        <Icon className="h-5 w-5" />
+        <span className={cn('text-xs', isActive ? 'text-emerald-800' : 'text-gray-600')}>
+          {label}
+        </span>
+      </Button>
+    </Link>
+  )
+}
 
 export function Header() {
   const { data: session } = useSession()
@@ -75,6 +117,7 @@ export function Header() {
   const [notificationOpen, setNotificationOpen] = useState(false)
   const { notifications, markAsRead, markAsUnread, unreadCount } = useNotifications()
   const router = useRouter()
+  const pathname = usePathname()
   const [selectedNotification, setSelectedNotification] = useState<ReservationNotification | null>(
     null
   )
@@ -159,7 +202,7 @@ export function Header() {
 
   return (
     <>
-      <div className="print-hidden sticky top-0 z-50 flex items-center gap-4 border-b bg-background p-4 shadow-sm">
+      <div className="print-hidden sticky top-0 z-50 flex items-center gap-2 border-b bg-background p-2 shadow-sm">
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="outline" size="icon" className="xl:hidden" aria-label="メニューを開く">
@@ -197,28 +240,53 @@ export function Header() {
               ) : null}
               {adminNavigationLinks
                 .filter((item) => item.href !== '/admin/customers' || canReadCustomers)
-                .map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-muted"
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.label}
-                  </Link>
-                ))}
+                .map((item) => {
+                  const isActive = isAdminNavActive(pathname, item.href)
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={cn(
+                        'flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-muted',
+                        isActive && 'bg-emerald-50 font-medium text-emerald-800'
+                      )}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {item.label}
+                    </Link>
+                  )
+                })}
               {canViewAnalytics && (
                 <>
                   <Link
                     href="/admin/analytics/daily-report"
-                    className="flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-muted"
+                    aria-current={
+                      isAdminNavActive(pathname, '/admin/analytics/daily-report')
+                        ? 'page'
+                        : undefined
+                    }
+                    className={cn(
+                      'flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-muted',
+                      isAdminNavActive(pathname, '/admin/analytics/daily-report') &&
+                        'bg-emerald-50 font-medium text-emerald-800'
+                    )}
                   >
                     <CalendarDays className="h-4 w-4" />
                     日報
                   </Link>
                   <Link
                     href="/admin/analytics/daily-sales"
-                    className="flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-muted"
+                    aria-current={
+                      isAdminNavActive(pathname, '/admin/analytics/daily-sales')
+                        ? 'page'
+                        : undefined
+                    }
+                    className={cn(
+                      'flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-muted',
+                      isAdminNavActive(pathname, '/admin/analytics/daily-sales') &&
+                        'bg-emerald-50 font-medium text-emerald-800'
+                    )}
                   >
                     <BarChart2 className="h-4 w-4" />
                     集計
@@ -229,15 +297,7 @@ export function Header() {
           </SheetContent>
         </Sheet>
 
-        <Link href="/admin/dashboard" className="hidden xl:block">
-          <Button
-            variant="ghost"
-            className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
-          >
-            <Home className="h-5 w-5" />
-            <span className="text-xs text-gray-600">ホーム</span>
-          </Button>
-        </Link>
+        <HeaderNavLink href="/admin/dashboard" label="ホーム" icon={Home} pathname={pathname} />
 
         {/* 店舗セレクター */}
         <StoreSelector />
@@ -246,7 +306,7 @@ export function Header() {
           <Button
             type="button"
             variant="ghost"
-            className="hidden h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2 xl:flex"
+            className="hidden h-auto shrink-0 flex-col items-center gap-0.5 px-2 py-1.5 xl:flex"
             onClick={() => setShowCustomerSelection(true)}
           >
             <Calendar className="h-5 w-5" />
@@ -258,7 +318,7 @@ export function Header() {
           <Button
             type="button"
             variant="ghost"
-            className="hidden h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2 xl:flex"
+            className="hidden h-auto shrink-0 flex-col items-center gap-0.5 px-2 py-1.5 xl:flex"
             onClick={() => setShowCustomerLookup(true)}
           >
             <Search className="h-5 w-5" />
@@ -266,45 +326,31 @@ export function Header() {
           </Button>
         ) : null}
 
-        <Link href="/admin/reservation-list" className="hidden xl:block">
-          <Button
-            variant="ghost"
-            className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
-          >
-            <ListChecks className="h-5 w-5" />
-            <span className="text-xs text-gray-600">予約一覧</span>
-          </Button>
-        </Link>
-
-        <Link href="/admin/chat" className="hidden xl:block">
-          <Button
-            variant="ghost"
-            className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
-          >
-            <MessageSquare className="h-5 w-5" />
-            <span className="text-xs text-gray-600">チャット</span>
-          </Button>
-        </Link>
-
-        <Link href="/admin/cast/list" className="hidden xl:block">
-          <Button
-            variant="ghost"
-            className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
-          >
-            <Users className="h-5 w-5" />
-            <span className="text-xs text-gray-600">キャスト</span>
-          </Button>
-        </Link>
-
-        <Link href="/admin/cast/weekly-schedule" className="hidden xl:block">
-          <Button
-            variant="ghost"
-            className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
-          >
-            <Clock className="h-5 w-5" />
-            <span className="text-xs text-gray-600">出勤表</span>
-          </Button>
-        </Link>
+        <HeaderNavLink
+          href="/admin/reservation"
+          label="予約表"
+          icon={CalendarRange}
+          pathname={pathname}
+        />
+        <HeaderNavLink
+          href="/admin/reservation-list"
+          label="予約一覧"
+          icon={ListChecks}
+          pathname={pathname}
+        />
+        <HeaderNavLink
+          href="/admin/chat"
+          label="チャット"
+          icon={MessageSquare}
+          pathname={pathname}
+        />
+        <HeaderNavLink href="/admin/cast/list" label="キャスト" icon={Users} pathname={pathname} />
+        <HeaderNavLink
+          href="/admin/cast/weekly-schedule"
+          label="出勤表"
+          icon={Clock}
+          pathname={pathname}
+        />
 
         <div className="hidden xl:block">
           <Popover open={open} onOpenChange={setOpen}>
@@ -355,46 +401,23 @@ export function Header() {
 
         {canViewAnalytics && (
           <>
-            <Link href="/admin/analytics/daily-report" className="hidden xl:block">
-              <Button
-                variant="ghost"
-                className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
-              >
-                <CalendarDays className="h-5 w-5" />
-                <span className="text-xs text-gray-600">日報</span>
-              </Button>
-            </Link>
-            <Link href="/admin/analytics/daily-sales" className="hidden xl:block">
-              <Button
-                variant="ghost"
-                className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
-              >
-                <BarChart2 className="h-5 w-5" />
-                <span className="text-xs text-gray-600">集計</span>
-              </Button>
-            </Link>
+            <HeaderNavLink
+              href="/admin/analytics/daily-report"
+              label="日報"
+              icon={CalendarDays}
+              pathname={pathname}
+            />
+            <HeaderNavLink
+              href="/admin/analytics/daily-sales"
+              label="集計"
+              icon={BarChart2}
+              pathname={pathname}
+            />
           </>
         )}
 
-        <Link href="/admin/reviews" className="hidden xl:block">
-          <Button
-            variant="ghost"
-            className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
-          >
-            <Star className="h-5 w-5" />
-            <span className="text-xs text-gray-600">口コミ</span>
-          </Button>
-        </Link>
-
-        <Link href="/admin/settings" className="hidden xl:block">
-          <Button
-            variant="ghost"
-            className="flex h-auto shrink-0 flex-col items-center gap-0.5 px-3 py-2"
-          >
-            <Settings className="h-5 w-5" />
-            <span className="text-xs text-gray-600">設定</span>
-          </Button>
-        </Link>
+        <HeaderNavLink href="/admin/reviews" label="口コミ" icon={Star} pathname={pathname} />
+        <HeaderNavLink href="/admin/settings" label="設定" icon={Settings} pathname={pathname} />
 
         <div className="flex-1" />
 
@@ -402,7 +425,7 @@ export function Header() {
           <PopoverTrigger asChild>
             <Button
               variant="ghost"
-              className="relative flex h-auto flex-col items-center gap-0.5 px-3 py-2"
+              className="relative flex h-auto flex-col items-center gap-0.5 px-2 py-1.5"
             >
               <Bell className="h-5 w-5" />
               <span className="text-xs text-gray-600">通知</span>
@@ -426,7 +449,7 @@ export function Header() {
 
         <Button
           variant="ghost"
-          className="flex h-auto flex-col items-center gap-0.5 px-3 py-2 text-red-600"
+          className="flex h-auto flex-col items-center gap-0.5 px-2 py-1.5 text-red-600"
           onClick={() => signOut({ callbackUrl: '/admin/login' })}
         >
           <LogOut className="h-5 w-5" />

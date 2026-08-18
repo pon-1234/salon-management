@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Customer } from '@/lib/customer/types'
 import { TableSkeleton } from '@/components/ui/page-loading'
+import { PageHeader } from '@/components/admin/page-header'
 import { useSession } from 'next-auth/react'
 import { hasPermission } from '@/lib/auth/permissions'
 import { formatPhoneNumber } from '@/lib/customer/utils'
@@ -132,141 +133,133 @@ export default function CustomerListPage() {
 
   if (!canReadCustomers) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <main className="mx-auto max-w-6xl p-6">
-          <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-4 text-red-700">
-            顧客情報の閲覧権限がありません。管理者にお問い合わせください。
-          </div>
-        </main>
+      <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-4 text-red-700">
+        顧客情報の閲覧権限がありません。管理者にお問い合わせください。
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="mx-auto max-w-6xl p-6">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">顧客一覧</h1>
-            <p className="text-sm text-muted-foreground">登録されている顧客情報を確認できます。</p>
-          </div>
-          {canCreateCustomers ? (
+    <>
+      <PageHeader
+        title="顧客一覧"
+        description="登録されている顧客情報を確認できます。"
+        actions={
+          canCreateCustomers ? (
             <Link href="/admin/customers/new">
               <Button>新規顧客を追加</Button>
             </Link>
-          ) : null}
-        </div>
+          ) : null
+        }
+      />
 
-        <form className="mb-4 flex gap-2" onSubmit={handleSearch}>
-          <Input
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="氏名・電話番号・メール・会員番号で検索"
-            aria-label="顧客検索"
-          />
-          <Button type="submit">検索</Button>
-        </form>
+      <form className="mb-4 flex gap-2" onSubmit={handleSearch}>
+        <Input
+          value={searchInput}
+          onChange={(event) => setSearchInput(event.target.value)}
+          placeholder="氏名・電話番号・メール・会員番号で検索"
+          aria-label="顧客検索"
+        />
+        <Button type="submit">検索</Button>
+      </form>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>顧客リスト</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <TableSkeleton rows={5} columns={8} label="顧客一覧を読み込んでいます" />
-            ) : errorMessage ? (
-              <div
-                role="alert"
-                className="flex min-h-48 flex-col items-center justify-center gap-4 rounded-md border border-red-200 bg-red-50 p-6 text-center text-sm text-red-700"
+      <Card>
+        <CardHeader>
+          <CardTitle>顧客リスト</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <TableSkeleton rows={5} columns={8} label="顧客一覧を読み込んでいます" />
+          ) : errorMessage ? (
+            <div
+              role="alert"
+              className="flex min-h-48 flex-col items-center justify-center gap-4 rounded-md border border-red-200 bg-red-50 p-6 text-center text-sm text-red-700"
+            >
+              <p>{errorMessage}</p>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setReloadAttempt((attempt) => attempt + 1)}
               >
-                <p>{errorMessage}</p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setReloadAttempt((attempt) => attempt + 1)}
-                >
-                  再試行
-                </Button>
-              </div>
-            ) : customers.length === 0 ? (
-              <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-                顧客が登録されていません。
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>名前</TableHead>
-                    <TableHead>電話番号</TableHead>
-                    <TableHead>メールアドレス</TableHead>
-                    <TableHead>会員種別</TableHead>
-                    <TableHead>ステージ</TableHead>
-                    <TableHead>状態</TableHead>
-                    <TableHead>登録日</TableHead>
-                    <TableHead className="text-right">詳細</TableHead>
+                再試行
+              </Button>
+            </div>
+          ) : customers.length === 0 ? (
+            <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
+              {query ? '条件に一致する顧客が見つかりません。' : '顧客が登録されていません。'}
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>名前</TableHead>
+                  <TableHead>電話番号</TableHead>
+                  <TableHead>メールアドレス</TableHead>
+                  <TableHead>会員種別</TableHead>
+                  <TableHead>ステージ</TableHead>
+                  <TableHead>状態</TableHead>
+                  <TableHead>登録日</TableHead>
+                  <TableHead className="text-right">詳細</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {customers.map((customer) => (
+                  <TableRow key={customer.id}>
+                    <TableCell className="font-medium">{customer.name}</TableCell>
+                    <TableCell>{formatPhoneNumber(customer.phone)}</TableCell>
+                    <TableCell>{customer.email}</TableCell>
+                    <TableCell>
+                      <Badge variant={customer.memberType === 'vip' ? 'default' : 'secondary'}>
+                        {customer.memberType === 'vip' ? 'VIP' : '通常'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {membershipStageLabels[customer.membershipStage ?? 'regular']}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={customer.accountStatus === 'active' ? 'secondary' : 'destructive'}
+                      >
+                        {accountStatusLabels[customer.accountStatus ?? 'active']}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {customer.createdAt
+                        ? new Date(customer.createdAt).toLocaleDateString('ja-JP')
+                        : '-'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Link
+                        href={`/admin/customers/${customer.id}`}
+                        className="text-sm text-emerald-600 hover:underline"
+                      >
+                        詳細を見る
+                      </Link>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {customers.map((customer) => (
-                    <TableRow key={customer.id}>
-                      <TableCell className="font-medium">{customer.name}</TableCell>
-                      <TableCell>{formatPhoneNumber(customer.phone)}</TableCell>
-                      <TableCell>{customer.email}</TableCell>
-                      <TableCell>
-                        <Badge variant={customer.memberType === 'vip' ? 'default' : 'secondary'}>
-                          {customer.memberType === 'vip' ? 'VIP' : '通常'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {membershipStageLabels[customer.membershipStage ?? 'regular']}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            customer.accountStatus === 'active' ? 'secondary' : 'destructive'
-                          }
-                        >
-                          {accountStatusLabels[customer.accountStatus ?? 'active']}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {customer.createdAt
-                          ? new Date(customer.createdAt).toLocaleDateString('ja-JP')
-                          : '-'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Link
-                          href={`/admin/customers/${customer.id}`}
-                          className="text-sm text-emerald-600 hover:underline"
-                        >
-                          詳細を見る
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-        <div className="mt-4 flex items-center justify-end gap-3">
-          <Button
-            variant="outline"
-            disabled={page === 0 || loading || Boolean(errorMessage)}
-            onClick={() => setPage(page - 1)}
-          >
-            前へ
-          </Button>
-          <span className="text-sm text-muted-foreground">{page + 1}ページ</span>
-          <Button
-            variant="outline"
-            disabled={!hasMore || loading || Boolean(errorMessage)}
-            onClick={() => setPage(page + 1)}
-          >
-            次へ
-          </Button>
-        </div>
-      </main>
-    </div>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+      <div className="mt-4 flex items-center justify-end gap-3">
+        <Button
+          variant="outline"
+          disabled={page === 0 || loading || Boolean(errorMessage)}
+          onClick={() => setPage(page - 1)}
+        >
+          前へ
+        </Button>
+        <span className="text-sm text-muted-foreground">{page + 1}ページ</span>
+        <Button
+          variant="outline"
+          disabled={!hasMore || loading || Boolean(errorMessage)}
+          onClick={() => setPage(page + 1)}
+        >
+          次へ
+        </Button>
+      </div>
+    </>
   )
 }

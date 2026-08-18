@@ -15,7 +15,7 @@ export default function AnalyticsRootLayout({ children }: { children: ReactNode 
 
   if (status === 'loading') {
     return (
-      <div className="flex min-h-[calc(100vh-80px)] w-full items-center justify-center bg-muted/20 p-8">
+      <div className="flex h-full min-h-0 w-full items-center justify-center bg-muted/20 p-8">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           権限を確認しています...
@@ -26,7 +26,7 @@ export default function AnalyticsRootLayout({ children }: { children: ReactNode 
 
   if (!isAdmin || !canViewAnalytics) {
     return (
-      <div className="flex min-h-[calc(100vh-80px)] w-full items-center justify-center bg-muted/20 p-8">
+      <div className="flex h-full min-h-0 w-full items-center justify-center bg-muted/20 p-8">
         <div className="max-w-md">
           <Alert variant="destructive">
             <AlertDescription>
@@ -39,9 +39,9 @@ export default function AnalyticsRootLayout({ children }: { children: ReactNode 
   }
 
   return (
-    <div className="flex">
+    <div className="flex h-full min-h-0">
       <AnalyticsLayout />
-      <div className="min-w-0 flex-1 overflow-x-hidden p-6 lg:p-8">
+      <div className="min-h-0 flex-1 overflow-auto p-6 lg:p-8">
         <div className="mx-auto mb-4 flex w-full max-w-screen-xl justify-end">
           <AnalyticsCsvExport />
         </div>

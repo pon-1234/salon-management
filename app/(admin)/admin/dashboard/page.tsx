@@ -136,14 +136,14 @@ function KPICard({
   }
 
   const bgColors = {
-    primary: 'bg-purple-100',
+    primary: 'bg-emerald-100',
     success: 'bg-green-100',
     warning: 'bg-yellow-100',
     danger: 'bg-red-100',
   }
 
   const iconColors = {
-    primary: 'text-purple-600',
+    primary: 'text-emerald-600',
     success: 'text-green-600',
     warning: 'text-yellow-600',
     danger: 'text-red-600',
@@ -720,7 +720,7 @@ export default function DashboardPage() {
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="flex items-center gap-2 text-3xl font-bold">
-            <Sparkles className="h-8 w-8 text-purple-600" />
+            <Sparkles className="h-8 w-8 text-emerald-600" />
             ダッシュボード
           </h1>
           <p className="mt-1 text-muted-foreground">
@@ -770,10 +770,10 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <Card className="border-purple-200 shadow-sm">
+        <Card className="border-emerald-200 shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-purple-600" />
+              <Calendar className="h-5 w-5 text-emerald-600" />
               予約受付
             </CardTitle>
             <CardDescription>
@@ -1158,8 +1158,8 @@ export default function DashboardPage() {
           <CardContent className="p-6">
             <Link href="/admin/analytics/daily-sales" className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="rounded-lg bg-purple-100 p-3">
-                  <BarChart3 className="h-6 w-6 text-purple-600" />
+                <div className="rounded-lg bg-emerald-100 p-3">
+                  <BarChart3 className="h-6 w-6 text-emerald-600" />
                 </div>
                 <div>
                   <p className="font-medium">詳細分析</p>
@@ -1243,7 +1243,7 @@ export default function DashboardPage() {
                     onClick={() => setSelectedReservation(reservation)}
                   >
                     <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400" />
+                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600" />
                       <div>
                         <div className="flex items-center gap-2">
                           <p className="font-medium">{customerDisplayName}</p>

@@ -92,7 +92,7 @@ export function AnalyticsLayout() {
   const pathname = usePathname()
 
   return (
-    <nav className="sticky top-[83px] h-[calc(100vh-83px)] w-64 flex-shrink-0 overflow-y-auto border-r bg-gray-100">
+    <nav className="h-full w-64 shrink-0 overflow-y-auto border-r bg-muted/40">
       <ul className="space-y-2 p-4">
         {navigation.map((item) => (
           <li key={item.name}>

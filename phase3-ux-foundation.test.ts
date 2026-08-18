@@ -29,8 +29,20 @@ describe('phase 3 UX foundation contracts', () => {
     expect(header).toContain('モバイル予約作成')
     expect(header).toContain('モバイル顧客検索')
     expect(layout).not.toContain('pt-[83px]')
+    expect(layout).toContain('h-dvh')
+    expect(layout).toContain('min-h-0 flex-1')
     expect(layout).toContain('<PageLoading')
     expect(layout).not.toContain('Loading...')
+  })
+
+  it('keeps the analytics sidebar inside the remaining viewport instead of a stale 83px offset', async () => {
+    const analyticsNav = await read('components/analytics/layout.tsx')
+    const analyticsShell = await read('app/(admin)/admin/analytics/layout.tsx')
+
+    expect(analyticsNav).not.toContain('83px')
+    expect(analyticsNav).toContain('h-full')
+    expect(analyticsShell).toContain('h-full min-h-0')
+    expect(analyticsShell).not.toContain('100vh-80px')
   })
 
   it.each([
@@ -70,6 +82,14 @@ describe('phase 3 UX foundation contracts', () => {
     const currentEditor = await read('components/cast/schedule-edit-dialog.tsx')
     expect(legacyEditor).toContain('findScheduleValidationError')
     expect(currentEditor).toContain('findScheduleValidationError')
+  })
+
+  it('keeps the admin home accent on emerald instead of a leftover purple template', async () => {
+    const dashboard = await read('app/(admin)/admin/dashboard/page.tsx')
+
+    expect(dashboard).toContain('text-emerald-600')
+    expect(dashboard).not.toContain('text-purple-600')
+    expect(dashboard).not.toContain('bg-purple-100')
   })
 
   it('uses one explicit theme strategy and print foundation', async () => {

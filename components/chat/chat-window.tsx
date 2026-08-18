@@ -9,7 +9,6 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Send, Check, CheckCheck, ImagePlus } from 'lucide-react'
 import type { CastChatEntry, Customer, Message } from '@/lib/types/chat'
@@ -323,9 +322,9 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-white to-gray-50/30">
-      <ScrollArea
+      <div
         data-testid="chat-message-pane"
-        className="min-h-0 flex-1 p-4"
+        className="min-h-0 flex-1 overflow-y-auto p-4"
         ref={scrollAreaRef}
       >
         {loading ? (
@@ -424,7 +423,7 @@ export function ChatWindow({ participantType, participantId }: ChatWindowProps) 
             )}
           </div>
         )}
-      </ScrollArea>
+      </div>
 
       <div data-testid="chat-composer" className="shrink-0 border-t bg-white p-3">
         <div className="flex flex-col gap-2">

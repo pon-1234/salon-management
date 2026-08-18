@@ -105,7 +105,7 @@ describe('ChatPage deep links', () => {
     render(<ChatPage />)
 
     expect(screen.getByTestId('admin-chat-workspace')).toHaveClass(
-      'h-[calc(100dvh-5.5rem)]',
+      'h-full',
       'min-h-0',
       'overflow-hidden'
     )
