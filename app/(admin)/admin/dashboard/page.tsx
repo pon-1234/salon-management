@@ -1,7 +1,7 @@
 /**
- * @design_doc   docs/LEGACY_GOLD_ADMIN_MIGRATION_INVENTORY.md admin dashboard mapping
+ * @design_doc   docs/UX_FOUNDATIONS.md
  * @related_to   CustomerSelectionDialog, CastScheduleUseCases, and dashboard.utils
- * @known_issues None currently
+ * @known_issues Charts and period tabs belong on analytics screens, not this ops home
  */
 'use client'
 
@@ -11,30 +11,22 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
-  TrendingUp,
-  TrendingDown,
-  Users,
   Calendar,
-  DollarSign,
   Clock,
-  Activity,
   ArrowUpRight,
-  BarChart3,
-  PieChart,
-  Target,
-  AlertCircle,
   CheckCircle2,
   XCircle,
-  Sparkles,
+  AlertCircle,
   Loader2,
   Phone,
   Search,
   FileText,
+  LayoutGrid,
+  ListChecks,
 } from 'lucide-react'
 import { getAllReservations } from '@/lib/reservation/data'
-import { subDays, addHours, subHours, differenceInMinutes } from 'date-fns'
+import { addHours, subHours, differenceInMinutes } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { formatInTimeZone } from 'date-fns-tz'
 import {
@@ -48,22 +40,6 @@ import { ReservationDialog } from '@/components/reservation/reservation-dialog'
 import { CustomerSelectionDialog } from '@/components/customer/customer-selection-dialog'
 import { useStore } from '@/contexts/store-context'
 import { mapReservationToReservationData } from '@/lib/reservation/transformers'
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  PieChart as RePieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-} from 'recharts'
 import { useSession } from 'next-auth/react'
 import { hasPermission } from '@/lib/auth/permissions'
 import {
@@ -82,7 +58,6 @@ import {
   getJstPeriodBounds,
   isWithinPeriod,
   sumActiveReservationRevenue,
-  type DashboardPeriod,
 } from './dashboard.utils'
 
 const JST_TIMEZONE = 'Asia/Tokyo'
@@ -96,110 +71,6 @@ interface PhoneCustomerSearchResult {
 
 type PhoneSearchStatus = 'idle' | 'loading' | 'ready' | 'error'
 
-// カラーパレット
-const colors = {
-  primary: '#8b5cf6',
-  secondary: '#ec4899',
-  success: '#10b981',
-  warning: '#f59e0b',
-  danger: '#ef4444',
-  info: '#3b82f6',
-}
-
-// KPIカード用のインターフェース
-interface KPICardProps {
-  title: string
-  value: string | number
-  change?: number
-  changeLabel?: string
-  icon: React.ReactNode
-  trend?: 'up' | 'down' | 'neutral'
-  color?: 'primary' | 'success' | 'warning' | 'danger'
-  sparklineData?: number[]
-}
-
-// KPIカードコンポーネント
-function KPICard({
-  title,
-  value,
-  change,
-  changeLabel,
-  icon,
-  trend,
-  color = 'primary',
-  sparklineData,
-}: KPICardProps) {
-  const trendColors = {
-    up: 'text-green-600',
-    down: 'text-red-600',
-    neutral: 'text-gray-600',
-  }
-
-  const bgColors = {
-    primary: 'bg-emerald-100',
-    success: 'bg-green-100',
-    warning: 'bg-yellow-100',
-    danger: 'bg-red-100',
-  }
-
-  const iconColors = {
-    primary: 'text-emerald-600',
-    success: 'text-green-600',
-    warning: 'text-yellow-600',
-    danger: 'text-red-600',
-  }
-
-  return (
-    <Card className="transition-shadow duration-300 hover:shadow-lg">
-      <CardContent className="p-6">
-        <div className="mb-4 flex items-start justify-between">
-          <div className={cn('rounded-lg p-3', bgColors[color])}>
-            <div className={cn('h-5 w-5', iconColors[color])}>{icon}</div>
-          </div>
-          {trend && (
-            <div className="flex items-center gap-1">
-              {trend === 'up' ? (
-                <TrendingUp className="h-4 w-4 text-green-600" />
-              ) : trend === 'down' ? (
-                <TrendingDown className="h-4 w-4 text-red-600" />
-              ) : null}
-              {change !== undefined && (
-                <span className={cn('text-sm font-medium', trendColors[trend])}>
-                  {change > 0 ? '+' : ''}
-                  {change}%
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-1">
-          <p className="text-sm text-muted-foreground">{title}</p>
-          <p className="text-2xl font-bold">{value}</p>
-          {changeLabel && <p className="text-xs text-muted-foreground">{changeLabel}</p>}
-        </div>
-
-        {sparklineData && sparklineData.length > 0 && (
-          <div className="mt-4 h-12">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={sparklineData.map((v, i) => ({ value: v, index: i }))}>
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  stroke={colors[color] || colors.primary}
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-// ステータスバッジコンポーネント
 function StatusBadge({ status }: { status: string }) {
   const statusConfig = {
     confirmed: {
@@ -208,7 +79,12 @@ function StatusBadge({ status }: { status: string }) {
       icon: <CheckCircle2 className="h-3 w-3" />,
     },
     pending: {
-      label: '保留中',
+      label: '仮予約',
+      variant: 'secondary' as const,
+      icon: <Clock className="h-3 w-3" />,
+    },
+    tentative: {
+      label: '仮予約',
       variant: 'secondary' as const,
       icon: <Clock className="h-3 w-3" />,
     },
@@ -218,12 +94,12 @@ function StatusBadge({ status }: { status: string }) {
       icon: <XCircle className="h-3 w-3" />,
     },
     completed: {
-      label: '完了',
+      label: '対応済み',
       variant: 'outline' as const,
       icon: <CheckCircle2 className="h-3 w-3" />,
     },
     modifiable: {
-      label: '修正可能',
+      label: '修正待ち',
       variant: 'outline' as const,
       icon: <AlertCircle className="h-3 w-3" />,
     },
@@ -244,33 +120,17 @@ function getUpcomingTimingBadge(startTime: Date) {
   const minutesUntil = differenceInMinutes(startTime, now)
 
   if (minutesUntil <= 0) {
-    return {
-      label: '施術中',
-      variant: 'secondary' as const,
-    }
+    return { label: '施術中', variant: 'secondary' as const }
   }
-
   if (minutesUntil <= 30) {
-    return {
-      label: 'まもなく開始',
-      variant: 'default' as const,
-    }
+    return { label: 'まもなく開始', variant: 'default' as const }
   }
-
   if (minutesUntil < 60) {
-    return {
-      label: `${minutesUntil}分後に開始`,
-      variant: 'success' as const,
-    }
+    return { label: `${minutesUntil}分後に開始`, variant: 'success' as const }
   }
-
   if (minutesUntil < 180) {
-    return {
-      label: `開始まで約${Math.round(minutesUntil / 60)}時間`,
-      variant: 'success' as const,
-    }
+    return { label: `開始まで約${Math.round(minutesUntil / 60)}時間`, variant: 'success' as const }
   }
-
   return {
     label: `${formatInTimeZone(startTime, JST_TIMEZONE, 'MM月dd日 HH:mm')} 開始予定`,
     variant: 'outline' as const,
@@ -281,8 +141,7 @@ export default function DashboardPage() {
   const { data: session, status } = useSession()
   const { currentStore } = useStore()
   const grantedPermissions = session?.user?.permissions ?? []
-  const isAdmin = session?.user?.role === 'admin'
-  const isAdminUser = isAdmin
+  const isAdminUser = session?.user?.role === 'admin'
   const canViewAnalytics = hasPermission(grantedPermissions, 'analytics:read')
   const canViewFinancials = canViewAnalytics || hasPermission(grantedPermissions, 'dashboard:view')
   const canUpdateReservations = hasPermission(grantedPermissions, 'reservation:update')
@@ -294,7 +153,6 @@ export default function DashboardPage() {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule | null>(null)
   const [loading, setLoading] = useState(true)
-  const [selectedPeriod, setSelectedPeriod] = useState<DashboardPeriod>('today')
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
   const [customerDialogMode, setCustomerDialogMode] = useState<'reservation' | 'lookup' | null>(
     null
@@ -339,7 +197,7 @@ export default function DashboardPage() {
     const fetchData = async () => {
       setLoading(true)
       const now = new Date()
-      const queryWindow = getDashboardQueryWindow(selectedPeriod, now)
+      const queryWindow = getDashboardQueryWindow('today', now)
       const [reservationResult, scheduleResult] = await Promise.allSettled([
         fetchAllDashboardReservations({
           storeId: currentStore.id,
@@ -380,15 +238,13 @@ export default function DashboardPage() {
     return () => {
       ignore = true
     }
-  }, [currentStore.id, isAdminUser, selectedPeriod, status])
+  }, [currentStore.id, isAdminUser, status])
 
   const isSessionLoading = status === 'loading'
   const isUnauthorized = !isSessionLoading && !isAdminUser
 
-  // 予約データをダイアログ用に変換
   const convertToReservationData = (reservation: Reservation): ReservationData | null => {
     if (!reservation) return null
-
     return mapReservationToReservationData(reservation)
   }
 
@@ -497,48 +353,23 @@ export default function DashboardPage() {
     }
   }
 
-  const filteredReservations = useMemo(() => {
-    const bounds = getJstPeriodBounds(selectedPeriod)
+  const todaysReservations = useMemo(() => {
+    const bounds = getJstPeriodBounds('today')
     return reservations.filter((reservation) =>
       isWithinPeriod(new Date(reservation.startTime), bounds)
     )
-  }, [reservations, selectedPeriod])
+  }, [reservations])
 
-  const previousPeriodReservations = useMemo(() => {
-    const bounds = getJstPeriodBounds(selectedPeriod, new Date(), true)
-    return reservations.filter((reservation) =>
-      isWithinPeriod(new Date(reservation.startTime), bounds)
-    )
-  }, [reservations, selectedPeriod])
-
-  const kpis = useMemo(() => {
-    const activeReservations = filteredReservations.filter(
-      (reservation) => reservation.status !== 'cancelled'
-    )
-    const activePreviousReservations = previousPeriodReservations.filter(
-      (reservation) => reservation.status !== 'cancelled'
-    )
-    const totalRevenue = sumActiveReservationRevenue(filteredReservations)
-    const avgRevenue = activeReservations.length > 0 ? totalRevenue / activeReservations.length : 0
-    const confirmedCount = activeReservations.filter((r) => r.status === 'confirmed').length
-    const cancelledCount = filteredReservations.length - activeReservations.length
-    const cancelRate =
-      filteredReservations.length > 0 ? (cancelledCount / filteredReservations.length) * 100 : 0
-
-    const previousRevenue = sumActiveReservationRevenue(previousPeriodReservations)
-    const revenueChange =
-      previousRevenue > 0 ? ((totalRevenue - previousRevenue) / previousRevenue) * 100 : 0
-
+  const todaySummary = useMemo(() => {
+    const active = todaysReservations.filter((reservation) => reservation.status !== 'cancelled')
+    const pendingStatuses = new Set(['pending', 'tentative', 'modifiable'])
     return {
-      totalRevenue,
-      avgRevenue,
-      confirmedCount,
-      cancelRate,
-      revenueChange,
-      totalBookings: activeReservations.length,
-      previousBookings: activePreviousReservations.length,
+      bookings: active.length,
+      confirmed: active.filter((reservation) => reservation.status === 'confirmed').length,
+      pending: active.filter((reservation) => pendingStatuses.has(reservation.status)).length,
+      revenue: sumActiveReservationRevenue(todaysReservations),
     }
-  }, [filteredReservations, previousPeriodReservations])
+  }, [todaysReservations])
 
   const { displayReservations, hasUpcomingReservations } = useMemo(() => {
     if (!reservations.length) {
@@ -588,67 +419,6 @@ export default function DashboardPage() {
     }
   }, [reservations])
 
-  // 売上推移データ
-  const salesData = useMemo(() => {
-    return Array.from({ length: 7 }, (_, i) => {
-      const date = subDays(new Date(), 6 - i)
-      const dayReservations = reservations.filter(
-        (reservation) =>
-          reservation.status !== 'cancelled' &&
-          formatInTimeZone(new Date(reservation.startTime), JST_TIMEZONE, 'yyyy-MM-dd') ===
-            formatInTimeZone(date, JST_TIMEZONE, 'yyyy-MM-dd')
-      )
-      return {
-        date: formatInTimeZone(date, JST_TIMEZONE, 'MM/dd'),
-        revenue: sumActiveReservationRevenue(dayReservations),
-        count: dayReservations.length,
-      }
-    })
-  }, [reservations])
-  const hourlyData = useMemo(() => {
-    const hourly = Array.from({ length: 24 }, (_, hour) => ({
-      hour: `${hour}時`,
-      count: 0,
-      revenue: 0,
-    }))
-
-    filteredReservations
-      .filter((reservation) => reservation.status !== 'cancelled')
-      .forEach((r) => {
-        const hour = Number(formatInTimeZone(new Date(r.startTime), JST_TIMEZONE, 'H'))
-        hourly[hour].count += 1
-        hourly[hour].revenue += r.price
-      })
-
-    return hourly.filter((h) => h.count > 0)
-  }, [filteredReservations])
-
-  const statusDistribution = useMemo(
-    () => [
-      {
-        name: '確定済み',
-        value: filteredReservations.filter((r) => r.status === 'confirmed').length,
-        color: colors.success,
-      },
-      {
-        name: '保留中',
-        value: filteredReservations.filter((r) => r.status === 'pending').length,
-        color: colors.warning,
-      },
-      {
-        name: 'キャンセル',
-        value: filteredReservations.filter((r) => r.status === 'cancelled').length,
-        color: colors.danger,
-      },
-      {
-        name: '修正可能',
-        value: filteredReservations.filter((r) => r.status === 'modifiable').length,
-        color: colors.info,
-      },
-    ],
-    [filteredReservations]
-  )
-
   const todayDateKey = formatInTimeZone(new Date(), JST_TIMEZONE, 'yyyy-MM-dd')
   const todaysWorkingCasts = useMemo(
     () =>
@@ -666,10 +436,10 @@ export default function DashboardPage() {
 
   if (isSessionLoading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center bg-gray-50 p-6">
+      <div className="flex min-h-[60vh] items-center justify-center p-6">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          ダッシュボードを読み込み中です...
+          今日の状況を読み込み中です...
         </div>
       </div>
     )
@@ -677,7 +447,7 @@ export default function DashboardPage() {
 
   if (isUnauthorized) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center bg-gray-50 p-6">
+      <div className="flex min-h-[60vh] items-center justify-center p-6">
         <div className="max-w-md">
           <Alert variant="destructive">
             <AlertDescription>
@@ -692,48 +462,46 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="space-y-6 p-6">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Card key={index} className="animate-pulse">
-              <CardContent className="space-y-3 p-6">
-                <div className="h-4 w-24 rounded bg-muted" />
-                <div className="h-7 w-32 rounded bg-muted" />
-                <div className="h-3 w-full rounded bg-muted" />
-              </CardContent>
-            </Card>
-          ))}
+        <div className="h-10 w-48 animate-pulse rounded bg-muted" />
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <Card className="animate-pulse">
+            <CardContent className="h-48" />
+          </Card>
+          <Card className="animate-pulse">
+            <CardContent className="h-48" />
+          </Card>
         </div>
-
-        <Card className="animate-pulse">
-          <CardContent className="space-y-4 p-6">
-            <div className="h-4 w-32 rounded bg-muted" />
-            <div className="h-56 rounded bg-muted" />
-          </CardContent>
-        </Card>
       </div>
     )
   }
 
   return (
     <div className="space-y-6 p-6">
-      {/* ヘッダー */}
-      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="flex items-center gap-2 text-3xl font-bold">
-            <Sparkles className="h-8 w-8 text-emerald-600" />
-            ダッシュボード
-          </h1>
-          <p className="mt-1 text-muted-foreground">
+          <h1 className="text-2xl font-semibold text-gray-900 md:text-3xl">今日の状況</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             {formatInTimeZone(new Date(), JST_TIMEZONE, 'yyyy年MM月dd日 (E)', {
               locale: ja,
             })}{' '}
-            {currentStore.displayName}の状況
+            {currentStore.displayName}
           </p>
         </div>
-
-        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
-          {canViewAnalytics && (
-            <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/admin/reservation" aria-label="予約表を開く">
+              <LayoutGrid className="mr-2 h-4 w-4" />
+              予約表
+            </Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/admin/reservation-list" aria-label="予約一覧を開く">
+              <ListChecks className="mr-2 h-4 w-4" />
+              予約一覧
+            </Link>
+          </Button>
+          {canViewAnalytics ? (
+            <>
               <Button variant="outline" asChild>
                 <Link href="/admin/analytics/daily-report" aria-label="業務日報を開く">
                   <FileText className="mr-2 h-4 w-4" />
@@ -750,22 +518,29 @@ export default function DashboardPage() {
                   入金精算
                 </Link>
               </Button>
-            </div>
-          )}
-          <Tabs
-            value={selectedPeriod}
-            onValueChange={(value) => {
-              if (value === 'today' || value === 'week' || value === 'month') {
-                setSelectedPeriod(value)
-              }
-            }}
-          >
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="today">今日</TabsTrigger>
-              <TabsTrigger value="week">今週</TabsTrigger>
-              <TabsTrigger value="month">今月</TabsTrigger>
-            </TabsList>
-          </Tabs>
+            </>
+          ) : null}
+        </div>
+      </div>
+
+      <div data-testid="today-ops-summary" className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="rounded-lg border bg-white px-4 py-3">
+          <p className="text-xs text-muted-foreground">本日の予約</p>
+          <p className="text-xl font-semibold tabular-nums">{todaySummary.bookings}件</p>
+        </div>
+        <div className="rounded-lg border bg-white px-4 py-3">
+          <p className="text-xs text-muted-foreground">確定</p>
+          <p className="text-xl font-semibold tabular-nums">{todaySummary.confirmed}件</p>
+        </div>
+        <div className="rounded-lg border bg-white px-4 py-3">
+          <p className="text-xs text-muted-foreground">仮予約</p>
+          <p className="text-xl font-semibold tabular-nums">{todaySummary.pending}件</p>
+        </div>
+        <div className="rounded-lg border bg-white px-4 py-3">
+          <p className="text-xs text-muted-foreground">本日売上</p>
+          <p className="text-xl font-semibold tabular-nums">
+            {canViewFinancials ? `¥${todaySummary.revenue.toLocaleString()}` : '閲覧不可'}
+          </p>
         </div>
       </div>
 
@@ -776,9 +551,7 @@ export default function DashboardPage() {
               <Calendar className="h-5 w-5 text-emerald-600" />
               予約受付
             </CardTitle>
-            <CardDescription>
-              予約作成と顧客情報の確認は、それぞれ専用の入口から操作できます。
-            </CardDescription>
+            <CardDescription>電話が来たら、ここで顧客を探して予約を作ります。</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="grid gap-3 sm:grid-cols-2">
@@ -946,261 +719,17 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* メインKPIカード */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {canViewFinancials ? (
-          <KPICard
-            title="総売上"
-            value={`¥${kpis.totalRevenue.toLocaleString()}`}
-            change={Math.round(kpis.revenueChange)}
-            changeLabel={`前${selectedPeriod === 'today' ? '日' : selectedPeriod === 'week' ? '週' : '月'}比`}
-            icon={<DollarSign />}
-            trend={kpis.revenueChange > 0 ? 'up' : kpis.revenueChange < 0 ? 'down' : 'neutral'}
-            color="primary"
-            sparklineData={salesData.map((d) => d.revenue)}
-          />
-        ) : (
-          <KPICard
-            title="総売上"
-            value="閲覧不可"
-            changeLabel="売上情報の閲覧権限がありません"
-            icon={<DollarSign />}
-            color="primary"
-          />
-        )}
-
-        <KPICard
-          title="予約数"
-          value={kpis.totalBookings}
-          change={
-            kpis.previousBookings > 0
-              ? Math.round(
-                  ((kpis.totalBookings - kpis.previousBookings) / kpis.previousBookings) * 100
-                )
-              : 0
-          }
-          changeLabel={`${kpis.confirmedCount}件確定済み`}
-          icon={<Calendar />}
-          trend={
-            kpis.totalBookings > kpis.previousBookings
-              ? 'up'
-              : kpis.totalBookings < kpis.previousBookings
-                ? 'down'
-                : 'neutral'
-          }
-          color="success"
-          sparklineData={salesData.map((d) => d.count)}
-        />
-
-        {canViewFinancials ? (
-          <KPICard
-            title="平均単価"
-            value={`¥${Math.round(kpis.avgRevenue).toLocaleString()}`}
-            icon={<Target />}
-            color="warning"
-          />
-        ) : (
-          <KPICard
-            title="ステータス進捗"
-            value={`${kpis.confirmedCount}件 確定済み`}
-            changeLabel={`${reservations.filter((r) => r.status === 'pending').length}件が保留中`}
-            icon={<Target />}
-            color="warning"
-          />
-        )}
-
-        <KPICard
-          title="キャンセル率"
-          value={`${kpis.cancelRate.toFixed(1)}%`}
-          icon={<AlertCircle />}
-          trend={kpis.cancelRate > 10 ? 'down' : 'neutral'}
-          color={kpis.cancelRate > 10 ? 'danger' : 'success'}
-        />
-      </div>
-
-      {/* チャートセクション */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* 売上推移 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              売上推移
-            </CardTitle>
-            <CardDescription>過去7日間の売上と予約数</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {canViewFinancials ? (
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={salesData}>
-                    <defs>
-                      <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={colors.primary} stopOpacity={0.8} />
-                        <stop offset="95%" stopColor={colors.primary} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip
-                      formatter={(value: any) => `¥${value.toLocaleString()}`}
-                      labelFormatter={(label) => `日付: ${label}`}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="revenue"
-                      stroke={colors.primary}
-                      fillOpacity={1}
-                      fill="url(#colorRevenue)"
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="count"
-                      stroke={colors.secondary}
-                      strokeWidth={2}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <div className="flex h-64 items-center justify-center rounded-lg border border-dashed border-muted-foreground/40 bg-muted/20 text-sm text-muted-foreground">
-                売上チャートを表示する権限がありません
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* ステータス分布 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PieChart className="h-5 w-5" />
-              予約ステータス分布
-            </CardTitle>
-            <CardDescription>選択期間の予約ステータス内訳</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <RePieChart>
-                  <Pie
-                    data={statusDistribution}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {statusDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </RePieChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 時間帯別分析 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            時間帯別予約状況
-          </CardTitle>
-          <CardDescription>予約が集中する時間帯の分析</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={hourlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="hour" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill={colors.info} radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* クイックアクション */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {canCreateReservation ? (
-          <Card className="cursor-pointer transition-shadow hover:shadow-lg">
-            <CardContent className="p-6">
-              <div
-                onClick={() => setCustomerDialogMode('reservation')}
-                className="flex cursor-pointer items-center justify-between"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="rounded-lg bg-blue-100 p-3">
-                    <Calendar className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium">新規予約</p>
-                    <p className="text-sm text-muted-foreground">予約を作成</p>
-                  </div>
-                </div>
-                <ArrowUpRight className="h-5 w-5 text-muted-foreground" />
-              </div>
-            </CardContent>
-          </Card>
-        ) : null}
-
-        <Card className="cursor-pointer transition-shadow hover:shadow-lg">
-          <CardContent className="p-6">
-            <Link href="/admin/analytics/daily-sales" className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg bg-emerald-100 p-3">
-                  <BarChart3 className="h-6 w-6 text-emerald-600" />
-                </div>
-                <div>
-                  <p className="font-medium">詳細分析</p>
-                  <p className="text-sm text-muted-foreground">レポートを表示</p>
-                </div>
-              </div>
-              <ArrowUpRight className="h-5 w-5 text-muted-foreground" />
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card className="cursor-pointer transition-shadow hover:shadow-lg">
-          <CardContent className="p-6">
-            <Link href="/admin/cast/list" className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg bg-green-100 p-3">
-                  <Users className="h-6 w-6 text-green-600" />
-                </div>
-                <div>
-                  <p className="font-medium">キャスト管理</p>
-                  <p className="text-sm text-muted-foreground">担当キャスト一覧</p>
-                </div>
-              </div>
-              <ArrowUpRight className="h-5 w-5 text-muted-foreground" />
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 最近の予約 */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              最近の予約
-            </CardTitle>
+            <h2 className="flex items-center gap-2 text-lg font-semibold leading-none tracking-tight">
+              <Clock className="h-5 w-5 text-emerald-600" />
+              直近の予約
+            </h2>
             <CardDescription>
               {hasUpcomingReservations
-                ? '今後48時間以内に開始する予約を表示しています'
-                : '最新の予約5件を表示しています'}
+                ? '今から48時間以内に始まる予約です。行を押すと内容を確認できます。'
+                : '直近の予約5件です。行を押すと内容を確認できます。'}
             </CardDescription>
           </div>
           <Button variant="outline" size="sm" asChild>
@@ -1211,9 +740,9 @@ export default function DashboardPage() {
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {displayReservations.length === 0 ? (
-              <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-muted-foreground/40 text-sm text-muted-foreground">
+              <div className="flex h-24 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
                 表示できる予約がありません
               </div>
             ) : (
@@ -1242,34 +771,26 @@ export default function DashboardPage() {
                     className="flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50"
                     onClick={() => setSelectedReservation(reservation)}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600" />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{customerDisplayName}</p>
-                          <Badge variant="outline" className="font-mono text-xs uppercase">
-                            {reservation.id.slice(0, 8)}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">担当: {staffDisplayName}</p>
-                        <p className="whitespace-nowrap text-xs text-muted-foreground">
-                          {formatInTimeZone(startAt, JST_TIMEZONE, 'MM月dd日 HH:mm')} -{' '}
-                          {formatInTimeZone(endAt, JST_TIMEZONE, 'HH:mm')}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="font-medium">¥{reservation.price.toLocaleString()}</p>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        {timingBadge && (
-                          <Badge variant={timingBadge.variant} className="whitespace-nowrap">
-                            {timingBadge.label}
-                          </Badge>
-                        )}
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{customerDisplayName}</p>
                         <StatusBadge status={reservation.status} />
                       </div>
+                      <p className="mt-1 text-sm text-muted-foreground">担当: {staffDisplayName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatInTimeZone(startAt, JST_TIMEZONE, 'MM月dd日 HH:mm')} -{' '}
+                        {formatInTimeZone(endAt, JST_TIMEZONE, 'HH:mm')}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      {canViewFinancials ? (
+                        <p className="font-medium">¥{reservation.price.toLocaleString()}</p>
+                      ) : null}
+                      {timingBadge ? (
+                        <Badge variant={timingBadge.variant} className="whitespace-nowrap">
+                          {timingBadge.label}
+                        </Badge>
+                      ) : null}
                     </div>
                   </div>
                 )

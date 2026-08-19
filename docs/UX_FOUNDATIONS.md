@@ -22,6 +22,8 @@ system audit.
   Chat and analytics fill that remaining height instead of using a hardcoded header offset.
 - The current admin destination uses `aria-current="page"`. Daily reservation work uses
   予約表 (`/admin/reservation`) next to 予約一覧.
+- The admin home (`/admin/dashboard`) is today's operations: intake, attendance, nearby
+  reservations, and links. Charts and period comparisons stay on analytics screens.
 - Long administrative forms use `useUnsavedChangesWarning` where losing edits would be costly.
 
 ## Printing
