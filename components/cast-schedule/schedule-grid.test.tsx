@@ -62,10 +62,15 @@ describe('ScheduleGrid', () => {
 
   it('keeps dates visible while scrolling and opens that day in the editor', () => {
     const scrollIntoView = vi.fn()
-    const previousElementScroll = Element.prototype.scrollIntoView
-    const previousHtmlScroll = HTMLElement.prototype.scrollIntoView
-    Element.prototype.scrollIntoView = scrollIntoView
-    HTMLElement.prototype.scrollIntoView = scrollIntoView
+    const previousHtmlScroll = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      'scrollIntoView'
+    )
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      writable: true,
+      value: scrollIntoView,
+    })
 
     try {
       render(
@@ -94,8 +99,9 @@ describe('ScheduleGrid', () => {
       )
       expect(screen.getByTestId('schedule-edit-dialog')).toBeInTheDocument()
     } finally {
-      Element.prototype.scrollIntoView = previousElementScroll
-      HTMLElement.prototype.scrollIntoView = previousHtmlScroll
+      if (previousHtmlScroll) {
+        Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', previousHtmlScroll)
+      }
     }
   })
 
