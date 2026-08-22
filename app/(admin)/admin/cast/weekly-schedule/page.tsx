@@ -237,10 +237,7 @@ export default function WeeklySchedulePage() {
 
   if (loading || !schedule) {
     return (
-      <div
-        data-testid="weekly-schedule-page"
-        className="flex h-full min-h-0 flex-col bg-gray-50"
-      >
+      <div data-testid="weekly-schedule-page" className="flex h-full min-h-0 flex-col bg-gray-50">
         <div className="flex h-64 items-center justify-center">
           <div className="text-center">
             <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-emerald-600" />

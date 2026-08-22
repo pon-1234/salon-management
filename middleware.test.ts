@@ -473,5 +473,45 @@ describe('Middleware Authentication', () => {
       expect(response?.status).toBe(307)
       expect(response?.headers.get('location')).toContain('/admin/dashboard')
     })
+
+    it('keeps InfiniTalk incoming-call params on the admin login callback', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValueOnce(null)
+
+      const request = new NextRequest(
+        new URL('http://localhost:3000/admin/cti/incoming?telno=09012345678&calledno=0312345678')
+      )
+
+      const response = await middleware(request)
+      const location = new URL(response?.headers.get('location') ?? '')
+
+      expect(response?.status).toBe(307)
+      expect(location.pathname).toBe('/admin/login')
+      expect(location.searchParams.get('callbackUrl')).toBe(
+        '/admin/cti/incoming?telno=09012345678&calledno=0312345678'
+      )
+    })
+
+    it('preserves InfiniTalk params when sending /admin to the dashboard', async () => {
+      const { getToken } = await import('next-auth/jwt')
+      vi.mocked(getToken).mockResolvedValueOnce({
+        id: '1',
+        email: 'admin@example.com',
+        role: 'admin',
+        sub: '1',
+        iat: Date.now() / 1000,
+        exp: (Date.now() + 86400000) / 1000,
+        jti: 'test-jwt-id',
+      })
+
+      const request = new NextRequest(new URL('http://localhost:3000/admin?telno=09012345678'))
+
+      const response = await middleware(request)
+      const location = new URL(response?.headers.get('location') ?? '')
+
+      expect(response?.status).toBe(307)
+      expect(location.pathname).toBe('/admin/dashboard')
+      expect(location.searchParams.get('telno')).toBe('09012345678')
+    })
   })
 })

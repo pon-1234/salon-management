@@ -242,7 +242,7 @@ _(注意: 他のエンティティについても同様に定義を追記する�
 
 - **CTI (Computer Telephony Integration)**
   - 電話着信時に顧客情報をポップアップ表示する機能 (`components/cti/`, `hooks/use-cti.ts`)。
-  - 着信をトリガーするURLパラメータ (`?tel=...`) に対応。
+  - InfiniTalkの画面ポップアップは HTML/URL 連携で、`/admin/cti/incoming?telno={発信番号}&calledno={着信番号}` を開く。既存の `?tel=` もそのまま使える。
 
 ---
 

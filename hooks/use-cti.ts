@@ -3,7 +3,7 @@
 /**
  * @design_doc   docs/SYSTEM_AUDIT_2026-07-26.md A-4
  * @related_to   GET /api/customer/by-phone/[phone]: persisted administrator lookup
- * @known_issues PBX integration is not configured; URL-triggered caller display is read-only
+ * @known_issues InfiniTalk still delivers the caller over HTML/URL query params; the overlay is read-only
  */
 import { useState, useCallback } from 'react'
 import type { Customer } from '@/lib/customer/types'
@@ -13,6 +13,7 @@ import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 export interface IncomingCall {
   id: string
   phoneNumber: string
+  calledNumber?: string | null
   customer?: Customer | null
   startTime: Date
 }
@@ -42,11 +43,12 @@ export function useCTI() {
 
   // 着信表示
   const showIncomingCall = useCallback(
-    async (phoneNumber: string) => {
+    async (phoneNumber: string, calledNumber?: string | null) => {
       const customer = await findCustomerByPhone(phoneNumber).catch(() => null)
       const call: IncomingCall = {
         id: `call_${Date.now()}`,
         phoneNumber,
+        calledNumber: calledNumber ?? null,
         customer,
         startTime: new Date(),
       }

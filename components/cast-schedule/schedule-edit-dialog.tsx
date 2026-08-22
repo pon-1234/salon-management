@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @design_doc   SCH-01/SCH-02 キャスト出勤時間テンプレートと休み登録
+ * @related_to   ScheduleGrid, applyShiftTemplate, Cast.scheduleTemplates
+ * @known_issues None
+ */
 import { useEffect, useMemo, useState } from 'react'
 import { format, startOfWeek } from 'date-fns'
 import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz'
@@ -235,22 +240,18 @@ export function ScheduleEditDialog({
     return statusOptions.find((opt) => opt.value === status)?.color || 'bg-gray-100 text-gray-600'
   }
 
-  const applyTemplateToWeek = (template: CastShiftTemplate) => {
-    setSchedule((prev) => {
-      const next = { ...prev }
-      visibleDays.forEach((date) => {
-        const dateKey = format(date, 'yyyy-MM-dd')
-        const applied = applyShiftTemplate(template, dateKey)
-        next[dateKey] = {
-          ...next[dateKey],
-          date: dateKey,
-          status: applied.status,
-          startTime: applied.startTime,
-          endTime: applied.endTime,
-        }
-      })
-      return next
-    })
+  const applyTemplateToDate = (template: CastShiftTemplate, dateKey: string) => {
+    const applied = applyShiftTemplate(template, dateKey)
+    setSchedule((prev) => ({
+      ...prev,
+      [dateKey]: {
+        ...prev[dateKey],
+        date: dateKey,
+        status: applied.status,
+        startTime: applied.startTime,
+        endTime: applied.endTime,
+      },
+    }))
   }
 
   const persistTemplates = async (next: CastShiftTemplate[]) => {
@@ -306,14 +307,6 @@ export function ScheduleEditDialog({
     void persistTemplates(next)
   }
 
-  const filteredTimeOptions = useMemo(() => {
-    return timeOptions.filter((time) => {
-      const [hours, minutes] = time.split(':').map(Number)
-      const totalMinutes = hours * 60 + minutes
-      return totalMinutes >= businessHours.startMinutes && totalMinutes <= businessHours.endMinutes
-    })
-  }, [timeOptions, businessHours])
-
   useEffect(() => {
     if (!open || !focusDate) {
       return
@@ -329,7 +322,10 @@ export function ScheduleEditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+      <DialogContent
+        className="max-h-[90vh] max-w-4xl overflow-y-auto"
+        aria-describedby={undefined}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
@@ -353,21 +349,6 @@ export function ScheduleEditDialog({
           >
             4週間をまとめて入力
           </Button>
-          <div className="flex flex-wrap gap-2">
-            {templates.map((template) => (
-              <Button
-                key={template.id}
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => applyTemplateToWeek(template)}
-              >
-                {template.isHoliday
-                  ? '表示中の日付を休みで登録'
-                  : `${template.name} ${template.startTime}-${template.endTime} を適用`}
-              </Button>
-            ))}
-          </div>
           <div className="flex flex-wrap items-end gap-2">
             <div className="min-w-[12rem] flex-1">
               <Label htmlFor="new-shift-template-name">このキャストの出勤テンプレート名</Label>
@@ -397,13 +378,28 @@ export function ScheduleEditDialog({
                 className="border-l-4 border-l-emerald-500"
               >
                 <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center justify-between text-lg">
+                  <CardTitle className="flex flex-col gap-3 text-lg sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex items-center gap-3">
                       <Calendar className="h-5 w-5" />
                       {formatInTimeZone(date, timeZone, 'M月d日(E)', { locale: ja })}
                       <Badge className={getStatusColor(daySchedule.status)}>
                         {daySchedule.status}
                       </Badge>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {templates.map((template) => (
+                        <Button
+                          key={`${dateKey}-${template.id}`}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => applyTemplateToDate(template, dateKey)}
+                        >
+                          {template.isHoliday
+                            ? '休みを適用'
+                            : `${template.name} ${template.startTime}-${template.endTime} を適用`}
+                        </Button>
+                      ))}
                     </div>
                   </CardTitle>
                 </CardHeader>
@@ -467,7 +463,10 @@ export function ScheduleEditDialog({
                             <SelectValue placeholder="開始時間を選択" />
                           </SelectTrigger>
                           <SelectContent>
-                            {timeOptions.map((time) => (
+                            {(daySchedule.startTime && !timeOptions.includes(daySchedule.startTime)
+                              ? [...timeOptions, daySchedule.startTime]
+                              : timeOptions
+                            ).map((time) => (
                               <SelectItem key={time} value={time}>
                                 {time}
                               </SelectItem>
@@ -488,7 +487,10 @@ export function ScheduleEditDialog({
                             <SelectValue placeholder="終了時間を選択" />
                           </SelectTrigger>
                           <SelectContent>
-                            {timeOptions.map((time) => (
+                            {(daySchedule.endTime && !timeOptions.includes(daySchedule.endTime)
+                              ? [...timeOptions, daySchedule.endTime]
+                              : timeOptions
+                            ).map((time) => (
                               <SelectItem key={time} value={time}>
                                 {time}
                               </SelectItem>
