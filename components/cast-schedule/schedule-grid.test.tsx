@@ -3,13 +3,18 @@
  * @related_to   ScheduleGrid and ScheduleEditDialog
  * @known_issues None
  */
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { CastScheduleEntry } from '@/lib/cast-schedule/old-types'
 import { ScheduleGrid } from './schedule-grid'
 
+const editDialogMock = vi.hoisted(() => vi.fn(() => null))
+
 vi.mock('./schedule-edit-dialog', () => ({
-  ScheduleEditDialog: () => null,
+  ScheduleEditDialog: (props: { focusDate?: string | null; open: boolean }) => {
+    editDialogMock(props)
+    return props.open ? <div data-testid="schedule-edit-dialog" /> : null
+  },
 }))
 
 const entry: CastScheduleEntry = {
@@ -27,6 +32,9 @@ const entry: CastScheduleEntry = {
 }
 
 describe('ScheduleGrid', () => {
+  afterEach(() => {
+    editDialogMock.mockClear()
+  })
   it('renders a compact list when list mode is selected and the weekly table otherwise', () => {
     const { rerender } = render(
       <ScheduleGrid
@@ -50,6 +58,35 @@ describe('ScheduleGrid', () => {
 
     expect(screen.getByRole('table', { name: '週間出勤表' })).toBeInTheDocument()
     expect(screen.queryByRole('list', { name: '週間出勤一覧' })).not.toBeInTheDocument()
+  })
+
+  it('keeps dates visible while scrolling and opens that day in the editor', () => {
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+
+    render(
+      <ScheduleGrid
+        startDate={new Date('2026-08-10T00:00:00+09:00')}
+        entries={[entry]}
+        viewMode="grid"
+      />
+    )
+
+    const dateHeader = screen.getByRole('button', { name: '08/10(月)の列へ移動' })
+    expect(dateHeader.closest('[data-testid="schedule-date-header"]')).toHaveClass('sticky')
+
+    fireEvent.click(dateHeader)
+    expect(scrollIntoView).toHaveBeenCalled()
+
+    fireEvent.click(screen.getByText('出勤予定'))
+
+    expect(editDialogMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        open: true,
+        focusDate: '2026-08-10',
+      })
+    )
+    expect(screen.getByTestId('schedule-edit-dialog')).toBeInTheDocument()
   })
 
   it('shows an explicit empty result instead of a blank schedule', () => {

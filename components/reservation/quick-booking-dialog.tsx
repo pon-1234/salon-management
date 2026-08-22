@@ -146,6 +146,7 @@ export function QuickBookingDialog({
 }: QuickBookingDialogProps) {
   const { currentStore } = useStore()
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false)
+  const [showExtraFields, setShowExtraFields] = useState(false)
   const wasOpenRef = useRef(false)
   const [staffDetails, setStaffDetails] = useState<Cast | null>(
     selectedStaff &&
@@ -856,6 +857,7 @@ export function QuickBookingDialog({
     if (!justOpened) return
 
     setDiscardConfirmOpen(false)
+    setShowExtraFields(false)
     setSelectedCourseId(courseCatalog[0]?.id ?? '')
     setSelectedDesignationId(designationFees[0]?.id ?? '')
     setBookingDetails(
@@ -1241,56 +1243,76 @@ export function QuickBookingDialog({
                   </div>
 
                   <div className="rounded-lg border p-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label className="text-sm font-medium">ポイントを利用</Label>
-                        <p className="text-xs text-gray-500">
-                          利用可能ポイント: {bookingDetails.points.toLocaleString()}pt
-                        </p>
-                      </div>
-                      <Switch
-                        disabled={!selectedCustomer}
-                        checked={bookingDetails.usePoints}
-                        onCheckedChange={(checked) =>
-                          setBookingDetails((prev) => ({
-                            ...prev,
-                            usePoints: Boolean(checked),
-                            pointsToUse: checked ? prev.pointsToUse : 0,
-                          }))
-                        }
-                      />
-                    </div>
-                    {bookingDetails.usePoints && (
-                      <div className="mt-3">
-                        <Label htmlFor="pointsToUse">利用ポイント数</Label>
-                        <Input
-                          id="pointsToUse"
-                          type="number"
-                          min={0}
-                          value={bookingDetails.pointsToUse}
-                          onChange={(event) =>
-                            setBookingDetails((prev) => ({
-                              ...prev,
-                              pointsToUse: Number(event.target.value),
-                            }))
-                          }
-                        />
-                        <p className="mt-1 text-xs text-gray-500">
-                          入力したポイントが自動で差し引かれます
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-auto w-full justify-start px-0 py-1 text-sm"
+                      onClick={() => setShowExtraFields((open) => !open)}
+                    >
+                      追加項目（ポイント・店舗メモ）
+                    </Button>
+                    {showExtraFields ? (
+                      <div className="mt-3 space-y-4">
+                        <div className="rounded-lg border p-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label
+                                htmlFor="quick-booking-use-points"
+                                className="text-sm font-medium"
+                              >
+                                ポイントを利用
+                              </Label>
+                              <p className="text-xs text-gray-500">
+                                利用可能ポイント: {bookingDetails.points.toLocaleString()}pt
+                              </p>
+                            </div>
+                            <Switch
+                              id="quick-booking-use-points"
+                              disabled={!selectedCustomer}
+                              checked={bookingDetails.usePoints}
+                              onCheckedChange={(checked) =>
+                                setBookingDetails((prev) => ({
+                                  ...prev,
+                                  usePoints: Boolean(checked),
+                                  pointsToUse: checked ? prev.pointsToUse : 0,
+                                }))
+                              }
+                            />
+                          </div>
+                          {bookingDetails.usePoints && (
+                            <div className="mt-3">
+                              <Label htmlFor="pointsToUse">利用ポイント数</Label>
+                              <Input
+                                id="pointsToUse"
+                                type="number"
+                                min={0}
+                                value={bookingDetails.pointsToUse}
+                                onChange={(event) =>
+                                  setBookingDetails((prev) => ({
+                                    ...prev,
+                                    pointsToUse: Number(event.target.value),
+                                  }))
+                                }
+                              />
+                              <p className="mt-1 text-xs text-gray-500">
+                                入力したポイントが自動で差し引かれます
+                              </p>
+                            </div>
+                          )}
+                        </div>
 
-                  <div>
-                    <Label>メモ</Label>
-                    <Textarea
-                      name="notes"
-                      value={bookingDetails.notes}
-                      onChange={handleTextChange}
-                      placeholder="店舗用メモがあれば記載してください"
-                      rows={3}
-                    />
+                        <div>
+                          <Label>メモ</Label>
+                          <Textarea
+                            name="notes"
+                            value={bookingDetails.notes}
+                            onChange={handleTextChange}
+                            placeholder="店舗用メモがあれば記載してください"
+                            rows={3}
+                          />
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 </CardContent>
               </Card>
@@ -1360,19 +1382,30 @@ export function QuickBookingDialog({
             data-testid="quick-booking-sticky-footer"
             className="sticky bottom-0 z-10 -mx-6 -mb-6 shrink-0 border-t bg-background px-6 py-4 shadow-[0_-8px_18px_-16px_rgba(0,0,0,0.45)]"
           >
-            <Button className="w-full" onClick={handleSubmit} disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                  処理中...
-                </>
-              ) : (
-                <>
-                  <Check className="mr-1 h-4 w-4" />
-                  {bookingDetails.bookingStatus === '仮予約' ? '仮予約として保存' : '予約を確定'}
-                </>
-              )}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-28"
+                onClick={() => handleDialogOpenChange(false)}
+                disabled={isSubmitting}
+              >
+                閉じる
+              </Button>
+              <Button className="flex-1" onClick={handleSubmit} disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                    処理中...
+                  </>
+                ) : (
+                  <>
+                    <Check className="mr-1 h-4 w-4" />
+                    {bookingDetails.bookingStatus === '仮予約' ? '仮予約として保存' : '予約を確定'}
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

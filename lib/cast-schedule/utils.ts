@@ -1,10 +1,19 @@
+/**
+ * @design_doc   Weekly and multi-week cast schedule date helpers
+ * @related_to   ScheduleGrid, ScheduleEditDialog, getDateRange
+ * @known_issues None
+ */
 import { addDays } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { InvalidTimeFormatError } from './errors'
 import { formatInJst } from '@/lib/shared/timezone'
 
 export function getWeekDates(startDate: Date): Date[] {
-  return Array.from({ length: 7 }, (_, i) => addDays(startDate, i))
+  return getDateRange(startDate, 7)
+}
+
+export function getDateRange(startDate: Date, dayCount: number): Date[] {
+  return Array.from({ length: dayCount }, (_, i) => addDays(startDate, i))
 }
 
 export function formatScheduleDate(date: Date): string {

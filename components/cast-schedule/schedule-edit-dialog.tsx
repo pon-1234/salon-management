@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { addDays, format, startOfWeek } from 'date-fns'
+import { format, startOfWeek } from 'date-fns'
 import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz'
 import { ja } from 'date-fns/locale'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -20,6 +20,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Calendar, Save, X, Clock, User } from 'lucide-react'
 import { CastScheduleStatus } from '@/lib/cast-schedule/old-types'
+import { getDateRange } from '@/lib/cast-schedule/utils'
+import { scheduleEditDayCount, type ScheduleEditSpan } from '@/lib/cast-schedule/edit-span'
 import { useStore } from '@/contexts/store-context'
 import {
   DEFAULT_BUSINESS_HOURS,
@@ -56,6 +58,7 @@ interface ScheduleEditDialogProps {
   initialSchedule: { [date: string]: CastScheduleStatus }
   startDate: Date
   onSave: (castId: string, schedule: WeeklyScheduleEdit) => void
+  focusDate?: string | null
 }
 
 export function ScheduleEditDialog({
@@ -66,6 +69,7 @@ export function ScheduleEditDialog({
   initialSchedule,
   startDate,
   onSave,
+  focusDate = null,
 }: ScheduleEditDialogProps) {
   const { currentStore } = useStore()
   const timeZone = 'Asia/Tokyo'
@@ -74,6 +78,7 @@ export function ScheduleEditDialog({
     mergeCastShiftTemplates(null)
   )
   const [newTemplateName, setNewTemplateName] = useState('')
+  const [editSpan, setEditSpan] = useState<ScheduleEditSpan>('week')
   const [schedule, setSchedule] = useState<WeeklyScheduleEdit>(() => {
     const converted: WeeklyScheduleEdit = {}
     Object.entries(initialSchedule).forEach(([date, status]) => {
@@ -90,7 +95,7 @@ export function ScheduleEditDialog({
 
   // Generate 7 days starting from the given start date
   const weekStart = startOfWeek(startDate, { weekStartsOn: 1 }) // Monday start
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+  const visibleDays = getDateRange(weekStart, scheduleEditDayCount(editSpan))
 
   const statusOptions: { value: '休日' | '出勤予定' | '未入力'; label: string; color: string }[] = [
     { value: '未入力', label: '未入力', color: 'bg-gray-100 text-gray-600' },
@@ -233,7 +238,7 @@ export function ScheduleEditDialog({
   const applyTemplateToWeek = (template: CastShiftTemplate) => {
     setSchedule((prev) => {
       const next = { ...prev }
-      weekDays.forEach((date) => {
+      visibleDays.forEach((date) => {
         const dateKey = format(date, 'yyyy-MM-dd')
         const applied = applyShiftTemplate(template, dateKey)
         next[dateKey] = {
@@ -275,7 +280,7 @@ export function ScheduleEditDialog({
   }
 
   const saveCurrentDayAsTemplate = () => {
-    const firstWorkDay = weekDays
+    const firstWorkDay = visibleDays
       .map((date) => getDaySchedule(format(date, 'yyyy-MM-dd')))
       .find((day) => day.status === '出勤予定' && day.startTime && day.endTime)
     if (!firstWorkDay?.startTime || !firstWorkDay.endTime || !newTemplateName.trim()) {
@@ -309,21 +314,45 @@ export function ScheduleEditDialog({
     })
   }, [timeOptions, businessHours])
 
+  useEffect(() => {
+    if (!open || !focusDate) {
+      return
+    }
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(`schedule-edit-day-${focusDate}`)?.scrollIntoView({
+        block: 'start',
+        behavior: 'smooth',
+      })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [editSpan, focusDate, open])
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
-            {castName} - 週間スケジュール編集
+            {castName} - スケジュール編集
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
             {formatInTimeZone(weekStart, timeZone, 'yyyy年M月d日', { locale: ja })} 〜{' '}
-            {formatInTimeZone(addDays(weekStart, 6), timeZone, 'M月d日', { locale: ja })}
+            {formatInTimeZone(visibleDays[visibleDays.length - 1], timeZone, 'M月d日', {
+              locale: ja,
+            })}
           </p>
         </DialogHeader>
 
         <div className="space-y-2">
+          <Button
+            type="button"
+            variant={editSpan === 'fourWeeks' ? 'default' : 'outline'}
+            size="sm"
+            aria-pressed={editSpan === 'fourWeeks'}
+            onClick={() => setEditSpan((span) => (span === 'week' ? 'fourWeeks' : 'week'))}
+          >
+            4週間をまとめて入力
+          </Button>
           <div className="flex flex-wrap gap-2">
             {templates.map((template) => (
               <Button
@@ -334,7 +363,7 @@ export function ScheduleEditDialog({
                 onClick={() => applyTemplateToWeek(template)}
               >
                 {template.isHoliday
-                  ? 'この週を休みで登録'
+                  ? '表示中の日付を休みで登録'
                   : `${template.name} ${template.startTime}-${template.endTime} を適用`}
               </Button>
             ))}
@@ -356,13 +385,17 @@ export function ScheduleEditDialog({
         </div>
 
         <div className="space-y-4">
-          {weekDays.map((date) => {
+          {visibleDays.map((date) => {
             const dateKey = format(date, 'yyyy-MM-dd')
             const daySchedule = getDaySchedule(dateKey)
             const isWorkDay = daySchedule.status === '出勤予定'
 
             return (
-              <Card key={dateKey} className="border-l-4 border-l-emerald-500">
+              <Card
+                key={dateKey}
+                id={`schedule-edit-day-${dateKey}`}
+                className="border-l-4 border-l-emerald-500"
+              >
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center justify-between text-lg">
                     <div className="flex items-center gap-3">

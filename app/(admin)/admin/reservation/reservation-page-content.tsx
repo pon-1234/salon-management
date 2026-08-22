@@ -6,7 +6,7 @@
  * @known_issues None
  */
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { DateNavigation } from '@/components/reservation/date-navigation'
 import { ActionButtons } from '@/components/reservation/action-buttons'
@@ -50,6 +50,7 @@ import {
 } from '@/lib/reservation/timeline-filters'
 import { hasPermission } from '@/lib/auth/permissions'
 import { computeStoreCastRanks } from '@/lib/cast/rank'
+import { buildReservationCustomerSelectionHref } from '@/lib/reservation/customer-selection-url'
 
 interface ScheduleEntry {
   castId: string
@@ -229,6 +230,9 @@ export function applyReservationUpdateToCasts(
 export function ReservationPageContent() {
   const useMockFallbacks = shouldUseMockFallbacks()
   const { currentStore } = useStore()
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [allCasts, setAllCasts] = useState<Cast[]>([])
   const [castData, setCastData] = useState<Cast[]>([])
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
@@ -280,7 +284,6 @@ export function ReservationPageContent() {
     [currentStore.id]
   )
 
-  const searchParams = useSearchParams()
   const customerId = searchParams.get('customerId')
 
   const selectedDateKey = useMemo(() => formatDateKey(selectedDate), [selectedDate])
@@ -687,19 +690,14 @@ export function ReservationPageContent() {
 
   const handleCustomerSelection = (customer: Customer | null) => {
     setSelectedCustomer(customer)
-    if (customer) {
-      const params = new URLSearchParams(window.location.search)
-      params.set('customerId', customer.id)
-      const newUrl = `${window.location.pathname}?${params.toString()}`
-      window.history.replaceState(null, '', newUrl)
-    } else {
-      const params = new URLSearchParams(window.location.search)
-      params.delete('customerId')
-      const newUrl = params.toString()
-        ? `${window.location.pathname}?${params.toString()}`
-        : window.location.pathname
-      window.history.replaceState(null, '', newUrl)
-    }
+    router.replace(
+      buildReservationCustomerSelectionHref(
+        pathname,
+        searchParams.toString(),
+        customer?.id ?? null
+      ),
+      { scroll: false }
+    )
   }
 
   const allAppointments = getActiveReservationData(currentDayReservations)

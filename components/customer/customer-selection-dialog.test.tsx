@@ -369,6 +369,15 @@ describe('CustomerSelectionDialog', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('hides the timeline shortcut while choosing a customer for an in-progress reservation', async () => {
+    getAll.mockResolvedValueOnce([customer])
+
+    render(<CustomerSelectionDialog open onOpenChange={vi.fn()} onSelectCustomer={vi.fn()} />)
+
+    expect(await screen.findByText('[確認用] 旧実名顧客')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'タイムラインを確認する' })).not.toBeInTheDocument()
+  })
+
   it('keeps lookup mode available with customer:read alone', async () => {
     authState.permissions = ['customer:read']
 

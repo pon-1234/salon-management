@@ -4,6 +4,7 @@ import {
   formatDisplayDate,
   formatDayOfWeek,
   getWeekDates,
+  getDateRange,
   validateTimeFormat,
   parseTime,
   timeToMinutes,
@@ -42,6 +43,16 @@ describe('Schedule Utils', () => {
       expect(dates).toHaveLength(7)
       expect(dates[0]).toEqual(new Date('2024-01-15'))
       expect(dates[6]).toEqual(new Date('2024-01-21'))
+    })
+  })
+
+  describe('getDateRange', () => {
+    it('should return the requested number of consecutive dates', () => {
+      const startDate = new Date('2024-01-15')
+      const dates = getDateRange(startDate, 4)
+
+      expect(dates).toHaveLength(4)
+      expect(dates[3]).toEqual(new Date('2024-01-18'))
     })
   })
 

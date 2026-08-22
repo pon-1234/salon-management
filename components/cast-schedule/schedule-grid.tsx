@@ -36,11 +36,20 @@ export function ScheduleGrid({
   const dates = getWeekDates(startDate)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [selectedCast, setSelectedCast] = useState<CastScheduleEntry | null>(null)
+  const [focusDate, setFocusDate] = useState<string | null>(null)
   const timeZone = 'Asia/Tokyo'
 
-  const handleCellClick = (entry: CastScheduleEntry) => {
+  const handleCellClick = (entry: CastScheduleEntry, date?: Date) => {
     setSelectedCast(entry)
+    setFocusDate(date ? formatScheduleDate(date) : null)
     setEditDialogOpen(true)
+  }
+
+  const scrollDateColumnIntoView = (date: Date) => {
+    const dateKey = formatScheduleDate(date)
+    document
+      .querySelector(`[role="cell"][data-schedule-column="${dateKey}"]`)
+      ?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' })
   }
 
   const handleSaveSchedule = async (castId: string, schedule: WeeklyScheduleEdit) => {
@@ -63,7 +72,7 @@ export function ScheduleGrid({
           className={`group relative h-20 cursor-pointer rounded-lg border p-3 transition-all duration-200 hover:shadow-md ${
             isToday ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
           }`}
-          onClick={() => handleCellClick(entry)}
+          onClick={() => handleCellClick(entry, date)}
         >
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
@@ -81,7 +90,7 @@ export function ScheduleGrid({
           className={`group relative h-20 cursor-pointer rounded-lg border p-3 transition-all duration-200 hover:shadow-md ${
             isToday ? 'border-red-300 bg-red-50' : 'border-red-200 bg-red-50 hover:border-red-300'
           }`}
-          onClick={() => handleCellClick(entry)}
+          onClick={() => handleCellClick(entry, date)}
         >
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
@@ -101,7 +110,7 @@ export function ScheduleGrid({
               ? 'border-emerald-300 bg-emerald-50'
               : 'border-emerald-200 bg-emerald-50 hover:border-emerald-300'
           }`}
-          onClick={() => handleCellClick(entry)}
+          onClick={() => handleCellClick(entry, date)}
         >
           <div className="space-y-1">
             <Badge className="bg-emerald-500 text-xs text-white hover:bg-emerald-600">
@@ -129,7 +138,7 @@ export function ScheduleGrid({
         className={`group relative h-20 cursor-pointer rounded-lg border p-3 transition-all duration-200 hover:shadow-md ${
           isToday ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
         }`}
-        onClick={() => handleCellClick(entry)}
+        onClick={() => handleCellClick(entry, date)}
       >
         <div className="flex h-full items-center justify-center">
           <div className="text-center">
@@ -170,6 +179,7 @@ export function ScheduleGrid({
       castId={selectedCast.castId}
       initialSchedule={selectedCast.schedule}
       startDate={startDate}
+      focusDate={focusDate}
       onSave={handleSaveSchedule}
     />
   ) : null
@@ -240,40 +250,61 @@ export function ScheduleGrid({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-full overflow-x-auto p-4" role="table" aria-label="週間出勤表">
-        {/* Week Header */}
-        <Card className="mb-6 bg-white shadow-sm" role="rowgroup">
-          <CardContent className="p-4">
-            <div className="grid min-w-[1000px] grid-cols-8 gap-4" role="row">
-              <div className="flex min-w-[180px] items-center justify-center" role="columnheader">
-                <span className="text-sm font-medium text-gray-600">キャスト</span>
-              </div>
-              {dates.map((date) => {
-                const isToday = formatScheduleDate(new Date()) === formatScheduleDate(date)
-                const weekday = Number(formatInTimeZone(date, timeZone, 'i'))
-                const isWeekend = weekday === 6 || weekday === 7
+    <div className="bg-gray-50">
+      <div
+        className="mx-auto max-h-[calc(100vh-12rem)] max-w-full overflow-auto p-4"
+        role="table"
+        aria-label="週間出勤表"
+      >
+        <div
+          data-testid="schedule-date-header"
+          className="sticky top-0 z-20 mb-4 bg-gray-50 pb-2"
+          role="rowgroup"
+        >
+          <Card className="bg-white shadow-sm">
+            <CardContent className="p-4">
+              <div className="grid min-w-[1000px] grid-cols-8 gap-4" role="row">
+                <div
+                  className="sticky left-0 z-10 flex min-w-[180px] items-center justify-center bg-white"
+                  role="columnheader"
+                >
+                  <span className="text-sm font-medium text-gray-600">キャスト</span>
+                </div>
+                {dates.map((date) => {
+                  const dateKey = formatScheduleDate(date)
+                  const isToday = formatScheduleDate(new Date()) === dateKey
+                  const weekday = Number(formatInTimeZone(date, timeZone, 'i'))
+                  const isWeekend = weekday === 6 || weekday === 7
+                  const dateLabel = `${formatDisplayDate(date)}${formatDayOfWeek(date)}`
 
-                return (
-                  <div
-                    key={date.toISOString()}
-                    role="columnheader"
-                    className={`rounded-lg p-3 text-center ${
-                      isToday
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : isWeekend
-                          ? 'bg-red-50 text-red-700'
-                          : 'bg-gray-50 text-gray-700'
-                    }`}
-                  >
-                    <div className="text-lg font-semibold">{formatDisplayDate(date)}</div>
-                    <div className="text-sm">{formatDayOfWeek(date)}</div>
-                  </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
+                  return (
+                    <div
+                      key={date.toISOString()}
+                      role="columnheader"
+                      className={`rounded-lg p-1 text-center ${
+                        isToday
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : isWeekend
+                            ? 'bg-red-50 text-red-700'
+                            : 'bg-gray-50 text-gray-700'
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        className="w-full rounded-md p-2 hover:bg-white/70"
+                        aria-label={`${dateLabel}の列へ移動`}
+                        onClick={() => scrollDateColumnIntoView(date)}
+                      >
+                        <div className="text-lg font-semibold">{formatDisplayDate(date)}</div>
+                        <div className="text-sm">{formatDayOfWeek(date)}</div>
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Cast Schedule Cards */}
         <div className="space-y-4" role="rowgroup">
@@ -323,7 +354,11 @@ export function ScheduleGrid({
                     const scheduleDate = formatScheduleDate(date)
                     const status = entry.schedule[scheduleDate]
                     return (
-                      <div key={`${entry.castId}-${scheduleDate}`} role="cell">
+                      <div
+                        key={`${entry.castId}-${scheduleDate}`}
+                        role="cell"
+                        data-schedule-column={scheduleDate}
+                      >
                         {renderScheduleCell(status, date, entry)}
                       </div>
                     )

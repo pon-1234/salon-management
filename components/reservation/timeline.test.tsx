@@ -283,6 +283,53 @@ describe('Timeline appointment cards', () => {
     expect(screen.queryByText('午後')).not.toBeInTheDocument()
   })
 
+  it('places each empty-slot start on the same column as the header time circle', () => {
+    const selectedCustomer = {
+      id: 'customer-1',
+      name: '確認顧客',
+      ngCasts: [],
+      ngCastIds: [],
+    } as unknown as Customer
+    const eveningStaff = [
+      {
+        ...staff[0],
+        appointments: [],
+        workStart: new Date('2030-07-21T18:00:00+09:00'),
+        workEnd: new Date('2030-07-21T22:30:00+09:00'),
+      },
+    ]
+
+    render(
+      <Timeline
+        canCreateReservation
+        staff={eveningStaff}
+        selectedDate={new Date('2030-07-21T00:00:00+09:00')}
+        selectedCustomer={selectedCustomer}
+        setSelectedAppointment={vi.fn()}
+        reservations={[]}
+        businessHours={{
+          startMinutes: 10 * 60,
+          endMinutes: 24 * 60,
+          startLabel: '10:00',
+          endLabel: '24:00',
+        }}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: '18:00の空き枠を選択' })).toHaveStyle({
+      left: '960px',
+      width: '60px',
+    })
+    expect(screen.getByRole('button', { name: '18:30の空き枠を選択' })).toHaveStyle({
+      left: '1020px',
+      width: '60px',
+    })
+    expect(screen.getByRole('button', { name: '22:00の空き枠を選択' })).toHaveStyle({
+      left: '1440px',
+      width: '60px',
+    })
+  })
+
   it('opens a booking from a 30-minute header button at that start time', () => {
     const selectedCustomer = {
       id: 'customer-1',

@@ -21,7 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { addWeeks, subWeeks } from 'date-fns'
+import { addWeeks, addMonths, subWeeks } from 'date-fns'
 import { formatInTimeZone } from 'date-fns-tz'
 import { ja } from 'date-fns/locale'
 
@@ -149,10 +149,34 @@ export function ScheduleActionButtons({
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-10 px-3"
+                onClick={() => onDateChange(new Date())}
+              >
+                今日
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-10 px-3"
+                onClick={() => onDateChange(addMonths(date, -1))}
+              >
+                前の月
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-10 px-3"
+                onClick={() => onDateChange(addMonths(date, 1))}
+              >
+                次の月
+              </Button>
               <input
                 type="date"
                 aria-label="出勤表の日付へ移動"
-                className="h-10 min-w-[10rem] rounded-md border border-input bg-background px-2 text-sm"
+                className="h-11 min-w-[12rem] rounded-md border border-input bg-background px-3 text-base"
                 value={formatInTimeZone(date, timeZone, 'yyyy-MM-dd')}
                 onChange={(event) => {
                   if (!event.target.value) return

@@ -464,7 +464,7 @@ export function CustomerSelectionDialog({
             </Button>
           ) : null}
 
-          {status === 'ready' && !isLookupMode && (
+          {status === 'ready' && !isLookupMode && !onSelectCustomer ? (
             <Button
               onClick={handleOpenTimeline}
               variant="secondary"
@@ -473,7 +473,7 @@ export function CustomerSelectionDialog({
               <Clock className="mr-2 h-4 w-4" />
               タイムラインを確認する
             </Button>
-          )}
+          ) : null}
 
           {status === 'ready' ? (
             <ScrollArea className="h-[400px] pr-4">

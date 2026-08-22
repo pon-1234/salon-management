@@ -602,53 +602,59 @@ export function Timeline({
                     if (slot.duration < MIN_BOOKING_DURATION_MINUTES) return null
                     const selectableTimes = buildSelectableStartTimes(slot)
                     const disabled = !selectedCustomer || !canCreateReservation
+                    const slotEndMinute = getMinutesFromDate(slot.endTime)
 
                     return (
-                      <div
-                        key={`${member.id}-${index}`}
-                        className="absolute top-2 flex h-[calc(100%-16px)] w-full items-center justify-center"
-                        style={getTimeBlockStyle(slot.startTime, slot.endTime)}
-                      >
+                      <div key={`${member.id}-${index}`}>
                         <div
-                          className={cn(
-                            'flex h-full w-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 p-2 text-center transition-all',
-                            disabled
-                              ? 'bg-gray-50/80 text-gray-400'
-                              : 'bg-white/80 text-gray-600 hover:border-emerald-500 hover:bg-emerald-50'
-                          )}
+                          className="pointer-events-none absolute top-2 h-[calc(100%-16px)] rounded-lg border-2 border-dashed border-gray-300"
+                          style={getTimeBlockStyle(slot.startTime, slot.endTime)}
                         >
-                          <div className="mb-2 text-xs text-gray-500">空き {slot.duration}分</div>
-                          <div className="flex flex-wrap items-center justify-center gap-2">
-                            {selectableTimes.map((startTime) => {
-                              const label = formatInTimeZone(startTime, JST_TIMEZONE, 'HH:mm')
-
-                              return (
-                                <Button
-                                  key={startTime.toISOString()}
-                                  type="button"
-                                  size="sm"
-                                  variant="secondary"
-                                  className={cn(
-                                    'h-8 w-8 rounded-full p-0 text-[11px]',
-                                    disabled && 'cursor-not-allowed opacity-60'
-                                  )}
-                                  aria-label={`${label}の空き枠を選択`}
-                                  onClick={() => handleTimeSlotClick(slot, startTime)}
-                                  disabled={disabled}
-                                >
-                                  {label}
-                                </Button>
-                              )
-                            })}
+                          <div
+                            className={cn(
+                              'absolute left-1 top-1 text-[10px] leading-none',
+                              disabled ? 'text-gray-400' : 'text-gray-500'
+                            )}
+                          >
+                            空き {slot.duration}分
                           </div>
-                          {disabled && (
-                            <span className="mt-1 text-xs text-gray-400">
+                          {disabled ? (
+                            <span className="absolute bottom-1 left-1 text-[10px] text-gray-400">
                               {canCreateReservation
                                 ? '顧客を選択してください'
                                 : '予約作成権限がありません'}
                             </span>
-                          )}
+                          ) : null}
                         </div>
+                        {selectableTimes.map((startTime) => {
+                          const label = formatInTimeZone(startTime, JST_TIMEZONE, 'HH:mm')
+                          const startMinute = getMinutesFromDate(startTime)
+                          const cellEndMinute = Math.min(
+                            startMinute + TIMELINE_INTERVAL_MINUTES,
+                            slotEndMinute
+                          )
+
+                          return (
+                            <Button
+                              key={startTime.toISOString()}
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className={cn(
+                                'absolute top-2 z-10 flex h-[calc(100%-16px)] items-center justify-center rounded-none p-0 text-[11px]',
+                                disabled && 'cursor-not-allowed opacity-60'
+                              )}
+                              style={getTimeBlockStyle(startTime, minutesToUtcDate(cellEndMinute))}
+                              aria-label={`${label}の空き枠を選択`}
+                              onClick={() => handleTimeSlotClick(slot, startTime)}
+                              disabled={disabled}
+                            >
+                              <span className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-400 bg-white text-[11px] font-medium text-emerald-700">
+                                {label}
+                              </span>
+                            </Button>
+                          )
+                        })}
                       </div>
                     )
                   })}
