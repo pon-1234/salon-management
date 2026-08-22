@@ -237,7 +237,10 @@ export default function WeeklySchedulePage() {
 
   if (loading || !schedule) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div
+        data-testid="weekly-schedule-page"
+        className="flex h-full min-h-0 flex-col bg-gray-50"
+      >
         <div className="flex h-64 items-center justify-center">
           <div className="text-center">
             <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-emerald-600" />
@@ -249,33 +252,39 @@ export default function WeeklySchedulePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <ScheduleInfoBar
-        totalCast={schedule.stats.totalCast}
-        workingCast={schedule.stats.workingCast}
-        averageWorkingHours={schedule.stats.averageWorkingHours}
-        averageWorkingCast={schedule.stats.averageWorkingCast}
-      />
-      <ScheduleActionButtons
-        onRefresh={handleRefresh}
-        date={date}
-        onDateChange={setDate}
-        stores={availableStores.map((store) => ({
-          id: store.id,
-          displayName: store.displayName || store.name,
-        }))}
-        selectedStoreId={currentStore.id}
-        onStoreChange={switchStore}
-        searchQuery={searchQuery}
-        onSearchQueryChange={setSearchQuery}
-        statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
-        characterFilter={characterFilter}
-        onCharacterFilterChange={setCharacterFilter}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-      />
+    <div
+      data-testid="weekly-schedule-page"
+      className="flex h-full min-h-0 flex-col overflow-hidden bg-gray-50"
+    >
+      <div className="shrink-0">
+        <ScheduleInfoBar
+          totalCast={schedule.stats.totalCast}
+          workingCast={schedule.stats.workingCast}
+          averageWorkingHours={schedule.stats.averageWorkingHours}
+          averageWorkingCast={schedule.stats.averageWorkingCast}
+        />
+        <ScheduleActionButtons
+          onRefresh={handleRefresh}
+          date={date}
+          onDateChange={setDate}
+          stores={availableStores.map((store) => ({
+            id: store.id,
+            displayName: store.displayName || store.name,
+          }))}
+          selectedStoreId={currentStore.id}
+          onStoreChange={switchStore}
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          characterFilter={characterFilter}
+          onCharacterFilterChange={setCharacterFilter}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+        />
+      </div>
       <ScheduleGrid
+        className="min-h-0 flex-1"
         startDate={schedule.startDate}
         entries={filteredEntries}
         onSaveSchedule={handleSaveSchedule}

@@ -73,6 +73,8 @@ describe('ScheduleGrid', () => {
     )
 
     const dateHeader = screen.getByRole('button', { name: '08/10(月)の列へ移動' })
+    expect(screen.getByTestId('schedule-scrollport')).toHaveClass('h-full', 'overflow-auto')
+    expect(screen.getByTestId('schedule-scrollport')).not.toHaveClass('max-h-[calc(100vh-12rem)]')
     expect(dateHeader.closest('[data-testid="schedule-date-header"]')).toHaveClass('sticky')
 
     fireEvent.click(dateHeader)

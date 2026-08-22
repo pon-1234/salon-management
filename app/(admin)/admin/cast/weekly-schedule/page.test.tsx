@@ -104,11 +104,13 @@ vi.mock('@/components/cast-schedule/schedule-grid', () => ({
   ScheduleGrid: ({
     entries,
     viewMode,
+    className,
   }: {
     entries: CastScheduleEntry[]
     viewMode: 'grid' | 'list'
+    className?: string
   }) => (
-    <div data-testid="schedule-results" data-view-mode={viewMode}>
+    <div data-testid="schedule-results" data-view-mode={viewMode} className={className}>
       {entries.length === 0 ? (
         <span>条件に一致するキャストはいません</span>
       ) : (
@@ -220,6 +222,15 @@ describe('WeeklySchedulePage filters', () => {
     expect(screen.getByText('沙羅')).toBeInTheDocument()
     expect(screen.queryByText('明里')).not.toBeInTheDocument()
     expect(screen.queryByText('楓')).not.toBeInTheDocument()
+  })
+
+  it('fills the remaining admin viewport so the grid can keep dates sticky', async () => {
+    render(<WeeklySchedulePage />)
+
+    const page = await screen.findByTestId('weekly-schedule-page')
+    expect(page).toHaveClass('flex', 'h-full', 'min-h-0', 'flex-col')
+    expect(page).not.toHaveClass('min-h-screen')
+    expect(screen.getByTestId('schedule-results')).toHaveClass('min-h-0', 'flex-1')
   })
 
   it('switches the actual result presentation and reloads the selected store', async () => {

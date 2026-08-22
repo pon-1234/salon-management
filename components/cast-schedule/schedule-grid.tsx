@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { CastScheduleEntry, CastScheduleStatus } from '@/lib/cast-schedule/old-types'
+import { cn } from '@/lib/utils'
 import {
   getWeekDates,
   formatScheduleDate,
@@ -25,6 +26,7 @@ interface ScheduleGridProps {
   entries: CastScheduleEntry[]
   onSaveSchedule?: (castId: string, schedule: WeeklyScheduleEdit) => void
   viewMode?: ScheduleViewMode
+  className?: string
 }
 
 export function ScheduleGrid({
@@ -32,6 +34,7 @@ export function ScheduleGrid({
   entries,
   onSaveSchedule,
   viewMode = 'grid',
+  className,
 }: ScheduleGridProps) {
   const dates = getWeekDates(startDate)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
@@ -186,8 +189,8 @@ export function ScheduleGrid({
 
   if (entries.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
-        <Card className="mx-auto max-w-7xl bg-white shadow-sm">
+      <div className={cn('flex min-h-0 flex-col bg-gray-50 p-4', className)}>
+        <Card className="mx-auto w-full max-w-7xl bg-white shadow-sm">
           <CardContent className="py-12 text-center text-sm text-gray-500">
             条件に一致するキャストはいません
           </CardContent>
@@ -198,8 +201,11 @@ export function ScheduleGrid({
 
   if (viewMode === 'list') {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="mx-auto max-w-7xl p-4">
+      <div className={cn('flex min-h-0 flex-col bg-gray-50', className)}>
+        <div
+          data-testid="schedule-scrollport"
+          className="mx-auto h-full min-h-0 w-full max-w-7xl flex-1 overflow-auto p-4"
+        >
           <div role="list" aria-label="週間出勤一覧" className="space-y-3">
             {entries.map((entry) => (
               <Card key={entry.castId} role="listitem" className="bg-white shadow-sm">
@@ -250,15 +256,16 @@ export function ScheduleGrid({
   }
 
   return (
-    <div className="bg-gray-50">
+    <div className={cn('flex min-h-0 flex-col bg-gray-50', className)}>
       <div
-        className="mx-auto max-h-[calc(100vh-12rem)] max-w-full overflow-auto p-4"
+        data-testid="schedule-scrollport"
+        className="h-full min-h-0 max-w-full flex-1 overflow-auto"
         role="table"
         aria-label="週間出勤表"
       >
         <div
           data-testid="schedule-date-header"
-          className="sticky top-0 z-20 mb-4 bg-gray-50 pb-2"
+          className="sticky top-0 z-20 bg-gray-50 px-4 pb-2 pt-4"
           role="rowgroup"
         >
           <Card className="bg-white shadow-sm">
@@ -306,8 +313,7 @@ export function ScheduleGrid({
           </Card>
         </div>
 
-        {/* Cast Schedule Cards */}
-        <div className="space-y-4" role="rowgroup">
+        <div className="space-y-4 px-4 pb-4" role="rowgroup">
           {entries.map((entry) => (
             <Card
               key={entry.castId}
