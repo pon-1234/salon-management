@@ -74,6 +74,9 @@ describe('DailyReportPageClient', () => {
     render(<DailyReportPageClient />)
 
     expect(await screen.findByText('日報: 2026-08-14')).toBeInTheDocument()
+    expect(screen.getByTestId('daily-report-kpis')).toBeInTheDocument()
+    expect(screen.getByText('総売上')).toBeInTheDocument()
+    expect(screen.getByText('総客数')).toBeInTheDocument()
     expect(screen.getByText('値引き')).toBeInTheDocument()
     expect(screen.getByText('ホテル')).toBeInTheDocument()
     expect(screen.getByText('厚生費')).toBeInTheDocument()

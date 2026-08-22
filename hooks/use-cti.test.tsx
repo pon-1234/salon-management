@@ -25,7 +25,7 @@ describe('useCTI', () => {
     const { result } = renderHook(() => useCTI())
 
     await act(async () => {
-      await result.current.showIncomingCall('090-1234-5678')
+      await result.current.showIncomingCall('090-1234-5678', '03-1234-5678')
     })
 
     expect(fetch).toHaveBeenCalledWith(
@@ -33,5 +33,6 @@ describe('useCTI', () => {
       { credentials: 'include', cache: 'no-store' }
     )
     expect(result.current.incomingCall?.customer?.id).toBe('customer-1')
+    expect(result.current.incomingCall?.calledNumber).toBe('03-1234-5678')
   })
 })

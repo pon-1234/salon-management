@@ -18,6 +18,12 @@ system audit.
 - `TableSkeleton` is the loading state for administrative lists.
 - Destructive actions use `ConfirmDialog`; validation feedback uses the toast system.
 - Header and navigation actions must provide a minimum 44px touch target.
+- The admin shell is `h-dvh` with a sticky header and a `flex-1 min-h-0` main pane.
+  Chat and analytics fill that remaining height instead of using a hardcoded header offset.
+- The current admin destination uses `aria-current="page"`. Daily reservation work uses
+  予約表 (`/admin/reservation`) next to 予約一覧.
+- The admin home (`/admin/dashboard`) is today's operations: intake, attendance, nearby
+  reservations, and links. Charts and period comparisons stay on analytics screens.
 - Long administrative forms use `useUnsavedChangesWarning` where losing edits would be costly.
 
 ## Printing

@@ -43,6 +43,20 @@ const castSchema = z.object({
   image: imageUrlSchema,
   images: z.array(imageUrlSchema).optional().default([]),
   description: z.string().optional().default(''),
+  mediaComment: z.string().optional(),
+  mediaCommentSource: z.string().optional(),
+  mediaSyncExcluded: z.boolean().optional().default(false),
+  scheduleTemplates: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        startTime: z.string(),
+        endTime: z.string(),
+        isHoliday: z.boolean(),
+      })
+    )
+    .optional(),
   publicProfile: z.any().optional(), // JSON field for public profile data
   netReservation: z.boolean().optional().default(true),
   specialDesignationFee: z.union([z.null(), z.coerce.number().int().min(0)]).optional(),
@@ -222,6 +236,10 @@ function transformCast(cast: any) {
     availableOptionSettings,
     publicProfile: normalizePublicProfile(base.publicProfile),
     appointments: base.appointments ?? [],
+    mediaComment: base.mediaComment ?? '',
+    mediaCommentSource: base.mediaCommentSource ?? 'manual',
+    mediaSyncExcluded: Boolean(base.mediaSyncExcluded),
+    scheduleTemplates: Array.isArray(base.scheduleTemplates) ? base.scheduleTemplates : [],
   }
 }
 
@@ -268,6 +286,7 @@ async function fetchCastListWithRelations(
       where: { storeId },
       take: pagination.take,
       skip: pagination.skip,
+      orderBy: [{ nameKana: { sort: 'asc', nulls: 'last' } }, { name: 'asc' }],
       select: {
         id: true,
         name: true,
@@ -281,6 +300,10 @@ async function fetchCastListWithRelations(
         image: true,
         images: true,
         description: true,
+        mediaComment: true,
+        mediaCommentSource: true,
+        mediaSyncExcluded: true,
+        scheduleTemplates: true,
         publicProfile: true,
         netReservation: true,
         requestAttendanceEnabled: true,
@@ -308,6 +331,7 @@ async function fetchCastListWithRelations(
         where: { storeId },
         take: pagination.take,
         skip: pagination.skip,
+        orderBy: [{ nameKana: { sort: 'asc', nulls: 'last' } }, { name: 'asc' }],
       })
     }
     throw error

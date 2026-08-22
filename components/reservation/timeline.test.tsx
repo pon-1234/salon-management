@@ -140,7 +140,7 @@ describe('Timeline appointment cards', () => {
       />
     )
 
-    expect(screen.getByTestId('reservation-timeline-scroll')).toHaveClass('h-[calc(100vh-14rem)]')
+    expect(screen.getByTestId('reservation-timeline-scroll')).toHaveClass('overflow-auto')
     expect(screen.getByTestId('timeline-time-header')).toHaveClass('sticky', 'top-0')
   })
 
@@ -281,6 +281,97 @@ describe('Timeline appointment cards', () => {
     expect(screen.getByRole('button', { name: '23:30の空き枠を選択' })).toBeVisible()
     expect(screen.queryByText('午前')).not.toBeInTheDocument()
     expect(screen.queryByText('午後')).not.toBeInTheDocument()
+  })
+
+  it('places each empty-slot start on the same column as the header time circle', () => {
+    const selectedCustomer = {
+      id: 'customer-1',
+      name: '確認顧客',
+      ngCasts: [],
+      ngCastIds: [],
+    } as unknown as Customer
+    const eveningStaff = [
+      {
+        ...staff[0],
+        appointments: [],
+        workStart: new Date('2030-07-21T18:00:00+09:00'),
+        workEnd: new Date('2030-07-21T22:30:00+09:00'),
+      },
+    ]
+
+    render(
+      <Timeline
+        canCreateReservation
+        staff={eveningStaff}
+        selectedDate={new Date('2030-07-21T00:00:00+09:00')}
+        selectedCustomer={selectedCustomer}
+        setSelectedAppointment={vi.fn()}
+        reservations={[]}
+        businessHours={{
+          startMinutes: 10 * 60,
+          endMinutes: 24 * 60,
+          startLabel: '10:00',
+          endLabel: '24:00',
+        }}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: '18:00の空き枠を選択' })).toHaveStyle({
+      left: '960px',
+      width: '60px',
+    })
+    expect(screen.getByRole('button', { name: '18:30の空き枠を選択' })).toHaveStyle({
+      left: '1020px',
+      width: '60px',
+    })
+    expect(screen.getByRole('button', { name: '22:00の空き枠を選択' })).toHaveStyle({
+      left: '1440px',
+      width: '60px',
+    })
+  })
+
+  it('opens a booking from a 30-minute header button at that start time', () => {
+    const selectedCustomer = {
+      id: 'customer-1',
+      name: '確認顧客',
+      ngCasts: [],
+      ngCastIds: [],
+    } as unknown as Customer
+    const midnightStaff = [
+      {
+        ...staff[0],
+        appointments: [],
+        workStart: new Date('2030-07-21T14:00:00+09:00'),
+        workEnd: new Date('2030-07-22T00:00:00+09:00'),
+      },
+    ]
+
+    render(
+      <Timeline
+        canCreateReservation
+        staff={midnightStaff}
+        selectedDate={new Date('2030-07-21T00:00:00+09:00')}
+        selectedCustomer={selectedCustomer}
+        setSelectedAppointment={vi.fn()}
+        reservations={[]}
+        businessHours={{
+          startMinutes: 10 * 60,
+          endMinutes: 24 * 60,
+          startLabel: '10:00',
+          endLabel: '24:00',
+        }}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: '15:00を予約開始に設定' }))
+
+    expect(quickBookingDialogMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        open: true,
+        selectedTime: new Date('2030-07-21T15:00:00+09:00'),
+      }),
+      undefined
+    )
   })
 
   it('does not offer selectable starts for a past day', () => {

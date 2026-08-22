@@ -29,6 +29,11 @@ const storeSettingsSchema = z.object({
   lastOrder: z.string(),
   parkingInfo: z.string().optional(),
   welfareExpenseRate: z.coerce.number().min(0).max(100).optional(),
+  creditCardFeeRate: z.coerce
+    .number()
+    .refine((value) => value === 0 || value === 10)
+    .optional(),
+  mediaCommentOverwrite: z.boolean().optional(),
   marketingChannels: z.array(z.string().trim().min(1)).min(1).optional(),
   pointEarnRate: z.coerce.number().min(0).max(100).optional(),
   pointExpirationMonths: z.coerce.number().min(1).max(36).optional(),
@@ -81,6 +86,8 @@ export async function GET(request: NextRequest) {
     return SuccessResponses.ok({
       ...settings,
       welfareExpenseRate: Number(settings.welfareExpenseRate ?? 10),
+      creditCardFeeRate: Number(settings.creditCardFeeRate ?? 10) === 0 ? 0 : 10,
+      mediaCommentOverwrite: Boolean(settings.mediaCommentOverwrite),
       marketingChannels:
         Array.isArray(settings.marketingChannels) && settings.marketingChannels.length > 0
           ? settings.marketingChannels
@@ -105,6 +112,8 @@ export async function PUT(request: NextRequest) {
     // Validate request body
     const validatedData = storeSettingsSchema.parse(body)
     const welfareExpenseRate = validatedData.welfareExpenseRate ?? 10
+    const creditCardFeeRate = validatedData.creditCardFeeRate === 0 ? 0 : 10
+    const mediaCommentOverwrite = validatedData.mediaCommentOverwrite ?? false
     const marketingChannels =
       validatedData.marketingChannels?.map((channel) => channel.trim()).filter(Boolean) ??
       DEFAULT_MARKETING_CHANNELS
@@ -126,6 +135,8 @@ export async function PUT(request: NextRequest) {
           building: validatedData.building || '',
           parkingInfo: validatedData.parkingInfo || '',
           welfareExpenseRate,
+          creditCardFeeRate,
+          mediaCommentOverwrite,
           marketingChannels,
           pointEarnRate,
           pointExpirationMonths,
@@ -142,6 +153,8 @@ export async function PUT(request: NextRequest) {
           building: validatedData.building || '',
           parkingInfo: validatedData.parkingInfo || '',
           welfareExpenseRate,
+          creditCardFeeRate,
+          mediaCommentOverwrite,
           marketingChannels,
           pointEarnRate,
           pointExpirationMonths,
@@ -153,6 +166,8 @@ export async function PUT(request: NextRequest) {
     return SuccessResponses.updated({
       ...updatedSettings,
       welfareExpenseRate: Number(updatedSettings.welfareExpenseRate ?? 10),
+      creditCardFeeRate: Number(updatedSettings.creditCardFeeRate ?? 10) === 0 ? 0 : 10,
+      mediaCommentOverwrite: Boolean(updatedSettings.mediaCommentOverwrite),
       marketingChannels:
         Array.isArray(updatedSettings.marketingChannels) &&
         updatedSettings.marketingChannels.length > 0

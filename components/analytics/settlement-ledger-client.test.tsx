@@ -89,9 +89,10 @@ describe('SettlementLedgerClient', () => {
 
     render(<SettlementLedgerClient mode="payment" />)
 
-    expect(await screen.findByRole('heading', { name: '入金処理' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '精算' })).toBeInTheDocument()
     expect(screen.getByText(/\[UAT\] 予約確認/)).toBeInTheDocument()
     expect(screen.getByText(/UAT-0815-1030/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '精算する' })).toBeInTheDocument()
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringContaining('/api/admin/settlements?'),
@@ -113,7 +114,7 @@ describe('SettlementLedgerClient', () => {
 
     render(<SettlementLedgerClient mode="settlement" />)
 
-    expect(await screen.findByRole('heading', { name: '入金精算処理' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '精算' })).toBeInTheDocument()
     expect(screen.getByText('さら')).toBeInTheDocument()
     expect(screen.getAllByText('¥18,000').length).toBeGreaterThan(0)
     expect(screen.getByText('旧台帳')).toBeInTheDocument()

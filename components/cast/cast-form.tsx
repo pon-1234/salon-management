@@ -105,6 +105,8 @@ const buildInitialFormState = (cast?: Cast | null) => ({
   image: cast?.image || '',
   images: cast?.images ? [...cast.images] : [],
   description: cast?.description || '',
+  mediaComment: cast?.mediaComment || '',
+  mediaSyncExcluded: cast?.mediaSyncExcluded ?? false,
   netReservation: cast?.netReservation ?? true,
   specialDesignationFee: cast?.specialDesignationFee ?? '',
   regularDesignationFee: cast?.regularDesignationFee ?? '',
@@ -386,6 +388,9 @@ export function CastForm({
       bust: formData.bust.trim(),
       type: formData.type,
       description: formData.description.trim(),
+      mediaComment: formData.mediaComment.trim(),
+      mediaCommentSource: 'manual',
+      mediaSyncExcluded: formData.mediaSyncExcluded,
       netReservation: formData.netReservation,
       images: sanitizedImages,
       workStatus: formData.workStatus,
@@ -685,6 +690,28 @@ export function CastForm({
             placeholder="キャストの雰囲気や得意なサービスなどを記載します。"
             className="min-h-[120px]"
           />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={fieldId('mediaComment')}>媒体掲載用コメント</Label>
+          <Textarea
+            id={fieldId('mediaComment')}
+            name="mediaComment"
+            value={formData.mediaComment}
+            onChange={handleInputChange}
+            placeholder="ヘブン・便利など外部媒体向けのコメント。店舗内部の備考とは別に保存されます。"
+            className="min-h-[120px]"
+          />
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              name="mediaSyncExcluded"
+              checked={formData.mediaSyncExcluded}
+              onChange={(event) =>
+                setFormData((prev) => ({ ...prev, mediaSyncExcluded: event.target.checked }))
+              }
+            />
+            外部サービスからのコメント同期対象外にする
+          </label>
         </div>
       </FormSection>
 

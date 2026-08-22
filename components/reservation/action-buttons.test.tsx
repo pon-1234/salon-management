@@ -51,4 +51,40 @@ describe('ActionButtons reservation permissions', () => {
 
     expect(screen.getByTestId('customer-selection-dialog')).toBeInTheDocument()
   })
+
+  it('unbinds the current customer so another customer can be chosen', () => {
+    const onCustomerSelect = vi.fn()
+
+    render(
+      <ActionButtons
+        canCreateReservation
+        onRefresh={vi.fn()}
+        onFilter={vi.fn()}
+        onCustomerSelect={onCustomerSelect}
+        selectedCustomer={{
+          id: 'cust-1',
+          name: '解除対象',
+          nameKana: 'カイジョタイショウ',
+          phone: '09012345678',
+          email: '',
+          password: '',
+          birthDate: new Date('1990-01-01T00:00:00.000Z'),
+          age: 36,
+          memberType: 'regular',
+          accountStatus: 'active',
+          membershipStage: 'regular',
+          smsEnabled: false,
+          emailNotificationEnabled: false,
+          points: 0,
+          registrationDate: new Date('2020-01-01T00:00:00.000Z'),
+          createdAt: new Date('2020-01-01T00:00:00.000Z'),
+          updatedAt: new Date('2026-08-22T00:00:00.000Z'),
+        }}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: '顧客選択を解除' }))
+
+    expect(onCustomerSelect).toHaveBeenCalledWith(null)
+  })
 })

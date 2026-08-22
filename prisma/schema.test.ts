@@ -313,16 +313,16 @@ describe('Prisma schema', () => {
     expect(migration).not.toMatch(/UPDATE\s+"PaymentTransaction"/i)
   })
 
-  it('allows each reservation to be allocated to only one settlement payment', () => {
+  it('records partial settlement allocations against the same reservation', () => {
     const allocationModel = schemaContent.match(
       /model SettlementPaymentReservation \{[\s\S]*?\n\}/u
     )?.[0]
     expect(allocationModel).toBeDefined()
-    expect(allocationModel).toContain(
-      '@@unique([reservationId], map: "SettlementPaymentReservation_reservationId_key")'
-    )
+    expect(allocationModel).toContain('allocatedAmount')
+    expect(allocationModel).toContain('@@index([reservationId])')
+    expect(allocationModel).not.toMatch(/@@unique\(\[reservationId\]/)
 
-    const migration = readFileSync(
+    const uniqueMigration = readFileSync(
       join(
         process.cwd(),
         'prisma',
@@ -332,19 +332,28 @@ describe('Prisma schema', () => {
       ),
       'utf8'
     )
-    expect(migration.trimStart()).toMatch(/^BEGIN;/u)
-    expect(migration).toContain(
+    expect(uniqueMigration.trimStart()).toMatch(/^BEGIN;/u)
+    expect(uniqueMigration).toContain(
       'LOCK TABLE "SettlementPaymentReservation" IN SHARE ROW EXCLUSIVE MODE'
     )
-    expect(migration).toContain('GROUP BY "reservationId"')
-    expect(migration).toContain('HAVING COUNT(*) > 1')
-    expect(migration).toContain('RAISE EXCEPTION')
-    expect(migration).toContain(
+    expect(uniqueMigration).toContain(
       'CREATE UNIQUE INDEX "SettlementPaymentReservation_reservationId_key"'
     )
-    expect(migration.trimEnd()).toMatch(/COMMIT;$/u)
-    expect(migration).not.toMatch(/DELETE\s+FROM/iu)
-    expect(migration).not.toMatch(/UPDATE\s+"SettlementPaymentReservation"/iu)
+
+    const partialMigration = readFileSync(
+      join(
+        process.cwd(),
+        'prisma',
+        'migrations',
+        '20260822090000_meeting_ops_requirements',
+        'migration.sql'
+      ),
+      'utf8'
+    )
+    expect(partialMigration).toContain(
+      'DROP INDEX IF EXISTS "SettlementPaymentReservation_reservationId_key"'
+    )
+    expect(partialMigration).toContain('allocatedAmount')
   })
 
   it('persists non-sensitive card references and free-text cancellation reasons', () => {

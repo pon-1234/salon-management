@@ -7,7 +7,7 @@
  */
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,9 +22,11 @@ import {
 } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle, Eye, EyeOff, ShieldCheck } from 'lucide-react'
+import { sanitizeCallbackUrl } from '@/lib/auth/callback-url'
 
 export function AdminLoginClient() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -46,7 +48,9 @@ export function AdminLoginClient() {
       if (result?.error) {
         setError('ログインに失敗しました。メールアドレスとパスワードを確認してください。')
       } else if (result?.ok) {
-        router.push('/admin/dashboard')
+        router.push(
+          sanitizeCallbackUrl(searchParams.get('callbackUrl'), { fallback: '/admin/dashboard' })
+        )
         router.refresh()
       }
     } catch {

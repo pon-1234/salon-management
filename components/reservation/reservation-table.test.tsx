@@ -72,4 +72,15 @@ describe('ReservationTable', () => {
     expect(onOpenReservation).toHaveBeenCalledTimes(1)
     expect(onOpenReservation).toHaveBeenCalledWith(reservation)
   })
+
+  it('uses Japanese column labels for start, end, and cast', () => {
+    render(<ReservationTable reservations={[reservation]} />)
+
+    expect(screen.getByRole('columnheader', { name: '番号' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: '開始' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: '終了' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'キャスト' })).toBeInTheDocument()
+    expect(screen.queryByRole('columnheader', { name: 'NO.' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('columnheader', { name: '女性' })).not.toBeInTheDocument()
+  })
 })

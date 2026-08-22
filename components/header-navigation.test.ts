@@ -14,8 +14,19 @@ describe('admin header navigation', () => {
   it('exposes a direct daily report link without replacing the existing analytics link', () => {
     expect(headerSource.match(/href="\/admin\/analytics\/daily-report"/g)).toHaveLength(2)
     expect(headerSource.match(/href="\/admin\/analytics\/daily-sales"/g)).toHaveLength(2)
-    expect(headerSource).toContain('>日報<')
-    expect(headerSource).toContain('>集計<')
+    expect(headerSource).toContain('当日売上')
+    expect(headerSource).toContain('集計')
+  })
+
+  it('exposes the reservation board next to the reservation list', () => {
+    expect(headerSource).toContain("href: '/admin/reservation'")
+    expect(headerSource).toContain('href="/admin/reservation"')
+    expect(headerSource).toContain("label: '予約表'")
+  })
+
+  it('marks the current destination so staff can see where they are', () => {
+    expect(headerSource).toContain('usePathname')
+    expect(headerSource).toContain("aria-current={isActive ? 'page' : undefined}")
   })
 
   it('does not expose the redundant global search link', () => {

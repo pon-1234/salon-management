@@ -22,6 +22,16 @@ export interface Cast extends BaseEntity {
   lineUserId?: string | null
   welfareExpenseRate?: number | null
   loginEmail?: string | null
+  mediaComment?: string
+  mediaCommentSource?: string | null
+  mediaSyncExcluded?: boolean
+  scheduleTemplates?: Array<{
+    id: string
+    name: string
+    startTime: string
+    endTime: string
+    isHoliday: boolean
+  }>
   workStart?: Date
   workEnd?: Date
   appointments: Appointment[]
@@ -81,6 +91,7 @@ export interface Appointment {
   status: 'provisional' | 'confirmed'
   location?: string
   price: number
+  designationType?: string | null
 }
 
 export interface CastSchedule {

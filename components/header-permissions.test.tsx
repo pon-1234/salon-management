@@ -21,13 +21,25 @@ vi.mock('next-auth/react', () => ({
   signOut: vi.fn(),
 }))
 
+const navigationState = vi.hoisted(() => ({ pathname: '/admin/dashboard' }))
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
+  usePathname: () => navigationState.pathname,
 }))
 
 vi.mock('next/link', () => ({
-  default: ({ children, href }: { children: React.ReactNode; href: string }) => (
-    <a href={href}>{children}</a>
+  default: ({
+    children,
+    href,
+    ...props
+  }: {
+    children: React.ReactNode
+    href: string
+  } & React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
   ),
 }))
 
@@ -85,6 +97,7 @@ vi.mock('@/components/ui/sheet', () => ({
 
 describe('Header customer permissions', () => {
   beforeEach(() => {
+    navigationState.pathname = '/admin/dashboard'
     authState.permissions = ['customer:read', 'reservation:create']
     authState.currentStore = { id: 'ikebukuro', slug: 'ikebukuro' }
     vi.stubGlobal(
@@ -93,9 +106,20 @@ describe('Header customer permissions', () => {
     )
   })
 
+  it('marks the current destination as the active page', () => {
+    navigationState.pathname = '/admin/chat'
+    render(<Header />)
+
+    const chatLinks = screen.getAllByRole('link', { name: 'チャット' })
+    expect(chatLinks.some((link) => link.getAttribute('aria-current') === 'page')).toBe(true)
+    const homeLinks = screen.getAllByRole('link', { name: 'ホーム' })
+    expect(homeLinks.every((link) => link.getAttribute('aria-current') !== 'page')).toBe(true)
+  })
+
   it('shows reservation and customer lookup launchers with both required permissions', () => {
     render(<Header />)
 
+    expect(screen.getAllByRole('link', { name: '予約表' }).length).toBeGreaterThan(0)
     expect(screen.getByRole('link', { name: '顧客管理' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '予約作成' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '顧客検索' })).toBeInTheDocument()

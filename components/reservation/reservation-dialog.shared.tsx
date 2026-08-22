@@ -4,6 +4,8 @@
  * @known_issues Entry metadata follows the reservation API's ISO date response contract
  */
 import { cn } from '@/lib/utils'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import type { PaymentMethod, ReservationStatus } from '@/lib/constants'
 import type { ReservationData, ReservationSavePayload } from '@/lib/types/reservation'
 import type { Cast } from '@/lib/cast/types'
@@ -154,4 +156,34 @@ export function parseEntryMeta(payload: {
       ? new Date(payload.entryReminderSentAt)
       : null,
   }
+}
+
+export function cardPaymentReferenceClassName(value: string): string {
+  return value.trim() ? 'border-emerald-400 bg-emerald-50' : 'border-amber-400 bg-amber-50'
+}
+
+export function ReservationCardPaymentReferenceInput({
+  id,
+  value,
+  onChange,
+}: {
+  id: string
+  value: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <div>
+      <Label htmlFor={id}>カード決済管理番号を入力してください</Label>
+      <Input
+        id={id}
+        aria-label="カード決済管理番号"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        maxLength={100}
+        autoComplete="off"
+        placeholder="決済伝票の管理番号（カード番号は入力しない）"
+        className={cardPaymentReferenceClassName(value)}
+      />
+    </div>
+  )
 }

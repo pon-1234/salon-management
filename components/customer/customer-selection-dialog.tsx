@@ -243,25 +243,31 @@ export function CustomerSelectionDialog({
 
   const handleCustomerSelect = (customer: Customer) => {
     setSelectedCustomer(customer)
+    proceedWithCustomer(customer)
   }
 
-  const handleProceed = () => {
+  const proceedWithCustomer = (customer: Customer) => {
     if (mode === 'reservation' && !canCreateReservation) {
       return
     }
 
+    if (onSelectCustomer) {
+      onSelectCustomer(customer)
+      onOpenChange(false)
+      return
+    }
+
+    if (mode === 'lookup') {
+      router.push(`/admin/customers/${encodeURIComponent(customer.id)}`)
+    } else {
+      router.push(`/admin/reservation?customerId=${encodeURIComponent(customer.id)}`)
+    }
+    onOpenChange(false)
+  }
+
+  const handleProceed = () => {
     if (selectedCustomer) {
-      if (onSelectCustomer) {
-        onSelectCustomer(selectedCustomer)
-        onOpenChange(false)
-      } else {
-        if (mode === 'lookup') {
-          router.push(`/admin/customers/${encodeURIComponent(selectedCustomer.id)}`)
-        } else {
-          router.push(`/admin/reservation?customerId=${encodeURIComponent(selectedCustomer.id)}`)
-        }
-        onOpenChange(false)
-      }
+      proceedWithCustomer(selectedCustomer)
     }
   }
 
@@ -458,7 +464,7 @@ export function CustomerSelectionDialog({
             </Button>
           ) : null}
 
-          {status === 'ready' && !isLookupMode && (
+          {status === 'ready' && !isLookupMode && !onSelectCustomer ? (
             <Button
               onClick={handleOpenTimeline}
               variant="secondary"
@@ -467,7 +473,7 @@ export function CustomerSelectionDialog({
               <Clock className="mr-2 h-4 w-4" />
               タイムラインを確認する
             </Button>
-          )}
+          ) : null}
 
           {status === 'ready' ? (
             <ScrollArea className="h-[400px] pr-4">
@@ -478,6 +484,7 @@ export function CustomerSelectionDialog({
                       key={customer.id}
                       role="button"
                       tabIndex={0}
+                      aria-label={`${customer.name} ${formatPhoneNumber(customer.phone)}`}
                       className={cn(
                         'cursor-pointer p-4 transition-all hover:shadow-md',
                         selectedCustomer?.id === customer.id &&

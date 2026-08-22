@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @design_doc   docs/UX_FOUNDATIONS.md
+ * @related_to   Header: sticky admin navigation; chat/analytics fill the remaining viewport
+ * @known_issues Breadcrumb rollout is still page-by-page
+ */
 import { ReactNode, Suspense } from 'react'
 import { Header } from '@/components/header'
 import { cn } from '@/lib/utils'
@@ -12,14 +17,14 @@ function AdminLayoutContent({ children }: { children: ReactNode }) {
   const { hasNewNotifications } = useNotification()
 
   return (
-    <>
+    <div className="flex h-dvh min-h-0 flex-col overflow-hidden">
       <Header />
-      <div className="min-h-screen w-full">
-        <main>
-          <div className={cn('w-full', hasNewNotifications && 'has-notifications')}>{children}</div>
-        </main>
-      </div>
-    </>
+      <main className="min-h-0 flex-1 overflow-auto">
+        <div className={cn('h-full w-full', hasNewNotifications && 'has-notifications')}>
+          {children}
+        </div>
+      </main>
+    </div>
   )
 }
 

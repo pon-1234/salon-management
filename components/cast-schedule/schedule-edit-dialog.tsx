@@ -1,11 +1,17 @@
 'use client'
 
+/**
+ * @design_doc   SCH-01/SCH-02 キャスト出勤時間テンプレートと休み登録
+ * @related_to   ScheduleGrid, applyShiftTemplate, Cast.scheduleTemplates
+ * @known_issues None
+ */
 import { useEffect, useMemo, useState } from 'react'
-import { addDays, format, startOfWeek } from 'date-fns'
+import { format, startOfWeek } from 'date-fns'
 import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz'
 import { ja } from 'date-fns/locale'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -19,6 +25,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Calendar, Save, X, Clock, User } from 'lucide-react'
 import { CastScheduleStatus } from '@/lib/cast-schedule/old-types'
+import { getDateRange } from '@/lib/cast-schedule/utils'
+import { scheduleEditDayCount, type ScheduleEditSpan } from '@/lib/cast-schedule/edit-span'
 import { useStore } from '@/contexts/store-context'
 import {
   DEFAULT_BUSINESS_HOURS,
@@ -28,6 +36,12 @@ import {
 } from '@/lib/settings/business-hours'
 import { toast } from '@/hooks/use-toast'
 import { findScheduleValidationError } from '@/lib/cast-schedule/validation'
+import {
+  applyShiftTemplate,
+  createHolidayTemplate,
+  mergeCastShiftTemplates,
+  type CastShiftTemplate,
+} from '@/lib/cast-schedule/shift-template'
 
 export interface DaySchedule {
   date: string // yyyy-mm-dd format
@@ -49,6 +63,7 @@ interface ScheduleEditDialogProps {
   initialSchedule: { [date: string]: CastScheduleStatus }
   startDate: Date
   onSave: (castId: string, schedule: WeeklyScheduleEdit) => void
+  focusDate?: string | null
 }
 
 export function ScheduleEditDialog({
@@ -59,10 +74,16 @@ export function ScheduleEditDialog({
   initialSchedule,
   startDate,
   onSave,
+  focusDate = null,
 }: ScheduleEditDialogProps) {
   const { currentStore } = useStore()
   const timeZone = 'Asia/Tokyo'
   const [businessHours, setBusinessHours] = useState<BusinessHoursRange>(DEFAULT_BUSINESS_HOURS)
+  const [templates, setTemplates] = useState<CastShiftTemplate[]>(() =>
+    mergeCastShiftTemplates(null)
+  )
+  const [newTemplateName, setNewTemplateName] = useState('')
+  const [editSpan, setEditSpan] = useState<ScheduleEditSpan>('week')
   const [schedule, setSchedule] = useState<WeeklyScheduleEdit>(() => {
     const converted: WeeklyScheduleEdit = {}
     Object.entries(initialSchedule).forEach(([date, status]) => {
@@ -79,7 +100,7 @@ export function ScheduleEditDialog({
 
   // Generate 7 days starting from the given start date
   const weekStart = startOfWeek(startDate, { weekStartsOn: 1 }) // Monday start
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+  const visibleDays = getDateRange(weekStart, scheduleEditDayCount(editSpan))
 
   const statusOptions: { value: '休日' | '出勤予定' | '未入力'; label: string; color: string }[] = [
     { value: '未入力', label: '未入力', color: 'bg-gray-100 text-gray-600' },
@@ -124,6 +145,40 @@ export function ScheduleEditDialog({
       ignore = true
     }
   }, [currentStore.id])
+
+  useEffect(() => {
+    if (!open) return
+    let ignore = false
+    const loadTemplates = async () => {
+      try {
+        const params = new URLSearchParams({ id: castId })
+        if (currentStore.id) {
+          params.set('storeId', currentStore.id)
+        }
+        const response = await fetch(`/api/cast?${params.toString()}`, {
+          credentials: 'include',
+          cache: 'no-store',
+        })
+        if (!response.ok) {
+          throw new Error(`Failed to fetch cast templates: ${response.status}`)
+        }
+        const payload = await response.json()
+        const saved = Array.isArray(payload?.scheduleTemplates) ? payload.scheduleTemplates : []
+        if (!ignore) {
+          setTemplates(mergeCastShiftTemplates(saved))
+        }
+      } catch (error) {
+        console.error('Failed to load shift templates:', error)
+        if (!ignore) {
+          setTemplates(mergeCastShiftTemplates(null))
+        }
+      }
+    }
+    void loadTemplates()
+    return () => {
+      ignore = true
+    }
+  }, [open, castId, currentStore.id])
 
   const timeOptions = useMemo(() => {
     const options: string[] = []
@@ -185,44 +240,166 @@ export function ScheduleEditDialog({
     return statusOptions.find((opt) => opt.value === status)?.color || 'bg-gray-100 text-gray-600'
   }
 
-  const filteredTimeOptions = useMemo(() => {
-    return timeOptions.filter((time) => {
-      const [hours, minutes] = time.split(':').map(Number)
-      const totalMinutes = hours * 60 + minutes
-      return totalMinutes >= businessHours.startMinutes && totalMinutes <= businessHours.endMinutes
+  const applyTemplateToDate = (template: CastShiftTemplate, dateKey: string) => {
+    const applied = applyShiftTemplate(template, dateKey)
+    setSchedule((prev) => ({
+      ...prev,
+      [dateKey]: {
+        ...prev[dateKey],
+        date: dateKey,
+        status: applied.status,
+        startTime: applied.startTime,
+        endTime: applied.endTime,
+      },
+    }))
+  }
+
+  const persistTemplates = async (next: CastShiftTemplate[]) => {
+    setTemplates(next)
+    try {
+      const response = await fetch('/api/cast', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: castId,
+          storeId: currentStore.id,
+          scheduleTemplates: next,
+        }),
+      })
+      if (!response.ok) {
+        throw new Error(`Failed to save templates: ${response.status}`)
+      }
+    } catch (error) {
+      console.error('Failed to persist shift templates:', error)
+      toast({
+        title: 'テンプレートを保存できませんでした',
+        description: '出勤時間テンプレートの保存に失敗しました。',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const saveCurrentDayAsTemplate = () => {
+    const firstWorkDay = visibleDays
+      .map((date) => getDaySchedule(format(date, 'yyyy-MM-dd')))
+      .find((day) => day.status === '出勤予定' && day.startTime && day.endTime)
+    if (!firstWorkDay?.startTime || !firstWorkDay.endTime || !newTemplateName.trim()) {
+      toast({
+        title: 'テンプレート名と出勤時間を確認してください',
+        description: '出勤予定の日付がある状態で、テンプレート名を入力してください。',
+        variant: 'destructive',
+      })
+      return
+    }
+    const next: CastShiftTemplate[] = [
+      ...templates.filter((template) => template.id !== 'holiday'),
+      {
+        id: `custom-${Date.now()}`,
+        name: newTemplateName.trim(),
+        startTime: firstWorkDay.startTime,
+        endTime: firstWorkDay.endTime,
+        isHoliday: false,
+      },
+      createHolidayTemplate(),
+    ]
+    setNewTemplateName('')
+    void persistTemplates(next)
+  }
+
+  useEffect(() => {
+    if (!open || !focusDate) {
+      return
+    }
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(`schedule-edit-day-${focusDate}`)?.scrollIntoView({
+        block: 'start',
+        behavior: 'smooth',
+      })
     })
-  }, [timeOptions, businessHours])
+    return () => window.cancelAnimationFrame(frame)
+  }, [editSpan, focusDate, open])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+      <DialogContent
+        className="max-h-[90vh] max-w-4xl overflow-y-auto"
+        aria-describedby={undefined}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
-            {castName} - 週間スケジュール編集
+            {castName} - スケジュール編集
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
             {formatInTimeZone(weekStart, timeZone, 'yyyy年M月d日', { locale: ja })} 〜{' '}
-            {formatInTimeZone(addDays(weekStart, 6), timeZone, 'M月d日', { locale: ja })}
+            {formatInTimeZone(visibleDays[visibleDays.length - 1], timeZone, 'M月d日', {
+              locale: ja,
+            })}
           </p>
         </DialogHeader>
 
+        <div className="space-y-2">
+          <Button
+            type="button"
+            variant={editSpan === 'fourWeeks' ? 'default' : 'outline'}
+            size="sm"
+            aria-pressed={editSpan === 'fourWeeks'}
+            onClick={() => setEditSpan((span) => (span === 'week' ? 'fourWeeks' : 'week'))}
+          >
+            4週間をまとめて入力
+          </Button>
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="min-w-[12rem] flex-1">
+              <Label htmlFor="new-shift-template-name">このキャストの出勤テンプレート名</Label>
+              <Input
+                id="new-shift-template-name"
+                value={newTemplateName}
+                onChange={(event) => setNewTemplateName(event.target.value)}
+                placeholder="例: 昼勤 12:00-22:00"
+              />
+            </div>
+            <Button type="button" variant="secondary" size="sm" onClick={saveCurrentDayAsTemplate}>
+              表示中の出勤時間をテンプレート保存
+            </Button>
+          </div>
+        </div>
+
         <div className="space-y-4">
-          {weekDays.map((date) => {
+          {visibleDays.map((date) => {
             const dateKey = format(date, 'yyyy-MM-dd')
             const daySchedule = getDaySchedule(dateKey)
             const isWorkDay = daySchedule.status === '出勤予定'
 
             return (
-              <Card key={dateKey} className="border-l-4 border-l-emerald-500">
+              <Card
+                key={dateKey}
+                id={`schedule-edit-day-${dateKey}`}
+                className="border-l-4 border-l-emerald-500"
+              >
                 <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center justify-between text-lg">
+                  <CardTitle className="flex flex-col gap-3 text-lg sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex items-center gap-3">
                       <Calendar className="h-5 w-5" />
                       {formatInTimeZone(date, timeZone, 'M月d日(E)', { locale: ja })}
                       <Badge className={getStatusColor(daySchedule.status)}>
                         {daySchedule.status}
                       </Badge>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {templates.map((template) => (
+                        <Button
+                          key={`${dateKey}-${template.id}`}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => applyTemplateToDate(template, dateKey)}
+                        >
+                          {template.isHoliday
+                            ? '休みを適用'
+                            : `${template.name} ${template.startTime}-${template.endTime} を適用`}
+                        </Button>
+                      ))}
                     </div>
                   </CardTitle>
                 </CardHeader>
@@ -252,6 +429,20 @@ export function ScheduleEditDialog({
                         ))}
                       </SelectContent>
                     </Select>
+                    <label className="mt-2 flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={daySchedule.status === '休日'}
+                        onChange={(event) =>
+                          handleScheduleChange(
+                            dateKey,
+                            'status',
+                            event.target.checked ? '休日' : '出勤予定'
+                          )
+                        }
+                      />
+                      休みで登録
+                    </label>
                   </div>
 
                   {/* 時間設定（出勤日のみ） */}
@@ -272,7 +463,10 @@ export function ScheduleEditDialog({
                             <SelectValue placeholder="開始時間を選択" />
                           </SelectTrigger>
                           <SelectContent>
-                            {timeOptions.map((time) => (
+                            {(daySchedule.startTime && !timeOptions.includes(daySchedule.startTime)
+                              ? [...timeOptions, daySchedule.startTime]
+                              : timeOptions
+                            ).map((time) => (
                               <SelectItem key={time} value={time}>
                                 {time}
                               </SelectItem>
@@ -293,7 +487,10 @@ export function ScheduleEditDialog({
                             <SelectValue placeholder="終了時間を選択" />
                           </SelectTrigger>
                           <SelectContent>
-                            {timeOptions.map((time) => (
+                            {(daySchedule.endTime && !timeOptions.includes(daySchedule.endTime)
+                              ? [...timeOptions, daySchedule.endTime]
+                              : timeOptions
+                            ).map((time) => (
                               <SelectItem key={time} value={time}>
                                 {time}
                               </SelectItem>

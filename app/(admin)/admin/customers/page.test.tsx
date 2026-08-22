@@ -132,6 +132,20 @@ describe('CustomerListPage', () => {
     expect(await screen.findByText('顧客が登録されていません。')).toBeInTheDocument()
   })
 
+  it('distinguishes a search miss from an empty ledger', async () => {
+    render(<CustomerListPage />)
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
+
+    fireEvent.change(screen.getByPlaceholderText('氏名・電話番号・メール・会員番号で検索'), {
+      target: { value: '存在しない顧客' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '検索' }))
+
+    expect(await screen.findByText('条件に一致する顧客が見つかりません。')).toBeInTheDocument()
+    expect(screen.queryByText('顧客が登録されていません。')).not.toBeInTheDocument()
+  })
+
   it('does not expose new customer creation without customer:create permission', async () => {
     authState.permissions = ['customer:read']
 

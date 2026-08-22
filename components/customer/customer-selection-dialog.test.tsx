@@ -117,6 +117,16 @@ describe('CustomerSelectionDialog', () => {
     expect(push).toHaveBeenCalledWith('/admin/customers/legacy%2Fcustomer%201234')
   })
 
+  it('opens customer details when the customer card is clicked in lookup mode', async () => {
+    getAll.mockResolvedValueOnce([customer])
+
+    render(<CustomerSelectionDialog open mode="lookup" onOpenChange={vi.fn()} />)
+
+    fireEvent.click(await screen.findByRole('button', { name: /\[確認用\] 旧実名顧客/ }))
+
+    expect(push).toHaveBeenCalledWith('/admin/customers/legacy-customer-member-1234')
+  })
+
   it('clears the prior search and customer selection every time it is reopened', async () => {
     getAll.mockResolvedValueOnce([customer])
     searchByPhone.mockResolvedValueOnce([customer])
@@ -357,6 +367,15 @@ describe('CustomerSelectionDialog', () => {
     expect(
       screen.queryByPlaceholderText('名前、電話番号、メールアドレス、会員番号で検索...')
     ).not.toBeInTheDocument()
+  })
+
+  it('hides the timeline shortcut while choosing a customer for an in-progress reservation', async () => {
+    getAll.mockResolvedValueOnce([customer])
+
+    render(<CustomerSelectionDialog open onOpenChange={vi.fn()} onSelectCustomer={vi.fn()} />)
+
+    expect(await screen.findByText('[確認用] 旧実名顧客')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'タイムラインを確認する' })).not.toBeInTheDocument()
   })
 
   it('keeps lookup mode available with customer:read alone', async () => {

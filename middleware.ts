@@ -49,6 +49,16 @@ function isExactOrChild(pathname: string, route: string): boolean {
   return pathname === route || pathname.startsWith(`${route}/`)
 }
 
+function pathWithSearch(request: NextRequest): string {
+  return `${request.nextUrl.pathname}${request.nextUrl.search}`
+}
+
+function redirectWithSearch(pathname: string, request: NextRequest) {
+  const url = new URL(pathname, request.url)
+  url.search = request.nextUrl.search
+  return NextResponse.redirect(url, { status: 307 })
+}
+
 function extractStoreContext(request: NextRequest): string | null {
   const queryStore =
     request.nextUrl.searchParams.get('storeId') ?? request.nextUrl.searchParams.get('store')
@@ -208,19 +218,19 @@ export async function middleware(request: NextRequest) {
     if (!token) {
       // Redirect to admin login if not authenticated
       const url = new URL('/admin/login', request.url)
-      url.searchParams.set('callbackUrl', pathname)
+      url.searchParams.set('callbackUrl', pathWithSearch(request))
       return NextResponse.redirect(url, { status: 307 })
     }
 
     if (token.role !== 'admin') {
       const url = new URL('/admin/login', request.url)
-      url.searchParams.set('callbackUrl', pathname)
+      url.searchParams.set('callbackUrl', pathWithSearch(request))
       return NextResponse.redirect(url, { status: 307 })
     }
 
     // Special redirect for /admin to /admin/dashboard
     if (pathname === '/admin') {
-      return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+      return redirectWithSearch('/admin/dashboard', request)
     }
 
     return NextResponse.next()

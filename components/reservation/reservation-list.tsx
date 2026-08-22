@@ -18,6 +18,7 @@ import { ReservationData } from '@/lib/types/reservation'
 import Link from 'next/link'
 import { useMemo } from 'react'
 import { ReservationStatus } from '@/lib/constants'
+import { isCreditCardPaymentMethod } from '@/lib/reservation/credit-card-fee'
 
 interface ReservationListProps {
   reservations: ReservationData[]
@@ -93,64 +94,93 @@ export function ReservationList({
     )
   }
 
+  const renderCardPaymentBadge = (reservation: ReservationData) => {
+    if (!isCreditCardPaymentMethod(reservation.paymentMethod)) {
+      return <span className="text-xs text-muted-foreground">—</span>
+    }
+    const processed = Boolean(reservation.paymentReference?.trim())
+    return (
+      <Badge
+        variant="outline"
+        className={
+          processed
+            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+            : 'border-red-200 bg-red-50 text-red-700'
+        }
+      >
+        {processed ? 'カード処理済み' : 'カード未処理'}
+      </Badge>
+    )
+  }
+
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border bg-white">
+      <div className="overflow-x-auto rounded-lg border bg-white">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[80px] whitespace-nowrap">NO.</TableHead>
+              <TableHead className="w-[80px] whitespace-nowrap">番号</TableHead>
               <TableHead className="w-[140px] whitespace-nowrap">お名前</TableHead>
               <TableHead className="whitespace-nowrap">日時指定</TableHead>
               <TableHead className="whitespace-nowrap">キャスト</TableHead>
               <TableHead className="whitespace-nowrap">コース</TableHead>
-              <TableHead className="w-[80px] whitespace-nowrap">IN</TableHead>
-              <TableHead className="w-[80px] whitespace-nowrap">OUT</TableHead>
+              <TableHead className="w-[80px] whitespace-nowrap">開始</TableHead>
+              <TableHead className="w-[80px] whitespace-nowrap">終了</TableHead>
               <TableHead className="w-[180px] whitespace-nowrap">ステータス</TableHead>
+              <TableHead className="w-[140px] whitespace-nowrap">カード決済</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {displayReservations.map((reservation) => (
-              <TableRow
-                key={reservation.id}
-                onClick={() => onOpenReservation && onOpenReservation(reservation)}
-                className="cursor-pointer hover:bg-gray-50"
-              >
-                <TableCell className="whitespace-nowrap">
-                  <div className="w-24 rounded bg-red-50 p-1 text-center font-mono text-xs">
-                    {reservation.id.slice(0, 10)}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div>{reservation.customerName} 様</div>
-                  {reservation.designation === 'new' && (
-                    <div className="mt-1 text-sm text-gray-500">[新規指名]</div>
-                  )}
-                  <div className="mt-1 text-sm text-gray-500">{reservation.location}</div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span>{format(reservation.startTime, 'yyyy-MM-dd')}</span>
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {format(reservation.startTime, 'HH:mm')}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span>{reservation.staff || 'キャスト未設定'}</span>
-                  </div>
-                </TableCell>
-                <TableCell>{`${reservation.course}`}</TableCell>
-                <TableCell>{format(reservation.startTime, 'HH:mm')}</TableCell>
-                <TableCell>{format(reservation.endTime, 'HH:mm')}</TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {renderStatusBadge(reservation.status, reservation.bookingStatus)}
-                  </div>
+            {displayReservations.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9} className="h-32 text-center text-sm text-muted-foreground">
+                  この日の予約はありません。
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              displayReservations.map((reservation) => (
+                <TableRow
+                  key={reservation.id}
+                  onClick={() => onOpenReservation && onOpenReservation(reservation)}
+                  className="cursor-pointer hover:bg-gray-50"
+                >
+                  <TableCell className="whitespace-nowrap">
+                    <div className="w-24 rounded bg-muted p-1 text-center font-mono text-xs text-muted-foreground">
+                      {reservation.id.slice(0, 10)}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div>{reservation.customerName} 様</div>
+                    {reservation.designation === 'new' && (
+                      <div className="mt-1 text-sm text-gray-500">[新規指名]</div>
+                    )}
+                    <div className="mt-1 text-sm text-gray-500">{reservation.location}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span>{format(reservation.startTime, 'yyyy-MM-dd')}</span>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {format(reservation.startTime, 'HH:mm')}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span>{reservation.staff || 'キャスト未設定'}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>{`${reservation.course}`}</TableCell>
+                  <TableCell>{format(reservation.startTime, 'HH:mm')}</TableCell>
+                  <TableCell>{format(reservation.endTime, 'HH:mm')}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {renderStatusBadge(reservation.status, reservation.bookingStatus)}
+                    </div>
+                  </TableCell>
+                  <TableCell>{renderCardPaymentBadge(reservation)}</TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>

@@ -36,16 +36,10 @@ import { CastLineRegistrationPanel } from '@/components/cast/cast-line-registrat
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useStore } from '@/contexts/store-context'
 
-const CAST_MANAGE_TABS = new Set([
-  'overview',
-  'edit',
-  'sales',
-  'payment',
-  'settlement',
-  'performance',
-])
+const CAST_MANAGE_TABS = new Set(['overview', 'edit', 'sales', 'settlement', 'performance'])
 
 function resolveCastManageTab(tab: string | null): string {
+  if (tab === 'payment') return 'settlement'
   return tab && CAST_MANAGE_TABS.has(tab) ? tab : 'overview'
 }
 
@@ -256,13 +250,9 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
                     <DollarSign className="mr-2 h-4 w-4" />
                     売上管理
                   </TabsTrigger>
-                  <TabsTrigger value="payment" className="data-[state=active]:bg-emerald-50">
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    入金履歴
-                  </TabsTrigger>
                   <TabsTrigger value="settlement" className="data-[state=active]:bg-emerald-50">
                     <Calculator className="mr-2 h-4 w-4" />
-                    精算状況
+                    精算
                   </TabsTrigger>
                   <TabsTrigger value="performance" className="data-[state=active]:bg-emerald-50">
                     <BarChart3 className="mr-2 h-4 w-4" />
@@ -323,16 +313,13 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
                   <SalesManagementTab castId={cast.id} castName={cast.name} />
                 </TabsContent>
 
-                <TabsContent value="payment" className="space-y-6">
-                  <PaymentHistoryTab castId={cast.id} storeId={currentStore.id} />
-                </TabsContent>
-
                 <TabsContent value="settlement" className="space-y-6">
                   <SettlementStatusTab
                     castId={cast.id}
                     castName={cast.name}
                     storeId={currentStore.id}
                   />
+                  <PaymentHistoryTab castId={cast.id} storeId={currentStore.id} />
                 </TabsContent>
 
                 <TabsContent value="performance" className="space-y-6">

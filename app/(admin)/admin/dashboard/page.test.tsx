@@ -213,13 +213,17 @@ describe('DashboardPage field operations', () => {
       'href',
       '/admin/analytics/daily-report'
     )
-    expect(screen.getByRole('link', { name: '入金処理を開く' })).toHaveAttribute(
-      'href',
-      '/admin/analytics/payment-processing'
-    )
-    expect(screen.getByRole('link', { name: '入金精算処理を開く' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: '精算を開く' })).toHaveAttribute(
       'href',
       '/admin/analytics/settlement-processing'
+    )
+    expect(screen.getByRole('link', { name: '予約表を開く' })).toHaveAttribute(
+      'href',
+      '/admin/reservation'
+    )
+    expect(screen.getByRole('link', { name: '予約一覧を開く' })).toHaveAttribute(
+      'href',
+      '/admin/reservation-list'
     )
     expect(mocks.getWeeklySchedule).toHaveBeenCalledWith(
       expect.objectContaining({ storeId: 'ikebukuro', castFilter: 'all' })
@@ -233,6 +237,23 @@ describe('DashboardPage field operations', () => {
         endDate: expect.any(String),
       })
     )
+  })
+
+  it('is an operations home instead of an analytics dump', async () => {
+    render(<DashboardPage />)
+
+    expect(await screen.findByRole('heading', { name: '今日の状況' })).toBeInTheDocument()
+    expect(screen.getByTestId('today-ops-summary')).toHaveTextContent('本日の予約')
+    expect(screen.getByRole('heading', { name: '直近の予約' })).toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: '今週' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: '今月' })).not.toBeInTheDocument()
+    expect(screen.queryByText('売上推移')).not.toBeInTheDocument()
+    expect(screen.queryByText('予約ステータス分布')).not.toBeInTheDocument()
+    expect(screen.queryByText('時間帯別予約状況')).not.toBeInTheDocument()
+    expect(screen.queryByText('詳細分析')).not.toBeInTheDocument()
+    expect(screen.queryByText('新規予約')).not.toBeInTheDocument()
+    expect(screen.queryByText('キャンセル率')).not.toBeInTheDocument()
+    expect(screen.queryByText('平均単価')).not.toBeInTheDocument()
   })
 
   it('separates reservation creation from customer detail lookup', async () => {

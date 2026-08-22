@@ -17,17 +17,12 @@ const navigation = [
     icon: Calendar,
   },
   {
-    name: '日報',
+    name: '当日売上',
     href: '/admin/analytics/daily-report',
     icon: CalendarDays,
   },
   {
-    name: '入金処理',
-    href: '/admin/analytics/payment-processing',
-    icon: BarChart3,
-  },
-  {
-    name: '入金精算処理',
+    name: '精算',
     href: '/admin/analytics/settlement-processing',
     icon: BarChart3,
   },
@@ -92,7 +87,7 @@ export function AnalyticsLayout() {
   const pathname = usePathname()
 
   return (
-    <nav className="sticky top-[83px] h-[calc(100vh-83px)] w-64 flex-shrink-0 overflow-y-auto border-r bg-gray-100">
+    <nav className="h-full w-64 shrink-0 overflow-y-auto border-r bg-muted/40">
       <ul className="space-y-2 p-4">
         {navigation.map((item) => (
           <li key={item.name}>

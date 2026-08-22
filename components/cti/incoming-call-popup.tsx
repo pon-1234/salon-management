@@ -1,6 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+/**
+ * @design_doc   docs/SYSTEM_AUDIT_2026-07-26.md A-4
+ * @related_to   CTIProvider InfiniTalk incoming overlay
+ * @known_issues Visit counts remain uncomputed on this overlay
+ */
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -13,6 +17,7 @@ import { SafeImage } from '@/components/ui/safe-image'
 interface IncomingCallPopupProps {
   isOpen: boolean
   phoneNumber: string
+  calledNumber?: string | null
   customer?: Customer | null
   onViewDetails: () => void
   onClose: () => void
@@ -21,6 +26,7 @@ interface IncomingCallPopupProps {
 export function IncomingCallPopup({
   isOpen,
   phoneNumber,
+  calledNumber,
   customer,
   onViewDetails,
   onClose,
@@ -38,6 +44,9 @@ export function IncomingCallPopup({
               <span className="text-lg font-semibold text-emerald-600">着信中</span>
             </div>
             <div className="font-mono text-2xl font-bold">{phoneNumber}</div>
+            {calledNumber ? (
+              <div className="text-sm text-gray-500">着信先 {calledNumber}</div>
+            ) : null}
           </div>
 
           {/* Customer Information */}

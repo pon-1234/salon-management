@@ -128,7 +128,7 @@ export default function ChatPage() {
     <>
       <div
         data-testid="admin-chat-workspace"
-        className="flex h-[calc(100dvh-5.5rem)] min-h-0 flex-col overflow-hidden"
+        className="flex h-full min-h-0 flex-col overflow-hidden"
       >
         <div className="flex shrink-0 flex-wrap gap-2 border-b bg-white px-4 py-2">
           <Button

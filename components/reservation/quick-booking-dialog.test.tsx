@@ -207,7 +207,7 @@ function dialogElement({
 async function waitForOnePageBookingForm() {
   await waitFor(() => expect(screen.getAllByText(/テストコース 60分/)).not.toHaveLength(0))
   expect(await screen.findByText('オプション選択')).toBeInTheDocument()
-  expect(await screen.findByText('予約内容確認')).toBeInTheDocument()
+  expect(await screen.findByText('料金内訳')).toBeInTheDocument()
 }
 
 function getPostedReservation(fetchMock: ReturnType<typeof createFetchMock>) {
@@ -372,6 +372,31 @@ describe('QuickBookingDialog', () => {
     expect(getPostedReservation(fetchMock)).toEqual(expect.objectContaining({ status: 'pending' }))
   })
 
+  it('keeps store memo and points collapsed until additional fields are opened', async () => {
+    render(dialogElement())
+    await waitForOnePageBookingForm()
+
+    expect(
+      screen.queryByPlaceholderText('店舗用メモがあれば記載してください')
+    ).not.toBeInTheDocument()
+    expect(screen.queryByRole('switch', { name: 'ポイントを利用' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '追加項目（ポイント・店舗メモ）' }))
+
+    expect(screen.getByPlaceholderText('店舗用メモがあれば記載してください')).toBeInTheDocument()
+    expect(screen.getByRole('switch', { name: 'ポイントを利用' })).toBeInTheDocument()
+  })
+
+  it('closes an unsaved card-payment draft from the footer without extra steps', async () => {
+    const onOpenChange = vi.fn()
+    render(dialogElement({ onOpenChange }))
+    await waitForOnePageBookingForm()
+
+    fireEvent.click(screen.getByRole('button', { name: '閉じる' }))
+
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
   it('requires and posts a non-sensitive management reference for card payment', async () => {
     const user = userEvent.setup()
     const fetchMock = createFetchMock()
@@ -387,7 +412,7 @@ describe('QuickBookingDialog', () => {
     })
     await user.click(paymentMethod)
     await user.click(await screen.findByRole('option', { name: 'クレジットカード' }))
-    const referenceInput = screen.getByLabelText('カード管理番号')
+    const referenceInput = screen.getByLabelText('カード決済管理番号')
     await user.type(referenceInput, 'IK-2026-00421')
     await user.click(screen.getByRole('button', { name: '予約を確定' }))
 
@@ -417,6 +442,7 @@ describe('QuickBookingDialog', () => {
     fireEvent.change(dateInput!, { target: { value: '2099-05-06' } })
     expect(dateInput).toHaveValue('2099-05-06')
     await waitForOnePageBookingForm()
+    await user.click(screen.getByRole('button', { name: '追加項目（ポイント・店舗メモ）' }))
     await user.type(
       screen.getByPlaceholderText('店舗用メモがあれば記載してください'),
       '前回入力したメモ'
@@ -433,6 +459,7 @@ describe('QuickBookingDialog', () => {
       )
     })
     await waitForOnePageBookingForm()
+    await user.click(screen.getByRole('button', { name: '追加項目（ポイント・店舗メモ）' }))
     expect(screen.getByPlaceholderText('店舗用メモがあれば記載してください')).toHaveValue('')
     expect(screen.getByRole('switch', { name: '仮予約として保存' })).not.toBeChecked()
   })
@@ -443,6 +470,7 @@ describe('QuickBookingDialog', () => {
     const { rerender } = render(dialogElement())
 
     await waitForOnePageBookingForm()
+    await user.click(screen.getByRole('button', { name: '追加項目（ポイント・店舗メモ）' }))
     const notes = screen.getByPlaceholderText('店舗用メモがあれば記載してください')
     await user.type(notes, '入力途中のメモ')
     expect(notes).toHaveValue('入力途中のメモ')

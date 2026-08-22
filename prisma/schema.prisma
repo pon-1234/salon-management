@@ -101,6 +101,10 @@ model Cast {
   castOptionSettings       CastOptionSetting[]
   lineUserId               String?                        @unique
   welfareExpenseRate       Decimal?
+  mediaComment             String?
+  mediaCommentSource       String?                        @default("manual")
+  mediaSyncExcluded        Boolean                        @default(false)
+  scheduleTemplates        Json                           @default("[]")
   loginEmail               String?                        @unique
   passwordHash             String?
   storeId                  String
@@ -163,6 +167,7 @@ model Reservation {
   welfareExpense      Int                            @default(0)
   paymentMethod       String?                        @default("現金")
   paymentReference    String?
+  creditCardFee       Int                            @default(0)
   marketingChannel    String?
   storeRevenue        Int?
   staffRevenue        Int?
@@ -214,7 +219,7 @@ model SettlementPayment {
   castId       String
   storeId      String
   amount       Int
-  method       String                         @default("現金精算")
+  method       String                         @default("現金")
   handledBy    String
   paidAt       DateTime                       @default(now())
   notes        String?
@@ -252,13 +257,14 @@ model CastLedgerEntry {
 }
 
 model SettlementPaymentReservation {
-  paymentId     String
-  reservationId String
-  payment       SettlementPayment @relation(fields: [paymentId], references: [id])
-  reservation   Reservation       @relation(fields: [reservationId], references: [id])
+  paymentId       String
+  reservationId   String
+  allocatedAmount Int               @default(0)
+  payment         SettlementPayment @relation(fields: [paymentId], references: [id])
+  reservation     Reservation       @relation(fields: [reservationId], references: [id])
 
   @@id([paymentId, reservationId])
-  @@unique([reservationId], map: "SettlementPaymentReservation_reservationId_key")
+  @@index([reservationId])
 }
 
 model CoursePrice {
@@ -584,6 +590,8 @@ model StoreSettings {
   lastOrder             String
   parkingInfo           String?
   welfareExpenseRate    Decimal  @default(10)
+  creditCardFeeRate     Decimal  @default(10)
+  mediaCommentOverwrite Boolean  @default(false)
   hourlyGuaranteeAmount Int      @default(0)
   marketingChannels     String[] @default(["店リピート", "電話", "紹介", "SNS", "WEB", "Heaven"])
   pointEarnRate         Decimal  @default(1.0)

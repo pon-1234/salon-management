@@ -40,6 +40,8 @@ export default function StoreInfoPage() {
     lastOrder: '',
     parkingInfo: '',
     welfareExpenseRate: '10',
+    creditCardFeeRate: '10',
+    mediaCommentOverwrite: false,
     marketingChannelsInput: DEFAULT_MARKETING_CHANNEL_INPUT,
   })
   const [loading, setLoading] = useState(true)
@@ -59,6 +61,8 @@ export default function StoreInfoPage() {
           settings?.welfareExpenseRate !== undefined
             ? String(Number(settings.welfareExpenseRate))
             : prev.welfareExpenseRate,
+        creditCardFeeRate: Number(settings?.creditCardFeeRate) === 0 ? '0' : '10',
+        mediaCommentOverwrite: Boolean(settings?.mediaCommentOverwrite),
         marketingChannelsInput:
           Array.isArray(settings?.marketingChannels) && settings.marketingChannels.length > 0
             ? settings.marketingChannels.join('\n')
@@ -96,6 +100,7 @@ export default function StoreInfoPage() {
       const payload = {
         ...restForm,
         welfareExpenseRate: Number(formData.welfareExpenseRate || 0),
+        creditCardFeeRate: Number(formData.creditCardFeeRate) === 0 ? 0 : 10,
         marketingChannels:
           marketingChannels.length > 0 ? marketingChannels : [...MARKETING_CHANNELS],
       }
@@ -253,6 +258,50 @@ export default function StoreInfoPage() {
                   />
                   <p className="text-xs text-muted-foreground">
                     コース料金に対して自動計上される厚生費（店舗売上側で控除される分）の割合です。未入力の場合は10%が適用されます。
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Store className="h-5 w-5 text-emerald-600" />
+                  クレジット手数料
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="creditCardFeeRate">クレジット決済手数料</Label>
+                  <select
+                    id="creditCardFeeRate"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={formData.creditCardFeeRate}
+                    onChange={(e) => handleInputChange('creditCardFeeRate', e.target.value)}
+                  >
+                    <option value="10">10%（通常）</option>
+                    <option value="0">0%（キャンペーン）</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground">
+                    全顧客・全予約共通です。0%にするとクレジットカード支払いでも手数料を加算しません。
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={formData.mediaCommentOverwrite}
+                      onChange={(event) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          mediaCommentOverwrite: event.target.checked,
+                        }))
+                      }
+                    />
+                    媒体コメント取り込み時に手入力を上書きする
+                  </label>
+                  <p className="text-xs text-muted-foreground">
+                    オフのときは、同期対象外のキャストと手入力コメントは外部データで消しません。
                   </p>
                 </div>
               </CardContent>
