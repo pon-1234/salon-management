@@ -1,6 +1,6 @@
 /**
  * @design_doc   Time slot picker component with availability checking
- * @related_to   quick-booking-dialog.tsx, use-availability.ts
+ * @related_to   quick-booking-dialog.tsx, use-availability.ts, and time-boundary.ts
  * @known_issues None currently
  */
 'use client'
@@ -13,6 +13,7 @@ import { Clock, Loader2, AlertCircle } from 'lucide-react'
 import { useAvailability } from '@/hooks/use-availability'
 import { cn } from '@/lib/utils'
 import { BusinessHoursRange } from '@/lib/settings/business-hours'
+import { RESERVATION_START_STEP_MINUTES } from '@/lib/reservation/time-boundary'
 
 interface TimeSlotPickerProps {
   castId: string
@@ -35,7 +36,7 @@ export function TimeSlotPicker({
   businessHours,
   windowStart,
   windowEnd,
-  stepMinutes = 30,
+  stepMinutes = RESERVATION_START_STEP_MINUTES,
 }: TimeSlotPickerProps) {
   const { loading, error, availableSlots, getAvailableSlots, generateTimeSlots, isSlotAvailable } =
     useAvailability()

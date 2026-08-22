@@ -1,25 +1,60 @@
 /**
  * @design_doc   docs/PREVIEW_UAT_CHECKLIST.md
- * @related_to   DailyReportUseCases and the store-scoped daily-report API
- * @known_issues None
+ * @related_to   DailyReportUseCases, DailySalesCharts, and the store-scoped daily-report API
+ * @known_issues Chart data still comes from the separate daily-sales API
  */
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { DailyReport } from '@/lib/report/types'
 import { DailyReportTable } from '@/components/analytics/daily-report-table'
+import { DailySalesCharts } from '@/components/analytics/daily-sales-charts'
 import { addDays, format, isValid, parseISO } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { RefreshCw } from 'lucide-react'
 import { useStore } from '@/contexts/store-context'
 import { PageLoading } from '@/components/ui/page-loading'
+import { DailySalesUseCases } from '@/lib/daily-sales/usecases'
+import { DailySalesRepositoryImpl } from '@/lib/daily-sales/repository-impl'
 
 export function DailyReportPageClient() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [report, setReport] = useState<DailyReport | null>(null)
+  const [hourlyData, setHourlyData] = useState<Array<{ hour: string; sales: number }>>([])
+  const [weeklyData, setWeeklyData] = useState<Array<{ day: string; sales: number }>>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { currentStore } = useStore()
+
+  const dailySalesUseCases = useMemo(() => {
+    const repository = new DailySalesRepositoryImpl(currentStore.id)
+    return new DailySalesUseCases(repository)
+  }, [currentStore.id])
+
+  const fetchCharts = useCallback(
+    async (date: Date) => {
+      try {
+        const data = await dailySalesUseCases.getDailySales(date)
+        setHourlyData(
+          data.hourlyBreakdown?.map((entry) => ({
+            hour: entry.hour,
+            sales: entry.sales,
+          })) ?? []
+        )
+        setWeeklyData(
+          data.weeklyTrend?.map((entry) => ({
+            day: entry.date,
+            sales: entry.sales,
+          })) ?? []
+        )
+      } catch (chartError) {
+        console.error('Error fetching daily sales charts:', chartError)
+        setHourlyData([])
+        setWeeklyData([])
+      }
+    },
+    [dailySalesUseCases]
+  )
 
   const fetchReport = useCallback(
     async (date: Date) => {
@@ -48,6 +83,7 @@ export function DailyReportPageClient() {
         }
         const dailyReport = (await response.json()) as DailyReport
         setReport(dailyReport)
+        await fetchCharts(date)
       } catch (error) {
         console.error('Error fetching daily report:', error)
         setReport(null)
@@ -56,7 +92,7 @@ export function DailyReportPageClient() {
         setIsLoading(false)
       }
     },
-    [currentStore.id]
+    [currentStore.id, fetchCharts]
   )
 
   useEffect(() => {
@@ -126,7 +162,10 @@ export function DailyReportPageClient() {
           {error}
         </div>
       ) : report ? (
-        <DailyReportTable report={report} />
+        <div className="space-y-6">
+          <DailyReportTable report={report} />
+          <DailySalesCharts hourlyData={hourlyData} weeklyData={weeklyData} />
+        </div>
       ) : (
         <p className="text-sm text-muted-foreground">表示できる日報がありません。</p>
       )}

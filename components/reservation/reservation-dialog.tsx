@@ -102,6 +102,7 @@ import { CastTimelineModal } from '@/components/reservation/cast-timeline-modal'
 import {
   isReservationStartBoundary,
   RESERVATION_START_STEP_SECONDS,
+  reservationStartMinuteHint,
 } from '@/lib/reservation/time-boundary'
 import {
   DiscardReservationEditDialog,
@@ -1403,7 +1404,7 @@ export function ReservationDialog({
       formState.startTime !== format(reservation.startTime, 'HH:mm')
 
     if (startInputChanged && !isReservationStartBoundary(enteredStart)) {
-      setValidationError('開始時間の分は00分または30分を指定してください。')
+      setValidationError(reservationStartMinuteHint())
       return
     }
 

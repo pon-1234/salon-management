@@ -73,9 +73,12 @@ describe('CastTimelineModal accessibility', () => {
     ).toBe(false)
   })
 
-  it('starts selectable timeline slots at the next 30-minute boundary', () => {
+  it('starts selectable timeline slots at the next reservation start boundary', () => {
     const slots = buildTimelineSlots(legacyOffsetSchedule)
 
-    expect(slots.map((slot) => slot.startIso)).toEqual(['2099-01-20T02:30:00.000Z'])
+    expect(slots.map((slot) => slot.startIso)).toEqual([
+      '2099-01-20T02:10:00.000Z',
+      '2099-01-20T02:40:00.000Z',
+    ])
   })
 })

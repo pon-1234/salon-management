@@ -8,11 +8,22 @@
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
-import { ChevronDown, Loader2, PiggyBank, Receipt } from 'lucide-react'
+import { ChevronDown, Loader2, PiggyBank, Plus, Receipt } from 'lucide-react'
 import type { CastSettlementsData } from '@/lib/cast-portal/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  PaymentRecordForm,
+  type PaymentRecordSubmitData,
+} from '@/components/cast/payment-record-form'
 import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import { cn } from '@/lib/utils'
 
@@ -20,6 +31,7 @@ interface SettlementStatusTabProps {
   castId: string
   castName: string
   storeId: string
+  onSettled?: () => void
 }
 
 const settlementStatusStyles = {
@@ -34,11 +46,14 @@ const settlementStatusLabels = {
   settled: '精算済み',
 } as const
 
-export function SettlementStatusTab({ castId, storeId }: SettlementStatusTabProps) {
+export function SettlementStatusTab({ castId, storeId, onSettled }: SettlementStatusTabProps) {
   const [data, setData] = useState<CastSettlementsData | null>(null)
   const [isPending, startTransition] = useTransition()
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({})
   const [error, setError] = useState<string | null>(null)
+  const [isSettleDialogOpen, setIsSettleDialogOpen] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
 
   const fetchData = useCallback(async () => {
     const response = await fetch(
@@ -113,6 +128,57 @@ export function SettlementStatusTab({ castId, storeId }: SettlementStatusTabProp
     }
   }, [data])
 
+  const pendingReservations = useMemo(() => {
+    if (!data) return []
+    return data.days.flatMap((day) =>
+      day.records.filter((record) => {
+        if (record.status !== 'completed') return false
+        const status = record.settlementStatus ?? 'pending'
+        const unpaid = record.unpaidAmount ?? record.staffRevenue
+        return status !== 'settled' && unpaid > 0
+      })
+    )
+  }, [data])
+
+  const handleAddPayment = async (payload: PaymentRecordSubmitData) => {
+    setSaveError(null)
+    setSaving(true)
+    try {
+      const response = await fetch(
+        buildStoreScopedEndpoint('/api/admin/cast/settlements', storeId),
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            castId,
+            storeId,
+            amount: payload.amount,
+            method: payload.method,
+            handledBy: payload.handledBy,
+            paidAt: payload.paidAt,
+            notes: payload.notes,
+            reservationIds: payload.reservationIds,
+          }),
+        }
+      )
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}))
+        throw new Error(
+          typeof body.error === 'string' ? body.error : '入金記録の保存に失敗しました'
+        )
+      }
+      const payloadData = await fetchData()
+      setData(payloadData)
+      setIsSettleDialogOpen(false)
+      onSettled?.()
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : '保存に失敗しました')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (!data) {
     return (
       <Card>
@@ -139,25 +205,62 @@ export function SettlementStatusTab({ castId, storeId }: SettlementStatusTabProp
             当月の精算状況と日別の内訳を確認できます。
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            startTransition(async () => {
-              setError(null)
-              try {
-                const payload = await fetchData()
-                setData(payload)
-              } catch (err) {
-                setError(err instanceof Error ? err.message : '精算情報の取得に失敗しました。')
-              }
-            })
-          }
-          disabled={isPending}
-        >
-          {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          更新
-        </Button>
+        <div className="flex items-center gap-2">
+          <Dialog
+            open={isSettleDialogOpen}
+            onOpenChange={(open) => {
+              setIsSettleDialogOpen(open)
+              if (!open) setSaveError(null)
+            }}
+          >
+            <Button type="button" onClick={() => setIsSettleDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              精算する
+            </Button>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>精算する</DialogTitle>
+                <DialogDescription>
+                  対象予約は初期状態で全件選択されます。金額を変えると古い予約から充当します。
+                </DialogDescription>
+              </DialogHeader>
+              {saveError ? (
+                <div
+                  role="alert"
+                  className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+                >
+                  {saveError}
+                </div>
+              ) : null}
+              {isSettleDialogOpen ? (
+                <PaymentRecordForm
+                  onSubmit={handleAddPayment}
+                  reservations={pendingReservations}
+                  isSubmitting={saving}
+                />
+              ) : null}
+            </DialogContent>
+          </Dialog>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              startTransition(async () => {
+                setError(null)
+                try {
+                  const payload = await fetchData()
+                  setData(payload)
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : '精算情報の取得に失敗しました。')
+                }
+              })
+            }
+            disabled={isPending}
+          >
+            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            更新
+          </Button>
+        </div>
       </div>
 
       {error ? (

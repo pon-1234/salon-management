@@ -48,8 +48,8 @@ describe('normalizeDesignationShares', () => {
 
 describe('findDesignationFeeByName', () => {
   it('finds exact default fee names and does not trim or partially match', () => {
-    expect(findDesignationFeeByName('本指名')?.id).toBe('repeat-designation')
-    expect(findDesignationFeeByName(' 本指名')).toBeUndefined()
+    expect(findDesignationFeeByName('リピート指名')?.id).toBe('repeat-designation')
+    expect(findDesignationFeeByName(' リピート指名')).toBeUndefined()
     expect(findDesignationFeeByName('指名')).toBeUndefined()
   })
 

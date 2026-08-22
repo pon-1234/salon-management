@@ -41,6 +41,7 @@ function mapDesignationFee(payload: any): DesignationFee {
   return {
     ...payload,
     description: payload.description ?? null,
+    kind: payload.kind,
     createdAt: payload.createdAt ? new Date(payload.createdAt) : undefined,
     updatedAt: payload.updatedAt ? new Date(payload.updatedAt) : undefined,
   }

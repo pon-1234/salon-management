@@ -2,15 +2,12 @@
 
 /**
  * @design_doc   ui-improvement-instructions.md U-6 admin navigation
- * @related_to   StoreSelector, NotificationList, and the daily-report/analytics routes
+ * @related_to   StoreSelector, NotificationList, CustomerSelectionDialog, and CastListPage search
  * @known_issues Full breadcrumb rollout is left for later page-by-page adoption
  */
 import {
   Home,
   Search,
-  ChevronDown,
-  Check,
-  BarChart2,
   Bell,
   MessageSquare,
   Calendar,
@@ -25,14 +22,6 @@ import {
   Star,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-  CommandList,
-  CommandInput,
-} from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { NotificationList } from '@/components/notification-list'
 import { NotificationDetailDialog } from '@/components/notification-detail-dialog'
@@ -41,16 +30,12 @@ import { useState, useCallback, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
-import { Cast } from '@/lib/cast/types'
-import { normalizeCastList } from '@/lib/cast/mapper'
 import { useNotifications } from '@/contexts/notification-context'
 import type { AdminNotification, ReservationNotification } from '@/contexts/notification-context'
 import { StoreSelector } from '@/components/store/store-selector'
 import { useSession, signOut } from 'next-auth/react'
 import { CustomerSelectionDialog } from '@/components/customer/customer-selection-dialog'
-import { HeaderPhoneSearch } from '@/components/header-phone-search'
 import { hasPermission } from '@/lib/auth/permissions'
-import { useStore } from '@/contexts/store-context'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 
 const adminNavigationLinks = [
@@ -107,14 +92,10 @@ function HeaderNavLink({
 
 export function Header() {
   const { data: session } = useSession()
-  const { currentStore } = useStore()
   const canViewAnalytics = hasPermission(session?.user?.permissions ?? [], 'analytics:read')
   const canReadCustomers = hasPermission(session?.user?.permissions ?? [], 'customer:read')
   const canCreateReservation =
     canReadCustomers && hasPermission(session?.user?.permissions ?? [], 'reservation:create')
-  const [castList, setCastList] = useState<Cast[]>([])
-  const [open, setOpen] = useState(false)
-  const [value, setValue] = useState('')
   const [notificationOpen, setNotificationOpen] = useState(false)
   const { notifications, markAsRead, markAsUnread, unreadCount } = useNotifications()
   const router = useRouter()
@@ -124,46 +105,6 @@ export function Header() {
   )
   const [showCustomerSelection, setShowCustomerSelection] = useState(false)
   const [showCustomerLookup, setShowCustomerLookup] = useState(false)
-
-  useEffect(() => {
-    const controller = new AbortController()
-    let active = true
-    setCastList([])
-    setValue('')
-
-    const loadCasts = async () => {
-      try {
-        const response = await fetch(
-          `/api/cast?storeId=${encodeURIComponent(currentStore.id)}&limit=100`,
-          {
-            cache: 'no-store',
-            credentials: 'include',
-            signal: controller.signal,
-          }
-        )
-        if (!response.ok) {
-          throw new Error(`Failed to fetch casts: ${response.status}`)
-        }
-        const payload = await response.json()
-        if (!active) {
-          return
-        }
-        setCastList(normalizeCastList(payload))
-      } catch (error) {
-        if (!active) {
-          return
-        }
-        console.error('Failed to load casts:', error)
-      }
-    }
-
-    void loadCasts()
-
-    return () => {
-      active = false
-      controller.abort()
-    }
-  }, [currentStore.id])
 
   const handleNotificationSelect = useCallback(
     (notification: AdminNotification) => {
@@ -274,23 +215,7 @@ export function Header() {
                     )}
                   >
                     <CalendarDays className="h-4 w-4" />
-                    日報 / 当日売上
-                  </Link>
-                  <Link
-                    href="/admin/analytics/daily-sales"
-                    aria-current={
-                      isAdminNavActive(pathname, '/admin/analytics/daily-sales')
-                        ? 'page'
-                        : undefined
-                    }
-                    className={cn(
-                      'flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-muted',
-                      isAdminNavActive(pathname, '/admin/analytics/daily-sales') &&
-                        'bg-emerald-50 font-medium text-emerald-800'
-                    )}
-                  >
-                    <BarChart2 className="h-4 w-4" />
-                    集計
+                    当日売上
                   </Link>
                 </>
               )}
@@ -327,8 +252,6 @@ export function Header() {
           </Button>
         ) : null}
 
-        {canReadCustomers ? <HeaderPhoneSearch /> : null}
-
         <HeaderNavLink
           href="/admin/reservation"
           label="予約表"
@@ -355,65 +278,12 @@ export function Header() {
           pathname={pathname}
         />
 
-        <div className="hidden xl:block">
-          <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={open}
-                className="w-[160px] justify-between"
-              >
-                {value
-                  ? castList.find((cast) => cast.id === value)?.name || 'キャスト検索'
-                  : 'キャスト検索'}
-                <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[240px] p-0">
-              <Command>
-                <CommandInput placeholder="キャストを検索..." className="h-9" />
-                <CommandList>
-                  <CommandEmpty>キャストが見つかりません。</CommandEmpty>
-                  <CommandGroup>
-                    {castList.map((cast) => (
-                      <CommandItem
-                        key={cast.id}
-                        value={cast.id}
-                        onSelect={(currentValue) => {
-                          setValue(currentValue === value ? '' : currentValue)
-                          setOpen(false)
-                          router.push(`/admin/cast/manage/${cast.id}`)
-                        }}
-                      >
-                        {cast.name}
-                        <Check
-                          className={cn(
-                            'ml-auto h-4 w-4',
-                            value === cast.id ? 'opacity-100' : 'opacity-0'
-                          )}
-                        />
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-        </div>
-
         {canViewAnalytics && (
           <>
             <HeaderNavLink
               href="/admin/analytics/daily-report"
               label="当日売上"
               icon={CalendarDays}
-              pathname={pathname}
-            />
-            <HeaderNavLink
-              href="/admin/analytics/daily-sales"
-              label="集計"
-              icon={BarChart2}
               pathname={pathname}
             />
           </>

@@ -3,21 +3,7 @@
  * @related_to   Timeline rank badges, cast performance designation categories
  * @known_issues Legacy media-to-princess mapping remains unclassified
  */
-
-const REGULAR_DESIGNATIONS = new Set(['regular', '本指名', 'repeat-designation'])
-const PANEL_DESIGNATIONS = new Set([
-  'panel',
-  'special',
-  'free',
-  'パネル指名',
-  '特別指名',
-  'おすすめ指名',
-  'フリー指名',
-  'panel-designation',
-  'special-designation',
-  'recommend-designation',
-  'free-designation',
-])
+import { isPanelDesignation, isRegularDesignation } from '@/lib/designation/kind'
 
 export type CastRankSource = {
   castId: string | null
@@ -28,14 +14,6 @@ export type CastRankSource = {
 export type CastRank = {
   regularDesignationRank: number
   panelDesignationRank: number
-}
-
-function isRegular(value: string | null | undefined): boolean {
-  return REGULAR_DESIGNATIONS.has(value?.trim() ?? '')
-}
-
-function isPanel(value: string | null | undefined): boolean {
-  return PANEL_DESIGNATIONS.has(value?.trim() ?? '')
 }
 
 function rankByCount(
@@ -58,8 +36,8 @@ export function computeStoreCastRanks(reservations: CastRankSource[]): Map<strin
       regular: 0,
       panel: 0,
     }
-    if (isRegular(reservation.designationType)) current.regular += 1
-    if (isPanel(reservation.designationType)) current.panel += 1
+    if (isRegularDesignation(reservation.designationType)) current.regular += 1
+    if (isPanelDesignation(reservation.designationType)) current.panel += 1
     totals.set(reservation.castId, current)
   }
 

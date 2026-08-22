@@ -72,15 +72,31 @@ describe('CustomerSelectionDialog', () => {
     searchByPhone.mockResolvedValue([])
   })
 
-  it('searches the server for a customer name that is not on the first page', async () => {
+  it('does not load or list customers until a search finishes', async () => {
+    getAll.mockResolvedValue([customer])
+    search.mockResolvedValue([customer])
+
     render(<CustomerSelectionDialog open onOpenChange={vi.fn()} onSelectCustomer={vi.fn()} />)
 
-    const input = await screen.findByPlaceholderText(
-      '名前、電話番号、メールアドレス、会員番号で検索...'
+    expect(
+      await screen.findByPlaceholderText('名前、電話番号、メールアドレス、会員番号で検索...')
+    ).toBeInTheDocument()
+    expect(getAll).not.toHaveBeenCalled()
+    expect(search).not.toHaveBeenCalled()
+    expect(searchByPhone).not.toHaveBeenCalled()
+    expect(screen.queryByText('[確認用] 旧実名顧客')).not.toBeInTheDocument()
+    expect(screen.queryByText('検索条件に一致する顧客が見つかりません')).not.toBeInTheDocument()
+    expect(
+      screen.getByText('名前、電話番号、メールアドレス、会員番号で検索すると顧客が表示されます。')
+    ).toBeInTheDocument()
+
+    fireEvent.change(
+      screen.getByPlaceholderText('名前、電話番号、メールアドレス、会員番号で検索...'),
+      { target: { value: '旧実名顧客' } }
     )
-    fireEvent.change(input, { target: { value: '旧実名顧客' } })
 
     await waitFor(() => expect(search).toHaveBeenCalledWith('旧実名顧客'))
+    expect(getAll).not.toHaveBeenCalled()
     expect(await screen.findByText('[確認用] 旧実名顧客')).toBeInTheDocument()
     expect(screen.getByText('090-1234-5678')).toBeInTheDocument()
   })
@@ -118,17 +134,21 @@ describe('CustomerSelectionDialog', () => {
   })
 
   it('opens customer details when the customer card is clicked in lookup mode', async () => {
-    getAll.mockResolvedValueOnce([customer])
+    search.mockResolvedValueOnce([customer])
 
     render(<CustomerSelectionDialog open mode="lookup" onOpenChange={vi.fn()} />)
 
+    fireEvent.change(
+      await screen.findByPlaceholderText('名前、電話番号、メールアドレス、会員番号で検索...'),
+      { target: { value: '旧実名顧客' } }
+    )
     fireEvent.click(await screen.findByRole('button', { name: /\[確認用\] 旧実名顧客/ }))
 
+    expect(getAll).not.toHaveBeenCalled()
     expect(push).toHaveBeenCalledWith('/admin/customers/legacy-customer-member-1234')
   })
 
   it('clears the prior search and customer selection every time it is reopened', async () => {
-    getAll.mockResolvedValueOnce([customer])
     searchByPhone.mockResolvedValueOnce([customer])
     const onOpenChange = vi.fn()
     const { rerender } = render(
@@ -158,52 +178,62 @@ describe('CustomerSelectionDialog', () => {
     expect(
       await screen.findByPlaceholderText('名前、電話番号、メールアドレス、会員番号で検索...')
     ).toHaveValue('')
+    expect(screen.queryByText('[確認用] 旧実名顧客')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /この顧客で予約を作成/ })).toBeDisabled()
+    expect(getAll).not.toHaveBeenCalled()
   })
 
-  it('discards the old customer list and reloads after the operator changes stores', async () => {
+  it('discards the previous search results after the operator changes stores', async () => {
     const otherStoreCustomer = {
       ...customer,
       id: 'other-store-customer',
       name: '[確認用] 別店舗顧客',
     }
-    getAll.mockResolvedValueOnce([customer]).mockResolvedValueOnce([otherStoreCustomer])
+    search.mockResolvedValueOnce([customer]).mockResolvedValueOnce([otherStoreCustomer])
 
     const { rerender } = render(
       <CustomerSelectionDialog open onOpenChange={vi.fn()} onSelectCustomer={vi.fn()} />
     )
 
+    fireEvent.change(
+      await screen.findByPlaceholderText('名前、電話番号、メールアドレス、会員番号で検索...'),
+      { target: { value: '旧実名顧客' } }
+    )
     expect(await screen.findByText('[確認用] 旧実名顧客')).toBeInTheDocument()
 
     storeState.currentStore = { id: 'other-store', slug: 'other-store' }
     rerender(<CustomerSelectionDialog open onOpenChange={vi.fn()} onSelectCustomer={vi.fn()} />)
 
-    await waitFor(() => expect(getAll).toHaveBeenCalledTimes(2))
+    expect(getAll).not.toHaveBeenCalled()
+    expect(
+      await screen.findByPlaceholderText('名前、電話番号、メールアドレス、会員番号で検索...')
+    ).toHaveValue('')
+    expect(screen.queryByText('[確認用] 旧実名顧客')).not.toBeInTheDocument()
+    expect(screen.queryByText('[確認用] 別店舗顧客')).not.toBeInTheDocument()
+
+    fireEvent.change(
+      screen.getByPlaceholderText('名前、電話番号、メールアドレス、会員番号で検索...'),
+      { target: { value: '別店舗顧客' } }
+    )
     expect(await screen.findByText('[確認用] 別店舗顧客')).toBeInTheDocument()
     expect(screen.queryByText('[確認用] 旧実名顧客')).not.toBeInTheDocument()
   })
 
-  it('shows a retryable error instead of substituting mock customers when loading fails', async () => {
-    getAll.mockRejectedValueOnce(new Error('network unavailable')).mockResolvedValueOnce([])
+  it('does not fetch the customer catalog when the dialog is opened', async () => {
+    getAll.mockRejectedValue(new Error('network unavailable'))
 
     render(<CustomerSelectionDialog open onOpenChange={vi.fn()} />)
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('顧客データを取得できませんでした')
-    expect(screen.queryAllByText('検索中です…')).toHaveLength(0)
-    expect(screen.queryByText('データを読み込めていません')).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'タイムラインを確認する' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'この顧客で予約を作成' })).not.toBeInTheDocument()
-    expect(screen.queryByText(/モックデータ/)).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: '新規顧客を登録' })).not.toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: '再試行' }))
-    await waitFor(() => expect(getAll).toHaveBeenCalledTimes(2))
-    await waitFor(() => expect(screen.queryAllByText('検索中です…')).toHaveLength(0))
+    expect(
+      await screen.findByPlaceholderText('名前、電話番号、メールアドレス、会員番号で検索...')
+    ).toBeInTheDocument()
+    expect(getAll).not.toHaveBeenCalled()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.queryByText('[確認用] 旧実名顧客')).not.toBeInTheDocument()
+    expect(screen.queryByText(/モックデータ/)).not.toBeInTheDocument()
   })
 
   it('shows only a retryable error when server search fails and retries the same query', async () => {
-    getAll.mockResolvedValueOnce([customer])
     search.mockRejectedValueOnce(new Error('search unavailable')).mockResolvedValueOnce([customer])
 
     render(<CustomerSelectionDialog open onOpenChange={vi.fn()} />)
@@ -238,7 +268,7 @@ describe('CustomerSelectionDialog', () => {
     )
     await waitFor(() => expect(searchByPhone).toHaveBeenCalledWith('090-1234-5678'))
 
-    fireEvent.click(screen.getByRole('button', { name: '新規顧客を登録' }))
+    fireEvent.click(await screen.findByRole('button', { name: '新規顧客を登録' }))
 
     expect(push).toHaveBeenCalledWith(
       '/admin/customers/new?returnTo=reservation&phone=09012345678&store=ikebukuro'
@@ -277,7 +307,7 @@ describe('CustomerSelectionDialog', () => {
     const input = await screen.findByPlaceholderText(
       '名前、電話番号、メールアドレス、会員番号で検索...'
     )
-    await waitFor(() => expect(getAll).toHaveBeenCalledTimes(1))
+    expect(getAll).not.toHaveBeenCalled()
     expect(screen.queryByRole('button', { name: '新規顧客を登録' })).not.toBeInTheDocument()
 
     fireEvent.change(input, { target: { value: '該当なし' } })
@@ -370,11 +400,13 @@ describe('CustomerSelectionDialog', () => {
   })
 
   it('hides the timeline shortcut while choosing a customer for an in-progress reservation', async () => {
-    getAll.mockResolvedValueOnce([customer])
-
     render(<CustomerSelectionDialog open onOpenChange={vi.fn()} onSelectCustomer={vi.fn()} />)
 
-    expect(await screen.findByText('[確認用] 旧実名顧客')).toBeInTheDocument()
+    expect(
+      await screen.findByPlaceholderText('名前、電話番号、メールアドレス、会員番号で検索...')
+    ).toBeInTheDocument()
+    expect(getAll).not.toHaveBeenCalled()
+    expect(screen.queryByText('[確認用] 旧実名顧客')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'タイムラインを確認する' })).not.toBeInTheDocument()
   })
 
@@ -386,6 +418,6 @@ describe('CustomerSelectionDialog', () => {
     expect(
       await screen.findByPlaceholderText('名前、電話番号、メールアドレス、会員番号で検索...')
     ).toBeInTheDocument()
-    await waitFor(() => expect(getAll).toHaveBeenCalledTimes(1))
+    expect(getAll).not.toHaveBeenCalled()
   })
 })

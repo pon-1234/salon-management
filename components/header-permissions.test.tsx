@@ -3,7 +3,7 @@
  * @related_to   Header and CustomerSelectionDialog
  * @known_issues None
  */
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { Header } from './header'
@@ -78,15 +78,6 @@ vi.mock('@/components/ui/popover', () => ({
   PopoverContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
 
-vi.mock('@/components/ui/command', () => ({
-  Command: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  CommandEmpty: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  CommandGroup: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  CommandItem: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  CommandList: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  CommandInput: () => <input aria-label="キャストを検索" />,
-}))
-
 vi.mock('@/components/ui/sheet', () => ({
   Sheet: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   SheetTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -100,10 +91,6 @@ describe('Header customer permissions', () => {
     navigationState.pathname = '/admin/dashboard'
     authState.permissions = ['customer:read', 'reservation:create']
     authState.currentStore = { id: 'ikebukuro', slug: 'ikebukuro' }
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => new Promise<Response>(() => {}))
-    )
   })
 
   it('marks the current destination as the active page', () => {
@@ -125,6 +112,8 @@ describe('Header customer permissions', () => {
     expect(screen.getByRole('button', { name: '顧客検索' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'モバイル予約作成' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'モバイル顧客検索' })).toBeInTheDocument()
+    expect(screen.queryByRole('form', { name: '顧客電話番号検索' })).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('顧客の電話番号')).not.toBeInTheDocument()
   })
 
   it('keeps customer lookup but hides reservation creation without reservation:create', () => {
@@ -155,65 +144,5 @@ describe('Header customer permissions', () => {
     render(<Header />)
 
     expect(screen.queryByRole('link', { name: '顧客管理' })).not.toBeInTheDocument()
-  })
-
-  it('clears the previous store cast list immediately while the next store loads', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => [{ id: 'ikebukuro-cast', name: '池袋キャスト' }],
-      } as Response)
-      .mockImplementationOnce(() => new Promise<Response>(() => {}))
-    vi.stubGlobal('fetch', fetchMock)
-    const { rerender } = render(<Header />)
-
-    expect(await screen.findByText('池袋キャスト')).toBeInTheDocument()
-
-    authState.currentStore = { id: 'shinjuku', slug: 'shinjuku' }
-    rerender(<Header />)
-
-    await waitFor(() => expect(screen.queryByText('池袋キャスト')).not.toBeInTheDocument())
-  })
-
-  it('ignores a delayed cast response from the previous store', async () => {
-    let resolveIkebukuro: ((response: Response) => void) | undefined
-    const fetchMock = vi.fn((input: RequestInfo | URL) => {
-      if (String(input).includes('storeId=ikebukuro')) {
-        return new Promise<Response>((resolve) => {
-          resolveIkebukuro = resolve
-        })
-      }
-      return Promise.resolve({
-        ok: true,
-        json: async () => [{ id: 'shinjuku-cast', name: '新宿キャスト' }],
-      } as Response)
-    })
-    vi.stubGlobal('fetch', fetchMock)
-    const { rerender } = render(<Header />)
-
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
-
-    authState.currentStore = { id: 'shinjuku', slug: 'shinjuku' }
-    rerender(<Header />)
-
-    await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/api/cast?storeId=shinjuku&limit=100',
-        expect.any(Object)
-      )
-    )
-    expect(await screen.findByText('新宿キャスト')).toBeInTheDocument()
-
-    await act(async () => {
-      resolveIkebukuro?.({
-        ok: true,
-        json: async () => [{ id: 'ikebukuro-cast', name: '池袋キャスト' }],
-      } as Response)
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-
-    expect(screen.getByText('新宿キャスト')).toBeInTheDocument()
-    expect(screen.queryByText('池袋キャスト')).not.toBeInTheDocument()
   })
 })

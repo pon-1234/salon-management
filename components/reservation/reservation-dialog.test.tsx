@@ -755,7 +755,7 @@ describe('ReservationDialog Edit Mode', () => {
     expect(savedPayload.endTime).toEqual(legacyCourseReservation.endTime)
   })
 
-  it('uses a 30-minute input step and rejects an off-boundary edited start time', async () => {
+  it('uses a 10-minute input step and rejects an off-boundary edited start time', async () => {
     const futureReservation: ReservationData = {
       ...mockReservation,
       startTime: new Date('2099-01-20T14:00:00'),
@@ -773,15 +773,13 @@ describe('ReservationDialog Edit Mode', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /編集/i }))
     const startTimeInput = screen.getByLabelText('開始時間')
-    expect(startTimeInput).toHaveAttribute('step', '1800')
+    expect(startTimeInput).toHaveAttribute('step', '600')
 
-    fireEvent.change(startTimeInput, { target: { value: '14:10' } })
+    fireEvent.change(startTimeInput, { target: { value: '14:05' } })
     fireEvent.click(screen.getByRole('button', { name: /保存/i }))
 
     await waitFor(() =>
-      expect(
-        screen.getByText('開始時間の分は00分または30分を指定してください。')
-      ).toBeInTheDocument()
+      expect(screen.getByText('開始時間の分は10分単位で指定してください。')).toBeInTheDocument()
     )
     expect(mockOnSave).not.toHaveBeenCalled()
   })

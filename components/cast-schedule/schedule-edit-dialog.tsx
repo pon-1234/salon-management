@@ -429,20 +429,6 @@ export function ScheduleEditDialog({
                         ))}
                       </SelectContent>
                     </Select>
-                    <label className="mt-2 flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={daySchedule.status === '休日'}
-                        onChange={(event) =>
-                          handleScheduleChange(
-                            dateKey,
-                            'status',
-                            event.target.checked ? '休日' : '出勤予定'
-                          )
-                        }
-                      />
-                      休みで登録
-                    </label>
                   </div>
 
                   {/* 時間設定（出勤日のみ） */}

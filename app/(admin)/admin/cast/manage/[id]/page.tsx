@@ -52,6 +52,7 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
   const [loading, setLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [activeTab, setActiveTab] = useState(() => resolveCastManageTab(searchParams.get('tab')))
+  const [settlementRevision, setSettlementRevision] = useState(0)
   const router = useRouter()
   const castRepository = useMemo(
     () => new CastRepositoryImpl(undefined, currentStore.id),
@@ -318,8 +319,13 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
                     castId={cast.id}
                     castName={cast.name}
                     storeId={currentStore.id}
+                    onSettled={() => setSettlementRevision((value) => value + 1)}
                   />
-                  <PaymentHistoryTab castId={cast.id} storeId={currentStore.id} />
+                  <PaymentHistoryTab
+                    key={settlementRevision}
+                    castId={cast.id}
+                    storeId={currentStore.id}
+                  />
                 </TabsContent>
 
                 <TabsContent value="performance" className="space-y-6">

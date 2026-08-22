@@ -1,3 +1,5 @@
+import type { DesignationFeeKind } from './kind'
+
 export interface DesignationFee {
   id: string
   name: string
@@ -7,6 +9,7 @@ export interface DesignationFee {
   description?: string | null
   sortOrder: number
   isActive: boolean
+  kind?: DesignationFeeKind
   createdAt?: string | Date | null
   updatedAt?: string | Date | null
 }

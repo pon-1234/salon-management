@@ -3,11 +3,18 @@
  * @related_to   SettlementStatusTab and CastSettlementsData
  * @known_issues None
  */
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CastSettlementsData } from '@/lib/cast-portal/types'
 import { SettlementStatusTab } from './settlement-status-tab'
+
+vi.mock('next-auth/react', () => ({
+  useSession: () => ({
+    data: { user: { id: 'admin-1', name: '池袋受付', email: 'uke@example.com', role: 'admin' } },
+    status: 'authenticated',
+  }),
+}))
 
 const records: CastSettlementsData['days'][number]['records'] = [
   {
@@ -138,5 +145,78 @@ describe('SettlementStatusTab', () => {
     render(<SettlementStatusTab castId="cast-1" castName="池袋キャスト" storeId="ikebukuro" />)
 
     expect(await screen.findByRole('alert')).toHaveTextContent('精算APIが一時的に利用できません')
+  })
+
+  it('opens the settlement dialog from the status header with unpaid reservations selected', async () => {
+    const user = userEvent.setup()
+    vi.mocked(fetch).mockResolvedValue(jsonResponse(settlementPayload))
+
+    render(<SettlementStatusTab castId="cast-1" castName="池袋キャスト" storeId="ikebukuro" />)
+
+    await user.click(await screen.findByRole('button', { name: '精算する' }))
+    const dialog = await screen.findByRole('dialog')
+    const amount = within(dialog).getByRole('spinbutton', { name: '今回精算する額' })
+
+    expect(amount).toHaveValue(30_000)
+    expect(within(dialog).getByText('未精算コース')).toBeVisible()
+    expect(within(dialog).getByText('一部精算コース')).toBeVisible()
+    expect(within(dialog).queryByText('精算済みコース')).not.toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: '未精算全件を入れる' })).toBeVisible()
+    expect(within(dialog).getByText(/一括/)).toBeVisible()
+    expect(within(dialog).queryByRole('textbox', { name: '処理者' })).not.toBeInTheDocument()
+    expect(within(dialog).getByText('池袋受付')).toBeVisible()
+  })
+
+  it('restores every unpaid reservation when 未精算全件を入れる is clicked', async () => {
+    const user = userEvent.setup()
+    vi.mocked(fetch).mockResolvedValue(jsonResponse(settlementPayload))
+
+    render(<SettlementStatusTab castId="cast-1" castName="池袋キャスト" storeId="ikebukuro" />)
+
+    await user.click(await screen.findByRole('button', { name: '精算する' }))
+    const dialog = await screen.findByRole('dialog')
+    const unpaidCheckbox = within(dialog).getByRole('checkbox', { name: /未精算コース/ })
+    await user.click(unpaidCheckbox)
+    expect(within(dialog).getByRole('spinbutton', { name: '今回精算する額' })).toHaveValue(20_000)
+
+    await user.click(within(dialog).getByRole('button', { name: '未精算全件を入れる' }))
+    expect(unpaidCheckbox).toBeChecked()
+    expect(within(dialog).getByRole('spinbutton', { name: '今回精算する額' })).toHaveValue(30_000)
+  })
+
+  it('posts a settlement and refreshes status after confirm', async () => {
+    const user = userEvent.setup()
+    const onSettled = vi.fn()
+    vi.mocked(fetch).mockImplementation(async (_input, init) => {
+      if (init?.method === 'POST') {
+        return jsonResponse({ id: 'payment-1' }, 201)
+      }
+      return jsonResponse(settlementPayload)
+    })
+
+    render(
+      <SettlementStatusTab
+        castId="cast-1"
+        castName="池袋キャスト"
+        storeId="ikebukuro"
+        onSettled={onSettled}
+      />
+    )
+
+    await user.click(await screen.findByRole('button', { name: '精算する' }))
+    const dialog = await screen.findByRole('dialog')
+    await user.click(within(dialog).getByRole('button', { name: '精算を確定' }))
+
+    await waitFor(() => {
+      expect(onSettled).toHaveBeenCalledTimes(1)
+    })
+    const postCall = vi.mocked(fetch).mock.calls.find(([, init]) => init?.method === 'POST')
+    expect(JSON.parse(String(postCall?.[1]?.body))).toEqual(
+      expect.objectContaining({
+        amount: 30_000,
+        handledBy: '池袋受付',
+        reservationIds: ['pending-reservation', 'partial-reservation'],
+      })
+    )
   })
 })

@@ -4,10 +4,8 @@
  * @known_issues None
  */
 import { NextResponse } from 'next/server'
+import { reservationStartBoundaryErrorMessage } from './time-boundary'
 
 export function reservationStartBoundaryErrorResponse(): NextResponse {
-  return NextResponse.json(
-    { error: '開始時間は30分単位（00分・30分）で指定してください。' },
-    { status: 400 }
-  )
+  return NextResponse.json({ error: reservationStartBoundaryErrorMessage() }, { status: 400 })
 }

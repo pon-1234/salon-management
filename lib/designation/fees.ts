@@ -1,15 +1,21 @@
+/**
+ * @design_doc   docs/LEGACY_GOLD_ADMIN_MIGRATION_INVENTORY.md designation catalog
+ * @related_to   DesignationFee settings, reservation designation select, share normalization
+ * @known_issues Existing reservations may still store 本指名 / フリー指名 names
+ */
 import { DesignationFee } from './types'
 
 export const DEFAULT_DESIGNATION_FEES: DesignationFee[] = [
   {
     id: 'free-designation',
-    name: 'フリー指名',
+    name: 'フリー',
     price: 0,
     storeShare: 0,
     castShare: 0,
     description: '通常の受付からの指名。無料です。',
     sortOrder: 1,
     isActive: true,
+    kind: 'free',
   },
   {
     id: 'panel-designation',
@@ -20,16 +26,18 @@ export const DEFAULT_DESIGNATION_FEES: DesignationFee[] = [
     description: 'パネルを見ての指名。',
     sortOrder: 2,
     isActive: true,
+    kind: 'panel',
   },
   {
     id: 'repeat-designation',
-    name: '本指名',
+    name: 'リピート指名',
     price: 2000,
     storeShare: 1200,
     castShare: 800,
     description: '過去に担当したキャストを再指名。',
     sortOrder: 3,
     isActive: true,
+    kind: 'repeat',
   },
   {
     id: 'recommend-designation',
@@ -40,6 +48,7 @@ export const DEFAULT_DESIGNATION_FEES: DesignationFee[] = [
     description: 'スタッフ推奨キャストの指名。',
     sortOrder: 4,
     isActive: true,
+    kind: 'other',
   },
 ]
 
