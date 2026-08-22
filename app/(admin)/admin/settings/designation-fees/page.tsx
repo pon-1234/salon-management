@@ -22,9 +22,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { ArrowLeft, Pencil, Trash2, Plus } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { normalizeDesignationShares } from '@/lib/designation/fees'
+import { inferDesignationKindFromName, type DesignationFeeKind } from '@/lib/designation/kind'
 import {
   createDesignationFee,
   deleteDesignationFee,
@@ -34,6 +42,13 @@ import {
 import type { DesignationFee } from '@/lib/designation/types'
 import { useStore } from '@/contexts/store-context'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
+
+const KIND_LABELS: Record<DesignationFeeKind, string> = {
+  free: 'フリー',
+  repeat: 'リピート指名',
+  panel: 'パネル',
+  other: 'その他',
+}
 
 export default function DesignationFeesPage() {
   const { toast } = useToast()
@@ -50,6 +65,7 @@ export default function DesignationFeesPage() {
     description: '',
     sortOrder: 1,
     isActive: true,
+    kind: 'other' as DesignationFeeKind,
   })
 
   const loadFees = useCallback(async () => {
@@ -90,6 +106,7 @@ export default function DesignationFeesPage() {
       description: '',
       sortOrder: fees.length + 1,
       isActive: true,
+      kind: 'other',
     })
     setDialogOpen(true)
   }, [fees.length])
@@ -104,6 +121,7 @@ export default function DesignationFeesPage() {
       description: fee.description || '',
       sortOrder: fee.sortOrder,
       isActive: fee.isActive,
+      kind: fee.kind ?? inferDesignationKindFromName(fee.name),
     })
     setDialogOpen(true)
   }, [])
@@ -145,6 +163,7 @@ export default function DesignationFeesPage() {
       description: formData.description.trim() || null,
       sortOrder: Math.max(1, Math.round(formData.sortOrder)),
       isActive: formData.isActive,
+      kind: formData.kind,
     }
 
     try {
@@ -222,7 +241,7 @@ export default function DesignationFeesPage() {
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 pb-12 pt-8">
         <PageHeader
           title="指名料設定"
-          description="フリー指名や本指名などの料金とキャスト・店舗それぞれの売上配分を設定できます。"
+          description="フリーやリピート指名などの料金と種別、キャスト・店舗それぞれの売上配分を設定できます。"
           backHref="/admin/settings"
           backIcon={ArrowLeft}
           actions={
@@ -246,6 +265,7 @@ export default function DesignationFeesPage() {
                 <TableRow>
                   <TableHead className="w-[120px] whitespace-nowrap">表示順</TableHead>
                   <TableHead className="whitespace-nowrap">名称</TableHead>
+                  <TableHead className="whitespace-nowrap">種別</TableHead>
                   <TableHead className="w-[120px] whitespace-nowrap">料金</TableHead>
                   <TableHead className="w-[160px] whitespace-nowrap">売上配分</TableHead>
                   <TableHead>備考</TableHead>
@@ -256,7 +276,7 @@ export default function DesignationFeesPage() {
               <TableBody>
                 {!loading && orderedFees.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
                       指名料が登録されていません。「新規項目追加」から登録してください。
                     </TableCell>
                   </TableRow>
@@ -267,6 +287,9 @@ export default function DesignationFeesPage() {
                       #{fee.sortOrder.toString().padStart(2, '0')}
                     </TableCell>
                     <TableCell className="whitespace-nowrap font-medium">{fee.name}</TableCell>
+                    <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                      {KIND_LABELS[fee.kind ?? inferDesignationKindFromName(fee.name)]}
+                    </TableCell>
                     <TableCell className="whitespace-nowrap">
                       ¥{fee.price.toLocaleString()}
                     </TableCell>
@@ -342,6 +365,27 @@ export default function DesignationFeesPage() {
                 value={formData.name}
                 onChange={(event) => setFormData((prev) => ({ ...prev, name: event.target.value }))}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="designation-kind">種別</Label>
+              <Select
+                value={formData.kind}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, kind: value as DesignationFeeKind }))
+                }
+              >
+                <SelectTrigger id="designation-kind">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(KIND_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-3">

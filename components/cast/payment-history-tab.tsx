@@ -23,26 +23,12 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Calendar, CreditCard, User, Plus, Eye, Receipt } from 'lucide-react'
-import {
-  CastSettlementRecordDetail,
-  CastSettlementsData,
-  SettlementPaymentDto,
-} from '@/lib/cast-portal/types'
-import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
-import { persistSettlementMethod, displaySettlementMethodLabel } from '@/lib/payment/method-labels'
+import { Calendar, CreditCard, User, Eye, Receipt } from 'lucide-react'
+import { SettlementPaymentDto } from '@/lib/cast-portal/types'
+import { displaySettlementMethodLabel } from '@/lib/payment/method-labels'
+import { settlementStatusPresentation } from '@/components/cast/payment-record-form'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 
@@ -50,21 +36,6 @@ interface PaymentHistoryTabProps {
   castId: string
   storeId: string
 }
-
-const settlementStatusPresentation = {
-  pending: {
-    label: '未精算',
-    className: 'border-amber-200 bg-amber-50 text-amber-700',
-  },
-  partial: {
-    label: '一部精算',
-    className: 'border-blue-200 bg-blue-50 text-blue-700',
-  },
-  settled: {
-    label: '精算済み',
-    className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-  },
-} as const
 
 async function readApiErrorBody(response: Response, fallback: string): Promise<string> {
   const body = await response.text().catch(() => '')
@@ -83,13 +54,9 @@ async function readApiErrorBody(response: Response, fallback: string): Promise<s
 
 export function PaymentHistoryTab({ castId, storeId }: PaymentHistoryTabProps) {
   const [paymentRecords, setPaymentRecords] = useState<SettlementPaymentDto[]>([])
-  const [pendingReservations, setPendingReservations] = useState<CastSettlementRecordDetail[]>([])
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [selectedPayment, setSelectedPayment] = useState<SettlementPaymentDto | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [saveError, setSaveError] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
 
   const fetchPayments = useCallback(async () => {
     try {
@@ -110,68 +77,9 @@ export function PaymentHistoryTab({ castId, storeId }: PaymentHistoryTabProps) {
     }
   }, [castId, storeId])
 
-  const fetchPendingReservations = useCallback(async () => {
-    try {
-      const res = await fetch(
-        buildStoreScopedEndpoint(
-          `/api/admin/cast/settlements?castId=${encodeURIComponent(castId)}`,
-          storeId
-        ),
-        { cache: 'no-store' }
-      )
-      if (!res.ok) {
-        throw new Error(await readApiErrorBody(res, '精算情報の取得に失敗しました'))
-      }
-      const data = (await res.json()) as CastSettlementsData
-      const pending = data.days.flatMap((d) =>
-        d.records.filter((record) => {
-          if (record.status !== 'completed') return false
-          const status = record.settlementStatus ?? 'pending'
-          const unpaid = record.unpaidAmount ?? record.staffRevenue
-          return status !== 'settled' && unpaid > 0
-        })
-      )
-      setPendingReservations(pending)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '精算情報の取得に失敗しました')
-    }
-  }, [castId, storeId])
-
   useEffect(() => {
-    fetchPayments()
-    fetchPendingReservations()
-  }, [fetchPayments, fetchPendingReservations])
-
-  const handleAddPayment = async (payload: PaymentRecordSubmitData) => {
-    setSaveError(null)
-    setSaving(true)
-    try {
-      const res = await fetch(buildStoreScopedEndpoint('/api/admin/cast/settlements', storeId), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          castId,
-          storeId,
-          amount: payload.amount,
-          method: payload.method,
-          handledBy: payload.handledBy,
-          paidAt: payload.paidAt,
-          notes: payload.notes,
-          reservationIds: payload.reservationIds,
-        }),
-      })
-      if (!res.ok) {
-        throw new Error(await readApiErrorBody(res, '入金記録の保存に失敗しました'))
-      }
-      await fetchPayments()
-      await fetchPendingReservations()
-      setIsAddDialogOpen(false)
-    } catch (e) {
-      setSaveError(e instanceof Error ? e.message : '保存に失敗しました')
-    } finally {
-      setSaving(false)
-    }
-  }
+    void fetchPayments()
+  }, [fetchPayments])
 
   const totalPaid = paymentRecords.reduce((sum, record) => sum + record.amount, 0)
 
@@ -209,7 +117,7 @@ export function PaymentHistoryTab({ castId, storeId }: PaymentHistoryTabProps) {
   return (
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground">
-        精算は、対応済み予約の手取り（キャスト売上）をまとめて記録する操作です。対象予約は初期状態で全件選択され、金額は変更できます。一部精算の残額は未精算のまま残ります。店舗全体の一覧は「精算」からも開けます。
+        精算の実行は上の「精算する」から行います。ここでは記録の確認だけできます。店舗全体の一覧は「精算」からも開けます。
       </p>
       {/* サマリーカード */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -255,44 +163,7 @@ export function PaymentHistoryTab({ castId, storeId }: PaymentHistoryTabProps) {
       {/* 入金記録テーブル */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>精算履歴</CardTitle>
-            <Dialog
-              open={isAddDialogOpen}
-              onOpenChange={(open) => {
-                setIsAddDialogOpen(open)
-                if (!open) setSaveError(null)
-              }}
-            >
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  精算する
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>精算する</DialogTitle>
-                  <DialogDescription>
-                    対象予約は初期状態で全件選択されます。金額を変えると古い予約から充当します。
-                  </DialogDescription>
-                </DialogHeader>
-                {saveError ? (
-                  <div
-                    role="alert"
-                    className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
-                  >
-                    {saveError}
-                  </div>
-                ) : null}
-                <PaymentRecordForm
-                  onSubmit={handleAddPayment}
-                  reservations={pendingReservations}
-                  isSubmitting={saving}
-                />
-              </DialogContent>
-            </Dialog>
-          </div>
+          <CardTitle>精算履歴</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -376,239 +247,6 @@ export function PaymentHistoryTab({ castId, storeId }: PaymentHistoryTabProps) {
         </Dialog>
       )}
     </div>
-  )
-}
-
-interface PaymentRecordFormProps {
-  onSubmit: (data: PaymentRecordSubmitData) => void | Promise<void>
-  reservations: CastSettlementRecordDetail[]
-  initialData?: Partial<SettlementPaymentDto>
-  isSubmitting?: boolean
-}
-
-type PaymentRecordSubmitData = {
-  amount: number
-  method: string
-  handledBy: string
-  paidAt: string
-  reservationIds: string[]
-  notes?: string | null
-}
-
-type PaymentRecordFormState = {
-  date: string
-  time: string
-  paymentType: string
-  reservationIds: string[]
-  handledBy: string
-  notes: string
-}
-
-function PaymentRecordForm({
-  onSubmit,
-  reservations,
-  initialData,
-  isSubmitting = false,
-}: PaymentRecordFormProps) {
-  const eligibleReservationIds = useMemo(
-    () => new Set(reservations.map((reservation) => reservation.id)),
-    [reservations]
-  )
-  const [formData, setFormData] = useState<PaymentRecordFormState>({
-    date: initialData?.paidAt
-      ? format(new Date(initialData.paidAt), 'yyyy-MM-dd')
-      : format(new Date(), 'yyyy-MM-dd'),
-    time: initialData?.paidAt ? format(new Date(initialData.paidAt), 'HH:mm') : '10:00',
-    paymentType: persistSettlementMethod(initialData?.method) || '現金',
-    reservationIds:
-      initialData?.reservations
-        ?.map((reservation) => reservation.id)
-        .filter((reservationId) => eligibleReservationIds.has(reservationId)) ||
-      reservations.map((reservation) => reservation.id),
-    handledBy: initialData?.handledBy || '',
-    notes: initialData?.notes || '',
-  })
-
-  const selectedSalesTotal = useMemo(
-    () =>
-      reservations
-        .filter((record) => formData.reservationIds.includes(record.id))
-        .reduce((sum, record) => sum + (record.unpaidAmount ?? record.staffRevenue), 0),
-    [formData.reservationIds, reservations]
-  )
-  const [amount, setAmount] = useState(selectedSalesTotal)
-  useEffect(() => {
-    setAmount(selectedSalesTotal)
-  }, [selectedSalesTotal])
-  const hasSelectedReservations = formData.reservationIds.length > 0
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!hasSelectedReservations || amount <= 0 || amount > selectedSalesTotal) return
-
-    const dateTime = new Date(`${formData.date}T${formData.time}`)
-    void onSubmit({
-      amount,
-      method: persistSettlementMethod(formData.paymentType),
-      handledBy: formData.handledBy,
-      paidAt: dateTime.toISOString(),
-      reservationIds: formData.reservationIds,
-      notes: formData.notes,
-    })
-  }
-
-  const handleReservationToggle = (recordId: string) => {
-    setFormData((current) => ({
-      ...current,
-      reservationIds: current.reservationIds.includes(recordId)
-        ? current.reservationIds.filter((id) => id !== recordId)
-        : [...current.reservationIds, recordId],
-    }))
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="date">支払日</Label>
-          <Input
-            id="date"
-            type="date"
-            value={formData.date}
-            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-            required
-          />
-        </div>
-        <div>
-          <Label htmlFor="time">時間</Label>
-          <Input
-            id="time"
-            type="time"
-            value={formData.time}
-            onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-            required
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="paymentType">支払方法</Label>
-          <Select
-            value={formData.paymentType}
-            onValueChange={(value) => setFormData({ ...formData, paymentType: value })}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="現金">現金</SelectItem>
-              <SelectItem value="振込">振込</SelectItem>
-              <SelectItem value="その他">その他</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="handledBy">処理者</Label>
-          <Input
-            id="handledBy"
-            value={formData.handledBy}
-            onChange={(e) => setFormData({ ...formData, handledBy: e.target.value })}
-            placeholder="例: 管理者"
-            required
-          />
-        </div>
-      </div>
-
-      <div>
-        <Label htmlFor="amount">今回精算する額</Label>
-        <Input
-          id="amount"
-          type="number"
-          min={1}
-          max={selectedSalesTotal}
-          value={amount}
-          onChange={(event) => setAmount(Number(event.target.value) || 0)}
-          aria-describedby="settlement-amount-help"
-          required
-        />
-        <p id="settlement-amount-help" className="mt-1 text-sm text-gray-600">
-          未精算合計 ¥{selectedSalesTotal.toLocaleString()}
-          {amount < selectedSalesTotal
-            ? ` ／ 精算後残額 ¥${Math.max(selectedSalesTotal - amount, 0).toLocaleString()}`
-            : ''}
-          。古い予約から順に充当します。
-        </p>
-      </div>
-
-      {reservations.length > 0 ? (
-        <div>
-          <Label>対象予約</Label>
-          <div className="mt-2 max-h-40 overflow-y-auto rounded-md border p-2">
-            {reservations.map((record) => (
-              <label key={record.id} className="flex items-center space-x-2 p-2 hover:bg-gray-50">
-                <input
-                  type="checkbox"
-                  checked={formData.reservationIds.includes(record.id)}
-                  onChange={() => handleReservationToggle(record.id)}
-                />
-                <div className="flex-1 text-sm">
-                  <div className="font-medium">
-                    <span>
-                      {format(new Date(record.startTime), 'M/d(E) HH:mm', { locale: ja })}{' '}
-                    </span>
-                    <span>{record.courseName ?? 'コース未設定'}</span>
-                  </div>
-                  <div className="text-gray-500">
-                    キャスト売上: ¥{record.staffRevenue.toLocaleString()}
-                    {(record.unpaidAmount ?? record.staffRevenue) !== record.staffRevenue
-                      ? ` / 未精算残 ¥${(record.unpaidAmount ?? record.staffRevenue).toLocaleString()}`
-                      : ''}{' '}
-                    / 状態:{' '}
-                    {settlementStatusPresentation[record.settlementStatus ?? 'pending'].label}
-                  </div>
-                </div>
-              </label>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
-          入金対象にできる完了済み・未精算の予約はありません。
-        </p>
-      )}
-
-      {!hasSelectedReservations ? (
-        <p className="text-sm text-amber-700">
-          完了済み・未精算の対象予約を1件以上選択してください。
-        </p>
-      ) : null}
-
-      <div>
-        <Label htmlFor="notes">備考</Label>
-        <Textarea
-          id="notes"
-          value={formData.notes}
-          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-          placeholder="特記事項があれば入力してください"
-        />
-      </div>
-
-      <div className="flex justify-end gap-2">
-        <Button
-          type="submit"
-          disabled={
-            !hasSelectedReservations ||
-            amount <= 0 ||
-            amount > selectedSalesTotal ||
-            !formData.handledBy.trim() ||
-            isSubmitting
-          }
-        >
-          {isSubmitting ? '処理中...' : '精算を確定'}
-        </Button>
-      </div>
-    </form>
   )
 }
 

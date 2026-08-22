@@ -1,6 +1,6 @@
 /**
  * @design_doc   CST-02 上部メニューの電話番号検索結果の分岐
- * @related_to   HeaderPhoneSearch
+ * @related_to   dashboard phone lookup and CustomerSelectionDialog
  * @known_issues None
  */
 import { normalizePhoneQuery } from './utils'

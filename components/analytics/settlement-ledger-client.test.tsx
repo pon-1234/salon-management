@@ -12,6 +12,21 @@ vi.mock('@/contexts/store-context', () => ({
   useStore: () => ({ currentStore: { id: 'ikebukuro' } }),
 }))
 
+vi.mock('next/link', () => ({
+  default: ({
+    children,
+    href,
+    ...props
+  }: {
+    children: React.ReactNode
+    href: string
+  } & React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+}))
+
 const ledger = {
   month: '2026-08',
   hourlyGuaranteeAmount: 5000,
@@ -92,13 +107,19 @@ describe('SettlementLedgerClient', () => {
     expect(await screen.findByRole('heading', { name: '精算' })).toBeInTheDocument()
     expect(screen.getByText(/\[UAT\] 予約確認/)).toBeInTheDocument()
     expect(screen.getByText(/UAT-0815-1030/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '精算する' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '精算する' })).not.toBeInTheDocument()
+    const statusLink = screen.getByRole('link', { name: '精算状況を見る' })
+    expect(statusLink).toHaveAttribute('href', '/admin/cast/manage/cast-1?tab=settlement')
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringContaining('/api/admin/settlements?'),
         expect.objectContaining({ cache: 'no-store' })
       )
     })
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      expect.stringContaining('/api/admin/cast/settlements'),
+      expect.objectContaining({ method: 'POST' })
+    )
   })
 
   it('shows settlement totals and recorded payments on the settlement screen', async () => {

@@ -10,6 +10,7 @@ import { db } from '@/lib/db'
 import { Prisma } from '@prisma/client'
 import logger from '@/lib/logger'
 import { DEFAULT_DESIGNATION_FEES, normalizeDesignationShares } from '@/lib/designation/fees'
+import { inferDesignationKindFromName, isDesignationFeeKind } from '@/lib/designation/kind'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
 import { isUnknownStoreError } from '@/lib/store/errors'
 import { requireAdmin } from '@/lib/auth/utils'
@@ -76,6 +77,17 @@ function buildDesignationPayload(data: any, mode: 'create' | 'update' = 'create'
     payload.isActive = Boolean(data.isActive)
   } else if (mode === 'create') {
     payload.isActive = true
+  }
+
+  if (data.kind !== undefined) {
+    if (!isDesignationFeeKind(data.kind)) {
+      throw new Error('KIND_INVALID')
+    }
+    payload.kind = data.kind
+  } else if (mode === 'create') {
+    payload.kind = inferDesignationKindFromName(
+      typeof payload.name === 'string' ? payload.name : data.name
+    )
   }
 
   return payload
@@ -182,7 +194,9 @@ export async function POST(request: NextRequest) {
     const message =
       error instanceof Error && error.message === 'NAME_REQUIRED'
         ? '名称は必須です'
-        : '指名料の作成に失敗しました'
+        : error instanceof Error && error.message === 'KIND_INVALID'
+          ? '指名種別が不正です'
+          : '指名料の作成に失敗しました'
     return NextResponse.json({ error: message }, { status: 400 })
   }
 }

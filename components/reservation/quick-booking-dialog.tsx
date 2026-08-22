@@ -40,7 +40,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { addMinutes, format } from 'date-fns'
 import { formatInTimeZone, utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz'
-import { Phone, User, CreditCard, DollarSign, Check, Calendar, Users, Loader2 } from 'lucide-react'
+import { CreditCard, Check, Calendar, Users, Loader2 } from 'lucide-react'
 import { Customer } from '@/lib/customer/types'
 import { Cast } from '@/lib/cast/types'
 import { usePricing } from '@/hooks/use-pricing'
@@ -49,16 +49,20 @@ import { TimeSlotPicker } from './time-slot-picker'
 import { toast } from '@/hooks/use-toast'
 import { isVipMember } from '@/lib/utils'
 import { getDesignationFees } from '@/lib/designation/data'
+import { pickAutoDesignationFee, payloadHasCompletedVisit } from '@/lib/designation/kind'
 import type { DesignationFee } from '@/lib/designation/types'
 import { BusinessHoursRange, formatMinutesAsLabel } from '@/lib/settings/business-hours'
 import { useStore } from '@/contexts/store-context'
 import { calculateReservationRevenue } from '@/lib/reservation/revenue'
 import { normalizePaymentReference } from '@/lib/reservation/financial-reference'
 import { buildStoreCastEndpoint, buildStoreReservationEndpoint } from '@/lib/reservation/endpoints'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import { MARKETING_CHANNELS, PAYMENT_METHODS } from '@/lib/constants'
 import {
   RESERVATION_START_STEP_MINUTES,
   RESERVATION_START_STEP_SECONDS,
+  reservationStartBoundaryToastTitle,
+  reservationStartMinuteHint,
 } from '@/lib/reservation/time-boundary'
 import {
   formatDateInJst,
@@ -148,6 +152,7 @@ export function QuickBookingDialog({
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false)
   const [showExtraFields, setShowExtraFields] = useState(false)
   const wasOpenRef = useRef(false)
+  const designationTouchedRef = useRef(false)
   const [staffDetails, setStaffDetails] = useState<Cast | null>(
     selectedStaff &&
       Array.isArray(selectedStaff.availableOptions) &&
@@ -395,10 +400,53 @@ export function QuickBookingDialog({
     if (!open || designationFees.length === 0) {
       return
     }
+    if (designationTouchedRef.current) {
+      return
+    }
+    const fallback = pickAutoDesignationFee(designationFees, false)
     setSelectedDesignationId((prev) =>
-      prev && designationFees.some((fee) => fee.id === prev) ? prev : designationFees[0].id
+      prev && designationFees.some((fee) => fee.id === prev) ? prev : (fallback?.id ?? '')
     )
   }, [designationFees, open])
+
+  useEffect(() => {
+    if (!open || !selectedCustomer?.id || !currentStaff?.id || designationFees.length === 0) {
+      return
+    }
+
+    let ignore = false
+    const controller = new AbortController()
+
+    const loadHistory = async () => {
+      try {
+        const response = await fetch(
+          buildStoreScopedEndpoint(
+            `/api/reservation?customerId=${encodeURIComponent(selectedCustomer.id)}&castId=${encodeURIComponent(currentStaff.id)}&status=completed&limit=1`,
+            currentStore.id
+          ),
+          { cache: 'no-store', credentials: 'include', signal: controller.signal }
+        )
+        if (!response.ok) {
+          throw new Error('Failed to load designation history')
+        }
+        const payload: unknown = await response.json()
+        if (ignore || designationTouchedRef.current) return
+        const selected = pickAutoDesignationFee(designationFees, payloadHasCompletedVisit(payload))
+        if (selected) {
+          setSelectedDesignationId(selected.id)
+        }
+      } catch (error) {
+        if (controller.signal.aborted || ignore) return
+        console.error('Failed to auto-select designation from visit history:', error)
+      }
+    }
+
+    void loadHistory()
+    return () => {
+      ignore = true
+      controller.abort()
+    }
+  }, [open, selectedCustomer?.id, currentStaff?.id, designationFees, currentStore.id])
 
   useEffect(() => {
     setBookingDetails((prev) => ({
@@ -671,8 +719,8 @@ export function QuickBookingDialog({
 
     if (bookingStartMinutes % RESERVATION_START_STEP_MINUTES !== 0) {
       toast({
-        title: '開始時間は30分単位で入力してください',
-        description: '開始時間の分は00分または30分を指定してください。',
+        title: reservationStartBoundaryToastTitle(),
+        description: reservationStartMinuteHint(),
         variant: 'destructive',
       })
       return
@@ -859,7 +907,8 @@ export function QuickBookingDialog({
     setDiscardConfirmOpen(false)
     setShowExtraFields(false)
     setSelectedCourseId(courseCatalog[0]?.id ?? '')
-    setSelectedDesignationId(designationFees[0]?.id ?? '')
+    designationTouchedRef.current = false
+    setSelectedDesignationId(pickAutoDesignationFee(designationFees, false)?.id ?? '')
     setBookingDetails(
       createInitialBookingDetails({
         customer: selectedCustomer,
@@ -893,41 +942,19 @@ export function QuickBookingDialog({
           </DialogHeader>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-2">
+            <div
+              data-testid="quick-booking-customer-summary"
+              className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border bg-gray-50 px-3 py-1.5 text-sm"
+            >
+              <span className="text-xs font-medium text-gray-500">お客様情報</span>
+              <span className="font-medium">{bookingDetails.customerName || '未選択'}</span>
+              <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                {bookingDetails.customerType || '---'}
+              </Badge>
+              <span className="text-gray-600">{bookingDetails.phoneNumber || '未設定'}</span>
+              <span className="text-gray-600">{bookingDetails.points.toLocaleString()}pt</span>
+            </div>
             <div className="grid gap-4 pb-6 lg:grid-cols-2">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center">
-                    <User className="mr-2 h-5 w-5" />
-                    お客様情報
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="rounded-lg bg-gray-50 p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold">
-                          {bookingDetails.customerName || '未選択'}
-                        </h3>
-                        <Badge variant="secondary" className="mt-1">
-                          {bookingDetails.customerType || '---'}
-                        </Badge>
-                      </div>
-                      <div className="text-right">
-                        <div className="flex items-center">
-                          <Phone className="mr-1 h-4 w-4" />
-                          <span className="font-semibold">
-                            {bookingDetails.phoneNumber || '未設定'}
-                          </span>
-                        </div>
-                        <div className="mt-1 text-sm text-gray-600">
-                          現在 {bookingDetails.points.toLocaleString()}pt
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center">
@@ -1020,42 +1047,28 @@ export function QuickBookingDialog({
                       </SelectContent>
                     </Select>
                   </div>
-                </CardContent>
-              </Card>
 
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center">
-                    <DollarSign className="mr-2 h-5 w-5" />
-                    指名設定
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex flex-wrap gap-2">
-                    {designationFees.map((fee) => (
-                      <Button
-                        key={fee.id}
-                        type="button"
-                        size="sm"
-                        variant={selectedDesignationId === fee.id ? 'default' : 'outline'}
-                        onClick={() => setSelectedDesignationId(fee.id)}
-                      >
-                        {fee.name}
-                        <span className="ml-2 text-xs text-gray-500">
-                          {fee.price > 0 ? formatYen(fee.price) : '0円'}
-                        </span>
-                      </Button>
-                    ))}
+                  <div>
+                    <Label htmlFor="quick-booking-designation">指名設定</Label>
+                    <Select
+                      value={selectedDesignationId || undefined}
+                      onValueChange={(value) => {
+                        designationTouchedRef.current = true
+                        setSelectedDesignationId(value)
+                      }}
+                    >
+                      <SelectTrigger id="quick-booking-designation">
+                        <SelectValue placeholder="指名を選択" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {designationFees.map((fee) => (
+                          <SelectItem key={fee.id} value={fee.id}>
+                            {fee.name}（{fee.price > 0 ? formatYen(fee.price) : '0円'}）
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <p className="text-xs text-gray-500">
-                    {selectedDesignationFee?.name?.includes('フリー') ||
-                    selectedDesignationFee?.price === 0
-                      ? '指名欄: フリー（担当キャストを固定しない）'
-                      : `選択中: ${selectedDesignationFee?.name ?? 'なし'}`}
-                    {priceBreakdown.designationFee > 0
-                      ? `（${formatYen(priceBreakdown.designationFee)}）`
-                      : ''}
-                  </p>
                 </CardContent>
               </Card>
 

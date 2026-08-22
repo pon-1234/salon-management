@@ -214,11 +214,11 @@ describe('Pricing Data', () => {
       expect(notesText).not.toContain('現金のみ')
     })
 
-    it('should describe the same 30-minute booking boundary enforced by reservation flows', () => {
+    it('should describe the same 10-minute booking boundary enforced by reservation flows', () => {
       const notesText = defaultPricingNotes.join(' ')
 
-      expect(notesText).toContain('ご予約は30分単位で承ります')
-      expect(notesText).not.toContain('ご予約は10分単位で承ります')
+      expect(notesText).toContain('ご予約は10分単位で承ります')
+      expect(notesText).not.toContain('ご予約は30分単位で承ります')
     })
   })
 

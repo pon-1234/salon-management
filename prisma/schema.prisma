@@ -399,19 +399,27 @@ model ReservationHistory {
   @@index([reservationId])
 }
 
+enum DesignationFeeKind {
+  free
+  repeat
+  panel
+  other
+}
+
 model DesignationFee {
-  id          String   @id @default(cuid())
+  id          String             @id @default(cuid())
   name        String
-  price       Int      @default(0)
-  storeShare  Int      @default(0)
-  castShare   Int      @default(0)
+  price       Int                @default(0)
+  storeShare  Int                @default(0)
+  castShare   Int                @default(0)
   description String?
-  sortOrder   Int      @default(0)
-  isActive    Boolean  @default(true)
+  sortOrder   Int                @default(0)
+  isActive    Boolean            @default(true)
+  kind        DesignationFeeKind @default(other)
   storeId     String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  store       Store    @relation(fields: [storeId], references: [id])
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  store       Store              @relation(fields: [storeId], references: [id])
 
   @@index([storeId])
 }

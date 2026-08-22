@@ -54,7 +54,7 @@ interface CustomerSelectionDialogProps {
 }
 
 type SearchStatus = 'idle' | 'loading' | 'ready' | 'error'
-type FailedOperation = 'initial-load' | 'search' | null
+type FailedOperation = 'search' | null
 
 export function CustomerSelectionDialog({
   open,
@@ -63,15 +63,12 @@ export function CustomerSelectionDialog({
   mode = 'reservation',
 }: CustomerSelectionDialogProps) {
   const [searchTerm, setSearchTerm] = useState('')
-  const [allCustomers, setAllCustomers] = useState<Customer[]>([])
-  const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([])
+  const [searchResults, setSearchResults] = useState<Customer[]>([])
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [status, setStatus] = useState<SearchStatus>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [failedOperation, setFailedOperation] = useState<FailedOperation>(null)
   const [completedSearchTerm, setCompletedSearchTerm] = useState<string | null>(null)
-  const [loadedStoreId, setLoadedStoreId] = useState<string | null>(null)
-  const [loadAttempt, setLoadAttempt] = useState(0)
   const [searchAttempt, setSearchAttempt] = useState(0)
   const router = useRouter()
   const { data: session } = useSession()
@@ -90,11 +87,7 @@ export function CustomerSelectionDialog({
     () => new CustomerUseCases(new CustomerRepositoryImpl(currentStore.id)),
     [currentStore.id]
   )
-  const hasLoadedCurrentStore = loadedStoreId === currentStore.id
-  const visibleCustomers = useMemo(
-    () => (hasLoadedCurrentStore ? filteredCustomers : []),
-    [filteredCustomers, hasLoadedCurrentStore]
-  )
+  const visibleCustomers = searchResults
 
   useEffect(() => {
     const storeChanged = previousStoreIdRef.current !== currentStore.id
@@ -106,64 +99,15 @@ export function CustomerSelectionDialog({
       setErrorMessage(null)
       setFailedOperation(null)
       setCompletedSearchTerm(null)
-      setFilteredCustomers(hasLoadedCurrentStore ? allCustomers : [])
-      setStatus(hasLoadedCurrentStore ? 'ready' : 'loading')
+      setSearchResults([])
+      setStatus('idle')
     }
     previousStoreIdRef.current = currentStore.id
     wasOpenRef.current = open
-  }, [allCustomers, currentStore.id, hasLoadedCurrentStore, open])
-
-  useEffect(() => {
-    if (!open || !canUseDialog || hasLoadedCurrentStore) {
-      return
-    }
-
-    let ignore = false
-
-    const fetchCustomers = async () => {
-      setStatus('loading')
-      setErrorMessage(null)
-      setFailedOperation(null)
-      setCompletedSearchTerm(null)
-      try {
-        const customers = await customerUseCases.getAll()
-        if (!ignore) {
-          setAllCustomers(customers)
-          setLoadedStoreId(currentStore.id)
-          if (searchTermRef.current.trim()) {
-            setFilteredCustomers([])
-            setStatus('loading')
-          } else {
-            setFilteredCustomers(customers)
-            setStatus('ready')
-          }
-        }
-      } catch (error) {
-        if (ignore) {
-          return
-        }
-        console.error('Failed to fetch customers:', error)
-        setAllCustomers([])
-        setFilteredCustomers([])
-        setStatus('error')
-        setFailedOperation('initial-load')
-        setErrorMessage('顧客データを取得できませんでした。通信状態を確認して再試行してください。')
-      }
-    }
-
-    fetchCustomers()
-
-    return () => {
-      ignore = true
-    }
-  }, [open, canUseDialog, customerUseCases, currentStore.id, hasLoadedCurrentStore, loadAttempt])
+  }, [currentStore.id, open])
 
   useEffect(() => {
     if (!open || !canUseDialog) {
-      return
-    }
-
-    if (!hasLoadedCurrentStore) {
       return
     }
 
@@ -176,17 +120,17 @@ export function CustomerSelectionDialog({
 
     if (!trimmed) {
       searchRequestIdRef.current += 1
-      setFilteredCustomers(allCustomers)
+      setSearchResults([])
       setErrorMessage(null)
       setFailedOperation(null)
       setCompletedSearchTerm(null)
-      setStatus('ready')
+      setStatus('idle')
       return
     }
 
     let ignore = false
     const requestId = ++searchRequestIdRef.current
-    setFilteredCustomers([])
+    setSearchResults([])
     setSelectedCustomer(null)
     setStatus('loading')
     setErrorMessage(null)
@@ -200,14 +144,14 @@ export function CustomerSelectionDialog({
     searchRequest
       .then((customers) => {
         if (ignore || requestId !== searchRequestIdRef.current) return
-        setFilteredCustomers(customers)
+        setSearchResults(customers)
         setCompletedSearchTerm(trimmed)
         setStatus('ready')
       })
       .catch((error) => {
         if (ignore || requestId !== searchRequestIdRef.current) return
         console.error('Customer search failed:', error)
-        setFilteredCustomers([])
+        setSearchResults([])
         setSelectedCustomer(null)
         setStatus('error')
         setFailedOperation('search')
@@ -217,15 +161,7 @@ export function CustomerSelectionDialog({
     return () => {
       ignore = true
     }
-  }, [
-    searchTerm,
-    open,
-    canUseDialog,
-    allCustomers,
-    customerUseCases,
-    hasLoadedCurrentStore,
-    searchAttempt,
-  ])
+  }, [searchTerm, open, canUseDialog, customerUseCases, searchAttempt])
 
   useEffect(() => {
     if (searchTerm.trim() && visibleCustomers.length === 1) {
@@ -299,15 +235,10 @@ export function CustomerSelectionDialog({
     setErrorMessage(null)
     setFailedOperation(null)
     setCompletedSearchTerm(null)
-    setFilteredCustomers([])
+    setSearchResults([])
     setSelectedCustomer(null)
     setStatus('loading')
-    if (operationToRetry === 'initial-load') {
-      setLoadedStoreId(null)
-      setLoadAttempt((attempt) => attempt + 1)
-    } else {
-      setSearchAttempt((attempt) => attempt + 1)
-    }
+    setSearchAttempt((attempt) => attempt + 1)
   }
 
   const handleOpenTimeline = () => {
@@ -425,13 +356,10 @@ export function CustomerSelectionDialog({
                 setErrorMessage(null)
                 setFailedOperation(null)
                 setCompletedSearchTerm(null)
-                if (hasLoadedCurrentStore) {
-                  const hasSearchTerm = nextSearchTerm.trim().length > 0
-                  setFilteredCustomers(hasSearchTerm ? [] : allCustomers)
-                  setStatus(hasSearchTerm ? 'loading' : 'ready')
-                }
+                const hasSearchTerm = nextSearchTerm.trim().length > 0
+                setSearchResults([])
+                setStatus(hasSearchTerm ? 'loading' : 'idle')
               }}
-              disabled={failedOperation === 'initial-load'}
               className="pl-10"
             />
           </div>
@@ -464,7 +392,13 @@ export function CustomerSelectionDialog({
             </Button>
           ) : null}
 
-          {status === 'ready' && !isLookupMode && !onSelectCustomer ? (
+          {status === 'idle' && !errorMessage ? (
+            <p className="py-6 text-center text-sm text-gray-500">
+              名前、電話番号、メールアドレス、会員番号で検索すると顧客が表示されます。
+            </p>
+          ) : null}
+
+          {(status === 'idle' || status === 'ready') && !isLookupMode && !onSelectCustomer ? (
             <Button
               onClick={handleOpenTimeline}
               variant="secondary"
@@ -543,7 +477,7 @@ export function CustomerSelectionDialog({
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               キャンセル
             </Button>
-            {status === 'ready' ? (
+            {status === 'idle' || status === 'ready' ? (
               <Button
                 onClick={handleProceed}
                 disabled={!selectedCustomer}

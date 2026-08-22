@@ -3,7 +3,7 @@
  * @related_to   ScheduleEditDialog per-day template buttons
  * @known_issues None
  */
-import { fireEvent, render, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ScheduleEditDialog } from './schedule-edit-dialog'
 
@@ -84,5 +84,49 @@ describe('ScheduleEditDialog day templates', () => {
     expect(within(dayCards[2] as HTMLElement).queryByText('出勤予定')).not.toBeInTheDocument()
     expect(within(dayCards[2] as HTMLElement).queryByText('12:00')).not.toBeInTheDocument()
     expect(within(dayCards[2] as HTMLElement).queryByText('18:00')).not.toBeInTheDocument()
+  })
+
+  it('keeps 休みを適用 as the only holiday shortcut', () => {
+    render(
+      <ScheduleEditDialog
+        open
+        onOpenChange={vi.fn()}
+        castName="明里"
+        castId="cast-1"
+        startDate={new Date('2026-08-10T00:00:00+09:00')}
+        initialSchedule={{}}
+        onSave={vi.fn()}
+      />
+    )
+
+    const dayCards = [...document.querySelectorAll('[id^="schedule-edit-day-"]')]
+    expect(
+      within(dayCards[0] as HTMLElement).getByRole('button', { name: '休みを適用' })
+    ).toBeInTheDocument()
+    expect(screen.queryByText('休みで登録')).not.toBeInTheDocument()
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+  })
+
+  it('marks the clicked date as 休日 from 休みを適用', () => {
+    render(
+      <ScheduleEditDialog
+        open
+        onOpenChange={vi.fn()}
+        castName="明里"
+        castId="cast-1"
+        startDate={new Date('2026-08-10T00:00:00+09:00')}
+        initialSchedule={{
+          '2026-08-10': { type: '出勤予定', startTime: '12:00', endTime: '22:00' },
+        }}
+        onSave={vi.fn()}
+      />
+    )
+
+    const dayCard = document.getElementById('schedule-edit-day-2026-08-10') as HTMLElement
+    fireEvent.click(within(dayCard).getByRole('button', { name: '休みを適用' }))
+
+    expect(within(dayCard).getByRole('combobox')).toHaveTextContent('休日')
+    expect(within(dayCard).queryByText('12:00')).not.toBeInTheDocument()
+    expect(within(dayCard).queryByText('22:00')).not.toBeInTheDocument()
   })
 })

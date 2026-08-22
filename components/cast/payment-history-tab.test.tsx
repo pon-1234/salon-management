@@ -3,7 +3,7 @@
  * @related_to   PaymentHistoryTab and settlement payment APIs
  * @known_issues None
  */
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
@@ -131,65 +131,13 @@ describe('PaymentHistoryTab', () => {
     vi.restoreAllMocks()
   })
 
-  it('selects unpaid reservations and allows a partial settlement amount', async () => {
-    const user = userEvent.setup()
-    const fetchMock = successfulFetch()
-    vi.stubGlobal('fetch', fetchMock)
+  it('does not expose the settlement action on the history card', async () => {
+    vi.stubGlobal('fetch', successfulFetch([paymentWithStatuses]))
 
     render(<PaymentHistoryTab castId="cast-1" storeId="ikebukuro" />)
 
-    await user.click(await screen.findByRole('button', { name: '精算する' }))
-    const dialog = await screen.findByRole('dialog')
-    const amount = within(dialog).getByRole('spinbutton', { name: '今回精算する額' })
-
-    expect(amount).toHaveValue(20_000)
-    expect(amount).not.toHaveAttribute('readonly')
-    expect(within(dialog).getByText('完了済み未精算コース')).toBeVisible()
-    expect(within(dialog).getByText('一部精算コース')).toBeVisible()
-    expect(within(dialog).queryByText('精算済みコース')).not.toBeInTheDocument()
-    expect(within(dialog).queryByText('未完了コース')).not.toBeInTheDocument()
-    expect(within(dialog).getByRole('button', { name: '精算を確定' })).toBeDisabled()
-
-    await user.clear(amount)
-    await user.type(amount, '16000')
-    expect(amount).toHaveValue(16_000)
-    await user.type(within(dialog).getByRole('textbox', { name: '処理者' }), '受付担当')
-    expect(within(dialog).getByRole('button', { name: '精算を確定' })).toBeEnabled()
-
-    await user.click(within(dialog).getByRole('button', { name: '精算を確定' }))
-
-    await waitFor(() => {
-      const postCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST')
-      expect(postCall).toBeDefined()
-      expect(JSON.parse(String(postCall?.[1]?.body))).toEqual(
-        expect.objectContaining({
-          amount: 16_000,
-          reservationIds: ['reservation-pending', 'reservation-partial'],
-        })
-      )
-    })
-  })
-
-  it('shows the API error body when saving fails', async () => {
-    const user = userEvent.setup()
-    const fetchMock = successfulFetch()
-    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input)
-      if (init?.method === 'POST') {
-        return jsonResponse({ error: '対象予約は既に精算されています。' }, 409)
-      }
-      return url.includes('/payments?') ? jsonResponse([]) : jsonResponse(settlementPayload)
-    })
-    vi.stubGlobal('fetch', fetchMock)
-
-    render(<PaymentHistoryTab castId="cast-1" storeId="ikebukuro" />)
-
-    await user.click(await screen.findByRole('button', { name: '精算する' }))
-    const dialog = await screen.findByRole('dialog')
-    await user.type(within(dialog).getByRole('textbox', { name: '処理者' }), '受付担当')
-    await user.click(within(dialog).getByRole('button', { name: '精算を確定' }))
-
-    expect(await screen.findByRole('alert')).toHaveTextContent('対象予約は既に精算されています。')
+    expect(await screen.findByText('精算履歴')).toBeVisible()
+    expect(screen.queryByRole('button', { name: '精算する' })).not.toBeInTheDocument()
   })
 
   it('shows the API error body when loading fails', async () => {

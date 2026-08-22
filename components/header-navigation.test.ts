@@ -11,11 +11,11 @@ const headerSource = readFileSync(join(__dirname, 'header.tsx'), 'utf8')
 const storeSelectorSource = readFileSync(join(__dirname, 'store', 'store-selector.tsx'), 'utf8')
 
 describe('admin header navigation', () => {
-  it('exposes a direct daily report link without replacing the existing analytics link', () => {
+  it('exposes a single daily report destination without a duplicate sales screen', () => {
     expect(headerSource.match(/href="\/admin\/analytics\/daily-report"/g)).toHaveLength(2)
-    expect(headerSource.match(/href="\/admin\/analytics\/daily-sales"/g)).toHaveLength(2)
+    expect(headerSource.match(/href="\/admin\/analytics\/daily-sales"/g)).toBeNull()
     expect(headerSource).toContain('当日売上')
-    expect(headerSource).toContain('集計')
+    expect(headerSource).not.toContain('集計')
   })
 
   it('exposes the reservation board next to the reservation list', () => {

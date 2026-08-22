@@ -32,9 +32,12 @@ const legacyOffsetSchedule: PublicCastSchedule = {
 }
 
 describe('StoreScheduleContent booking slots', () => {
-  it('starts public booking links at the next 30-minute boundary', () => {
+  it('starts public booking links at the next reservation start boundary', () => {
     const slots = buildTimelineSlots(legacyOffsetSchedule)
 
-    expect(slots.map((slot) => slot.startIso)).toEqual(['2099-01-20T02:30:00.000Z'])
+    expect(slots.map((slot) => slot.startIso)).toEqual([
+      '2099-01-20T02:10:00.000Z',
+      '2099-01-20T02:40:00.000Z',
+    ])
   })
 })

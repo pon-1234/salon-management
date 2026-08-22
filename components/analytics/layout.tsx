@@ -5,17 +5,12 @@
  * @related_to   app/(admin)/admin/analytics/layout.tsx: analytics route shell
  * @known_issues Sidebar structure remains otherwise unchanged
  */
-import { Calendar, BarChart3, CalendarDays, Clock, Users } from 'lucide-react'
+import { CalendarDays, BarChart3, Clock, Users } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
 const navigation = [
-  {
-    name: '日次レポート',
-    href: '/admin/analytics/daily-sales',
-    icon: Calendar,
-  },
   {
     name: '当日売上',
     href: '/admin/analytics/daily-report',

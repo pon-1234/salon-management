@@ -5,6 +5,7 @@
  */
 import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz'
 
+import { classifyDesignationType } from '@/lib/designation/kind'
 import { db } from '@/lib/db'
 import { resolveMarketingCategory } from '@/lib/reservation/legacy-status'
 import type {
@@ -15,24 +16,6 @@ import type {
 } from '@/lib/types/cast-performance'
 
 const JST_TIME_ZONE = 'Asia/Tokyo' as const
-
-const REGULAR_DESIGNATIONS = new Set(['regular', '本指名', 'repeat-designation'])
-const FREE_DESIGNATIONS = new Set([
-  'panel',
-  'special',
-  'free',
-  'パネル指名',
-  '特別指名',
-  'おすすめ指名',
-  'フリー指名',
-  'panel-designation',
-  'special-designation',
-  'recommend-designation',
-  'free-designation',
-])
-const NO_DESIGNATIONS = new Set(['none', '指名なし', 'フリー'])
-
-type DesignationCategory = 'regular' | 'free' | 'none' | 'unclassified'
 type MarketingCategory = 'princess' | 'other' | 'unclassified'
 type PaymentCategory = 'cash' | 'card' | 'unclassified'
 
@@ -59,12 +42,8 @@ export function getJstMonthRange(year: number, month: number): { start: Date; en
   }
 }
 
-function designationCategory(value: string | null): DesignationCategory {
-  const normalized = value?.trim().toLowerCase()
-  if (!normalized || NO_DESIGNATIONS.has(normalized)) return 'none'
-  if (REGULAR_DESIGNATIONS.has(normalized)) return 'regular'
-  if (FREE_DESIGNATIONS.has(normalized)) return 'free'
-  return 'unclassified'
+function designationCategory(value: string | null): ReturnType<typeof classifyDesignationType> {
+  return classifyDesignationType(value)
 }
 
 function marketingCategory(value: string | null): MarketingCategory {

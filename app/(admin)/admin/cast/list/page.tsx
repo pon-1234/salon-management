@@ -15,6 +15,7 @@ import { CastListViewToggle } from '@/components/cast/cast-list-view-toggle'
 import { useStore } from '@/contexts/store-context'
 import { TableSkeleton } from '@/components/ui/page-loading'
 import { sortCastsByGojuon } from '@/lib/cast/gojuon-sort'
+import { matchesCastNameSearch } from '@/lib/cast/name-search'
 
 const KANA_ROWS: Record<string, string[]> = {
   あ: ['あ', 'い', 'う', 'え', 'お'],
@@ -106,11 +107,7 @@ export default function CastListPage() {
 
   const filteredCasts = sortCastsByGojuon(
     allCasts.filter((cast) => {
-      const normalizedSearch = nameSearch.trim().toLocaleLowerCase('ja-JP')
-      const matchesName =
-        normalizedSearch.length === 0 ||
-        cast.name.toLocaleLowerCase('ja-JP').includes(normalizedSearch) ||
-        cast.nameKana.toLocaleLowerCase('ja-JP').includes(normalizedSearch)
+      const matchesName = matchesCastNameSearch(cast, nameSearch)
       const matchesWorkStatus = workStatus === 'all' || cast.workStatus === workStatus
 
       return matchesName && matchesWorkStatus && matchesKanaFilter(cast.nameKana, kanaFilter)

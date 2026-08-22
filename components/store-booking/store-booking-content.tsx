@@ -57,10 +57,13 @@ import { PAYMENT_METHODS } from '@/lib/constants'
 import { toast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import type { PublicCastProfile } from '@/lib/store/public-casts'
-import { ceilReservationStartDate } from '@/lib/reservation/time-boundary'
+import {
+  ceilReservationStartDate,
+  RESERVATION_START_STEP_MINUTES,
+} from '@/lib/reservation/time-boundary'
 
 const JST_TIMEZONE = 'Asia/Tokyo'
-const STEP_MINUTES = 30
+const STEP_MINUTES = RESERVATION_START_STEP_MINUTES
 const MAX_BOOKING_DAYS = 14
 
 function resolveInitialSlotDate(slot?: string | null): Date | null {

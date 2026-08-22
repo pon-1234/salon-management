@@ -64,7 +64,8 @@ export function CastListActionButtons({
 
         <Input
           type="search"
-          placeholder="キャスト名・かな検索"
+          placeholder="名前・ひらがなで検索"
+          aria-label="キャスト名・ひらがな検索"
           value={nameSearch}
           onChange={(e) => onNameSearchChange(e.target.value)}
           className="w-[200px]"

@@ -1,6 +1,6 @@
 /**
  * @design_doc   Custom hook for checking reservation availability
- * @related_to   reservation/availability/route.ts, quick-booking-dialog.tsx
+ * @related_to   reservation/availability/route.ts, quick-booking-dialog.tsx, and time-boundary.ts
  * @known_issues None currently
  */
 import { useState, useCallback } from 'react'
@@ -11,7 +11,10 @@ import {
   minutesToIsoInJst,
 } from '@/lib/settings/business-hours'
 import { useStore } from '@/contexts/store-context'
-import { ceilReservationStartMinutes } from '@/lib/reservation/time-boundary'
+import {
+  ceilReservationStartMinutes,
+  RESERVATION_START_STEP_MINUTES,
+} from '@/lib/reservation/time-boundary'
 
 interface TimeSlot {
   startTime: string
@@ -133,7 +136,7 @@ export function useAvailability() {
       dateString: string,
       duration: number,
       businessHours: BusinessHoursRange = DEFAULT_BUSINESS_HOURS,
-      stepMinutes = 30
+      stepMinutes = RESERVATION_START_STEP_MINUTES
     ) => {
       const slots: TimeSlot[] = []
       const increment = Math.max(1, stepMinutes)

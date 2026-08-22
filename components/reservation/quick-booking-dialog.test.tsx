@@ -164,13 +164,21 @@ const businessHours: BusinessHoursRange = {
 
 const selectedTime = new Date('2099-01-02T03:00:00.000Z')
 
-function createFetchMock() {
-  return vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+function createFetchMock(completedHistory: unknown[] = []) {
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     if (init?.method === 'POST') {
       return {
         ok: true,
         status: 201,
         json: async () => ({ id: 'reservation-created' }),
+      } as Response
+    }
+
+    if (String(input).includes('/api/reservation?')) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => completedHistory,
       } as Response
     }
 
@@ -251,10 +259,15 @@ describe('QuickBookingDialog', () => {
 
     await waitForOnePageBookingForm()
 
-    expect(screen.getByText('お客様情報')).toBeInTheDocument()
+    const customerSummary = screen.getByTestId('quick-booking-customer-summary')
+    expect(customerSummary).toHaveTextContent('お客様情報')
+    expect(customerSummary).toHaveTextContent('予約テスト顧客')
+    expect(customerSummary).toHaveTextContent('090-1111-2222')
+    expect(customerSummary).toHaveClass('text-sm')
+    expect(customerSummary.querySelector('h3')).toBeNull()
     expect(screen.getByText('サービス詳細')).toBeInTheDocument()
     expect(screen.getByText('コース選択')).toBeInTheDocument()
-    expect(screen.getByText('指名設定')).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: '指名設定' })).toBeInTheDocument()
     expect(screen.getByText('支払い・受付情報')).toBeInTheDocument()
     expect(screen.getByText('料金内訳')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '次へ' })).not.toBeInTheDocument()
@@ -266,7 +279,7 @@ describe('QuickBookingDialog', () => {
     expect(stickyFooter).toContainElement(submit)
   })
 
-  it('offers only 30-minute start boundaries and rejects an off-boundary manual time', async () => {
+  it('offers only 10-minute start boundaries and rejects an off-boundary manual time', async () => {
     const fetchMock = createFetchMock()
     vi.stubGlobal('fetch', fetchMock)
     render(dialogElement())
@@ -274,26 +287,103 @@ describe('QuickBookingDialog', () => {
     await waitForOnePageBookingForm()
     await waitFor(() =>
       expect(mocks.renderTimeSlotPicker).toHaveBeenCalledWith(
-        expect.objectContaining({ stepMinutes: 30 })
+        expect.objectContaining({ stepMinutes: 10 })
       )
     )
 
     const timeInput = document.querySelector<HTMLInputElement>('input[name="time"]')
     expect(timeInput).not.toBeNull()
-    expect(timeInput).toHaveAttribute('step', '1800')
+    expect(timeInput).toHaveAttribute('step', '600')
 
-    fireEvent.change(timeInput!, { target: { value: '12:10' } })
+    fireEvent.change(timeInput!, { target: { value: '12:05' } })
     fireEvent.click(screen.getByRole('button', { name: '予約を確定' }))
 
     await waitFor(() =>
       expect(mocks.toast).toHaveBeenCalledWith({
-        title: '開始時間は30分単位で入力してください',
-        description: '開始時間の分は00分または30分を指定してください。',
+        title: '開始時間は10分単位で入力してください',
+        description: '開始時間の分は10分単位で指定してください。',
         variant: 'destructive',
       })
     )
     expect(mocks.checkAvailability).not.toHaveBeenCalled()
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false)
+  })
+
+  it('lets the operator pick a designation from a single select instead of fee buttons', async () => {
+    mocks.getDesignationFees.mockResolvedValue([
+      {
+        id: 'fee-free',
+        name: 'フリー',
+        price: 0,
+        storeShare: 0,
+        castShare: 0,
+        sortOrder: 1,
+        isActive: true,
+        kind: 'free',
+      },
+      {
+        id: 'fee-repeat',
+        name: 'リピート指名',
+        price: 3_000,
+        storeShare: 1_000,
+        castShare: 2_000,
+        sortOrder: 2,
+        isActive: true,
+        kind: 'repeat',
+      },
+    ])
+    vi.stubGlobal('fetch', createFetchMock())
+    render(dialogElement())
+
+    await waitForOnePageBookingForm()
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', { name: '指名設定' })).toBeInTheDocument()
+    )
+
+    expect(screen.queryByRole('button', { name: /フリー/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /リピート指名/ })).not.toBeInTheDocument()
+  })
+
+  it('auto-selects フリー for a first visit and リピート指名 when the customer already used that cast', async () => {
+    const catalog = [
+      {
+        id: 'fee-free',
+        name: 'フリー',
+        price: 0,
+        storeShare: 0,
+        castShare: 0,
+        sortOrder: 1,
+        isActive: true,
+        kind: 'free' as const,
+      },
+      {
+        id: 'fee-repeat',
+        name: 'リピート指名',
+        price: 3_000,
+        storeShare: 1_000,
+        castShare: 2_000,
+        sortOrder: 2,
+        isActive: true,
+        kind: 'repeat' as const,
+      },
+    ]
+    mocks.getDesignationFees.mockResolvedValue(catalog)
+    vi.stubGlobal('fetch', createFetchMock())
+    const { unmount } = render(dialogElement())
+
+    await waitForOnePageBookingForm()
+    await waitFor(() => {
+      expect(screen.getByRole('combobox', { name: '指名設定' })).toHaveTextContent('フリー')
+    })
+    unmount()
+
+    mocks.getDesignationFees.mockResolvedValue(catalog)
+    vi.stubGlobal('fetch', createFetchMock([{ id: 'completed-1' }]))
+    render(dialogElement())
+    await waitForOnePageBookingForm()
+    await waitFor(() => {
+      expect(screen.getByRole('combobox', { name: '指名設定' })).toHaveTextContent('リピート指名')
+    })
   })
 
   it('does not label any amount as welfare expense in the booking price breakdown', async () => {

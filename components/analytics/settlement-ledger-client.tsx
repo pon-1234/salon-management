@@ -6,13 +6,14 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { formatInTimeZone } from 'date-fns-tz'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useStore } from '@/contexts/store-context'
 import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import type { StoreSettlementLedger } from '@/lib/settlement/store-ledger'
-import { persistSettlementMethod, displaySettlementMethodLabel } from '@/lib/payment/method-labels'
+import { displaySettlementMethodLabel } from '@/lib/payment/method-labels'
 import { PageLoading } from '@/components/ui/page-loading'
 
 const JST_TIME_ZONE = 'Asia/Tokyo'
@@ -40,7 +41,6 @@ export function SettlementLedgerClient({ mode: _mode }: { mode: 'payment' | 'set
   const [ledger, setLedger] = useState<StoreSettlementLedger | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [savingId, setSavingId] = useState<string | null>(null)
 
   const fetchLedger = useCallback(async () => {
     setIsLoading(true)
@@ -85,40 +85,9 @@ export function SettlementLedgerClient({ mode: _mode }: { mode: 'payment' | 'set
     setMonth(next)
   }
 
-  const recordFullPayment = async (castId: string, reservationIds: string[], amount: number) => {
-    setSavingId(castId)
-    setError(null)
-    try {
-      const response = await fetch(
-        buildStoreScopedEndpoint('/api/admin/cast/settlements', currentStore.id),
-        {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            castId,
-            amount,
-            method: persistSettlementMethod('現金'),
-            handledBy: 'admin',
-            reservationIds,
-          }),
-        }
-      )
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}))
-        throw new Error(payload.error ?? '入金記録の保存に失敗しました。')
-      }
-      await fetchLedger()
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '入金記録の保存に失敗しました。')
-    } finally {
-      setSavingId(null)
-    }
-  }
-
   const title = '精算'
   const description =
-    'キャストごとの未精算額を確認し、その日の金額をまとめて精算します。精算記録と旧台帳もこの画面で確認できます。'
+    'キャストごとの未精算額を確認します。精算の実行は各キャストの精算状況画面で行います。精算記録と旧台帳もこの画面で確認できます。'
 
   return (
     <div className="container mx-auto space-y-6 py-6">
@@ -184,21 +153,11 @@ export function SettlementLedgerClient({ mode: _mode }: { mode: 'payment' | 'set
                       ))}
                     </ul>
                   ) : null}
-                  {cast.pendingReservations.length > 0 ? (
-                    <Button
-                      type="button"
-                      disabled={savingId === cast.castId}
-                      onClick={() =>
-                        void recordFullPayment(
-                          cast.castId,
-                          cast.pendingReservations.map((reservation) => reservation.id),
-                          cast.pendingAmount
-                        )
-                      }
-                    >
-                      精算する
-                    </Button>
-                  ) : null}
+                  <Button asChild>
+                    <Link href={`/admin/cast/manage/${cast.castId}?tab=settlement`}>
+                      精算状況を見る
+                    </Link>
+                  </Button>
                 </CardContent>
               </Card>
             ))}
