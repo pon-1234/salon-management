@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { CastScheduleEntry } from '@/lib/cast-schedule/old-types'
 import { ScheduleGrid } from './schedule-grid'
 
-const editDialogMock = vi.hoisted(() => vi.fn(() => null))
+const editDialogMock = vi.hoisted(() => vi.fn((_props?: unknown) => null))
 
 vi.mock('./schedule-edit-dialog', () => ({
   ScheduleEditDialog: (props: { focusDate?: string | null; open: boolean }) => {
