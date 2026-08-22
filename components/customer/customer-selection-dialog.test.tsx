@@ -268,7 +268,7 @@ describe('CustomerSelectionDialog', () => {
     )
     await waitFor(() => expect(searchByPhone).toHaveBeenCalledWith('090-1234-5678'))
 
-    fireEvent.click(screen.getByRole('button', { name: '新規顧客を登録' }))
+    fireEvent.click(await screen.findByRole('button', { name: '新規顧客を登録' }))
 
     expect(push).toHaveBeenCalledWith(
       '/admin/customers/new?returnTo=reservation&phone=09012345678&store=ikebukuro'
