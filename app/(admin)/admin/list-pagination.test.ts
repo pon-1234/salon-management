@@ -24,10 +24,12 @@ describe('admin list pagination', () => {
     expect(source).toContain('次へ')
   })
 
-  it('keeps the global cast picker bounded', async () => {
+  it('does not keep a global header cast picker', async () => {
     const source = await readFile(resolve(process.cwd(), 'components/header.tsx'), 'utf8')
 
-    expect(source).toContain('limit=100')
+    expect(source).not.toContain('limit=100')
+    expect(source).not.toContain('/api/cast')
+    expect(source).toContain("href: '/admin/cast/list'")
   })
 
   it('loads every bounded cast page before applying client-side operational filters', async () => {

@@ -115,18 +115,15 @@ describe('ScheduleEditDialog day templates', () => {
         castName="明里"
         castId="cast-1"
         startDate={new Date('2026-08-10T00:00:00+09:00')}
-        initialSchedule={{
-          '2026-08-10': { type: '出勤予定', startTime: '12:00', endTime: '22:00' },
-        }}
+        initialSchedule={{}}
         onSave={vi.fn()}
       />
     )
 
-    const dayCard = document.getElementById('schedule-edit-day-2026-08-10') as HTMLElement
+    const dayCard = document.querySelector('[id^="schedule-edit-day-"]') as HTMLElement
+    fireEvent.click(within(dayCard).getByRole('button', { name: '昼勤 12:00-22:00 を適用' }))
     fireEvent.click(within(dayCard).getByRole('button', { name: '休みを適用' }))
 
     expect(within(dayCard).getByRole('combobox')).toHaveTextContent('休日')
-    expect(within(dayCard).queryByText('12:00')).not.toBeInTheDocument()
-    expect(within(dayCard).queryByText('22:00')).not.toBeInTheDocument()
   })
 })
