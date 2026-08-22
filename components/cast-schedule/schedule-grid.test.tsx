@@ -62,33 +62,41 @@ describe('ScheduleGrid', () => {
 
   it('keeps dates visible while scrolling and opens that day in the editor', () => {
     const scrollIntoView = vi.fn()
+    const previousElementScroll = Element.prototype.scrollIntoView
+    const previousHtmlScroll = HTMLElement.prototype.scrollIntoView
     Element.prototype.scrollIntoView = scrollIntoView
+    HTMLElement.prototype.scrollIntoView = scrollIntoView
 
-    render(
-      <ScheduleGrid
-        startDate={new Date('2026-08-10T00:00:00+09:00')}
-        entries={[entry]}
-        viewMode="grid"
-      />
-    )
+    try {
+      render(
+        <ScheduleGrid
+          startDate={new Date('2026-08-10T00:00:00+09:00')}
+          entries={[entry]}
+          viewMode="grid"
+        />
+      )
 
-    const dateHeader = screen.getByRole('button', { name: '08/10(月)の列へ移動' })
-    expect(screen.getByTestId('schedule-scrollport')).toHaveClass('h-full', 'overflow-auto')
-    expect(screen.getByTestId('schedule-scrollport')).not.toHaveClass('max-h-[calc(100vh-12rem)]')
-    expect(dateHeader.closest('[data-testid="schedule-date-header"]')).toHaveClass('sticky')
+      const dateHeader = screen.getByRole('button', { name: '08/10(月)の列へ移動' })
+      expect(screen.getByTestId('schedule-scrollport')).toHaveClass('h-full', 'overflow-auto')
+      expect(screen.getByTestId('schedule-scrollport')).not.toHaveClass('max-h-[calc(100vh-12rem)]')
+      expect(dateHeader.closest('[data-testid="schedule-date-header"]')).toHaveClass('sticky')
 
-    fireEvent.click(dateHeader)
-    expect(scrollIntoView).toHaveBeenCalled()
+      fireEvent.click(dateHeader)
+      expect(scrollIntoView).toHaveBeenCalled()
 
-    fireEvent.click(screen.getByText('出勤予定'))
+      fireEvent.click(screen.getByText('出勤予定'))
 
-    expect(editDialogMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        open: true,
-        focusDate: '2026-08-10',
-      })
-    )
-    expect(screen.getByTestId('schedule-edit-dialog')).toBeInTheDocument()
+      expect(editDialogMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          open: true,
+          focusDate: '2026-08-10',
+        })
+      )
+      expect(screen.getByTestId('schedule-edit-dialog')).toBeInTheDocument()
+    } finally {
+      Element.prototype.scrollIntoView = previousElementScroll
+      HTMLElement.prototype.scrollIntoView = previousHtmlScroll
+    }
   })
 
   it('shows an explicit empty result instead of a blank schedule', () => {
