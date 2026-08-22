@@ -286,10 +286,7 @@ export function PaymentRecordForm({
         <Button
           type="submit"
           disabled={
-            !hasSelectedReservations ||
-            amount <= 0 ||
-            amount > selectedSalesTotal ||
-            isSubmitting
+            !hasSelectedReservations || amount <= 0 || amount > selectedSalesTotal || isSubmitting
           }
         >
           {isSubmitting ? '処理中...' : '精算を確定'}

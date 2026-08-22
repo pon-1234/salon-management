@@ -428,8 +428,8 @@ export function ScheduleEditDialog({
                           </SelectItem>
                         ))}
                       </SelectContent>
-                      </Select>
-                    </div>
+                    </Select>
+                  </div>
 
                   {/* 時間設定（出勤日のみ） */}
                   {isWorkDay && (
