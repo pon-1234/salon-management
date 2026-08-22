@@ -5,6 +5,8 @@
  */
 import { db } from '@/lib/db'
 import { SettlementStatus, SettlementPaymentDto } from '@/lib/cast-portal/types'
+import { allocateSettlementAmount, remainingStaffRevenue } from './allocate-partial'
+import { persistSettlementMethod } from '@/lib/payment/method-labels'
 
 type UpsertInput = {
   id?: string
@@ -74,8 +76,9 @@ export async function upsertSettlementPayment(input: UpsertInput): Promise<Settl
         status: true,
         settlementStatus: true,
         staffRevenue: true,
+        startTime: true,
         settlementPayments: {
-          select: { paymentId: true },
+          select: { paymentId: true, allocatedAmount: true },
         },
       },
     })
@@ -88,14 +91,20 @@ export async function upsertSettlementPayment(input: UpsertInput): Promise<Settl
       const belongsToCurrentPayment = reservation.settlementPayments.some(
         ({ paymentId }) => paymentId === input.id
       )
-      const belongsToAnotherPayment = reservation.settlementPayments.some(
-        ({ paymentId }) => paymentId !== input.id
-      )
+      const alreadyAllocated = reservation.settlementPayments.reduce((sum, rel) => {
+        if (rel.paymentId === input.id) return sum
+        const allocated = rel.allocatedAmount ?? 0
+        if (allocated > 0) return sum + allocated
+        return sum + (reservation.staffRevenue ?? 0)
+      }, 0)
+      const remaining = remainingStaffRevenue({
+        staffRevenue: reservation.staffRevenue ?? 0,
+        alreadyAllocated,
+      })
       return (
         reservation.status !== 'completed' ||
         reservation.staffRevenue === null ||
-        belongsToAnotherPayment ||
-        (reservation.settlementStatus === 'settled' && !belongsToCurrentPayment)
+        (remaining <= 0 && !belongsToCurrentPayment)
       )
     })
 
@@ -103,23 +112,31 @@ export async function upsertSettlementPayment(input: UpsertInput): Promise<Settl
       throw new SettlementValidationError('Only completed, unallocated reservations can be settled')
     }
 
-    const expectedAmount = reservations.reduce(
-      (sum, reservation) => sum + (reservation.staffRevenue ?? 0),
-      0
-    )
-    if (input.amount > expectedAmount) {
+    const allocationInput = reservations.map((reservation) => ({
+      id: reservation.id,
+      staffRevenue: reservation.staffRevenue ?? 0,
+      alreadyAllocated: reservation.settlementPayments.reduce((sum, rel) => {
+        if (rel.paymentId === input.id) return sum
+        const allocated = rel.allocatedAmount ?? 0
+        if (allocated > 0) return sum + allocated
+        return sum + (reservation.staffRevenue ?? 0)
+      }, 0),
+      startTime: reservation.startTime ?? new Date(0),
+    }))
+    const { allocations, remainingAmount } = allocateSettlementAmount(allocationInput, input.amount)
+
+    if (remainingAmount > 0 || allocations.length === 0) {
       throw new SettlementValidationError(
         'Settlement amount cannot exceed selected reservation staff revenue'
       )
     }
-    const settlementStatus = input.amount === expectedAmount ? 'settled' : 'partial'
 
     const paymentRecord = input.id
       ? await tx.settlementPayment.update({
           where: { id: input.id },
           data: {
             amount: input.amount,
-            method: input.method,
+            method: persistSettlementMethod(input.method),
             handledBy: input.handledBy,
             paidAt,
             notes: input.notes,
@@ -130,7 +147,7 @@ export async function upsertSettlementPayment(input: UpsertInput): Promise<Settl
             castId: input.castId,
             storeId: input.storeId,
             amount: input.amount,
-            method: input.method,
+            method: persistSettlementMethod(input.method),
             handledBy: input.handledBy,
             paidAt,
             notes: input.notes,
@@ -156,20 +173,29 @@ export async function upsertSettlementPayment(input: UpsertInput): Promise<Settl
     }
 
     await tx.settlementPaymentReservation.createMany({
-      data: reservationIds.map((reservationId) => ({
+      data: allocations.map((allocation) => ({
         paymentId: paymentRecord.id,
-        reservationId,
+        reservationId: allocation.reservationId,
+        allocatedAmount: allocation.allocatedAmount,
       })),
     })
 
-    await tx.reservation.updateMany({
-      where: {
-        id: { in: reservationIds },
-        castId: input.castId,
-        storeId: input.storeId,
-      },
-      data: { settlementStatus },
-    })
+    const idsByStatus = new Map<string, string[]>()
+    for (const allocation of allocations) {
+      const ids = idsByStatus.get(allocation.nextStatus) ?? []
+      ids.push(allocation.reservationId)
+      idsByStatus.set(allocation.nextStatus, ids)
+    }
+    for (const [settlementStatus, ids] of idsByStatus) {
+      await tx.reservation.updateMany({
+        where: {
+          id: { in: ids },
+          castId: input.castId,
+          storeId: input.storeId,
+        },
+        data: { settlementStatus },
+      })
+    }
 
     return paymentRecord
   })

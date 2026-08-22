@@ -1,5 +1,5 @@
 /**
- * @design_doc   Store-wide payment processing screen for completed reservations
+ * @design_doc   Store-wide payment processing screen now shares the unified settlement view
  * @related_to   SettlementLedgerClient
  * @known_issues Legacy settlement history is not imported
  */

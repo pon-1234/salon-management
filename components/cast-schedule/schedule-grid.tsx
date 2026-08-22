@@ -286,7 +286,10 @@ export function ScheduleGrid({
               <CardContent className="p-4">
                 <div className="grid min-w-[1000px] grid-cols-8 items-center gap-4">
                   {/* Cast Info */}
-                  <div className="flex min-w-[180px] items-center gap-3" role="rowheader">
+                  <div
+                    className="sticky left-0 z-10 flex min-w-[180px] items-center gap-3 bg-white"
+                    role="rowheader"
+                  >
                     <Avatar className="h-12 w-12">
                       <AvatarImage src={entry.image} alt={entry.name} />
                       <AvatarFallback className="bg-gradient-to-br from-emerald-400 to-emerald-600 font-medium text-white">

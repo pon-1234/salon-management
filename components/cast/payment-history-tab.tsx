@@ -42,6 +42,7 @@ import {
   SettlementPaymentDto,
 } from '@/lib/cast-portal/types'
 import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
+import { persistSettlementMethod, displaySettlementMethodLabel } from '@/lib/payment/method-labels'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 
@@ -123,10 +124,12 @@ export function PaymentHistoryTab({ castId, storeId }: PaymentHistoryTabProps) {
       }
       const data = (await res.json()) as CastSettlementsData
       const pending = data.days.flatMap((d) =>
-        d.records.filter(
-          (record) =>
-            record.status === 'completed' && (record.settlementStatus ?? 'pending') === 'pending'
-        )
+        d.records.filter((record) => {
+          if (record.status !== 'completed') return false
+          const status = record.settlementStatus ?? 'pending'
+          const unpaid = record.unpaidAmount ?? record.staffRevenue
+          return status !== 'settled' && unpaid > 0
+        })
       )
       setPendingReservations(pending)
     } catch (e) {
@@ -180,6 +183,7 @@ export function PaymentHistoryTab({ castId, storeId }: PaymentHistoryTabProps) {
   const getPaymentTypeColor = (type: string) => {
     switch (type) {
       case '現金精算':
+      case '現金':
         return 'bg-green-100 text-green-700'
       case '振込':
         return 'bg-blue-100 text-blue-700'
@@ -205,7 +209,7 @@ export function PaymentHistoryTab({ castId, storeId }: PaymentHistoryTabProps) {
   return (
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground">
-        入金記録は、対応済み予約の手取り（キャスト売上）を精算する操作です。対象予約を選ぶと金額が自動計算されます。一部金額でも記録でき、残額は未精算のまま残ります。店舗全体の一覧は「入金処理」「入金精算処理」からも開けます。
+        精算は、対応済み予約の手取り（キャスト売上）をまとめて記録する操作です。対象予約は初期状態で全件選択され、金額は変更できます。一部精算の残額は未精算のまま残ります。店舗全体の一覧は「精算」からも開けます。
       </p>
       {/* サマリーカード */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -252,7 +256,7 @@ export function PaymentHistoryTab({ castId, storeId }: PaymentHistoryTabProps) {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>入金履歴</CardTitle>
+            <CardTitle>精算履歴</CardTitle>
             <Dialog
               open={isAddDialogOpen}
               onOpenChange={(open) => {
@@ -263,14 +267,14 @@ export function PaymentHistoryTab({ castId, storeId }: PaymentHistoryTabProps) {
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="mr-2 h-4 w-4" />
-                  入金記録追加
+                  精算する
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                  <DialogTitle>新規入金記録</DialogTitle>
+                  <DialogTitle>精算する</DialogTitle>
                   <DialogDescription>
-                    完了済み・未精算の予約を選択して入金を記録します。
+                    対象予約は初期状態で全件選択されます。金額を変えると古い予約から充当します。
                   </DialogDescription>
                 </DialogHeader>
                 {saveError ? (
@@ -315,7 +319,9 @@ export function PaymentHistoryTab({ castId, storeId }: PaymentHistoryTabProps) {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getPaymentTypeColor(record.method)}>{record.method}</Badge>
+                    <Badge className={getPaymentTypeColor(record.method)}>
+                      {displaySettlementMethodLabel(record.method)}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-lg font-medium">
                     ¥{record.amount.toLocaleString()}
@@ -413,11 +419,12 @@ function PaymentRecordForm({
       ? format(new Date(initialData.paidAt), 'yyyy-MM-dd')
       : format(new Date(), 'yyyy-MM-dd'),
     time: initialData?.paidAt ? format(new Date(initialData.paidAt), 'HH:mm') : '10:00',
-    paymentType: initialData?.method || '現金精算',
+    paymentType: persistSettlementMethod(initialData?.method) || '現金',
     reservationIds:
       initialData?.reservations
         ?.map((reservation) => reservation.id)
-        .filter((reservationId) => eligibleReservationIds.has(reservationId)) || [],
+        .filter((reservationId) => eligibleReservationIds.has(reservationId)) ||
+      reservations.map((reservation) => reservation.id),
     handledBy: initialData?.handledBy || '',
     notes: initialData?.notes || '',
   })
@@ -426,19 +433,23 @@ function PaymentRecordForm({
     () =>
       reservations
         .filter((record) => formData.reservationIds.includes(record.id))
-        .reduce((sum, record) => sum + record.staffRevenue, 0),
+        .reduce((sum, record) => sum + (record.unpaidAmount ?? record.staffRevenue), 0),
     [formData.reservationIds, reservations]
   )
+  const [amount, setAmount] = useState(selectedSalesTotal)
+  useEffect(() => {
+    setAmount(selectedSalesTotal)
+  }, [selectedSalesTotal])
   const hasSelectedReservations = formData.reservationIds.length > 0
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!hasSelectedReservations || selectedSalesTotal <= 0) return
+    if (!hasSelectedReservations || amount <= 0 || amount > selectedSalesTotal) return
 
     const dateTime = new Date(`${formData.date}T${formData.time}`)
     void onSubmit({
-      amount: selectedSalesTotal,
-      method: formData.paymentType,
+      amount,
+      method: persistSettlementMethod(formData.paymentType),
       handledBy: formData.handledBy,
       paidAt: dateTime.toISOString(),
       reservationIds: formData.reservationIds,
@@ -491,7 +502,7 @@ function PaymentRecordForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="現金精算">現金精算</SelectItem>
+              <SelectItem value="現金">現金</SelectItem>
               <SelectItem value="振込">振込</SelectItem>
               <SelectItem value="その他">その他</SelectItem>
             </SelectContent>
@@ -510,17 +521,23 @@ function PaymentRecordForm({
       </div>
 
       <div>
-        <Label htmlFor="amount">支払金額</Label>
+        <Label htmlFor="amount">今回精算する額</Label>
         <Input
           id="amount"
           type="number"
-          value={selectedSalesTotal}
-          readOnly
+          min={1}
+          max={selectedSalesTotal}
+          value={amount}
+          onChange={(event) => setAmount(Number(event.target.value) || 0)}
           aria-describedby="settlement-amount-help"
           required
         />
         <p id="settlement-amount-help" className="mt-1 text-sm text-gray-600">
-          選択予約のキャスト取り分合計から自動算出されます: ¥{selectedSalesTotal.toLocaleString()}
+          未精算合計 ¥{selectedSalesTotal.toLocaleString()}
+          {amount < selectedSalesTotal
+            ? ` ／ 精算後残額 ¥${Math.max(selectedSalesTotal - amount, 0).toLocaleString()}`
+            : ''}
+          。古い予約から順に充当します。
         </p>
       </div>
 
@@ -543,7 +560,11 @@ function PaymentRecordForm({
                     <span>{record.courseName ?? 'コース未設定'}</span>
                   </div>
                   <div className="text-gray-500">
-                    キャスト売上: ¥{record.staffRevenue.toLocaleString()} / 状態:{' '}
+                    キャスト売上: ¥{record.staffRevenue.toLocaleString()}
+                    {(record.unpaidAmount ?? record.staffRevenue) !== record.staffRevenue
+                      ? ` / 未精算残 ¥${(record.unpaidAmount ?? record.staffRevenue).toLocaleString()}`
+                      : ''}{' '}
+                    / 状態:{' '}
                     {settlementStatusPresentation[record.settlementStatus ?? 'pending'].label}
                   </div>
                 </div>
@@ -576,9 +597,15 @@ function PaymentRecordForm({
       <div className="flex justify-end gap-2">
         <Button
           type="submit"
-          disabled={!hasSelectedReservations || selectedSalesTotal <= 0 || isSubmitting}
+          disabled={
+            !hasSelectedReservations ||
+            amount <= 0 ||
+            amount > selectedSalesTotal ||
+            !formData.handledBy.trim() ||
+            isSubmitting
+          }
         >
-          {isSubmitting ? '保存中...' : '保存'}
+          {isSubmitting ? '処理中...' : '精算を確定'}
         </Button>
       </div>
     </form>

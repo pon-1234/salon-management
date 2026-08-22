@@ -76,9 +76,9 @@ export function DailyReportPageClient() {
 
   return (
     <div className="container mx-auto py-8">
-      <h1 className="mb-4 text-2xl font-bold">日報</h1>
+      <h1 className="mb-4 text-2xl font-bold">当日売上</h1>
       <p className="mb-4 text-sm text-muted-foreground">
-        営業日は5:30から翌5:30までです。完了予約の現金/カード、値引き、ホテル、厚生費、店舗売上、手取りと出勤時間を表示します。
+        閲覧専用です。当日の売上とキャスト別実績を確認できます。過去日の予約修正は月間売上へ即時反映されるため、日報の確定操作はありません。
       </p>
       <div className="mb-6 flex flex-wrap items-end gap-2">
         <Button

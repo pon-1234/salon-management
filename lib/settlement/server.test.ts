@@ -265,8 +265,8 @@ describe('upsertSettlementPayment', () => {
     })
     expect(tx.settlementPaymentReservation.createMany).toHaveBeenCalledWith({
       data: [
-        { paymentId: 'payment-1', reservationId: 'reservation-1' },
-        { paymentId: 'payment-1', reservationId: 'reservation-2' },
+        { paymentId: 'payment-1', reservationId: 'reservation-1', allocatedAmount: 14000 },
+        { paymentId: 'payment-1', reservationId: 'reservation-2', allocatedAmount: 18000 },
       ],
     })
     expect(tx.reservation.updateMany).toHaveBeenCalledWith({
@@ -345,7 +345,7 @@ describe('upsertSettlementPayment', () => {
       where: { paymentId: 'payment-1' },
     })
     expect(tx.settlementPaymentReservation.createMany).toHaveBeenCalledWith({
-      data: [{ paymentId: 'payment-1', reservationId: 'reservation-3' }],
+      data: [{ paymentId: 'payment-1', reservationId: 'reservation-3', allocatedAmount: 15000 }],
     })
     expect(tx.reservation.updateMany).toHaveBeenNthCalledWith(1, {
       where: {
@@ -453,8 +453,9 @@ describe('upsertSettlementPayment', () => {
         status: true,
         settlementStatus: true,
         staffRevenue: true,
+        startTime: true,
         settlementPayments: {
-          select: { paymentId: true },
+          select: { paymentId: true, allocatedAmount: true },
         },
       },
     })

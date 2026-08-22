@@ -14,6 +14,7 @@ import { CastListActionButtons } from '@/components/cast/cast-list-action-button
 import { CastListViewToggle } from '@/components/cast/cast-list-view-toggle'
 import { useStore } from '@/contexts/store-context'
 import { TableSkeleton } from '@/components/ui/page-loading'
+import { sortCastsByGojuon } from '@/lib/cast/gojuon-sort'
 
 const KANA_ROWS: Record<string, string[]> = {
   あ: ['あ', 'い', 'う', 'え', 'お'],
@@ -103,16 +104,18 @@ export default function CastListPage() {
     fetchCasts()
   }, [fetchCasts])
 
-  const filteredCasts = allCasts.filter((cast) => {
-    const normalizedSearch = nameSearch.trim().toLocaleLowerCase('ja-JP')
-    const matchesName =
-      normalizedSearch.length === 0 ||
-      cast.name.toLocaleLowerCase('ja-JP').includes(normalizedSearch) ||
-      cast.nameKana.toLocaleLowerCase('ja-JP').includes(normalizedSearch)
-    const matchesWorkStatus = workStatus === 'all' || cast.workStatus === workStatus
+  const filteredCasts = sortCastsByGojuon(
+    allCasts.filter((cast) => {
+      const normalizedSearch = nameSearch.trim().toLocaleLowerCase('ja-JP')
+      const matchesName =
+        normalizedSearch.length === 0 ||
+        cast.name.toLocaleLowerCase('ja-JP').includes(normalizedSearch) ||
+        cast.nameKana.toLocaleLowerCase('ja-JP').includes(normalizedSearch)
+      const matchesWorkStatus = workStatus === 'all' || cast.workStatus === workStatus
 
-    return matchesName && matchesWorkStatus && matchesKanaFilter(cast.nameKana, kanaFilter)
-  })
+      return matchesName && matchesWorkStatus && matchesKanaFilter(cast.nameKana, kanaFilter)
+    })
+  )
 
   const handleRefresh = () => {
     fetchCasts()

@@ -181,6 +181,7 @@ export interface CastSettlementRecordDetail {
   courseDuration: number | null
   price: number
   staffRevenue: number
+  unpaidAmount?: number
   storeRevenue: number
   welfareExpense: number
   designationType?: Reservation['designationType'] | null

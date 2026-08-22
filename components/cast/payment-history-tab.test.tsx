@@ -29,6 +29,7 @@ function settlementRecord(
     courseDuration: 60,
     price: staffRevenue * 2,
     staffRevenue,
+    unpaidAmount: staffRevenue,
     storeRevenue: staffRevenue,
     welfareExpense: 1_000,
     designationFee: 0,
@@ -130,42 +131,40 @@ describe('PaymentHistoryTab', () => {
     vi.restoreAllMocks()
   })
 
-  it('requires one completed pending reservation and derives a read-only payment amount', async () => {
+  it('selects unpaid reservations and allows a partial settlement amount', async () => {
     const user = userEvent.setup()
     const fetchMock = successfulFetch()
     vi.stubGlobal('fetch', fetchMock)
 
     render(<PaymentHistoryTab castId="cast-1" storeId="ikebukuro" />)
 
-    await user.click(await screen.findByRole('button', { name: '入金記録追加' }))
+    await user.click(await screen.findByRole('button', { name: '精算する' }))
     const dialog = await screen.findByRole('dialog')
-    const amount = within(dialog).getByRole('spinbutton', { name: '支払金額' })
+    const amount = within(dialog).getByRole('spinbutton', { name: '今回精算する額' })
 
-    expect(amount).toHaveValue(0)
-    expect(amount).toHaveAttribute('readonly')
-    expect(
-      within(dialog).getByText('完了済み・未精算の対象予約を1件以上選択してください。')
-    ).toBeVisible()
+    expect(amount).toHaveValue(20_000)
+    expect(amount).not.toHaveAttribute('readonly')
     expect(within(dialog).getByText('完了済み未精算コース')).toBeVisible()
-    expect(within(dialog).queryByText('一部精算コース')).not.toBeInTheDocument()
+    expect(within(dialog).getByText('一部精算コース')).toBeVisible()
     expect(within(dialog).queryByText('精算済みコース')).not.toBeInTheDocument()
     expect(within(dialog).queryByText('未完了コース')).not.toBeInTheDocument()
-    expect(within(dialog).getByRole('button', { name: '保存' })).toBeDisabled()
+    expect(within(dialog).getByRole('button', { name: '精算を確定' })).toBeDisabled()
 
-    await user.click(within(dialog).getByRole('checkbox', { name: /完了済み未精算コース/ }))
-    expect(amount).toHaveValue(12_000)
-    expect(within(dialog).getByRole('button', { name: '保存' })).toBeEnabled()
-
+    await user.clear(amount)
+    await user.type(amount, '16000')
+    expect(amount).toHaveValue(16_000)
     await user.type(within(dialog).getByRole('textbox', { name: '処理者' }), '受付担当')
-    await user.click(within(dialog).getByRole('button', { name: '保存' }))
+    expect(within(dialog).getByRole('button', { name: '精算を確定' })).toBeEnabled()
+
+    await user.click(within(dialog).getByRole('button', { name: '精算を確定' }))
 
     await waitFor(() => {
       const postCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST')
       expect(postCall).toBeDefined()
       expect(JSON.parse(String(postCall?.[1]?.body))).toEqual(
         expect.objectContaining({
-          amount: 12_000,
-          reservationIds: ['reservation-pending'],
+          amount: 16_000,
+          reservationIds: ['reservation-pending', 'reservation-partial'],
         })
       )
     })
@@ -185,11 +184,10 @@ describe('PaymentHistoryTab', () => {
 
     render(<PaymentHistoryTab castId="cast-1" storeId="ikebukuro" />)
 
-    await user.click(await screen.findByRole('button', { name: '入金記録追加' }))
+    await user.click(await screen.findByRole('button', { name: '精算する' }))
     const dialog = await screen.findByRole('dialog')
-    await user.click(within(dialog).getByRole('checkbox', { name: /完了済み未精算コース/ }))
     await user.type(within(dialog).getByRole('textbox', { name: '処理者' }), '受付担当')
-    await user.click(within(dialog).getByRole('button', { name: '保存' }))
+    await user.click(within(dialog).getByRole('button', { name: '精算を確定' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('対象予約は既に精算されています。')
   })

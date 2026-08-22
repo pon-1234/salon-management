@@ -115,6 +115,7 @@ const normalizeAppointment = (raw: any): Appointment | null => {
     status: toAppointmentStatus(raw.status),
     location: raw.location,
     price: typeof raw.price === 'number' ? raw.price : Number(raw.price ?? 0),
+    designationType: raw.designationType ?? raw.designation ?? null,
   }
 }
 
@@ -176,6 +177,10 @@ export const normalizeCast = (raw: any): Cast => {
         ? null
         : Number(raw.welfareExpenseRate),
     loginEmail: raw.loginEmail ?? null,
+    mediaComment: raw.mediaComment ?? '',
+    mediaCommentSource: raw.mediaCommentSource ?? 'manual',
+    mediaSyncExcluded: Boolean(raw.mediaSyncExcluded),
+    scheduleTemplates: Array.isArray(raw.scheduleTemplates) ? raw.scheduleTemplates : [],
     workStart: toDate(raw.workStart),
     workEnd: toDate(raw.workEnd),
     appointments,

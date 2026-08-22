@@ -5,6 +5,7 @@
  */
 import { db } from '@/lib/db'
 import logger from '@/lib/logger'
+import { remainingStaffRevenue } from '@/lib/settlement/allocate-partial'
 import { ensureStoreId } from '@/lib/store/server'
 import { getCastPerformanceReport, getJstMonthRange } from '@/lib/analytics/server/cast-performance'
 import {
@@ -77,6 +78,7 @@ type SettlementReservationRow = {
     duration: number
   } | null
   options?: SettlementReservationOptionRow[]
+  settlementPayments?: Array<{ allocatedAmount?: number | null }>
 }
 
 const DEFAULT_SCHEDULE_START_TIME = '10:00'
@@ -769,6 +771,11 @@ async function loadCastSettlements(
           castShare: true,
         },
       },
+      settlementPayments: {
+        select: {
+          allocatedAmount: true,
+        },
+      },
     },
   })
 
@@ -811,6 +818,11 @@ async function loadCastSettlements(
     }
 
     const rawOptions = Array.isArray(reservation.options) ? reservation.options : []
+    const staffRevenue = reservation.staffRevenue ?? reservation.price ?? 0
+    const alreadyAllocated = (reservation.settlementPayments ?? []).reduce(
+      (sum, rel) => sum + (rel.allocatedAmount ?? 0),
+      0
+    )
 
     const record: CastSettlementRecordDetail = {
       id: reservation.id,
@@ -820,7 +832,8 @@ async function loadCastSettlements(
       courseName: reservation.course?.name ?? null,
       courseDuration: reservation.course?.duration ?? null,
       price: reservation.price ?? 0,
-      staffRevenue: reservation.staffRevenue ?? reservation.price ?? 0,
+      staffRevenue,
+      unpaidAmount: remainingStaffRevenue({ staffRevenue, alreadyAllocated }),
       storeRevenue: reservation.storeRevenue ?? 0,
       welfareExpense: reservation.welfareExpense ?? 0,
       designationType: reservation.designationType ?? null,

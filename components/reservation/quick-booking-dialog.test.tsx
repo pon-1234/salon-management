@@ -207,7 +207,7 @@ function dialogElement({
 async function waitForOnePageBookingForm() {
   await waitFor(() => expect(screen.getAllByText(/テストコース 60分/)).not.toHaveLength(0))
   expect(await screen.findByText('オプション選択')).toBeInTheDocument()
-  expect(await screen.findByText('予約内容確認')).toBeInTheDocument()
+  expect(await screen.findByText('料金内訳')).toBeInTheDocument()
 }
 
 function getPostedReservation(fetchMock: ReturnType<typeof createFetchMock>) {
@@ -387,7 +387,7 @@ describe('QuickBookingDialog', () => {
     })
     await user.click(paymentMethod)
     await user.click(await screen.findByRole('option', { name: 'クレジットカード' }))
-    const referenceInput = screen.getByLabelText('カード管理番号')
+    const referenceInput = screen.getByLabelText('カード決済管理番号')
     await user.type(referenceInput, 'IK-2026-00421')
     await user.click(screen.getByRole('button', { name: '予約を確定' }))
 

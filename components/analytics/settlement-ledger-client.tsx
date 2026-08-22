@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useStore } from '@/contexts/store-context'
 import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import type { StoreSettlementLedger } from '@/lib/settlement/store-ledger'
+import { persistSettlementMethod, displaySettlementMethodLabel } from '@/lib/payment/method-labels'
 import { PageLoading } from '@/components/ui/page-loading'
 
 const JST_TIME_ZONE = 'Asia/Tokyo'
@@ -31,7 +32,7 @@ function legacyKindLabel(kind: string): string {
   return kind
 }
 
-export function SettlementLedgerClient({ mode }: { mode: 'payment' | 'settlement' }) {
+export function SettlementLedgerClient({ mode: _mode }: { mode: 'payment' | 'settlement' }) {
   const { currentStore } = useStore()
   const now = useMemo(() => new Date(), [])
   const [year, setYear] = useState(Number(formatInTimeZone(now, JST_TIME_ZONE, 'yyyy')))
@@ -97,7 +98,7 @@ export function SettlementLedgerClient({ mode }: { mode: 'payment' | 'settlement
           body: JSON.stringify({
             castId,
             amount,
-            method: 'cash',
+            method: persistSettlementMethod('現金'),
             handledBy: 'admin',
             reservationIds,
           }),
@@ -115,11 +116,9 @@ export function SettlementLedgerClient({ mode }: { mode: 'payment' | 'settlement
     }
   }
 
-  const title = mode === 'payment' ? '入金処理' : '入金精算処理'
+  const title = '精算'
   const description =
-    mode === 'payment'
-      ? '完了予約の入金を記録します。カード管理番号がある予約もここに表示されます。一部金額でも記録できます。'
-      : 'キャストごとの未精算・精算済み、新規入金、旧システムの月次台帳（入金・出金・厚生費）を確認します。'
+    'キャストごとの未精算額を確認し、その日の金額をまとめて精算します。精算記録と旧台帳もこの画面で確認できます。'
 
   return (
     <div className="container mx-auto space-y-6 py-6">
@@ -159,114 +158,97 @@ export function SettlementLedgerClient({ mode }: { mode: 'payment' | 'settlement
       {isLoading ? (
         <PageLoading compact label="精算情報を読み込んでいます" />
       ) : ledger ? (
-        mode === 'payment' ? (
-          <div className="space-y-4">
-            {ledger.casts.flatMap((cast) =>
-              cast.pendingReservations.map((reservation) => (
-                <Card key={reservation.id}>
-                  <CardHeader>
-                    <CardTitle className="text-lg">
-                      {reservation.customerName} / {cast.castName}
-                    </CardTitle>
-                    <CardDescription>
-                      {reservation.courseName ?? 'コース未設定'} ・ 管理番号{' '}
-                      {reservation.paymentReference ?? 'なし'} ・{' '}
-                      {reservation.paymentMethod ?? '支払方法未設定'}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="text-sm">
-                      手取り ¥{reservation.takeHome.toLocaleString()} / 店舗売上 ¥
-                      {reservation.storeRevenue.toLocaleString()}
-                    </div>
+        <div className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2">
+            {ledger.casts.map((cast) => (
+              <Card key={cast.castId}>
+                <CardHeader>
+                  <CardTitle>{cast.castName}</CardTitle>
+                  <CardDescription>
+                    手取り ¥{cast.staffRevenue.toLocaleString()} / 店舗売上 ¥
+                    {cast.storeRevenue.toLocaleString()}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <p className={cast.pendingAmount > 0 ? 'font-medium text-red-600' : undefined}>
+                    未精算 {cast.pendingCount}件 ¥{cast.pendingAmount.toLocaleString()}
+                  </p>
+                  <p>精算済み ¥{cast.settledAmount.toLocaleString()}</p>
+                  {cast.pendingReservations.length > 0 ? (
+                    <ul className="space-y-1 text-muted-foreground">
+                      {cast.pendingReservations.map((reservation) => (
+                        <li key={reservation.id}>
+                          {reservation.customerName} / {reservation.courseName ?? 'コース未設定'} /
+                          カード決済管理番号 {reservation.paymentReference ?? 'なし'}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {cast.pendingReservations.length > 0 ? (
                     <Button
                       type="button"
                       disabled={savingId === cast.castId}
                       onClick={() =>
-                        void recordFullPayment(cast.castId, [reservation.id], reservation.takeHome)
+                        void recordFullPayment(
+                          cast.castId,
+                          cast.pendingReservations.map((reservation) => reservation.id),
+                          cast.pendingAmount
+                        )
                       }
                     >
-                      全額入金する
+                      精算する
                     </Button>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-            {ledger.casts.every((cast) => cast.pendingReservations.length === 0) ? (
-              <p className="text-sm text-muted-foreground">未精算の完了予約はありません。</p>
-            ) : null}
+                  ) : null}
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              {ledger.casts.map((cast) => (
-                <Card key={cast.castId}>
-                  <CardHeader>
-                    <CardTitle>{cast.castName}</CardTitle>
-                    <CardDescription>
-                      手取り ¥{cast.staffRevenue.toLocaleString()} / 店舗売上 ¥
-                      {cast.storeRevenue.toLocaleString()}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="text-sm">
-                    <p>
-                      未精算 {cast.pendingCount}件 ¥{cast.pendingAmount.toLocaleString()}
-                    </p>
-                    <p>精算済み ¥{cast.settledAmount.toLocaleString()}</p>
-                  </CardContent>
-                </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>精算履歴</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              {ledger.payments.map((payment) => (
+                <div
+                  key={payment.id}
+                  className="flex flex-wrap justify-between gap-2 border-b py-2"
+                >
+                  <span>
+                    {payment.castName} / {displaySettlementMethodLabel(payment.method)}
+                  </span>
+                  <span>¥{payment.amount.toLocaleString()}</span>
+                </div>
               ))}
-            </div>
-            <Card>
-              <CardHeader>
-                <CardTitle>入金記録</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                {ledger.payments.map((payment) => (
-                  <div
-                    key={payment.id}
-                    className="flex flex-wrap justify-between gap-2 border-b py-2"
-                  >
-                    <span>
-                      {payment.castName} / {payment.method}
-                    </span>
-                    <span>¥{payment.amount.toLocaleString()}</span>
-                  </div>
-                ))}
-                {ledger.payments.length === 0 ? (
-                  <p className="text-muted-foreground">この月の入金記録はありません。</p>
-                ) : null}
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>旧台帳</CardTitle>
-                <CardDescription>
-                  旧システムの入金・出金・厚生費です。時給保証単価は ¥
-                  {ledger.hourlyGuaranteeAmount.toLocaleString()}
-                  。同じ店舗の年次入金は含みます。別DBの保証実績は含みません。
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                {ledger.legacyEntries.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="flex flex-wrap justify-between gap-2 border-b py-2"
-                  >
-                    <span>
-                      {entry.castName} / {legacyDirectionLabel(entry.direction)} /{' '}
-                      {legacyKindLabel(entry.kind)}
-                    </span>
-                    <span>¥{entry.amount.toLocaleString()}</span>
-                  </div>
-                ))}
-                {ledger.legacyEntries.length === 0 ? (
-                  <p className="text-muted-foreground">この月の旧台帳はありません。</p>
-                ) : null}
-              </CardContent>
-            </Card>
-          </div>
-        )
+              {ledger.payments.length === 0 ? (
+                <p className="text-muted-foreground">この月の精算記録はありません。</p>
+              ) : null}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>旧台帳</CardTitle>
+              <CardDescription>
+                旧システムの入金・出金・厚生費です。時給保証単価は ¥
+                {ledger.hourlyGuaranteeAmount.toLocaleString()}
+                。同じ店舗の年次入金は含みます。別DBの保証実績は含みません。
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              {ledger.legacyEntries.map((entry) => (
+                <div key={entry.id} className="flex flex-wrap justify-between gap-2 border-b py-2">
+                  <span>
+                    {entry.castName} / {legacyDirectionLabel(entry.direction)} /{' '}
+                    {legacyKindLabel(entry.kind)}
+                  </span>
+                  <span>¥{entry.amount.toLocaleString()}</span>
+                </div>
+              ))}
+              {ledger.legacyEntries.length === 0 ? (
+                <p className="text-muted-foreground">この月の旧台帳はありません。</p>
+              ) : null}
+            </CardContent>
+          </Card>
+        </div>
       ) : (
         <p className="text-sm text-muted-foreground">表示できる精算情報がありません。</p>
       )}

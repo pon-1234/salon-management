@@ -97,10 +97,7 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
                   <Link href={`/admin/cast/manage/${member.id}?tab=sales`}>売上管理</Link>
                 </Button>
                 <Button size="sm" variant="outline" className="h-8" asChild>
-                  <Link href={`/admin/cast/manage/${member.id}?tab=payment`}>入金履歴</Link>
-                </Button>
-                <Button size="sm" variant="outline" className="h-8" asChild>
-                  <Link href={`/admin/cast/manage/${member.id}?tab=settlement`}>精算状況</Link>
+                  <Link href={`/admin/cast/manage/${member.id}?tab=settlement`}>精算</Link>
                 </Button>
                 <Button size="sm" variant="outline" className="h-8" asChild>
                   <Link href={`/admin/cast/manage/${member.id}?tab=performance`}>就業成績</Link>

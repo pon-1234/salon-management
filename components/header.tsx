@@ -48,6 +48,7 @@ import type { AdminNotification, ReservationNotification } from '@/contexts/noti
 import { StoreSelector } from '@/components/store/store-selector'
 import { useSession, signOut } from 'next-auth/react'
 import { CustomerSelectionDialog } from '@/components/customer/customer-selection-dialog'
+import { HeaderPhoneSearch } from '@/components/header-phone-search'
 import { hasPermission } from '@/lib/auth/permissions'
 import { useStore } from '@/contexts/store-context'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
@@ -273,7 +274,7 @@ export function Header() {
                     )}
                   >
                     <CalendarDays className="h-4 w-4" />
-                    日報
+                    日報 / 当日売上
                   </Link>
                   <Link
                     href="/admin/analytics/daily-sales"
@@ -325,6 +326,8 @@ export function Header() {
             <span className="text-xs text-gray-600">顧客検索</span>
           </Button>
         ) : null}
+
+        {canReadCustomers ? <HeaderPhoneSearch /> : null}
 
         <HeaderNavLink
           href="/admin/reservation"
@@ -403,7 +406,7 @@ export function Header() {
           <>
             <HeaderNavLink
               href="/admin/analytics/daily-report"
-              label="日報"
+              label="当日売上"
               icon={CalendarDays}
               pathname={pathname}
             />

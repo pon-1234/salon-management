@@ -18,6 +18,7 @@ import { ReservationData } from '@/lib/types/reservation'
 import Link from 'next/link'
 import { useMemo } from 'react'
 import { ReservationStatus } from '@/lib/constants'
+import { isCreditCardPaymentMethod } from '@/lib/reservation/credit-card-fee'
 
 interface ReservationListProps {
   reservations: ReservationData[]
@@ -93,6 +94,25 @@ export function ReservationList({
     )
   }
 
+  const renderCardPaymentBadge = (reservation: ReservationData) => {
+    if (!isCreditCardPaymentMethod(reservation.paymentMethod)) {
+      return <span className="text-xs text-muted-foreground">—</span>
+    }
+    const processed = Boolean(reservation.paymentReference?.trim())
+    return (
+      <Badge
+        variant="outline"
+        className={
+          processed
+            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+            : 'border-red-200 bg-red-50 text-red-700'
+        }
+      >
+        {processed ? 'カード処理済み' : 'カード未処理'}
+      </Badge>
+    )
+  }
+
   return (
     <div className="space-y-4">
       <div className="overflow-x-auto rounded-lg border bg-white">
@@ -107,12 +127,13 @@ export function ReservationList({
               <TableHead className="w-[80px] whitespace-nowrap">開始</TableHead>
               <TableHead className="w-[80px] whitespace-nowrap">終了</TableHead>
               <TableHead className="w-[180px] whitespace-nowrap">ステータス</TableHead>
+              <TableHead className="w-[140px] whitespace-nowrap">カード決済</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {displayReservations.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-32 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={9} className="h-32 text-center text-sm text-muted-foreground">
                   この日の予約はありません。
                 </TableCell>
               </TableRow>
@@ -156,6 +177,7 @@ export function ReservationList({
                       {renderStatusBadge(reservation.status, reservation.bookingStatus)}
                     </div>
                   </TableCell>
+                  <TableCell>{renderCardPaymentBadge(reservation)}</TableCell>
                 </TableRow>
               ))
             )}

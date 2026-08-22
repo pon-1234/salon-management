@@ -46,6 +46,14 @@ import {
   invalidOptionSelectionResponse,
 } from '@/lib/reservation/option-selection-error'
 import {
+  attachedOptionIds,
+  mergeAttachedOptionRecords,
+  resolveSelectedOptionIds,
+  uniqueResolvedOptionIds,
+  type ReservationOptionRecord,
+} from '@/lib/reservation/resolve-selected-options'
+import { applyStoreCreditCardFee } from '@/lib/reservation/credit-card-fee'
+import {
   formatCurrency,
   formatDesignation,
   formatSchedule,
@@ -68,7 +76,6 @@ interface AvailabilityCheck {
     endTime: string
   }>
 }
-
 type PrismaTransactionClient = Omit<
   PrismaClient,
   '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
@@ -659,13 +666,11 @@ export async function POST(request: NextRequest) {
         }> = []
 
         if (optionIds.length) {
-          const uniqueOptionIds = Array.from(new Set(optionIds))
+          const uniqueOptionIds = uniqueResolvedOptionIds(optionIds)
           const optionRecords = await tx.optionPrice.findMany({
             where: {
               id: { in: uniqueOptionIds },
               storeId,
-              isActive: true,
-              archivedAt: null,
               ...(isAdmin ? {} : { visibility: 'public' }),
             },
             select: {
@@ -674,19 +679,22 @@ export async function POST(request: NextRequest) {
               price: true,
               storeShare: true,
               castShare: true,
+              isActive: true,
+              archivedAt: true,
             },
           })
 
-          const optionRecordMap = new Map(optionRecords.map((record) => [record.id, record]))
-          const missingOptionIds = uniqueOptionIds.filter(
-            (optionId) => !optionRecordMap.has(optionId)
-          )
+          const { acceptedIds, missingIds } = resolveSelectedOptionIds({
+            requestedIds: uniqueOptionIds,
+            catalog: optionRecords,
+          })
 
-          if (missingOptionIds.length) {
-            throw new InvalidOptionSelectionError(missingOptionIds)
+          if (missingIds.length) {
+            throw new InvalidOptionSelectionError(missingIds)
           }
 
-          optionsToCreate = uniqueOptionIds
+          const optionRecordMap = new Map(optionRecords.map((record) => [record.id, record]))
+          optionsToCreate = acceptedIds
             .map((optionId) => optionRecordMap.get(optionId))
             .filter((option): option is (typeof optionRecords)[number] => Boolean(option))
             .map((option) => ({
@@ -765,8 +773,11 @@ export async function POST(request: NextRequest) {
               })
             : baseRevenue
 
-        const storeRevenue = Math.min(revenue.storeRevenue, revenue.total)
-        const staffRevenue = revenue.staffRevenue
+        const revenueWithCardFee = applyStoreCreditCardFee(
+          revenue,
+          storeSettings?.creditCardFeeRate,
+          paymentMethodToPersist
+        )
 
         const createdReservation = await tx.reservation.create({
           data: {
@@ -775,7 +786,7 @@ export async function POST(request: NextRequest) {
             courseId: reservationData.courseId,
             storeId,
             status: reservationData.status ?? 'pending',
-            price: revenue.total,
+            price: revenueWithCardFee.total,
             designationType: reservationData.designationType ?? null,
             designationFee: designationAmount,
             transportationFee: reservationData.transportationFee ?? 0,
@@ -796,9 +807,10 @@ export async function POST(request: NextRequest) {
             roomNumber: reservationData.roomNumber ?? null,
             locationMemo: reservationData.locationMemo ?? null,
             notes: reservationData.notes ?? null,
-            welfareExpense: revenue.welfareExpense,
-            storeRevenue,
-            staffRevenue,
+            welfareExpense: revenueWithCardFee.welfareExpense,
+            creditCardFee: revenueWithCardFee.creditCardFee,
+            storeRevenue: revenueWithCardFee.storeRevenue,
+            staffRevenue: revenueWithCardFee.staffRevenue,
             startTime,
             endTime,
             options: optionsToCreate.length
@@ -1183,20 +1195,10 @@ export async function PUT(request: NextRequest) {
       numericFieldChanged(updates.staffRevenue, existingReservation.staffRevenue) ||
       numericFieldChanged(updates.welfareExpense, existingReservation.welfareExpense)
 
-    // トランザクション内で予約更新とオプション更新を実行
     const updatedReservation = await db.$transaction(async (tx) => {
-      // オプションが変更される場合は既存オプションを削除
-      type OptionRecord = {
-        id: string
-        name: string
-        price: number
-        storeShare: number | null
-        castShare: number | null
-      }
-
       const rawOptionIds: string[] | null = optionsChanged ? requestedOptionIds : null
       let normalizedOptionIds: string[] | null = null
-      let optionRecordMap: Map<string, OptionRecord> | null = null
+      let optionRecordMap: Map<string, ReservationOptionRecord> | null = null
 
       if (rawOptionIds) {
         const candidateOptionIds = rawOptionIds.filter(
@@ -1205,15 +1207,14 @@ export async function PUT(request: NextRequest) {
         )
 
         if (candidateOptionIds.length > 0) {
-          const uniqueOptionIds = Array.from(new Set(candidateOptionIds))
+          const uniqueOptionIds = uniqueResolvedOptionIds(candidateOptionIds)
+          const attachedIds = attachedOptionIds(previousReservation.options ?? [])
           const optionRecords = await tx.optionPrice.findMany({
             where: {
               id: {
                 in: uniqueOptionIds,
               },
               storeId,
-              isActive: true,
-              archivedAt: null,
             },
             select: {
               id: true,
@@ -1221,29 +1222,23 @@ export async function PUT(request: NextRequest) {
               price: true,
               storeShare: true,
               castShare: true,
+              isActive: true,
+              archivedAt: true,
             },
           })
-          optionRecordMap = new Map(
-            optionRecords.map((record) => [
-              record.id,
-              {
-                id: record.id,
-                name: record.name,
-                price: record.price,
-                storeShare: record.storeShare ?? null,
-                castShare: record.castShare ?? null,
-              },
-            ])
-          )
-          const validOptionIds = new Set(optionRecords.map((option) => option.id))
-          if (validOptionIds.size !== uniqueOptionIds.length) {
-            throw new InvalidOptionSelectionError(
-              uniqueOptionIds.filter((optionId) => !validOptionIds.has(optionId))
-            )
+          const { acceptedIds, missingIds } = resolveSelectedOptionIds({
+            requestedIds: uniqueOptionIds,
+            catalog: optionRecords,
+            attachedIds,
+          })
+          if (missingIds.length) {
+            throw new InvalidOptionSelectionError(missingIds)
           }
-          normalizedOptionIds = candidateOptionIds.filter((optionId) =>
-            validOptionIds.has(optionId)
+          optionRecordMap = mergeAttachedOptionRecords(
+            optionRecords,
+            previousReservation.options ?? []
           )
+          normalizedOptionIds = acceptedIds
         } else {
           normalizedOptionIds = []
         }
@@ -1453,18 +1448,24 @@ export async function PUT(request: NextRequest) {
           welfareRate: normalizedWelfareRate,
         }
 
-        const revenue =
+        const pricedRevenue =
           existingPointsUsed > 0
             ? calculateReservationRevenue({
                 ...revenueInputBase,
                 discountAmount: discountAmount + existingPointsUsed,
               })
             : calculateReservationRevenue(revenueInputBase)
+        const revenue = applyStoreCreditCardFee(
+          pricedRevenue,
+          storeSettings?.creditCardFeeRate,
+          nextPaymentMethod
+        )
 
         updateData.price = revenue.total
-        updateData.storeRevenue = Math.min(revenue.storeRevenue, revenue.total)
+        updateData.storeRevenue = revenue.storeRevenue
         updateData.staffRevenue = revenue.staffRevenue
         updateData.welfareExpense = revenue.welfareExpense
+        updateData.creditCardFee = revenue.creditCardFee
       }
 
       const updated = await tx.reservation.update({
@@ -1476,7 +1477,7 @@ export async function PUT(request: NextRequest) {
               ? {
                   create: normalizedOptionIds
                     .map((optionId) => optionRecordMap?.get(optionId))
-                    .filter((record): record is OptionRecord => Boolean(record))
+                    .filter((record): record is ReservationOptionRecord => Boolean(record))
                     .map((record) => ({
                       optionId: record.id,
                       optionName: record.name,

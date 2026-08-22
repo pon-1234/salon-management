@@ -117,6 +117,16 @@ describe('CustomerSelectionDialog', () => {
     expect(push).toHaveBeenCalledWith('/admin/customers/legacy%2Fcustomer%201234')
   })
 
+  it('opens customer details when the customer card is clicked in lookup mode', async () => {
+    getAll.mockResolvedValueOnce([customer])
+
+    render(<CustomerSelectionDialog open mode="lookup" onOpenChange={vi.fn()} />)
+
+    fireEvent.click(await screen.findByRole('button', { name: /\[確認用\] 旧実名顧客/ }))
+
+    expect(push).toHaveBeenCalledWith('/admin/customers/legacy-customer-member-1234')
+  })
+
   it('clears the prior search and customer selection every time it is reopened', async () => {
     getAll.mockResolvedValueOnce([customer])
     searchByPhone.mockResolvedValueOnce([customer])

@@ -391,7 +391,7 @@ describe('ReservationDialog Edit Mode', () => {
     expect(screen.getByText('IK-2026-00421')).toBeInTheDocument()
     expect(screen.queryByLabelText('カード番号')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /編集/i }))
-    const referenceInput = screen.getByLabelText('カード管理番号')
+    const referenceInput = screen.getByLabelText('カード決済管理番号')
     fireEvent.change(referenceInput, { target: { value: 'IK-2026-00422' } })
     fireEvent.click(screen.getByRole('button', { name: /保存/i }))
 
@@ -884,6 +884,7 @@ describe('ReservationDialog Edit Mode', () => {
       />
     )
 
+    fireEvent.click(screen.getByRole('button', { name: /編集/i }))
     const lineMessageInput = await screen.findByLabelText('メッセージ本文')
     await waitFor(() =>
       expect((lineMessageInput as HTMLTextAreaElement).value).toContain('田中太郎')

@@ -557,6 +557,7 @@ export function ReservationPageContent() {
             status: toTimelineAppointmentStatus(reservation.status),
             location: reservation.location,
             price: reservation.totalPayment,
+            designationType: reservation.designationType ?? reservation.designation,
           }))
 
         const hasAppointments = appointments.length > 0

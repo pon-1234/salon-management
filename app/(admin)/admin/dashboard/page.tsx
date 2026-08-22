@@ -505,17 +505,12 @@ export default function DashboardPage() {
               <Button variant="outline" asChild>
                 <Link href="/admin/analytics/daily-report" aria-label="業務日報を開く">
                   <FileText className="mr-2 h-4 w-4" />
-                  日報
+                  当日売上
                 </Link>
               </Button>
               <Button variant="outline" asChild>
-                <Link href="/admin/analytics/payment-processing" aria-label="入金処理を開く">
-                  入金処理
-                </Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href="/admin/analytics/settlement-processing" aria-label="入金精算処理を開く">
-                  入金精算
+                <Link href="/admin/analytics/settlement-processing" aria-label="精算を開く">
+                  精算
                 </Link>
               </Button>
             </>

@@ -17,17 +17,12 @@ const navigation = [
     icon: Calendar,
   },
   {
-    name: '日報',
+    name: '当日売上',
     href: '/admin/analytics/daily-report',
     icon: CalendarDays,
   },
   {
-    name: '入金処理',
-    href: '/admin/analytics/payment-processing',
-    icon: BarChart3,
-  },
-  {
-    name: '入金精算処理',
+    name: '精算',
     href: '/admin/analytics/settlement-processing',
     icon: BarChart3,
   },

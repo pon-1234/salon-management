@@ -125,6 +125,7 @@ import {
   STATUS_META,
   STATUS_OPTIONS,
   StatusBadge,
+  ReservationCardPaymentReferenceInput,
   type EditFormState,
   type LineLogEntry,
   type ReservationDialogProps,
@@ -2020,22 +2021,13 @@ export function ReservationDialog({
                             </div>
                           </div>
                           {formState.paymentMethod === PAYMENT_METHODS.CARD ? (
-                            <div>
-                              <Label htmlFor="reservation-payment-reference">カード管理番号</Label>
-                              <Input
-                                id="reservation-payment-reference"
-                                value={formState.paymentReference}
-                                onChange={(event) =>
-                                  setFormState((prev) => ({
-                                    ...prev,
-                                    paymentReference: event.target.value,
-                                  }))
-                                }
-                                maxLength={100}
-                                autoComplete="off"
-                                placeholder="決済伝票の管理番号（カード番号は入力しない）"
-                              />
-                            </div>
+                            <ReservationCardPaymentReferenceInput
+                              id="reservation-payment-reference"
+                              value={formState.paymentReference}
+                              onChange={(paymentReference) =>
+                                setFormState((prev) => ({ ...prev, paymentReference }))
+                              }
+                            />
                           ) : null}
                         </div>
                       ) : (
@@ -2067,7 +2059,7 @@ export function ReservationDialog({
                           {normalizePaymentMethodValue(reservation.paymentMethod) ===
                           PAYMENT_METHODS.CARD ? (
                             <div className="flex items-center justify-between text-muted-foreground">
-                              <span>カード管理番号</span>
+                              <span>カード決済管理番号</span>
                               <span>{reservation.paymentReference || '未登録'}</span>
                             </div>
                           ) : null}
@@ -2212,213 +2204,255 @@ export function ReservationDialog({
                   </Card>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
+                {isEditMode ? (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">連絡先</CardTitle>
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent className="space-y-2 text-sm">
+                        <div>
+                          <div className="text-muted-foreground">電話番号</div>
+                          <div className="font-medium">{reservation.phoneNumber || '未登録'}</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">メール</div>
+                          <div className="font-medium">{reservation.email || '未登録'}</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">保有ポイント</div>
+                          <div className="font-medium">
+                            {reservation.points.toLocaleString()} pt
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">店舗メモ</CardTitle>
+                        <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        {isEditMode ? (
+                          <Textarea
+                            value={formState.storeMemo}
+                            onChange={(event) =>
+                              setFormState((prev) => ({ ...prev, storeMemo: event.target.value }))
+                            }
+                            rows={4}
+                          />
+                        ) : reservation.storeMemo ? (
+                          <p className="text-sm">{reservation.storeMemo}</p>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            店舗メモは登録されていません。
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                ) : (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm font-medium">予約内容</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
+                      <div>
+                        <div className="text-muted-foreground">コース</div>
+                        <div className="font-medium">{reservation.course || '未設定'}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">オプション</div>
+                        <div className="font-medium">
+                          {initialOptionNames.length > 0 ? initialOptionNames.join('、') : 'なし'}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">指名区分</div>
+                        <div className="font-medium">{reservation.designation || 'フリー'}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">料金</div>
+                        <div className="font-medium">
+                          {formatCurrency(reservation.totalPayment)}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                {isEditMode ? (
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">連絡先</CardTitle>
+                      <CardTitle className="text-sm font-medium">LINE通知</CardTitle>
                       <Phone className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
-                    <CardContent className="space-y-2 text-sm">
-                      <div>
-                        <div className="text-muted-foreground">電話番号</div>
-                        <div className="font-medium">{reservation.phoneNumber || '未登録'}</div>
-                      </div>
-                      <div>
-                        <div className="text-muted-foreground">メール</div>
-                        <div className="font-medium">{reservation.email || '未登録'}</div>
-                      </div>
-                      <div>
-                        <div className="text-muted-foreground">保有ポイント</div>
-                        <div className="font-medium">{reservation.points.toLocaleString()} pt</div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                    <CardContent className="space-y-4 text-sm">
+                      {!selectedCast?.lineUserId && (
+                        <Alert variant="destructive">
+                          <AlertDescription>
+                            キャストにLINEユーザーIDが未登録のため送信できません。キャスト管理でLINEユーザーIDを設定してください。
+                          </AlertDescription>
+                        </Alert>
+                      )}
 
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">店舗メモ</CardTitle>
-                      <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      {isEditMode ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="line-message">メッセージ本文</Label>
                         <Textarea
-                          value={formState.storeMemo}
-                          onChange={(event) =>
-                            setFormState((prev) => ({ ...prev, storeMemo: event.target.value }))
-                          }
-                          rows={4}
+                          id="line-message"
+                          value={lineMessage}
+                          onChange={(event) => handleLineMessageChange(event.target.value)}
+                          rows={6}
+                          maxLength={MAX_LINE_MESSAGE_LENGTH}
+                          placeholder={buildDefaultLineMessage()}
                         />
-                      ) : reservation.storeMemo ? (
-                        <p className="text-sm">{reservation.storeMemo}</p>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">
-                          店舗メモは登録されていません。
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">LINE通知</CardTitle>
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent className="space-y-4 text-sm">
-                    {!selectedCast?.lineUserId && (
-                      <Alert variant="destructive">
-                        <AlertDescription>
-                          キャストにLINEユーザーIDが未登録のため送信できません。キャスト管理でLINEユーザーIDを設定してください。
-                        </AlertDescription>
-                      </Alert>
-                    )}
-
-                    <div className="space-y-2">
-                      <Label htmlFor="line-message">メッセージ本文</Label>
-                      <Textarea
-                        id="line-message"
-                        value={lineMessage}
-                        onChange={(event) => handleLineMessageChange(event.target.value)}
-                        rows={6}
-                        maxLength={MAX_LINE_MESSAGE_LENGTH}
-                        placeholder={buildDefaultLineMessage()}
-                      />
-                      <div className="flex items-center justify-between text-xs">
-                        <span
-                          className={cn(
-                            'text-muted-foreground',
-                            isLineMessageTooLong && 'text-red-600'
-                          )}
-                        >
-                          {lineMessageLength} / {MAX_LINE_MESSAGE_LENGTH} 文字
-                        </span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleResetLineMessage}
-                          disabled={lineSending}
-                        >
-                          テンプレートに戻す
-                        </Button>
-                      </div>
-                      {isLineMessageTooLong && (
-                        <p className="text-xs text-red-600">
-                          メッセージは{MAX_LINE_MESSAGE_LENGTH}文字以内で入力してください。
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>送信プレビュー</Label>
-                      <div className="whitespace-pre-wrap rounded-md border bg-muted/40 p-3 font-mono text-xs leading-relaxed">
-                        {lineMessageLength > 0 ? lineMessage : 'メッセージを入力してください。'}
-                      </div>
-                    </div>
-
-                    {lineSendError && <p className="text-sm text-red-600">{lineSendError}</p>}
-                    {lineSendSuccess && (
-                      <p className="text-sm text-emerald-600">{lineSendSuccess}</p>
-                    )}
-
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                      <p className="text-xs text-muted-foreground">
-                        送信先: {selectedCast?.name ?? 'キャスト未設定'}
-                      </p>
-                      <AlertDialog open={lineConfirmOpen} onOpenChange={setLineConfirmOpen}>
-                        <AlertDialogTrigger asChild>
+                        <div className="flex items-center justify-between text-xs">
+                          <span
+                            className={cn(
+                              'text-muted-foreground',
+                              isLineMessageTooLong && 'text-red-600'
+                            )}
+                          >
+                            {lineMessageLength} / {MAX_LINE_MESSAGE_LENGTH} 文字
+                          </span>
                           <Button
                             type="button"
-                            disabled={lineSending || !canSendLineMessage || isEditMode || !onSave}
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleResetLineMessage}
+                            disabled={lineSending}
                           >
-                            LINE送信
+                            テンプレートに戻す
                           </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>LINE通知を送信しますか？</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              {selectedCast?.name
-                                ? `${selectedCast.name}さんに以下の内容でLINE通知を送信します。`
-                                : '以下の内容でLINE通知を送信します。'}
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <div className="whitespace-pre-wrap rounded-md border bg-muted/40 p-3 font-mono text-sm leading-relaxed">
-                            {lineMessageLength > 0 ? lineMessage : 'メッセージを入力してください。'}
-                          </div>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel disabled={lineSending}>キャンセル</AlertDialogCancel>
-                            <AlertDialogAction
-                              disabled={lineSending}
-                              onClick={handleConfirmSendLineMessage}
-                            >
-                              {lineSending ? (
-                                <>
-                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                  送信中...
-                                </>
-                              ) : (
-                                '送信する'
-                              )}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-medium">送信ログ</h4>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={refreshLineLogs}
-                          disabled={isLoadingLineLogs}
-                        >
-                          {isLoadingLineLogs ? (
-                            <span className="flex items-center gap-1">
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" /> 更新中
-                            </span>
-                          ) : (
-                            '更新'
-                          )}
-                        </Button>
-                      </div>
-                      {isLoadingLineLogs ? (
-                        <p className="text-xs text-muted-foreground">
-                          送信履歴を読み込んでいます...
-                        </p>
-                      ) : lineLogs.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">送信履歴はまだありません。</p>
-                      ) : (
-                        <div className="space-y-2">
-                          {lineLogs.map((log) => (
-                            <div key={log.id} className="rounded-md border p-3">
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="font-medium">
-                                  {format(log.createdAt, 'yyyy/MM/dd HH:mm')}
-                                </span>
-                                <Badge variant={log.status === 'sent' ? 'default' : 'destructive'}>
-                                  {log.status === 'sent' ? '送信済み' : '送信失敗'}
-                                </Badge>
-                              </div>
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                {log.castName ?? 'キャスト未設定'}
-                              </p>
-                              <pre className="mt-2 whitespace-pre-wrap rounded bg-muted/40 p-2 text-xs leading-relaxed">
-                                {log.message}
-                              </pre>
-                              {log.errorMessage && (
-                                <p className="mt-2 text-xs text-red-600">
-                                  エラー: {log.errorMessage}
-                                </p>
-                              )}
-                            </div>
-                          ))}
                         </div>
+                        {isLineMessageTooLong && (
+                          <p className="text-xs text-red-600">
+                            メッセージは{MAX_LINE_MESSAGE_LENGTH}文字以内で入力してください。
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>送信プレビュー</Label>
+                        <div className="whitespace-pre-wrap rounded-md border bg-muted/40 p-3 font-mono text-xs leading-relaxed">
+                          {lineMessageLength > 0 ? lineMessage : 'メッセージを入力してください。'}
+                        </div>
+                      </div>
+
+                      {lineSendError && <p className="text-sm text-red-600">{lineSendError}</p>}
+                      {lineSendSuccess && (
+                        <p className="text-sm text-emerald-600">{lineSendSuccess}</p>
                       )}
-                    </div>
-                  </CardContent>
-                </Card>
+
+                      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <p className="text-xs text-muted-foreground">
+                          送信先: {selectedCast?.name ?? 'キャスト未設定'}
+                        </p>
+                        <AlertDialog open={lineConfirmOpen} onOpenChange={setLineConfirmOpen}>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              type="button"
+                              disabled={lineSending || !canSendLineMessage || isEditMode || !onSave}
+                            >
+                              LINE送信
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>LINE通知を送信しますか？</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {selectedCast?.name
+                                  ? `${selectedCast.name}さんに以下の内容でLINE通知を送信します。`
+                                  : '以下の内容でLINE通知を送信します。'}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <div className="whitespace-pre-wrap rounded-md border bg-muted/40 p-3 font-mono text-sm leading-relaxed">
+                              {lineMessageLength > 0
+                                ? lineMessage
+                                : 'メッセージを入力してください。'}
+                            </div>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel disabled={lineSending}>
+                                キャンセル
+                              </AlertDialogCancel>
+                              <AlertDialogAction
+                                disabled={lineSending}
+                                onClick={handleConfirmSendLineMessage}
+                              >
+                                {lineSending ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    送信中...
+                                  </>
+                                ) : (
+                                  '送信する'
+                                )}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-medium">送信ログ</h4>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={refreshLineLogs}
+                            disabled={isLoadingLineLogs}
+                          >
+                            {isLoadingLineLogs ? (
+                              <span className="flex items-center gap-1">
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" /> 更新中
+                              </span>
+                            ) : (
+                              '更新'
+                            )}
+                          </Button>
+                        </div>
+                        {isLoadingLineLogs ? (
+                          <p className="text-xs text-muted-foreground">
+                            送信履歴を読み込んでいます...
+                          </p>
+                        ) : lineLogs.length === 0 ? (
+                          <p className="text-xs text-muted-foreground">
+                            送信履歴はまだありません。
+                          </p>
+                        ) : (
+                          <div className="space-y-2">
+                            {lineLogs.map((log) => (
+                              <div key={log.id} className="rounded-md border p-3">
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="font-medium">
+                                    {format(log.createdAt, 'yyyy/MM/dd HH:mm')}
+                                  </span>
+                                  <Badge
+                                    variant={log.status === 'sent' ? 'default' : 'destructive'}
+                                  >
+                                    {log.status === 'sent' ? '送信済み' : '送信失敗'}
+                                  </Badge>
+                                </div>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  {log.castName ?? 'キャスト未設定'}
+                                </p>
+                                <pre className="mt-2 whitespace-pre-wrap rounded bg-muted/40 p-2 text-xs leading-relaxed">
+                                  {log.message}
+                                </pre>
+                                {log.errorMessage && (
+                                  <p className="mt-2 text-xs text-red-600">
+                                    エラー: {log.errorMessage}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : null}
               </TabsContent>
 
               <TabsContent value="details" className="space-y-6 p-4">

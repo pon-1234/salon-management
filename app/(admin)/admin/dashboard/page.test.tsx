@@ -213,11 +213,7 @@ describe('DashboardPage field operations', () => {
       'href',
       '/admin/analytics/daily-report'
     )
-    expect(screen.getByRole('link', { name: '入金処理を開く' })).toHaveAttribute(
-      'href',
-      '/admin/analytics/payment-processing'
-    )
-    expect(screen.getByRole('link', { name: '入金精算処理を開く' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: '精算を開く' })).toHaveAttribute(
       'href',
       '/admin/analytics/settlement-processing'
     )

@@ -32,11 +32,7 @@ describe('CastListView', () => {
       'href',
       '/admin/cast/manage/cast-1?tab=sales'
     )
-    expect(screen.getByRole('link', { name: '入金履歴' })).toHaveAttribute(
-      'href',
-      '/admin/cast/manage/cast-1?tab=payment'
-    )
-    expect(screen.getByRole('link', { name: '精算状況' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: '精算' })).toHaveAttribute(
       'href',
       '/admin/cast/manage/cast-1?tab=settlement'
     )

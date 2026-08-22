@@ -149,6 +149,16 @@ export function ScheduleActionButtons({
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
+              <input
+                type="date"
+                aria-label="出勤表の日付へ移動"
+                className="h-10 min-w-[10rem] rounded-md border border-input bg-background px-2 text-sm"
+                value={formatInTimeZone(date, timeZone, 'yyyy-MM-dd')}
+                onChange={(event) => {
+                  if (!event.target.value) return
+                  onDateChange(new Date(`${event.target.value}T00:00:00`))
+                }}
+              />
             </div>
 
             <div className="relative">
