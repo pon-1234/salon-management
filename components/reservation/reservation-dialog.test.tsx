@@ -258,10 +258,28 @@ describe('ReservationDialog Edit Mode', () => {
     fireEvent.click(editButton)
 
     // Should show save button
-    expect(screen.getByRole('button', { name: /保存/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '保存' })).toBeInTheDocument()
     // Should show cancel button - using getAllByRole since there might be multiple cancel buttons
     const cancelButtons = screen.getAllByRole('button', { name: /キャンセル/i })
     expect(cancelButtons.length).toBeGreaterThan(0)
+  })
+
+  it('shows date, course, and memo on one reservation tab instead of splitting 概要 and 詳細', () => {
+    render(
+      <ReservationDialog
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        reservation={mockReservation}
+        onSave={mockOnSave}
+      />
+    )
+
+    expect(screen.getByRole('tab', { name: '予約' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: '履歴' })).toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: '概要' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: /^詳細$/ })).not.toBeInTheDocument()
+    expect(screen.getByText('日時')).toBeInTheDocument()
+    expect(screen.getByText('予約詳細')).toBeInTheDocument()
   })
 
   it('should display editable fields in edit mode', async () => {
@@ -284,15 +302,10 @@ describe('ReservationDialog Edit Mode', () => {
 
     // Check the current cast and visit-location fields
     expect(screen.getByLabelText(/キャスト/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/ホテル名/i)).toBeInTheDocument()
+    expect(screen.getAllByLabelText('ホテル名').length).toBeGreaterThan(0)
     expect(screen.getByLabelText(/訪問先メモ/i)).toBeInTheDocument()
 
-    // Switch to details tab to check other fields
-    fireEvent.mouseDown(screen.getByRole('tab', { name: /詳細/i }), {
-      button: 0,
-      ctrlKey: false,
-    })
-    expect(await screen.findByText('予約詳細')).toBeInTheDocument()
+    expect(screen.getByText('予約詳細')).toBeInTheDocument()
 
     // Check for editable options checkboxes
     expect(screen.getByLabelText(/ネックトリートメント/i)).toBeInTheDocument()
@@ -393,7 +406,7 @@ describe('ReservationDialog Edit Mode', () => {
     fireEvent.click(screen.getByRole('button', { name: /編集/i }))
     const referenceInput = screen.getByLabelText('カード決済管理番号')
     fireEvent.change(referenceInput, { target: { value: 'IK-2026-00422' } })
-    fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+    fireEvent.click(screen.getByRole('button', { name: '保存' }))
 
     await waitFor(() => {
       expect(mockOnSave).toHaveBeenCalledWith(
@@ -419,10 +432,6 @@ describe('ReservationDialog Edit Mode', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: /編集/i }))
-    fireEvent.mouseDown(screen.getByRole('tab', { name: /詳細/i }), {
-      button: 0,
-      ctrlKey: false,
-    })
 
     expect(await screen.findByText('料金プレビュー')).toBeInTheDocument()
     expect(screen.queryByText(/厚生費/)).not.toBeInTheDocument()
@@ -562,7 +571,7 @@ describe('ReservationDialog Edit Mode', () => {
     fireEvent.change(dateInput, { target: { value: '' } })
 
     // Try to save
-    fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+    fireEvent.click(screen.getByRole('button', { name: '保存' }))
 
     // Should show validation error
     await waitFor(() => {
@@ -596,7 +605,7 @@ describe('ReservationDialog Edit Mode', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /編集/i }))
     expect(screen.getByLabelText('総額')).toHaveValue(12_000)
-    fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+    fireEvent.click(screen.getByRole('button', { name: '保存' }))
 
     await waitFor(() => {
       expect(mockOnSave).toHaveBeenCalled()
@@ -629,7 +638,7 @@ describe('ReservationDialog Edit Mode', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: /編集/i }))
-    fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+    fireEvent.click(screen.getByRole('button', { name: '保存' }))
 
     await waitFor(() => {
       expect(mockOnSave).toHaveBeenCalledWith(
@@ -661,7 +670,7 @@ describe('ReservationDialog Edit Mode', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: /編集/i }))
-    fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+    fireEvent.click(screen.getByRole('button', { name: '保存' }))
 
     await waitFor(() => {
       expect(mockOnSave).toHaveBeenCalledWith(
@@ -712,7 +721,7 @@ describe('ReservationDialog Edit Mode', () => {
       )
 
       fireEvent.click(screen.getByRole('button', { name: /編集/i }))
-      fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+      fireEvent.click(screen.getByRole('button', { name: '保存' }))
 
       await waitFor(() => expect(mockOnSave).toHaveBeenCalled())
       const savedPayload = mockOnSave.mock.calls[0]?.[1]
@@ -746,7 +755,7 @@ describe('ReservationDialog Edit Mode', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: /編集/i }))
-    fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+    fireEvent.click(screen.getByRole('button', { name: '保存' }))
 
     await waitFor(() => expect(mockOnSave).toHaveBeenCalled())
     const savedPayload = mockOnSave.mock.calls[0]?.[1]
@@ -776,7 +785,7 @@ describe('ReservationDialog Edit Mode', () => {
     expect(startTimeInput).toHaveAttribute('step', '600')
 
     fireEvent.change(startTimeInput, { target: { value: '14:05' } })
-    fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+    fireEvent.click(screen.getByRole('button', { name: '保存' }))
 
     await waitFor(() =>
       expect(screen.getByText('開始時間の分は10分単位で指定してください。')).toBeInTheDocument()
@@ -805,7 +814,7 @@ describe('ReservationDialog Edit Mode', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: /編集/i }))
-    fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+    fireEvent.click(screen.getByRole('button', { name: '保存' }))
 
     await waitFor(() => expect(mockOnSave).toHaveBeenCalled())
     expect(mockOnSave).toHaveBeenCalledWith(
@@ -829,7 +838,7 @@ describe('ReservationDialog Edit Mode', () => {
     fireEvent.change(additionalFeeInput, { target: { value: '-5000' } })
 
     expect(additionalFeeInput).toHaveValue(0)
-    fireEvent.click(screen.getByRole('button', { name: /保存/i }))
+    fireEvent.click(screen.getByRole('button', { name: '保存' }))
     await waitFor(() => expect(mockOnSave).toHaveBeenCalled())
     expect(mockOnSave.mock.calls[0]?.[1]).toEqual(expect.objectContaining({ additionalFee: 0 }))
   })
@@ -922,6 +931,6 @@ describe('ReservationDialog Edit Mode', () => {
 
     // Should be back to view mode
     expect(screen.getByRole('button', { name: /編集/i })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /保存/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '保存' })).not.toBeInTheDocument()
   })
 })

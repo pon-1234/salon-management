@@ -174,6 +174,56 @@ describe('Timeline appointment cards', () => {
     expect(screen.getByText('パネル 3位')).toBeInTheDocument()
   })
 
+  it('marks a cast with a special designation fee on the staff column', () => {
+    const specialStaff = [
+      {
+        ...staff[0],
+        specialDesignationFee: 5_000,
+      },
+    ]
+
+    render(
+      <Timeline
+        canCreateReservation
+        staff={specialStaff}
+        selectedDate={new Date('2030-07-21T00:00:00+09:00')}
+        selectedCustomer={null}
+        setSelectedAppointment={vi.fn()}
+        reservations={[reservation]}
+        businessHours={{
+          startMinutes: 10 * 60,
+          endMinutes: 24 * 60,
+          startLabel: '10:00',
+          endLabel: '24:00',
+        }}
+      />
+    )
+
+    expect(screen.getByLabelText('特別指名料 5,000円')).toBeInTheDocument()
+    expect(screen.getByText('特別指名 5,000円')).toBeInTheDocument()
+  })
+
+  it('does not mark a cast without a special designation fee', () => {
+    render(
+      <Timeline
+        canCreateReservation
+        staff={staff}
+        selectedDate={new Date('2030-07-21T00:00:00+09:00')}
+        selectedCustomer={null}
+        setSelectedAppointment={vi.fn()}
+        reservations={[reservation]}
+        businessHours={{
+          startMinutes: 10 * 60,
+          endMinutes: 24 * 60,
+          startLabel: '10:00',
+          endLabel: '24:00',
+        }}
+      />
+    )
+
+    expect(screen.queryByLabelText(/特別指名料/)).not.toBeInTheDocument()
+  })
+
   it('passes the store option catalog to the selected cast detail', () => {
     const optionCatalog = [{ id: 'option-aroma', name: 'アロマ追加', price: 1_000, note: '確認用' }]
 

@@ -27,12 +27,18 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
             <Card key={member.id} className="overflow-hidden">
               <CardContent className="p-0">
                 <div className="relative">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <SafeImage
-                    src={memberImage}
-                    alt={member.name}
-                    className="aspect-[7/10] w-full object-cover"
-                  />
+                  <Link
+                    href={`/admin/cast/manage/${member.id}`}
+                    aria-label={`${member.name}の詳細`}
+                    className="block"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <SafeImage
+                      src={memberImage}
+                      alt={member.name}
+                      className="aspect-[7/10] w-full object-cover"
+                    />
+                  </Link>
                   <Badge className="absolute right-2 top-2 bg-emerald-600">
                     {member.workStatus}
                   </Badge>
@@ -70,7 +76,11 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
 
         return (
           <div key={member.id} className="flex items-start gap-4 rounded-lg bg-white p-4 shadow">
-            <Link href={`/admin/cast/manage/${member.id}`} className="shrink-0">
+            <Link
+              href={`/admin/cast/manage/${member.id}`}
+              aria-label={`${member.name}の詳細`}
+              className="shrink-0"
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <SafeImage
                 src={memberImage}

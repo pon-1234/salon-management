@@ -145,7 +145,7 @@ export function ReservationDialog({
 }: ReservationDialogProps) {
   const { currentStore } = useStore()
   const [isCastTimelineOpen, setIsCastTimelineOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'history'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'history'>('overview')
   const [isEditMode, setIsEditMode] = useState(false)
   const [discardEditConfirmOpen, setDiscardEditConfirmOpen] = useState(false)
   const [status, setStatus] = useState<ReservationStatus | 'completed'>(
@@ -1666,9 +1666,8 @@ export function ReservationDialog({
               onValueChange={(value) => setActiveTab(value as typeof activeTab)}
             >
               <div className="border-b bg-white px-4 pt-3">
-                <TabsList className="grid w-full grid-cols-3 md:w-auto md:grid-cols-3">
-                  <TabsTrigger value="overview">概要</TabsTrigger>
-                  <TabsTrigger value="details">詳細</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 md:w-auto md:grid-cols-2">
+                  <TabsTrigger value="overview">予約</TabsTrigger>
                   <TabsTrigger value="history" className="relative">
                     履歴
                     {modificationAlerts.length > 0 && (
@@ -2454,9 +2453,7 @@ export function ReservationDialog({
                     </CardContent>
                   </Card>
                 ) : null}
-              </TabsContent>
 
-              <TabsContent value="details" className="space-y-6 p-4">
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-sm font-medium">予約詳細</CardTitle>

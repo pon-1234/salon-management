@@ -40,4 +40,17 @@ describe('CastListView', () => {
     expect(screen.queryByRole('button', { name: '電話をかける' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '業務連絡' })).not.toBeInTheDocument()
   })
+
+  it('opens the cast detail from the grid photo as well as the name', () => {
+    render(<CastListView casts={[cast]} view="grid" />)
+
+    expect(screen.getByRole('link', { name: '池袋 花子の詳細' })).toHaveAttribute(
+      'href',
+      '/admin/cast/manage/cast-1'
+    )
+    expect(screen.getByRole('link', { name: '池袋 花子' })).toHaveAttribute(
+      'href',
+      '/admin/cast/manage/cast-1'
+    )
+  })
 })
