@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { QuickBookingDialog } from './quick-booking-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Clock, User, AlertCircle } from 'lucide-react'
+import { Clock, User, AlertCircle, Pin } from 'lucide-react'
 import { Cast, Appointment } from '@/lib/cast/types'
 import { logError } from '@/lib/error-utils'
 import { StaffDialog, type StaffOptionCatalogEntry } from '@/components/cast/cast-dialog'
@@ -430,16 +430,25 @@ export function Timeline({
               {safeMap(filteredStaff, (member) => (
                 <button
                   key={member.id}
-                  className="flex h-24 w-full items-center gap-3 border-b px-4 py-3 transition-colors hover:bg-gray-50"
+                  className="flex h-24 w-full items-center gap-3 overflow-hidden border-b px-4 py-3 transition-colors hover:bg-gray-50"
                   onClick={() => setSelectedStaff(member)}
                 >
                   <Avatar className="h-12 w-12">
                     <AvatarImage src={member.image} alt={member.name} />
                     <AvatarFallback>{member.name.slice(0, 2)}</AvatarFallback>
                   </Avatar>
-                  <div className="flex-1 text-left">
+                  <div className="min-w-0 flex-1 text-left">
                     <div className="font-medium">{member.name}</div>
                     <div className="mt-0.5 flex flex-wrap gap-1">
+                      {member.specialDesignationFee != null && member.specialDesignationFee > 0 ? (
+                        <Badge
+                          className="h-4 gap-0.5 border border-slate-400 bg-gradient-to-b from-slate-100 to-slate-300 px-1 text-[10px] text-slate-800"
+                          aria-label={`特別指名料 ${member.specialDesignationFee.toLocaleString('ja-JP')}円`}
+                        >
+                          <Pin className="h-2.5 w-2.5" aria-hidden />
+                          特別指名 {member.specialDesignationFee.toLocaleString('ja-JP')}円
+                        </Badge>
+                      ) : null}
                       {member.regularDesignationRank > 0 ? (
                         <Badge variant="outline" className="h-4 px-1 text-[10px]">
                           本指名 {member.regularDesignationRank}位
