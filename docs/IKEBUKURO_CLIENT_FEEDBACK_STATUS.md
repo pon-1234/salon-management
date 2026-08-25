@@ -1,12 +1,12 @@
 # 池袋・クライアント指摘対応状況
 
-最終更新: 2026年8月16日
+最終更新: 2026年8月25日
 
 対象: 池袋・現場確認環境
 
 判定: **現場確認開始可／正式本番切替はNo-Go**
 
-この文書は、クライアントから受け取った指摘を「修正済み」「現場確認」「仕様・移行データ待ち」に分けたものです。2026年8月16日17時台に会計・日報・入金画面の修正を確認環境へ反映したため、現場確認を開始できます。技術試験の合格だけで、操作性、会計結果、旧システムとの業務同等性を承認済みとは扱いません。現場確認は[池袋・新システム 現場確認マニュアル](./IKEBUKURO_FIELD_UAT_MANUAL.md)に沿って記録します。
+この文書は、クライアントから受け取った指摘を「修正済み」「現場確認」「仕様・移行データ待ち」に分けたものです。2026年8月25日18時32分に、ダッシュボード、予約タイムライン、予約一覧・編集、精算画面を含む最新版を確認環境へ反映したため、現場確認を開始できます。技術試験の合格だけで、操作性、会計結果、旧システムとの業務同等性を承認済みとは扱いません。現場確認は[池袋・新システム 現場確認マニュアル](./IKEBUKURO_FIELD_UAT_MANUAL.md)に沿って記録します。
 
 ## データ基準と現在地
 
@@ -18,11 +18,11 @@ schema18の管理証跡は、不変のV5取込候補を再現・照合できる�
 
 ## 最新リリース技術確認
 
-- **反映済みrelease**: 作業ツリー `ledger-20260816T101014Z`（2026年8月16日19時台、日本時間）。直前のgit SHAは `683c00cd9cc9d659c7e7303f0807c3fa2784904e`。
-- **CI**: 台帳取込前の作業ツリーで typecheck と関連テストを通し、preview の production build 78 pagesが合格。正式な全CI件数はcommit後の記録を正とする。
-- **直前backup**: `/home/deploy/salon-preview-backups/pre-ledger-20260816T101015Z.dump`、SHA-256 `a7161e4b99a8d4e6b3968d9d1047d1fcd7ccd1395c92d6ce8a2edc69046107ec`。今回はpreviewアプリ再ビルドと `CastLedgerEntry` 追加のみで、隔離PostgreSQL volumeの復元・初期化は未実施。
-- **アプリrollback**: `/opt/salon-preview-rollbacks/20260816T101015Z-current`
-- **ブラウザ**: 公開年齢確認、管理ログイン、日報・入金処理・入金精算処理の未ログイン時307、`robots.txt` 全体拒否、`X-Robots-Tag: noindex, nofollow, noarchive` を確認。管理者ログイン後の操作確認は現場確認で行う。
+- **反映済みrelease**: git SHA `74388cdaf47413fec9729e5aba4a995007a41ff1`（2026年8月25日18時32分、日本時間）。実行コードを変えないテスト安定化commit `39d6f0fef6963b9462ceaa1f116a9a2e44694062` まで `main` へ反映済み。
+- **CI**: `39d6f0fef6963b9462ceaa1f116a9a2e44694062` のGitHub CIで、Prettier、ESLint、TypeScript、全テスト、coverage、Playwright、production buildが合格。ローカルの同じ全CIも合格。
+- **直前backup**: databaseは `/opt/platinum/maintenance/salon-preview-deploy-20260825T092622Z/db/20260825T092638Z-salon_uat_preview.dump.gz.enc`、storageは `/opt/platinum/maintenance/salon-preview-deploy-20260825T092622Z/preview-storage-correct/storage/20260825T092725Z-storage.tar.gz.enc`。既存previewデータは初期化していない。
+- **アプリrollback**: `/opt/salon-preview-rollbacks/20260825T092622Z-b2cfa266a66df59fb6f9e6ad77c029af34f156d4`
+- **ブラウザ・稼働確認**: 公開年齢確認、管理ログイン、日報・入金処理・入金精算処理の未ログイン時307、`robots.txt` 全体拒否、`X-Robots-Tag: noindex, nofollow, noarchive` を確認。2026年8月25日19時台にpreviewコンテナのhealthyと公開 `/api/health` のHTTP 200を再確認。管理者ログイン後の操作確認は現場確認で行う。
 - **安全**: 確認環境は外部送信停止のpreview mode。旧本番、`salon-system`、Platinum、preview PostgreSQL volumeは変更していない。今回の再ビルドは `SALON_PREVIEW_APP_ROOT=/opt/salon-management-preview` を明示指定した。
 
 ## 環境・共通導線
