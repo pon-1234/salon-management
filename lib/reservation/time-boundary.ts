@@ -4,7 +4,7 @@
  * @known_issues Existing legacy reservations keep their original start when unrelated fields change
  */
 
-export const RESERVATION_START_STEP_MINUTES = 10
+export const RESERVATION_START_STEP_MINUTES = 5
 export const RESERVATION_START_STEP_SECONDS = RESERVATION_START_STEP_MINUTES * 60
 const RESERVATION_START_STEP_MILLISECONDS = RESERVATION_START_STEP_SECONDS * 1000
 

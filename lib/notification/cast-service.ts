@@ -49,7 +49,8 @@ const STATUS_LABELS: Record<string, string> = {
   tentative: '仮予約',
   cancelled: 'キャンセル',
   modifiable: '修正待ち',
-  completed: '対応済み',
+  completed: '完了',
+  preconfirmed: '事前確認',
 }
 
 const SENDER_LABELS: Record<ChatMessageForNotification['sender'], string> = {

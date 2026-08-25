@@ -26,7 +26,7 @@ import {
   ListChecks,
 } from 'lucide-react'
 import { getAllReservations } from '@/lib/reservation/data'
-import { addHours, subHours, differenceInMinutes } from 'date-fns'
+import { differenceInMinutes } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { formatInTimeZone } from 'date-fns-tz'
 import {
@@ -57,8 +57,10 @@ import {
   getDashboardQueryWindow,
   getJstPeriodBounds,
   isWithinPeriod,
+  selectDashboardRecentReservations,
   sumActiveReservationRevenue,
 } from './dashboard.utils'
+import { getReservationStatusLabel } from '@/lib/reservation/status-display'
 
 const JST_TIMEZONE = 'Asia/Tokyo'
 const castScheduleUseCases = new CastScheduleUseCases()
@@ -71,35 +73,39 @@ interface PhoneCustomerSearchResult {
 
 type PhoneSearchStatus = 'idle' | 'loading' | 'ready' | 'error'
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({
+  status,
+  marketingChannel,
+}: {
+  status: string
+  marketingChannel?: string | null
+}) {
   const statusConfig = {
     confirmed: {
-      label: '確定',
       variant: 'default' as const,
       icon: <CheckCircle2 className="h-3 w-3" />,
     },
     pending: {
-      label: '仮予約',
       variant: 'secondary' as const,
       icon: <Clock className="h-3 w-3" />,
     },
     tentative: {
-      label: '仮予約',
       variant: 'secondary' as const,
       icon: <Clock className="h-3 w-3" />,
     },
+    preconfirmed: {
+      variant: 'outline' as const,
+      icon: <AlertCircle className="h-3 w-3" />,
+    },
     cancelled: {
-      label: 'キャンセル',
       variant: 'destructive' as const,
       icon: <XCircle className="h-3 w-3" />,
     },
     completed: {
-      label: '対応済み',
       variant: 'outline' as const,
       icon: <CheckCircle2 className="h-3 w-3" />,
     },
     modifiable: {
-      label: '修正待ち',
       variant: 'outline' as const,
       icon: <AlertCircle className="h-3 w-3" />,
     },
@@ -110,7 +116,7 @@ function StatusBadge({ status }: { status: string }) {
   return (
     <Badge variant={config.variant} className="gap-1">
       {config.icon}
-      {config.label}
+      {getReservationStatusLabel(status, marketingChannel)}
     </Badge>
   )
 }
@@ -372,50 +378,10 @@ export default function DashboardPage() {
   }, [todaysReservations])
 
   const { displayReservations, hasUpcomingReservations } = useMemo(() => {
-    if (!reservations.length) {
-      return {
-        displayReservations: [] as Reservation[],
-        hasUpcomingReservations: false,
-      }
-    }
-
-    const now = new Date()
-    const windowStart = subHours(now, 1)
-    const windowEnd = addHours(now, 48)
-
-    const activeReservations = reservations.filter(
-      (reservation) => reservation.status !== 'cancelled'
-    )
-    const upcoming = activeReservations
-      .filter((reservation) => {
-        const start =
-          reservation.startTime instanceof Date
-            ? reservation.startTime
-            : new Date(reservation.startTime)
-        return start >= windowStart && start <= windowEnd
-      })
-      .sort((a, b) => {
-        const aStart = a.startTime instanceof Date ? a.startTime : new Date(a.startTime)
-        const bStart = b.startTime instanceof Date ? b.startTime : new Date(b.startTime)
-        return aStart.getTime() - bStart.getTime()
-      })
-
-    if (upcoming.length > 0) {
-      return {
-        displayReservations: upcoming.slice(0, 5),
-        hasUpcomingReservations: true,
-      }
-    }
-
-    const latest = [...activeReservations].sort((a, b) => {
-      const aStart = a.startTime instanceof Date ? a.startTime : new Date(a.startTime)
-      const bStart = b.startTime instanceof Date ? b.startTime : new Date(b.startTime)
-      return bStart.getTime() - aStart.getTime()
-    })
-
+    const tentativeReservations = selectDashboardRecentReservations(reservations)
     return {
-      displayReservations: latest.slice(0, 5),
-      hasUpcomingReservations: false,
+      displayReservations: tentativeReservations,
+      hasUpcomingReservations: tentativeReservations.length > 0,
     }
   }, [reservations])
 
@@ -723,8 +689,8 @@ export default function DashboardPage() {
             </h2>
             <CardDescription>
               {hasUpcomingReservations
-                ? '今から48時間以内に始まる予約です。行を押すと内容を確認できます。'
-                : '直近の予約5件です。行を押すと内容を確認できます。'}
+                ? '仮押さえとネット予約です。確定するとここから外れます。'
+                : 'いま処理待ちの仮予約はありません。'}
             </CardDescription>
           </div>
           <Button variant="outline" size="sm" asChild>
@@ -769,7 +735,10 @@ export default function DashboardPage() {
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="font-medium">{customerDisplayName}</p>
-                        <StatusBadge status={reservation.status} />
+                        <StatusBadge
+                          status={reservation.status}
+                          marketingChannel={reservation.marketingChannel}
+                        />
                       </div>
                       <p className="mt-1 text-sm text-muted-foreground">担当: {staffDisplayName}</p>
                       <p className="text-xs text-muted-foreground">

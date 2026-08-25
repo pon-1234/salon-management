@@ -279,7 +279,7 @@ describe('QuickBookingDialog', () => {
     expect(stickyFooter).toContainElement(submit)
   })
 
-  it('offers only 10-minute start boundaries and rejects an off-boundary manual time', async () => {
+  it('offers only 5-minute start boundaries and rejects an off-boundary manual time', async () => {
     const fetchMock = createFetchMock()
     vi.stubGlobal('fetch', fetchMock)
     render(dialogElement())
@@ -287,21 +287,21 @@ describe('QuickBookingDialog', () => {
     await waitForOnePageBookingForm()
     await waitFor(() =>
       expect(mocks.renderTimeSlotPicker).toHaveBeenCalledWith(
-        expect.objectContaining({ stepMinutes: 10 })
+        expect.objectContaining({ stepMinutes: 5 })
       )
     )
 
     const timeInput = document.querySelector<HTMLInputElement>('input[name="time"]')
     expect(timeInput).not.toBeNull()
-    expect(timeInput).toHaveAttribute('step', '600')
+    expect(timeInput).toHaveAttribute('step', '300')
 
-    fireEvent.change(timeInput!, { target: { value: '12:05' } })
+    fireEvent.change(timeInput!, { target: { value: '12:03' } })
     fireEvent.click(screen.getByRole('button', { name: '予約を確定' }))
 
     await waitFor(() =>
       expect(mocks.toast).toHaveBeenCalledWith({
-        title: '開始時間は10分単位で入力してください',
-        description: '開始時間の分は10分単位で指定してください。',
+        title: '開始時間は5分単位で入力してください',
+        description: '開始時間の分は5分単位で指定してください。',
         variant: 'destructive',
       })
     )
@@ -412,6 +412,34 @@ describe('QuickBookingDialog', () => {
     expect(checkbox).not.toBeChecked()
   })
 
+  it('keeps options compact in a two-column grid', async () => {
+    vi.stubGlobal('fetch', createFetchMock())
+    render(dialogElement())
+
+    await waitForOnePageBookingForm()
+
+    expect(screen.getByTestId('quick-booking-option-grid')).toHaveClass('sm:grid-cols-2')
+  })
+
+  it('merges required intake channels with the store-specific list', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', createFetchMock())
+    render(dialogElement())
+
+    await waitForOnePageBookingForm()
+    const channelSelect = screen.getByRole('combobox', { name: '集客チャネル' })
+    Object.assign(channelSelect, {
+      hasPointerCapture: () => false,
+      setPointerCapture: () => undefined,
+      releasePointerCapture: () => undefined,
+    })
+    await user.click(channelSelect)
+
+    expect(await screen.findByRole('option', { name: 'LINE' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'ショートメール' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'サイト関連' })).toBeInTheDocument()
+  })
+
   it('posts confirmed status, real option IDs, and no implicit dispatch charge', async () => {
     const user = userEvent.setup()
     const fetchMock = createFetchMock()
@@ -448,9 +476,9 @@ describe('QuickBookingDialog', () => {
     render(dialogElement())
 
     await waitForOnePageBookingForm()
-    const provisionalSwitch = screen.getByRole('switch', { name: '仮予約として保存' })
-    expect(provisionalSwitch).not.toBeChecked()
-    await user.click(provisionalSwitch)
+    const statusSelect = screen.getByLabelText('予約ステータス')
+    expect(statusSelect).toHaveValue('確定済')
+    await user.selectOptions(statusSelect, '仮予約')
     await user.click(screen.getByRole('button', { name: '仮予約として保存' }))
 
     await waitFor(() =>
@@ -537,7 +565,7 @@ describe('QuickBookingDialog', () => {
       screen.getByPlaceholderText('店舗用メモがあれば記載してください'),
       '前回入力したメモ'
     )
-    await user.click(screen.getByRole('switch', { name: '仮予約として保存' }))
+    await user.selectOptions(screen.getByLabelText('予約ステータス'), '仮予約')
 
     rerender(dialogElement({ open: false, time: null, onOpenChange }))
     await act(async () => undefined)
@@ -551,7 +579,7 @@ describe('QuickBookingDialog', () => {
     await waitForOnePageBookingForm()
     await user.click(screen.getByRole('button', { name: '追加項目（ポイント・店舗メモ）' }))
     expect(screen.getByPlaceholderText('店舗用メモがあれば記載してください')).toHaveValue('')
-    expect(screen.getByRole('switch', { name: '仮予約として保存' })).not.toBeChecked()
+    expect(screen.getByLabelText('予約ステータス')).toHaveValue('確定済')
   })
 
   it('does not erase entered text when async catalog data arrives while open', async () => {

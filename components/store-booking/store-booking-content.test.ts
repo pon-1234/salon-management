@@ -15,99 +15,59 @@ describe('StoreBookingContent time-slot choices', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2099-01-19T00:00:00.000Z'))
 
-    expect(
-      buildTimeSlotChoices(
-        [
-          {
-            startTime: '2099-01-20T11:10:00+09:00',
-            endTime: '2099-01-20T12:40:00+09:00',
-          },
-        ],
-        60
-      )
-    ).toEqual([
-      {
-        start: '2099-01-20T02:10:00.000Z',
-        end: '2099-01-20T03:10:00.000Z',
-        label: '11:10 - 12:10',
-        dayLabel: '1月20日(火)',
-      },
-      {
-        start: '2099-01-20T02:20:00.000Z',
-        end: '2099-01-20T03:20:00.000Z',
-        label: '11:20 - 12:20',
-        dayLabel: '1月20日(火)',
-      },
-      {
-        start: '2099-01-20T02:30:00.000Z',
-        end: '2099-01-20T03:30:00.000Z',
-        label: '11:30 - 12:30',
-        dayLabel: '1月20日(火)',
-      },
-      {
-        start: '2099-01-20T02:40:00.000Z',
-        end: '2099-01-20T03:40:00.000Z',
-        label: '11:40 - 12:40',
-        dayLabel: '1月20日(火)',
-      },
-    ])
+    const slots = buildTimeSlotChoices(
+      [
+        {
+          startTime: '2099-01-20T11:10:00+09:00',
+          endTime: '2099-01-20T12:40:00+09:00',
+        },
+      ],
+      60
+    )
+
+    expect(slots).toHaveLength(7)
+    expect(slots[0]).toEqual({
+      start: '2099-01-20T02:10:00.000Z',
+      end: '2099-01-20T03:10:00.000Z',
+      label: '11:10 - 12:10',
+      dayLabel: '1月20日(火)',
+    })
+    expect(slots.at(-1)).toEqual({
+      start: '2099-01-20T02:40:00.000Z',
+      end: '2099-01-20T03:40:00.000Z',
+      label: '11:40 - 12:40',
+      dayLabel: '1月20日(火)',
+    })
   })
 
   it('keeps aligned complete minimum-course slots across midnight', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2099-01-19T00:00:00.000Z'))
 
+    const slots = buildTimeSlotChoices(
+      [
+        {
+          startTime: '2099-01-20T23:10:00+09:00',
+          endTime: '2099-01-21T01:40:00+09:00',
+        },
+      ],
+      60
+    ).map(({ start, end }) => ({ start, end }))
+
+    expect(slots).toHaveLength(19)
+    expect(slots[0]).toEqual({
+      start: '2099-01-20T14:10:00.000Z',
+      end: '2099-01-20T15:10:00.000Z',
+    })
+    expect(slots.at(-1)).toEqual({
+      start: '2099-01-20T15:40:00.000Z',
+      end: '2099-01-20T16:40:00.000Z',
+    })
     expect(
-      buildTimeSlotChoices(
-        [
-          {
-            startTime: '2099-01-20T23:10:00+09:00',
-            endTime: '2099-01-21T01:40:00+09:00',
-          },
-        ],
-        60
-      ).map(({ start, end }) => ({ start, end }))
-    ).toEqual([
-      {
-        start: '2099-01-20T14:10:00.000Z',
-        end: '2099-01-20T15:10:00.000Z',
-      },
-      {
-        start: '2099-01-20T14:20:00.000Z',
-        end: '2099-01-20T15:20:00.000Z',
-      },
-      {
-        start: '2099-01-20T14:30:00.000Z',
-        end: '2099-01-20T15:30:00.000Z',
-      },
-      {
-        start: '2099-01-20T14:40:00.000Z',
-        end: '2099-01-20T15:40:00.000Z',
-      },
-      {
-        start: '2099-01-20T14:50:00.000Z',
-        end: '2099-01-20T15:50:00.000Z',
-      },
-      {
-        start: '2099-01-20T15:00:00.000Z',
-        end: '2099-01-20T16:00:00.000Z',
-      },
-      {
-        start: '2099-01-20T15:10:00.000Z',
-        end: '2099-01-20T16:10:00.000Z',
-      },
-      {
-        start: '2099-01-20T15:20:00.000Z',
-        end: '2099-01-20T16:20:00.000Z',
-      },
-      {
-        start: '2099-01-20T15:30:00.000Z',
-        end: '2099-01-20T16:30:00.000Z',
-      },
-      {
-        start: '2099-01-20T15:40:00.000Z',
-        end: '2099-01-20T16:40:00.000Z',
-      },
-    ])
+      slots.slice(1).every((slot, index) => {
+        const previous = slots[index]
+        return new Date(slot.start).getTime() - new Date(previous.start).getTime() === 300_000
+      })
+    ).toBe(true)
   })
 })

@@ -270,21 +270,51 @@ describe('DashboardPage field operations', () => {
   it('excludes cancelled orders from revenue and the operational reservation list', async () => {
     mocks.getAllReservations.mockResolvedValueOnce([
       makeReservation('active', 'confirmed', 12_000, '有効予約顧客'),
+      makeReservation('hold', 'pending', 8_000, '仮予約顧客'),
       makeReservation('cancelled', 'cancelled', 99_000, '取消予約顧客'),
     ])
 
     render(<DashboardPage />)
 
-    expect((await screen.findAllByText('¥12,000')).length).toBeGreaterThan(0)
-    expect(screen.queryByText('¥111,000')).not.toBeInTheDocument()
-    expect(screen.getByText('有効予約顧客')).toBeInTheDocument()
+    expect((await screen.findByText('¥20,000')).textContent).toBe('¥20,000')
+    expect(screen.queryByText('¥99,000')).not.toBeInTheDocument()
+    expect(screen.getByText('仮予約顧客')).toBeInTheDocument()
+    expect(screen.queryByText('有効予約顧客')).not.toBeInTheDocument()
     expect(screen.queryByText('取消予約顧客')).not.toBeInTheDocument()
+  })
+
+  it('drops a hold from 直近の予約 after it is confirmed', async () => {
+    const user = userEvent.setup()
+    const hold = makeReservation('direct-edit', 'pending', 12_000, '直接編集顧客')
+    mocks.getAllReservations.mockResolvedValueOnce([hold])
+    mocks.dialogSavePayload = { status: 'confirmed', notes: '更新後メモ' }
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(async (_input: RequestInfo | URL, init?: RequestInit) => {
+        const payload = JSON.parse(String(init?.body)) as Record<string, unknown>
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ ...hold, ...payload }),
+        } as Response
+      })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<DashboardPage />)
+
+    await user.click(await screen.findByText('直接編集顧客'))
+    await user.click(screen.getByRole('button', { name: 'ダッシュボード予約を保存' }))
+
+    await waitFor(() => {
+      expect(screen.queryByText('直接編集顧客')).not.toBeInTheDocument()
+    })
   })
 
   it('edits and saves a confirmed reservation without changing it to modifiable', async () => {
     const user = userEvent.setup()
-    const confirmed = makeReservation('direct-edit', 'confirmed', 12_000, '直接編集顧客')
+    const confirmed = makeReservation('direct-edit', 'pending', 12_000, '直接編集顧客')
     mocks.getAllReservations.mockResolvedValueOnce([confirmed])
+    mocks.dialogSavePayload = { status: 'confirmed', notes: '更新後メモ' }
     const fetchMock = vi
       .fn()
       .mockImplementation(async (_input: RequestInfo | URL, init?: RequestInit) => {
@@ -320,7 +350,7 @@ describe('DashboardPage field operations', () => {
 
   it('removes a dashboard order immediately after a reasoned cancellation', async () => {
     const user = userEvent.setup()
-    const confirmed = makeReservation('cancel-now', 'confirmed', 12_000, '取消対象顧客')
+    const confirmed = makeReservation('cancel-now', 'pending', 12_000, '取消対象顧客')
     mocks.getAllReservations.mockResolvedValueOnce([confirmed])
     mocks.dialogSavePayload = {
       status: 'cancelled',

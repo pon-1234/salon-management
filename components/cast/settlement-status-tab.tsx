@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import { format } from 'date-fns'
+import { formatInTimeZone } from 'date-fns-tz'
 import { ja } from 'date-fns/locale'
 import { ChevronDown, Loader2, PiggyBank, Plus, Receipt } from 'lucide-react'
 import type { CastSettlementsData } from '@/lib/cast-portal/types'
@@ -47,6 +48,9 @@ const settlementStatusLabels = {
 } as const
 
 export function SettlementStatusTab({ castId, storeId, onSettled }: SettlementStatusTabProps) {
+  const now = useMemo(() => new Date(), [])
+  const [year, setYear] = useState(Number(formatInTimeZone(now, 'Asia/Tokyo', 'yyyy')))
+  const [month, setMonth] = useState(Number(formatInTimeZone(now, 'Asia/Tokyo', 'M')))
   const [data, setData] = useState<CastSettlementsData | null>(null)
   const [isPending, startTransition] = useTransition()
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({})
@@ -58,7 +62,7 @@ export function SettlementStatusTab({ castId, storeId, onSettled }: SettlementSt
   const fetchData = useCallback(async () => {
     const response = await fetch(
       buildStoreScopedEndpoint(
-        `/api/admin/cast/settlements?castId=${encodeURIComponent(castId)}&year=${new Date().getFullYear()}&month=${new Date().getMonth() + 1}`,
+        `/api/admin/cast/settlements?castId=${encodeURIComponent(castId)}&year=${year}&month=${month}`,
         storeId
       ),
       { cache: 'no-store' }
@@ -70,7 +74,22 @@ export function SettlementStatusTab({ castId, storeId, onSettled }: SettlementSt
     }
 
     return (await response.json()) as CastSettlementsData
-  }, [castId, storeId])
+  }, [castId, month, storeId, year])
+
+  const shiftMonth = (delta: number) => {
+    const next = month + delta
+    if (next < 1) {
+      setYear((value) => value - 1)
+      setMonth(12)
+      return
+    }
+    if (next > 12) {
+      setYear((value) => value + 1)
+      setMonth(1)
+      return
+    }
+    setMonth(next)
+  }
 
   useEffect(() => {
     let ignore = false
@@ -202,10 +221,19 @@ export function SettlementStatusTab({ castId, storeId, onSettled }: SettlementSt
         <div>
           <h2 className="text-2xl font-bold">精算状況</h2>
           <p className="text-sm text-muted-foreground">
-            当月の精算状況と日別の内訳を確認できます。
+            日付ごとの精算状況です。前月へ戻って未精算も確認できます。
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={() => shiftMonth(-1)}>
+            前月
+          </Button>
+          <div className="min-w-[7rem] text-center text-sm font-medium">
+            {year}年{month}月
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={() => shiftMonth(1)}>
+            翌月
+          </Button>
           <Dialog
             open={isSettleDialogOpen}
             onOpenChange={(open) => {
@@ -276,7 +304,7 @@ export function SettlementStatusTab({ castId, storeId, onSettled }: SettlementSt
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <SummaryTile
             icon={PiggyBank}
-            title="今月の手取り見込み"
+            title={`${year}年${month}月の手取り見込み`}
             value={`¥${settlementStats.takeHome.toLocaleString()}`}
             helper={`厚生費 ¥${settlementStats.welfareExpense.toLocaleString()} は反映済み`}
           />

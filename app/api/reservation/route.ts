@@ -30,7 +30,7 @@ import {
 import { sanitizeReservationCreationInput } from '@/lib/reservation/creation-policy'
 import {
   normalizeCancellationReason,
-  normalizePaymentReference,
+  normalizeOptionalPaymentReference,
 } from '@/lib/reservation/financial-reference'
 import { resolveCancellationSourceUpdate } from '@/lib/reservation/cancellation-source'
 import {
@@ -603,7 +603,9 @@ export async function POST(request: NextRequest) {
     let paymentReferenceToPersist: string | null = null
     if (isAdmin && paymentMethodToPersist === PAYMENT_METHODS.CARD) {
       try {
-        paymentReferenceToPersist = normalizePaymentReference(reservationData.paymentReference)
+        paymentReferenceToPersist = normalizeOptionalPaymentReference(
+          reservationData.paymentReference
+        )
       } catch {
         return NextResponse.json(
           {
@@ -1056,7 +1058,7 @@ export async function PUT(request: NextRequest) {
       nextPaymentReference = null
     } else if (Object.prototype.hasOwnProperty.call(updates, 'paymentReference')) {
       try {
-        nextPaymentReference = normalizePaymentReference(updates.paymentReference)
+        nextPaymentReference = normalizeOptionalPaymentReference(updates.paymentReference)
       } catch {
         return NextResponse.json(
           {
@@ -1065,13 +1067,6 @@ export async function PUT(request: NextRequest) {
           { status: 400 }
         )
       }
-    } else if (requestedPaymentMethod === PAYMENT_METHODS.CARD && !nextPaymentReference) {
-      return NextResponse.json(
-        {
-          error: 'カード決済の管理番号を入力してください。カード番号は入力しないでください。',
-        },
-        { status: 400 }
-      )
     }
 
     const hasRequestedStartTime = Boolean(updates.startTime)

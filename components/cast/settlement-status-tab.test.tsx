@@ -109,7 +109,7 @@ describe('SettlementStatusTab', () => {
 
     render(<SettlementStatusTab castId="cast-1" castName="池袋キャスト" storeId="ikebukuro" />)
 
-    const takeHomeTile = await screen.findByRole('group', { name: '今月の手取り見込み' })
+    const takeHomeTile = await screen.findByRole('group', { name: /手取り見込み/ })
     expect(within(takeHomeTile).getByText('¥60,000')).toBeVisible()
     expect(within(takeHomeTile).queryByText('¥57,000')).not.toBeInTheDocument()
 

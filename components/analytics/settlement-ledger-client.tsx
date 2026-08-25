@@ -86,15 +86,15 @@ export function SettlementLedgerClient({ mode: _mode }: { mode: 'payment' | 'set
   }
 
   const title = '精算'
-  const description =
-    'キャストごとの未精算額を確認します。精算の実行は各キャストの精算状況画面で行います。精算記録と旧台帳もこの画面で確認できます。'
 
   return (
     <div className="container mx-auto space-y-6 py-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold">{title}</h1>
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <p className="text-sm text-muted-foreground">
+            キャストごとの未精算だけを確認します。詳細と精算実行は各キャスト画面です。
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button type="button" variant="outline" onClick={() => shiftMonth(-1)}>
@@ -128,39 +128,51 @@ export function SettlementLedgerClient({ mode: _mode }: { mode: 'payment' | 'set
         <PageLoading compact label="精算情報を読み込んでいます" />
       ) : ledger ? (
         <div className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            {ledger.casts.map((cast) => (
-              <Card key={cast.castId}>
-                <CardHeader>
-                  <CardTitle>{cast.castName}</CardTitle>
-                  <CardDescription>
-                    手取り ¥{cast.staffRevenue.toLocaleString()} / 店舗売上 ¥
-                    {cast.storeRevenue.toLocaleString()}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
-                  <p className={cast.pendingAmount > 0 ? 'font-medium text-red-600' : undefined}>
-                    未精算 {cast.pendingCount}件 ¥{cast.pendingAmount.toLocaleString()}
-                  </p>
-                  <p>精算済み ¥{cast.settledAmount.toLocaleString()}</p>
-                  {cast.pendingReservations.length > 0 ? (
-                    <ul className="space-y-1 text-muted-foreground">
-                      {cast.pendingReservations.map((reservation) => (
-                        <li key={reservation.id}>
-                          {reservation.customerName} / {reservation.courseName ?? 'コース未設定'} /
-                          カード決済管理番号 {reservation.paymentReference ?? 'なし'}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                  <Button asChild>
-                    <Link href={`/admin/cast/manage/${cast.castId}?tab=settlement`}>
-                      精算状況を見る
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="overflow-x-auto rounded-lg border bg-white">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 text-left text-xs text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2 font-medium">キャスト</th>
+                  <th className="px-3 py-2 font-medium">未精算件数</th>
+                  <th className="px-3 py-2 font-medium">キャスト売上</th>
+                  <th className="px-3 py-2 font-medium">店舗売上</th>
+                  <th className="px-3 py-2 font-medium">精算済み</th>
+                  <th className="px-3 py-2 font-medium">未精算</th>
+                  <th className="px-3 py-2 font-medium"> </th>
+                </tr>
+              </thead>
+              <tbody>
+                {ledger.casts.map((cast) => (
+                  <tr key={cast.castId} className="border-t">
+                    <td className="px-3 py-2 font-medium">{cast.castName}</td>
+                    <td
+                      className={
+                        cast.pendingCount > 0 ? 'px-3 py-2 font-medium text-red-600' : 'px-3 py-2'
+                      }
+                    >
+                      {cast.pendingCount}件
+                    </td>
+                    <td className="px-3 py-2">¥{cast.staffRevenue.toLocaleString()}</td>
+                    <td className="px-3 py-2">¥{cast.storeRevenue.toLocaleString()}</td>
+                    <td className="px-3 py-2">¥{cast.settledAmount.toLocaleString()}</td>
+                    <td
+                      className={
+                        cast.pendingAmount > 0 ? 'px-3 py-2 font-medium text-red-600' : 'px-3 py-2'
+                      }
+                    >
+                      ¥{cast.pendingAmount.toLocaleString()}
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      <Button asChild size="sm" variant="outline">
+                        <Link href={`/admin/cast/manage/${cast.castId}?tab=settlement`}>
+                          精算状況を見る
+                        </Link>
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
           <Card>
             <CardHeader>

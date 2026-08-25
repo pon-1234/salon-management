@@ -140,8 +140,46 @@ describe('Timeline appointment cards', () => {
       />
     )
 
-    expect(screen.getByTestId('reservation-timeline-scroll')).toHaveClass('overflow-auto')
+    expect(screen.getByTestId('reservation-timeline-scroll')).toHaveClass(
+      'absolute',
+      'overflow-auto'
+    )
+    expect(screen.getByTestId('timeline-horizontal-scrollbar')).toHaveClass('absolute', 'bottom-0')
     expect(screen.getByTestId('timeline-time-header')).toHaveClass('sticky', 'top-0')
+  })
+
+  it('keeps on-duty hours white and darkens the rest of the row', () => {
+    const mixedStaff = [
+      staff[0],
+      {
+        ...staff[0],
+        id: 'off-duty-cast',
+        name: '休みキャスト',
+        workStart: undefined,
+        workEnd: undefined,
+        appointments: [],
+      },
+    ]
+
+    render(
+      <Timeline
+        canCreateReservation
+        staff={mixedStaff}
+        selectedDate={new Date('2030-07-21T00:00:00+09:00')}
+        selectedCustomer={null}
+        setSelectedAppointment={vi.fn()}
+        reservations={[reservation]}
+        businessHours={{
+          startMinutes: 10 * 60,
+          endMinutes: 24 * 60,
+          startLabel: '10:00',
+          endLabel: '24:00',
+        }}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: /さら/ })).toHaveClass('bg-white')
+    expect(screen.getByRole('button', { name: /休みキャスト/ })).toHaveClass('bg-slate-200')
   })
 
   it('shows both operational ranks beside the cast name', () => {
@@ -293,7 +331,38 @@ describe('Timeline appointment cards', () => {
     expect(setSelectedAppointment).toHaveBeenCalledWith(reservation)
   })
 
-  it('preserves a midnight shift end and offers starts every 30 minutes', () => {
+  it('uses the reservation source of truth for the timeline status label', () => {
+    render(
+      <Timeline
+        canCreateReservation
+        staff={staff}
+        selectedDate={new Date('2030-07-21T00:00:00+09:00')}
+        selectedCustomer={null}
+        setSelectedAppointment={vi.fn()}
+        reservations={[
+          {
+            ...reservation,
+            status: 'preconfirmed',
+            bookingStatus: 'preconfirmed',
+          },
+        ]}
+        businessHours={{
+          startMinutes: 10 * 60,
+          endMinutes: 24 * 60,
+          startLabel: '10:00',
+          endLabel: '24:00',
+        }}
+      />
+    )
+
+    const appointmentButton = screen.getByRole('button', {
+      name: /\[確認用\] 旧顧客 #104168/,
+    })
+    expect(within(appointmentButton).getByText('事前確認')).toBeVisible()
+    expect(within(appointmentButton).queryByText('仮予約')).not.toBeInTheDocument()
+  })
+
+  it('preserves a midnight shift end and offers starts through the final valid window', () => {
     const selectedCustomer = {
       id: 'customer-1',
       name: '確認顧客',
@@ -368,16 +437,55 @@ describe('Timeline appointment cards', () => {
 
     expect(screen.getByRole('button', { name: '18:00の空き枠を選択' })).toHaveStyle({
       left: '960px',
-      width: '60px',
+      width: '10px',
     })
     expect(screen.getByRole('button', { name: '18:30の空き枠を選択' })).toHaveStyle({
       left: '1020px',
-      width: '60px',
+      width: '10px',
     })
     expect(screen.getByRole('button', { name: '22:00の空き枠を選択' })).toHaveStyle({
       left: '1440px',
-      width: '60px',
+      width: '10px',
     })
+  })
+
+  it('offers every available reservation start in five-minute increments', () => {
+    const selectedCustomer = {
+      id: 'customer-1',
+      name: '確認顧客',
+      ngCasts: [],
+      ngCastIds: [],
+    } as unknown as Customer
+    const workingStaff = [
+      {
+        ...staff[0],
+        appointments: [],
+        workStart: new Date('2030-07-21T14:00:00+09:00'),
+        workEnd: new Date('2030-07-21T15:00:00+09:00'),
+      },
+    ]
+
+    render(
+      <Timeline
+        canCreateReservation
+        staff={workingStaff}
+        selectedDate={new Date('2030-07-21T00:00:00+09:00')}
+        selectedCustomer={selectedCustomer}
+        setSelectedAppointment={vi.fn()}
+        reservations={[]}
+        businessHours={{
+          startMinutes: 10 * 60,
+          endMinutes: 24 * 60,
+          startLabel: '10:00',
+          endLabel: '24:00',
+        }}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: '14:00の空き枠を選択' })).toBeVisible()
+    expect(screen.getByRole('button', { name: '14:05の空き枠を選択' })).toBeVisible()
+    expect(screen.getByRole('button', { name: '14:50の空き枠を選択' })).toBeVisible()
+    expect(screen.queryByRole('button', { name: '14:55の空き枠を選択' })).not.toBeInTheDocument()
   })
 
   it('opens a booking from a 30-minute header button at that start time', () => {

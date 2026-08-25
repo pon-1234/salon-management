@@ -19,6 +19,11 @@ import Link from 'next/link'
 import { useMemo } from 'react'
 import { ReservationStatus } from '@/lib/constants'
 import { isCreditCardPaymentMethod } from '@/lib/reservation/credit-card-fee'
+import {
+  compareReservationsForOpsList,
+  getReservationStatusLabel,
+  isCompletedOpsStatus,
+} from '@/lib/reservation/status-display'
 
 interface ReservationListProps {
   reservations: ReservationData[]
@@ -34,6 +39,16 @@ export function ReservationList({
   onOpenReservation,
 }: ReservationListProps) {
   const displayReservations = limit ? reservations.slice(0, limit) : reservations
+  const orderedReservations = useMemo(
+    () => [...displayReservations].sort(compareReservationsForOpsList),
+    [displayReservations]
+  )
+  const activeReservations = orderedReservations.filter(
+    (reservation) => !isCompletedOpsStatus(reservation.status)
+  )
+  const completedReservations = orderedReservations.filter((reservation) =>
+    isCompletedOpsStatus(reservation.status)
+  )
 
   const statusMeta = useMemo(
     () =>
@@ -64,9 +79,14 @@ export function ReservationList({
           dot: 'bg-sky-500',
         },
         completed: {
-          label: '対応済み',
+          label: '完了',
           className: 'bg-slate-200 text-slate-700 border-slate-300',
           dot: 'bg-slate-500',
+        },
+        preconfirmed: {
+          label: '事前確認',
+          className: 'bg-sky-100 text-sky-700 border-sky-200',
+          dot: 'bg-sky-500',
         },
       }) as Record<
         ReservationStatus | 'tentative' | string,
@@ -75,10 +95,18 @@ export function ReservationList({
     []
   )
 
-  const renderStatusBadge = (status?: string | null, fallbackLabel?: string) => {
+  const renderStatusBadge = (
+    status?: string | null,
+    fallbackLabel?: string,
+    marketingChannel?: string | null
+  ) => {
     const normalized = status?.toLowerCase() ?? ''
     const meta = statusMeta[normalized] ?? null
-    const label = meta?.label ?? fallbackLabel ?? '未設定'
+    const label =
+      getReservationStatusLabel(normalized, marketingChannel) ||
+      meta?.label ||
+      fallbackLabel ||
+      '未設定'
     const dotClass = meta?.dot ?? 'bg-slate-400'
     const baseClass =
       meta?.className ?? 'bg-slate-100 text-slate-600 border border-slate-200 shadow-none'
@@ -113,6 +141,51 @@ export function ReservationList({
     )
   }
 
+  const renderRow = (reservation: ReservationData) => (
+    <TableRow
+      key={reservation.id}
+      onClick={() => onOpenReservation && onOpenReservation(reservation)}
+      className="cursor-pointer hover:bg-gray-50"
+    >
+      <TableCell className="whitespace-nowrap">
+        <div className="w-24 rounded bg-muted p-1 text-center font-mono text-xs text-muted-foreground">
+          {reservation.id.slice(0, 10)}
+        </div>
+      </TableCell>
+      <TableCell>
+        <div>{reservation.customerName} 様</div>
+        {reservation.designation === 'new' && (
+          <div className="mt-1 text-sm text-gray-500">[新規指名]</div>
+        )}
+        <div className="mt-1 text-sm text-gray-500">{reservation.location}</div>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <span>{format(reservation.startTime, 'yyyy-MM-dd')}</span>
+        </div>
+        <div className="text-sm text-gray-500">{format(reservation.startTime, 'HH:mm')}</div>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <span>{reservation.staff || 'キャスト未設定'}</span>
+        </div>
+      </TableCell>
+      <TableCell>{`${reservation.course}`}</TableCell>
+      <TableCell>{format(reservation.startTime, 'HH:mm')}</TableCell>
+      <TableCell>{format(reservation.endTime, 'HH:mm')}</TableCell>
+      <TableCell>
+        <div className="flex flex-wrap items-center gap-2">
+          {renderStatusBadge(
+            reservation.status,
+            reservation.bookingStatus,
+            reservation.marketingChannel
+          )}
+        </div>
+      </TableCell>
+      <TableCell>{renderCardPaymentBadge(reservation)}</TableCell>
+    </TableRow>
+  )
+
   return (
     <div className="space-y-4">
       <div className="overflow-x-auto rounded-lg border bg-white">
@@ -131,55 +204,29 @@ export function ReservationList({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {displayReservations.length === 0 ? (
+            {orderedReservations.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} className="h-32 text-center text-sm text-muted-foreground">
                   この日の予約はありません。
                 </TableCell>
               </TableRow>
             ) : (
-              displayReservations.map((reservation) => (
-                <TableRow
-                  key={reservation.id}
-                  onClick={() => onOpenReservation && onOpenReservation(reservation)}
-                  className="cursor-pointer hover:bg-gray-50"
-                >
-                  <TableCell className="whitespace-nowrap">
-                    <div className="w-24 rounded bg-muted p-1 text-center font-mono text-xs text-muted-foreground">
-                      {reservation.id.slice(0, 10)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>{reservation.customerName} 様</div>
-                    {reservation.designation === 'new' && (
-                      <div className="mt-1 text-sm text-gray-500">[新規指名]</div>
-                    )}
-                    <div className="mt-1 text-sm text-gray-500">{reservation.location}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <span>{format(reservation.startTime, 'yyyy-MM-dd')}</span>
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {format(reservation.startTime, 'HH:mm')}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <span>{reservation.staff || 'キャスト未設定'}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{`${reservation.course}`}</TableCell>
-                  <TableCell>{format(reservation.startTime, 'HH:mm')}</TableCell>
-                  <TableCell>{format(reservation.endTime, 'HH:mm')}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {renderStatusBadge(reservation.status, reservation.bookingStatus)}
-                    </div>
-                  </TableCell>
-                  <TableCell>{renderCardPaymentBadge(reservation)}</TableCell>
-                </TableRow>
-              ))
+              <>
+                {activeReservations.map(renderRow)}
+                {completedReservations.length > 0 ? (
+                  <>
+                    <TableRow>
+                      <TableCell
+                        colSpan={9}
+                        className="bg-slate-100 text-xs font-semibold uppercase tracking-wide text-slate-600"
+                      >
+                        完了
+                      </TableCell>
+                    </TableRow>
+                    {completedReservations.map(renderRow)}
+                  </>
+                ) : null}
+              </>
             )}
           </TableBody>
         </Table>
