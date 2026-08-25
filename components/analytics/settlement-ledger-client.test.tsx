@@ -105,7 +105,7 @@ describe('SettlementLedgerClient', () => {
     render(<SettlementLedgerClient mode="payment" />)
 
     expect(await screen.findByRole('heading', { name: '精算' })).toBeInTheDocument()
-    expect(screen.getByText('さら')).toBeInTheDocument()
+    expect(await screen.findByText('さら')).toBeInTheDocument()
     expect(screen.getByText('1件')).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'キャスト売上' })).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: '店舗売上' })).toBeInTheDocument()
@@ -141,7 +141,7 @@ describe('SettlementLedgerClient', () => {
     render(<SettlementLedgerClient mode="settlement" />)
 
     expect(await screen.findByRole('heading', { name: '精算' })).toBeInTheDocument()
-    expect(screen.getByText('さら')).toBeInTheDocument()
+    expect(await screen.findByText('さら')).toBeInTheDocument()
     expect(screen.getAllByText('¥18,000').length).toBeGreaterThan(0)
     expect(screen.getByText('旧台帳')).toBeInTheDocument()
     expect(screen.getByText('さら / 入金 / 現金')).toBeInTheDocument()
