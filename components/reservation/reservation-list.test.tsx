@@ -95,4 +95,16 @@ describe('ReservationList interactions', () => {
 
     expect(screen.getByText('この日の予約はありません。')).toBeInTheDocument()
   })
+
+  it('keeps 完了 reservations in a lower section after 仮予約 and 確定', () => {
+    const completed = createReservation('completed-reservation', 'completed', '完了顧客')
+
+    render(<ReservationList reservations={[completed, confirmed, pending]} />)
+
+    const names = screen.getAllByText(/様$/).map((node) => node.textContent)
+    expect(names[0]).toContain('仮予約顧客')
+    expect(names[1]).toContain('確定顧客')
+    expect(names[2]).toContain('完了顧客')
+    expect(screen.getAllByText('完了').length).toBeGreaterThan(0)
+  })
 })

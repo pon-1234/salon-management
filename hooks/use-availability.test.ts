@@ -29,30 +29,29 @@ describe('useAvailability generateTimeSlots', () => {
     vi.setSystemTime(new Date('2099-01-19T00:00:00.000Z'))
     const { result } = renderHook(() => useAvailability())
 
+    const slots = result.current.generateTimeSlots(
+      '2099-01-20',
+      60,
+      range(11 * 60 + 10, 12 * 60 + 40, '11:10', '12:40')
+    )
+
+    expect(slots).toHaveLength(7)
+    expect(slots[0]).toEqual({
+      startTime: '2099-01-20T02:10:00.000Z',
+      endTime: '2099-01-20T03:10:00.000Z',
+    })
+    expect(slots.at(-1)).toEqual({
+      startTime: '2099-01-20T02:40:00.000Z',
+      endTime: '2099-01-20T03:40:00.000Z',
+    })
     expect(
-      result.current.generateTimeSlots(
-        '2099-01-20',
-        60,
-        range(11 * 60 + 10, 12 * 60 + 40, '11:10', '12:40')
-      )
-    ).toEqual([
-      {
-        startTime: '2099-01-20T02:10:00.000Z',
-        endTime: '2099-01-20T03:10:00.000Z',
-      },
-      {
-        startTime: '2099-01-20T02:20:00.000Z',
-        endTime: '2099-01-20T03:20:00.000Z',
-      },
-      {
-        startTime: '2099-01-20T02:30:00.000Z',
-        endTime: '2099-01-20T03:30:00.000Z',
-      },
-      {
-        startTime: '2099-01-20T02:40:00.000Z',
-        endTime: '2099-01-20T03:40:00.000Z',
-      },
-    ])
+      slots.slice(1).every((slot, index) => {
+        const previous = slots[index]
+        return (
+          new Date(slot.startTime).getTime() - new Date(previous.startTime).getTime() === 300_000
+        )
+      })
+    ).toBe(true)
   })
 
   it('preserves complete aligned minimum-course slots across midnight', () => {
@@ -60,53 +59,28 @@ describe('useAvailability generateTimeSlots', () => {
     vi.setSystemTime(new Date('2099-01-19T00:00:00.000Z'))
     const { result } = renderHook(() => useAvailability())
 
+    const slots = result.current.generateTimeSlots(
+      '2099-01-20',
+      60,
+      range(23 * 60 + 10, 24 * 60 + 100, '23:10', '01:40')
+    )
+
+    expect(slots).toHaveLength(19)
+    expect(slots[0]).toEqual({
+      startTime: '2099-01-20T14:10:00.000Z',
+      endTime: '2099-01-20T15:10:00.000Z',
+    })
+    expect(slots.at(-1)).toEqual({
+      startTime: '2099-01-20T15:40:00.000Z',
+      endTime: '2099-01-20T16:40:00.000Z',
+    })
     expect(
-      result.current.generateTimeSlots(
-        '2099-01-20',
-        60,
-        range(23 * 60 + 10, 24 * 60 + 100, '23:10', '01:40')
-      )
-    ).toEqual([
-      {
-        startTime: '2099-01-20T14:10:00.000Z',
-        endTime: '2099-01-20T15:10:00.000Z',
-      },
-      {
-        startTime: '2099-01-20T14:20:00.000Z',
-        endTime: '2099-01-20T15:20:00.000Z',
-      },
-      {
-        startTime: '2099-01-20T14:30:00.000Z',
-        endTime: '2099-01-20T15:30:00.000Z',
-      },
-      {
-        startTime: '2099-01-20T14:40:00.000Z',
-        endTime: '2099-01-20T15:40:00.000Z',
-      },
-      {
-        startTime: '2099-01-20T14:50:00.000Z',
-        endTime: '2099-01-20T15:50:00.000Z',
-      },
-      {
-        startTime: '2099-01-20T15:00:00.000Z',
-        endTime: '2099-01-20T16:00:00.000Z',
-      },
-      {
-        startTime: '2099-01-20T15:10:00.000Z',
-        endTime: '2099-01-20T16:10:00.000Z',
-      },
-      {
-        startTime: '2099-01-20T15:20:00.000Z',
-        endTime: '2099-01-20T16:20:00.000Z',
-      },
-      {
-        startTime: '2099-01-20T15:30:00.000Z',
-        endTime: '2099-01-20T16:30:00.000Z',
-      },
-      {
-        startTime: '2099-01-20T15:40:00.000Z',
-        endTime: '2099-01-20T16:40:00.000Z',
-      },
-    ])
+      slots.slice(1).every((slot, index) => {
+        const previous = slots[index]
+        return (
+          new Date(slot.startTime).getTime() - new Date(previous.startTime).getTime() === 300_000
+        )
+      })
+    ).toBe(true)
   })
 })

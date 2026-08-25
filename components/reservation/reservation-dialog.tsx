@@ -95,7 +95,7 @@ import { usePricing } from '@/hooks/use-pricing'
 import { useLocations } from '@/hooks/use-locations'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useStore } from '@/contexts/store-context'
-import { normalizePaymentReference } from '@/lib/reservation/financial-reference'
+import { normalizeOptionalPaymentReference } from '@/lib/reservation/financial-reference'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { zonedTimeToUtc } from 'date-fns-tz'
 import { CastTimelineModal } from '@/components/reservation/cast-timeline-modal'
@@ -1449,7 +1449,7 @@ export function ReservationDialog({
     let paymentReferenceToSave: string | null = null
     if (formState.paymentMethod === PAYMENT_METHODS.CARD) {
       try {
-        paymentReferenceToSave = normalizePaymentReference(formState.paymentReference)
+        paymentReferenceToSave = normalizeOptionalPaymentReference(formState.paymentReference)
       } catch {
         setValidationError(
           'カード決済の管理番号を入力してください。カード番号は入力しないでください。'
@@ -1541,7 +1541,7 @@ export function ReservationDialog({
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-semibold">{reservation.customerName} 様</h2>
-                  <StatusBadge status={status} />
+                  <StatusBadge status={status} marketingChannel={reservation.marketingChannel} />
                   {reservation.customerType && (
                     <Badge variant="secondary" className="text-xs">
                       {reservation.customerType}
@@ -1567,6 +1567,17 @@ export function ReservationDialog({
                 ) : null}
               </div>
               <div className="flex flex-wrap items-center gap-2">
+                {reservation.phoneNumber ? (
+                  <Button variant="outline" size="sm" asChild>
+                    <a
+                      href={`tel:${reservation.phoneNumber}`}
+                      aria-label={`${reservation.phoneNumber}に電話`}
+                    >
+                      <Phone className="mr-2 h-4 w-4" />
+                      {reservation.phoneNumber}
+                    </a>
+                  </Button>
+                ) : null}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -1825,6 +1836,7 @@ export function ReservationDialog({
                                 }))
                               }
                               rows={3}
+                              className="max-h-24 overflow-y-auto"
                             />
                           </div>
                           <div>
@@ -1873,7 +1885,7 @@ export function ReservationDialog({
                             </div>
                           )}
                           {reservation.locationMemo && (
-                            <div className="whitespace-pre-wrap rounded-md bg-muted px-3 py-2 text-xs">
+                            <div className="max-h-24 overflow-y-auto whitespace-pre-wrap rounded-md bg-muted px-3 py-2 text-xs">
                               {reservation.locationMemo}
                             </div>
                           )}
@@ -2205,51 +2217,20 @@ export function ReservationDialog({
                 </div>
 
                 {isEditMode ? (
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">連絡先</CardTitle>
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent className="space-y-2 text-sm">
-                        <div>
-                          <div className="text-muted-foreground">電話番号</div>
-                          <div className="font-medium">{reservation.phoneNumber || '未登録'}</div>
-                        </div>
-                        <div>
-                          <div className="text-muted-foreground">メール</div>
-                          <div className="font-medium">{reservation.email || '未登録'}</div>
-                        </div>
-                        <div>
-                          <div className="text-muted-foreground">保有ポイント</div>
-                          <div className="font-medium">
-                            {reservation.points.toLocaleString()} pt
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
+                  <div>
                     <Card>
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">店舗メモ</CardTitle>
                         <AlertCircle className="h-4 w-4 text-muted-foreground" />
                       </CardHeader>
                       <CardContent>
-                        {isEditMode ? (
-                          <Textarea
-                            value={formState.storeMemo}
-                            onChange={(event) =>
-                              setFormState((prev) => ({ ...prev, storeMemo: event.target.value }))
-                            }
-                            rows={4}
-                          />
-                        ) : reservation.storeMemo ? (
-                          <p className="text-sm">{reservation.storeMemo}</p>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">
-                            店舗メモは登録されていません。
-                          </p>
-                        )}
+                        <Textarea
+                          value={formState.storeMemo}
+                          onChange={(event) =>
+                            setFormState((prev) => ({ ...prev, storeMemo: event.target.value }))
+                          }
+                          rows={4}
+                        />
                       </CardContent>
                     </Card>
                   </div>

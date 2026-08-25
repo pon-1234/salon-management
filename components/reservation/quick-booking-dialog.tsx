@@ -54,7 +54,7 @@ import type { DesignationFee } from '@/lib/designation/types'
 import { BusinessHoursRange, formatMinutesAsLabel } from '@/lib/settings/business-hours'
 import { useStore } from '@/contexts/store-context'
 import { calculateReservationRevenue } from '@/lib/reservation/revenue'
-import { normalizePaymentReference } from '@/lib/reservation/financial-reference'
+import { normalizeOptionalPaymentReference } from '@/lib/reservation/financial-reference'
 import { buildStoreCastEndpoint, buildStoreReservationEndpoint } from '@/lib/reservation/endpoints'
 import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import { MARKETING_CHANNELS, PAYMENT_METHODS } from '@/lib/constants'
@@ -338,7 +338,9 @@ export function QuickBookingDialog({
             .map((channel: unknown) => (typeof channel === 'string' ? channel.trim() : ''))
             .filter((channel: string) => channel.length > 0)
           if (normalized.length > 0) {
-            setMarketingChannels(Array.from(new Set(normalized)))
+            setMarketingChannels(
+              Array.from(new Set([...normalized, ...DEFAULT_MARKETING_CHANNELS]))
+            )
           }
         }
       } catch (error) {
@@ -785,7 +787,12 @@ export function QuickBookingDialog({
           courseId: selectedCourseId,
           startTime: startTime.toISOString(),
           endTime: endTime.toISOString(),
-          status: bookingDetails.bookingStatus === '仮予約' ? 'pending' : 'confirmed',
+          status:
+            bookingDetails.bookingStatus === '仮予約'
+              ? 'pending'
+              : bookingDetails.bookingStatus === '事前確認'
+                ? 'preconfirmed'
+                : 'confirmed',
           options: selectedOptionIds,
           price: priceBreakdown.total,
           designationType:
@@ -799,7 +806,7 @@ export function QuickBookingDialog({
           paymentMethod: bookingDetails.paymentMethod,
           paymentReference:
             bookingDetails.paymentMethod === PAYMENT_METHODS.CARD
-              ? normalizePaymentReference(bookingDetails.paymentReference)
+              ? normalizeOptionalPaymentReference(bookingDetails.paymentReference)
               : null,
           marketingChannel: bookingDetails.marketingChannel,
           areaId: null,
@@ -1079,9 +1086,12 @@ export function QuickBookingDialog({
                     オプション選択
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent
+                  data-testid="quick-booking-option-grid"
+                  className="grid gap-3 sm:grid-cols-2"
+                >
                   {availableOptions.length === 0 ? (
-                    <div className="rounded-lg bg-gray-50 p-4 text-center text-gray-500">
+                    <div className="rounded-lg bg-gray-50 p-4 text-center text-gray-500 sm:col-span-2">
                       利用可能なオプションがありません
                     </div>
                   ) : (
@@ -1160,14 +1170,14 @@ export function QuickBookingDialog({
                       </Select>
                     </div>
                     <div>
-                      <Label>集客チャネル</Label>
+                      <Label htmlFor="quick-booking-marketing-channel">集客チャネル</Label>
                       <Select
                         value={bookingDetails.marketingChannel}
                         onValueChange={(value) =>
                           setBookingDetails((prev) => ({ ...prev, marketingChannel: value }))
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger id="quick-booking-marketing-channel">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1233,26 +1243,28 @@ export function QuickBookingDialog({
                   </div>
 
                   <div className="rounded-lg border p-3">
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <Label htmlFor="provisional-booking" className="text-sm font-medium">
-                          仮予約として保存
-                        </Label>
-                        <p className="text-xs text-gray-500">
-                          確定前の予約として登録する場合のみ選択してください
-                        </p>
-                      </div>
-                      <Switch
-                        id="provisional-booking"
-                        checked={bookingDetails.bookingStatus === '仮予約'}
-                        onCheckedChange={(checked) =>
-                          setBookingDetails((prev) => ({
-                            ...prev,
-                            bookingStatus: checked ? '仮予約' : '確定済',
-                          }))
-                        }
-                      />
-                    </div>
+                    <Label htmlFor="quick-booking-status" className="text-sm font-medium">
+                      予約ステータス
+                    </Label>
+                    <p className="mb-2 text-xs text-gray-500">
+                      仮押さえ・ネット予約は仮予約。新規や先の予約は事前確認を選べます。
+                    </p>
+                    <select
+                      id="quick-booking-status"
+                      aria-label="予約ステータス"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={bookingDetails.bookingStatus}
+                      onChange={(event) =>
+                        setBookingDetails((prev) => ({
+                          ...prev,
+                          bookingStatus: event.target.value,
+                        }))
+                      }
+                    >
+                      <option value="仮予約">仮予約</option>
+                      <option value="事前確認">事前確認</option>
+                      <option value="確定済">確定</option>
+                    </select>
                   </div>
 
                   <div className="rounded-lg border p-3">
@@ -1414,7 +1426,11 @@ export function QuickBookingDialog({
                 ) : (
                   <>
                     <Check className="mr-1 h-4 w-4" />
-                    {bookingDetails.bookingStatus === '仮予約' ? '仮予約として保存' : '予約を確定'}
+                    {bookingDetails.bookingStatus === '仮予約'
+                      ? '仮予約として保存'
+                      : bookingDetails.bookingStatus === '事前確認'
+                        ? '事前確認として保存'
+                        : '予約を確定'}
                   </>
                 )}
               </Button>

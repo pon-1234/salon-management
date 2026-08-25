@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act, render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { ReservationDialog } from './reservation-dialog'
+import { STATUS_OPTIONS } from './reservation-dialog.shared'
 import { ReservationData } from '@/lib/types/reservation'
 
 // Mock the modification history data
@@ -49,6 +50,19 @@ vi.mock('@/contexts/store-context', () => {
       switchStore: () => {},
     }),
   }
+})
+
+describe('ReservationDialog operational status order', () => {
+  it('puts provisional and correction work before confirmed work and completed work', () => {
+    expect(STATUS_OPTIONS.map((option) => option.value)).toEqual([
+      'pending',
+      'modifiable',
+      'confirmed',
+      'preconfirmed',
+      'completed',
+      'cancelled',
+    ])
+  })
 })
 
 vi.mock('next-auth/react', () => ({
@@ -167,6 +181,26 @@ describe('ReservationDialog Edit Mode', () => {
     endTime: new Date('2024-01-20T16:00:00'),
     staffImage: '/staff/yamada.jpg',
   }
+
+  it('keeps the customer phone action in the sticky header and removes the lower contact card', () => {
+    render(
+      <ReservationDialog
+        open
+        onOpenChange={vi.fn()}
+        reservation={mockReservation}
+        onSave={vi.fn()}
+      />
+    )
+
+    expect(screen.getByRole('link', { name: '090-1234-5678に電話' })).toHaveAttribute(
+      'href',
+      'tel:090-1234-5678'
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /編集/i }))
+
+    expect(screen.queryByText('連絡先')).not.toBeInTheDocument()
+  })
 
   const mockOnOpenChange = vi.fn()
   const mockOnSave = vi.fn()
@@ -332,11 +366,12 @@ describe('ReservationDialog Edit Mode', () => {
 
     // Check for status change menu items
     await waitFor(() => {
-      expect(screen.getByRole('menuitem', { name: /仮予約/ })).toBeInTheDocument()
+      expect(screen.getByRole('menuitem', { name: /^仮予約/ })).toBeInTheDocument()
     })
-    expect(screen.getByRole('menuitem', { name: /確定/ })).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: /キャンセル/ })).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: /対応済み/ })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: /^確定/ })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: /^キャンセル/ })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: /^完了/ })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: /^事前確認/ })).toBeInTheDocument()
   })
 
   it('should show confirmation dialog when changing status', async () => {
@@ -764,7 +799,7 @@ describe('ReservationDialog Edit Mode', () => {
     expect(savedPayload.endTime).toEqual(legacyCourseReservation.endTime)
   })
 
-  it('uses a 10-minute input step and rejects an off-boundary edited start time', async () => {
+  it('uses a 5-minute input step and rejects an off-boundary edited start time', async () => {
     const futureReservation: ReservationData = {
       ...mockReservation,
       startTime: new Date('2099-01-20T14:00:00'),
@@ -782,13 +817,13 @@ describe('ReservationDialog Edit Mode', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /編集/i }))
     const startTimeInput = screen.getByLabelText('開始時間')
-    expect(startTimeInput).toHaveAttribute('step', '600')
+    expect(startTimeInput).toHaveAttribute('step', '300')
 
-    fireEvent.change(startTimeInput, { target: { value: '14:05' } })
+    fireEvent.change(startTimeInput, { target: { value: '14:03' } })
     fireEvent.click(screen.getByRole('button', { name: '保存' }))
 
     await waitFor(() =>
-      expect(screen.getByText('開始時間の分は10分単位で指定してください。')).toBeInTheDocument()
+      expect(screen.getByText('開始時間の分は5分単位で指定してください。')).toBeInTheDocument()
     )
     expect(mockOnSave).not.toHaveBeenCalled()
   })

@@ -8,6 +8,7 @@ import type { Reservation } from '@/lib/types/reservation'
 import {
   fetchAllDashboardReservations,
   getJstPeriodBounds,
+  selectDashboardRecentReservations,
   sumActiveReservationRevenue,
 } from './dashboard.utils'
 
@@ -78,5 +79,24 @@ describe('dashboard JST data boundaries', () => {
         reservation('cancelled', 'cancelled', 99_000),
       ])
     ).toBe(12_000)
+  })
+
+  it('lists only tentative holds and web bookings in date order, dropping confirmed work', () => {
+    const confirmed = reservation('confirmed', 'confirmed', 12_000)
+    const laterHold = {
+      ...reservation('later-hold', 'pending', 8_000),
+      startTime: new Date('2026-08-16T04:00:00.000Z'),
+    }
+    const earlierWeb = {
+      ...reservation('earlier-web', 'tentative', 9_000),
+      startTime: new Date('2026-08-15T01:00:00.000Z'),
+    }
+    const completed = reservation('done', 'completed', 10_000)
+
+    expect(
+      selectDashboardRecentReservations([confirmed, laterHold, earlierWeb, completed]).map(
+        (item) => item.id
+      )
+    ).toEqual(['earlier-web', 'later-hold'])
   })
 })

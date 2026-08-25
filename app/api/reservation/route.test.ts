@@ -753,7 +753,7 @@ describe('Reservation API - Modifiable Status', () => {
       expect(db.$transaction).not.toHaveBeenCalled()
     })
 
-    it('rejects a reservation whose start time is outside a 10-minute boundary', async () => {
+    it('rejects a reservation whose start time is outside a 5-minute boundary', async () => {
       vi.mocked(getServerSession).mockResolvedValue({
         user: {
           id: 'admin-1',
@@ -770,15 +770,15 @@ describe('Reservation API - Modifiable Status', () => {
             customerId: 'cust-123',
             castId: 'cast-123',
             courseId: 'course-123',
-            startTime: '2099-07-04T18:05:00+09:00',
-            endTime: '2099-07-04T19:05:00+09:00',
+            startTime: '2099-07-04T18:03:00+09:00',
+            endTime: '2099-07-04T19:03:00+09:00',
           }),
         })
       )
 
       expect(response.status).toBe(400)
       await expect(response.json()).resolves.toEqual({
-        error: '開始時間は10分単位で指定してください。',
+        error: '開始時間は5分単位で指定してください。',
       })
       expect(db.cast.findFirst).not.toHaveBeenCalled()
       expect(db.customer.findUnique).not.toHaveBeenCalled()
@@ -805,6 +805,7 @@ describe('Reservation API - Modifiable Status', () => {
             startTime: '2099-07-04T18:00:00+09:00',
             endTime: '2099-07-04T19:00:00+09:00',
             paymentMethod: 'クレジットカード',
+            paymentReference: '4111111111111111',
           }),
         })
       )
@@ -1522,7 +1523,7 @@ describe('Reservation API - Modifiable Status', () => {
   })
 
   describe('PUT endpoint validation and conflicts', () => {
-    it('rejects changing a reservation start time outside a 10-minute boundary', async () => {
+    it('rejects changing a reservation start time outside a 5-minute boundary', async () => {
       vi.mocked(getServerSession).mockResolvedValue({
         user: {
           role: 'admin',
@@ -1537,15 +1538,15 @@ describe('Reservation API - Modifiable Status', () => {
           method: 'PUT',
           body: JSON.stringify({
             id: mockReservation.id,
-            startTime: '2099-07-04T18:05:00+09:00',
-            endTime: '2099-07-04T19:05:00+09:00',
+            startTime: '2099-07-04T18:03:00+09:00',
+            endTime: '2099-07-04T19:03:00+09:00',
           }),
         })
       )
 
       expect(response.status).toBe(400)
       await expect(response.json()).resolves.toEqual({
-        error: '開始時間は10分単位で指定してください。',
+        error: '開始時間は5分単位で指定してください。',
       })
       expect(db.ngCastEntry.findUnique).not.toHaveBeenCalled()
       expect(db.$transaction).not.toHaveBeenCalled()

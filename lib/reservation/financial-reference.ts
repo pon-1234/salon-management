@@ -28,6 +28,16 @@ export function normalizePaymentReference(input: unknown): string {
   return normalized
 }
 
+export function normalizeOptionalPaymentReference(input: unknown): string | null {
+  if (input == null) {
+    return null
+  }
+  if (typeof input === 'string' && input.trim().length === 0) {
+    return null
+  }
+  return normalizePaymentReference(input)
+}
+
 export function normalizeCancellationReason(input: unknown): string {
   if (typeof input !== 'string') {
     throw new Error('INVALID_CANCELLATION_REASON')

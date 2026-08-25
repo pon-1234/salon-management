@@ -98,6 +98,19 @@ export function sumActiveReservationRevenue(reservations: Reservation[]): number
   )
 }
 
+const DASHBOARD_TENTATIVE_STATUSES = new Set(['pending', 'tentative'])
+
+export function selectDashboardRecentReservations(reservations: Reservation[]): Reservation[] {
+  return reservations
+    .filter((reservation) => DASHBOARD_TENTATIVE_STATUSES.has(reservation.status))
+    .sort((left, right) => {
+      const leftStart = left.startTime instanceof Date ? left.startTime : new Date(left.startTime)
+      const rightStart =
+        right.startTime instanceof Date ? right.startTime : new Date(right.startTime)
+      return leftStart.getTime() - rightStart.getTime()
+    })
+}
+
 export async function fetchAllDashboardReservations({
   storeId,
   start,

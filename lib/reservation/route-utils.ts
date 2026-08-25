@@ -14,7 +14,8 @@ const STATUS_LABEL_MAP: Record<string, string> = {
   tentative: '仮予約',
   cancelled: 'キャンセル',
   modifiable: '修正待ち',
-  completed: '対応済み',
+  completed: '完了',
+  preconfirmed: '事前確認',
 }
 
 const DESIGNATION_LABEL_MAP: Record<string, string> = {

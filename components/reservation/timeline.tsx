@@ -25,11 +25,12 @@ import {
   formatMinutesAsLabel,
   minutesToIsoInJst,
 } from '@/lib/settings/business-hours'
+import { getReservationStatusLabel } from '@/lib/reservation/status-display'
 
 const JST_TIMEZONE = 'Asia/Tokyo'
 const MINUTES_IN_DAY = 24 * 60
 const TIMELINE_INTERVAL_MINUTES = 30
-const BOOKING_STEP_MINUTES = 30
+const BOOKING_STEP_MINUTES = 5
 const MIN_BOOKING_DURATION_MINUTES = 10
 const MIN_DISPLAY_SLOT_MINUTES = 10
 
@@ -83,6 +84,10 @@ export function Timeline({
   const totalMinutes = endMinutes - startMinutes
   const hourSegments = Math.ceil(totalMinutes / 60)
   const selectedDateKey = formatInTimeZone(selectedDate, JST_TIMEZONE, 'yyyy-MM-dd')
+  const reservationsById = useMemo(
+    () => new Map(reservations.map((reservation) => [reservation.id, reservation])),
+    [reservations]
+  )
 
   const getMinutesFromDate = useCallback(
     (date: Date) => {
@@ -135,9 +140,9 @@ export function Timeline({
       const candidates: number[] = []
       let cursor = startMinute
 
-      while (cursor + TIMELINE_INTERVAL_MINUTES <= endMinute) {
+      while (cursor + MIN_BOOKING_DURATION_MINUTES <= endMinute) {
         candidates.push(cursor)
-        cursor += TIMELINE_INTERVAL_MINUTES
+        cursor += BOOKING_STEP_MINUTES
       }
 
       if (candidates.length === 0) {
@@ -410,11 +415,11 @@ export function Timeline({
         </div>
       </div>
 
-      <div className="flex h-[calc(100vh-14rem)] min-h-[28rem] w-full flex-col">
+      <div className="relative h-[calc(100vh-14rem)] min-h-[28rem] w-full">
         <div
           ref={timelineBodyRef}
           data-testid="reservation-timeline-scroll"
-          className="min-h-0 flex-1 overflow-auto"
+          className="absolute inset-x-0 bottom-4 top-0 overflow-auto"
           onScroll={() => syncHorizontalScroll('body')}
         >
           <div className="flex" style={{ minWidth: `${timelineMinWidth}px` }}>
@@ -430,10 +435,15 @@ export function Timeline({
               {safeMap(filteredStaff, (member) => (
                 <button
                   key={member.id}
-                  className="flex h-24 w-full items-center gap-3 overflow-hidden border-b px-4 py-3 transition-colors hover:bg-gray-50"
+                  className={cn(
+                    'flex h-20 w-full items-center gap-3 overflow-hidden border-b px-4 py-2 transition-colors',
+                    member.workStart && member.workEnd
+                      ? 'bg-white hover:bg-gray-50'
+                      : 'bg-slate-200 hover:bg-slate-300'
+                  )}
                   onClick={() => setSelectedStaff(member)}
                 >
-                  <Avatar className="h-12 w-12">
+                  <Avatar className="h-9 w-9">
                     <AvatarImage src={member.image} alt={member.name} />
                     <AvatarFallback>{member.name.slice(0, 2)}</AvatarFallback>
                   </Avatar>
@@ -519,17 +529,32 @@ export function Timeline({
 
               {/* スタッフ別タイムライン */}
               {safeMap(filteredStaff, (member) => (
-                <div key={member.id} className="relative h-24 border-b bg-white">
+                <div
+                  key={member.id}
+                  className={cn(
+                    'relative h-20 border-b',
+                    member.workStart && member.workEnd ? 'bg-slate-200' : 'bg-slate-300'
+                  )}
+                >
                   {/* 勤務時間の背景 */}
                   {member.workStart && member.workEnd && (
                     <div
-                      className="absolute top-0 h-full bg-blue-50 opacity-30"
+                      className="absolute top-0 h-full bg-white"
                       style={getTimeBlockStyle(member.workStart, member.workEnd)}
                     />
                   )}
 
                   {/* 予約ブロック */}
                   {safeMap(member.appointments, (appointment) => {
+                    const sourceReservation = reservationsById.get(appointment.id)
+                    const displayStatus =
+                      sourceReservation?.status ??
+                      (appointment.status === 'provisional' ? 'pending' : appointment.status)
+                    const statusLabel = getReservationStatusLabel(
+                      displayStatus,
+                      sourceReservation?.marketingChannel
+                    )
+                    const isTentative = displayStatus === 'pending' || displayStatus === 'tentative'
                     const durationMinutes = Math.round(
                       (appointment.endTime.getTime() - appointment.startTime.getTime()) / 60000
                     )
@@ -551,9 +576,11 @@ export function Timeline({
                         className={cn(
                           'absolute top-2 cursor-pointer overflow-hidden rounded-lg text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md',
                           'flex flex-col px-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-1',
-                          appointment.status === 'provisional'
-                            ? 'border-2 border-orange-300 bg-orange-100'
-                            : 'border-2 border-emerald-400 bg-white'
+                          isTentative && 'border-2 border-orange-300 bg-orange-100',
+                          displayStatus === 'modifiable' && 'border-2 border-amber-400 bg-amber-50',
+                          displayStatus === 'preconfirmed' && 'border-2 border-sky-400 bg-sky-50',
+                          displayStatus === 'completed' && 'border-2 border-slate-300 bg-slate-100',
+                          displayStatus === 'confirmed' && 'border-2 border-emerald-400 bg-white'
                         )}
                         style={{
                           ...getTimeBlockStyle(appointment.startTime, appointment.endTime),
@@ -569,15 +596,17 @@ export function Timeline({
                         </div>
                         <div className="mt-0.5 flex w-full shrink-0 items-center justify-between gap-1 leading-4">
                           <Badge
-                            variant={appointment.status === 'provisional' ? 'secondary' : 'default'}
+                            variant={isTentative ? 'secondary' : 'default'}
                             className={cn(
                               'shrink-0 px-1.5 py-0 text-xs',
-                              appointment.status === 'provisional'
-                                ? 'bg-orange-500 text-white'
-                                : 'bg-emerald-600 text-white'
+                              isTentative && 'bg-orange-500 text-white',
+                              displayStatus === 'modifiable' && 'bg-amber-600 text-white',
+                              displayStatus === 'preconfirmed' && 'bg-sky-600 text-white',
+                              displayStatus === 'completed' && 'bg-slate-600 text-white',
+                              displayStatus === 'confirmed' && 'bg-emerald-600 text-white'
                             )}
                           >
-                            {appointment.status === 'provisional' ? '仮予約' : '確定'}
+                            {statusLabel}
                           </Badge>
                           {(appointment.designationType === 'special' ||
                             appointment.designationType === '特別指名') && (
@@ -616,7 +645,8 @@ export function Timeline({
                     return (
                       <div key={`${member.id}-${index}`}>
                         <div
-                          className="pointer-events-none absolute top-2 h-[calc(100%-16px)] rounded-lg border-2 border-dashed border-gray-300"
+                          data-testid="timeline-available-slot"
+                          className="pointer-events-none absolute top-2 h-[calc(100%-16px)] rounded-lg border border-emerald-200 bg-emerald-50/60"
                           style={getTimeBlockStyle(slot.startTime, slot.endTime)}
                         >
                           <div
@@ -625,7 +655,9 @@ export function Timeline({
                               disabled ? 'text-gray-400' : 'text-gray-500'
                             )}
                           >
-                            空き {slot.duration}分
+                            次回予約可能 {formatInTimeZone(slot.startTime, JST_TIMEZONE, 'HH:mm')}{' '}
+                            ・ 空き
+                            {slot.duration}分
                           </div>
                           {disabled ? (
                             <span className="absolute bottom-1 left-1 text-[10px] text-gray-400">
@@ -639,7 +671,7 @@ export function Timeline({
                           const label = formatInTimeZone(startTime, JST_TIMEZONE, 'HH:mm')
                           const startMinute = getMinutesFromDate(startTime)
                           const cellEndMinute = Math.min(
-                            startMinute + TIMELINE_INTERVAL_MINUTES,
+                            startMinute + BOOKING_STEP_MINUTES,
                             slotEndMinute
                           )
 
@@ -650,17 +682,16 @@ export function Timeline({
                               size="sm"
                               variant="ghost"
                               className={cn(
-                                'absolute top-2 z-10 flex h-[calc(100%-16px)] items-center justify-center rounded-none p-0 text-[11px]',
+                                'absolute top-2 z-10 h-[calc(100%-16px)] rounded-none border-0 p-0 hover:bg-emerald-200/70',
                                 disabled && 'cursor-not-allowed opacity-60'
                               )}
                               style={getTimeBlockStyle(startTime, minutesToUtcDate(cellEndMinute))}
                               aria-label={`${label}の空き枠を選択`}
+                              title={`${label}から予約`}
                               onClick={() => handleTimeSlotClick(slot, startTime)}
                               disabled={disabled}
                             >
-                              <span className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-400 bg-white text-[11px] font-medium text-emerald-700">
-                                {label}
-                              </span>
+                              <span className="sr-only">{label}</span>
                             </Button>
                           )
                         })}
@@ -697,7 +728,7 @@ export function Timeline({
         <div
           ref={timelineHScrollRef}
           data-testid="timeline-horizontal-scrollbar"
-          className="h-4 shrink-0 overflow-y-hidden overflow-x-scroll border-t bg-gray-100"
+          className="absolute inset-x-0 bottom-0 h-4 overflow-y-hidden overflow-x-scroll border-t bg-gray-100"
           onScroll={() => syncHorizontalScroll('bar')}
         >
           <div style={{ width: `${timelineMinWidth}px`, height: 1 }} />

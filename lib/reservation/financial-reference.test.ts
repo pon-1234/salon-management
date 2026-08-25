@@ -5,7 +5,11 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { normalizeCancellationReason, normalizePaymentReference } from './financial-reference'
+import {
+  normalizeCancellationReason,
+  normalizeOptionalPaymentReference,
+  normalizePaymentReference,
+} from './financial-reference'
 
 describe('normalizePaymentReference', () => {
   it('trims an operator-facing receipt management number', () => {
@@ -18,6 +22,12 @@ describe('normalizePaymentReference', () => {
       expect(() => normalizePaymentReference(value)).toThrow('INVALID_PAYMENT_REFERENCE')
     }
   )
+
+  it('allows a card reservation to close without a management number yet', () => {
+    expect(normalizeOptionalPaymentReference('')).toBeNull()
+    expect(normalizeOptionalPaymentReference(null)).toBeNull()
+    expect(normalizeOptionalPaymentReference(' IK-1 ')).toBe('IK-1')
+  })
 })
 
 describe('normalizeCancellationReason', () => {

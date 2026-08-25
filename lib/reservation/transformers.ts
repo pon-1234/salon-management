@@ -16,12 +16,13 @@ interface TransformOptions {
 }
 
 const statusLabelMap: Record<string, string> = {
-  confirmed: '確定済',
+  confirmed: '確定',
   pending: '仮予約',
   tentative: '仮予約',
   cancelled: 'キャンセル',
-  modifiable: '修正可能',
+  modifiable: '修正待ち',
   completed: '完了',
+  preconfirmed: '事前確認',
 }
 
 const designationTypeLabel: Record<string, string> = {

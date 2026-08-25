@@ -9,6 +9,9 @@ import { Label } from '@/components/ui/label'
 import type { PaymentMethod, ReservationStatus } from '@/lib/constants'
 import type { ReservationData, ReservationSavePayload } from '@/lib/types/reservation'
 import type { Cast } from '@/lib/cast/types'
+import { getReservationStatusLabel } from '@/lib/reservation/status-display'
+
+export { getReservationStatusLabel }
 
 export interface ReservationDialogProps {
   open: boolean
@@ -53,20 +56,12 @@ export type LineLogEntry = {
 
 const statusColorMap: Record<string, string> = {
   confirmed: 'bg-emerald-600',
+  preconfirmed: 'bg-sky-600',
   modifiable: 'bg-orange-500',
   pending: 'bg-amber-500',
   tentative: 'bg-amber-500',
   cancelled: 'bg-red-500',
   completed: 'bg-blue-500',
-}
-
-const statusTextMap: Record<string, string> = {
-  confirmed: '確定',
-  pending: '仮予約',
-  tentative: '仮予約',
-  cancelled: 'キャンセル',
-  modifiable: '修正待ち',
-  completed: '対応済み',
 }
 
 export const STATUS_OPTIONS: Array<{
@@ -77,28 +72,32 @@ export const STATUS_OPTIONS: Array<{
   {
     value: 'pending',
     label: '仮予約',
-    description:
-      '旧システムの仮予約・ネット予約・事前予約（lev -2〜0）。スケジュールを押さえる段階です。',
-  },
-  {
-    value: 'confirmed',
-    label: '確定',
-    description: '旧システムの当日予約・確定済（lev 1〜2）。顧客・店舗双方の確認が取れた状態です。',
+    description: '店が取った仮押さえ、またはネット予約。確定すると稼働中の処理対象になります。',
   },
   {
     value: 'modifiable',
     label: '修正待ち',
-    description: '詳細調整が残っている予約に設定してください。完了後に再度ステータスを更新します。',
+    description: '詳細調整が残っている予約です。仮予約と同じ優先枠で扱います。',
+  },
+  {
+    value: 'confirmed',
+    label: '確定',
+    description: '顧客・店舗双方の確認が取れた状態です。',
+  },
+  {
+    value: 'preconfirmed',
+    label: '事前確認',
+    description: '新規や先の予約など、確定前に内容確認が必要なときに使います。',
+  },
+  {
+    value: 'completed',
+    label: '完了',
+    description: '施術完了後の入金・日報対象です。',
   },
   {
     value: 'cancelled',
     label: 'キャンセル',
-    description: '旧システムの削除オーダー。顧客キャンセル・トラブル等で取り消す場合に使用します。',
-  },
-  {
-    value: 'completed',
-    label: '対応済み',
-    description: '旧システムの終了（lev 3）。施術完了後の入金・日報対象です。',
+    description: '顧客キャンセル・トラブル等で取り消す場合に使用します。',
   },
 ]
 
@@ -115,9 +114,15 @@ export const NG_REASON_LABELS: Record<'customer' | 'cast' | 'staff', string> = {
   staff: '店舗NG',
 }
 
-export function StatusBadge({ status }: { status: ReservationStatus | 'completed' }) {
+export function StatusBadge({
+  status,
+  marketingChannel,
+}: {
+  status: ReservationStatus | 'completed' | string
+  marketingChannel?: string | null
+}) {
   const color = statusColorMap[status] ?? 'bg-gray-500'
-  const label = getReservationStatusLabel(status)
+  const label = getReservationStatusLabel(status, marketingChannel)
   return (
     <span
       className={cn(
@@ -128,10 +133,6 @@ export function StatusBadge({ status }: { status: ReservationStatus | 'completed
       {label}
     </span>
   )
-}
-
-export function getReservationStatusLabel(status: string): string {
-  return statusTextMap[status] ?? status
 }
 
 export function formatRemainingTime(totalSeconds: number): string {

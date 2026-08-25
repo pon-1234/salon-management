@@ -36,7 +36,10 @@ exports[`Constants > should match the snapshot for all exported constants 1`] = 
     "紹介",
     "SNS",
     "WEB",
+    "ショートメール",
+    "LINE",
     "Heaven",
+    "サイト関連",
   ],
   "PAYMENT_METHODS": {
     "CARD": "クレジットカード",
@@ -54,6 +57,8 @@ exports[`Constants > should match the snapshot for all exported constants 1`] = 
     "CONFIRMED": "confirmed",
     "MODIFIABLE": "modifiable",
     "PENDING": "pending",
+    "PRECONFIRMED": "preconfirmed",
+    "TENTATIVE": "tentative",
   },
   "UI_CONSTANTS": {
     "DIALOG_MAX_HEIGHT": "90vh",
