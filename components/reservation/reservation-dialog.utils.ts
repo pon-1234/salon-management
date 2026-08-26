@@ -143,6 +143,65 @@ export function normalizePaymentMethodValue(input?: string | null): PaymentMetho
   return PAYMENT_METHODS.CASH
 }
 
+export const ACQUISITION_SITE_CHANNEL_HINTS = ['heaven', 'ヘブン', 'サイト関連'] as const
+
+export function isAcquisitionSiteChannel(channel: string): boolean {
+  const lower = channel.trim().toLowerCase()
+  return ACQUISITION_SITE_CHANNEL_HINTS.some((hint) => lower.includes(hint))
+}
+
+export function partitionMarketingChannels(channels: readonly string[]): {
+  methods: string[]
+  sites: string[]
+} {
+  const methods: string[] = []
+  const sites: string[] = []
+  for (const channel of channels) {
+    const trimmed = channel.trim()
+    if (!trimmed) continue
+    if (isAcquisitionSiteChannel(trimmed)) {
+      sites.push(trimmed)
+    } else {
+      methods.push(trimmed)
+    }
+  }
+  if (!sites.some((site) => site.toLowerCase().includes('heaven') || site.includes('ヘブン'))) {
+    sites.push('Heaven')
+  }
+  return { methods, sites }
+}
+
+export function composeMarketingChannel(method: string, site: string | null | undefined): string {
+  const trimmedMethod = method.trim()
+  const trimmedSite = site?.trim() ?? ''
+  if (trimmedSite.length > 0) {
+    return trimmedMethod.length > 0 ? `${trimmedMethod} / ${trimmedSite}` : trimmedSite
+  }
+  return trimmedMethod
+}
+
+export function parseMarketingChannel(value: string | null | undefined): {
+  method: string
+  site: string | null
+} {
+  const trimmed = value?.trim() ?? ''
+  if (!trimmed) {
+    return { method: '', site: null }
+  }
+  const separator = ' / '
+  const separatorIndex = trimmed.indexOf(separator)
+  if (separatorIndex >= 0) {
+    return {
+      method: trimmed.slice(0, separatorIndex).trim(),
+      site: trimmed.slice(separatorIndex + separator.length).trim() || null,
+    }
+  }
+  if (isAcquisitionSiteChannel(trimmed)) {
+    return { method: 'WEB', site: trimmed }
+  }
+  return { method: trimmed, site: null }
+}
+
 export function normalizeMarketingChannelValue(
   input: string | null | undefined,
   available: string[]
@@ -157,6 +216,13 @@ export function normalizeMarketingChannelValue(
   }
   if (available.includes(trimmed)) {
     return trimmed
+  }
+  const parsed = parseMarketingChannel(trimmed)
+  if (parsed.site && available.includes(parsed.site)) {
+    return composeMarketingChannel(
+      parsed.method && available.includes(parsed.method) ? parsed.method : parsed.method,
+      parsed.site
+    )
   }
   const lower = trimmed.toLowerCase()
   const match = available.find((channel) => channel.toLowerCase() === lower)

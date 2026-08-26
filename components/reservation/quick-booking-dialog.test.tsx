@@ -427,7 +427,7 @@ describe('QuickBookingDialog', () => {
     render(dialogElement())
 
     await waitForOnePageBookingForm()
-    const channelSelect = screen.getByRole('combobox', { name: '集客チャネル' })
+    const channelSelect = screen.getByRole('combobox', { name: '集客手段' })
     Object.assign(channelSelect, {
       hasPointerCapture: () => false,
       setPointerCapture: () => undefined,
@@ -437,6 +437,16 @@ describe('QuickBookingDialog', () => {
 
     expect(await screen.findByRole('option', { name: 'LINE' })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'ショートメール' })).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+
+    const siteSelect = screen.getByRole('combobox', { name: '集客チャンネル' })
+    Object.assign(siteSelect, {
+      hasPointerCapture: () => false,
+      setPointerCapture: () => undefined,
+      releasePointerCapture: () => undefined,
+    })
+    await user.click(siteSelect)
+    expect(await screen.findByRole('option', { name: 'Heaven' })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'サイト関連' })).toBeInTheDocument()
   })
 
@@ -611,5 +621,77 @@ describe('QuickBookingDialog', () => {
         '入力途中のメモ'
       )
     )
+  })
+
+  it('keeps the dialog open after confirmation so the operator can review the booking', async () => {
+    const user = userEvent.setup()
+    const onOpenChange = vi.fn()
+    const fetchMock = createFetchMock()
+    vi.stubGlobal('fetch', fetchMock)
+    render(dialogElement({ onOpenChange }))
+
+    await waitForOnePageBookingForm()
+    await user.click(screen.getByRole('button', { name: '予約を確定' }))
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ method: 'POST' })
+      )
+    )
+    expect(onOpenChange).not.toHaveBeenCalledWith(false)
+    expect(screen.getByRole('heading', { name: '予約受付' })).toBeInTheDocument()
+    expect(screen.getByText('予約を作成しました。内容を確認できます。')).toBeInTheDocument()
+  })
+
+  it('limits one-tap time choices to six 5-minute starts in the selected 30-minute window', async () => {
+    vi.stubGlobal('fetch', createFetchMock())
+    const slotStart = new Date('2099-01-02T01:00:00.000Z')
+    render(
+      <QuickBookingDialog
+        open
+        onOpenChange={vi.fn()}
+        selectedStaff={selectedStaff}
+        selectedTime={slotStart}
+        selectedSlot={{
+          startTime: slotStart,
+          endTime: new Date('2099-01-02T06:00:00.000Z'),
+        }}
+        selectedCustomer={selectedCustomer}
+        businessHours={businessHours}
+      />
+    )
+
+    await waitForOnePageBookingForm()
+    await waitFor(() =>
+      expect(mocks.renderTimeSlotPicker).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stepMinutes: 5,
+          windowStart: slotStart,
+          windowEnd: new Date(slotStart.getTime() + 30 * 60 * 1000),
+        })
+      )
+    )
+  })
+
+  it('accepts hotel, room, and a selectable cast on the same page', async () => {
+    vi.stubGlobal('fetch', createFetchMock())
+    render(
+      <QuickBookingDialog
+        open
+        onOpenChange={vi.fn()}
+        selectedStaff={selectedStaff}
+        staffOptions={[selectedStaff, { ...selectedStaff, id: 'cast-2', name: '別キャスト' }]}
+        selectedTime={selectedTime}
+        selectedSlot={null}
+        selectedCustomer={selectedCustomer}
+        businessHours={businessHours}
+      />
+    )
+
+    await waitForOnePageBookingForm()
+    expect(screen.getByLabelText('ホテル名')).toBeInTheDocument()
+    expect(screen.getByLabelText('部屋番号')).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: '担当者' })).toHaveTextContent('テストキャスト')
   })
 })

@@ -15,10 +15,10 @@ interface ViewToggleProps {
 
 export function ViewToggle({ view, onViewChange }: ViewToggleProps) {
   return (
-    <div className="flex gap-2 border-b p-4">
+    <div className="flex gap-1 px-2 py-1">
       <Button
         variant={view === 'timeline' ? 'default' : 'outline'}
-        className={view === 'timeline' ? 'bg-emerald-600' : ''}
+        className={view === 'timeline' ? 'h-8 bg-emerald-600 text-xs' : 'h-8 text-xs'}
         onClick={() => onViewChange('timeline')}
       >
         <Calendar className="mr-2 h-4 w-4" />
@@ -26,7 +26,7 @@ export function ViewToggle({ view, onViewChange }: ViewToggleProps) {
       </Button>
       <Button
         variant={view === 'list' ? 'default' : 'outline'}
-        className={view === 'list' ? 'bg-emerald-600' : ''}
+        className={view === 'list' ? 'h-8 bg-emerald-600 text-xs' : 'h-8 text-xs'}
         onClick={() => onViewChange('list')}
       >
         <LayoutList className="mr-2 h-4 w-4" />

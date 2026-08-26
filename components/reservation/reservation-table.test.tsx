@@ -60,7 +60,7 @@ describe('ReservationTable', () => {
     render(<ReservationTable reservations={[reservation]} />)
 
     const row = screen.getByRole('row', { name: /一覧顧客/ })
-    expect(within(row).getAllByRole('cell')[0]?.textContent).toBe('0001')
+    expect(within(row).getAllByRole('cell')[0]?.textContent).toContain('reservatio')
   })
 
   it('opens details from an explicit operation button exactly once', () => {

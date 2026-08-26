@@ -66,12 +66,16 @@ export function DateNavigation({ selectedDate, onSelectDate }: DateNavigationPro
   }
 
   return (
-    <div className="p-4">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="px-2 py-1">
+      <div className="flex items-center gap-2 overflow-x-auto">
         <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="w-[280px] justify-start text-left font-normal">
-              <CalendarIcon className="mr-2 h-4 w-4" />
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-[220px] shrink-0 justify-start text-left text-xs font-normal"
+            >
+              <CalendarIcon className="mr-2 h-3.5 w-3.5" />
               {formatInTimeZone(selectedDate, JST_TIMEZONE, 'yyyy年MM月dd日(E)', {
                 locale: ja,
               })}
@@ -86,24 +90,23 @@ export function DateNavigation({ selectedDate, onSelectDate }: DateNavigationPro
             />
           </PopoverContent>
         </Popover>
-      </div>
-
-      <div className="flex items-center gap-2 overflow-x-auto">
         <Button
           variant="outline"
           size="icon"
+          className="h-8 w-8 shrink-0"
           onClick={handlePrevWeek}
           aria-label="前の週へ"
           disabled={dateKeyInJapan(baseDate) <= todayKey}
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           {dates.map((item, index) => (
             <Button
               key={index}
               variant={item.active ? 'default' : 'outline'}
-              className={`rounded-full ${item.active ? 'bg-emerald-600 text-white' : ''}`}
+              size="sm"
+              className={`h-8 rounded-full px-2.5 text-xs ${item.active ? 'bg-emerald-600 text-white' : ''}`}
               onClick={() => onSelectDate(item.date)}
               disabled={item.disabled}
             >
@@ -111,7 +114,13 @@ export function DateNavigation({ selectedDate, onSelectDate }: DateNavigationPro
             </Button>
           ))}
         </div>
-        <Button variant="outline" size="icon" onClick={handleNextWeek} aria-label="次の週へ">
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-8 w-8 shrink-0"
+          onClick={handleNextWeek}
+          aria-label="次の週へ"
+        >
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>

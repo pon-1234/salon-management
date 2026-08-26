@@ -314,6 +314,9 @@ describe('ReservationDialog Edit Mode', () => {
     expect(screen.queryByRole('tab', { name: /^詳細$/ })).not.toBeInTheDocument()
     expect(screen.getByText('日時')).toBeInTheDocument()
     expect(screen.getByText('予約詳細')).toBeInTheDocument()
+    expect(screen.getAllByLabelText('ホテル名').length).toBeGreaterThan(0)
+    expect(screen.getByRole('button', { name: '更新' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '女性に通知' })).toBeInTheDocument()
   })
 
   it('should display editable fields in edit mode', async () => {

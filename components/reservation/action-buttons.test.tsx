@@ -86,5 +86,9 @@ describe('ActionButtons reservation permissions', () => {
     fireEvent.click(screen.getByRole('button', { name: '顧客選択を解除' }))
 
     expect(onCustomerSelect).toHaveBeenCalledWith(null)
+    expect(screen.getByRole('link', { name: '顧客情報' })).toHaveAttribute(
+      'href',
+      '/admin/customers/cust-1'
+    )
   })
 })

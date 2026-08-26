@@ -51,6 +51,8 @@ export interface BookingDetails {
   paymentReference: string
   locationMemo: string
   notes: string
+  hotelName: string
+  roomNumber: string
 }
 
 export interface NormalizedCourse {

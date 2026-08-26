@@ -111,10 +111,13 @@ import {
 import {
   PAYMENT_METHOD_OPTIONS,
   calculateReservationPriceBreakdown,
+  composeMarketingChannel,
   formatCurrency,
   formatMinutes,
   normalizeMarketingChannelValue,
   normalizePaymentMethodValue,
+  parseMarketingChannel,
+  partitionMarketingChannels,
   toNullableNumber,
   toNumber,
 } from '@/components/reservation/reservation-dialog.utils'
@@ -203,6 +206,10 @@ export function ReservationDialog({
     }
     return Array.from(seed)
   })
+  const partitionedMarketingChannels = useMemo(
+    () => partitionMarketingChannels(marketingChannelOptions),
+    [marketingChannelOptions]
+  )
 
   const [lineMessage, setLineMessage] = useState('')
   const [lineLogs, setLineLogs] = useState<LineLogEntry[]>([])
@@ -1690,7 +1697,7 @@ export function ReservationDialog({
                 </TabsList>
               </div>
 
-              <TabsContent value="overview" className="space-y-6 p-4">
+              <TabsContent value="overview" className="space-y-3 p-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -1738,12 +1745,13 @@ export function ReservationDialog({
                         </div>
                       ) : (
                         <div className="space-y-1">
-                          <p className="text-lg font-semibold">
-                            {format(reservation.startTime, 'yyyy年MM月dd日(E)', { locale: ja })}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-3xl font-bold tracking-tight">
                             {format(reservation.startTime, 'HH:mm')} -{' '}
                             {format(reservation.endTime, 'HH:mm')}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {format(reservation.startTime, 'yyyy年MM月dd日(E)', { locale: ja })}
+                            {reservation.staff ? ` ・ ${reservation.staff}` : ''}
                           </p>
                         </div>
                       )}
@@ -1897,6 +1905,58 @@ export function ReservationDialog({
                               )}
                             </div>
                           )}
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            <div>
+                              <Label htmlFor="location-hotel-name">ホテル名</Label>
+                              <Input
+                                id="location-hotel-name"
+                                value={entryForm.hotelName}
+                                onChange={(event) =>
+                                  setEntryForm((prev) => ({
+                                    ...prev,
+                                    hotelName: event.target.value,
+                                  }))
+                                }
+                                placeholder="例: 渋谷グランドホテル"
+                                disabled={entrySending}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="location-room-number">部屋番号</Label>
+                              <Input
+                                id="location-room-number"
+                                value={entryForm.roomNumber}
+                                onChange={(event) =>
+                                  setEntryForm((prev) => ({
+                                    ...prev,
+                                    roomNumber: event.target.value,
+                                  }))
+                                }
+                                placeholder="例: 1203"
+                                disabled={entrySending}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={handleSaveEntryInfo}
+                              disabled={entrySending || !onSave}
+                            >
+                              {entrySending ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              ) : null}
+                              更新
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={handleSaveEntryInfo}
+                              disabled={entrySending || !onSave}
+                            >
+                              女性に通知
+                            </Button>
+                          </div>
                         </div>
                       )}
                     </CardContent>
@@ -2012,18 +2072,57 @@ export function ReservationDialog({
                               </Select>
                             </div>
                             <div>
-                              <Label htmlFor="reservation-channel">集客チャネル</Label>
+                              <Label htmlFor="reservation-acquisition-method">集客手段</Label>
                               <Select
-                                value={formState.marketingChannel}
+                                value={
+                                  parseMarketingChannel(formState.marketingChannel).method ||
+                                  undefined
+                                }
                                 onValueChange={(value) =>
-                                  setFormState((prev) => ({ ...prev, marketingChannel: value }))
+                                  setFormState((prev) => ({
+                                    ...prev,
+                                    marketingChannel: composeMarketingChannel(
+                                      value,
+                                      parseMarketingChannel(prev.marketingChannel).site
+                                    ),
+                                  }))
+                                }
+                              >
+                                <SelectTrigger id="reservation-acquisition-method">
+                                  <SelectValue placeholder="手段を選択" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {partitionedMarketingChannels.methods.map((channel) => (
+                                    <SelectItem key={channel} value={channel}>
+                                      {channel}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label htmlFor="reservation-channel">集客チャンネル</Label>
+                              <Select
+                                value={
+                                  parseMarketingChannel(formState.marketingChannel).site ??
+                                  '__none__'
+                                }
+                                onValueChange={(value) =>
+                                  setFormState((prev) => ({
+                                    ...prev,
+                                    marketingChannel: composeMarketingChannel(
+                                      parseMarketingChannel(prev.marketingChannel).method,
+                                      value === '__none__' ? null : value
+                                    ),
+                                  }))
                                 }
                               >
                                 <SelectTrigger id="reservation-channel">
-                                  <SelectValue placeholder="チャネルを選択" />
+                                  <SelectValue placeholder="チャンネルを選択" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {marketingChannelOptions.map((channel) => (
+                                  <SelectItem value="__none__">なし</SelectItem>
+                                  {partitionedMarketingChannels.sites.map((channel) => (
                                     <SelectItem key={channel} value={channel}>
                                       {channel}
                                     </SelectItem>
@@ -2192,6 +2291,15 @@ export function ReservationDialog({
                               {format(selectedCast.workEnd, 'HH:mm')}
                             </p>
                           )}
+                          {selectedCast &&
+                          (selectedCast.workStatus === '休日' ||
+                            selectedCast.workStatus === '未出勤') ? (
+                            <Alert variant="destructive">
+                              <AlertDescription>
+                                このキャストは出勤時間外です。出勤登録を確認してから変更してください。
+                              </AlertDescription>
+                            </Alert>
+                          ) : null}
                         </>
                       ) : (
                         <>

@@ -5,9 +5,10 @@
  */
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { RefreshCw, Filter, UserPlus, UserMinus } from 'lucide-react'
+import { RefreshCw, Filter, UserPlus, UserMinus, History } from 'lucide-react'
 import { CustomerSelectionDialog } from '@/components/customer/customer-selection-dialog'
 import { Customer } from '@/lib/customer/types'
+import Link from 'next/link'
 
 interface ActionButtonsProps {
   onRefresh: () => void
@@ -27,23 +28,41 @@ export function ActionButtons({
   const [showCustomerDialog, setShowCustomerDialog] = useState(false)
 
   return (
-    <div className="flex items-center justify-between border-b p-4">
-      <div className="flex gap-2">
-        <Button onClick={onRefresh} variant="outline" size="sm">
+    <div className="flex items-center justify-between px-2 py-1">
+      <div className="flex gap-1">
+        <Button onClick={onRefresh} variant="outline" size="sm" className="h-8 text-xs">
           <RefreshCw className="mr-2 h-4 w-4" />
           更新
         </Button>
-        <Button onClick={onFilter} variant="outline" size="sm">
+        <Button onClick={onFilter} variant="outline" size="sm" className="h-8 text-xs">
           <Filter className="mr-2 h-4 w-4" />
           フィルター
         </Button>
         {selectedCustomer ? (
-          <Button onClick={() => onCustomerSelect(null)} variant="outline" size="sm">
-            <UserMinus className="mr-2 h-4 w-4" />
-            顧客選択を解除
-          </Button>
+          <>
+            <Button asChild variant="outline" size="sm" className="h-8 text-xs">
+              <Link href={`/admin/customers/${selectedCustomer.id}`}>
+                <History className="mr-2 h-4 w-4" />
+                顧客情報
+              </Link>
+            </Button>
+            <Button
+              onClick={() => onCustomerSelect(null)}
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs"
+            >
+              <UserMinus className="mr-2 h-4 w-4" />
+              顧客選択を解除
+            </Button>
+          </>
         ) : canCreateReservation ? (
-          <Button onClick={() => setShowCustomerDialog(true)} variant="outline" size="sm">
+          <Button
+            onClick={() => setShowCustomerDialog(true)}
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs"
+          >
             <UserPlus className="mr-2 h-4 w-4" />
             この顧客で予約を取る
           </Button>

@@ -13,8 +13,8 @@ interface InfoBarProps {
 export function InfoBar({ selectedCustomer }: InfoBarProps) {
   if (selectedCustomer) {
     return (
-      <Alert className="border-emerald-200 bg-emerald-50 text-emerald-800">
-        <AlertDescription className="flex items-center">
+      <Alert className="border-emerald-200 bg-emerald-50 py-1.5 text-emerald-800">
+        <AlertDescription className="flex items-center text-xs">
           <InfoIcon className="mr-2 h-4 w-4" />
           現在選択中の顧客：{selectedCustomer.name} 様
         </AlertDescription>
@@ -23,8 +23,8 @@ export function InfoBar({ selectedCustomer }: InfoBarProps) {
   }
 
   return (
-    <Alert className="border-yellow-200 bg-yellow-50 text-yellow-800">
-      <AlertDescription className="flex items-center">
+    <Alert className="border-yellow-200 bg-yellow-50 py-1.5 text-yellow-800">
+      <AlertDescription className="flex items-center text-xs">
         <InfoIcon className="mr-2 h-4 w-4" />
         顧客が未選択です。『この顧客で予約を取る』ボタンから顧客を選択すると、予約作成ができます。
       </AlertDescription>

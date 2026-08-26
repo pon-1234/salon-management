@@ -121,7 +121,7 @@ export function TimeSlotPicker({
         <Badge variant="outline">{availableCount} 枠空き</Badge>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
+      <div className="grid grid-cols-6 gap-2">
         {visibleSlots.map((slot, index) => {
           const timeStr = formatTime(slot.startTime)
           const isSelected = selectedTime === slot.startTime

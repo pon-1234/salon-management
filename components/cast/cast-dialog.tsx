@@ -5,14 +5,20 @@
  */
 'use client'
 
-import React from 'react'
-import { formatInTimeZone } from 'date-fns-tz'
+import React, { useEffect, useState } from 'react'
+import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz'
 import { ja } from 'date-fns/locale'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Cast } from '@/lib/cast/types'
 import { FALLBACK_IMAGE } from '@/lib/cast/mapper'
 import { SafeImage } from '@/components/ui/safe-image'
+import { useStore } from '@/contexts/store-context'
+import { toast } from '@/hooks/use-toast'
+import { Loader2 } from 'lucide-react'
 
 const JST_TIMEZONE = 'Asia/Tokyo'
 
@@ -29,6 +35,7 @@ interface CastDialogProps {
   staff: Cast | null
   selectedDate: Date
   optionCatalog?: StaffOptionCatalogEntry[]
+  onScheduleSaved?: () => void
 }
 
 export function StaffDialog({
@@ -37,7 +44,58 @@ export function StaffDialog({
   staff,
   selectedDate,
   optionCatalog = [],
+  onScheduleSaved,
 }: CastDialogProps) {
+  const { currentStore } = useStore()
+  const [startTime, setStartTime] = useState('')
+  const [endTime, setEndTime] = useState('')
+  const [scheduleId, setScheduleId] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const selectedDateKey = formatInTimeZone(selectedDate, JST_TIMEZONE, 'yyyy-MM-dd')
+
+  useEffect(() => {
+    if (!open || !staff) return
+    setStartTime(staff.workStart ? formatInTimeZone(staff.workStart, JST_TIMEZONE, 'HH:mm') : '')
+    setEndTime(staff.workEnd ? formatInTimeZone(staff.workEnd, JST_TIMEZONE, 'HH:mm') : '')
+    setScheduleId(null)
+
+    let ignore = false
+    const controller = new AbortController()
+    const loadSchedule = async () => {
+      try {
+        const rangeStart = zonedTimeToUtc(`${selectedDateKey}T00:00:00`, JST_TIMEZONE)
+        const rangeEnd = zonedTimeToUtc(`${selectedDateKey}T23:59:59`, JST_TIMEZONE)
+        const params = new URLSearchParams({
+          castId: staff.id,
+          startDate: rangeStart.toISOString(),
+          endDate: rangeEnd.toISOString(),
+          storeId: currentStore.id,
+        })
+        const response = await fetch(`/api/cast-schedule?${params.toString()}`, {
+          credentials: 'include',
+          cache: 'no-store',
+          signal: controller.signal,
+        })
+        if (!response.ok) return
+        const payload = await response.json()
+        const rows = Array.isArray(payload?.data) ? payload.data : payload
+        const match = Array.isArray(rows) ? rows[0] : null
+        if (!ignore && match?.id) {
+          setScheduleId(String(match.id))
+        }
+      } catch {
+        if (!controller.signal.aborted) {
+          return
+        }
+      }
+    }
+    void loadSchedule()
+    return () => {
+      ignore = true
+      controller.abort()
+    }
+  }, [open, staff, selectedDateKey, currentStore.id])
+
   if (!staff) return null
 
   const staffImage = staff.image?.trim() ? staff.image : FALLBACK_IMAGE
@@ -47,6 +105,58 @@ export function StaffDialog({
   const selectedDateLabel = formatInTimeZone(selectedDate, JST_TIMEZONE, 'yyyy/MM/dd (E)', {
     locale: ja,
   })
+
+  const handleSaveSchedule = async () => {
+    if (!startTime || !endTime) {
+      toast({
+        title: '出勤時間を入力してください',
+        variant: 'destructive',
+      })
+      return
+    }
+    setSaving(true)
+    try {
+      const start = zonedTimeToUtc(`${selectedDateKey}T${startTime}:00`, JST_TIMEZONE)
+      const end = zonedTimeToUtc(`${selectedDateKey}T${endTime}:00`, JST_TIMEZONE)
+      const body = scheduleId
+        ? {
+            id: scheduleId,
+            startTime: start.toISOString(),
+            endTime: end.toISOString(),
+            isAvailable: true,
+          }
+        : {
+            castId: staff.id,
+            date: start.toISOString(),
+            startTime: start.toISOString(),
+            endTime: end.toISOString(),
+            isAvailable: true,
+            storeId: currentStore.id,
+          }
+      const response = await fetch(
+        `/api/cast-schedule${currentStore.id ? `?storeId=${encodeURIComponent(currentStore.id)}` : ''}`,
+        {
+          method: scheduleId ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(body),
+        }
+      )
+      if (!response.ok) {
+        throw new Error('出勤時間の保存に失敗しました')
+      }
+      toast({ title: '出勤時間を更新しました' })
+      onScheduleSaved?.()
+    } catch (error) {
+      toast({
+        title: '出勤時間の保存に失敗しました',
+        description: error instanceof Error ? error.message : undefined,
+        variant: 'destructive',
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -150,6 +260,35 @@ export function StaffDialog({
                 ) : (
                   <p className="mt-1 text-sm text-gray-600">この日の出勤登録はありません。</p>
                 )}
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="timeline-cast-work-start">出勤開始</Label>
+                    <Input
+                      id="timeline-cast-work-start"
+                      type="time"
+                      value={startTime}
+                      onChange={(event) => setStartTime(event.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="timeline-cast-work-end">出勤終了</Label>
+                    <Input
+                      id="timeline-cast-work-end"
+                      type="time"
+                      value={endTime}
+                      onChange={(event) => setEndTime(event.target.value)}
+                    />
+                  </div>
+                </div>
+                <Button
+                  className="mt-3"
+                  size="sm"
+                  onClick={() => void handleSaveSchedule()}
+                  disabled={saving}
+                >
+                  {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  出勤時間を保存
+                </Button>
               </div>
             </section>
 

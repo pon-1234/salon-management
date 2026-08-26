@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { QuickBookingDialog } from './quick-booking-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Clock, User, AlertCircle, Pin } from 'lucide-react'
+import { Clock, User, AlertCircle } from 'lucide-react'
 import { Cast, Appointment } from '@/lib/cast/types'
 import { logError } from '@/lib/error-utils'
 import { StaffDialog, type StaffOptionCatalogEntry } from '@/components/cast/cast-dialog'
@@ -26,16 +26,21 @@ import {
   minutesToIsoInJst,
 } from '@/lib/settings/business-hours'
 import { getReservationStatusLabel } from '@/lib/reservation/status-display'
+import {
+  TIMELINE_BOOKING_INTERVAL_MINUTES,
+  QUICK_BOOKING_STEP_MINUTES,
+  buildHalfHourBookingStarts,
+  ceilToInterval,
+} from '@/lib/reservation/booking-slot-window'
 
 const JST_TIMEZONE = 'Asia/Tokyo'
 const MINUTES_IN_DAY = 24 * 60
-const TIMELINE_INTERVAL_MINUTES = 30
-const BOOKING_STEP_MINUTES = 5
+const TIMELINE_INTERVAL_MINUTES = TIMELINE_BOOKING_INTERVAL_MINUTES
 const MIN_BOOKING_DURATION_MINUTES = 10
 const MIN_DISPLAY_SLOT_MINUTES = 10
+const CAST_COLUMN_WIDTH = 176
 
-const snapToStep = (minute: number) =>
-  Math.ceil(minute / BOOKING_STEP_MINUTES) * BOOKING_STEP_MINUTES
+const snapToStep = (minute: number) => ceilToInterval(minute, QUICK_BOOKING_STEP_MINUTES)
 
 // safeMapを安全に実装（undefinedやnullでも空配列を返す）
 function safeMap<T, U>(arr: T[] | undefined | null, callback: (item: T, index: number) => U): U[] {
@@ -52,6 +57,7 @@ interface TimelineProps {
   businessHours: BusinessHoursRange
   optionCatalog?: StaffOptionCatalogEntry[]
   canCreateReservation: boolean
+  onScheduleSaved?: () => void
 }
 
 interface AvailableSlot {
@@ -72,6 +78,7 @@ export function Timeline({
   businessHours,
   optionCatalog = [],
   canCreateReservation,
+  onScheduleSaved,
 }: TimelineProps) {
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null)
   const [selectedStaff, setSelectedStaff] = useState<Cast | null>(null)
@@ -137,26 +144,13 @@ export function Timeline({
         return []
       }
 
-      const candidates: number[] = []
-      let cursor = startMinute
-
-      while (cursor + MIN_BOOKING_DURATION_MINUTES <= endMinute) {
-        candidates.push(cursor)
-        cursor += BOOKING_STEP_MINUTES
-      }
-
-      if (candidates.length === 0) {
-        candidates.push(startMinute)
-      } else if (candidates[0] !== startMinute) {
-        candidates.unshift(startMinute)
-      }
-
-      const validMinutes = Array.from(new Set(candidates))
-        .filter((minute) => minute + MIN_BOOKING_DURATION_MINUTES <= endMinute)
-        .sort((a, b) => a - b)
-
+      const candidates = buildHalfHourBookingStarts(
+        startMinute,
+        endMinute,
+        MIN_BOOKING_DURATION_MINUTES
+      )
       const filteredMinutes =
-        nowMinutes !== null ? validMinutes.filter((minute) => minute >= nowMinutes) : validMinutes
+        nowMinutes !== null ? candidates.filter((minute) => minute >= nowMinutes) : candidates
 
       return filteredMinutes.map(minutesToUtcDate)
     },
@@ -331,27 +325,6 @@ export function Timeline({
     })
   }
 
-  const handleHeaderTimeClick = (minute: number) => {
-    if (!canCreateReservation) {
-      return
-    }
-    const selectedTime = minutesToUtcDate(minute)
-    const workingStaff = filteredStaff.find((member) => {
-      if (!member.workStart || !member.workEnd) return false
-      return member.workStart <= selectedTime && selectedTime < member.workEnd
-    })
-    if (!workingStaff) {
-      return
-    }
-    const coveringSlot = getAvailableSlots(workingStaff).find(
-      (slot) => slot.startTime <= selectedTime && selectedTime < slot.endTime
-    )
-    if (!coveringSlot) {
-      return
-    }
-    handleTimeSlotClick(coveringSlot, selectedTime)
-  }
-
   // 現在時刻の位置を計算
   const currentTime = now
   const currentTimePosition = (() => {
@@ -369,7 +342,7 @@ export function Timeline({
     return (relative / 60) * HOUR_WIDTH
   })()
 
-  const timelineMinWidth = hourSegments * HOUR_WIDTH + 240
+  const timelineMinWidth = hourSegments * HOUR_WIDTH + CAST_COLUMN_WIDTH
   const halfHourSegments = hourSegments * 2
 
   const syncHorizontalScroll = (source: 'body' | 'bar') => {
@@ -385,37 +358,34 @@ export function Timeline({
 
   return (
     <div className="relative bg-gray-50">
-      {/* コントロールバー */}
-      <div className="flex items-center justify-between border-b bg-white px-4 py-2">
-        <div className="flex items-center gap-2">
-          <Button
-            variant={zoomLevel === 0.75 ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setZoomLevel(0.75)}
-          >
-            75%
-          </Button>
-          <Button
-            variant={zoomLevel === 1 ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setZoomLevel(1)}
-          >
-            100%
-          </Button>
-          <Button
-            variant={zoomLevel === 1.25 ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setZoomLevel(1.25)}
-          >
-            125%
-          </Button>
-        </div>
-        <div className="text-sm text-gray-600">
-          {formatInTimeZone(selectedDate, JST_TIMEZONE, 'yyyy年MM月dd日(E)')}
-        </div>
+      <div className="flex items-center justify-end gap-1 border-b bg-white px-2 py-1">
+        <Button
+          variant={zoomLevel === 0.75 ? 'default' : 'outline'}
+          size="sm"
+          className="h-6 px-2 text-[11px]"
+          onClick={() => setZoomLevel(0.75)}
+        >
+          75%
+        </Button>
+        <Button
+          variant={zoomLevel === 1 ? 'default' : 'outline'}
+          size="sm"
+          className="h-6 px-2 text-[11px]"
+          onClick={() => setZoomLevel(1)}
+        >
+          100%
+        </Button>
+        <Button
+          variant={zoomLevel === 1.25 ? 'default' : 'outline'}
+          size="sm"
+          className="h-6 px-2 text-[11px]"
+          onClick={() => setZoomLevel(1.25)}
+        >
+          125%
+        </Button>
       </div>
 
-      <div className="relative h-[calc(100vh-14rem)] min-h-[28rem] w-full">
+      <div className="relative h-[calc(100vh-8rem)] min-h-[28rem] w-full">
         <div
           ref={timelineBodyRef}
           data-testid="reservation-timeline-scroll"
@@ -426,67 +396,55 @@ export function Timeline({
             {/* キャスト列 */}
             <div
               className="sticky left-0 z-20 border-r bg-white shadow-sm"
-              style={{ width: '240px' }}
+              style={{ width: `${CAST_COLUMN_WIDTH}px` }}
             >
-              <div className="sticky top-0 z-30 flex h-16 items-center border-b bg-gray-50 px-4">
-                <User className="mr-2 h-4 w-4 text-gray-600" />
-                <span className="font-medium">キャスト</span>
+              <div className="sticky top-0 z-30 flex h-8 items-center border-b bg-gray-50 px-2">
+                <User className="mr-1 h-3.5 w-3.5 text-gray-600" />
+                <span className="text-xs font-medium">キャスト</span>
               </div>
               {safeMap(filteredStaff, (member) => (
                 <button
                   key={member.id}
                   className={cn(
-                    'flex h-20 w-full items-center gap-3 overflow-hidden border-b px-4 py-2 transition-colors',
+                    'flex h-14 w-full items-center gap-2 overflow-hidden border-b px-2 py-1 transition-colors',
                     member.workStart && member.workEnd
                       ? 'bg-white hover:bg-gray-50'
                       : 'bg-slate-200 hover:bg-slate-300'
                   )}
                   onClick={() => setSelectedStaff(member)}
                 >
-                  <Avatar className="h-9 w-9">
+                  <Avatar className="h-7 w-7">
                     <AvatarImage src={member.image} alt={member.name} />
                     <AvatarFallback>{member.name.slice(0, 2)}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1 text-left">
-                    <div className="font-medium">{member.name}</div>
-                    <div className="mt-0.5 flex flex-wrap gap-1">
+                    <div
+                      data-testid={`timeline-cast-name-${member.name}`}
+                      className="flex min-w-0 items-center gap-1"
+                    >
+                      <span className="truncate text-sm font-medium">{member.name}</span>
                       {member.specialDesignationFee != null && member.specialDesignationFee > 0 ? (
                         <Badge
-                          className="h-4 gap-0.5 border border-slate-400 bg-gradient-to-b from-slate-100 to-slate-300 px-1 text-[10px] text-slate-800"
+                          className="h-4 shrink-0 px-1 text-[10px]"
+                          variant="outline"
                           aria-label={`特別指名料 ${member.specialDesignationFee.toLocaleString('ja-JP')}円`}
                         >
-                          <Pin className="h-2.5 w-2.5" aria-hidden />
                           特別指名 {member.specialDesignationFee.toLocaleString('ja-JP')}円
-                        </Badge>
-                      ) : null}
-                      {member.regularDesignationRank > 0 ? (
-                        <Badge variant="outline" className="h-4 px-1 text-[10px]">
-                          本指名 {member.regularDesignationRank}位
-                        </Badge>
-                      ) : null}
-                      {member.panelDesignationRank > 0 ? (
-                        <Badge variant="outline" className="h-4 px-1 text-[10px]">
-                          パネル {member.panelDesignationRank}位
                         </Badge>
                       ) : null}
                     </div>
                     {member.workStart && member.workEnd ? (
-                      <div className="flex items-center gap-1 text-xs text-gray-600">
+                      <div className="flex items-center gap-1 text-[11px] text-gray-600">
                         <Clock className="h-3 w-3" />
                         {formatInTimeZone(member.workStart, JST_TIMEZONE, 'HH:mm')}
                         {' - '}
                         {formatInTimeZone(member.workEnd, JST_TIMEZONE, 'HH:mm')}
                       </div>
                     ) : (
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge variant="secondary" className="h-4 px-1 text-[10px]">
                         休み
                       </Badge>
                     )}
-                    <div className="mt-1 flex items-center gap-1">
-                      <div className="text-xs text-gray-500">
-                        予約 {member.appointments?.length || 0}件
-                      </div>
-                    </div>
                   </div>
                 </button>
               ))}
@@ -497,31 +455,18 @@ export function Timeline({
               {/* 時間ヘッダー */}
               <div
                 data-testid="timeline-time-header"
-                className="sticky top-0 z-10 flex h-16 border-b bg-gray-50"
+                className="sticky top-0 z-10 flex h-8 border-b bg-gray-50"
               >
                 {Array.from({ length: halfHourSegments }).map((_, index) => {
                   const minute = startMinutes + index * TIMELINE_INTERVAL_MINUTES
                   const label = formatMinutesAsLabel(minute)
-                  const isHour = minute % 60 === 0
                   return (
                     <div
                       key={index}
-                      className="flex flex-col items-center justify-center gap-1 border-r"
+                      className="flex items-center justify-center border-r text-[11px] font-medium text-gray-700"
                       style={{ width: `${HOUR_WIDTH / 2}px` }}
                     >
-                      {isHour ? (
-                        <div className="text-xs font-medium">{label}</div>
-                      ) : (
-                        <div className="h-4" />
-                      )}
-                      <button
-                        type="button"
-                        className="h-6 w-6 rounded-full border border-emerald-400 bg-white text-[10px] font-medium text-emerald-700 hover:bg-emerald-50"
-                        aria-label={`${label}を予約開始に設定`}
-                        onClick={() => handleHeaderTimeClick(minute)}
-                      >
-                        {label.slice(-2) === '00' ? '00' : '30'}
-                      </button>
+                      {label}
                     </div>
                   )
                 })}
@@ -532,7 +477,7 @@ export function Timeline({
                 <div
                   key={member.id}
                   className={cn(
-                    'relative h-20 border-b',
+                    'relative h-14 border-b',
                     member.workStart && member.workEnd ? 'bg-slate-200' : 'bg-slate-300'
                   )}
                 >
@@ -574,8 +519,8 @@ export function Timeline({
                         type="button"
                         aria-label={`${appointment.customerName} 様 ${startLabel}-${endLabel}`}
                         className={cn(
-                          'absolute top-2 cursor-pointer overflow-hidden rounded-lg text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md',
-                          'flex flex-col px-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-1',
+                          'absolute top-1 cursor-pointer overflow-hidden rounded-md text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md',
+                          'flex flex-col px-1.5 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-1',
                           isTentative && 'border-2 border-orange-300 bg-orange-100',
                           displayStatus === 'modifiable' && 'border-2 border-amber-400 bg-amber-50',
                           displayStatus === 'preconfirmed' && 'border-2 border-sky-400 bg-sky-50',
@@ -584,7 +529,7 @@ export function Timeline({
                         )}
                         style={{
                           ...getTimeBlockStyle(appointment.startTime, appointment.endTime),
-                          height: 'calc(100% - 16px)',
+                          height: 'calc(100% - 8px)',
                         }}
                         onClick={() => handleAppointmentClick(appointment)}
                       >
@@ -640,39 +585,19 @@ export function Timeline({
                     if (slot.duration < MIN_BOOKING_DURATION_MINUTES) return null
                     const selectableTimes = buildSelectableStartTimes(slot)
                     const disabled = !selectedCustomer || !canCreateReservation
-                    const slotEndMinute = getMinutesFromDate(slot.endTime)
 
                     return (
                       <div key={`${member.id}-${index}`}>
                         <div
                           data-testid="timeline-available-slot"
-                          className="pointer-events-none absolute top-2 h-[calc(100%-16px)] rounded-lg border border-emerald-200 bg-emerald-50/60"
+                          className="pointer-events-none absolute top-1 h-[calc(100%-8px)] rounded-md border border-emerald-200 bg-emerald-50/60"
                           style={getTimeBlockStyle(slot.startTime, slot.endTime)}
-                        >
-                          <div
-                            className={cn(
-                              'absolute left-1 top-1 text-[10px] leading-none',
-                              disabled ? 'text-gray-400' : 'text-gray-500'
-                            )}
-                          >
-                            次回予約可能 {formatInTimeZone(slot.startTime, JST_TIMEZONE, 'HH:mm')}{' '}
-                            ・ 空き
-                            {slot.duration}分
-                          </div>
-                          {disabled ? (
-                            <span className="absolute bottom-1 left-1 text-[10px] text-gray-400">
-                              {canCreateReservation
-                                ? '顧客を選択してください'
-                                : '予約作成権限がありません'}
-                            </span>
-                          ) : null}
-                        </div>
+                        />
                         {selectableTimes.map((startTime) => {
                           const label = formatInTimeZone(startTime, JST_TIMEZONE, 'HH:mm')
                           const startMinute = getMinutesFromDate(startTime)
-                          const cellEndMinute = Math.min(
-                            startMinute + BOOKING_STEP_MINUTES,
-                            slotEndMinute
+                          const circleEnd = minutesToUtcDate(
+                            startMinute + TIMELINE_INTERVAL_MINUTES
                           )
 
                           return (
@@ -682,16 +607,25 @@ export function Timeline({
                               size="sm"
                               variant="ghost"
                               className={cn(
-                                'absolute top-2 z-10 h-[calc(100%-16px)] rounded-none border-0 p-0 hover:bg-emerald-200/70',
+                                'absolute top-1 z-10 flex h-[calc(100%-8px)] items-center justify-start rounded-none border-0 p-0 hover:bg-transparent',
                                 disabled && 'cursor-not-allowed opacity-60'
                               )}
-                              style={getTimeBlockStyle(startTime, minutesToUtcDate(cellEndMinute))}
-                              aria-label={`${label}の空き枠を選択`}
+                              style={getTimeBlockStyle(startTime, circleEnd)}
+                              aria-label={`${label}から予約`}
                               title={`${label}から予約`}
                               onClick={() => handleTimeSlotClick(slot, startTime)}
                               disabled={disabled}
                             >
-                              <span className="sr-only">{label}</span>
+                              <span
+                                className={cn(
+                                  'ml-0.5 flex h-5 w-5 items-center justify-center rounded-full border text-[9px] font-medium',
+                                  disabled
+                                    ? 'border-gray-300 bg-white text-gray-400'
+                                    : 'border-emerald-500 bg-white text-emerald-700 hover:bg-emerald-50'
+                                )}
+                              >
+                                ○
+                              </span>
                             </Button>
                           )
                         })}
@@ -700,11 +634,14 @@ export function Timeline({
                   })}
 
                   {/* 時間グリッド線 */}
-                  {Array.from({ length: hourSegments }).map((_, index) => (
+                  {Array.from({ length: halfHourSegments }).map((_, index) => (
                     <div
                       key={index}
-                      className="absolute top-0 h-full border-r border-gray-200"
-                      style={{ left: `${index * HOUR_WIDTH}px` }}
+                      className={cn(
+                        'absolute top-0 h-full border-r',
+                        index % 2 === 0 ? 'border-gray-200' : 'border-gray-100'
+                      )}
+                      style={{ left: `${(index * HOUR_WIDTH) / 2}px` }}
                     />
                   ))}
                 </div>
@@ -740,12 +677,14 @@ export function Timeline({
         onOpenChange={(open) => !open && setSelectedSlot(null)}
         selectedStaff={
           selectedSlot
-            ? ({
+            ? (staff?.find((member) => member.id === selectedSlot.staffId) ??
+              ({
                 id: selectedSlot.staffId,
                 name: selectedSlot.staffName,
-              } as any)
+              } as Cast))
             : null
         }
+        staffOptions={staff}
         selectedTime={selectedSlot?.startTime}
         selectedSlot={selectedSlot}
         selectedCustomer={selectedCustomer}
@@ -761,6 +700,7 @@ export function Timeline({
         staff={selectedStaff}
         selectedDate={selectedDate}
         optionCatalog={optionCatalog}
+        onScheduleSaved={onScheduleSaved}
       />
     </div>
   )

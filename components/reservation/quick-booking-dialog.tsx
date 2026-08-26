@@ -64,6 +64,12 @@ import {
   reservationStartBoundaryToastTitle,
   reservationStartMinuteHint,
 } from '@/lib/reservation/time-boundary'
+import { TIMELINE_BOOKING_INTERVAL_MINUTES } from '@/lib/reservation/booking-slot-window'
+import {
+  composeMarketingChannel,
+  parseMarketingChannel,
+  partitionMarketingChannels,
+} from '@/components/reservation/reservation-dialog.utils'
 import {
   formatDateInJst,
   formatTimeInJst,
@@ -89,6 +95,7 @@ interface QuickBookingDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   selectedStaff?: Cast
+  staffOptions?: Cast[]
   selectedTime?: Date
   selectedSlot?: { startTime: Date; endTime: Date } | null
   selectedCustomer: Customer | null
@@ -135,6 +142,8 @@ function createInitialBookingDetails({
     paymentReference: '',
     locationMemo: '',
     notes: '',
+    hotelName: '',
+    roomNumber: '',
   }
 }
 
@@ -142,6 +151,7 @@ export function QuickBookingDialog({
   open,
   onOpenChange,
   selectedStaff,
+  staffOptions = [],
   selectedTime,
   selectedSlot,
   selectedCustomer,
@@ -151,6 +161,8 @@ export function QuickBookingDialog({
   const { currentStore } = useStore()
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false)
   const [showExtraFields, setShowExtraFields] = useState(false)
+  const [createdReservationId, setCreatedReservationId] = useState<string | null>(null)
+  const [activeStaffId, setActiveStaffId] = useState<string | null>(selectedStaff?.id ?? null)
   const wasOpenRef = useRef(false)
   const designationTouchedRef = useRef(false)
   const [staffDetails, setStaffDetails] = useState<Cast | null>(
@@ -161,6 +173,20 @@ export function QuickBookingDialog({
       : null
   )
   const [marketingChannels, setMarketingChannels] = useState<string[]>(DEFAULT_MARKETING_CHANNELS)
+  const [customerHistory, setCustomerHistory] = useState<
+    Array<{ id: string; startTime?: string; staffName?: string; serviceName?: string }>
+  >([])
+
+  const assignedStaff = useMemo(() => {
+    const id = activeStaffId ?? selectedStaff?.id
+    if (!id) return selectedStaff ?? null
+    return staffOptions.find((member) => member.id === id) ?? selectedStaff ?? null
+  }, [activeStaffId, selectedStaff, staffOptions])
+
+  const partitionedChannels = useMemo(
+    () => partitionMarketingChannels(marketingChannels),
+    [marketingChannels]
+  )
 
   const slotWindowStart = selectedSlot?.startTime ?? selectedTime ?? null
   const slotWindowEndLimit = selectedSlot?.endTime ?? null
@@ -168,10 +194,10 @@ export function QuickBookingDialog({
     slotWindowStart !== null
       ? new Date(
           Math.min(
-            slotWindowStart.getTime() + 60 * 60 * 1000,
+            slotWindowStart.getTime() + TIMELINE_BOOKING_INTERVAL_MINUTES * 60 * 1000,
             slotWindowEndLimit
               ? slotWindowEndLimit.getTime()
-              : slotWindowStart.getTime() + 60 * 60 * 1000
+              : slotWindowStart.getTime() + TIMELINE_BOOKING_INTERVAL_MINUTES * 60 * 1000
           )
         )
       : (slotWindowEndLimit ?? null)
@@ -240,16 +266,16 @@ export function QuickBookingDialog({
   useEffect(() => {
     let ignore = false
 
-    if (!selectedStaff) {
+    if (!assignedStaff) {
       setStaffDetails(null)
       return
     }
 
     const hasDefinedOptions =
-      Array.isArray(selectedStaff.availableOptions) && selectedStaff.availableOptions.length > 0
+      Array.isArray(assignedStaff.availableOptions) && assignedStaff.availableOptions.length > 0
 
     if (hasDefinedOptions) {
-      setStaffDetails(selectedStaff)
+      setStaffDetails(assignedStaff)
       return
     }
 
@@ -257,14 +283,14 @@ export function QuickBookingDialog({
 
     ;(async () => {
       try {
-        const response = await fetch(buildStoreCastEndpoint(currentStore.id, selectedStaff.id), {
+        const response = await fetch(buildStoreCastEndpoint(currentStore.id, assignedStaff.id), {
           credentials: 'include',
           cache: 'no-store',
           signal: controller.signal,
         })
 
         if (!response.ok) {
-          throw new Error(`Failed to fetch cast details for ${selectedStaff.id}`)
+          throw new Error(`Failed to fetch cast details for ${assignedStaff.id}`)
         }
 
         const payload = await response.json()
@@ -286,11 +312,11 @@ export function QuickBookingDialog({
       ignore = true
       controller.abort()
     }
-  }, [currentStore.id, selectedStaff])
+  }, [currentStore.id, assignedStaff])
 
   const currentStaff = useMemo(
-    () => staffDetails ?? selectedStaff ?? null,
-    [staffDetails, selectedStaff]
+    () => staffDetails ?? assignedStaff ?? null,
+    [staffDetails, assignedStaff]
   )
 
   const [bookingDetails, setBookingDetails] = useState<BookingDetails>(() =>
@@ -362,13 +388,21 @@ export function QuickBookingDialog({
     if (marketingChannels.length === 0) {
       return
     }
+    const { methods, sites } = partitionMarketingChannels(marketingChannels)
     setBookingDetails((prev) => {
       if (prev.marketingChannel && marketingChannels.includes(prev.marketingChannel)) {
         return prev
       }
+      const parsed = parseMarketingChannel(prev.marketingChannel)
+      if (
+        (parsed.method && methods.includes(parsed.method)) ||
+        (parsed.site && sites.includes(parsed.site))
+      ) {
+        return prev
+      }
       return {
         ...prev,
-        marketingChannel: marketingChannels[0],
+        marketingChannel: methods[0] ?? marketingChannels[0],
       }
     })
   }, [marketingChannels])
@@ -449,6 +483,65 @@ export function QuickBookingDialog({
       controller.abort()
     }
   }, [open, selectedCustomer?.id, currentStaff?.id, designationFees, currentStore.id])
+
+  useEffect(() => {
+    if (!open || !selectedCustomer?.id) {
+      setCustomerHistory([])
+      return
+    }
+
+    let ignore = false
+    const controller = new AbortController()
+
+    const loadCustomerHistory = async () => {
+      try {
+        const response = await fetch(
+          buildStoreScopedEndpoint(
+            `/api/reservation?customerId=${encodeURIComponent(selectedCustomer.id)}&limit=5`,
+            currentStore.id
+          ),
+          { cache: 'no-store', credentials: 'include', signal: controller.signal }
+        )
+        if (!response.ok) {
+          throw new Error('Failed to load customer history')
+        }
+        const payload: unknown = await response.json()
+        const rows = Array.isArray(payload)
+          ? payload
+          : Array.isArray((payload as { data?: unknown })?.data)
+            ? ((payload as { data: unknown[] }).data ?? [])
+            : []
+        if (ignore) return
+        setCustomerHistory(
+          rows.slice(0, 5).map((row) => {
+            const record = row as {
+              id?: string
+              startTime?: string
+              staffName?: string
+              cast?: { name?: string }
+              course?: { name?: string }
+              serviceName?: string
+            }
+            return {
+              id: String(record.id ?? ''),
+              startTime: record.startTime,
+              staffName: record.staffName ?? record.cast?.name,
+              serviceName: record.serviceName ?? record.course?.name,
+            }
+          })
+        )
+      } catch (error) {
+        if (controller.signal.aborted || ignore) return
+        console.error('Failed to load customer history:', error)
+      }
+    }
+
+    void loadCustomerHistory()
+    return () => {
+      ignore = true
+      controller.abort()
+    }
+  }, [open, selectedCustomer?.id, currentStore.id])
 
   useEffect(() => {
     setBookingDetails((prev) => ({
@@ -811,6 +904,8 @@ export function QuickBookingDialog({
           marketingChannel: bookingDetails.marketingChannel,
           areaId: null,
           stationId: null,
+          hotelName: bookingDetails.hotelName.trim() || null,
+          roomNumber: bookingDetails.roomNumber.trim() || null,
           locationMemo: '',
           notes: bookingDetails.notes,
           storeRevenue: priceBreakdown.storeRevenue,
@@ -863,7 +958,7 @@ export function QuickBookingDialog({
         onReservationCreated(reservationId)
       }
 
-      onOpenChange(false)
+      setCreatedReservationId(reservationId ?? 'created')
     } catch (error) {
       toast({
         title: 'エラー',
@@ -913,6 +1008,8 @@ export function QuickBookingDialog({
 
     setDiscardConfirmOpen(false)
     setShowExtraFields(false)
+    setCreatedReservationId(null)
+    setActiveStaffId(selectedStaff?.id ?? null)
     setSelectedCourseId(courseCatalog[0]?.id ?? '')
     designationTouchedRef.current = false
     setSelectedDesignationId(pickAutoDesignationFee(designationFees, false)?.id ?? '')
@@ -947,6 +1044,14 @@ export function QuickBookingDialog({
           <DialogHeader>
             <DialogTitle className="text-center text-2xl font-bold">予約受付</DialogTitle>
           </DialogHeader>
+          {createdReservationId ? (
+            <div
+              role="status"
+              className="mx-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
+            >
+              予約を作成しました。内容を確認できます。
+            </div>
+          ) : null}
 
           <div className="min-h-0 flex-1 overflow-y-auto px-2">
             <div
@@ -960,6 +1065,19 @@ export function QuickBookingDialog({
               </Badge>
               <span className="text-gray-600">{bookingDetails.phoneNumber || '未設定'}</span>
               <span className="text-gray-600">{bookingDetails.points.toLocaleString()}pt</span>
+              {customerHistory.length > 0 ? (
+                <span className="w-full text-xs text-gray-500">
+                  過去の履歴:{' '}
+                  {customerHistory
+                    .map((entry) => {
+                      const when = entry.startTime
+                        ? formatInTimeZone(new Date(entry.startTime), JST_TIMEZONE, 'MM/dd HH:mm')
+                        : ''
+                      return [when, entry.staffName, entry.serviceName].filter(Boolean).join(' ')
+                    })
+                    .join(' / ')}
+                </span>
+              ) : null}
             </div>
             <div className="grid gap-4 pb-6 lg:grid-cols-2">
               <Card>
@@ -1020,12 +1138,57 @@ export function QuickBookingDialog({
                   </div>
 
                   <div>
-                    <Label>キャスト</Label>
-                    <Input
-                      value={bookingDetails.staff || '未選択'}
-                      readOnly
-                      className="bg-gray-50"
-                    />
+                    <Label htmlFor="quick-booking-staff">担当者</Label>
+                    <Select
+                      value={currentStaff?.id ?? undefined}
+                      onValueChange={(value) => {
+                        setActiveStaffId(value)
+                        const next = staffOptions.find((member) => member.id === value)
+                        setBookingDetails((prev) => ({
+                          ...prev,
+                          staff: next?.name ?? prev.staff,
+                        }))
+                      }}
+                    >
+                      <SelectTrigger id="quick-booking-staff">
+                        <SelectValue placeholder="担当者を選択" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(staffOptions.length > 0
+                          ? staffOptions
+                          : currentStaff
+                            ? [currentStaff]
+                            : []
+                        ).map((member) => (
+                          <SelectItem key={member.id} value={member.id}>
+                            {member.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="quick-booking-hotel-name">ホテル名</Label>
+                      <Input
+                        id="quick-booking-hotel-name"
+                        name="hotelName"
+                        value={bookingDetails.hotelName}
+                        onChange={handleTextChange}
+                        placeholder="例: 池袋ホテル"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="quick-booking-room-number">部屋番号</Label>
+                      <Input
+                        id="quick-booking-room-number"
+                        name="roomNumber"
+                        value={bookingDetails.roomNumber}
+                        onChange={handleTextChange}
+                        placeholder="例: 1203"
+                      />
+                    </div>
                   </div>
 
                   <div>
@@ -1170,18 +1333,55 @@ export function QuickBookingDialog({
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="quick-booking-marketing-channel">集客チャネル</Label>
+                      <Label htmlFor="quick-booking-acquisition-method">集客手段</Label>
                       <Select
-                        value={bookingDetails.marketingChannel}
+                        value={
+                          parseMarketingChannel(bookingDetails.marketingChannel).method || undefined
+                        }
                         onValueChange={(value) =>
-                          setBookingDetails((prev) => ({ ...prev, marketingChannel: value }))
+                          setBookingDetails((prev) => ({
+                            ...prev,
+                            marketingChannel: composeMarketingChannel(
+                              value,
+                              parseMarketingChannel(prev.marketingChannel).site
+                            ),
+                          }))
+                        }
+                      >
+                        <SelectTrigger id="quick-booking-acquisition-method">
+                          <SelectValue placeholder="手段を選択" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {partitionedChannels.methods.map((channel) => (
+                            <SelectItem key={channel} value={channel}>
+                              {channel}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="quick-booking-marketing-channel">集客チャンネル</Label>
+                      <Select
+                        value={
+                          parseMarketingChannel(bookingDetails.marketingChannel).site ?? '__none__'
+                        }
+                        onValueChange={(value) =>
+                          setBookingDetails((prev) => ({
+                            ...prev,
+                            marketingChannel: composeMarketingChannel(
+                              parseMarketingChannel(prev.marketingChannel).method,
+                              value === '__none__' ? null : value
+                            ),
+                          }))
                         }
                       >
                         <SelectTrigger id="quick-booking-marketing-channel">
-                          <SelectValue />
+                          <SelectValue placeholder="チャンネルを選択" />
                         </SelectTrigger>
                         <SelectContent>
-                          {marketingChannels.map((channel) => (
+                          <SelectItem value="__none__">なし</SelectItem>
+                          {partitionedChannels.sites.map((channel) => (
                             <SelectItem key={channel} value={channel}>
                               {channel}
                             </SelectItem>

@@ -4,9 +4,19 @@
  * @known_issues None
  */
 import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Cast } from '@/lib/cast/types'
 import { StaffDialog } from './cast-dialog'
+
+vi.mock('@/contexts/store-context', () => ({
+  useStore: () => ({
+    currentStore: { id: 'ikebukuro' },
+  }),
+}))
+
+vi.mock('@/hooks/use-toast', () => ({
+  toast: vi.fn(),
+}))
 
 const staff: Cast = {
   id: 'legacy-cast-56060',
@@ -36,7 +46,20 @@ const staff: Cast = {
 }
 
 describe('StaffDialog', () => {
-  afterEach(cleanup)
+  beforeEach(() => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({ data: [] }),
+      }))
+    )
+  })
+
+  afterEach(() => {
+    cleanup()
+    vi.unstubAllGlobals()
+  })
 
   it('shows the real description, selected-day attendance, and only assigned options', () => {
     render(
@@ -55,6 +78,9 @@ describe('StaffDialog', () => {
     expect(screen.getByText('旧システムから移行した紹介文です。')).toBeInTheDocument()
     expect(screen.getByText('2026/08/15 (土)')).toBeInTheDocument()
     expect(screen.getByText('10:00 - 18:00')).toBeInTheDocument()
+    expect(screen.getByLabelText('出勤開始')).toBeInTheDocument()
+    expect(screen.getByLabelText('出勤終了')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '出勤時間を保存' })).toBeInTheDocument()
     expect(screen.getByText('アロマ追加')).toBeInTheDocument()
     expect(screen.queryByText('未対応オプション')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '選択' })).not.toBeInTheDocument()

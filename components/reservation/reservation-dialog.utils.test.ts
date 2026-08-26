@@ -8,10 +8,13 @@ import { PAYMENT_METHODS } from '@/lib/constants'
 
 import {
   calculateReservationPriceBreakdown,
+  composeMarketingChannel,
   formatCurrency,
   formatMinutes,
   normalizeMarketingChannelValue,
   normalizePaymentMethodValue,
+  parseMarketingChannel,
+  partitionMarketingChannels,
   toNullableNumber,
   toNumber,
 } from './reservation-dialog.utils'
@@ -98,6 +101,27 @@ describe('reservation-dialog utils', () => {
 
     it('matches available channels case-insensitively', () => {
       expect(normalizeMarketingChannelValue('web', ['WEB', '公式'])).toBe('WEB')
+    })
+  })
+
+  describe('acquisition method and site channels', () => {
+    it('splits store channels into booking methods and site channels including Heaven', () => {
+      expect(
+        partitionMarketingChannels(['店リピート', '電話', 'WEB', 'Heaven', 'サイト関連'])
+      ).toEqual({
+        methods: ['店リピート', '電話', 'WEB'],
+        sites: ['Heaven', 'サイト関連'],
+      })
+    })
+
+    it('composes and parses method plus site so both can be reported', () => {
+      expect(composeMarketingChannel('電話', 'Heaven')).toBe('電話 / Heaven')
+      expect(parseMarketingChannel('電話 / Heaven')).toEqual({
+        method: '電話',
+        site: 'Heaven',
+      })
+      expect(parseMarketingChannel('Heaven')).toEqual({ method: 'WEB', site: 'Heaven' })
+      expect(parseMarketingChannel('電話')).toEqual({ method: '電話', site: null })
     })
   })
 })

@@ -704,16 +704,22 @@ export function ReservationPageContent() {
 
   return (
     <div className="min-h-screen bg-white">
-      <InfoBar selectedCustomer={selectedCustomer} />
-      <DateNavigation selectedDate={selectedDate} onSelectDate={setSelectedDate} />
-      <ViewToggle view={view} onViewChange={setView} />
-      <ActionButtons
-        onRefresh={handleRefresh}
-        onFilter={handleFilterDialogOpen}
-        onCustomerSelect={handleCustomerSelection}
-        selectedCustomer={selectedCustomer}
-        canCreateReservation={canCreateReservation}
-      />
+      <div className="sticky top-0 z-30 border-b bg-white">
+        <div className="flex flex-wrap items-center justify-between gap-1">
+          <DateNavigation selectedDate={selectedDate} onSelectDate={setSelectedDate} />
+          <div className="flex flex-wrap items-center">
+            <ViewToggle view={view} onViewChange={setView} />
+            <ActionButtons
+              onRefresh={handleRefresh}
+              onFilter={handleFilterDialogOpen}
+              onCustomerSelect={handleCustomerSelection}
+              selectedCustomer={selectedCustomer}
+              canCreateReservation={canCreateReservation}
+            />
+          </div>
+        </div>
+        <InfoBar selectedCustomer={selectedCustomer} />
+      </div>
 
       <FilterDialog
         open={filterDialogOpen}
@@ -735,6 +741,7 @@ export function ReservationPageContent() {
           businessHours={businessHours}
           optionCatalog={activeOptionCatalog}
           canCreateReservation={canCreateReservation}
+          onScheduleSaved={handleRefresh}
         />
       ) : (
         <ReservationTable

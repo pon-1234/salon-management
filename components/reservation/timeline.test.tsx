@@ -182,10 +182,11 @@ describe('Timeline appointment cards', () => {
     expect(screen.getByRole('button', { name: /休みキャスト/ })).toHaveClass('bg-slate-200')
   })
 
-  it('shows both operational ranks beside the cast name', () => {
+  it('shows the special designation fee rank next to the stage name instead of designation ranking', () => {
     const rankedStaff = [
       {
         ...staff[0],
+        specialDesignationFee: 5_000,
         regularDesignationRank: 2,
         panelDesignationRank: 3,
       },
@@ -208,8 +209,11 @@ describe('Timeline appointment cards', () => {
       />
     )
 
-    expect(screen.getByText('本指名 2位')).toBeInTheDocument()
-    expect(screen.getByText('パネル 3位')).toBeInTheDocument()
+    const nameRow = screen.getByTestId('timeline-cast-name-さら')
+    expect(nameRow).toHaveTextContent('さら')
+    expect(nameRow).toHaveTextContent('特別指名 5,000円')
+    expect(screen.queryByText('本指名 2位')).not.toBeInTheDocument()
+    expect(screen.queryByText('パネル 3位')).not.toBeInTheDocument()
   })
 
   it('marks a cast with a special designation fee on the staff column', () => {
@@ -237,8 +241,8 @@ describe('Timeline appointment cards', () => {
       />
     )
 
+    expect(screen.getByTestId('timeline-cast-name-さら')).toHaveTextContent('特別指名 5,000円')
     expect(screen.getByLabelText('特別指名料 5,000円')).toBeInTheDocument()
-    expect(screen.getByText('特別指名 5,000円')).toBeInTheDocument()
   })
 
   it('does not mark a cast without a special designation fee', () => {
@@ -395,14 +399,14 @@ describe('Timeline appointment cards', () => {
       />
     )
 
-    expect(screen.getByRole('button', { name: '14:00の空き枠を選択' })).toBeVisible()
-    expect(screen.getByRole('button', { name: '14:30の空き枠を選択' })).toBeVisible()
-    expect(screen.getByRole('button', { name: '23:30の空き枠を選択' })).toBeVisible()
+    expect(screen.getByRole('button', { name: '14:00から予約' })).toBeVisible()
+    expect(screen.getByRole('button', { name: '14:30から予約' })).toBeVisible()
+    expect(screen.getByRole('button', { name: '23:30から予約' })).toBeVisible()
     expect(screen.queryByText('午前')).not.toBeInTheDocument()
     expect(screen.queryByText('午後')).not.toBeInTheDocument()
   })
 
-  it('places each empty-slot start on the same column as the header time circle', () => {
+  it('places each 30-minute booking circle on the same column as the header time label', () => {
     const selectedCustomer = {
       id: 'customer-1',
       name: '確認顧客',
@@ -435,21 +439,18 @@ describe('Timeline appointment cards', () => {
       />
     )
 
-    expect(screen.getByRole('button', { name: '18:00の空き枠を選択' })).toHaveStyle({
+    expect(screen.getByRole('button', { name: '18:00から予約' })).toHaveStyle({
       left: '960px',
-      width: '10px',
     })
-    expect(screen.getByRole('button', { name: '18:30の空き枠を選択' })).toHaveStyle({
+    expect(screen.getByRole('button', { name: '18:30から予約' })).toHaveStyle({
       left: '1020px',
-      width: '10px',
     })
-    expect(screen.getByRole('button', { name: '22:00の空き枠を選択' })).toHaveStyle({
+    expect(screen.getByRole('button', { name: '22:00から予約' })).toHaveStyle({
       left: '1440px',
-      width: '10px',
     })
   })
 
-  it('offers every available reservation start in five-minute increments', () => {
+  it('offers booking circles only on 30-minute marks', () => {
     const selectedCustomer = {
       id: 'customer-1',
       name: '確認顧客',
@@ -482,13 +483,13 @@ describe('Timeline appointment cards', () => {
       />
     )
 
-    expect(screen.getByRole('button', { name: '14:00の空き枠を選択' })).toBeVisible()
-    expect(screen.getByRole('button', { name: '14:05の空き枠を選択' })).toBeVisible()
-    expect(screen.getByRole('button', { name: '14:50の空き枠を選択' })).toBeVisible()
-    expect(screen.queryByRole('button', { name: '14:55の空き枠を選択' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '14:00から予約' })).toBeVisible()
+    expect(screen.getByRole('button', { name: '14:30から予約' })).toBeVisible()
+    expect(screen.queryByRole('button', { name: '14:05から予約' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '14:50から予約' })).not.toBeInTheDocument()
   })
 
-  it('opens a booking from a 30-minute header button at that start time', () => {
+  it('labels 30-minute marks on the time axis and does not start a booking from the header', () => {
     const selectedCustomer = {
       id: 'customer-1',
       name: '確認顧客',
@@ -521,13 +522,15 @@ describe('Timeline appointment cards', () => {
       />
     )
 
-    fireEvent.click(screen.getByRole('button', { name: '15:00を予約開始に設定' }))
+    const header = screen.getByTestId('timeline-time-header')
+    expect(within(header).getByText('15:00')).toBeVisible()
+    expect(within(header).getByText('15:30')).toBeVisible()
+    expect(screen.queryByRole('button', { name: '15:00を予約開始に設定' })).not.toBeInTheDocument()
 
-    expect(quickBookingDialogMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        open: true,
-        selectedTime: new Date('2030-07-21T15:00:00+09:00'),
-      }),
+    fireEvent.click(within(header).getByText('15:00'))
+
+    expect(quickBookingDialogMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ open: false }),
       undefined
     )
   })
@@ -565,7 +568,7 @@ describe('Timeline appointment cards', () => {
       />
     )
 
-    expect(screen.queryByRole('button', { name: '14:00の空き枠を選択' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '14:00から予約' })).not.toBeInTheDocument()
   })
 
   it('keeps existing reservations readable but disables empty-slot booking without create permission', () => {
@@ -611,8 +614,8 @@ describe('Timeline appointment cards', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /\[確認用\] 旧顧客 #104168/ }))
     expect(setSelectedAppointment).toHaveBeenCalledWith(reservation)
-    expect(screen.getByRole('button', { name: '14:00の空き枠を選択' })).toBeDisabled()
-    fireEvent.click(screen.getByRole('button', { name: '14:00の空き枠を選択' }))
+    expect(screen.getByRole('button', { name: '14:00から予約' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: '14:00から予約' }))
     expect(screen.queryByTestId('quick-booking-dialog')).not.toBeInTheDocument()
     expect(quickBookingDialogMock).toHaveBeenLastCalledWith(
       expect.objectContaining({ open: false }),

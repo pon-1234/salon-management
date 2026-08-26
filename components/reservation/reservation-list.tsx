@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/table'
 import { format } from 'date-fns'
 import { ReservationData } from '@/lib/types/reservation'
+import { MoreHorizontal } from 'lucide-react'
 import Link from 'next/link'
 import { useMemo } from 'react'
 import { ReservationStatus } from '@/lib/constants'
@@ -183,6 +184,19 @@ export function ReservationList({
         </div>
       </TableCell>
       <TableCell>{renderCardPaymentBadge(reservation)}</TableCell>
+      <TableCell className="text-right">
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="予約詳細を開く"
+          onClick={(event) => {
+            event.stopPropagation()
+            onOpenReservation?.(reservation)
+          }}
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </TableCell>
     </TableRow>
   )
 
@@ -201,12 +215,13 @@ export function ReservationList({
               <TableHead className="w-[80px] whitespace-nowrap">終了</TableHead>
               <TableHead className="w-[180px] whitespace-nowrap">ステータス</TableHead>
               <TableHead className="w-[140px] whitespace-nowrap">カード決済</TableHead>
+              <TableHead className="w-[80px] text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {orderedReservations.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="h-32 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={10} className="h-32 text-center text-sm text-muted-foreground">
                   この日の予約はありません。
                 </TableCell>
               </TableRow>
@@ -217,7 +232,7 @@ export function ReservationList({
                   <>
                     <TableRow>
                       <TableCell
-                        colSpan={9}
+                        colSpan={10}
                         className="bg-slate-100 text-xs font-semibold uppercase tracking-wide text-slate-600"
                       >
                         完了
