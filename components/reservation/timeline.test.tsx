@@ -146,6 +146,12 @@ describe('Timeline appointment cards', () => {
     )
     expect(screen.getByTestId('timeline-horizontal-scrollbar')).toHaveClass('absolute', 'bottom-0')
     expect(screen.getByTestId('timeline-time-header')).toHaveClass('sticky', 'top-0')
+    expect(quickBookingDialogMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        selectedStaff: undefined,
+      }),
+      undefined
+    )
   })
 
   it('keeps on-duty hours white and darkens the rest of the row', () => {
