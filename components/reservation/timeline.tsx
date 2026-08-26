@@ -682,7 +682,7 @@ export function Timeline({
                 id: selectedSlot.staffId,
                 name: selectedSlot.staffName,
               } as Cast))
-            : null
+            : undefined
         }
         staffOptions={staff}
         selectedTime={selectedSlot?.startTime}
