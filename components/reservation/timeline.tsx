@@ -403,12 +403,14 @@ export function Timeline({
                   <div className="min-w-0 flex-1 text-left">
                     <div
                       data-testid={`timeline-cast-name-${member.name}`}
-                      className="flex min-w-0 items-center gap-1"
+                      className="flex min-w-0 flex-col items-start"
                     >
-                      <span className="truncate text-sm font-medium">{member.name}</span>
+                      <span className="w-full truncate text-sm font-medium leading-4">
+                        {member.name}
+                      </span>
                       {member.specialDesignationFee != null && member.specialDesignationFee > 0 ? (
                         <Badge
-                          className="h-4 shrink-0 px-1 text-[10px]"
+                          className="mt-0.5 h-3.5 max-w-full shrink-0 px-1 text-[9px] leading-none"
                           variant="outline"
                           aria-label={`特別指名料 ${member.specialDesignationFee.toLocaleString('ja-JP')}円`}
                         >
@@ -417,8 +419,8 @@ export function Timeline({
                       ) : null}
                     </div>
                     {member.workStart && member.workEnd ? (
-                      <div className="flex items-center gap-1 text-[11px] text-gray-600">
-                        <Clock className="h-3 w-3" />
+                      <div className="flex h-3 items-center gap-1 text-[10px] leading-3 text-gray-600">
+                        <Clock className="h-2.5 w-2.5" />
                         {formatInTimeZone(member.workStart, JST_TIMEZONE, 'HH:mm')}
                         {' - '}
                         {formatInTimeZone(member.workEnd, JST_TIMEZONE, 'HH:mm')}

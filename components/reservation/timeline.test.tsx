@@ -188,7 +188,7 @@ describe('Timeline appointment cards', () => {
     expect(screen.getByRole('button', { name: /休みキャスト/ })).toHaveClass('bg-slate-200')
   })
 
-  it('shows the special designation fee label next to the stage name instead of designation ranking', () => {
+  it('shows the special designation fee below the stage name instead of designation ranking', () => {
     const rankedStaff = [
       {
         ...staff[0],
@@ -218,6 +218,9 @@ describe('Timeline appointment cards', () => {
     const nameRow = screen.getByTestId('timeline-cast-name-さら')
     expect(nameRow).toHaveTextContent('さら')
     expect(nameRow).toHaveTextContent('特別指名料 5,000円')
+    expect(nameRow).toHaveClass('flex-col', 'items-start')
+    expect(nameRow).not.toHaveClass('items-center')
+    expect(within(nameRow).getByText('さら')).toHaveClass('w-full')
     expect(screen.queryByText('本指名 2位')).not.toBeInTheDocument()
     expect(screen.queryByText('パネル 3位')).not.toBeInTheDocument()
   })
