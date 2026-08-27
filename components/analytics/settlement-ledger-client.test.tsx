@@ -34,11 +34,12 @@ const ledger = {
     {
       castId: 'cast-1',
       castName: 'さら',
+      completedCount: 2,
       pendingCount: 1,
-      pendingAmount: 18_000,
-      settledAmount: 0,
+      pendingAmount: 12_000,
+      settledAmount: 15_000,
       staffRevenue: 18_000,
-      storeRevenue: 12_000,
+      storeRevenue: 27_000,
       pendingReservations: [
         {
           id: 'reservation-1',
@@ -106,9 +107,12 @@ describe('SettlementLedgerClient', () => {
 
     expect(await screen.findByRole('heading', { name: '精算' })).toBeInTheDocument()
     expect(await screen.findByText('さら')).toBeInTheDocument()
-    expect(screen.getByText('1件')).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: '本数' })).toBeInTheDocument()
+    expect(screen.getByText('2本')).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'キャスト売上' })).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: '店舗売上' })).toBeInTheDocument()
+    expect(screen.getByText('¥27,000')).toBeInTheDocument()
+    expect(screen.getByText('¥15,000')).toBeInTheDocument()
     expect(screen.getByText('¥12,000')).toBeInTheDocument()
     expect(screen.queryByText(/\[UAT\] 予約確認/)).not.toBeInTheDocument()
     expect(screen.queryByText(/UAT-0815-1030/)).not.toBeInTheDocument()

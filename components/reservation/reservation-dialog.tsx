@@ -53,13 +53,10 @@ import {
   Loader2,
   AlertCircle,
   ChevronDown,
-  Info,
-  Calculator,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { differenceInMinutes, addMinutes, format, parseISO } from 'date-fns'
 import { ja } from 'date-fns/locale'
-import { ModificationHistoryTable } from '@/components/reservation/modification-history-table'
 import { buildModificationAlerts, getModificationHistory } from '@/lib/modification-history/data'
 import { ReservationUpdatePayload } from '@/lib/types/reservation'
 import { ModificationAlert, ModificationHistory } from '@/lib/types/modification-history'
@@ -134,6 +131,13 @@ import {
   type LineLogEntry,
   type ReservationDialogProps,
 } from '@/components/reservation/reservation-dialog.shared'
+import {
+  ReservationDialogFooter,
+  ReservationEditPricePreview,
+  ReservationHistoryContent,
+  ReservationNotesAndConfirmation,
+  ReservationPrimarySummary,
+} from '@/components/reservation/reservation-dialog-sections'
 
 const MAX_LINE_MESSAGE_LENGTH = 1000
 
@@ -1698,7 +1702,31 @@ export function ReservationDialog({
               </div>
 
               <TabsContent value="overview" className="space-y-3 p-4">
-                <div className="grid gap-4 md:grid-cols-2">
+                {!isEditMode ? (
+                  <ReservationPrimarySummary
+                    reservation={reservation}
+                    castWorkStatus={selectedCast?.workStatus}
+                    courseName={selectedCourse?.name || reservation.course || '未設定'}
+                    designationName={
+                      designationForDisplay?.name || reservation.designation || 'なし'
+                    }
+                    optionNames={displayOptionNames}
+                    canViewFinancialDetails={canViewFinancialDetails}
+                    hotelName={entryForm.hotelName}
+                    roomNumber={entryForm.roomNumber}
+                    entrySending={entrySending}
+                    canSave={Boolean(onSave)}
+                    onHotelNameChange={(hotelName) =>
+                      setEntryForm((prev) => ({ ...prev, hotelName }))
+                    }
+                    onRoomNumberChange={(roomNumber) =>
+                      setEntryForm((prev) => ({ ...prev, roomNumber }))
+                    }
+                    onSaveEntryInfo={handleSaveEntryInfo}
+                  />
+                ) : null}
+
+                <div className={cn('grid gap-4 md:grid-cols-2', !isEditMode && 'hidden')}>
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">日時</CardTitle>
@@ -1963,7 +1991,7 @@ export function ReservationDialog({
                   </Card>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className={cn('grid gap-4 md:grid-cols-2', !isEditMode && 'hidden')}>
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">料金</CardTitle>
@@ -2798,258 +2826,47 @@ export function ReservationDialog({
                   </CardContent>
                 </Card>
 
-                {isEditMode && (
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">料金プレビュー</CardTitle>
-                      <Calculator className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent className="space-y-4 text-sm">
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground">変更後の合計</div>
-                        <div className="flex items-baseline justify-between gap-4">
-                          <span className="text-2xl font-semibold">
-                            {formatCurrency(priceBreakdown.total)}
-                          </span>
-                          {priceDelta !== 0 && (
-                            <span
-                              className={cn(
-                                'text-sm font-semibold',
-                                priceDelta > 0 ? 'text-red-600' : 'text-emerald-600'
-                              )}
-                            >
-                              {priceDelta > 0 ? '+' : '-'}
-                              {formatCurrency(Math.abs(priceDelta))}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>現在の金額</span>
-                          <span>{formatCurrency(originalTotal)}</span>
-                        </div>
-                      </div>
+                {isEditMode ? (
+                  <ReservationEditPricePreview
+                    priceBreakdown={priceBreakdown}
+                    priceDelta={priceDelta}
+                    originalTotal={originalTotal}
+                    durationMinutes={effectiveDurationMinutes}
+                    durationDelta={durationDelta}
+                    originalDurationMinutes={reservationDurationMinutes}
+                    endTime={
+                      computedEndTime ||
+                      (reservation?.endTime ? format(reservation.endTime, 'HH:mm') : '-')
+                    }
+                    options={selectedOptionDetails}
+                  />
+                ) : null}
 
-                      <div className="space-y-1 pt-2">
-                        <div className="text-muted-foreground">施術時間</div>
-                        <div className="flex items-baseline justify-between gap-4">
-                          <span className="text-lg font-semibold">
-                            {formatMinutes(effectiveDurationMinutes)}
-                          </span>
-                          {durationDelta !== 0 && (
-                            <span
-                              className={cn(
-                                'text-sm font-semibold',
-                                durationDelta > 0 ? 'text-orange-600' : 'text-emerald-600'
-                              )}
-                            >
-                              {durationDelta > 0 ? '+' : '-'}
-                              {formatMinutes(Math.abs(durationDelta))}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>現在の時間</span>
-                          <span>{formatMinutes(reservationDurationMinutes)}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>終了予定</span>
-                          <span>
-                            {computedEndTime ||
-                              (reservation?.endTime ? format(reservation.endTime, 'HH:mm') : '-')}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                          内訳
-                        </div>
-                        <dl className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <dt>コース</dt>
-                            <dd>{formatCurrency(priceBreakdown.basePrice)}</dd>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <dt>オプション</dt>
-                            <dd>{formatCurrency(priceBreakdown.optionTotal)}</dd>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <dt>指名料</dt>
-                            <dd>{formatCurrency(priceBreakdown.designation)}</dd>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <dt>追加料金</dt>
-                            <dd>{formatCurrency(priceBreakdown.additional)}</dd>
-                          </div>
-                          {priceBreakdown.discount > 0 && (
-                            <div className="flex items-center justify-between text-red-600">
-                              <dt>割引</dt>
-                              <dd>-{formatCurrency(priceBreakdown.discount)}</dd>
-                            </div>
-                          )}
-                          {priceBreakdown.pointsUsed > 0 && (
-                            <div className="flex items-center justify-between text-red-600">
-                              <dt>ポイント利用</dt>
-                              <dd>-{formatCurrency(priceBreakdown.pointsUsed)}</dd>
-                            </div>
-                          )}
-                        </dl>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
-                          <span>選択オプション</span>
-                          <span>
-                            {selectedOptionDetails.length > 0
-                              ? `${selectedOptionDetails.length}件`
-                              : 'なし'}
-                          </span>
-                        </div>
-                        {selectedOptionDetails.length > 0 ? (
-                          <ul className="divide-y divide-muted/40 overflow-hidden rounded-md border border-muted/40 text-xs">
-                            {selectedOptionDetails.map((option) => (
-                              <li
-                                key={option.id}
-                                className="flex items-center justify-between gap-3 bg-white/30 px-3 py-2"
-                              >
-                                <div className="flex-1">
-                                  <div className="font-medium">{option.name}</div>
-                                  {option.note && (
-                                    <div className="text-xs text-muted-foreground">
-                                      {option.note}
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="text-right text-muted-foreground">
-                                  {option.duration ? (
-                                    <div>{formatMinutes(option.duration)}</div>
-                                  ) : null}
-                                  <div>{formatCurrency(toNumber(option.price, 0))}</div>
-                                </div>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-xs text-muted-foreground">
-                            オプションは選択されていません。
-                          </p>
-                        )}
-                      </div>
-
-                      <p className="text-xs text-muted-foreground">
-                        変更内容は「保存する」で反映され、履歴にも記録されます。
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm font-medium">詳細メモ</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {isEditMode ? (
-                      <Textarea
-                        value={formState.notes}
-                        onChange={(event) =>
-                          setFormState((prev) => ({ ...prev, notes: event.target.value }))
-                        }
-                        rows={5}
-                        placeholder="予約に関する詳細メモを入力してください"
-                      />
-                    ) : reservation.notes ? (
-                      <p className="whitespace-pre-wrap text-sm">{reservation.notes}</p>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        詳細メモは登録されていません。
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm font-medium">確認状況</CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
-                    <div>
-                      <div className="text-muted-foreground">担当キャスト確認</div>
-                      <div className="font-medium">{reservation.staffConfirmation}</div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground">顧客確認</div>
-                      <div className="font-medium">{reservation.customerConfirmation}</div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="history" className="space-y-4 p-4">
-                <Alert variant="default" className="bg-muted/40">
-                  <Info className="h-4 w-4" />
-                  <AlertDescription>
-                    ステータス・時間帯・料金などの更新は自動で記録されます。スタッフ間の共有メモや監査対応の証跡として活用してください。
-                  </AlertDescription>
-                </Alert>
-                {isHistoryLoading && (
-                  <p className="text-xs text-muted-foreground">履歴を読み込み中...</p>
-                )}
-                <ModificationHistoryTable
-                  modifications={modificationHistory}
-                  alerts={modificationAlerts}
+                <ReservationNotesAndConfirmation
+                  isEditMode={isEditMode}
+                  notes={formState.notes}
+                  staffConfirmation={reservation.staffConfirmation}
+                  customerConfirmation={reservation.customerConfirmation}
+                  onNotesChange={(notes) => setFormState((prev) => ({ ...prev, notes }))}
                 />
               </TabsContent>
+
+              <ReservationHistoryContent
+                isLoading={isHistoryLoading}
+                modifications={modificationHistory}
+                alerts={modificationAlerts}
+              />
             </Tabs>
           </div>
-          <div className="border-t bg-white px-4 py-3 shadow-inner">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-baseline gap-3">
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">
-                    {isEditMode ? '変更後の合計' : '予約合計'}
-                  </p>
-                  <p className="text-xl font-semibold leading-none">
-                    {formatCurrency(isEditMode ? priceBreakdown.total : originalTotal)}
-                  </p>
-                </div>
-                {isEditMode && priceDelta !== 0 && (
-                  <span
-                    className={cn(
-                      'rounded-full px-2 py-0.5 text-xs font-semibold',
-                      priceDelta > 0
-                        ? 'bg-red-50 text-red-600 ring-1 ring-inset ring-red-200'
-                        : 'bg-emerald-50 text-emerald-600 ring-1 ring-inset ring-emerald-200'
-                    )}
-                  >
-                    {priceDelta > 0 ? '+' : '-'}
-                    {formatCurrency(Math.abs(priceDelta))}
-                  </span>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:items-center sm:gap-4">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium text-foreground">
-                      {formatMinutes(effectiveDurationMinutes)}
-                    </p>
-                    <p>{isEditMode ? '変更後の施術時間' : '施術時間'}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium text-foreground">
-                      {computedEndTime ||
-                        (reservation?.endTime ? format(reservation.endTime, 'HH:mm') : '-')}
-                    </p>
-                    <p>{isEditMode ? '変更後の終了予定' : '終了予定'}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ReservationDialogFooter
+            isEditMode={isEditMode}
+            total={isEditMode ? priceBreakdown.total : originalTotal}
+            priceDelta={priceDelta}
+            durationMinutes={effectiveDurationMinutes}
+            endTime={
+              computedEndTime || (reservation?.endTime ? format(reservation.endTime, 'HH:mm') : '-')
+            }
+          />
         </DialogContent>
       </Dialog>
       <DiscardReservationEditDialog

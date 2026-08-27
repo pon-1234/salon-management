@@ -74,6 +74,11 @@ interface ReservationPageQuery {
 
 type ReservationPageFetcher = (query: ReservationPageQuery) => Promise<Reservation[]>
 
+interface ReservationTimelineRefreshers {
+  reloadCasts: () => Promise<unknown>
+  reloadReservations: () => Promise<unknown>
+}
+
 interface StoreRequestVersion {
   storeId: string
   generation: number
@@ -96,6 +101,13 @@ export function acceptStoreScopedResponse<T>(
 
 export function buildCastListEndpoint(storeId: string): string {
   return `/api/cast?storeId=${encodeURIComponent(storeId)}&limit=${API_PAGE_SIZE}`
+}
+
+export async function refreshReservationTimeline({
+  reloadCasts,
+  reloadReservations,
+}: ReservationTimelineRefreshers): Promise<void> {
+  await Promise.all([reloadCasts(), reloadReservations()])
 }
 
 export function buildJstDayQueryRange(dateKey: string): {
@@ -400,58 +412,58 @@ export function ReservationPageContent() {
     }
   }, [currentStore.id])
 
-  useEffect(() => {
+  const loadCasts = useCallback(async () => {
     const requestVersion = {
       storeId: currentStore.id,
       generation: castRequestVersionRef.current.generation + 1,
     }
     castRequestVersionRef.current = requestVersion
+
+    try {
+      const response = await fetch(buildCastListEndpoint(currentStore.id), {
+        cache: 'no-store',
+        credentials: 'include',
+      })
+      if (!response.ok) {
+        throw new Error(`Failed to fetch casts: ${response.status}`)
+      }
+      const payload = await response.json()
+      const normalized = normalizeCastList(payload)
+      const currentCasts = acceptStoreScopedResponse(
+        requestVersion,
+        castRequestVersionRef.current,
+        normalized
+      )
+      if (currentCasts === undefined) {
+        return
+      }
+
+      loadedCastStoreIdRef.current = requestVersion.storeId
+      setAllCasts(currentCasts)
+      setCastData([]) // wait for fetchData to populate based on schedules
+    } catch (error) {
+      if (acceptStoreScopedResponse(requestVersion, castRequestVersionRef.current, true)) {
+        console.error('Failed to load cast data:', error)
+      }
+    }
+  }, [currentStore.id])
+
+  useEffect(() => {
     loadedCastStoreIdRef.current = null
     setAllCasts([])
     setCastData([])
 
-    const loadCasts = async () => {
-      try {
-        const response = await fetch(buildCastListEndpoint(currentStore.id), {
-          cache: 'no-store',
-          credentials: 'include',
-        })
-        if (!response.ok) {
-          throw new Error(`Failed to fetch casts: ${response.status}`)
-        }
-        const payload = await response.json()
-        const normalized = normalizeCastList(payload)
-        const currentCasts = acceptStoreScopedResponse(
-          requestVersion,
-          castRequestVersionRef.current,
-          normalized
-        )
-        if (currentCasts === undefined) {
-          return
-        }
-
-        loadedCastStoreIdRef.current = requestVersion.storeId
-        setAllCasts(currentCasts)
-        setCastData([]) // wait for fetchData to populate based on schedules
-      } catch (error) {
-        if (acceptStoreScopedResponse(requestVersion, castRequestVersionRef.current, true)) {
-          console.error('Failed to load cast data:', error)
-        }
-      }
-    }
-
     loadCasts()
 
     return () => {
-      if (acceptStoreScopedResponse(requestVersion, castRequestVersionRef.current, true)) {
-        castRequestVersionRef.current = {
-          storeId: requestVersion.storeId,
-          generation: requestVersion.generation + 1,
-        }
-        loadedCastStoreIdRef.current = null
+      const activeRequest = castRequestVersionRef.current
+      castRequestVersionRef.current = {
+        storeId: activeRequest.storeId,
+        generation: activeRequest.generation + 1,
       }
+      loadedCastStoreIdRef.current = null
     }
-  }, [currentStore.id])
+  }, [currentStore.id, loadCasts])
 
   const fetchData = useCallback(async (): Promise<ReservationData[]> => {
     const requestVersion = {
@@ -617,7 +629,10 @@ export function ReservationPageContent() {
   }, [currentStore.id, fetchData, selectedCustomer, selectedDateKey])
 
   const handleRefresh = () => {
-    fetchData()
+    void refreshReservationTimeline({
+      reloadCasts: loadCasts,
+      reloadReservations: fetchData,
+    })
   }
 
   const handleReservationSave = async (reservationId: string, payload: ReservationSavePayload) => {

@@ -188,7 +188,7 @@ describe('Timeline appointment cards', () => {
     expect(screen.getByRole('button', { name: /休みキャスト/ })).toHaveClass('bg-slate-200')
   })
 
-  it('shows the special designation fee rank next to the stage name instead of designation ranking', () => {
+  it('shows the special designation fee label next to the stage name instead of designation ranking', () => {
     const rankedStaff = [
       {
         ...staff[0],
@@ -217,7 +217,7 @@ describe('Timeline appointment cards', () => {
 
     const nameRow = screen.getByTestId('timeline-cast-name-さら')
     expect(nameRow).toHaveTextContent('さら')
-    expect(nameRow).toHaveTextContent('特別指名 5,000円')
+    expect(nameRow).toHaveTextContent('特別指名料 5,000円')
     expect(screen.queryByText('本指名 2位')).not.toBeInTheDocument()
     expect(screen.queryByText('パネル 3位')).not.toBeInTheDocument()
   })
@@ -247,7 +247,7 @@ describe('Timeline appointment cards', () => {
       />
     )
 
-    expect(screen.getByTestId('timeline-cast-name-さら')).toHaveTextContent('特別指名 5,000円')
+    expect(screen.getByTestId('timeline-cast-name-さら')).toHaveTextContent('特別指名料 5,000円')
     expect(screen.getByLabelText('特別指名料 5,000円')).toBeInTheDocument()
   })
 
@@ -539,6 +539,34 @@ describe('Timeline appointment cards', () => {
       expect.objectContaining({ open: false }),
       undefined
     )
+  })
+
+  it('does not draw a current-time center line over reservation cards', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2030-07-21T15:15:00+09:00'))
+
+    try {
+      render(
+        <Timeline
+          canCreateReservation
+          staff={staff}
+          selectedDate={new Date('2030-07-21T00:00:00+09:00')}
+          selectedCustomer={null}
+          setSelectedAppointment={vi.fn()}
+          reservations={[reservation]}
+          businessHours={{
+            startMinutes: 10 * 60,
+            endMinutes: 24 * 60,
+            startLabel: '10:00',
+            endLabel: '24:00',
+          }}
+        />
+      )
+
+      expect(document.querySelector('.bg-red-500')).not.toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('does not offer selectable starts for a past day', () => {

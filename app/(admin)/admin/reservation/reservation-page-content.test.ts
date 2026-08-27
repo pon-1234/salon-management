@@ -14,6 +14,7 @@ import {
   indexSchedulesForJstDay,
   acceptStoreScopedResponse,
   loadReservationsForJstDay,
+  refreshReservationTimeline,
 } from './reservation-page-content'
 import type { ReservationData } from '@/lib/types/reservation'
 import type { Cast } from '@/lib/cast/types'
@@ -136,6 +137,16 @@ describe('reservation timeline data loading', () => {
 
   it('requests the complete cast page allowed by the cast API', () => {
     expect(buildCastListEndpoint('uat-ikebukuro')).toBe('/api/cast?storeId=uat-ikebukuro&limit=100')
+  })
+
+  it('reloads cast master data as well as reservations when the timeline is refreshed', async () => {
+    const reloadCasts = vi.fn().mockResolvedValue(undefined)
+    const reloadReservations = vi.fn().mockResolvedValue([])
+
+    await refreshReservationTimeline({ reloadCasts, reloadReservations })
+
+    expect(reloadCasts).toHaveBeenCalledOnce()
+    expect(reloadReservations).toHaveBeenCalledOnce()
   })
 
   it('builds an inclusive API range for exactly one JST calendar day', () => {

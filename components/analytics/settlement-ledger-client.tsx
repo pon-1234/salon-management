@@ -93,7 +93,7 @@ export function SettlementLedgerClient({ mode: _mode }: { mode: 'payment' | 'set
         <div>
           <h1 className="text-2xl font-bold">{title}</h1>
           <p className="text-sm text-muted-foreground">
-            キャストごとの未精算だけを確認します。詳細と精算実行は各キャスト画面です。
+            完了本数と店舗売上を基準に、精算済み・未精算を確認します。
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -133,7 +133,7 @@ export function SettlementLedgerClient({ mode: _mode }: { mode: 'payment' | 'set
               <thead className="bg-slate-50 text-left text-xs text-muted-foreground">
                 <tr>
                   <th className="px-3 py-2 font-medium">キャスト</th>
-                  <th className="px-3 py-2 font-medium">未精算件数</th>
+                  <th className="px-3 py-2 font-medium">本数</th>
                   <th className="px-3 py-2 font-medium">キャスト売上</th>
                   <th className="px-3 py-2 font-medium">店舗売上</th>
                   <th className="px-3 py-2 font-medium">精算済み</th>
@@ -145,13 +145,7 @@ export function SettlementLedgerClient({ mode: _mode }: { mode: 'payment' | 'set
                 {ledger.casts.map((cast) => (
                   <tr key={cast.castId} className="border-t">
                     <td className="px-3 py-2 font-medium">{cast.castName}</td>
-                    <td
-                      className={
-                        cast.pendingCount > 0 ? 'px-3 py-2 font-medium text-red-600' : 'px-3 py-2'
-                      }
-                    >
-                      {cast.pendingCount}件
-                    </td>
+                    <td className="px-3 py-2">{cast.completedCount}本</td>
                     <td className="px-3 py-2">¥{cast.staffRevenue.toLocaleString()}</td>
                     <td className="px-3 py-2">¥{cast.storeRevenue.toLocaleString()}</td>
                     <td className="px-3 py-2">¥{cast.settledAmount.toLocaleString()}</td>

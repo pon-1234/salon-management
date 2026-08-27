@@ -26,6 +26,7 @@ export type StoreSettlementPendingReservation = {
 export type StoreSettlementCastSummary = {
   castId: string
   castName: string
+  completedCount: number
   pendingCount: number
   pendingAmount: number
   settledAmount: number
@@ -164,6 +165,7 @@ export async function getStoreSettlementLedger(
     const current = casts.get(castId) ?? {
       castId,
       castName,
+      completedCount: 0,
       pendingCount: 0,
       pendingAmount: 0,
       settledAmount: 0,
@@ -172,13 +174,14 @@ export async function getStoreSettlementLedger(
       pendingReservations: [],
     }
 
+    current.completedCount += 1
     current.staffRevenue += staffRevenue
     current.storeRevenue += storeRevenue
     if (reservation.settlementStatus === 'settled') {
-      current.settledAmount += takeHome
+      current.settledAmount += storeRevenue
     } else {
       current.pendingCount += 1
-      current.pendingAmount += takeHome
+      current.pendingAmount += storeRevenue
       current.pendingReservations.push({
         id: reservation.id,
         castId,

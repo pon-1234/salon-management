@@ -4,7 +4,7 @@
  * @known_issues None currently
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { act, render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { ReservationDialog } from './reservation-dialog'
 import { STATUS_OPTIONS } from './reservation-dialog.shared'
 import { ReservationData } from '@/lib/types/reservation'
@@ -312,11 +312,38 @@ describe('ReservationDialog Edit Mode', () => {
     expect(screen.getByRole('tab', { name: '履歴' })).toBeInTheDocument()
     expect(screen.queryByRole('tab', { name: '概要' })).not.toBeInTheDocument()
     expect(screen.queryByRole('tab', { name: /^詳細$/ })).not.toBeInTheDocument()
-    expect(screen.getByText('日時')).toBeInTheDocument()
-    expect(screen.getByText('予約詳細')).toBeInTheDocument()
+    expect(screen.getByText('日時・キャスト')).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('reservation-primary-summary-grid')).getByText('予約詳細')
+    ).toBeInTheDocument()
     expect(screen.getAllByLabelText('ホテル名').length).toBeGreaterThan(0)
-    expect(screen.getByRole('button', { name: '更新' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '女性に通知' })).toBeInTheDocument()
+    const summaryGrid = screen.getByTestId('reservation-primary-summary-grid')
+    expect(within(summaryGrid).getByRole('button', { name: '更新' })).toBeInTheDocument()
+    expect(within(summaryGrid).getByRole('button', { name: '女性に通知' })).toBeInTheDocument()
+  })
+
+  it('shows the four operational summaries in the requested first-screen order', () => {
+    render(
+      <ReservationDialog
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        reservation={mockReservation}
+        onSave={mockOnSave}
+      />
+    )
+
+    const summaryGrid = screen.getByTestId('reservation-primary-summary-grid')
+    const headings = within(summaryGrid)
+      .getAllByRole('heading')
+      .map((heading) => heading.textContent)
+
+    expect(headings).toEqual(['日時・キャスト', '場所', '予約詳細', '料金・総額'])
+    expect(within(summaryGrid).getByText(mockReservation.course)).toBeVisible()
+    expect(within(summaryGrid).getByText(mockReservation.staff)).toBeVisible()
+    expect(within(summaryGrid).getByLabelText('ホテル名')).toBeVisible()
+    expect(within(summaryGrid).getByLabelText('部屋番号')).toBeVisible()
+    expect(within(summaryGrid).getByRole('button', { name: '更新' })).toBeVisible()
+    expect(within(summaryGrid).getByRole('button', { name: '女性に通知' })).toBeVisible()
   })
 
   it('should display editable fields in edit mode', async () => {
@@ -439,7 +466,9 @@ describe('ReservationDialog Edit Mode', () => {
       />
     )
 
-    expect(screen.getByText('IK-2026-00421')).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('reservation-primary-summary-grid')).getByText('IK-2026-00421')
+    ).toBeInTheDocument()
     expect(screen.queryByLabelText('カード番号')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /編集/i }))
     const referenceInput = screen.getByLabelText('カード決済管理番号')

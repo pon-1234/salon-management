@@ -325,23 +325,6 @@ export function Timeline({
     })
   }
 
-  // 現在時刻の位置を計算
-  const currentTime = now
-  const currentTimePosition = (() => {
-    const now = new Date()
-    const nowMinutes = getMinutesFromDate(now)
-    if (formatInTimeZone(now, JST_TIMEZONE, 'yyyy-MM-dd') !== selectedDateKey) {
-      const diff = differenceInCalendarDays(
-        parse(formatInTimeZone(now, JST_TIMEZONE, 'yyyy-MM-dd'), 'yyyy-MM-dd', new Date()),
-        parse(selectedDateKey, 'yyyy-MM-dd', new Date())
-      )
-      if (diff !== 0) return null
-    }
-    const relative = nowMinutes - startMinutes
-    if (relative < 0 || relative > totalMinutes) return null
-    return (relative / 60) * HOUR_WIDTH
-  })()
-
   const timelineMinWidth = hourSegments * HOUR_WIDTH + CAST_COLUMN_WIDTH
   const halfHourSegments = hourSegments * 2
 
@@ -429,7 +412,7 @@ export function Timeline({
                           variant="outline"
                           aria-label={`特別指名料 ${member.specialDesignationFee.toLocaleString('ja-JP')}円`}
                         >
-                          特別指名 {member.specialDesignationFee.toLocaleString('ja-JP')}円
+                          特別指名料 {member.specialDesignationFee.toLocaleString('ja-JP')}円
                         </Badge>
                       ) : null}
                     </div>
@@ -646,19 +629,6 @@ export function Timeline({
                   ))}
                 </div>
               ))}
-
-              {/* 現在時刻ライン */}
-              {currentTimePosition !== null && (
-                <div
-                  className="pointer-events-none absolute top-0 z-30 h-full w-0.5 bg-red-500"
-                  style={{ left: `${currentTimePosition}px` }}
-                >
-                  <div className="absolute -left-1 -top-2 h-3 w-3 rounded-full bg-red-500" />
-                  <div className="absolute -left-8 -top-6 rounded bg-white px-1 text-xs font-medium text-red-600">
-                    {formatInTimeZone(currentTime, JST_TIMEZONE, 'HH:mm')}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>

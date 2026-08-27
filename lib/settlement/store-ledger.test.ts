@@ -46,6 +46,22 @@ describe('getStoreSettlementLedger', () => {
         course: { name: '90分' },
         customer: { name: '[UAT] 予約確認' },
       },
+      {
+        id: 'reservation-2',
+        castId: 'cast-1',
+        startTime: new Date('2026-08-16T12:00:00.000Z'),
+        status: 'completed',
+        settlementStatus: 'settled',
+        price: 24_000,
+        staffRevenue: 9_000,
+        storeRevenue: 15_000,
+        welfareExpense: 0,
+        paymentMethod: '現金',
+        paymentReference: null,
+        cast: { id: 'cast-1', name: 'さら' },
+        course: { name: '60分' },
+        customer: { name: '精算済み顧客' },
+      },
     ] as never)
     vi.mocked(db.settlementPayment.findMany).mockResolvedValue([
       {
@@ -94,10 +110,12 @@ describe('getStoreSettlementLedger', () => {
     expect(ledger.casts[0]).toMatchObject({
       castId: 'cast-1',
       castName: 'さら',
+      completedCount: 2,
       pendingCount: 1,
-      pendingAmount: 18_000,
-      staffRevenue: 18_000,
-      storeRevenue: 12_000,
+      pendingAmount: 12_000,
+      settledAmount: 15_000,
+      staffRevenue: 27_000,
+      storeRevenue: 27_000,
     })
     expect(ledger.casts[0]?.pendingReservations[0]).toMatchObject({
       id: 'reservation-1',
