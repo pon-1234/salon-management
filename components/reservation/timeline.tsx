@@ -590,7 +590,7 @@ export function Timeline({
                               size="sm"
                               variant="ghost"
                               className={cn(
-                                'absolute top-1 z-10 flex h-[calc(100%-8px)] items-center justify-start rounded-none border-0 p-0 hover:bg-transparent',
+                                'absolute top-1 z-10 flex h-[calc(100%-8px)] items-center justify-center rounded-none border-0 p-0 hover:bg-transparent',
                                 disabled && 'cursor-not-allowed opacity-60'
                               )}
                               style={getTimeBlockStyle(startTime, circleEnd)}
@@ -601,7 +601,7 @@ export function Timeline({
                             >
                               <span
                                 className={cn(
-                                  'ml-0.5 flex h-5 w-5 items-center justify-center rounded-full border text-[9px] font-medium',
+                                  'flex h-5 w-5 items-center justify-center rounded-full border text-[9px] font-medium',
                                   disabled
                                     ? 'border-gray-300 bg-white text-gray-400'
                                     : 'border-emerald-500 bg-white text-emerald-700 hover:bg-emerald-50'

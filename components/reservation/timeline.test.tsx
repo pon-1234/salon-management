@@ -454,6 +454,11 @@ describe('Timeline appointment cards', () => {
     expect(screen.getByRole('button', { name: '22:00から予約' })).toHaveStyle({
       left: '1440px',
     })
+
+    const bookingCircleButton = screen.getByRole('button', { name: '18:00から予約' })
+    expect(bookingCircleButton).toHaveClass('justify-center')
+    expect(bookingCircleButton).not.toHaveClass('justify-start')
+    expect(bookingCircleButton.querySelector('span')).not.toHaveClass('ml-0.5')
   })
 
   it('offers booking circles only on 30-minute marks', () => {
