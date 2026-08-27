@@ -602,15 +602,14 @@ export function Timeline({
                               disabled={disabled}
                             >
                               <span
+                                aria-hidden="true"
                                 className={cn(
-                                  'flex h-5 w-5 items-center justify-center rounded-full border text-[9px] font-medium',
+                                  'h-5 w-5 rounded-full border',
                                   disabled
-                                    ? 'border-gray-300 bg-white text-gray-400'
-                                    : 'border-emerald-500 bg-white text-emerald-700 hover:bg-emerald-50'
+                                    ? 'border-gray-300 bg-white'
+                                    : 'border-emerald-500 bg-white hover:bg-emerald-50'
                                 )}
-                              >
-                                ○
-                              </span>
+                              />
                             </Button>
                           )
                         })}
