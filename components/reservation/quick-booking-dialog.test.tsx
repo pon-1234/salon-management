@@ -182,6 +182,31 @@ function createFetchMock(completedHistory: unknown[] = []) {
       } as Response
     }
 
+    if (String(input).includes('/api/admin')) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          admins: [
+            {
+              id: 'admin-1',
+              name: '受付一郎',
+              role: 'manager',
+              isActive: true,
+              storeIds: ['ikebukuro'],
+            },
+            {
+              id: 'admin-2',
+              name: '受付花子',
+              role: 'staff',
+              isActive: true,
+              storeIds: ['ikebukuro'],
+            },
+          ],
+        }),
+      } as Response
+    }
+
     return {
       ok: true,
       status: 200,
@@ -232,6 +257,7 @@ function getPostedReservation(fetchMock: ReturnType<typeof createFetchMock>) {
 describe('QuickBookingDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.checkAvailability.mockReset()
     Object.defineProperty(Element.prototype, 'scrollIntoView', {
       configurable: true,
       value: vi.fn(),
@@ -280,6 +306,9 @@ describe('QuickBookingDialog', () => {
     expect(screen.getByText('ポイント利用')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '次へ' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '戻る' })).not.toBeInTheDocument()
+
+    const panelGrid = screen.getByTestId('quick-booking-panel-grid')
+    expect(panelGrid).toHaveClass('xl:grid-cols-4')
 
     const submit = screen.getByRole('button', { name: '事前確認として保存' })
     const stickyFooter = screen.getByTestId('quick-booking-sticky-footer')
@@ -858,6 +887,12 @@ describe('QuickBookingDialog', () => {
       },
     ]
     const fetchMock = createFetchMock()
+    mocks.checkAvailability
+      .mockResolvedValueOnce({ available: true, conflicts: [] })
+      .mockResolvedValueOnce({
+        available: false,
+        conflicts: [{ id: 'reservation-created' }],
+      })
     vi.stubGlobal('fetch', fetchMock)
     render(dialogElement())
 
@@ -892,6 +927,25 @@ describe('QuickBookingDialog', () => {
         expect.any(String),
         expect.objectContaining({ method: 'PUT' })
       )
+    )
+  })
+
+  it('selects and persists a same-store reception staff member separately from the cast', async () => {
+    const user = userEvent.setup()
+    const fetchMock = createFetchMock()
+    vi.stubGlobal('fetch', fetchMock)
+    render(dialogElement())
+
+    await waitForOnePageBookingForm()
+    await user.selectOptions(screen.getByLabelText('受付担当者'), 'admin-2')
+    await submitConfirmed(user)
+
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(true)
+    )
+
+    expect(getPostedReservation(fetchMock)).toEqual(
+      expect.objectContaining({ receptionStaffId: 'admin-2', castId: 'cast-1' })
     )
   })
 })

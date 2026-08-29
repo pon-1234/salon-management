@@ -22,7 +22,7 @@ const entryInfoSchema = z.object({
   roomNumber: z.string().trim().max(50).optional().nullable(),
   locationMemo: z.string().trim().max(500).optional().nullable(),
   entryMemo: z.string().trim().max(500).optional().nullable(),
-  action: z.enum(['save', 'remind']).optional(),
+  action: z.enum(['save', 'notify', 'remind']).optional(),
 })
 
 type EntryInfo = {
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     let entryInfo: EntryInfo
 
-    if (action === 'save') {
+    if (action === 'save' || action === 'notify') {
       const resolvedHotel = await resolveReservationHotel(db, {
         storeId,
         hotelIdSpecified: Object.prototype.hasOwnProperty.call(body, 'hotelId'),
@@ -175,6 +175,32 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
     }
 
+    if (action === 'save') {
+      const updatedReservation = await db.reservation.findFirst({
+        where: { id: reservationId, storeId },
+        select: {
+          hotelName: true,
+          roomNumber: true,
+          entryMemo: true,
+          entryReceivedAt: true,
+          entryReceivedBy: true,
+          entryNotifiedAt: true,
+          entryConfirmedAt: true,
+          entryReminderSentAt: true,
+        },
+      })
+
+      return NextResponse.json({
+        ...updatedReservation,
+        notificationStatus: 'not_requested',
+        notificationError: null,
+        entryReceivedAt: updatedReservation?.entryReceivedAt?.toISOString() ?? null,
+        entryNotifiedAt: updatedReservation?.entryNotifiedAt?.toISOString() ?? null,
+        entryConfirmedAt: updatedReservation?.entryConfirmedAt?.toISOString() ?? null,
+        entryReminderSentAt: updatedReservation?.entryReminderSentAt?.toISOString() ?? null,
+      })
+    }
+
     const message = buildEntryInfoMessage({
       reservationId: reservation.id,
       castName: cast.name ?? '未設定',
@@ -201,7 +227,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       if (delivery.status === 'sent') {
         await db.reservation.update({
           where: { id: reservationId },
-          data: action === 'save' ? { entryNotifiedAt: now } : { entryReminderSentAt: now },
+          data: action === 'notify' ? { entryNotifiedAt: now } : { entryReminderSentAt: now },
         })
       }
     } catch (error) {

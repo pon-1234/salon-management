@@ -63,6 +63,79 @@ export async function addPointTransaction(
   })
 }
 
+type ReservationPointUsageInput = {
+  customerId: string
+  reservationId: string
+  previousPointsUsed: number
+  nextPointsUsed: number
+}
+
+/**
+ * 予約編集時のポイント利用差分を残高と単一の利用履歴へ原子的に同期する。
+ */
+export async function syncReservationPointUsage(
+  input: ReservationPointUsageInput,
+  tx: Prisma.TransactionClient
+): Promise<void> {
+  const previousPointsUsed = Math.max(0, Math.floor(input.previousPointsUsed))
+  const nextPointsUsed = Math.max(0, Math.floor(input.nextPointsUsed))
+  const usageDelta = nextPointsUsed - previousPointsUsed
+
+  if (usageDelta !== 0) {
+    const result = await tx.customer.updateMany({
+      where: {
+        id: input.customerId,
+        ...(usageDelta > 0 ? { points: { gte: usageDelta } } : {}),
+      },
+      data: { points: { increment: -usageDelta } },
+    })
+
+    if (result.count === 0) {
+      const customer = await tx.customer.findUnique({
+        where: { id: input.customerId },
+        select: { id: true },
+      })
+      if (!customer) throw new Error('Customer not found')
+      throw new Error('Insufficient points')
+    }
+  }
+
+  const customer = await tx.customer.findUnique({
+    where: { id: input.customerId },
+    select: { id: true, points: true },
+  })
+  if (!customer) throw new Error('Customer not found')
+
+  if (nextPointsUsed === 0) {
+    await tx.customerPointHistory.deleteMany({
+      where: { reservationId: input.reservationId, type: 'used' },
+    })
+    return
+  }
+
+  await tx.customerPointHistory.upsert({
+    where: {
+      reservationId_type: {
+        reservationId: input.reservationId,
+        type: 'used',
+      },
+    },
+    create: {
+      customerId: input.customerId,
+      reservationId: input.reservationId,
+      type: 'used',
+      amount: -nextPointsUsed,
+      description: '予約でポイントを利用',
+      balance: customer.points,
+    },
+    update: {
+      amount: -nextPointsUsed,
+      description: '予約でポイントを利用',
+      balance: customer.points,
+    },
+  })
+}
+
 export function calculateEarnedPoints(
   amount: number,
   config: PointConfig = DEFAULT_POINT_CONFIG

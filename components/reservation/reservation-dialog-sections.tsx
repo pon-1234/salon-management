@@ -71,6 +71,7 @@ type ReservationPrimarySummaryProps = {
   onRoomNumberChange: (value: string) => void
   onLocationMemoChange: (value: string) => void
   onSaveEntryInfo: () => void
+  onNotifyEntryInfo: () => void
   isEditing?: boolean
   courseOptions?: SummaryCourseOption[]
   selectedCourseId?: string | null
@@ -139,6 +140,7 @@ export function ReservationPrimarySummary({
   onRoomNumberChange,
   onLocationMemoChange,
   onSaveEntryInfo,
+  onNotifyEntryInfo,
   isEditing = false,
   courseOptions = [],
   selectedCourseId = null,
@@ -393,7 +395,7 @@ export function ReservationPrimarySummary({
             >
               更新
             </Button>
-            <Button size="sm" onClick={onSaveEntryInfo} disabled={entrySending || !canSave}>
+            <Button size="sm" onClick={onNotifyEntryInfo} disabled={entrySending || !canSave}>
               女性に通知
             </Button>
           </div>

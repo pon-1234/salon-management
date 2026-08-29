@@ -42,6 +42,7 @@ export interface BookingDetails {
   stationTravelTime: number
   bookingStatus: string
   staff: string
+  receptionStaffId: string
   marketingChannel: string
   date: string
   time: string

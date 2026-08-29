@@ -8,6 +8,7 @@ import { NextRequest } from 'next/server'
 import { DELETE, GET, POST, PUT } from './route'
 import { getServerSession } from 'next-auth'
 import { db } from '@/lib/db'
+import { syncReservationPointUsage } from '@/lib/point/utils'
 
 // Mock dependencies
 vi.mock('next-auth', () => ({
@@ -86,6 +87,7 @@ vi.mock('@/lib/logger', () => ({
 
 vi.mock('@/lib/point/utils', () => ({
   addPointTransaction: vi.fn().mockResolvedValue(undefined),
+  syncReservationPointUsage: vi.fn().mockResolvedValue(undefined),
   calculateEarnedPoints: vi.fn().mockReturnValue(0),
   calculateExpiryDate: vi.fn().mockReturnValue(new Date()),
   resolvePointConfig: vi.fn().mockReturnValue({
@@ -143,6 +145,9 @@ describe('Reservation API - Modifiable Status', () => {
       },
       hotelSettings: {
         findFirst: vi.fn().mockResolvedValue(null),
+      },
+      admin: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'admin-2' }),
       },
       reservationHistory: {
         createMany: vi.fn().mockResolvedValue({ count: 0 }),
@@ -714,6 +719,61 @@ describe('Reservation API - Modifiable Status', () => {
   })
 
   describe('POST endpoint validation and conflicts', () => {
+    it('validates and persists the selected same-store reception staff member', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          id: 'admin-1',
+          role: 'admin',
+          permissions: ['reservation:create', 'customer:read'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+      const createReservation = vi.fn().mockImplementation(async ({ data }) => ({
+        id: 'reservation-with-reception-staff',
+        ...data,
+        customer: { id: 'cust-123', name: 'Test Customer' },
+        cast: { id: 'cast-123', name: 'Test Cast' },
+        course: { id: 'course-123', name: 'Test Course' },
+        options: [],
+      }))
+      const findReceptionStaff = vi.fn().mockResolvedValue({ id: 'admin-2' })
+      vi.mocked(db.$transaction).mockImplementation(async (callback) =>
+        callback({
+          reservation: {
+            findMany: vi.fn().mockResolvedValue([]),
+            create: createReservation,
+          },
+          admin: { findFirst: findReceptionStaff },
+        } as any)
+      )
+
+      const response = await POST(
+        new NextRequest('http://localhost/api/reservation?storeId=ikebukuro', {
+          method: 'POST',
+          body: JSON.stringify({
+            customerId: 'cust-123',
+            castId: 'cast-123',
+            courseId: 'course-123',
+            receptionStaffId: 'admin-2',
+            startTime: '2099-07-04T18:00:00+09:00',
+            endTime: '2099-07-04T19:00:00+09:00',
+          }),
+        })
+      )
+
+      expect(response.status).toBe(201)
+      expect(findReceptionStaff).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ id: 'admin-2', isActive: true }),
+        })
+      )
+      expect(createReservation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ receptionStaffId: 'admin-2' }),
+        })
+      )
+    })
+
     it('rejects a customer without membership in the reservation store', async () => {
       vi.mocked(getServerSession).mockResolvedValue({
         user: {
@@ -1523,6 +1583,115 @@ describe('Reservation API - Modifiable Status', () => {
   })
 
   describe('PUT endpoint validation and conflicts', () => {
+    it('synchronizes customer balance and point history when post-create point usage changes', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:update'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+      const existingReservation = {
+        ...mockReservation,
+        price: 29_900,
+        pointsUsed: 100,
+        designationType: null,
+        designationFee: 0,
+        transportationFee: 0,
+        additionalFee: 0,
+        discountAmount: 0,
+        storeRevenue: 11_900,
+        staffRevenue: 18_000,
+        welfareExpense: 3_000,
+        paymentMethod: 'cash',
+        course: {
+          id: 'course-123',
+          name: 'Test Course',
+          price: 30_000,
+          storeShare: 12_000,
+          castShare: 18_000,
+        },
+        options: [],
+      }
+      vi.mocked(db.reservation.findUnique).mockResolvedValue(existingReservation as any)
+      const transactionContext = buildTransactionContext({
+        ...existingReservation,
+        price: 29_700,
+        pointsUsed: 300,
+      })
+      vi.mocked(db.$transaction).mockImplementation(async (callback) =>
+        callback(transactionContext as any)
+      )
+
+      const response = await PUT(
+        new NextRequest('http://localhost/api/reservation', {
+          method: 'PUT',
+          body: JSON.stringify({ id: mockReservation.id, pointsUsed: 300 }),
+        })
+      )
+
+      expect(response.status).toBe(200)
+      expect(syncReservationPointUsage).toHaveBeenCalledWith(
+        {
+          customerId: existingReservation.customerId,
+          reservationId: existingReservation.id,
+          previousPointsUsed: 100,
+          nextPointsUsed: 300,
+        },
+        transactionContext
+      )
+    })
+
+    it('validates and updates the reception staff on an existing reservation', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:update'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+      const existingReservation = {
+        ...mockReservation,
+        receptionStaffId: 'admin-1',
+        price: 30_000,
+        pointsUsed: 0,
+        designationFee: 0,
+        transportationFee: 0,
+        additionalFee: 0,
+        discountAmount: 0,
+        storeRevenue: 12_000,
+        staffRevenue: 18_000,
+        welfareExpense: 3_000,
+        paymentMethod: 'cash',
+        course: { ...mockReservation.course, price: 30_000 },
+      }
+      vi.mocked(db.reservation.findUnique).mockResolvedValue(existingReservation as any)
+      const transactionContext = buildTransactionContext({
+        ...existingReservation,
+        receptionStaffId: 'admin-2',
+      })
+      vi.mocked(db.$transaction).mockImplementation(async (callback) =>
+        callback(transactionContext as any)
+      )
+
+      const response = await PUT(
+        new NextRequest('http://localhost/api/reservation', {
+          method: 'PUT',
+          body: JSON.stringify({ id: mockReservation.id, receptionStaffId: 'admin-2' }),
+        })
+      )
+
+      expect(response.status).toBe(200)
+      expect(transactionContext.admin.findFirst).toHaveBeenCalled()
+      expect(transactionContext.reservation.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ receptionStaffId: 'admin-2' }),
+        })
+      )
+    })
+
     it('rejects changing a reservation start time outside a 5-minute boundary', async () => {
       vi.mocked(getServerSession).mockResolvedValue({
         user: {

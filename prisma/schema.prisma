@@ -153,6 +153,7 @@ model Reservation {
   customerId          String
   castId              String
   courseId            String
+  receptionStaffId    String?
   startTime           DateTime
   endTime             DateTime
   status              String
@@ -197,6 +198,7 @@ model Reservation {
   cast                Cast                           @relation(fields: [castId], references: [id])
   course              CoursePrice                    @relation(fields: [courseId], references: [id])
   customer            Customer                       @relation(fields: [customerId], references: [id])
+  receptionStaff      Admin?                         @relation("ReservationReceptionStaff", fields: [receptionStaffId], references: [id], onDelete: SetNull)
   area                AreaInfo?                      @relation(fields: [areaId], references: [id])
   station             StationInfo?                   @relation(fields: [stationId], references: [id])
   hotel               HotelSettings?                 @relation(fields: [hotelId, storeId], references: [id, storeId], onDelete: Restrict)
@@ -211,6 +213,7 @@ model Reservation {
   paymentTransactions PaymentTransaction[]
 
   @@index([storeId])
+  @@index([receptionStaffId])
   @@index([hotelId, storeId])
 }
 
@@ -474,6 +477,7 @@ model Admin {
   updatedAt              DateTime                    @updatedAt
   storeAssignments       AdminStoreAssignment[]
   lineRegistrationTokens CastLineRegistrationToken[]
+  receptionReservations  Reservation[]               @relation("ReservationReceptionStaff")
 }
 
 model CastLineRegistrationToken {

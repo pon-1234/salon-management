@@ -40,7 +40,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { addMinutes, format } from 'date-fns'
 import { formatInTimeZone, utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz'
-import { CreditCard, Check, Calendar, Users, Loader2 } from 'lucide-react'
+import { Check, Calendar, Users, Loader2 } from 'lucide-react'
 import { Customer } from '@/lib/customer/types'
 import { Cast } from '@/lib/cast/types'
 import { usePricing } from '@/hooks/use-pricing'
@@ -87,6 +87,12 @@ import {
   type NormalizedOption,
   type PriceBreakdown,
 } from './quick-booking.utils'
+import {
+  QuickBookingPanelGrid,
+  QuickBookingPricePanel,
+  QuickBookingReceptionPanel,
+  type ReceptionStaffOption,
+} from './quick-booking-panels'
 
 const paymentMethods = Object.values(PAYMENT_METHODS)
 const DEFAULT_MARKETING_CHANNELS = [...MARKETING_CHANNELS]
@@ -133,6 +139,7 @@ function createInitialBookingDetails({
     stationTravelTime: 0,
     bookingStatus: '事前確認',
     staff: staffName,
+    receptionStaffId: '',
     marketingChannel,
     date: selectedTime ? formatDateInJst(selectedTime) : formatDateInJst(new Date()),
     time: selectedTime ? formatTimeInJst(selectedTime) : businessHoursStartLabel,
@@ -177,6 +184,7 @@ export function QuickBookingDialog({
       : null
   )
   const [marketingChannels, setMarketingChannels] = useState<string[]>(DEFAULT_MARKETING_CHANNELS)
+  const [receptionStaffOptions, setReceptionStaffOptions] = useState<ReceptionStaffOption[]>([])
   const [customerHistory, setCustomerHistory] = useState<
     Array<{ id: string; startTime?: string; staffName?: string; serviceName?: string }>
   >([])
@@ -407,6 +415,48 @@ export function QuickBookingDialog({
       controller.abort()
     }
   }, [currentStore?.id])
+
+  useEffect(() => {
+    if (!open || !currentStore?.id) return
+    let ignore = false
+    const controller = new AbortController()
+
+    const loadReceptionStaff = async () => {
+      try {
+        const response = await fetch(buildStoreScopedEndpoint('/api/admin', currentStore.id), {
+          signal: controller.signal,
+        })
+        if (!response.ok) return
+        const payload = await response.json().catch(() => null)
+        const admins = Array.isArray(payload?.admins) ? payload.admins : []
+        const options = admins
+          .filter(
+            (admin: ReceptionStaffOption & { isActive?: boolean }) => admin.isActive !== false
+          )
+          .map((admin: ReceptionStaffOption) => ({ id: admin.id, name: admin.name }))
+        if (ignore) return
+        setReceptionStaffOptions(options)
+        setBookingDetails((prev) => ({
+          ...prev,
+          receptionStaffId:
+            prev.receptionStaffId &&
+            options.some((admin: ReceptionStaffOption) => admin.id === prev.receptionStaffId)
+              ? prev.receptionStaffId
+              : (options[0]?.id ?? ''),
+        }))
+      } catch (error) {
+        if (!ignore && !(error instanceof DOMException && error.name === 'AbortError')) {
+          console.warn('[QuickBookingDialog] Failed to load reception staff', error)
+        }
+      }
+    }
+
+    void loadReceptionStaff()
+    return () => {
+      ignore = true
+      controller.abort()
+    }
+  }, [open, currentStore?.id])
 
   useEffect(() => {
     if (marketingChannels.length === 0) {
@@ -876,25 +926,28 @@ export function QuickBookingDialog({
     try {
       setIsSubmitting(true)
 
-      const availability = await checkAvailability(currentStaff.id, startTime, endTime)
-      if (!availability.available) {
-        toast({
-          title: '予約不可',
-          description: 'この時間帯は既に予約が入っています。別の時間を選択してください。',
-          variant: 'destructive',
-        })
-        return
-      }
-
-      const selectedOptionIds = getUniqueSelectedOptionIds(optionSelections)
       const isUpdate =
         typeof createdReservationId === 'string' &&
         createdReservationId.length > 0 &&
         createdReservationId !== 'created'
+      if (!isUpdate) {
+        const availability = await checkAvailability(currentStaff.id, startTime, endTime)
+        if (!availability.available) {
+          toast({
+            title: '予約不可',
+            description: 'この時間帯は既に予約が入っています。別の時間を選択してください。',
+            variant: 'destructive',
+          })
+          return
+        }
+      }
+
+      const selectedOptionIds = getUniqueSelectedOptionIds(optionSelections)
       const payload = {
         ...(isUpdate ? { id: createdReservationId } : {}),
         customerId: selectedCustomer.id,
         castId: currentStaff.id,
+        receptionStaffId: bookingDetails.receptionStaffId || null,
         courseId: selectedCourseId,
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
@@ -1108,7 +1161,7 @@ export function QuickBookingDialog({
                 </span>
               ) : null}
             </div>
-            <div className="grid gap-4 pb-6 lg:grid-cols-2">
+            <QuickBookingPanelGrid>
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center">
@@ -1535,171 +1588,31 @@ export function QuickBookingDialog({
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center">
-                    <CreditCard className="mr-2 h-5 w-5" />
-                    集客・受付情報
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="quick-booking-acquisition-method">集客手段</Label>
-                      <Select
-                        value={
-                          parseMarketingChannel(bookingDetails.marketingChannel).method || undefined
-                        }
-                        onValueChange={(value) =>
-                          setBookingDetails((prev) => ({
-                            ...prev,
-                            marketingChannel: composeMarketingChannel(
-                              value,
-                              parseMarketingChannel(prev.marketingChannel).site
-                            ),
-                          }))
-                        }
-                      >
-                        <SelectTrigger id="quick-booking-acquisition-method">
-                          <SelectValue placeholder="手段を選択" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {partitionedChannels.methods.map((channel) => (
-                            <SelectItem key={channel} value={channel}>
-                              {channel}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="quick-booking-marketing-channel">集客チャンネル</Label>
-                      <Select
-                        value={
-                          parseMarketingChannel(bookingDetails.marketingChannel).site ?? '__none__'
-                        }
-                        onValueChange={(value) =>
-                          setBookingDetails((prev) => ({
-                            ...prev,
-                            marketingChannel: composeMarketingChannel(
-                              parseMarketingChannel(prev.marketingChannel).method,
-                              value === '__none__' ? null : value
-                            ),
-                          }))
-                        }
-                      >
-                        <SelectTrigger id="quick-booking-marketing-channel">
-                          <SelectValue placeholder="チャンネルを選択" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__none__">なし</SelectItem>
-                          {partitionedChannels.sites.map((channel) => (
-                            <SelectItem key={channel} value={channel}>
-                              {channel}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+              <QuickBookingReceptionPanel
+                marketingChannel={bookingDetails.marketingChannel}
+                channelGroups={partitionedChannels}
+                receptionStaffId={bookingDetails.receptionStaffId}
+                receptionStaffOptions={receptionStaffOptions}
+                bookingStatus={bookingDetails.bookingStatus}
+                notes={bookingDetails.notes}
+                onMarketingChannelChange={(marketingChannel) =>
+                  setBookingDetails((prev) => ({ ...prev, marketingChannel }))
+                }
+                onReceptionStaffChange={(receptionStaffId) =>
+                  setBookingDetails((prev) => ({ ...prev, receptionStaffId }))
+                }
+                onBookingStatusChange={(bookingStatus) => {
+                  statusTouchedRef.current = true
+                  setBookingDetails((prev) => ({ ...prev, bookingStatus }))
+                }}
+                onNotesChange={(notes) => setBookingDetails((prev) => ({ ...prev, notes }))}
+              />
 
-                  <div>
-                    <Label>担当者</Label>
-                    <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm font-medium">
-                      {currentStaff?.name || '未選択'}
-                    </p>
-                  </div>
-
-                  <div className="rounded-lg border p-3">
-                    <Label htmlFor="quick-booking-status" className="text-sm font-medium">
-                      予約ステータス
-                    </Label>
-                    <p className="mb-2 text-xs text-gray-500">
-                      新規は事前確認、リピートは確定が初期値です。
-                    </p>
-                    <select
-                      id="quick-booking-status"
-                      aria-label="予約ステータス"
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      value={bookingDetails.bookingStatus}
-                      onChange={(event) => {
-                        statusTouchedRef.current = true
-                        setBookingDetails((prev) => ({
-                          ...prev,
-                          bookingStatus: event.target.value,
-                        }))
-                      }}
-                    >
-                      <option value="仮予約">仮予約</option>
-                      <option value="事前確認">事前確認</option>
-                      <option value="確定済">確定</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <Label>店舗メモ</Label>
-                    <Textarea
-                      name="notes"
-                      value={bookingDetails.notes}
-                      onChange={handleTextChange}
-                      placeholder="店舗用メモがあれば記載してください"
-                      rows={3}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle>料金内訳</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>基本料金</span>
-                      <span>{formatYen(priceBreakdown.basePrice)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>{selectedDesignationFee?.name ?? 'フリー'}料</span>
-                      <span>{formatYen(priceBreakdown.designationFee)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>オプション</span>
-                      <span>{formatYen(priceBreakdown.optionsTotal)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>追加料金</span>
-                      <span>{formatYen(priceBreakdown.additionalFee)}</span>
-                    </div>
-                    <div className="flex justify-between text-red-600">
-                      <span>割引</span>
-                      <span>-{formatYen(priceBreakdown.discount)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm text-gray-600">
-                      <span>小計</span>
-                      <span>{formatYen(priceBreakdown.subtotal)}</span>
-                    </div>
-                    <div className="flex justify-between text-emerald-600">
-                      <span>ポイント利用</span>
-                      <span>-{formatYen(priceBreakdown.pointsApplied)}</span>
-                    </div>
-                    <hr className="my-2" />
-                    <div className="flex justify-between text-lg font-bold">
-                      <span>合計</span>
-                      <span className="font-bold">{formatYen(priceBreakdown.total)}</span>
-                    </div>
-                    <div className="mt-2 grid grid-cols-2 gap-4 text-xs text-gray-500">
-                      <div className="rounded-md bg-gray-100 p-2">
-                        店舗売上: {formatYen(priceBreakdown.storeRevenue)}
-                      </div>
-                      <div className="rounded-md bg-gray-100 p-2">
-                        キャスト売上: {formatYen(priceBreakdown.staffRevenue)}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+              <QuickBookingPricePanel
+                priceBreakdown={priceBreakdown}
+                designationName={selectedDesignationFee?.name ?? 'フリー'}
+              />
+            </QuickBookingPanelGrid>
           </div>
 
           <div

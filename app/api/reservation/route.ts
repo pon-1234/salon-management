@@ -23,6 +23,11 @@ import {
   resolvePointConfig,
 } from '@/lib/point/utils'
 import {
+  calculateRevenueWithPointUsage,
+  resolveReceptionStaffId,
+  syncUpdatedReservationPointUsage,
+} from '@/lib/reservation/route-mutations'
+import {
   buildReservationConfirmationChatContent,
   formatChatAmount,
   resolveReservationTotalAmount,
@@ -67,7 +72,6 @@ import {
   valuesDiffer,
 } from '@/lib/reservation/route-utils'
 
-// Types
 interface AvailabilityCheck {
   available: boolean
   conflicts: Array<{
@@ -130,7 +134,6 @@ async function sendReservationConfirmedChatMessage(
   })
 }
 
-// Helper function to check cast availability
 async function checkCastAvailability(
   storeId: string,
   castId: string,
@@ -138,7 +141,6 @@ async function checkCastAvailability(
   endTime: Date,
   tx: PrismaTransactionClient | PrismaClient = db
 ): Promise<AvailabilityCheck> {
-  // Find overlapping reservations
   const conflicts = await tx.reservation.findMany({
     where: {
       storeId,
@@ -148,7 +150,6 @@ async function checkCastAvailability(
       },
       OR: [
         {
-          // New reservation starts during existing reservation
           startTime: {
             lte: startTime,
           },
@@ -157,7 +158,6 @@ async function checkCastAvailability(
           },
         },
         {
-          // New reservation ends during existing reservation
           startTime: {
             lt: endTime,
           },
@@ -166,7 +166,6 @@ async function checkCastAvailability(
           },
         },
         {
-          // New reservation completely contains existing reservation
           startTime: {
             gte: startTime,
           },
@@ -258,7 +257,6 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
       }
 
-      // 管理者または自分の予約のみアクセス可能
       if (!isAdmin && reservation.customerId !== sessionCustomerId) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
@@ -266,7 +264,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(sanitizeReservationResponseForRole(reservation, session.user.role))
     }
 
-    // 管理者は全予約を、顧客は自分の予約のみを取得
     const where: any = { storeId }
     if (!isAdmin) {
       if (!sessionCustomerId) {
@@ -277,7 +274,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'この操作を行う権限がありません' }, { status: 403 })
     }
 
-    // フィルタリング
     const castId = searchParams.get('castId')
     const customerId = searchParams.get('customerId')
     const startDate = searchParams.get('startDate')
@@ -302,13 +298,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // ページネーション
     const limit = searchParams.get('limit')
     const offset = searchParams.get('offset')
     const take = limit === null ? 25 : Number.parseInt(limit, 10)
     const skip = offset === null ? 0 : Number.parseInt(offset, 10)
 
-    // ソート
     const sortBy = searchParams.get('sortBy') || 'startTime'
     const sortOrder = searchParams.get('sortOrder') || 'asc'
     const allowedSortFields = new Set(['startTime', 'endTime', 'createdAt', 'updatedAt', 'status'])
@@ -377,7 +371,6 @@ export async function POST(request: NextRequest) {
 
     const data = await request.json()
 
-    // 管理者は顧客IDを指定可能、顧客は自分のIDのみ
     let targetCustomerId: string
     if (isAdmin && data.customerId) {
       targetCustomerId = data.customerId
@@ -616,7 +609,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 事前の空き状況チェック（早期リターン）
     const preflightAvailability = await checkCastAvailability(
       storeId,
       reservationData.castId,
@@ -631,10 +623,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // トランザクション内で空き状況の最終チェックと予約作成を行う
     try {
       const newReservation = await db.$transaction(async (tx) => {
-        // トランザクション内で再度空き状況をチェック
         const availability = await checkCastAvailability(
           storeId,
           reservationData.castId,
@@ -644,11 +634,16 @@ export async function POST(request: NextRequest) {
         )
 
         if (!availability.available) {
-          // 意図的にエラーを発生させてトランザクションをロールバック
           const conflictError = new Error('Time slot is not available')
           ;(conflictError as any).conflicts = availability.conflicts
           throw conflictError
         }
+
+        const receptionStaffId = await resolveReceptionStaffId(
+          tx,
+          reservationData.receptionStaffId,
+          storeId
+        )
 
         const optionIds: string[] = Array.isArray(reservationData.options)
           ? reservationData.options
@@ -786,6 +781,7 @@ export async function POST(request: NextRequest) {
             customerId: targetCustomerId,
             castId: reservationData.castId,
             courseId: reservationData.courseId,
+            receptionStaffId,
             storeId,
             status: reservationData.status ?? 'pending',
             price: revenueWithCardFee.total,
@@ -864,7 +860,6 @@ export async function POST(request: NextRequest) {
         return createdReservation
       })
 
-      // 通知はトランザクションが成功した後に実行
       try {
         await notificationService.sendReservationConfirmation(newReservation)
       } catch (notificationError) {
@@ -894,7 +889,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: message }, { status: 500 })
     }
   } catch (error) {
-    // この最上位のcatchは、リクエストの解析や認証などのトランザクション外のエラーを捕捉
     const message =
       error instanceof Error && error.message ? error.message : 'Internal server error'
     logger.error({ err: error }, 'Error in POST handler')
@@ -989,7 +983,6 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
     }
 
-    // 管理者または予約の所有者のみ編集可能
     if (!isAdmin && existingReservation.customerId !== sessionCustomerId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
@@ -1246,11 +1239,17 @@ export async function PUT(request: NextRequest) {
 
       let effectiveCast = previousReservation.cast ?? null
       let effectiveCourse = previousReservation.course ?? null
-      // 予約を更新
       const updateData: Record<string, unknown> = {}
 
       if (castChanged) updateData.castId = updates.castId
       if (courseChanged) updateData.courseId = updates.courseId
+      if (Object.prototype.hasOwnProperty.call(updates, 'receptionStaffId')) {
+        updateData.receptionStaffId = await resolveReceptionStaffId(
+          tx,
+          updates.receptionStaffId,
+          storeId
+        )
+      }
       if (updates.status) {
         updateData.status = updates.status
         updateData.modifiableUntil =
@@ -1449,13 +1448,7 @@ export async function PUT(request: NextRequest) {
           welfareRate: normalizedWelfareRate,
         }
 
-        const pricedRevenue =
-          existingPointsUsed > 0
-            ? calculateReservationRevenue({
-                ...revenueInputBase,
-                discountAmount: discountAmount + existingPointsUsed,
-              })
-            : calculateReservationRevenue(revenueInputBase)
+        const pricedRevenue = calculateRevenueWithPointUsage(revenueInputBase, existingPointsUsed)
         const revenue = applyStoreCreditCardFee(
           pricedRevenue,
           storeSettings?.creditCardFeeRate,
@@ -1502,6 +1495,8 @@ export async function PUT(request: NextRequest) {
           station: true,
         },
       })
+
+      await syncUpdatedReservationPointUsage(tx, previousReservation, updates.pointsUsed)
 
       const historyEntries: Array<{
         fieldName: string

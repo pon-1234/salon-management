@@ -131,6 +131,27 @@ describe('/api/reservation/[id]/entry-info', () => {
     )
   })
 
+  it('saves entry information without notifying the cast when action is save', async () => {
+    const response = await POST(
+      new NextRequest(
+        'http://localhost:3000/api/reservation/reservation-1/entry-info?storeId=ginza',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hotelName: 'ホテル', roomNumber: '101', action: 'save' }),
+        }
+      ),
+      context
+    )
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.notificationStatus).toBe('not_requested')
+    expect(castNotificationService.sendEntryInfoNotification).not.toHaveBeenCalled()
+    expect(db.message.create).not.toHaveBeenCalled()
+    expect(db.reservationLineLog.create).not.toHaveBeenCalled()
+  })
+
   it('returns the store authorization error before reading or notifying a reservation', async () => {
     vi.mocked(requireAdmin).mockResolvedValueOnce(
       NextResponse.json({ error: 'この店舗を操作する権限がありません' }, { status: 403 })
@@ -178,7 +199,7 @@ describe('/api/reservation/[id]/entry-info', () => {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ hotelName: 'ホテル', roomNumber: '101', action: 'save' }),
+          body: JSON.stringify({ hotelName: 'ホテル', roomNumber: '101', action: 'notify' }),
         }
       ),
       context
@@ -224,7 +245,7 @@ describe('/api/reservation/[id]/entry-info', () => {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ hotelName: 'ホテル', roomNumber: '101', action: 'save' }),
+          body: JSON.stringify({ hotelName: 'ホテル', roomNumber: '101', action: 'notify' }),
         }
       ),
       context
@@ -267,7 +288,7 @@ describe('/api/reservation/[id]/entry-info', () => {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ hotelName: 'ホテル', roomNumber: '101', action: 'save' }),
+          body: JSON.stringify({ hotelName: 'ホテル', roomNumber: '101', action: 'notify' }),
         }
       ),
       context

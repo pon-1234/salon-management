@@ -9,6 +9,7 @@ import {
   calculateEarnedPoints,
   calculateExpiryDate,
   resolvePointConfig,
+  syncReservationPointUsage,
 } from './utils'
 
 describe('addPointTransaction', () => {
@@ -80,6 +81,74 @@ describe('addPointTransaction', () => {
 
     expect(tx.customerPointHistory.create).not.toHaveBeenCalled()
     expect(tx.customer.update).not.toHaveBeenCalled()
+  })
+})
+
+describe('syncReservationPointUsage', () => {
+  it('deducts only the increased usage and updates the reservation point history', async () => {
+    const tx = {
+      customer: {
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'customer-1', points: 700 }),
+      },
+      customerPointHistory: {
+        upsert: vi.fn().mockResolvedValue({}),
+        deleteMany: vi.fn(),
+      },
+    }
+
+    await syncReservationPointUsage(
+      {
+        customerId: 'customer-1',
+        reservationId: 'reservation-1',
+        previousPointsUsed: 100,
+        nextPointsUsed: 300,
+      },
+      tx as any
+    )
+
+    expect(tx.customer.updateMany).toHaveBeenCalledWith({
+      where: { id: 'customer-1', points: { gte: 200 } },
+      data: { points: { increment: -200 } },
+    })
+    expect(tx.customerPointHistory.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ amount: -300, balance: 700 }),
+        update: expect.objectContaining({ amount: -300, balance: 700 }),
+      })
+    )
+  })
+
+  it('refunds the reduced usage and removes the used event when usage becomes zero', async () => {
+    const tx = {
+      customer: {
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        findUnique: vi.fn().mockResolvedValue({ id: 'customer-1', points: 1_000 }),
+      },
+      customerPointHistory: {
+        upsert: vi.fn(),
+        deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+    }
+
+    await syncReservationPointUsage(
+      {
+        customerId: 'customer-1',
+        reservationId: 'reservation-1',
+        previousPointsUsed: 300,
+        nextPointsUsed: 0,
+      },
+      tx as any
+    )
+
+    expect(tx.customer.updateMany).toHaveBeenCalledWith({
+      where: { id: 'customer-1' },
+      data: { points: { increment: 300 } },
+    })
+    expect(tx.customerPointHistory.deleteMany).toHaveBeenCalledWith({
+      where: { reservationId: 'reservation-1', type: 'used' },
+    })
+    expect(tx.customerPointHistory.upsert).not.toHaveBeenCalled()
   })
 })
 

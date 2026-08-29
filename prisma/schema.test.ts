@@ -67,6 +67,23 @@ describe('Prisma schema', () => {
     expect(schemaContent).toContain('model Reservation {')
   })
 
+  it('persists the reception staff assigned to a reservation', () => {
+    expect(schemaContent).toMatch(/receptionStaffId\s+String\?/)
+    expect(schemaContent).toContain('receptionStaff')
+    const migration = readFileSync(
+      join(
+        process.cwd(),
+        'prisma',
+        'migrations',
+        '20260829120000_add_reservation_reception_staff',
+        'migration.sql'
+      ),
+      'utf8'
+    )
+    expect(migration).toContain('ADD COLUMN "receptionStaffId" TEXT')
+    expect(migration).toContain('Reservation_receptionStaffId_fkey')
+  })
+
   it('should have CoursePrice model defined', () => {
     expect(schemaContent).toContain('model CoursePrice {')
   })

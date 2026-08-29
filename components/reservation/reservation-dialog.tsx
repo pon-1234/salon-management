@@ -1325,7 +1325,7 @@ export function ReservationDialog({
     setIsEditMode(false)
   }
 
-  const handleSaveEntryInfo = async () => {
+  const handleSaveEntryInfo = async (action: 'save' | 'notify') => {
     if (!reservation) return
     setEntrySendError(null)
     setEntrySendSuccess(null)
@@ -1341,7 +1341,7 @@ export function ReservationDialog({
           roomNumber: formState.roomNumber,
           locationMemo: formState.locationMemo,
           entryMemo: entryForm.entryMemo,
-          action: 'save',
+          action,
         }),
       })
 
@@ -1362,7 +1362,9 @@ export function ReservationDialog({
         hotelName: payload.hotelName ?? prev.hotelName,
         roomNumber: payload.roomNumber ?? prev.roomNumber,
       }))
-      if (payload.notificationStatus !== 'sent') {
+      if (action === 'save') {
+        setEntrySendSuccess('入室情報を保存しました。')
+      } else if (payload.notificationStatus !== 'sent') {
         setEntrySendError(
           `入室情報は保存しましたが、LINE通知は完了しませんでした。${
             payload.notificationError ? ` ${payload.notificationError}` : ''
@@ -1693,7 +1695,8 @@ export function ReservationDialog({
                   onLocationMemoChange={(locationMemo) =>
                     setFormState((prev) => ({ ...prev, locationMemo }))
                   }
-                  onSaveEntryInfo={handleSaveEntryInfo}
+                  onSaveEntryInfo={() => void handleSaveEntryInfo('save')}
+                  onNotifyEntryInfo={() => void handleSaveEntryInfo('notify')}
                   isEditing={isEditMode}
                   courseOptions={courseOptions}
                   selectedCourseId={formState.courseId}
@@ -2226,7 +2229,7 @@ export function ReservationDialog({
                     <div className="flex flex-wrap items-center gap-2">
                       <Button
                         size="sm"
-                        onClick={handleSaveEntryInfo}
+                        onClick={() => void handleSaveEntryInfo('notify')}
                         disabled={entrySending || isEditMode || !onSave}
                       >
                         {entrySending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
