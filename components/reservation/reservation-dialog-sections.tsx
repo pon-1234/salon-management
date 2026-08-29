@@ -12,12 +12,21 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { TabsContent } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { ModificationHistoryTable } from './modification-history-table'
+import { ReservationCardPaymentReferenceInput } from './reservation-dialog.shared'
 import { PAYMENT_METHODS } from '@/lib/constants'
 import type { ModificationAlert, ModificationHistory } from '@/lib/types/modification-history'
 import type { ReservationData } from '@/lib/types/reservation'
@@ -29,6 +38,22 @@ import {
   normalizePaymentMethodValue,
   toNumber,
 } from './reservation-dialog.utils'
+import { RESERVATION_START_STEP_SECONDS } from '@/lib/reservation/time-boundary'
+
+const UNASSIGNED_VALUE = '__unassigned__'
+
+type SummaryCourseOption = {
+  id: string
+  name: string
+  duration: number
+  price: number
+}
+
+type SummaryOptionChoice = {
+  id: string
+  name: string
+  price?: number
+}
 
 type ReservationPrimarySummaryProps = {
   reservation: ReservationData
@@ -39,11 +64,63 @@ type ReservationPrimarySummaryProps = {
   canViewFinancialDetails: boolean
   hotelName: string
   roomNumber: string
+  locationMemo: string
   entrySending: boolean
   canSave: boolean
   onHotelNameChange: (value: string) => void
   onRoomNumberChange: (value: string) => void
+  onLocationMemoChange: (value: string) => void
   onSaveEntryInfo: () => void
+  isEditing?: boolean
+  courseOptions?: SummaryCourseOption[]
+  selectedCourseId?: string | null
+  onCourseChange?: (courseId: string) => void
+  optionChoices?: SummaryOptionChoice[]
+  selectedOptionIds?: string[]
+  onOptionIdsChange?: (optionIds: string[]) => void
+  priceBreakdown?: {
+    basePrice: number
+    optionTotal: number
+    additional: number
+    discount: number
+    pointsUsed: number
+    designation?: number
+    total: number
+    storeRevenue: number
+    staffRevenue: number
+  }
+  date?: string
+  startTime?: string
+  endTime?: string
+  durationMinutes?: number
+  onDateChange?: (value: string) => void
+  onStartTimeChange?: (value: string) => void
+  castId?: string
+  castChoices?: Array<{ id: string; name: string }>
+  onCastChange?: (castId: string) => void
+  onOpenCastTimeline?: () => void
+  ngWarning?: string | null
+  additionalFee?: number
+  discountAmount?: number
+  pointsUsed?: number
+  paymentMethodValue?: string
+  paymentMethodOptions?: string[]
+  paymentReference?: string
+  onAdditionalFeeChange?: (value: number) => void
+  onDiscountAmountChange?: (value: number) => void
+  onPointsUsedChange?: (value: number) => void
+  onPaymentMethodChange?: (value: string) => void
+  onPaymentReferenceChange?: (value: string) => void
+  designationId?: string
+  designationChoices?: Array<{ id: string; name: string; price: number }>
+  onDesignationChange?: (designationId: string) => void
+  areaId?: string | null
+  areaChoices?: Array<{ id: string; name: string }>
+  onAreaChange?: (areaId: string | null) => void
+  stationId?: string | null
+  stationChoices?: Array<{ id: string; name: string }>
+  onStationChange?: (stationId: string | null) => void
+  locationsLoading?: boolean
 }
 
 export function ReservationPrimarySummary({
@@ -55,11 +132,53 @@ export function ReservationPrimarySummary({
   canViewFinancialDetails,
   hotelName,
   roomNumber,
+  locationMemo,
   entrySending,
   canSave,
   onHotelNameChange,
   onRoomNumberChange,
+  onLocationMemoChange,
   onSaveEntryInfo,
+  isEditing = false,
+  courseOptions = [],
+  selectedCourseId = null,
+  onCourseChange,
+  optionChoices = [],
+  selectedOptionIds = [],
+  onOptionIdsChange,
+  priceBreakdown,
+  date,
+  startTime,
+  endTime,
+  durationMinutes,
+  onDateChange,
+  onStartTimeChange,
+  castId,
+  castChoices = [],
+  onCastChange,
+  onOpenCastTimeline,
+  ngWarning,
+  additionalFee,
+  discountAmount,
+  pointsUsed,
+  paymentMethodValue,
+  paymentMethodOptions = [],
+  paymentReference = '',
+  onAdditionalFeeChange,
+  onDiscountAmountChange,
+  onPointsUsedChange,
+  onPaymentMethodChange,
+  onPaymentReferenceChange,
+  designationId,
+  designationChoices = [],
+  onDesignationChange,
+  areaId,
+  areaChoices = [],
+  onAreaChange,
+  stationId,
+  stationChoices = [],
+  onStationChange,
+  locationsLoading = false,
 }: ReservationPrimarySummaryProps) {
   const paymentMethod = reservation.paymentMethod
     ? normalizePaymentMethodValue(reservation.paymentMethod)
@@ -74,20 +193,88 @@ export function ReservationPrimarySummary({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <p className="text-3xl font-bold tracking-tight">
-            {format(reservation.startTime, 'HH:mm')} - {format(reservation.endTime, 'HH:mm')}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {format(reservation.startTime, 'yyyy年MM月dd日(E)', { locale: ja })}
-          </p>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="font-medium">{reservation.staff || 'キャスト未設定'}</span>
-            {castWorkStatus ? (
-              <Badge variant="secondary" className="text-xs">
-                {castWorkStatus}
-              </Badge>
-            ) : null}
-          </div>
+          {isEditing && onDateChange && onStartTimeChange ? (
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="reservation-date">日付</Label>
+                <Input
+                  id="reservation-date"
+                  type="date"
+                  value={date ?? ''}
+                  onChange={(event) => onDateChange(event.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="reservation-start-time">開始時間</Label>
+                <Input
+                  id="reservation-start-time"
+                  type="time"
+                  step={RESERVATION_START_STEP_SECONDS}
+                  value={startTime ?? ''}
+                  onChange={(event) => onStartTimeChange(event.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="reservation-end-time">終了時間</Label>
+                <Input id="reservation-end-time" type="time" value={endTime ?? ''} readOnly />
+                {typeof durationMinutes === 'number' ? (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    施術時間: {durationMinutes}分
+                  </p>
+                ) : null}
+              </div>
+              {onCastChange ? (
+                <div>
+                  <Label htmlFor="reservation-cast">キャスト</Label>
+                  <Select value={castId || undefined} onValueChange={onCastChange}>
+                    <SelectTrigger id="reservation-cast">
+                      <SelectValue placeholder="キャストを選択" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {castChoices.map((cast) => (
+                        <SelectItem key={cast.id} value={cast.id}>
+                          {cast.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {onOpenCastTimeline ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="mt-1 px-0 text-left text-xs text-purple-600"
+                      onClick={onOpenCastTimeline}
+                    >
+                      タイムラインで空き状況を見る
+                    </Button>
+                  ) : null}
+                  {ngWarning ? (
+                    <Alert variant="destructive" className="mt-2 text-xs">
+                      <AlertDescription>{ngWarning}</AlertDescription>
+                    </Alert>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <>
+              <p className="text-3xl font-bold tracking-tight">
+                {format(reservation.startTime, 'HH:mm')} - {format(reservation.endTime, 'HH:mm')}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {format(reservation.startTime, 'yyyy年MM月dd日(E)', { locale: ja })}
+              </p>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="font-medium">{reservation.staff || 'キャスト未設定'}</span>
+                {castWorkStatus ? (
+                  <Badge variant="secondary" className="text-xs">
+                    {castWorkStatus}
+                  </Badge>
+                ) : null}
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -98,9 +285,72 @@ export function ReservationPrimarySummary({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
-          <div className="font-medium">
-            {reservation.areaName || reservation.location || '未設定'}
-          </div>
+          {isEditing && onAreaChange && onStationChange ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="reservation-area">対応エリア</Label>
+                <Select
+                  value={areaId ?? UNASSIGNED_VALUE}
+                  onValueChange={(value) => onAreaChange(value === UNASSIGNED_VALUE ? null : value)}
+                >
+                  <SelectTrigger id="reservation-area" disabled={locationsLoading}>
+                    <SelectValue
+                      placeholder={locationsLoading ? '読み込み中...' : 'エリアを選択'}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={UNASSIGNED_VALUE}>未設定</SelectItem>
+                    {areaChoices.map((area) => (
+                      <SelectItem key={area.id} value={area.id}>
+                        {area.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="reservation-station">最寄り駅</Label>
+                <Select
+                  value={stationId ?? UNASSIGNED_VALUE}
+                  onValueChange={(value) =>
+                    onStationChange(value === UNASSIGNED_VALUE ? null : value)
+                  }
+                  disabled={stationChoices.length === 0}
+                >
+                  <SelectTrigger id="reservation-station">
+                    <SelectValue
+                      placeholder={
+                        stationChoices.length === 0
+                          ? areaId
+                            ? '該当する駅がありません'
+                            : 'エリアを選択してください'
+                          : '駅を選択'
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={UNASSIGNED_VALUE}>未設定</SelectItem>
+                    {stationChoices.map((station) => (
+                      <SelectItem key={station.id} value={station.id}>
+                        {station.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="font-medium">
+                {reservation.areaName || reservation.location || '未設定'}
+              </div>
+              {reservation.stationName ? (
+                <div className="text-xs text-muted-foreground">
+                  最寄り駅: {reservation.stationName}
+                </div>
+              ) : null}
+            </>
+          )}
           <div className="grid gap-2 sm:grid-cols-2">
             <div>
               <Label htmlFor="summary-hotel-name">ホテル名</Label>
@@ -122,6 +372,17 @@ export function ReservationPrimarySummary({
                 disabled={entrySending}
               />
             </div>
+          </div>
+          <div>
+            <Label htmlFor="summary-location-memo">訪問先メモ</Label>
+            <Textarea
+              id="summary-location-memo"
+              value={locationMemo}
+              onChange={(event) => onLocationMemoChange(event.target.value)}
+              rows={3}
+              className="max-h-24 overflow-y-auto"
+              disabled={entrySending}
+            />
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -147,26 +408,110 @@ export function ReservationPrimarySummary({
         </CardHeader>
         <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
           <div>
-            <div className="text-muted-foreground">コース</div>
-            <div className="font-medium">{courseName}</div>
+            {isEditing && onCourseChange ? (
+              <>
+                <Label htmlFor="summary-course">コース</Label>
+                <Select
+                  value={selectedCourseId ?? undefined}
+                  onValueChange={(value) => onCourseChange(value)}
+                >
+                  <SelectTrigger id="summary-course">
+                    <SelectValue placeholder="コースを選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {courseOptions.map((course) => (
+                      <SelectItem key={course.id} value={course.id}>
+                        {course.name}（{course.duration}分 / ¥{course.price.toLocaleString()}）
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
+            ) : (
+              <>
+                <div className="text-muted-foreground">コース</div>
+                <div className="font-medium">{courseName}</div>
+              </>
+            )}
           </div>
           <div>
-            <div className="text-muted-foreground">指名</div>
-            <div className="font-medium">{designationName}</div>
+            {isEditing && onDesignationChange ? (
+              <>
+                <Label htmlFor="reservation-designation">指名</Label>
+                <Select
+                  value={designationId || 'none'}
+                  onValueChange={(value) => onDesignationChange(value)}
+                >
+                  <SelectTrigger id="reservation-designation">
+                    <SelectValue placeholder="指名を選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">指名なし</SelectItem>
+                    {designationChoices.map((fee) => (
+                      <SelectItem key={fee.id} value={fee.id}>
+                        {fee.name}（¥{fee.price.toLocaleString()}）
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
+            ) : (
+              <>
+                <div className="text-muted-foreground">指名</div>
+                <div className="font-medium">{designationName}</div>
+              </>
+            )}
           </div>
           <div className="sm:col-span-2">
             <div className="text-muted-foreground">オプション</div>
-            <div className="mt-1 flex flex-wrap gap-1">
-              {optionNames.length > 0 ? (
-                optionNames.map((option) => (
-                  <Badge key={option} variant="secondary" className="text-xs">
-                    {option}
-                  </Badge>
-                ))
-              ) : (
+            {isEditing && onOptionIdsChange ? (
+              optionChoices.length === 0 ? (
                 <span className="font-medium">なし</span>
-              )}
-            </div>
+              ) : (
+                <div className="mt-1 space-y-2">
+                  {optionChoices.map((option) => {
+                    const checked = selectedOptionIds.includes(option.id)
+                    const optionId = `summary-option-${option.id}`
+                    return (
+                      <label key={option.id} htmlFor={optionId} className="flex items-center gap-2">
+                        <Checkbox
+                          id={optionId}
+                          checked={checked}
+                          onCheckedChange={(next) => {
+                            const selected = next === true
+                            const nextIds = new Set(selectedOptionIds)
+                            if (selected) {
+                              nextIds.add(option.id)
+                            } else {
+                              nextIds.delete(option.id)
+                            }
+                            onOptionIdsChange(Array.from(nextIds))
+                          }}
+                        />
+                        <span>
+                          {option.name}
+                          {typeof option.price === 'number'
+                            ? `（¥${option.price.toLocaleString()}）`
+                            : ''}
+                        </span>
+                      </label>
+                    )
+                  })}
+                </div>
+              )
+            ) : (
+              <div className="mt-1 flex flex-wrap gap-1">
+                {optionNames.length > 0 ? (
+                  optionNames.map((option) => (
+                    <Badge key={option} variant="secondary" className="text-xs">
+                      {option}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="font-medium">なし</span>
+                )}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -178,16 +523,140 @@ export function ReservationPrimarySummary({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
+          <div className="flex items-center justify-between text-lg font-bold">
+            <span>総額</span>
+            <span>{formatCurrency(priceBreakdown?.total ?? reservation.totalPayment)}</span>
+          </div>
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span>コース料金</span>
+            <span>
+              {formatCurrency(
+                priceBreakdown?.basePrice ??
+                  (typeof reservation.price === 'number'
+                    ? reservation.price
+                    : reservation.totalPayment)
+              )}
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span>オプション料金</span>
+            <span>{formatCurrency(priceBreakdown?.optionTotal)}</span>
+          </div>
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span>指名料</span>
+            <span>
+              {formatCurrency(
+                priceBreakdown?.designation ?? toNumber(reservation.designationFee, 0)
+              )}
+            </span>
+          </div>
+          {isEditing && onAdditionalFeeChange && onDiscountAmountChange && onPointsUsedChange ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <Label htmlFor="reservation-total">総額</Label>
+                <Input
+                  id="reservation-total"
+                  type="number"
+                  value={priceBreakdown?.total ?? reservation.totalPayment}
+                  readOnly
+                  disabled
+                  className="bg-gray-100"
+                />
+              </div>
+              <div>
+                <Label htmlFor="reservation-additional">追加料金</Label>
+                <Input
+                  id="reservation-additional"
+                  type="number"
+                  min={0}
+                  value={additionalFee ?? 0}
+                  onChange={(event) =>
+                    onAdditionalFeeChange(Math.max(Number(event.target.value || 0), 0))
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor="reservation-discount">割引</Label>
+                <Input
+                  id="reservation-discount"
+                  type="number"
+                  min={0}
+                  value={discountAmount ?? 0}
+                  onChange={(event) =>
+                    onDiscountAmountChange(Math.max(Number(event.target.value || 0), 0))
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor="reservation-points-used">利用ポイント</Label>
+                <Input
+                  id="reservation-points-used"
+                  type="number"
+                  min={0}
+                  value={pointsUsed ?? 0}
+                  onChange={(event) =>
+                    onPointsUsedChange(Math.max(Number(event.target.value || 0), 0))
+                  }
+                />
+              </div>
+              {onPaymentMethodChange ? (
+                <div>
+                  <Label htmlFor="reservation-payment">支払い方法</Label>
+                  <Select
+                    value={paymentMethodValue}
+                    onValueChange={(value) => onPaymentMethodChange(value)}
+                  >
+                    <SelectTrigger id="reservation-payment">
+                      <SelectValue placeholder="支払い方法を選択" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {paymentMethodOptions.map((method) => (
+                        <SelectItem key={method} value={method}>
+                          {method}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : null}
+              {onPaymentReferenceChange && paymentMethodValue === PAYMENT_METHODS.CARD ? (
+                <div className="sm:col-span-2">
+                  <ReservationCardPaymentReferenceInput
+                    id="reservation-payment-reference"
+                    value={paymentReference}
+                    onChange={onPaymentReferenceChange}
+                  />
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span>追加料金</span>
+                <span>
+                  {formatCurrency(priceBreakdown?.additional ?? reservation.additionalFee)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-red-600">
+                <span>割引</span>
+                <span>
+                  -{formatCurrency(priceBreakdown?.discount ?? reservation.discountAmount)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-red-600">
+                <span>ポイント利用</span>
+                <span>-{formatCurrency(priceBreakdown?.pointsUsed ?? reservation.pointsUsed)}</span>
+              </div>
+            </>
+          )}
           {canViewFinancialDetails ? (
             <>
-              <div className="flex items-center justify-between text-lg font-bold">
-                <span>総額</span>
-                <span>{formatCurrency(reservation.totalPayment)}</span>
-              </div>
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span>支払い方法</span>
-                <span>{paymentMethod || '未設定'}</span>
-              </div>
+              {!isEditing ? (
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span>支払い方法</span>
+                  <span>{paymentMethod || '未設定'}</span>
+                </div>
+              ) : null}
               {paymentMethod === PAYMENT_METHODS.CARD ? (
                 <div className="flex items-center justify-between text-muted-foreground">
                   <span>カード決済管理番号</span>
@@ -197,15 +666,19 @@ export function ReservationPrimarySummary({
               <Separator />
               <div className="flex items-center justify-between text-muted-foreground">
                 <span>店舗売上</span>
-                <span>{formatCurrency(reservation.storeRevenue)}</span>
+                <span>
+                  {formatCurrency(priceBreakdown?.storeRevenue ?? reservation.storeRevenue)}
+                </span>
               </div>
               <div className="flex items-center justify-between text-muted-foreground">
                 <span>キャスト売上</span>
-                <span>{formatCurrency(reservation.staffRevenue)}</span>
+                <span>
+                  {formatCurrency(priceBreakdown?.staffRevenue ?? reservation.staffRevenue)}
+                </span>
               </div>
             </>
           ) : (
-            <p className="text-sm text-muted-foreground">売上情報は表示できません。</p>
+            <p className="text-sm text-muted-foreground">売上内訳は表示できません。</p>
           )}
         </CardContent>
       </Card>

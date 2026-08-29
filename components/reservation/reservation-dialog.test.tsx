@@ -367,13 +367,13 @@ describe('ReservationDialog Edit Mode', () => {
     // Check the current cast and visit-location fields
     expect(screen.getByLabelText(/キャスト/i)).toBeInTheDocument()
     expect(screen.getAllByLabelText('ホテル名').length).toBeGreaterThan(0)
-    expect(screen.getByLabelText(/訪問先メモ/i)).toBeInTheDocument()
+    expect(screen.getAllByLabelText(/訪問先メモ/i).length).toBeGreaterThan(0)
 
-    expect(screen.getByText('予約詳細')).toBeInTheDocument()
+    expect(screen.getAllByText('予約詳細').length).toBeGreaterThan(0)
 
     // Check for editable options checkboxes
-    expect(screen.getByLabelText(/ネックトリートメント/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/ホットストーン/i)).toBeInTheDocument()
+    expect(screen.getAllByLabelText(/ネックトリートメント/i).length).toBeGreaterThan(0)
+    expect(screen.getAllByLabelText(/ホットストーン/i).length).toBeGreaterThan(0)
 
     // Check for editable memo textarea
     const memoTextarea = screen.getByPlaceholderText(/予約に関する詳細メモを入力/i)
@@ -999,5 +999,148 @@ describe('ReservationDialog Edit Mode', () => {
     // Should be back to view mode
     expect(screen.getByRole('button', { name: /編集/i })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '保存' })).not.toBeInTheDocument()
+  })
+
+  it('shows course price, discount, and points on the order summary', () => {
+    render(
+      <ReservationDialog
+        open
+        onOpenChange={mockOnOpenChange}
+        reservation={{
+          ...mockReservation,
+          discountAmount: 2_000,
+          pointsUsed: 500,
+          price: 13_000,
+        }}
+        onSave={mockOnSave}
+      />
+    )
+
+    const summaryGrid = screen.getByTestId('reservation-primary-summary-grid')
+    expect(within(summaryGrid).getByText('コース料金')).toBeInTheDocument()
+    expect(within(summaryGrid).getByText('¥13,000')).toBeInTheDocument()
+    expect(within(summaryGrid).getByText('割引')).toBeInTheDocument()
+    expect(within(summaryGrid).getByText('-¥2,000')).toBeInTheDocument()
+    expect(within(summaryGrid).getByText('ポイント利用')).toBeInTheDocument()
+    expect(within(summaryGrid).getByText('-¥500')).toBeInTheDocument()
+    expect(within(summaryGrid).getByText('追加料金')).toBeInTheDocument()
+  })
+
+  it('lets the operator change course and options from the order content itself', async () => {
+    render(
+      <ReservationDialog
+        open
+        onOpenChange={mockOnOpenChange}
+        reservation={{ ...mockReservation, serviceId: 'course-1' }}
+        onSave={mockOnSave}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /編集/i }))
+
+    const summaryGrid = screen.getByTestId('reservation-primary-summary-grid')
+    expect(within(summaryGrid).getByRole('combobox', { name: 'コース' })).toBeInTheDocument()
+    expect(
+      within(summaryGrid).getByRole('checkbox', { name: /ネックトリートメント/ })
+    ).toBeInTheDocument()
+  })
+
+  it('lets the operator edit visit memo and hotel on the surface and keeps entry info in sync', async () => {
+    render(
+      <ReservationDialog
+        open
+        onOpenChange={mockOnOpenChange}
+        reservation={{
+          ...mockReservation,
+          hotelName: '池袋ホテル',
+          roomNumber: '101',
+          locationMemo: '旧メモ',
+        }}
+        onSave={mockOnSave}
+      />
+    )
+
+    const summaryGrid = screen.getByTestId('reservation-primary-summary-grid')
+    expect(within(summaryGrid).getByLabelText('訪問先メモ')).toHaveValue('旧メモ')
+
+    fireEvent.change(within(summaryGrid).getByLabelText('ホテル名'), {
+      target: { value: '新宿ホテル' },
+    })
+    fireEvent.change(within(summaryGrid).getByLabelText('部屋番号'), {
+      target: { value: '888' },
+    })
+
+    expect((document.getElementById('entry-hotel-name') as HTMLInputElement).value).toBe(
+      '新宿ホテル'
+    )
+    expect((document.getElementById('entry-room-number') as HTMLInputElement).value).toBe('888')
+
+    fireEvent.click(screen.getByRole('button', { name: /編集/i }))
+
+    const hotelInputs = screen.getAllByLabelText('ホテル名')
+    expect(hotelInputs.some((input) => (input as HTMLInputElement).value === '新宿ホテル')).toBe(
+      true
+    )
+    expect((document.getElementById('entry-room-number') as HTMLInputElement).value).toBe('888')
+  })
+
+  it('shows option amount on the order summary breakdown', () => {
+    render(
+      <ReservationDialog
+        open
+        onOpenChange={mockOnOpenChange}
+        reservation={{
+          ...mockReservation,
+          designation: 'なし',
+          designationFee: '0',
+          price: 13_000,
+          additionalFee: 1_000,
+          discountAmount: 2_000,
+          pointsUsed: 500,
+          totalPayment: 13_500,
+        }}
+        onSave={mockOnSave}
+      />
+    )
+
+    const summaryGrid = screen.getByTestId('reservation-primary-summary-grid')
+    expect(within(summaryGrid).getByText('オプション料金')).toBeInTheDocument()
+    expect(within(summaryGrid).getByText('コース料金')).toBeInTheDocument()
+    expect(within(summaryGrid).getByText('オプション料金').parentElement).toHaveTextContent(
+      '¥3,000'
+    )
+  })
+
+  it('lets the operator edit date, points, and fees on the same order layout', async () => {
+    render(
+      <ReservationDialog
+        open
+        onOpenChange={mockOnOpenChange}
+        reservation={{ ...mockReservation, serviceId: 'course-1', points: 1_000 }}
+        onSave={mockOnSave}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /編集/i }))
+
+    const summaryGrid = screen.getByTestId('reservation-primary-summary-grid')
+    expect(within(summaryGrid).getByLabelText(/^日付$/i)).toBeInTheDocument()
+    expect(within(summaryGrid).getByLabelText('利用ポイント')).toBeInTheDocument()
+    expect(within(summaryGrid).getByLabelText('追加料金')).toBeInTheDocument()
+    expect(within(summaryGrid).getByLabelText('割引')).toBeInTheDocument()
+  })
+
+  it('allows applying points while editing an existing order', async () => {
+    render(
+      <ReservationDialog
+        open
+        onOpenChange={mockOnOpenChange}
+        reservation={{ ...mockReservation, points: 1_000, pointsUsed: 0 }}
+        onSave={mockOnSave}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /編集/i }))
+    expect(screen.getByLabelText('利用ポイント')).toBeInTheDocument()
   })
 })

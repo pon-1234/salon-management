@@ -20,6 +20,7 @@ const entryInfoSchema = z.object({
   hotelId: z.string().trim().max(200).optional().nullable(),
   hotelName: z.string().trim().max(100).optional().nullable(),
   roomNumber: z.string().trim().max(50).optional().nullable(),
+  locationMemo: z.string().trim().max(500).optional().nullable(),
   entryMemo: z.string().trim().max(500).optional().nullable(),
   action: z.enum(['save', 'remind']).optional(),
 })
@@ -136,6 +137,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         payload.entryMemo === undefined
           ? (reservation.entryMemo ?? null)
           : normalizeText(payload.entryMemo)
+      const locationMemo =
+        payload.locationMemo === undefined
+          ? (reservation.locationMemo ?? null)
+          : normalizeText(payload.locationMemo)
 
       entryInfo = {
         hotelName,
@@ -151,6 +156,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           hotelId: resolvedHotel.hotelId,
           hotelName,
           roomNumber,
+          locationMemo,
           entryMemo,
           entryReceivedAt: entryInfo.entryReceivedAt,
           entryReceivedBy: entryInfo.entryReceivedBy,

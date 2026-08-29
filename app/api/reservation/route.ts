@@ -1186,6 +1186,7 @@ export async function PUT(request: NextRequest) {
       numericFieldChanged(updates.transportationFee, existingReservation.transportationFee) ||
       numericFieldChanged(updates.additionalFee, existingReservation.additionalFee) ||
       numericFieldChanged(updates.discountAmount, existingReservation.discountAmount) ||
+      numericFieldChanged(updates.pointsUsed, existingReservation.pointsUsed) ||
       numericFieldChanged(updates.storeRevenue, existingReservation.storeRevenue) ||
       numericFieldChanged(updates.staffRevenue, existingReservation.staffRevenue) ||
       numericFieldChanged(updates.welfareExpense, existingReservation.welfareExpense)
@@ -1272,6 +1273,8 @@ export async function PUT(request: NextRequest) {
         updateData.additionalFee = updates.additionalFee
       if (typeof updates.discountAmount === 'number')
         updateData.discountAmount = updates.discountAmount
+      if (typeof updates.pointsUsed === 'number')
+        updateData.pointsUsed = Math.max(0, Math.floor(updates.pointsUsed))
       if (updates.marketingChannel) updateData.marketingChannel = updates.marketingChannel
       const hotelIdSpecified = Object.prototype.hasOwnProperty.call(updates, 'hotelId')
       const hotelNameSpecified = Object.prototype.hasOwnProperty.call(updates, 'hotelName')
@@ -1359,7 +1362,10 @@ export async function PUT(request: NextRequest) {
             ? updates.discountAmount
             : (previousReservation.discountAmount ?? 0)
 
-        const existingPointsUsed = previousReservation.pointsUsed ?? 0
+        const existingPointsUsed =
+          typeof updates.pointsUsed === 'number'
+            ? Math.max(0, Math.floor(updates.pointsUsed))
+            : (previousReservation.pointsUsed ?? 0)
 
         const currentOptionShares =
           normalizedOptionIds === null

@@ -4,10 +4,11 @@
  * @known_issues None
  */
 import { fireEvent, render, screen, within } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Appointment, Cast } from '@/lib/cast/types'
 import type { ReservationData } from '@/lib/types/reservation'
 import type { Customer } from '@/lib/customer/types'
+import { TIMELINE_HOUR_WIDTH_PX } from '@/lib/reservation/booking-slot-window'
 import { Timeline } from './timeline'
 
 const quickBookingDialogMock = vi.hoisted(() =>
@@ -122,6 +123,10 @@ describe('Timeline appointment cards', () => {
     quickBookingDialogMock.mockClear()
   })
 
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('keeps the time axis and horizontal scrollbar inside a viewport-height timeline', () => {
     render(
       <Timeline
@@ -140,12 +145,11 @@ describe('Timeline appointment cards', () => {
       />
     )
 
-    expect(screen.getByTestId('reservation-timeline-scroll')).toHaveClass(
-      'absolute',
-      'overflow-auto'
+    expect(screen.getByTestId('reservation-timeline-scroll')).toHaveClass('overflow-y-auto')
+    expect(screen.getByTestId('timeline-horizontal-scrollbar')).toHaveClass('overflow-x-scroll')
+    expect(screen.getByTestId('reservation-timeline-scroll')).not.toContainElement(
+      screen.getByTestId('timeline-time-header')
     )
-    expect(screen.getByTestId('timeline-horizontal-scrollbar')).toHaveClass('absolute', 'bottom-0')
-    expect(screen.getByTestId('timeline-time-header')).toHaveClass('sticky', 'top-0')
     expect(quickBookingDialogMock).toHaveBeenCalledWith(
       expect.objectContaining({
         selectedStaff: undefined,
@@ -330,11 +334,11 @@ describe('Timeline appointment cards', () => {
     const appointmentButton = screen.getByRole('button', {
       name: /\[確認用\] 旧顧客 #104168/,
     })
-    const customerName = within(appointmentButton).getByText(appointment.customerName)
+    const customerName = within(appointmentButton).getByText(`${appointment.customerName} 様`)
 
     expect(appointmentButton).toHaveClass('overflow-hidden')
     expect(customerName).toHaveClass('shrink-0')
-    expect(customerName).toHaveAttribute('title', appointment.customerName)
+    expect(customerName).toHaveAttribute('title', `${appointment.customerName} 様`)
     expect(
       within(appointmentButton).getByText(appointment.serviceName, { exact: false })
     ).toBeVisible()
@@ -449,13 +453,13 @@ describe('Timeline appointment cards', () => {
     )
 
     expect(screen.getByRole('button', { name: '18:00から予約' })).toHaveStyle({
-      left: '960px',
+      left: `${8 * TIMELINE_HOUR_WIDTH_PX}px`,
     })
     expect(screen.getByRole('button', { name: '18:30から予約' })).toHaveStyle({
-      left: '1020px',
+      left: `${8.5 * TIMELINE_HOUR_WIDTH_PX}px`,
     })
     expect(screen.getByRole('button', { name: '22:00から予約' })).toHaveStyle({
-      left: '1440px',
+      left: `${12 * TIMELINE_HOUR_WIDTH_PX}px`,
     })
 
     const bookingCircleButton = screen.getByRole('button', { name: '18:00から予約' })
@@ -659,12 +663,193 @@ describe('Timeline appointment cards', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /\[確認用\] 旧顧客 #104168/ }))
     expect(setSelectedAppointment).toHaveBeenCalledWith(reservation)
-    expect(screen.getByRole('button', { name: '14:00から予約' })).toBeDisabled()
-    fireEvent.click(screen.getByRole('button', { name: '14:00から予約' }))
+    const startButtons = screen.getAllByRole('button', { name: '14:00から予約' })
+    expect(startButtons.length).toBeGreaterThan(0)
+    startButtons.forEach((button) => expect(button).toBeDisabled())
+    fireEvent.click(startButtons[0])
     expect(screen.queryByTestId('quick-booking-dialog')).not.toBeInTheDocument()
     expect(quickBookingDialogMock).toHaveBeenLastCalledWith(
       expect.objectContaining({ open: false }),
       undefined
+    )
+  })
+
+  it('shows name, in/out, course, hotel, and status even on a 60-minute card', () => {
+    const hourAppointment = {
+      ...appointment,
+      startTime: new Date('2030-07-21T18:00:00+09:00'),
+      endTime: new Date('2030-07-21T19:00:00+09:00'),
+      reservationTime: '18:00-19:00',
+    }
+    const hourReservation = {
+      ...reservation,
+      hotelName: '池袋ホテル',
+      roomNumber: '1203',
+      course: hourAppointment.serviceName,
+    }
+
+    render(
+      <Timeline
+        canCreateReservation
+        staff={[{ ...staff[0], appointments: [hourAppointment] }]}
+        selectedDate={new Date('2030-07-21T00:00:00+09:00')}
+        selectedCustomer={null}
+        setSelectedAppointment={vi.fn()}
+        reservations={[hourReservation]}
+        businessHours={{
+          startMinutes: 10 * 60,
+          endMinutes: 24 * 60,
+          startLabel: '10:00',
+          endLabel: '24:00',
+        }}
+      />
+    )
+
+    const card = screen.getByRole('button', { name: /旧顧客 #104168 様 18:00-19:00/ })
+    expect(card).toHaveClass('flex-row')
+    expect(card).toHaveStyle({ width: `${TIMELINE_HOUR_WIDTH_PX}px` })
+    expect(within(card).getByTestId('timeline-appointment-in')).toHaveTextContent('18:00')
+    expect(within(card).getByTestId('timeline-appointment-out')).toHaveTextContent('19:00')
+    expect(card).toHaveTextContent('様')
+    expect(card).toHaveTextContent('旧90分コース')
+    expect(card).toHaveTextContent('池袋ホテル')
+    expect(card).toHaveTextContent('1203')
+    expect(card).toHaveTextContent('仮予約')
+  })
+
+  it('keeps a reservation visible when it starts before store opening', () => {
+    const earlyAppointment = {
+      ...appointment,
+      startTime: new Date('2030-07-21T08:00:00+09:00'),
+      endTime: new Date('2030-07-21T09:30:00+09:00'),
+    }
+
+    render(
+      <Timeline
+        canCreateReservation
+        staff={[{ ...staff[0], appointments: [earlyAppointment] }]}
+        selectedDate={new Date('2030-07-21T00:00:00+09:00')}
+        selectedCustomer={null}
+        setSelectedAppointment={vi.fn()}
+        reservations={[{ ...reservation, id: earlyAppointment.id }]}
+        businessHours={{
+          startMinutes: 10 * 60,
+          endMinutes: 23 * 60,
+          startLabel: '10:00',
+          endLabel: '23:00',
+        }}
+      />
+    )
+
+    expect(
+      screen.getByRole('button', { name: /旧顧客 #104168 様 08:00-09:30/ })
+    ).toBeInTheDocument()
+  })
+
+  it('shows time labels and booking circles when a cast clocks in before store opening', () => {
+    const selectedCustomer = {
+      id: 'customer-1',
+      name: '確認顧客',
+      ngCasts: [],
+      ngCastIds: [],
+    } as unknown as Customer
+
+    render(
+      <Timeline
+        canCreateReservation
+        staff={[
+          {
+            ...staff[0],
+            appointments: [],
+            workStart: new Date('2030-07-21T08:00:00+09:00'),
+            workEnd: new Date('2030-07-21T16:30:00+09:00'),
+          },
+        ]}
+        selectedDate={new Date('2030-07-21T00:00:00+09:00')}
+        selectedCustomer={selectedCustomer}
+        setSelectedAppointment={vi.fn()}
+        reservations={[]}
+        businessHours={{
+          startMinutes: 10 * 60,
+          endMinutes: 23 * 60,
+          startLabel: '10:00',
+          endLabel: '23:00',
+        }}
+      />
+    )
+
+    expect(screen.getByTestId('timeline-time-header')).toHaveTextContent('08:00')
+    expect(screen.getByRole('button', { name: '08:00から予約' })).toBeVisible()
+    expect(screen.queryByRole('button', { name: '07:30から予約' })).not.toBeInTheDocument()
+  })
+
+  it('shows booking circles through midnight when a cast works until 24:00', () => {
+    const selectedCustomer = {
+      id: 'customer-1',
+      name: '確認顧客',
+      ngCasts: [],
+      ngCastIds: [],
+    } as unknown as Customer
+
+    render(
+      <Timeline
+        canCreateReservation
+        staff={[
+          {
+            ...staff[0],
+            name: 'まりな',
+            appointments: [],
+            workStart: new Date('2030-07-21T19:00:00+09:00'),
+            workEnd: new Date('2030-07-22T00:00:00+09:00'),
+          },
+        ]}
+        selectedDate={new Date('2030-07-21T00:00:00+09:00')}
+        selectedCustomer={selectedCustomer}
+        setSelectedAppointment={vi.fn()}
+        reservations={[]}
+        businessHours={{
+          startMinutes: 10 * 60,
+          endMinutes: 23 * 60,
+          startLabel: '10:00',
+          endLabel: '23:00',
+        }}
+      />
+    )
+
+    expect(screen.getByTestId('timeline-time-header')).toHaveTextContent('23:30')
+    expect(screen.getByRole('button', { name: '23:30から予約' })).toBeVisible()
+  })
+
+  it('marks the current time as a bookable circle', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2030-07-21T14:07:00+09:00'))
+    const selectedCustomer = {
+      id: 'customer-1',
+      name: '確認顧客',
+      ngCasts: [],
+      ngCastIds: [],
+    } as unknown as Customer
+
+    render(
+      <Timeline
+        canCreateReservation
+        staff={[{ ...staff[0], appointments: [] }]}
+        selectedDate={new Date('2030-07-21T00:00:00+09:00')}
+        selectedCustomer={selectedCustomer}
+        setSelectedAppointment={vi.fn()}
+        reservations={[]}
+        businessHours={{
+          startMinutes: 10 * 60,
+          endMinutes: 24 * 60,
+          startLabel: '10:00',
+          endLabel: '24:00',
+        }}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: '14:10から予約' })).toHaveAttribute(
+      'data-current-time',
+      'true'
     )
   })
 })

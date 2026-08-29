@@ -40,23 +40,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import {
-  Calendar,
-  MapPin,
-  CreditCard,
-  Edit,
-  X,
-  Check,
-  Phone,
-  User,
-  Clock,
-  Loader2,
-  AlertCircle,
-  ChevronDown,
-} from 'lucide-react'
+import { Edit, X, Check, Phone, Loader2, AlertCircle, ChevronDown } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { differenceInMinutes, addMinutes, format, parseISO } from 'date-fns'
-import { ja } from 'date-fns/locale'
 import { buildModificationAlerts, getModificationHistory } from '@/lib/modification-history/data'
 import { ReservationUpdatePayload } from '@/lib/types/reservation'
 import { ModificationAlert, ModificationHistory } from '@/lib/types/modification-history'
@@ -90,7 +76,6 @@ import {
 import { toast } from '@/hooks/use-toast'
 import { usePricing } from '@/hooks/use-pricing'
 import { useLocations } from '@/hooks/use-locations'
-import { Checkbox } from '@/components/ui/checkbox'
 import { useStore } from '@/contexts/store-context'
 import { normalizeOptionalPaymentReference } from '@/lib/reservation/financial-reference'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -98,7 +83,6 @@ import { zonedTimeToUtc } from 'date-fns-tz'
 import { CastTimelineModal } from '@/components/reservation/cast-timeline-modal'
 import {
   isReservationStartBoundary,
-  RESERVATION_START_STEP_SECONDS,
   reservationStartMinuteHint,
 } from '@/lib/reservation/time-boundary'
 import {
@@ -110,7 +94,6 @@ import {
   calculateReservationPriceBreakdown,
   composeMarketingChannel,
   formatCurrency,
-  formatMinutes,
   normalizeMarketingChannelValue,
   normalizePaymentMethodValue,
   parseMarketingChannel,
@@ -126,7 +109,6 @@ import {
   STATUS_META,
   STATUS_OPTIONS,
   StatusBadge,
-  ReservationCardPaymentReferenceInput,
   type EditFormState,
   type LineLogEntry,
   type ReservationDialogProps,
@@ -175,6 +157,7 @@ export function ReservationDialog({
     discountAmount: 0,
     designationFee: 0,
     price: 0,
+    pointsUsed: 0,
     areaId: null,
     stationId: null,
     optionIds: [],
@@ -189,20 +172,13 @@ export function ReservationDialog({
   const [remainingTime, setRemainingTime] = useState<number | null>(null)
   const { data: session } = useSession()
   const canViewFinancialDetails = hasPermission(session?.user?.permissions ?? [], 'analytics:read')
-  const {
-    coursePrices,
-    courses,
-    optionPrices,
-    options,
-    loading: pricingLoading,
-  } = usePricing(currentStore.id)
+  const { coursePrices, courses, optionPrices, options } = usePricing(currentStore.id)
   const { areas, stations, loading: locationsLoading } = useLocations()
 
   const [modificationHistory, setModificationHistory] = useState<ModificationHistory[]>([])
   const [modificationAlerts, setModificationAlerts] = useState<ModificationAlert[]>([])
   const [isHistoryLoading, setIsHistoryLoading] = useState(false)
   const [historyReloadToken, setHistoryReloadToken] = useState(0)
-  const UNASSIGNED_VALUE = '__unassigned__'
   const [marketingChannelOptions, setMarketingChannelOptions] = useState<string[]>(() => {
     const seed = new Set<string>(DEFAULT_MARKETING_CHANNELS)
     if (reservation?.marketingChannel) {
@@ -243,7 +219,7 @@ export function ReservationDialog({
   const [customerNgEntries, setCustomerNgEntries] = useState<
     Array<{ castId: string; assignedBy?: 'customer' | 'cast' | 'staff'; notes?: string }>
   >([])
-  const [customerNgLoading, setCustomerNgLoading] = useState(false)
+  const [, setCustomerNgLoading] = useState(false)
   const [cancelReasonDialogOpen, setCancelReasonDialogOpen] = useState(false)
   const [pendingStatusChange, setPendingStatusChange] = useState<
     ReservationStatus | 'completed' | null
@@ -1137,7 +1113,7 @@ export function ReservationDialog({
       transportationFee: formState.transportationFee,
       additionalFee: formState.additionalFee,
       discountAmount: formState.discountAmount,
-      pointsUsed: reservation?.pointsUsed,
+      pointsUsed: formState.pointsUsed,
       designationFee: formState.designationFee,
       designation: selectedDesignation || reservationDesignation,
       welfareRate,
@@ -1149,8 +1125,8 @@ export function ReservationDialog({
     formState.transportationFee,
     formState.additionalFee,
     formState.discountAmount,
+    formState.pointsUsed,
     formState.designationFee,
-    reservation?.pointsUsed,
     selectedDesignation,
     reservationDesignation,
     welfareRate,
@@ -1180,6 +1156,7 @@ export function ReservationDialog({
         discountAmount: reservation.discountAmount ?? 0,
         designationFee: toNumber(reservation.designationFee, 0),
         price: Number(reservation.totalPayment ?? reservation.price ?? 0),
+        pointsUsed: reservation.pointsUsed ?? 0,
         areaId: reservation.areaId ?? null,
         stationId: reservation.stationId ?? null,
         optionIds: normalizedInitialOptionIds,
@@ -1296,6 +1273,7 @@ export function ReservationDialog({
       discountAmount: reservation.discountAmount ?? 0,
       designationFee: toNumber(reservation.designationFee, 0),
       price: Number(reservation.totalPayment ?? reservation.price ?? 0),
+      pointsUsed: reservation.pointsUsed ?? 0,
       areaId: reservation.areaId ?? null,
       stationId: reservation.stationId ?? null,
       optionIds: normalizedInitialOptionIds,
@@ -1359,8 +1337,9 @@ export function ReservationDialog({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          hotelName: entryForm.hotelName,
-          roomNumber: entryForm.roomNumber,
+          hotelName: formState.hotelName,
+          roomNumber: formState.roomNumber,
+          locationMemo: formState.locationMemo,
           entryMemo: entryForm.entryMemo,
           action: 'save',
         }),
@@ -1378,6 +1357,11 @@ export function ReservationDialog({
         roomNumber: payload.roomNumber ?? '',
         entryMemo: payload.entryMemo ?? '',
       })
+      setFormState((prev) => ({
+        ...prev,
+        hotelName: payload.hotelName ?? prev.hotelName,
+        roomNumber: payload.roomNumber ?? prev.roomNumber,
+      }))
       if (payload.notificationStatus !== 'sent') {
         setEntrySendError(
           `入室情報は保存しましたが、LINE通知は完了しませんでした。${
@@ -1471,23 +1455,6 @@ export function ReservationDialog({
     const paymentReferenceChanged =
       paymentReferenceToSave !== (reservation.paymentReference ?? null)
 
-    if (selectedCast?.workStart && selectedCast?.workEnd) {
-      const workStart = new Date(start)
-      workStart.setHours(
-        selectedCast.workStart.getHours(),
-        selectedCast.workStart.getMinutes(),
-        0,
-        0
-      )
-      const workEnd = new Date(start)
-      workEnd.setHours(selectedCast.workEnd.getHours(), selectedCast.workEnd.getMinutes(), 0, 0)
-
-      if (start < workStart || end > workEnd) {
-        setValidationError('選択した時間帯は担当キャストの出勤時間外です。')
-        return
-      }
-    }
-
     setValidationError(null)
     setIsSaving(true)
 
@@ -1503,6 +1470,7 @@ export function ReservationDialog({
         transportationFee: formState.transportationFee,
         additionalFee: formState.additionalFee,
         discountAmount: formState.discountAmount,
+        pointsUsed: formState.pointsUsed,
         marketingChannel: formState.marketingChannel,
         areaId: formState.areaId ?? null,
         stationId: formState.stationId ?? null,
@@ -1702,655 +1670,193 @@ export function ReservationDialog({
               </div>
 
               <TabsContent value="overview" className="space-y-3 p-4">
-                {!isEditMode ? (
-                  <ReservationPrimarySummary
-                    reservation={reservation}
-                    castWorkStatus={selectedCast?.workStatus}
-                    courseName={selectedCourse?.name || reservation.course || '未設定'}
-                    designationName={
-                      designationForDisplay?.name || reservation.designation || 'なし'
-                    }
-                    optionNames={displayOptionNames}
-                    canViewFinancialDetails={canViewFinancialDetails}
-                    hotelName={entryForm.hotelName}
-                    roomNumber={entryForm.roomNumber}
-                    entrySending={entrySending}
-                    canSave={Boolean(onSave)}
-                    onHotelNameChange={(hotelName) =>
-                      setEntryForm((prev) => ({ ...prev, hotelName }))
-                    }
-                    onRoomNumberChange={(roomNumber) =>
-                      setEntryForm((prev) => ({ ...prev, roomNumber }))
-                    }
-                    onSaveEntryInfo={handleSaveEntryInfo}
-                  />
+                <ReservationPrimarySummary
+                  reservation={reservation}
+                  castWorkStatus={selectedCast?.workStatus}
+                  courseName={selectedCourse?.name || reservation.course || '未設定'}
+                  designationName={designationForDisplay?.name || reservation.designation || 'なし'}
+                  optionNames={displayOptionNames}
+                  canViewFinancialDetails={canViewFinancialDetails}
+                  hotelName={formState.hotelName}
+                  roomNumber={formState.roomNumber}
+                  locationMemo={formState.locationMemo}
+                  entrySending={entrySending}
+                  canSave={Boolean(onSave)}
+                  onHotelNameChange={(hotelName) => {
+                    setFormState((prev) => ({ ...prev, hotelName }))
+                    setEntryForm((prev) => ({ ...prev, hotelName }))
+                  }}
+                  onRoomNumberChange={(roomNumber) => {
+                    setFormState((prev) => ({ ...prev, roomNumber }))
+                    setEntryForm((prev) => ({ ...prev, roomNumber }))
+                  }}
+                  onLocationMemoChange={(locationMemo) =>
+                    setFormState((prev) => ({ ...prev, locationMemo }))
+                  }
+                  onSaveEntryInfo={handleSaveEntryInfo}
+                  isEditing={isEditMode}
+                  courseOptions={courseOptions}
+                  selectedCourseId={formState.courseId}
+                  onCourseChange={(courseId) => setFormState((prev) => ({ ...prev, courseId }))}
+                  optionChoices={optionChoices}
+                  selectedOptionIds={formState.optionIds}
+                  onOptionIdsChange={(optionIds) =>
+                    setFormState((prev) => ({ ...prev, optionIds }))
+                  }
+                  priceBreakdown={priceBreakdown}
+                  date={formState.date}
+                  startTime={formState.startTime}
+                  endTime={computedEndTime}
+                  durationMinutes={effectiveDurationMinutes}
+                  onDateChange={(date) => setFormState((prev) => ({ ...prev, date }))}
+                  onStartTimeChange={(startTime) =>
+                    setFormState((prev) => ({ ...prev, startTime }))
+                  }
+                  castId={activeCastId}
+                  castChoices={castOptions}
+                  onCastChange={(castId) => setFormState((prev) => ({ ...prev, castId }))}
+                  onOpenCastTimeline={() => setIsCastTimelineOpen(true)}
+                  ngWarning={
+                    activeNgEntry
+                      ? `この顧客は${
+                          NG_REASON_LABELS[
+                            (activeNgEntry.assignedBy ?? 'customer') as
+                              | 'customer'
+                              | 'cast'
+                              | 'staff'
+                          ]
+                        }として現在のキャストをNG指定しています。別のキャストでのご案内をご検討ください。`
+                      : null
+                  }
+                  additionalFee={formState.additionalFee}
+                  discountAmount={formState.discountAmount}
+                  pointsUsed={formState.pointsUsed}
+                  paymentMethodValue={formState.paymentMethod}
+                  paymentMethodOptions={paymentMethodOptions}
+                  paymentReference={formState.paymentReference}
+                  onAdditionalFeeChange={(additionalFee) =>
+                    setFormState((prev) => ({ ...prev, additionalFee }))
+                  }
+                  onDiscountAmountChange={(discountAmount) =>
+                    setFormState((prev) => ({ ...prev, discountAmount }))
+                  }
+                  onPointsUsedChange={(pointsUsed) =>
+                    setFormState((prev) => ({ ...prev, pointsUsed }))
+                  }
+                  onPaymentMethodChange={(value) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      paymentMethod: value as PaymentMethod,
+                      paymentReference: value === PAYMENT_METHODS.CARD ? prev.paymentReference : '',
+                    }))
+                  }
+                  onPaymentReferenceChange={(paymentReference) =>
+                    setFormState((prev) => ({ ...prev, paymentReference }))
+                  }
+                  designationId={designationSelectValue === 'none' ? '' : designationSelectValue}
+                  designationChoices={selectableDesignationOptions}
+                  onDesignationChange={(value) => {
+                    const fee =
+                      value === 'none'
+                        ? undefined
+                        : selectableDesignationOptions.find((item) => item.id === value)
+                    setFormState((prev) => ({
+                      ...prev,
+                      designationId: value === 'none' ? '' : value,
+                      designationFee: fee?.price ?? 0,
+                    }))
+                  }}
+                  areaId={formState.areaId}
+                  areaChoices={areas}
+                  onAreaChange={(nextAreaId) =>
+                    setFormState((prev) => {
+                      const areaChanged = nextAreaId !== prev.areaId
+                      return {
+                        ...prev,
+                        areaId: nextAreaId,
+                        stationId: areaChanged ? null : prev.stationId,
+                        transportationFee: areaChanged ? 0 : prev.transportationFee,
+                      }
+                    })
+                  }
+                  stationId={formState.stationId}
+                  stationChoices={filteredStations}
+                  onStationChange={(nextStationId) =>
+                    setFormState((prev) => ({
+                      ...prev,
+                      stationId: nextStationId,
+                      transportationFee: 0,
+                    }))
+                  }
+                  locationsLoading={locationsLoading}
+                />
+
+                {isEditMode ? (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium">集客</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
+                      <div>
+                        <Label htmlFor="reservation-acquisition-method">集客手段</Label>
+                        <Select
+                          value={
+                            parseMarketingChannel(formState.marketingChannel).method || undefined
+                          }
+                          onValueChange={(value) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              marketingChannel: composeMarketingChannel(
+                                value,
+                                parseMarketingChannel(prev.marketingChannel).site
+                              ),
+                            }))
+                          }
+                        >
+                          <SelectTrigger id="reservation-acquisition-method">
+                            <SelectValue placeholder="手段を選択" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {partitionedMarketingChannels.methods.map((channel) => (
+                              <SelectItem key={channel} value={channel}>
+                                {channel}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="reservation-channel">集客チャンネル</Label>
+                        <Select
+                          value={
+                            parseMarketingChannel(formState.marketingChannel).site ?? '__none__'
+                          }
+                          onValueChange={(value) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              marketingChannel: composeMarketingChannel(
+                                parseMarketingChannel(prev.marketingChannel).method,
+                                value === '__none__' ? null : value
+                              ),
+                            }))
+                          }
+                        >
+                          <SelectTrigger id="reservation-channel">
+                            <SelectValue placeholder="チャンネルを選択" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">なし</SelectItem>
+                            {partitionedMarketingChannels.sites.map((channel) => (
+                              <SelectItem key={channel} value={channel}>
+                                {channel}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ) : null}
-
-                <div className={cn('grid gap-4 md:grid-cols-2', !isEditMode && 'hidden')}>
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">日時</CardTitle>
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {isEditMode ? (
-                        <div className="space-y-3">
-                          <div>
-                            <Label htmlFor="reservation-date">日付</Label>
-                            <Input
-                              id="reservation-date"
-                              type="date"
-                              value={formState.date}
-                              onChange={(event) =>
-                                setFormState((prev) => ({ ...prev, date: event.target.value }))
-                              }
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="reservation-start-time">開始時間</Label>
-                            <Input
-                              id="reservation-start-time"
-                              type="time"
-                              step={RESERVATION_START_STEP_SECONDS}
-                              value={formState.startTime}
-                              onChange={(event) =>
-                                setFormState((prev) => ({ ...prev, startTime: event.target.value }))
-                              }
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="reservation-end-time">終了時間</Label>
-                            <Input
-                              id="reservation-end-time"
-                              type="time"
-                              value={computedEndTime}
-                              readOnly
-                            />
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              施術時間: {effectiveDurationMinutes}分
-                            </p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-1">
-                          <p className="text-3xl font-bold tracking-tight">
-                            {format(reservation.startTime, 'HH:mm')} -{' '}
-                            {format(reservation.endTime, 'HH:mm')}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {format(reservation.startTime, 'yyyy年MM月dd日(E)', { locale: ja })}
-                            {reservation.staff ? ` ・ ${reservation.staff}` : ''}
-                          </p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">場所</CardTitle>
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent className="space-y-3 text-sm">
-                      {isEditMode ? (
-                        <div className="space-y-3">
-                          <div>
-                            <Label htmlFor="reservation-area">対応エリア</Label>
-                            <Select
-                              value={formState.areaId ?? UNASSIGNED_VALUE}
-                              onValueChange={(value) =>
-                                setFormState((prev) => {
-                                  const nextAreaId = value === UNASSIGNED_VALUE ? null : value
-                                  const areaChanged = nextAreaId !== prev.areaId
-                                  return {
-                                    ...prev,
-                                    areaId: nextAreaId,
-                                    stationId: areaChanged ? null : prev.stationId,
-                                    transportationFee: areaChanged ? 0 : prev.transportationFee,
-                                  }
-                                })
-                              }
-                            >
-                              <SelectTrigger id="reservation-area" disabled={locationsLoading}>
-                                <SelectValue
-                                  placeholder={locationsLoading ? '読み込み中...' : 'エリアを選択'}
-                                />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value={UNASSIGNED_VALUE}>未設定</SelectItem>
-                                {areas.map((area) => (
-                                  <SelectItem key={area.id} value={area.id}>
-                                    {area.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <Label htmlFor="reservation-station">最寄り駅</Label>
-                            <Select
-                              value={formState.stationId ?? UNASSIGNED_VALUE}
-                              onValueChange={(value) => {
-                                setFormState((prev) => ({
-                                  ...prev,
-                                  stationId: value === UNASSIGNED_VALUE ? null : value,
-                                  transportationFee: 0,
-                                }))
-                              }}
-                              disabled={filteredStations.length === 0}
-                            >
-                              <SelectTrigger id="reservation-station">
-                                <SelectValue
-                                  placeholder={
-                                    filteredStations.length === 0
-                                      ? formState.areaId
-                                        ? '該当する駅がありません'
-                                        : 'エリアを選択してください'
-                                      : '駅を選択'
-                                  }
-                                />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value={UNASSIGNED_VALUE}>未設定</SelectItem>
-                                {filteredStations.map((station) => (
-                                  <SelectItem key={station.id} value={station.id}>
-                                    {station.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <Label htmlFor="reservation-location-memo">訪問先メモ</Label>
-                            <Textarea
-                              id="reservation-location-memo"
-                              value={formState.locationMemo}
-                              onChange={(event) =>
-                                setFormState((prev) => ({
-                                  ...prev,
-                                  locationMemo: event.target.value,
-                                }))
-                              }
-                              rows={3}
-                              className="max-h-24 overflow-y-auto"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="reservation-hotel-name">ホテル名</Label>
-                            <Input
-                              id="reservation-hotel-name"
-                              value={formState.hotelName}
-                              onChange={(event) =>
-                                setFormState((prev) => ({ ...prev, hotelName: event.target.value }))
-                              }
-                              placeholder="例: 渋谷グランドホテル"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="reservation-room-number">部屋番号</Label>
-                            <Input
-                              id="reservation-room-number"
-                              value={formState.roomNumber}
-                              onChange={(event) =>
-                                setFormState((prev) => ({
-                                  ...prev,
-                                  roomNumber: event.target.value,
-                                }))
-                              }
-                              placeholder="例: 1203"
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <div className="font-medium">
-                            {reservation.areaName || reservation.location || '未設定'}
-                          </div>
-                          <div className="text-muted-foreground">
-                            {reservation.prefecture || '未設定'} /{' '}
-                            {reservation.district || '未設定'}
-                          </div>
-                          {reservation.stationName && (
-                            <div className="text-xs text-muted-foreground">
-                              最寄り駅: {reservation.stationName}
-                            </div>
-                          )}
-                          {reservation.specificLocation && (
-                            <div className="rounded-md bg-muted px-3 py-2 text-xs">
-                              {reservation.specificLocation}
-                            </div>
-                          )}
-                          {reservation.locationMemo && (
-                            <div className="max-h-24 overflow-y-auto whitespace-pre-wrap rounded-md bg-muted px-3 py-2 text-xs">
-                              {reservation.locationMemo}
-                            </div>
-                          )}
-                          {(reservation.hotelName || reservation.roomNumber) && (
-                            <div className="rounded-md bg-muted px-3 py-2 text-xs">
-                              {reservation.hotelName && <div>ホテル: {reservation.hotelName}</div>}
-                              {reservation.roomNumber && (
-                                <div>部屋番号: {reservation.roomNumber}</div>
-                              )}
-                            </div>
-                          )}
-                          <div className="grid gap-2 sm:grid-cols-2">
-                            <div>
-                              <Label htmlFor="location-hotel-name">ホテル名</Label>
-                              <Input
-                                id="location-hotel-name"
-                                value={entryForm.hotelName}
-                                onChange={(event) =>
-                                  setEntryForm((prev) => ({
-                                    ...prev,
-                                    hotelName: event.target.value,
-                                  }))
-                                }
-                                placeholder="例: 渋谷グランドホテル"
-                                disabled={entrySending}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="location-room-number">部屋番号</Label>
-                              <Input
-                                id="location-room-number"
-                                value={entryForm.roomNumber}
-                                onChange={(event) =>
-                                  setEntryForm((prev) => ({
-                                    ...prev,
-                                    roomNumber: event.target.value,
-                                  }))
-                                }
-                                placeholder="例: 1203"
-                                disabled={entrySending}
-                              />
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={handleSaveEntryInfo}
-                              disabled={entrySending || !onSave}
-                            >
-                              {entrySending ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              ) : null}
-                              更新
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={handleSaveEntryInfo}
-                              disabled={entrySending || !onSave}
-                            >
-                              女性に通知
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <div className={cn('grid gap-4 md:grid-cols-2', !isEditMode && 'hidden')}>
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">料金</CardTitle>
-                      <CreditCard className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent className="space-y-3 text-sm">
-                      {!canViewFinancialDetails ? (
-                        <p className="text-sm text-muted-foreground">売上情報は表示できません。</p>
-                      ) : isEditMode ? (
-                        <div className="space-y-3">
-                          <div className="space-y-2">
-                            <Label htmlFor="reservation-designation">指名設定</Label>
-                            <Select
-                              value={designationSelectValue}
-                              onValueChange={(value) => {
-                                const fee =
-                                  value === 'none'
-                                    ? undefined
-                                    : selectableDesignationOptions.find((item) => item.id === value)
-                                setFormState((prev) => ({
-                                  ...prev,
-                                  designationId: value === 'none' ? '' : value,
-                                  designationFee: fee?.price ?? 0,
-                                }))
-                              }}
-                            >
-                              <SelectTrigger id="reservation-designation">
-                                <SelectValue placeholder="指名を選択" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">指名なし</SelectItem>
-                                {selectableDesignationOptions.map((fee) => (
-                                  <SelectItem key={fee.id} value={fee.id}>
-                                    {fee.name}（¥{fee.price.toLocaleString()}）
-                                    {!fee.isActive && ' (非表示)'}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <Label htmlFor="reservation-total">総額</Label>
-                            <Input
-                              id="reservation-total"
-                              type="number"
-                              value={priceBreakdown.total}
-                              readOnly
-                              disabled
-                              className="bg-gray-100"
-                            />
-                          </div>
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            <div>
-                              <Label htmlFor="reservation-additional">追加料金</Label>
-                              <Input
-                                id="reservation-additional"
-                                type="number"
-                                value={formState.additionalFee}
-                                onChange={(event) =>
-                                  setFormState((prev) => ({
-                                    ...prev,
-                                    additionalFee: Math.max(Number(event.target.value || 0), 0),
-                                  }))
-                                }
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="reservation-discount">割引</Label>
-                              <Input
-                                id="reservation-discount"
-                                type="number"
-                                value={formState.discountAmount}
-                                onChange={(event) =>
-                                  setFormState((prev) => ({
-                                    ...prev,
-                                    discountAmount: Math.max(Number(event.target.value || 0), 0),
-                                  }))
-                                }
-                              />
-                            </div>
-                          </div>
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            <div>
-                              <Label htmlFor="reservation-payment">支払い方法</Label>
-                              <Select
-                                value={formState.paymentMethod}
-                                onValueChange={(value) =>
-                                  setFormState((prev) => ({
-                                    ...prev,
-                                    paymentMethod: value as PaymentMethod,
-                                    paymentReference:
-                                      value === PAYMENT_METHODS.CARD ? prev.paymentReference : '',
-                                  }))
-                                }
-                              >
-                                <SelectTrigger id="reservation-payment">
-                                  <SelectValue placeholder="支払い方法を選択" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {paymentMethodOptions.map((method) => (
-                                    <SelectItem key={method} value={method}>
-                                      {method}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div>
-                              <Label htmlFor="reservation-acquisition-method">集客手段</Label>
-                              <Select
-                                value={
-                                  parseMarketingChannel(formState.marketingChannel).method ||
-                                  undefined
-                                }
-                                onValueChange={(value) =>
-                                  setFormState((prev) => ({
-                                    ...prev,
-                                    marketingChannel: composeMarketingChannel(
-                                      value,
-                                      parseMarketingChannel(prev.marketingChannel).site
-                                    ),
-                                  }))
-                                }
-                              >
-                                <SelectTrigger id="reservation-acquisition-method">
-                                  <SelectValue placeholder="手段を選択" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {partitionedMarketingChannels.methods.map((channel) => (
-                                    <SelectItem key={channel} value={channel}>
-                                      {channel}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div>
-                              <Label htmlFor="reservation-channel">集客チャンネル</Label>
-                              <Select
-                                value={
-                                  parseMarketingChannel(formState.marketingChannel).site ??
-                                  '__none__'
-                                }
-                                onValueChange={(value) =>
-                                  setFormState((prev) => ({
-                                    ...prev,
-                                    marketingChannel: composeMarketingChannel(
-                                      parseMarketingChannel(prev.marketingChannel).method,
-                                      value === '__none__' ? null : value
-                                    ),
-                                  }))
-                                }
-                              >
-                                <SelectTrigger id="reservation-channel">
-                                  <SelectValue placeholder="チャンネルを選択" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="__none__">なし</SelectItem>
-                                  {partitionedMarketingChannels.sites.map((channel) => (
-                                    <SelectItem key={channel} value={channel}>
-                                      {channel}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                          {formState.paymentMethod === PAYMENT_METHODS.CARD ? (
-                            <ReservationCardPaymentReferenceInput
-                              id="reservation-payment-reference"
-                              value={formState.paymentReference}
-                              onChange={(paymentReference) =>
-                                setFormState((prev) => ({ ...prev, paymentReference }))
-                              }
-                            />
-                          ) : null}
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between font-medium">
-                            <span>総額</span>
-                            <span>{formatCurrency(reservation.totalPayment)}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-muted-foreground">
-                            <span>指名料</span>
-                            {selectedDesignation ? (
-                              <span>
-                                ¥{selectedDesignation.price.toLocaleString()} （店舗 ¥
-                                {selectedDesignation.storeShare.toLocaleString()} / キャスト ¥
-                                {selectedDesignation.castShare.toLocaleString()}）
-                              </span>
-                            ) : (
-                              <span>なし</span>
-                            )}
-                          </div>
-                          <div className="flex items-center justify-between text-muted-foreground">
-                            <span>支払い方法</span>
-                            <span>
-                              {reservation.paymentMethod
-                                ? normalizePaymentMethodValue(reservation.paymentMethod)
-                                : '未設定'}
-                            </span>
-                          </div>
-                          {normalizePaymentMethodValue(reservation.paymentMethod) ===
-                          PAYMENT_METHODS.CARD ? (
-                            <div className="flex items-center justify-between text-muted-foreground">
-                              <span>カード決済管理番号</span>
-                              <span>{reservation.paymentReference || '未登録'}</span>
-                            </div>
-                          ) : null}
-                          <div className="flex items-center justify-between text-muted-foreground">
-                            <span>集客チャネル</span>
-                            <span>{reservation.marketingChannel || '未設定'}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-muted-foreground">
-                            <span>追加料金</span>
-                            <span>{formatCurrency(reservation.additionalFee)}</span>
-                          </div>
-                          {reservation.discountAmount ? (
-                            <div className="flex items-center justify-between text-red-600">
-                              <span>割引</span>
-                              <span>-{formatCurrency(reservation.discountAmount)}</span>
-                            </div>
-                          ) : null}
-                          <Separator className="my-2" />
-                          <div className="flex items-center justify-between text-muted-foreground">
-                            <span>店舗売上</span>
-                            <span>{formatCurrency(reservation.storeRevenue)}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-muted-foreground">
-                            <span>キャスト売上</span>
-                            <span>{formatCurrency(reservation.staffRevenue)}</span>
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">キャスト</CardTitle>
-                      <User className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent className="space-y-3 text-sm">
-                      {isEditMode ? (
-                        <>
-                          <Label htmlFor="reservation-cast">キャスト</Label>
-                          <Select
-                            value={activeCastId}
-                            onValueChange={(value) =>
-                              setFormState((prev) => ({
-                                ...prev,
-                                castId: value,
-                              }))
-                            }
-                          >
-                            <SelectTrigger id="reservation-cast">
-                              <SelectValue
-                                placeholder={isLoadingCasts ? '読み込み中...' : 'キャストを選択'}
-                              />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {isLoadingCasts ? (
-                                <div className="px-3 py-2 text-xs text-muted-foreground">
-                                  読み込み中...
-                                </div>
-                              ) : (
-                                castOptions.map((cast) => {
-                                  const ngEntry = customerNgMap.get(cast.id)
-                                  const disabled = Boolean(ngEntry && cast.id !== activeCastId)
-                                  const assignment = (ngEntry?.assignedBy ?? 'customer') as
-                                    | 'customer'
-                                    | 'cast'
-                                    | 'staff'
-
-                                  return (
-                                    <SelectItem key={cast.id} value={cast.id} disabled={disabled}>
-                                      <div className="flex items-center justify-between gap-2">
-                                        <span>{cast.name}</span>
-                                        {ngEntry && (
-                                          <Badge
-                                            variant={
-                                              assignment === 'cast' ? 'destructive' : 'secondary'
-                                            }
-                                            className="text-xs"
-                                          >
-                                            {NG_REASON_LABELS[assignment]}
-                                          </Badge>
-                                        )}
-                                      </div>
-                                    </SelectItem>
-                                  )
-                                })
-                              )}
-                            </SelectContent>
-                          </Select>
-                          {activeNgEntry && (
-                            <Alert variant="destructive" className="mt-2 text-xs">
-                              <AlertDescription>
-                                この顧客は
-                                {
-                                  NG_REASON_LABELS[
-                                    (activeNgEntry.assignedBy ?? 'customer') as
-                                      | 'customer'
-                                      | 'cast'
-                                      | 'staff'
-                                  ]
-                                }
-                                として現在のキャストをNG指定しています。別のキャストでのご案内をご検討ください。
-                              </AlertDescription>
-                            </Alert>
-                          )}
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="px-0 text-left text-xs text-purple-600"
-                            onClick={() => setIsCastTimelineOpen(true)}
-                          >
-                            タイムラインで空き状況を見る
-                          </Button>
-                          {selectedCast?.workStart && selectedCast?.workEnd && (
-                            <p className="text-xs text-muted-foreground">
-                              勤務時間: {format(selectedCast.workStart, 'HH:mm')} -{' '}
-                              {format(selectedCast.workEnd, 'HH:mm')}
-                            </p>
-                          )}
-                          {selectedCast &&
-                          (selectedCast.workStatus === '休日' ||
-                            selectedCast.workStatus === '未出勤') ? (
-                            <Alert variant="destructive">
-                              <AlertDescription>
-                                このキャストは出勤時間外です。出勤登録を確認してから変更してください。
-                              </AlertDescription>
-                            </Alert>
-                          ) : null}
-                        </>
-                      ) : (
-                        <>
-                          <div className="flex items-center gap-2">
-                            <div className="font-medium">{reservation.staff}</div>
-                            {selectedCast?.workStatus && (
-                              <Badge variant="secondary" className="text-xs">
-                                {selectedCast.workStatus}
-                              </Badge>
-                            )}
-                          </div>
-                          {selectedCast?.workStart && selectedCast?.workEnd && (
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <Clock className="h-3 w-3" />
-                              {format(selectedCast.workStart, 'HH:mm')} -{' '}
-                              {format(selectedCast.workEnd, 'HH:mm')}
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
 
                 {isEditMode ? (
                   <div>
@@ -2578,41 +2084,9 @@ export function ReservationDialog({
                   <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
                     <div>
                       <div className="text-muted-foreground">コース</div>
-                      {isEditMode ? (
-                        <Select
-                          value={formState.courseId ?? UNASSIGNED_VALUE}
-                          onValueChange={(value) =>
-                            setFormState((prev) => ({
-                              ...prev,
-                              courseId: value === UNASSIGNED_VALUE ? null : value,
-                            }))
-                          }
-                        >
-                          <SelectTrigger id="reservation-course">
-                            <SelectValue
-                              placeholder={pricingLoading ? '読み込み中...' : 'コースを選択'}
-                            />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {courseOptions.length === 0 ? (
-                              <SelectItem value="__empty" disabled>
-                                コースが登録されていません
-                              </SelectItem>
-                            ) : (
-                              courseOptions.map((course) => (
-                                <SelectItem key={course.id} value={course.id}>
-                                  {course.name}（{course.duration}分 / ¥
-                                  {course.price.toLocaleString()}）
-                                </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <div className="font-medium">
-                          {selectedCourse?.name || reservation.course || '未設定'}
-                        </div>
-                      )}
+                      <div className="font-medium">
+                        {selectedCourse?.name || reservation.course || '未設定'}
+                      </div>
                     </div>
                     <div>
                       <div className="text-muted-foreground">指名</div>
@@ -2639,57 +2113,7 @@ export function ReservationDialog({
                     </div>
                     <div className="sm:col-span-2">
                       <div className="text-muted-foreground">オプション</div>
-                      {isEditMode ? (
-                        optionChoices.length === 0 ? (
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {pricingLoading
-                              ? 'オプションを読み込み中...'
-                              : 'オプションが設定されていません。'}
-                          </p>
-                        ) : (
-                          <div className="mt-2 space-y-2">
-                            {optionChoices.map((option) => {
-                              const isChecked = formState.optionIds.includes(option.id)
-                              return (
-                                <label key={option.id} className="flex items-start gap-2 text-xs">
-                                  <Checkbox
-                                    checked={isChecked}
-                                    onCheckedChange={(checkedState) => {
-                                      const checked = checkedState === true
-                                      setFormState((prev) => {
-                                        const next = new Set(prev.optionIds)
-                                        if (checked) {
-                                          next.add(option.id)
-                                        } else {
-                                          next.delete(option.id)
-                                        }
-                                        return {
-                                          ...prev,
-                                          optionIds: Array.from(next),
-                                        }
-                                      })
-                                    }}
-                                  />
-                                  <span className="flex-1">
-                                    <span className="font-medium">{option.name}</span>
-                                    <span className="ml-2 text-muted-foreground">
-                                      {option.duration
-                                        ? `${formatMinutes(option.duration)} / `
-                                        : ''}
-                                      ¥{option.price.toLocaleString()}
-                                    </span>
-                                    {option.note && (
-                                      <span className="block text-xs text-muted-foreground">
-                                        {option.note}
-                                      </span>
-                                    )}
-                                  </span>
-                                </label>
-                              )
-                            })}
-                          </div>
-                        )
-                      ) : displayOptionNames.length > 0 ? (
+                      {displayOptionNames.length > 0 ? (
                         <div className="mt-1 flex flex-wrap gap-2">
                           {displayOptionNames.map((option) => (
                             <Badge key={option} variant="secondary" className="text-xs">
@@ -2727,10 +2151,12 @@ export function ReservationDialog({
                         <Label htmlFor="entry-hotel-name">ホテル名</Label>
                         <Input
                           id="entry-hotel-name"
-                          value={entryForm.hotelName}
-                          onChange={(event) =>
-                            setEntryForm((prev) => ({ ...prev, hotelName: event.target.value }))
-                          }
+                          value={formState.hotelName}
+                          onChange={(event) => {
+                            const hotelName = event.target.value
+                            setFormState((prev) => ({ ...prev, hotelName }))
+                            setEntryForm((prev) => ({ ...prev, hotelName }))
+                          }}
                           placeholder="例: 渋谷グランドホテル"
                           disabled={entrySending}
                         />
@@ -2739,10 +2165,12 @@ export function ReservationDialog({
                         <Label htmlFor="entry-room-number">部屋番号</Label>
                         <Input
                           id="entry-room-number"
-                          value={entryForm.roomNumber}
-                          onChange={(event) =>
-                            setEntryForm((prev) => ({ ...prev, roomNumber: event.target.value }))
-                          }
+                          value={formState.roomNumber}
+                          onChange={(event) => {
+                            const roomNumber = event.target.value
+                            setFormState((prev) => ({ ...prev, roomNumber }))
+                            setEntryForm((prev) => ({ ...prev, roomNumber }))
+                          }}
                           placeholder="例: 1203"
                           disabled={entrySending}
                         />

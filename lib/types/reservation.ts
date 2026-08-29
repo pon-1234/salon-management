@@ -177,6 +177,7 @@ export interface ReservationUpdatePayload {
   roomNumber?: string | null
   locationMemo?: string
   options?: string[]
+  pointsUsed?: number
   castCheckedInAt?: Date | null
   castCheckedOutAt?: Date | null
 }

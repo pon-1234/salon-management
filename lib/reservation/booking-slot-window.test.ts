@@ -8,6 +8,8 @@ import {
   buildFiveMinuteWindowStarts,
   buildHalfHourBookingStarts,
   fiveMinuteWindowEndMinute,
+  mergeNowBookingStart,
+  resolveTimelineDisplayRange,
 } from './booking-slot-window'
 
 describe('booking slot window', () => {
@@ -42,5 +44,40 @@ describe('booking slot window', () => {
   it('keeps the intake window inside the same 30-minute block', () => {
     expect(fiveMinuteWindowEndMinute(10 * 60)).toBe(10 * 60 + 30)
     expect(fiveMinuteWindowEndMinute(10 * 60 + 30)).toBe(11 * 60)
+  })
+
+  it('extends the timeline to cover early appointments and after-hours now', () => {
+    expect(
+      resolveTimelineDisplayRange(
+        { startMinutes: 9 * 60, endMinutes: 23 * 60 },
+        [{ startMinutes: 8 * 60, endMinutes: 10 * 60 }],
+        23 * 60 + 40
+      )
+    ).toEqual({
+      startMinutes: 8 * 60,
+      endMinutes: 25 * 60,
+    })
+  })
+
+  it('extends the timeline to cover early clock-in and midnight clock-out', () => {
+    expect(
+      resolveTimelineDisplayRange(
+        { startMinutes: 10 * 60, endMinutes: 23 * 60 },
+        [
+          { startMinutes: 8 * 60, endMinutes: 16 * 60 + 30 },
+          { startMinutes: 19 * 60, endMinutes: 24 * 60 },
+        ],
+        null
+      )
+    ).toEqual({
+      startMinutes: 8 * 60,
+      endMinutes: 24 * 60,
+    })
+  })
+
+  it('adds a current-time booking start between half-hour circles', () => {
+    expect(
+      mergeNowBookingStart([17 * 60, 17 * 60 + 30], 17 * 60 + 7, 17 * 60, 19 * 60, 10, 5)
+    ).toEqual([17 * 60, 17 * 60 + 10, 17 * 60 + 30])
   })
 })

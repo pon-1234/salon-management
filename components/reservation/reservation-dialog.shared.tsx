@@ -37,6 +37,7 @@ export type EditFormState = {
   discountAmount: number
   designationFee: number
   price: number
+  pointsUsed: number
   areaId: string | null
   stationId: string | null
   optionIds: string[]

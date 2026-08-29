@@ -45,9 +45,14 @@ export function TimeSlotPicker({
     Array<{ startTime: string; endTime: string; available: boolean }>
   >([])
 
+  const windowStartMs = useMemo(() => windowStart?.getTime() ?? null, [windowStart])
+  const windowEndMs = useMemo(() => windowEnd?.getTime() ?? null, [windowEnd])
+
   useEffect(() => {
     if (castId && date && duration) {
-      const slots = generateTimeSlots(date, duration, businessHours, stepMinutes)
+      const slots = generateTimeSlots(date, duration, businessHours, stepMinutes, {
+        allowEndAfterClose: true,
+      })
       setAllSlots(slots.map((slot) => ({ ...slot, available: false })))
 
       getAvailableSlots(castId, date, duration, businessHours)
@@ -58,13 +63,15 @@ export function TimeSlotPicker({
     setAllSlots((prev) =>
       prev.map((slot) => ({
         ...slot,
-        available: availableSlots.length > 0 ? isSlotAvailable(slot, availableSlots) : false,
+        available:
+          windowStartMs !== null
+            ? true
+            : availableSlots.length > 0
+              ? isSlotAvailable(slot, availableSlots)
+              : false,
       }))
     )
-  }, [availableSlots, isSlotAvailable])
-
-  const windowStartMs = useMemo(() => windowStart?.getTime() ?? null, [windowStart])
-  const windowEndMs = useMemo(() => windowEnd?.getTime() ?? null, [windowEnd])
+  }, [availableSlots, isSlotAvailable, windowStartMs])
 
   const visibleSlots = useMemo(() => {
     if (windowStartMs === null && windowEndMs === null) {

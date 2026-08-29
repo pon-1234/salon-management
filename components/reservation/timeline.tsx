@@ -28,9 +28,12 @@ import {
 import { getReservationStatusLabel } from '@/lib/reservation/status-display'
 import {
   TIMELINE_BOOKING_INTERVAL_MINUTES,
+  TIMELINE_HOUR_WIDTH_PX,
   QUICK_BOOKING_STEP_MINUTES,
   buildHalfHourBookingStarts,
   ceilToInterval,
+  mergeNowBookingStart,
+  resolveTimelineDisplayRange,
 } from '@/lib/reservation/booking-slot-window'
 
 const JST_TIMEZONE = 'Asia/Tokyo'
@@ -39,6 +42,38 @@ const TIMELINE_INTERVAL_MINUTES = TIMELINE_BOOKING_INTERVAL_MINUTES
 const MIN_BOOKING_DURATION_MINUTES = 10
 const MIN_DISPLAY_SLOT_MINUTES = 10
 const CAST_COLUMN_WIDTH = 176
+const CAST_ROW_HEIGHT_CLASS = 'h-24'
+const TIME_HEADER_HEIGHT_CLASS = 'h-8'
+
+function normalizeCastWorkHours(
+  member: Cast,
+  selectedDateKey: string,
+  minutesToUtcDate: (minutes: number) => Date
+): { workStart?: Date; workEnd?: Date } {
+  if (!member.workStart || !member.workEnd) {
+    return { workStart: undefined, workEnd: undefined }
+  }
+
+  let workStart = member.workStart
+  let workEnd = member.workEnd
+  const sourceStartDateKey = formatInTimeZone(workStart, JST_TIMEZONE, 'yyyy-MM-dd')
+
+  if (sourceStartDateKey !== selectedDateKey) {
+    const sourceEndDateKey = formatInTimeZone(workEnd, JST_TIMEZONE, 'yyyy-MM-dd')
+    const startMinute =
+      Number(formatInTimeZone(workStart, JST_TIMEZONE, 'HH')) * 60 +
+      Number(formatInTimeZone(workStart, JST_TIMEZONE, 'mm'))
+    const endMinuteOfDay =
+      Number(formatInTimeZone(workEnd, JST_TIMEZONE, 'HH')) * 60 +
+      Number(formatInTimeZone(workEnd, JST_TIMEZONE, 'mm'))
+    const crossesMidnight = sourceEndDateKey > sourceStartDateKey || endMinuteOfDay <= startMinute
+
+    workStart = minutesToUtcDate(startMinute)
+    workEnd = minutesToUtcDate(endMinuteOfDay + (crossesMidnight ? MINUTES_IN_DAY : 0))
+  }
+
+  return { workStart, workEnd }
+}
 
 const snapToStep = (minute: number) => ceilToInterval(minute, QUICK_BOOKING_STEP_MINUTES)
 
@@ -81,15 +116,15 @@ export function Timeline({
   onScheduleSaved,
 }: TimelineProps) {
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null)
+  const pendingCreatedReservationIdRef = useRef<string | undefined>(undefined)
   const [selectedStaff, setSelectedStaff] = useState<Cast | null>(null)
   const [zoomLevel, setZoomLevel] = useState(1)
   const timelineBodyRef = useRef<HTMLDivElement>(null)
+  const timelineHeaderRef = useRef<HTMLDivElement>(null)
+  const timelineCastScrollRef = useRef<HTMLDivElement>(null)
   const timelineHScrollRef = useRef<HTMLDivElement>(null)
-  const HOUR_WIDTH = 120 * zoomLevel // ズームに応じた幅
-  const startMinutes = businessHours.startMinutes
-  const endMinutes = businessHours.endMinutes
-  const totalMinutes = endMinutes - startMinutes
-  const hourSegments = Math.ceil(totalMinutes / 60)
+  const syncingScrollRef = useRef(false)
+  const HOUR_WIDTH = TIMELINE_HOUR_WIDTH_PX * zoomLevel
   const selectedDateKey = formatInTimeZone(selectedDate, JST_TIMEZONE, 'yyyy-MM-dd')
   const reservationsById = useMemo(
     () => new Map(reservations.map((reservation) => [reservation.id, reservation])),
@@ -110,6 +145,53 @@ export function Timeline({
     [selectedDateKey]
   )
 
+  const minutesToUtcDate = useCallback(
+    (minutes: number) =>
+      new Date(zonedTimeToUtc(minutesToIsoInJst(selectedDateKey, minutes), JST_TIMEZONE)),
+    [selectedDateKey]
+  )
+
+  const now = new Date()
+  const todayKey = formatInTimeZone(now, JST_TIMEZONE, 'yyyy-MM-dd')
+  const isSelectedDateToday = todayKey === selectedDateKey
+  const isSelectedDatePast = selectedDateKey < todayKey
+  const nowMinutes = isSelectedDateToday ? getMinutesFromDate(now) : null
+  const appointmentRanges = safeMap(staff, (member) =>
+    safeMap(member.appointments, (appointment) => {
+      const startKey = formatInTimeZone(appointment.startTime, JST_TIMEZONE, 'yyyy-MM-dd')
+      const endKey = formatInTimeZone(appointment.endTime, JST_TIMEZONE, 'yyyy-MM-dd')
+      const overlapsSelectedDay =
+        startKey === selectedDateKey ||
+        endKey === selectedDateKey ||
+        (startKey < selectedDateKey && endKey > selectedDateKey)
+      return overlapsSelectedDay
+        ? {
+            startMinutes: getMinutesFromDate(appointment.startTime),
+            endMinutes: getMinutesFromDate(appointment.endTime),
+          }
+        : null
+    }).filter((range): range is { startMinutes: number; endMinutes: number } => range !== null)
+  ).flat()
+  const workRanges = safeMap(staff, (member) => {
+    const hours = normalizeCastWorkHours(member, selectedDateKey, minutesToUtcDate)
+    if (!hours.workStart || !hours.workEnd) {
+      return null
+    }
+    return {
+      startMinutes: getMinutesFromDate(hours.workStart),
+      endMinutes: getMinutesFromDate(hours.workEnd),
+    }
+  }).filter((range): range is { startMinutes: number; endMinutes: number } => range !== null)
+  const displayRange = resolveTimelineDisplayRange(
+    { startMinutes: businessHours.startMinutes, endMinutes: businessHours.endMinutes },
+    [...appointmentRanges, ...workRanges],
+    nowMinutes
+  )
+  const startMinutes = displayRange.startMinutes
+  const endMinutes = displayRange.endMinutes
+  const totalMinutes = endMinutes - startMinutes
+  const hourSegments = Math.ceil(totalMinutes / 60)
+
   const getTimeBlockStyle = useCallback(
     (startTime: Date, endTime: Date) => {
       const startMinute = getMinutesFromDate(startTime)
@@ -123,18 +205,6 @@ export function Timeline({
     [getMinutesFromDate, startMinutes, HOUR_WIDTH]
   )
 
-  const minutesToUtcDate = useCallback(
-    (minutes: number) =>
-      new Date(zonedTimeToUtc(minutesToIsoInJst(selectedDateKey, minutes), JST_TIMEZONE)),
-    [selectedDateKey]
-  )
-
-  const now = new Date()
-  const todayKey = formatInTimeZone(now, JST_TIMEZONE, 'yyyy-MM-dd')
-  const isSelectedDateToday = todayKey === selectedDateKey
-  const isSelectedDatePast = selectedDateKey < todayKey
-  const nowMinutes = isSelectedDateToday ? getMinutesFromDate(now) : null
-
   const buildSelectableStartTimes = useCallback(
     (slot: AvailableSlot): Date[] => {
       const startMinute = getMinutesFromDate(slot.startTime)
@@ -144,10 +214,13 @@ export function Timeline({
         return []
       }
 
-      const candidates = buildHalfHourBookingStarts(
+      const candidates = mergeNowBookingStart(
+        buildHalfHourBookingStarts(startMinute, endMinute, MIN_BOOKING_DURATION_MINUTES),
+        nowMinutes,
         startMinute,
         endMinute,
-        MIN_BOOKING_DURATION_MINUTES
+        MIN_BOOKING_DURATION_MINUTES,
+        QUICK_BOOKING_STEP_MINUTES
       )
       const filteredMinutes =
         nowMinutes !== null ? candidates.filter((minute) => minute >= nowMinutes) : candidates
@@ -187,37 +260,23 @@ export function Timeline({
   }
 
   const filteredStaff = safeMap(staff, (member) => {
-    const filteredAppointments = safeMap(member.appointments, (app) =>
-      formatInTimeZone(app.startTime, JST_TIMEZONE, 'yyyy-MM-dd') === selectedDateKey ? app : null
-    ).filter((app): app is Appointment => app !== null)
+    const filteredAppointments = safeMap(member.appointments, (app) => {
+      const startKey = formatInTimeZone(app.startTime, JST_TIMEZONE, 'yyyy-MM-dd')
+      const endKey = formatInTimeZone(app.endTime, JST_TIMEZONE, 'yyyy-MM-dd')
+      const overlapsSelectedDay =
+        startKey === selectedDateKey ||
+        endKey === selectedDateKey ||
+        (startKey < selectedDateKey && endKey > selectedDateKey)
+      return overlapsSelectedDay ? app : null
+    }).filter((app): app is Appointment => app !== null)
 
-    let workStart = member.workStart
-    let workEnd = member.workEnd
-
-    if (workStart && workEnd) {
-      const sourceStartDateKey = formatInTimeZone(workStart, JST_TIMEZONE, 'yyyy-MM-dd')
-
-      if (sourceStartDateKey !== selectedDateKey) {
-        const sourceEndDateKey = formatInTimeZone(workEnd, JST_TIMEZONE, 'yyyy-MM-dd')
-        const startMinute =
-          Number(formatInTimeZone(workStart, JST_TIMEZONE, 'HH')) * 60 +
-          Number(formatInTimeZone(workStart, JST_TIMEZONE, 'mm'))
-        const endMinuteOfDay =
-          Number(formatInTimeZone(workEnd, JST_TIMEZONE, 'HH')) * 60 +
-          Number(formatInTimeZone(workEnd, JST_TIMEZONE, 'mm'))
-        const crossesMidnight =
-          sourceEndDateKey > sourceStartDateKey || endMinuteOfDay <= startMinute
-
-        workStart = minutesToUtcDate(startMinute)
-        workEnd = minutesToUtcDate(endMinuteOfDay + (crossesMidnight ? MINUTES_IN_DAY : 0))
-      }
-    }
+    const hours = normalizeCastWorkHours(member, selectedDateKey, minutesToUtcDate)
 
     return {
       ...member,
       appointments: filteredAppointments,
-      workStart,
-      workEnd,
+      workStart: hours.workStart,
+      workEnd: hours.workEnd,
     }
   }).filter((member) => {
     // Filter out NG casts if a customer is selected
@@ -234,11 +293,11 @@ export function Timeline({
     try {
       if (isSelectedDatePast || !staff.workStart || !staff.workEnd) return []
 
-      const workStartMinute = Math.max(getMinutesFromDate(staff.workStart), startMinutes)
-      const workEndMinute = Math.min(getMinutesFromDate(staff.workEnd), endMinutes)
+      const windowStartMinute = getMinutesFromDate(staff.workStart)
+      const windowEndMinute = getMinutesFromDate(staff.workEnd)
       const timeLimitMinute = nowMinutes
 
-      if (workEndMinute <= workStartMinute) {
+      if (windowEndMinute <= windowStartMinute) {
         return []
       }
 
@@ -247,7 +306,7 @@ export function Timeline({
         (a, b) => a.startTime.getTime() - b.startTime.getTime()
       )
 
-      let currentMinute = workStartMinute
+      let currentMinute = windowStartMinute
 
       if (timeLimitMinute !== null) {
         currentMinute = Math.max(currentMinute, timeLimitMinute)
@@ -255,22 +314,19 @@ export function Timeline({
 
       currentMinute = snapToStep(currentMinute)
 
-      if (currentMinute >= workEndMinute) {
+      if (currentMinute >= windowEndMinute) {
         return []
       }
 
       for (const appointment of sortedAppointments) {
-        const appointmentStartMinute = Math.max(
-          getMinutesFromDate(appointment.startTime),
-          startMinutes
-        )
-        const appointmentEndMinute = Math.min(getMinutesFromDate(appointment.endTime), endMinutes)
+        const appointmentStartMinute = getMinutesFromDate(appointment.startTime)
+        const appointmentEndMinute = getMinutesFromDate(appointment.endTime)
 
         if (appointmentEndMinute <= currentMinute) {
           continue
         }
 
-        const gapEndMinute = Math.min(appointmentStartMinute, workEndMinute)
+        const gapEndMinute = Math.min(appointmentStartMinute, windowEndMinute)
         if (gapEndMinute - currentMinute >= MIN_DISPLAY_SLOT_MINUTES) {
           slots.push({
             startTime: minutesToUtcDate(currentMinute),
@@ -287,16 +343,16 @@ export function Timeline({
         }
         currentMinute = snapToStep(currentMinute)
 
-        if (currentMinute >= workEndMinute) {
+        if (currentMinute >= windowEndMinute) {
           break
         }
       }
 
-      if (workEndMinute - currentMinute >= MIN_DISPLAY_SLOT_MINUTES) {
+      if (windowEndMinute - currentMinute >= MIN_DISPLAY_SLOT_MINUTES) {
         slots.push({
           startTime: minutesToUtcDate(currentMinute),
-          endTime: minutesToUtcDate(workEndMinute),
-          duration: workEndMinute - currentMinute,
+          endTime: minutesToUtcDate(windowEndMinute),
+          duration: windowEndMinute - currentMinute,
           staffId: staff.id,
           staffName: staff.name,
         })
@@ -325,19 +381,97 @@ export function Timeline({
     })
   }
 
-  const timelineMinWidth = hourSegments * HOUR_WIDTH + CAST_COLUMN_WIDTH
+  const gridWidth = hourSegments * HOUR_WIDTH
   const halfHourSegments = hourSegments * 2
 
-  const syncHorizontalScroll = (source: 'body' | 'bar') => {
+  const syncHorizontalScroll = (source: 'header' | 'body' | 'bar') => {
+    if (syncingScrollRef.current) return
+    const header = timelineHeaderRef.current
     const body = timelineBodyRef.current
     const bar = timelineHScrollRef.current
-    if (!body || !bar) return
-    if (source === 'body') {
-      bar.scrollLeft = body.scrollLeft
-    } else {
-      body.scrollLeft = bar.scrollLeft
-    }
+    const left =
+      source === 'header'
+        ? (header?.scrollLeft ?? 0)
+        : source === 'body'
+          ? (body?.scrollLeft ?? 0)
+          : (bar?.scrollLeft ?? 0)
+    syncingScrollRef.current = true
+    if (header && source !== 'header') header.scrollLeft = left
+    if (body && source !== 'body') body.scrollLeft = left
+    if (bar && source !== 'bar') bar.scrollLeft = left
+    syncingScrollRef.current = false
   }
+
+  const syncVerticalScroll = (source: 'cast' | 'grid') => {
+    if (syncingScrollRef.current) return
+    const castPane = timelineCastScrollRef.current
+    const gridPane = timelineBodyRef.current
+    const top = source === 'cast' ? (castPane?.scrollTop ?? 0) : (gridPane?.scrollTop ?? 0)
+    syncingScrollRef.current = true
+    if (castPane && source !== 'cast') castPane.scrollTop = top
+    if (gridPane && source !== 'grid') gridPane.scrollTop = top
+    syncingScrollRef.current = false
+  }
+
+  const timeLabels = Array.from({ length: halfHourSegments }).map((_, index) => {
+    const minute = startMinutes + index * TIMELINE_INTERVAL_MINUTES
+    return (
+      <div
+        key={index}
+        className="flex items-center justify-center border-r text-[11px] font-medium text-gray-700"
+        style={{ width: `${HOUR_WIDTH / 2}px` }}
+      >
+        {formatMinutesAsLabel(minute)}
+      </div>
+    )
+  })
+
+  const castRows = safeMap(filteredStaff, (member) => (
+    <button
+      key={member.id}
+      className={cn(
+        `flex ${CAST_ROW_HEIGHT_CLASS} w-full items-center gap-2 overflow-hidden border-b px-2 py-1 transition-colors`,
+        member.workStart && member.workEnd
+          ? 'bg-white hover:bg-gray-50'
+          : 'bg-slate-200 hover:bg-slate-300'
+      )}
+      onClick={() => setSelectedStaff(member)}
+    >
+      <Avatar className="h-7 w-7">
+        <AvatarImage src={member.image} alt={member.name} />
+        <AvatarFallback>{member.name.slice(0, 2)}</AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 flex-1 text-left">
+        <div
+          data-testid={`timeline-cast-name-${member.name}`}
+          className="flex min-w-0 flex-col items-start"
+        >
+          <span className="w-full truncate text-sm font-medium leading-4">{member.name}</span>
+          {member.specialDesignationFee != null && member.specialDesignationFee > 0 ? (
+            <Badge
+              className="mt-0.5 h-3.5 max-w-full shrink-0 px-1 text-[9px] leading-none"
+              variant="outline"
+              aria-label={`特別指名料 ${member.specialDesignationFee.toLocaleString('ja-JP')}円`}
+            >
+              特別指名料 {member.specialDesignationFee.toLocaleString('ja-JP')}円
+            </Badge>
+          ) : null}
+        </div>
+        {member.workStart && member.workEnd ? (
+          <div className="flex h-3 items-center gap-1 text-[10px] leading-3 text-gray-600">
+            <Clock className="h-2.5 w-2.5" />
+            {formatInTimeZone(member.workStart, JST_TIMEZONE, 'HH:mm')}
+            {' - '}
+            {formatInTimeZone(member.workEnd, JST_TIMEZONE, 'HH:mm')}
+          </div>
+        ) : (
+          <Badge variant="secondary" className="h-4 px-1 text-[10px]">
+            休み
+          </Badge>
+        )}
+      </div>
+    </button>
+  ))
 
   return (
     <div className="relative bg-gray-50">
@@ -370,282 +504,258 @@ export function Timeline({
 
       <div className="relative h-[calc(100vh-8rem)] min-h-[28rem] w-full">
         <div
-          ref={timelineBodyRef}
-          data-testid="reservation-timeline-scroll"
-          className="absolute inset-x-0 bottom-4 top-0 overflow-auto"
-          onScroll={() => syncHorizontalScroll('body')}
+          className="absolute inset-x-0 top-0 grid"
+          style={{
+            bottom: '1rem',
+            gridTemplateColumns: `${CAST_COLUMN_WIDTH}px minmax(0, 1fr)`,
+            gridTemplateRows: '2rem minmax(0, 1fr)',
+          }}
         >
-          <div className="flex" style={{ minWidth: `${timelineMinWidth}px` }}>
-            {/* キャスト列 */}
+          <div
+            className={`z-30 flex ${TIME_HEADER_HEIGHT_CLASS} items-center border-b border-r bg-gray-50 px-2`}
+          >
+            <User className="mr-1 h-3.5 w-3.5 text-gray-600" />
+            <span className="text-xs font-medium">キャスト</span>
+          </div>
+          <div
+            ref={timelineHeaderRef}
+            className="overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            onScroll={() => syncHorizontalScroll('header')}
+          >
             <div
-              className="sticky left-0 z-20 border-r bg-white shadow-sm"
-              style={{ width: `${CAST_COLUMN_WIDTH}px` }}
+              data-testid="timeline-time-header"
+              className={`flex ${TIME_HEADER_HEIGHT_CLASS} border-b bg-gray-50`}
+              style={{ width: `${gridWidth}px` }}
             >
-              <div className="sticky top-0 z-30 flex h-8 items-center border-b bg-gray-50 px-2">
-                <User className="mr-1 h-3.5 w-3.5 text-gray-600" />
-                <span className="text-xs font-medium">キャスト</span>
-              </div>
-              {safeMap(filteredStaff, (member) => (
-                <button
-                  key={member.id}
-                  className={cn(
-                    'flex h-14 w-full items-center gap-2 overflow-hidden border-b px-2 py-1 transition-colors',
-                    member.workStart && member.workEnd
-                      ? 'bg-white hover:bg-gray-50'
-                      : 'bg-slate-200 hover:bg-slate-300'
-                  )}
-                  onClick={() => setSelectedStaff(member)}
-                >
-                  <Avatar className="h-7 w-7">
-                    <AvatarImage src={member.image} alt={member.name} />
-                    <AvatarFallback>{member.name.slice(0, 2)}</AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1 text-left">
-                    <div
-                      data-testid={`timeline-cast-name-${member.name}`}
-                      className="flex min-w-0 flex-col items-start"
-                    >
-                      <span className="w-full truncate text-sm font-medium leading-4">
-                        {member.name}
-                      </span>
-                      {member.specialDesignationFee != null && member.specialDesignationFee > 0 ? (
-                        <Badge
-                          className="mt-0.5 h-3.5 max-w-full shrink-0 px-1 text-[9px] leading-none"
-                          variant="outline"
-                          aria-label={`特別指名料 ${member.specialDesignationFee.toLocaleString('ja-JP')}円`}
-                        >
-                          特別指名料 {member.specialDesignationFee.toLocaleString('ja-JP')}円
-                        </Badge>
-                      ) : null}
-                    </div>
-                    {member.workStart && member.workEnd ? (
-                      <div className="flex h-3 items-center gap-1 text-[10px] leading-3 text-gray-600">
-                        <Clock className="h-2.5 w-2.5" />
-                        {formatInTimeZone(member.workStart, JST_TIMEZONE, 'HH:mm')}
-                        {' - '}
-                        {formatInTimeZone(member.workEnd, JST_TIMEZONE, 'HH:mm')}
-                      </div>
-                    ) : (
-                      <Badge variant="secondary" className="h-4 px-1 text-[10px]">
-                        休み
-                      </Badge>
-                    )}
-                  </div>
-                </button>
-              ))}
+              {timeLabels}
             </div>
-
-            {/* タイムグリッド */}
-            <div className="relative flex-1">
-              {/* 時間ヘッダー */}
+          </div>
+          <div
+            ref={timelineCastScrollRef}
+            className="overflow-y-auto overflow-x-hidden border-r bg-white [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            onScroll={() => syncVerticalScroll('cast')}
+          >
+            {castRows}
+          </div>
+          <div
+            ref={timelineBodyRef}
+            data-testid="reservation-timeline-scroll"
+            className="overflow-x-auto overflow-y-auto"
+            onScroll={() => {
+              syncHorizontalScroll('body')
+              syncVerticalScroll('grid')
+            }}
+          >
+            {safeMap(filteredStaff, (member) => (
               <div
-                data-testid="timeline-time-header"
-                className="sticky top-0 z-10 flex h-8 border-b bg-gray-50"
+                key={member.id}
+                className={cn(
+                  `relative ${CAST_ROW_HEIGHT_CLASS} border-b`,
+                  member.workStart && member.workEnd ? 'bg-slate-200' : 'bg-slate-300'
+                )}
+                style={{ width: `${gridWidth}px` }}
               >
-                {Array.from({ length: halfHourSegments }).map((_, index) => {
-                  const minute = startMinutes + index * TIMELINE_INTERVAL_MINUTES
-                  const label = formatMinutesAsLabel(minute)
+                {member.workStart && member.workEnd && (
+                  <div
+                    className="absolute top-0 h-full bg-white"
+                    style={getTimeBlockStyle(member.workStart, member.workEnd)}
+                  />
+                )}
+
+                {safeMap(member.appointments, (appointment) => {
+                  const sourceReservation = reservationsById.get(appointment.id)
+                  const rawStatus = sourceReservation?.status ?? appointment.status
+                  const displayStatus = rawStatus === 'provisional' ? 'pending' : rawStatus
+                  const statusLabel = getReservationStatusLabel(
+                    displayStatus,
+                    sourceReservation?.marketingChannel
+                  )
+                  const isTentative = displayStatus === 'pending' || displayStatus === 'tentative'
+                  const startLabel = formatInTimeZone(appointment.startTime, JST_TIMEZONE, 'HH:mm')
+                  const endLabel = formatInTimeZone(appointment.endTime, JST_TIMEZONE, 'HH:mm')
+                  const serviceName =
+                    appointment.serviceName ||
+                    (appointment.serviceId ? getCourseById(appointment.serviceId)?.name : '')
+                  const hotelLabel = [sourceReservation?.hotelName, sourceReservation?.roomNumber]
+                    .filter(Boolean)
+                    .join(' ')
+
                   return (
-                    <div
-                      key={index}
-                      className="flex items-center justify-center border-r text-[11px] font-medium text-gray-700"
-                      style={{ width: `${HOUR_WIDTH / 2}px` }}
+                    <button
+                      key={appointment.id}
+                      type="button"
+                      aria-label={`${appointment.customerName} 様 ${startLabel}-${endLabel}`}
+                      className={cn(
+                        'absolute top-1 cursor-pointer overflow-hidden rounded-md text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md',
+                        'flex flex-row items-stretch gap-0.5 px-0.5 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-1',
+                        isTentative && 'border-2 border-orange-300 bg-orange-100',
+                        displayStatus === 'modifiable' && 'border-2 border-amber-400 bg-amber-50',
+                        displayStatus === 'preconfirmed' && 'border-2 border-sky-400 bg-sky-50',
+                        displayStatus === 'completed' && 'border-2 border-slate-300 bg-slate-100',
+                        displayStatus === 'confirmed' && 'border-2 border-emerald-400 bg-white'
+                      )}
+                      style={{
+                        ...getTimeBlockStyle(appointment.startTime, appointment.endTime),
+                        height: 'calc(100% - 8px)',
+                      }}
+                      onClick={() => handleAppointmentClick(appointment)}
                     >
-                      {label}
+                      <div className="flex shrink-0 flex-col justify-center border-r border-black/10 pr-0.5 text-[10px] font-semibold leading-3 text-gray-800">
+                        <span data-testid="timeline-appointment-in">{startLabel}</span>
+                        <span data-testid="timeline-appointment-out">{endLabel}</span>
+                      </div>
+                      <div className="flex min-w-0 flex-1 flex-col justify-center">
+                        <div
+                          className="w-full min-w-0 shrink-0 truncate text-[11px] font-semibold leading-4 text-gray-900"
+                          title={`${appointment.customerName} 様`}
+                        >
+                          {appointment.customerName} 様
+                        </div>
+                        {serviceName ? (
+                          <div
+                            className="w-full min-w-0 truncate text-[10px] leading-3 text-gray-700"
+                            title={serviceName}
+                          >
+                            {serviceName}
+                          </div>
+                        ) : null}
+                        {hotelLabel ? (
+                          <div
+                            className="w-full min-w-0 truncate text-[10px] leading-3 text-gray-500"
+                            title={hotelLabel}
+                          >
+                            {hotelLabel}
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end justify-between py-0.5">
+                        <Badge
+                          variant={isTentative ? 'secondary' : 'default'}
+                          className={cn(
+                            'shrink-0 px-1 py-0 text-[10px]',
+                            isTentative && 'bg-orange-500 text-white',
+                            displayStatus === 'modifiable' && 'bg-amber-600 text-white',
+                            displayStatus === 'preconfirmed' && 'bg-sky-600 text-white',
+                            displayStatus === 'completed' && 'bg-slate-600 text-white',
+                            displayStatus === 'confirmed' && 'bg-emerald-600 text-white'
+                          )}
+                        >
+                          {statusLabel}
+                        </Badge>
+                        {(appointment.designationType === 'special' ||
+                          appointment.designationType === '特別指名') && (
+                          <Badge
+                            className="shrink-0 border border-slate-300 bg-slate-200 px-1 py-0 text-[9px] text-slate-800"
+                            aria-label="特別指名"
+                          >
+                            特別指名
+                          </Badge>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
+
+                {safeMap(getAvailableSlots(member), (slot, index) => {
+                  if (slot.duration < MIN_BOOKING_DURATION_MINUTES) return null
+                  const selectableTimes = buildSelectableStartTimes(slot)
+                  const disabled = !selectedCustomer || !canCreateReservation
+
+                  return (
+                    <div key={`${member.id}-${index}`}>
+                      <div
+                        data-testid="timeline-available-slot"
+                        className="pointer-events-none absolute top-1 h-[calc(100%-8px)] rounded-md border border-emerald-200 bg-emerald-50/60"
+                        style={getTimeBlockStyle(slot.startTime, slot.endTime)}
+                      />
+                      {selectableTimes.map((startTime) => {
+                        const label = formatInTimeZone(startTime, JST_TIMEZONE, 'HH:mm')
+                        const startMinute = getMinutesFromDate(startTime)
+                        const snappedNow =
+                          nowMinutes !== null
+                            ? ceilToInterval(nowMinutes, QUICK_BOOKING_STEP_MINUTES)
+                            : null
+                        const isNowCircle = snappedNow !== null && startMinute === snappedNow
+                        const circleEnd = minutesToUtcDate(startMinute + TIMELINE_INTERVAL_MINUTES)
+
+                        return (
+                          <Button
+                            key={startTime.toISOString()}
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className={cn(
+                              'absolute top-1 z-10 flex h-[calc(100%-8px)] items-center justify-center rounded-none border-0 p-0 hover:bg-transparent',
+                              disabled && 'cursor-not-allowed opacity-60'
+                            )}
+                            style={getTimeBlockStyle(startTime, circleEnd)}
+                            aria-label={`${label}から予約`}
+                            title={`${label}から予約`}
+                            data-current-time={isNowCircle ? 'true' : undefined}
+                            onClick={() => handleTimeSlotClick(slot, startTime)}
+                            disabled={disabled}
+                          >
+                            <span
+                              aria-hidden="true"
+                              className={cn(
+                                'h-5 w-5 rounded-full border',
+                                disabled
+                                  ? 'border-gray-300 bg-white'
+                                  : isNowCircle
+                                    ? 'border-emerald-600 bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.25)]'
+                                    : 'border-emerald-500 bg-white hover:bg-emerald-50'
+                              )}
+                            />
+                          </Button>
+                        )
+                      })}
                     </div>
                   )
                 })}
+
+                {Array.from({ length: halfHourSegments }).map((_, index) => (
+                  <div
+                    key={index}
+                    className={cn(
+                      'absolute top-0 h-full border-r',
+                      index % 2 === 0 ? 'border-gray-200' : 'border-gray-100'
+                    )}
+                    style={{ left: `${(index * HOUR_WIDTH) / 2}px` }}
+                  />
+                ))}
               </div>
-
-              {/* スタッフ別タイムライン */}
-              {safeMap(filteredStaff, (member) => (
-                <div
-                  key={member.id}
-                  className={cn(
-                    'relative h-14 border-b',
-                    member.workStart && member.workEnd ? 'bg-slate-200' : 'bg-slate-300'
-                  )}
-                >
-                  {/* 勤務時間の背景 */}
-                  {member.workStart && member.workEnd && (
-                    <div
-                      className="absolute top-0 h-full bg-white"
-                      style={getTimeBlockStyle(member.workStart, member.workEnd)}
-                    />
-                  )}
-
-                  {/* 予約ブロック */}
-                  {safeMap(member.appointments, (appointment) => {
-                    const sourceReservation = reservationsById.get(appointment.id)
-                    const displayStatus =
-                      sourceReservation?.status ??
-                      (appointment.status === 'provisional' ? 'pending' : appointment.status)
-                    const statusLabel = getReservationStatusLabel(
-                      displayStatus,
-                      sourceReservation?.marketingChannel
-                    )
-                    const isTentative = displayStatus === 'pending' || displayStatus === 'tentative'
-                    const durationMinutes = Math.round(
-                      (appointment.endTime.getTime() - appointment.startTime.getTime()) / 60000
-                    )
-                    const startLabel = formatInTimeZone(
-                      appointment.startTime,
-                      JST_TIMEZONE,
-                      'HH:mm'
-                    )
-                    const endLabel = formatInTimeZone(appointment.endTime, JST_TIMEZONE, 'HH:mm')
-                    const serviceName =
-                      appointment.serviceName ||
-                      (appointment.serviceId ? getCourseById(appointment.serviceId)?.name : '')
-
-                    return (
-                      <button
-                        key={appointment.id}
-                        type="button"
-                        aria-label={`${appointment.customerName} 様 ${startLabel}-${endLabel}`}
-                        className={cn(
-                          'absolute top-1 cursor-pointer overflow-hidden rounded-md text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md',
-                          'flex flex-col px-1.5 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-1',
-                          isTentative && 'border-2 border-orange-300 bg-orange-100',
-                          displayStatus === 'modifiable' && 'border-2 border-amber-400 bg-amber-50',
-                          displayStatus === 'preconfirmed' && 'border-2 border-sky-400 bg-sky-50',
-                          displayStatus === 'completed' && 'border-2 border-slate-300 bg-slate-100',
-                          displayStatus === 'confirmed' && 'border-2 border-emerald-400 bg-white'
-                        )}
-                        style={{
-                          ...getTimeBlockStyle(appointment.startTime, appointment.endTime),
-                          height: 'calc(100% - 8px)',
-                        }}
-                        onClick={() => handleAppointmentClick(appointment)}
-                      >
-                        <div
-                          className="w-full min-w-0 shrink-0 truncate text-sm font-semibold leading-5 text-gray-900"
-                          title={appointment.customerName}
-                        >
-                          {appointment.customerName}
-                        </div>
-                        <div className="mt-0.5 flex w-full shrink-0 items-center justify-between gap-1 leading-4">
-                          <Badge
-                            variant={isTentative ? 'secondary' : 'default'}
-                            className={cn(
-                              'shrink-0 px-1.5 py-0 text-xs',
-                              isTentative && 'bg-orange-500 text-white',
-                              displayStatus === 'modifiable' && 'bg-amber-600 text-white',
-                              displayStatus === 'preconfirmed' && 'bg-sky-600 text-white',
-                              displayStatus === 'completed' && 'bg-slate-600 text-white',
-                              displayStatus === 'confirmed' && 'bg-emerald-600 text-white'
-                            )}
-                          >
-                            {statusLabel}
-                          </Badge>
-                          {(appointment.designationType === 'special' ||
-                            appointment.designationType === '特別指名') && (
-                            <Badge
-                              className="shrink-0 border border-slate-300 bg-slate-200 px-1.5 py-0 text-[10px] text-slate-800"
-                              aria-label="特別指名"
-                            >
-                              特別指名
-                            </Badge>
-                          )}
-                          <span className="shrink-0 text-xs text-gray-600">
-                            {durationMinutes}分
-                          </span>
-                        </div>
-                        <div className="mt-0.5 flex w-full min-w-0 shrink-0 items-center gap-1 text-xs leading-4 text-gray-600">
-                          <Clock className="h-3 w-3 shrink-0" />
-                          <span className="shrink-0">
-                            {startLabel}-{endLabel}
-                          </span>
-                          {serviceName && (
-                            <span className="min-w-0 truncate text-gray-500" title={serviceName}>
-                              ・{serviceName}
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    )
-                  })}
-
-                  {safeMap(getAvailableSlots(member), (slot, index) => {
-                    if (slot.duration < MIN_BOOKING_DURATION_MINUTES) return null
-                    const selectableTimes = buildSelectableStartTimes(slot)
-                    const disabled = !selectedCustomer || !canCreateReservation
-
-                    return (
-                      <div key={`${member.id}-${index}`}>
-                        <div
-                          data-testid="timeline-available-slot"
-                          className="pointer-events-none absolute top-1 h-[calc(100%-8px)] rounded-md border border-emerald-200 bg-emerald-50/60"
-                          style={getTimeBlockStyle(slot.startTime, slot.endTime)}
-                        />
-                        {selectableTimes.map((startTime) => {
-                          const label = formatInTimeZone(startTime, JST_TIMEZONE, 'HH:mm')
-                          const startMinute = getMinutesFromDate(startTime)
-                          const circleEnd = minutesToUtcDate(
-                            startMinute + TIMELINE_INTERVAL_MINUTES
-                          )
-
-                          return (
-                            <Button
-                              key={startTime.toISOString()}
-                              type="button"
-                              size="sm"
-                              variant="ghost"
-                              className={cn(
-                                'absolute top-1 z-10 flex h-[calc(100%-8px)] items-center justify-center rounded-none border-0 p-0 hover:bg-transparent',
-                                disabled && 'cursor-not-allowed opacity-60'
-                              )}
-                              style={getTimeBlockStyle(startTime, circleEnd)}
-                              aria-label={`${label}から予約`}
-                              title={`${label}から予約`}
-                              onClick={() => handleTimeSlotClick(slot, startTime)}
-                              disabled={disabled}
-                            >
-                              <span
-                                aria-hidden="true"
-                                className={cn(
-                                  'h-5 w-5 rounded-full border',
-                                  disabled
-                                    ? 'border-gray-300 bg-white'
-                                    : 'border-emerald-500 bg-white hover:bg-emerald-50'
-                                )}
-                              />
-                            </Button>
-                          )
-                        })}
-                      </div>
-                    )
-                  })}
-
-                  {/* 時間グリッド線 */}
-                  {Array.from({ length: halfHourSegments }).map((_, index) => (
-                    <div
-                      key={index}
-                      className={cn(
-                        'absolute top-0 h-full border-r',
-                        index % 2 === 0 ? 'border-gray-200' : 'border-gray-100'
-                      )}
-                      style={{ left: `${(index * HOUR_WIDTH) / 2}px` }}
-                    />
-                  ))}
-                </div>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
-        <div
-          ref={timelineHScrollRef}
-          data-testid="timeline-horizontal-scrollbar"
-          className="absolute inset-x-0 bottom-0 h-4 overflow-y-hidden overflow-x-scroll border-t bg-gray-100"
-          onScroll={() => syncHorizontalScroll('bar')}
-        >
-          <div style={{ width: `${timelineMinWidth}px`, height: 1 }} />
+        <div className="absolute inset-x-0 bottom-0 flex h-4">
+          <div
+            className="shrink-0 border-t bg-gray-100"
+            style={{ width: `${CAST_COLUMN_WIDTH}px` }}
+          />
+          <div
+            ref={timelineHScrollRef}
+            data-testid="timeline-horizontal-scrollbar"
+            className="min-w-0 flex-1 overflow-y-hidden overflow-x-scroll border-t bg-gray-100"
+            onScroll={() => syncHorizontalScroll('bar')}
+          >
+            <div style={{ width: `${gridWidth}px`, height: 1 }} />
+          </div>
         </div>
       </div>
 
       <QuickBookingDialog
         open={canCreateReservation && !!selectedSlot}
-        onOpenChange={(open) => !open && setSelectedSlot(null)}
+        onOpenChange={(open) => {
+          if (open) {
+            return
+          }
+          setSelectedSlot(null)
+          const createdId = pendingCreatedReservationIdRef.current
+          pendingCreatedReservationIdRef.current = undefined
+          if (createdId !== undefined) {
+            onReservationCreated?.(createdId === '' ? undefined : createdId)
+          }
+        }}
         selectedStaff={
           selectedSlot
             ? (staff?.find((member) => member.id === selectedSlot.staffId) ??
@@ -660,7 +770,7 @@ export function Timeline({
         selectedSlot={selectedSlot}
         selectedCustomer={selectedCustomer}
         onReservationCreated={(reservationId) => {
-          onReservationCreated?.(reservationId)
+          pendingCreatedReservationIdRef.current = reservationId ?? ''
         }}
         businessHours={businessHours}
       />

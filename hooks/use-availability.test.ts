@@ -83,4 +83,23 @@ describe('useAvailability generateTimeSlots', () => {
       })
     ).toBe(true)
   })
+
+  it('can offer starts after reception close when the course would end past business hours', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2099-01-19T00:00:00.000Z'))
+    const { result } = renderHook(() => useAvailability())
+
+    const slots = result.current.generateTimeSlots(
+      '2099-01-20',
+      60,
+      range(10 * 60, 23 * 60, '10:00', '23:00'),
+      30,
+      { allowEndAfterClose: true }
+    )
+
+    const starts = slots.map((slot) => slot.startTime)
+    expect(starts).toContain('2099-01-20T13:30:00.000Z')
+    expect(starts).toContain('2099-01-20T14:00:00.000Z')
+    expect(starts).toContain('2099-01-20T14:30:00.000Z')
+  })
 })

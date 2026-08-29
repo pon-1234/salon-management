@@ -8,6 +8,8 @@ import { utcToZonedTime } from 'date-fns-tz'
 import type { Cast } from '@/lib/cast/types'
 import { resolveOptionId } from '@/lib/options/data'
 import type { BusinessHoursRange } from '@/lib/settings/business-hours'
+import type { DesignationFee } from '@/lib/designation/types'
+import { resolveDesignationKind } from '@/lib/designation/kind'
 
 export type DesignationType = 'none' | 'regular' | 'special'
 
@@ -148,4 +150,57 @@ export function getCastAvailableOptions(
 
 export function getUniqueSelectedOptionIds(optionIds: readonly string[]): string[] {
   return Array.from(new Set(optionIds))
+}
+
+export function ensureBookingDesignationOptions(
+  fees: DesignationFee[],
+  specialDesignationFee?: number | null
+): DesignationFee[] {
+  const panelPrice =
+    typeof specialDesignationFee === 'number' && specialDesignationFee > 0
+      ? specialDesignationFee
+      : 0
+  const result = fees
+    .filter((fee) => fee.isActive)
+    .map((fee) => {
+      if (resolveDesignationKind(fee) !== 'panel' || panelPrice <= 0) {
+        return fee
+      }
+      return {
+        ...fee,
+        price: panelPrice,
+        castShare: panelPrice,
+        storeShare: 0,
+      }
+    })
+
+  if (!result.some((fee) => resolveDesignationKind(fee) === 'free')) {
+    result.push({
+      id: 'fallback-free',
+      name: 'フリー指名',
+      price: 0,
+      storeShare: 0,
+      castShare: 0,
+      sortOrder: 0,
+      isActive: true,
+      kind: 'free',
+    })
+  }
+
+  if (!result.some((fee) => resolveDesignationKind(fee) === 'panel')) {
+    result.push({
+      id: 'fallback-panel',
+      name: 'おすすめパネル指名',
+      price: panelPrice,
+      storeShare: 0,
+      castShare: panelPrice,
+      sortOrder: Number.MAX_SAFE_INTEGER,
+      isActive: true,
+      kind: 'panel',
+    })
+  }
+
+  return result.sort(
+    (left, right) => left.sortOrder - right.sortOrder || left.name.localeCompare(right.name)
+  )
 }

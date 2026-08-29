@@ -4,8 +4,13 @@
  * @known_issues None currently
  */
 import { describe, it, expect } from 'vitest'
-import { getCastAvailableOptions, getUniqueSelectedOptionIds } from './quick-booking.utils'
+import {
+  ensureBookingDesignationOptions,
+  getCastAvailableOptions,
+  getUniqueSelectedOptionIds,
+} from './quick-booking.utils'
 import type { Cast } from '@/lib/cast/types'
+import type { DesignationFee } from '@/lib/designation/types'
 
 const baseCast: Cast = {
   id: 'cast-1',
@@ -75,5 +80,46 @@ describe('getUniqueSelectedOptionIds', () => {
         'legacy-option-aroma',
       ])
     ).toEqual(['legacy-option-aroma', 'legacy-option-stone'])
+  })
+})
+
+describe('ensureBookingDesignationOptions', () => {
+  const repeatFee: DesignationFee = {
+    id: 'fee-repeat',
+    name: 'リピート指名',
+    price: 3_000,
+    storeShare: 1_000,
+    castShare: 2_000,
+    sortOrder: 2,
+    isActive: true,
+    kind: 'repeat',
+  }
+
+  it('adds フリー指名 and おすすめパネル指名 when the catalog lacks them', () => {
+    const options = ensureBookingDesignationOptions([repeatFee], 5_000)
+    expect(options.map((fee) => fee.name)).toEqual([
+      'フリー指名',
+      'リピート指名',
+      'おすすめパネル指名',
+    ])
+    expect(options.find((fee) => fee.kind === 'panel')?.price).toBe(5_000)
+  })
+
+  it('applies the cast special designation fee to an existing panel option', () => {
+    const panelFee: DesignationFee = {
+      id: 'fee-panel',
+      name: 'パネル指名',
+      price: 2_000,
+      storeShare: 1_200,
+      castShare: 800,
+      sortOrder: 2,
+      isActive: true,
+      kind: 'panel',
+    }
+    const options = ensureBookingDesignationOptions([panelFee], 8_000)
+    expect(options).toHaveLength(2)
+    expect(options.find((fee) => fee.kind === 'panel')).toEqual(
+      expect.objectContaining({ name: 'パネル指名', price: 8_000 })
+    )
   })
 })

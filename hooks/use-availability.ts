@@ -136,16 +136,21 @@ export function useAvailability() {
       dateString: string,
       duration: number,
       businessHours: BusinessHoursRange = DEFAULT_BUSINESS_HOURS,
-      stepMinutes = RESERVATION_START_STEP_MINUTES
+      stepMinutes = RESERVATION_START_STEP_MINUTES,
+      options?: { allowEndAfterClose?: boolean }
     ) => {
       const slots: TimeSlot[] = []
       const increment = Math.max(1, stepMinutes)
+      const allowEndAfterClose = options?.allowEndAfterClose === true
+      const rangeEnd = allowEndAfterClose
+        ? Math.max(businessHours.endMinutes, 24 * 60)
+        : businessHours.endMinutes
 
       const nowUtc = new Date()
 
       for (
         let minute = ceilReservationStartMinutes(businessHours.startMinutes);
-        minute + duration <= businessHours.endMinutes;
+        allowEndAfterClose ? minute < rangeEnd : minute + duration <= rangeEnd;
         minute += increment
       ) {
         const slotStartIso = minutesToIsoInJst(dateString, minute)

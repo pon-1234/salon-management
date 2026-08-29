@@ -166,10 +166,10 @@ const selectedTime = new Date('2099-01-02T03:00:00.000Z')
 
 function createFetchMock(completedHistory: unknown[] = []) {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    if (init?.method === 'POST') {
+    if (init?.method === 'POST' || init?.method === 'PUT') {
       return {
         ok: true,
-        status: 201,
+        status: init?.method === 'POST' ? 201 : 200,
         json: async () => ({ id: 'reservation-created' }),
       } as Response
     }
@@ -214,8 +214,13 @@ function dialogElement({
 
 async function waitForOnePageBookingForm() {
   await waitFor(() => expect(screen.getAllByText(/テストコース 60分/)).not.toHaveLength(0))
-  expect(await screen.findByText('オプション選択')).toBeInTheDocument()
+  expect(await screen.findByText(/オプション選択/)).toBeInTheDocument()
   expect(await screen.findByText('料金内訳')).toBeInTheDocument()
+}
+
+async function submitConfirmed(user: ReturnType<typeof userEvent.setup>) {
+  await user.selectOptions(screen.getByLabelText('予約ステータス'), '確定済')
+  await user.click(screen.getByRole('button', { name: '予約を確定' }))
 }
 
 function getPostedReservation(fetchMock: ReturnType<typeof createFetchMock>) {
@@ -242,15 +247,14 @@ describe('QuickBookingDialog', () => {
     vi.unstubAllGlobals()
   })
 
-  it('uses the reservation受付 name and hides dispatch-related fields', async () => {
+  it('uses the reservation受付 name and shows service location fields', async () => {
     vi.stubGlobal('fetch', createFetchMock())
     render(dialogElement())
 
     expect(await screen.findByRole('heading', { name: '予約受付' })).toBeInTheDocument()
-    expect(screen.queryByText('出張エリア・待ち合わせ場所')).not.toBeInTheDocument()
-    expect(screen.queryByText('エリア')).not.toBeInTheDocument()
-    expect(screen.queryByText('待ち合わせ駅')).not.toBeInTheDocument()
-    expect(screen.queryByText('現地情報メモ')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('対応エリア')).toBeInTheDocument()
+    expect(screen.getByLabelText('最寄り駅')).toBeInTheDocument()
+    expect(screen.getByLabelText('訪問先メモ')).toBeInTheDocument()
   })
 
   it('shows every booking section together without step navigation and keeps submit visible', async () => {
@@ -268,12 +272,16 @@ describe('QuickBookingDialog', () => {
     expect(screen.getByText('サービス詳細')).toBeInTheDocument()
     expect(screen.getByText('コース選択')).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: '指名設定' })).toBeInTheDocument()
-    expect(screen.getByText('支払い・受付情報')).toBeInTheDocument()
+    expect(screen.getByText('オプション選択・支払い情報')).toBeInTheDocument()
+    expect(screen.getByText('集客・受付情報')).toBeInTheDocument()
     expect(screen.getByText('料金内訳')).toBeInTheDocument()
+    expect(screen.getByText('追加料金')).toBeInTheDocument()
+    expect(screen.getByText('割引')).toBeInTheDocument()
+    expect(screen.getByText('ポイント利用')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '次へ' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '戻る' })).not.toBeInTheDocument()
 
-    const submit = screen.getByRole('button', { name: '予約を確定' })
+    const submit = screen.getByRole('button', { name: '事前確認として保存' })
     const stickyFooter = screen.getByTestId('quick-booking-sticky-footer')
     expect(stickyFooter).toHaveClass('sticky', 'bottom-0')
     expect(stickyFooter).toContainElement(submit)
@@ -296,7 +304,7 @@ describe('QuickBookingDialog', () => {
     expect(timeInput).toHaveAttribute('step', '300')
 
     fireEvent.change(timeInput!, { target: { value: '12:03' } })
-    fireEvent.click(screen.getByRole('button', { name: '予約を確定' }))
+    fireEvent.click(screen.getByRole('button', { name: '事前確認として保存' }))
 
     await waitFor(() =>
       expect(mocks.toast).toHaveBeenCalledWith({
@@ -342,6 +350,73 @@ describe('QuickBookingDialog', () => {
 
     expect(screen.queryByRole('button', { name: /フリー/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /リピート指名/ })).not.toBeInTheDocument()
+  })
+
+  it('offers フリー指名 and おすすめパネル指名 when the catalog is empty', async () => {
+    const user = userEvent.setup()
+    mocks.getDesignationFees.mockResolvedValue([])
+    vi.stubGlobal('fetch', createFetchMock())
+    render(
+      <QuickBookingDialog
+        open
+        onOpenChange={vi.fn()}
+        selectedStaff={{ ...selectedStaff, specialDesignationFee: 5_000 }}
+        selectedTime={selectedTime}
+        selectedSlot={null}
+        selectedCustomer={selectedCustomer}
+        businessHours={businessHours}
+      />
+    )
+
+    await waitForOnePageBookingForm()
+    const designation = screen.getByRole('combobox', { name: '指名設定' })
+    Object.assign(designation, {
+      hasPointerCapture: () => false,
+      setPointerCapture: () => undefined,
+      releasePointerCapture: () => undefined,
+    })
+    await user.click(designation)
+    expect(await screen.findByRole('option', { name: /フリー指名/ })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /おすすめパネル指名/ })).toBeInTheDocument()
+  })
+
+  it('still offers フリー指名 and おすすめパネル指名 when the catalog only has リピート指名', async () => {
+    const user = userEvent.setup()
+    mocks.getDesignationFees.mockResolvedValue([
+      {
+        id: 'fee-repeat',
+        name: 'リピート指名',
+        price: 3_000,
+        storeShare: 1_000,
+        castShare: 2_000,
+        sortOrder: 2,
+        isActive: true,
+        kind: 'repeat',
+      },
+    ])
+    vi.stubGlobal('fetch', createFetchMock())
+    render(
+      <QuickBookingDialog
+        open
+        onOpenChange={vi.fn()}
+        selectedStaff={{ ...selectedStaff, specialDesignationFee: 4_000 }}
+        selectedTime={selectedTime}
+        selectedSlot={null}
+        selectedCustomer={selectedCustomer}
+        businessHours={businessHours}
+      />
+    )
+
+    await waitForOnePageBookingForm()
+    const designation = screen.getByRole('combobox', { name: '指名設定' })
+    Object.assign(designation, {
+      hasPointerCapture: () => false,
+      setPointerCapture: () => undefined,
+      releasePointerCapture: () => undefined,
+    })
+    await user.click(designation)
+    expect(await screen.findByRole('option', { name: /フリー指名/ })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /おすすめパネル指名/ })).toBeInTheDocument()
   })
 
   it('auto-selects フリー for a first visit and リピート指名 when the customer already used that cast', async () => {
@@ -459,7 +534,24 @@ describe('QuickBookingDialog', () => {
     await waitForOnePageBookingForm()
     await user.click(screen.getByRole('checkbox', { name: /アロマ追加/ }))
     expect(screen.queryByText('交通費（円）')).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: '予約を確定' }))
+    const areaSelect = screen.getByRole('combobox', { name: '対応エリア' })
+    Object.assign(areaSelect, {
+      hasPointerCapture: () => false,
+      setPointerCapture: () => undefined,
+      releasePointerCapture: () => undefined,
+    })
+    await user.click(areaSelect)
+    await user.click(await screen.findByRole('option', { name: '池袋エリア' }))
+    const stationSelect = screen.getByRole('combobox', { name: '最寄り駅' })
+    Object.assign(stationSelect, {
+      hasPointerCapture: () => false,
+      setPointerCapture: () => undefined,
+      releasePointerCapture: () => undefined,
+    })
+    await user.click(stationSelect)
+    await user.click(await screen.findByRole('option', { name: '池袋駅' }))
+    await user.type(screen.getByLabelText('訪問先メモ'), '101前で待つ')
+    await submitConfirmed(user)
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -471,9 +563,9 @@ describe('QuickBookingDialog', () => {
       expect.objectContaining({
         status: 'confirmed',
         options: ['legacy-option-aroma'],
-        areaId: null,
-        stationId: null,
-        locationMemo: '',
+        areaId: 'area-ikebukuro',
+        stationId: 'station-ikebukuro',
+        locationMemo: '101前で待つ',
         transportationFee: 0,
       })
     )
@@ -487,7 +579,7 @@ describe('QuickBookingDialog', () => {
 
     await waitForOnePageBookingForm()
     const statusSelect = screen.getByLabelText('予約ステータス')
-    expect(statusSelect).toHaveValue('確定済')
+    expect(statusSelect).toHaveValue('事前確認')
     await user.selectOptions(statusSelect, '仮予約')
     await user.click(screen.getByRole('button', { name: '仮予約として保存' }))
 
@@ -500,19 +592,15 @@ describe('QuickBookingDialog', () => {
     expect(getPostedReservation(fetchMock)).toEqual(expect.objectContaining({ status: 'pending' }))
   })
 
-  it('keeps store memo and points collapsed until additional fields are opened', async () => {
+  it('keeps points and store memo visible in the booking panels', async () => {
     render(dialogElement())
     await waitForOnePageBookingForm()
 
-    expect(
-      screen.queryByPlaceholderText('店舗用メモがあれば記載してください')
-    ).not.toBeInTheDocument()
-    expect(screen.queryByRole('switch', { name: 'ポイントを利用' })).not.toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: '追加項目（ポイント・店舗メモ）' }))
-
     expect(screen.getByPlaceholderText('店舗用メモがあれば記載してください')).toBeInTheDocument()
     expect(screen.getByRole('switch', { name: 'ポイントを利用' })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: '追加項目（ポイント・店舗メモ）' })
+    ).not.toBeInTheDocument()
   })
 
   it('closes an unsaved card-payment draft from the footer without extra steps', async () => {
@@ -542,7 +630,7 @@ describe('QuickBookingDialog', () => {
     await user.click(await screen.findByRole('option', { name: 'クレジットカード' }))
     const referenceInput = screen.getByLabelText('カード決済管理番号')
     await user.type(referenceInput, 'IK-2026-00421')
-    await user.click(screen.getByRole('button', { name: '予約を確定' }))
+    await submitConfirmed(user)
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -570,7 +658,6 @@ describe('QuickBookingDialog', () => {
     fireEvent.change(dateInput!, { target: { value: '2099-05-06' } })
     expect(dateInput).toHaveValue('2099-05-06')
     await waitForOnePageBookingForm()
-    await user.click(screen.getByRole('button', { name: '追加項目（ポイント・店舗メモ）' }))
     await user.type(
       screen.getByPlaceholderText('店舗用メモがあれば記載してください'),
       '前回入力したメモ'
@@ -587,9 +674,8 @@ describe('QuickBookingDialog', () => {
       )
     })
     await waitForOnePageBookingForm()
-    await user.click(screen.getByRole('button', { name: '追加項目（ポイント・店舗メモ）' }))
     expect(screen.getByPlaceholderText('店舗用メモがあれば記載してください')).toHaveValue('')
-    expect(screen.getByLabelText('予約ステータス')).toHaveValue('確定済')
+    expect(screen.getByLabelText('予約ステータス')).toHaveValue('事前確認')
   })
 
   it('does not erase entered text when async catalog data arrives while open', async () => {
@@ -598,7 +684,6 @@ describe('QuickBookingDialog', () => {
     const { rerender } = render(dialogElement())
 
     await waitForOnePageBookingForm()
-    await user.click(screen.getByRole('button', { name: '追加項目（ポイント・店舗メモ）' }))
     const notes = screen.getByPlaceholderText('店舗用メモがあれば記載してください')
     await user.type(notes, '入力途中のメモ')
     expect(notes).toHaveValue('入力途中のメモ')
@@ -631,7 +716,7 @@ describe('QuickBookingDialog', () => {
     render(dialogElement({ onOpenChange }))
 
     await waitForOnePageBookingForm()
-    await user.click(screen.getByRole('button', { name: '予約を確定' }))
+    await submitConfirmed(user)
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -692,6 +777,121 @@ describe('QuickBookingDialog', () => {
     await waitForOnePageBookingForm()
     expect(screen.getByLabelText('ホテル名')).toBeInTheDocument()
     expect(screen.getByLabelText('部屋番号')).toBeInTheDocument()
-    expect(screen.getByRole('combobox', { name: '担当者' })).toHaveTextContent('テストキャスト')
+    expect(screen.getByRole('combobox', { name: '担当キャスト' })).toHaveTextContent(
+      'テストキャスト'
+    )
+  })
+
+  it('defaults returning customers to confirmed and first-time customers to preconfirmed', async () => {
+    vi.stubGlobal(
+      'fetch',
+      createFetchMock([
+        {
+          id: 'past-1',
+          startTime: '2099-01-01T03:00:00.000Z',
+          staffName: 'テストキャスト',
+          serviceName: 'テストコース',
+        },
+      ])
+    )
+    render(dialogElement())
+    await waitForOnePageBookingForm()
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('予約ステータス')).toHaveValue('確定済')
+    })
+  })
+
+  it('closes after a created booking without asking to discard', async () => {
+    const user = userEvent.setup()
+    const onOpenChange = vi.fn()
+    vi.stubGlobal('fetch', createFetchMock())
+    render(dialogElement({ onOpenChange }))
+
+    await waitForOnePageBookingForm()
+    await submitConfirmed(user)
+    await waitFor(() =>
+      expect(screen.getByText('予約を作成しました。内容を確認できます。')).toBeInTheDocument()
+    )
+
+    await user.click(screen.getByRole('button', { name: '閉じる' }))
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+    expect(screen.queryByText('入力内容を破棄しますか？')).not.toBeInTheDocument()
+  })
+
+  it('closes from the header X after a created booking without asking to discard', async () => {
+    const user = userEvent.setup()
+    const onOpenChange = vi.fn()
+    vi.stubGlobal('fetch', createFetchMock())
+    render(dialogElement({ onOpenChange }))
+
+    await waitForOnePageBookingForm()
+    await submitConfirmed(user)
+    await waitFor(() =>
+      expect(screen.getByText('予約を作成しました。内容を確認できます。')).toBeInTheDocument()
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+    expect(screen.queryByText('入力内容を破棄しますか？')).not.toBeInTheDocument()
+  })
+
+  it('lets the operator change course and payment after confirm and persist with PUT', async () => {
+    const user = userEvent.setup()
+    mocks.coursePrices = [
+      ...mocks.coursePrices,
+      {
+        id: 'course-90',
+        name: '90分コース',
+        duration: 90,
+        price: 18_000,
+        storeShare: 6_000,
+        castShare: 12_000,
+      },
+      {
+        id: 'course-190',
+        name: '190分コース',
+        duration: 190,
+        price: 32_000,
+        storeShare: 12_000,
+        castShare: 20_000,
+      },
+    ]
+    const fetchMock = createFetchMock()
+    vi.stubGlobal('fetch', fetchMock)
+    render(dialogElement())
+
+    await waitForOnePageBookingForm()
+    await user.click(screen.getByRole('checkbox', { name: /アロマ追加/ }))
+    const paymentMethod = screen.getByRole('combobox', { name: '支払い方法' })
+    Object.assign(paymentMethod, {
+      hasPointerCapture: () => false,
+      setPointerCapture: () => undefined,
+      releasePointerCapture: () => undefined,
+    })
+    await user.click(paymentMethod)
+    await user.click(await screen.findByRole('option', { name: 'クレジットカード' }))
+    await user.click(screen.getByRole('button', { name: '90分コース 90分 18,000円' }))
+    expect(screen.getByRole('button', { name: '90分コース 90分 18,000円' })).toHaveAttribute(
+      'class',
+      expect.stringContaining('bg-primary')
+    )
+    expect(screen.getByText('18,000円')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '190分コース 190分 32,000円' }))
+    expect(screen.getByText('32,000円')).toBeInTheDocument()
+    await submitConfirmed(user)
+
+    await waitFor(() =>
+      expect(screen.getByText('予約を作成しました。内容を確認できます。')).toBeInTheDocument()
+    )
+    await user.click(screen.getByRole('button', { name: '90分コース 90分 18,000円' }))
+    await user.click(screen.getByRole('button', { name: '予約を更新' }))
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ method: 'PUT' })
+      )
+    )
   })
 })
