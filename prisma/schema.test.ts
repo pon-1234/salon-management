@@ -84,6 +84,21 @@ describe('Prisma schema', () => {
     expect(migration).toContain('Reservation_receptionStaffId_fkey')
   })
 
+  it('persists up to three ordered course snapshots on a reservation', () => {
+    expect(schemaContent).toMatch(/courseItems\s+Json\?/)
+    const migration = readFileSync(
+      join(
+        process.cwd(),
+        'prisma',
+        'migrations',
+        '20260830090000_add_reservation_course_items',
+        'migration.sql'
+      ),
+      'utf8'
+    )
+    expect(migration).toContain('ADD COLUMN "courseItems" JSONB')
+  })
+
   it('should have CoursePrice model defined', () => {
     expect(schemaContent).toContain('model CoursePrice {')
   })

@@ -52,18 +52,29 @@ import {
 } from '@/lib/reservation/option-selection-error'
 import {
   attachedOptionIds,
+  hasOptionSelectionChanged,
   mergeAttachedOptionRecords,
+  normalizeRequestedOptionIds,
   resolveSelectedOptionIds,
   uniqueResolvedOptionIds,
   type ReservationOptionRecord,
 } from '@/lib/reservation/resolve-selected-options'
 import { applyStoreCreditCardFee } from '@/lib/reservation/credit-card-fee'
 import {
+  resolveCourseRevenueSource,
+  resolveCourseSelectionPersistence,
+  resolveCourseSelectionSummary,
+  tryResolveCourseSelectionUpdate,
+  tryResolveCreateCourseSelection,
+  type ReservationCourseRecord,
+} from '@/lib/reservation/course-selection'
+import {
   formatCurrency,
   formatDesignation,
   formatSchedule,
   formatStatus,
   formatText,
+  hasReservationRevenueUpdate,
   isValidHotelExpense,
   normalizePaymentMethodInput,
   parseReservationDate,
@@ -475,6 +486,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const courseSelectionResult = await tryResolveCreateCourseSelection(
+      db,
+      storeId,
+      courseRecord,
+      reservationData.courseIds
+    )
+    if (!courseSelectionResult.ok) {
+      return NextResponse.json({ error: courseSelectionResult.error }, { status: 400 })
+    }
+    const { courseIds: requestedCourseIds, summary: courseSummary } = courseSelectionResult.value
     let resolvedLocation
     try {
       resolvedLocation = await resolveReservationLocation(db, {
@@ -732,10 +753,10 @@ export async function POST(request: NextRequest) {
           typeof reservationData.discountAmount === 'number' ? reservationData.discountAmount : 0
 
         const revenueInputBase = {
-          basePrice: Number(courseRecord.price ?? 0),
+          basePrice: courseSummary.price,
           course: {
-            storeShare: courseRecord.storeShare,
-            castShare: courseRecord.castShare,
+            storeShare: courseSummary.storeShare,
+            castShare: courseSummary.castShare,
           },
           options: optionsToCreate.map((option) => ({
             price: option.optionPrice,
@@ -780,7 +801,8 @@ export async function POST(request: NextRequest) {
           data: {
             customerId: targetCustomerId,
             castId: reservationData.castId,
-            courseId: reservationData.courseId,
+            courseId: requestedCourseIds[0],
+            courseItems: courseSummary.items,
             receptionStaffId,
             storeId,
             status: reservationData.status ?? 'pending',
@@ -1135,55 +1157,28 @@ export async function PUT(request: NextRequest) {
     const actorIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null
     const actorAgent = request.headers.get('user-agent') ?? null
     const previousReservation = existingReservation
-    const courseChanged =
-      typeof updates.courseId === 'string' &&
-      updates.courseId.length > 0 &&
-      updates.courseId !== existingReservation.courseId
-    const designationTypeChanged =
-      Object.prototype.hasOwnProperty.call(updates, 'designationType') &&
-      (updates.designationType ?? null) !== (existingReservation.designationType ?? null)
-    const numericFieldChanged = (requestedValue: unknown, currentValue: unknown) =>
-      typeof requestedValue === 'number' &&
-      Number.isFinite(requestedValue) &&
-      requestedValue !== Number(currentValue ?? 0)
-    const requestedOptionIds: string[] | null = Array.isArray(updates.options)
-      ? Array.from(
-          new Set(
-            (updates.options as unknown[])
-              .filter(
-                (optionId: unknown): optionId is string =>
-                  typeof optionId === 'string' && optionId.trim().length > 0
-              )
-              .map((optionId: string) => optionId.trim())
-          )
-        )
-      : null
-    const existingOptionIds = (existingReservation.options ?? [])
-      .map((entry: any) => entry.optionId ?? entry.option?.id)
-      .filter((optionId: unknown): optionId is string => typeof optionId === 'string')
-    const sortedRequestedOptionIds = requestedOptionIds ? [...requestedOptionIds].sort() : null
-    const sortedExistingOptionIds = Array.from(new Set(existingOptionIds)).sort()
-    const optionsChanged =
-      sortedRequestedOptionIds !== null &&
-      (sortedRequestedOptionIds.length !== sortedExistingOptionIds.length ||
-        sortedRequestedOptionIds.some(
-          (optionId, index) => optionId !== sortedExistingOptionIds[index]
-        ))
-    const shouldRecalculateRevenue =
-      castChanged ||
-      courseChanged ||
-      optionsChanged ||
-      designationTypeChanged ||
-      numericFieldChanged(updates.price, existingReservation.price) ||
-      numericFieldChanged(updates.designationFee, existingReservation.designationFee) ||
-      numericFieldChanged(updates.transportationFee, existingReservation.transportationFee) ||
-      numericFieldChanged(updates.additionalFee, existingReservation.additionalFee) ||
-      numericFieldChanged(updates.discountAmount, existingReservation.discountAmount) ||
-      numericFieldChanged(updates.pointsUsed, existingReservation.pointsUsed) ||
-      numericFieldChanged(updates.storeRevenue, existingReservation.storeRevenue) ||
-      numericFieldChanged(updates.staffRevenue, existingReservation.staffRevenue) ||
-      numericFieldChanged(updates.welfareExpense, existingReservation.welfareExpense)
-
+    const courseUpdateResult = tryResolveCourseSelectionUpdate({
+      currentCourseId: existingReservation.courseId,
+      currentCourseItems: existingReservation.courseItems,
+      requestedCourseId: updates.courseId,
+      requestedCourseIds: updates.courseIds,
+      hasRequestedCourseIds: Object.prototype.hasOwnProperty.call(updates, 'courseIds'),
+    })
+    if (!courseUpdateResult.ok)
+      return NextResponse.json({ error: courseUpdateResult.error }, { status: 400 })
+    const courseUpdate = courseUpdateResult.value
+    const courseChanged = courseUpdate.primaryChanged
+    const courseSelectionChanged = courseUpdate.selectionChanged
+    const requestedOptionIds = normalizeRequestedOptionIds(updates.options)
+    const optionsChanged = hasOptionSelectionChanged(
+      requestedOptionIds,
+      existingReservation.options ?? []
+    )
+    const shouldRecalculateRevenue = hasReservationRevenueUpdate(
+      updates,
+      existingReservation,
+      castChanged || courseChanged || courseSelectionChanged || optionsChanged
+    )
     const updatedReservation = await db.$transaction(async (tx) => {
       const rawOptionIds: string[] | null = optionsChanged ? requestedOptionIds : null
       let normalizedOptionIds: string[] | null = null
@@ -1238,11 +1233,20 @@ export async function PUT(request: NextRequest) {
       }
 
       let effectiveCast = previousReservation.cast ?? null
-      let effectiveCourse = previousReservation.course ?? null
+      let effectiveCourse: Partial<ReservationCourseRecord> | null =
+        previousReservation.course ?? null
+      let effectiveCourseSummary: ReturnType<typeof resolveCourseSelectionSummary> | null = null
       const updateData: Record<string, unknown> = {}
-
       if (castChanged) updateData.castId = updates.castId
-      if (courseChanged) updateData.courseId = updates.courseId
+      const coursePersistence = await resolveCourseSelectionPersistence(
+        tx,
+        storeId,
+        courseUpdate,
+        updates.courseId
+      )
+      Object.assign(updateData, coursePersistence.data)
+      effectiveCourseSummary = coursePersistence.summary
+      if (coursePersistence.effectiveCourse) effectiveCourse = coursePersistence.effectiveCourse
       if (Object.prototype.hasOwnProperty.call(updates, 'receptionStaffId')) {
         updateData.receptionStaffId = await resolveReceptionStaffId(
           tx,
@@ -1314,7 +1318,7 @@ export async function PUT(request: NextRequest) {
         effectiveCast = castExists
       }
 
-      if (updateData.courseId) {
+      if (updateData.courseId && !effectiveCourseSummary) {
         const courseExists = await tx.coursePrice.findFirst({
           where: { id: updateData.courseId as string, storeId },
         })
@@ -1419,19 +1423,18 @@ export async function PUT(request: NextRequest) {
             ? Number(rawWelfareRate)
             : 10
 
-        const baseCoursePrice = Number(
-          effectiveCourse?.price ??
-            previousReservation.course?.price ??
-            previousReservation.price ??
-            0
+        const courseRevenue = resolveCourseRevenueSource(
+          effectiveCourseSummary,
+          effectiveCourse,
+          previousReservation.course,
+          previousReservation.price
         )
 
         const revenueInputBase = {
-          basePrice: baseCoursePrice,
+          basePrice: courseRevenue.price,
           course: {
-            storeShare:
-              effectiveCourse?.storeShare ?? previousReservation.course?.storeShare ?? null,
-            castShare: effectiveCourse?.castShare ?? previousReservation.course?.castShare ?? null,
+            storeShare: courseRevenue.storeShare,
+            castShare: courseRevenue.castShare,
           },
           options: currentOptionShares,
           designation:

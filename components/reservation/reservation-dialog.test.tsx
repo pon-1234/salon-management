@@ -1001,7 +1001,7 @@ describe('ReservationDialog Edit Mode', () => {
     expect(screen.queryByRole('button', { name: '保存' })).not.toBeInTheDocument()
   })
 
-  it('shows course price, discount, and points on the order summary', () => {
+  it('shows persisted courses, discount, points, and credit fee on the order summary', () => {
     render(
       <ReservationDialog
         open
@@ -1010,6 +1010,12 @@ describe('ReservationDialog Edit Mode', () => {
           ...mockReservation,
           discountAmount: 2_000,
           pointsUsed: 500,
+          paymentMethod: 'クレジットカード',
+          creditCardFee: 1_300,
+          courseItems: [
+            { id: 'course-1', name: '190分', duration: 190, price: 8_000, sortOrder: 0 },
+            { id: 'extension-30', name: '30分延長', duration: 30, price: 5_000, sortOrder: 1 },
+          ],
           price: 13_000,
         }}
         onSave={mockOnSave}
@@ -1023,6 +1029,8 @@ describe('ReservationDialog Edit Mode', () => {
     expect(within(summaryGrid).getByText('-¥2,000')).toBeInTheDocument()
     expect(within(summaryGrid).getByText('ポイント利用')).toBeInTheDocument()
     expect(within(summaryGrid).getByText('-¥500')).toBeInTheDocument()
+    expect(within(summaryGrid).getByText('クレジット手数料')).toBeInTheDocument()
+    expect(within(summaryGrid).getByText('¥1,300')).toBeInTheDocument()
     expect(within(summaryGrid).getByText('追加料金')).toBeInTheDocument()
   })
 

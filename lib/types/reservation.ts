@@ -73,6 +73,16 @@ export interface Reservation extends BaseEntity {
     } | null
   }>
   pointsUsed?: number
+  creditCardFee?: number
+  courseItems?: Array<{
+    id: string
+    name: string
+    duration: number
+    price: number
+    storeShare?: number | null
+    castShare?: number | null
+    sortOrder: number
+  }>
 }
 
 export interface ReservationData {
@@ -143,6 +153,8 @@ export interface ReservationData {
   castCheckedInAt?: Date | null
   castCheckedOutAt?: Date | null
   pointsUsed?: number
+  creditCardFee?: number
+  courseItems?: Reservation['courseItems']
   cancellationSource?: 'customer' | 'store' | null
   cancellationReason?: string | null
 }
@@ -152,6 +164,7 @@ export interface ReservationUpdatePayload {
   endTime: Date
   castId: string
   courseId?: string
+  courseIds?: string[]
   status?: ReservationStatus
   cancellationSource?: 'customer' | 'store' | null
   cancellationReason?: string | null

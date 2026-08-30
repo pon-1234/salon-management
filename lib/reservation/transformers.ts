@@ -9,6 +9,7 @@ import { customers as defaultCustomers } from '@/lib/customer/data'
 import { Customer } from '@/lib/customer/types'
 import { Cast } from '@/lib/cast/types'
 import { getCourseById } from '@/lib/course-option/utils'
+import { parseReservationCourseItems } from '@/lib/reservation/course-selection'
 
 interface TransformOptions {
   casts?: Cast[]
@@ -66,6 +67,7 @@ export function mapReservationToReservationData(
 
   const serviceId = reservation.serviceId || (reservation as any).courseId || rawCourse?.id || ''
   const course = getCourseById(serviceId)
+  const courseItems = parseReservationCourseItems((reservation as any).courseItems)
 
   const customer =
     customers.find((entry) => entry.id === reservation.customerId) || (reservation as any).customer
@@ -124,7 +126,10 @@ export function mapReservationToReservationData(
     date: format(start, 'yyyy-MM-dd'),
     time: format(start, 'HH:mm'),
     inOutTime: `${format(start, 'HH:mm')} - ${format(end, 'HH:mm')}`,
-    course: reservation.serviceName || rawCourse?.name || course?.name || '未設定',
+    course:
+      courseItems.length > 0
+        ? courseItems.map((item) => item.name).join(' / ')
+        : reservation.serviceName || rawCourse?.name || course?.name || '未設定',
     serviceId,
     freeExtension: (reservation as any).freeExtension || '0',
     designation: reservation.designationType
@@ -171,6 +176,8 @@ export function mapReservationToReservationData(
     castCheckedInAt: toDateOrNull(reservation.castCheckedInAt),
     castCheckedOutAt: toDateOrNull(reservation.castCheckedOutAt),
     pointsUsed: reservation.pointsUsed ?? 0,
+    creditCardFee: reservation.creditCardFee ?? 0,
+    courseItems,
     cancellationSource: reservation.cancellationSource ?? null,
     cancellationReason: reservation.cancellationReason ?? null,
   }

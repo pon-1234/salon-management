@@ -22,8 +22,18 @@ const mocks = vi.hoisted(() => ({
   legacyCourses: [],
   legacyOptions: [],
   additionalFees: [],
-  areas: [{ id: 'area-ikebukuro', name: '池袋エリア' }],
+  areas: [
+    { id: 'area-toshima', name: '豊島区', city: '豊島区' },
+    { id: 'area-ikebukuro', name: '池袋エリア' },
+  ],
   stations: [
+    {
+      id: 'station-ikebukuro-north',
+      name: '池袋（北口・西口）',
+      areaId: 'area-toshima',
+      transportationFee: 0,
+      travelTime: 10,
+    },
     {
       id: 'station-ikebukuro',
       name: '池袋駅',
@@ -210,7 +220,9 @@ function createFetchMock(completedHistory: unknown[] = []) {
     return {
       ok: true,
       status: 200,
-      json: async () => ({ data: { marketingChannels: ['WEB', '電話'] } }),
+      json: async () => ({
+        data: { marketingChannels: ['WEB', '電話'], creditCardFeeRate: 10 },
+      }),
     } as Response
   })
 }
@@ -238,7 +250,7 @@ function dialogElement({
 }
 
 async function waitForOnePageBookingForm() {
-  await waitFor(() => expect(screen.getAllByText(/テストコース 60分/)).not.toHaveLength(0))
+  await screen.findByRole('combobox', { name: 'コース1' })
   expect(await screen.findByText(/オプション選択/)).toBeInTheDocument()
   expect(await screen.findByText('料金内訳')).toBeInTheDocument()
 }
@@ -262,7 +274,16 @@ describe('QuickBookingDialog', () => {
       configurable: true,
       value: vi.fn(),
     })
-    mocks.coursePrices = mocks.coursePrices.slice(0, 1)
+    mocks.coursePrices = [
+      {
+        id: 'course-standard',
+        name: 'テストコース',
+        duration: 60,
+        price: 10_000,
+        storeShare: 3_000,
+        castShare: 7_000,
+      },
+    ]
     mocks.checkAvailability.mockResolvedValue({ available: true, conflicts: [] })
     mocks.getDesignationFees.mockResolvedValue([])
   })
@@ -287,7 +308,7 @@ describe('QuickBookingDialog', () => {
     vi.stubGlobal('fetch', createFetchMock())
     render(dialogElement())
 
-    await waitForOnePageBookingForm()
+    await screen.findByText('料金内訳')
 
     const customerSummary = screen.getByTestId('quick-booking-customer-summary')
     expect(customerSummary).toHaveTextContent('お客様情報')
@@ -321,7 +342,7 @@ describe('QuickBookingDialog', () => {
     vi.stubGlobal('fetch', fetchMock)
     render(dialogElement())
 
-    await waitForOnePageBookingForm()
+    await screen.findByText('料金内訳')
     await waitFor(() =>
       expect(mocks.renderTimeSlotPicker).toHaveBeenCalledWith(
         expect.objectContaining({ stepMinutes: 5 })
@@ -906,20 +927,18 @@ describe('QuickBookingDialog', () => {
     })
     await user.click(paymentMethod)
     await user.click(await screen.findByRole('option', { name: 'クレジットカード' }))
-    await user.click(screen.getByRole('button', { name: '90分コース 90分 18,000円' }))
-    expect(screen.getByRole('button', { name: '90分コース 90分 18,000円' })).toHaveAttribute(
-      'class',
-      expect.stringContaining('bg-primary')
-    )
+    const courseSelect = screen.getByRole('combobox', { name: 'コース1' })
+    await user.selectOptions(courseSelect, 'course-90')
+    expect(courseSelect).toHaveValue('course-90')
     expect(screen.getByText('18,000円')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: '190分コース 190分 32,000円' }))
+    await user.selectOptions(courseSelect, 'course-190')
     expect(screen.getByText('32,000円')).toBeInTheDocument()
     await submitConfirmed(user)
 
     await waitFor(() =>
       expect(screen.getByText('予約を作成しました。内容を確認できます。')).toBeInTheDocument()
     )
-    await user.click(screen.getByRole('button', { name: '90分コース 90分 18,000円' }))
+    await user.selectOptions(courseSelect, 'course-90')
     await user.click(screen.getByRole('button', { name: '予約を更新' }))
 
     await waitFor(() =>
@@ -947,5 +966,84 @@ describe('QuickBookingDialog', () => {
     expect(getPostedReservation(fetchMock)).toEqual(
       expect.objectContaining({ receptionStaffId: 'admin-2', castId: 'cast-1' })
     )
+  })
+
+  it('defaults the service location to 豊島区 and 池袋北口', async () => {
+    vi.stubGlobal('fetch', createFetchMock())
+    render(dialogElement())
+
+    await waitForOnePageBookingForm()
+
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', { name: '対応エリア' })).toHaveTextContent('豊島区')
+    )
+    expect(screen.getByRole('combobox', { name: '最寄り駅' })).toHaveTextContent(
+      '池袋（北口・西口）'
+    )
+  })
+
+  it('uses three course dropdowns and persists duplicate extensions in selection order', async () => {
+    const user = userEvent.setup()
+    mocks.coursePrices = [
+      {
+        id: 'course-190',
+        name: '190分',
+        duration: 190,
+        price: 30_000,
+        storeShare: 10_000,
+        castShare: 20_000,
+      },
+      {
+        id: 'course-extension-30',
+        name: '30分延長',
+        duration: 30,
+        price: 5_000,
+        storeShare: 2_000,
+        castShare: 3_000,
+      },
+    ]
+    const fetchMock = createFetchMock()
+    vi.stubGlobal('fetch', fetchMock)
+    render(dialogElement())
+
+    await screen.findByText('料金内訳')
+    await user.selectOptions(screen.getByRole('combobox', { name: 'コース1' }), 'course-190')
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'コース2' }),
+      'course-extension-30'
+    )
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'コース3' }),
+      'course-extension-30'
+    )
+    await submitConfirmed(user)
+
+    await waitFor(() => expect(getPostedReservation(fetchMock)).toBeDefined())
+    expect(getPostedReservation(fetchMock)).toEqual(
+      expect.objectContaining({
+        courseId: 'course-190',
+        courseIds: ['course-190', 'course-extension-30', 'course-extension-30'],
+        endTime: '2099-01-02T07:10:00.000Z',
+      })
+    )
+  })
+
+  it('adds the configured credit-card fee to the visible total', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', createFetchMock())
+    render(dialogElement())
+
+    await waitForOnePageBookingForm()
+    const paymentMethod = screen.getByRole('combobox', { name: '支払い方法' })
+    Object.assign(paymentMethod, {
+      hasPointerCapture: () => false,
+      setPointerCapture: () => undefined,
+      releasePointerCapture: () => undefined,
+    })
+    await user.click(paymentMethod)
+    await user.click(await screen.findByRole('option', { name: 'クレジットカード' }))
+
+    expect(screen.getByText('クレジット手数料').parentElement).toHaveTextContent('1,000円')
+    expect(screen.getByText('合計').parentElement).toHaveTextContent('11,000円')
   })
 })

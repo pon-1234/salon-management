@@ -10,6 +10,7 @@ describe('sanitizeReservationCreationInput', () => {
   const maliciousCustomerInput = {
     castId: 'cast-1',
     courseId: 'course-1',
+    courseIds: ['course-1', 'extension-30', 'extension-30'],
     startTime: '2099-07-04T09:00:00.000Z',
     endTime: '2099-07-04T10:00:00.000Z',
     options: ['option-1'],
@@ -41,6 +42,7 @@ describe('sanitizeReservationCreationInput', () => {
     expect(sanitizeReservationCreationInput(maliciousCustomerInput, false)).toEqual({
       castId: 'cast-1',
       courseId: 'course-1',
+      courseIds: ['course-1', 'extension-30', 'extension-30'],
       startTime: '2099-07-04T09:00:00.000Z',
       endTime: '2099-07-04T10:00:00.000Z',
       options: ['option-1'],

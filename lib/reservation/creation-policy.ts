@@ -7,6 +7,7 @@
 const CUSTOMER_RESERVATION_FIELDS = [
   'castId',
   'courseId',
+  'courseIds',
   'startTime',
   'endTime',
   'options',

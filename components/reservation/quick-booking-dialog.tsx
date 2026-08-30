@@ -25,7 +25,6 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
@@ -55,6 +54,8 @@ import type { DesignationFee } from '@/lib/designation/types'
 import { BusinessHoursRange } from '@/lib/settings/business-hours'
 import { useStore } from '@/contexts/store-context'
 import { calculateReservationRevenue } from '@/lib/reservation/revenue'
+import { applyStoreCreditCardFee } from '@/lib/reservation/credit-card-fee'
+import { resolveCourseSelectionSummary } from '@/lib/reservation/course-selection'
 import { normalizeOptionalPaymentReference } from '@/lib/reservation/financial-reference'
 import { buildStoreCastEndpoint, buildStoreReservationEndpoint } from '@/lib/reservation/endpoints'
 import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
@@ -81,6 +82,7 @@ import {
   getUniqueSelectedOptionIds,
   ensureBookingDesignationOptions,
   normalizeToBusinessMinutes,
+  resolveDefaultBookingLocation,
   type BookingDetails,
   type DesignationType,
   type NormalizedCourse,
@@ -88,9 +90,11 @@ import {
   type PriceBreakdown,
 } from './quick-booking.utils'
 import {
+  QuickBookingCourseSelector,
   QuickBookingPanelGrid,
   QuickBookingPricePanel,
   QuickBookingReceptionPanel,
+  QuickBookingVisitDetails,
   type ReceptionStaffOption,
 } from './quick-booking-panels'
 
@@ -174,6 +178,7 @@ export function QuickBookingDialog({
   const wasOpenRef = useRef(false)
   const designationTouchedRef = useRef(false)
   const statusTouchedRef = useRef(false)
+  const locationTouchedRef = useRef(false)
   const { areas, stations } = useLocations()
   const UNASSIGNED_VALUE = '__unassigned__'
   const [staffDetails, setStaffDetails] = useState<Cast | null>(
@@ -273,7 +278,8 @@ export function QuickBookingDialog({
   }, [optionPrices, options])
 
   const [designationFees, setDesignationFees] = useState<DesignationFee[]>([])
-  const [selectedCourseId, setSelectedCourseId] = useState<string>('')
+  const [selectedCourseIds, setSelectedCourseIds] = useState<[string, string, string]>(['', '', ''])
+  const [creditCardFeeRate, setCreditCardFeeRate] = useState(10)
   const [designationType, setDesignationType] = useState<DesignationType>('none')
   const [selectedDesignationId, setSelectedDesignationId] = useState<string>('')
 
@@ -358,14 +364,12 @@ export function QuickBookingDialog({
     if (pricingLoading || courseCatalog.length === 0) {
       return
     }
-    setSelectedCourseId((prev) => {
-      if (prev && courseCatalog.some((course) => course.id === prev)) {
-        return prev
-      }
-      if (prev) {
-        return prev
-      }
-      return courseCatalog[0].id
+    setSelectedCourseIds((prev) => {
+      const next = prev.map((courseId) =>
+        courseId && courseCatalog.some((course) => course.id === courseId) ? courseId : ''
+      ) as [string, string, string]
+      if (!next[0]) next[0] = courseCatalog[0].id
+      return next
     })
   }, [courseCatalog, pricingLoading])
 
@@ -391,6 +395,9 @@ export function QuickBookingDialog({
         const payload = await response.json().catch(() => null)
         const data = payload?.data ?? payload
         const channels = Array.isArray(data?.marketingChannels) ? data.marketingChannels : null
+        if (!ignore && Number.isFinite(Number(data?.creditCardFeeRate))) {
+          setCreditCardFeeRate(Number(data.creditCardFeeRate) === 0 ? 0 : 10)
+        }
         if (!ignore && channels) {
           const normalized = channels
             .map((channel: unknown) => (typeof channel === 'string' ? channel.trim() : ''))
@@ -646,6 +653,20 @@ export function QuickBookingDialog({
   }, [selectedCustomer])
 
   useEffect(() => {
+    if (!open || locationTouchedRef.current || bookingDetails.areaId || bookingDetails.stationId) {
+      return
+    }
+    const location = resolveDefaultBookingLocation(areas, stations)
+    if (!location) return
+    const station = stations.find((candidate) => candidate.id === location.stationId)
+    setBookingDetails((prev) => ({
+      ...prev,
+      ...location,
+      stationTravelTime: station?.travelTime ?? 0,
+    }))
+  }, [areas, bookingDetails.areaId, bookingDetails.stationId, open, stations])
+
+  useEffect(() => {
     if (currentStaff) {
       setBookingDetails((prev) => ({
         ...prev,
@@ -683,8 +704,24 @@ export function QuickBookingDialog({
   }, [selectedTime])
 
   const selectedCourse = useMemo(
-    () => courseCatalog.find((course) => course.id === selectedCourseId) ?? null,
-    [courseCatalog, selectedCourseId]
+    () => courseCatalog.find((course) => course.id === selectedCourseIds[0]) ?? null,
+    [courseCatalog, selectedCourseIds]
+  )
+  const selectedCourses = useMemo(
+    () =>
+      selectedCourseIds
+        .filter(Boolean)
+        .map((courseId) => courseCatalog.find((course) => course.id === courseId))
+        .filter((course): course is NormalizedCourse => Boolean(course)),
+    [courseCatalog, selectedCourseIds]
+  )
+  const selectedCourseSummary = useMemo(
+    () =>
+      resolveCourseSelectionSummary(
+        selectedCourses.map((course) => course.id),
+        selectedCourses
+      ),
+    [selectedCourses]
   )
 
   const availableOptions = useMemo(
@@ -745,7 +782,7 @@ export function QuickBookingDialog({
   }, [currentStaff?.welfareExpenseRate, currentStore?.welfareExpenseRate])
 
   const priceBreakdown = useMemo<PriceBreakdown>(() => {
-    const basePrice = selectedCourse?.price ?? 0
+    const basePrice = selectedCourseSummary.price
     const designationFeeAmount =
       selectedDesignationFee?.price ??
       getDesignationFeeAmount(designationType, currentStaff ?? undefined)
@@ -753,8 +790,12 @@ export function QuickBookingDialog({
     const additionalFee = bookingDetails.additionalFee || 0
     const discountAmount = Math.max(bookingDetails.discountAmount || 0, 0)
 
-    const revenue = calculateReservationRevenue({
+    const revenueInput = {
       basePrice,
+      course: {
+        storeShare: selectedCourseSummary.storeShare,
+        castShare: selectedCourseSummary.castShare,
+      },
       options: selectedOptionDetails.map((option) => ({
         price: option.price,
         storeShare: option.storeShare ?? undefined,
@@ -772,13 +813,24 @@ export function QuickBookingDialog({
       additionalFee,
       discountAmount,
       welfareRate,
-    })
+    }
+    const revenue = calculateReservationRevenue(revenueInput)
 
     const availablePoints = selectedCustomer?.points ?? bookingDetails.points ?? 0
     const requestedPoints = bookingDetails.usePoints
       ? Math.max(0, Math.floor(bookingDetails.pointsToUse || 0))
       : 0
     const pointsApplied = Math.min(availablePoints, Math.min(requestedPoints, revenue.total))
+
+    const revenueAfterPoints = calculateReservationRevenue({
+      ...revenueInput,
+      discountAmount: discountAmount + pointsApplied,
+    })
+    const revenueWithCardFee = applyStoreCreditCardFee(
+      revenueAfterPoints,
+      creditCardFeeRate,
+      bookingDetails.paymentMethod
+    )
 
     return {
       basePrice,
@@ -789,9 +841,10 @@ export function QuickBookingDialog({
       discount: discountAmount,
       subtotal: revenue.total,
       pointsApplied,
-      total: Math.max(revenue.total - pointsApplied, 0),
-      storeRevenue: revenue.storeRevenue,
-      staffRevenue: revenue.staffRevenue,
+      creditCardFee: revenueWithCardFee.creditCardFee,
+      total: revenueWithCardFee.total,
+      storeRevenue: revenueWithCardFee.storeRevenue,
+      staffRevenue: revenueWithCardFee.staffRevenue,
       welfareExpense: revenue.welfareExpense,
       welfareRate: revenue.welfareRate,
     }
@@ -802,9 +855,11 @@ export function QuickBookingDialog({
     bookingDetails.points,
     bookingDetails.pointsToUse,
     bookingDetails.usePoints,
+    bookingDetails.paymentMethod,
+    creditCardFeeRate,
     designationType,
     selectedCustomer?.points,
-    selectedCourse,
+    selectedCourseSummary,
     selectedOptionDetails,
     currentStaff,
     selectedDesignationFee,
@@ -878,7 +933,7 @@ export function QuickBookingDialog({
       return
     }
 
-    const courseDuration = selectedCourse?.duration ?? 0
+    const courseDuration = selectedCourseSummary.duration
     if (!selectedCourse || courseDuration <= 0) {
       toast({
         title: 'コース未選択',
@@ -948,7 +1003,8 @@ export function QuickBookingDialog({
         customerId: selectedCustomer.id,
         castId: currentStaff.id,
         receptionStaffId: bookingDetails.receptionStaffId || null,
-        courseId: selectedCourseId,
+        courseId: selectedCourseIds[0],
+        courseIds: selectedCourseIds.filter(Boolean),
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
         status:
@@ -1090,19 +1146,27 @@ export function QuickBookingDialog({
     setCreatedReservationId(null)
     lastCustomerIdRef.current = selectedCustomer?.id ?? null
     setActiveStaffId(selectedStaff?.id ?? null)
-    setSelectedCourseId(courseCatalog[0]?.id ?? '')
+    setSelectedCourseIds([courseCatalog[0]?.id ?? '', '', ''])
     designationTouchedRef.current = false
     statusTouchedRef.current = false
+    locationTouchedRef.current = false
     setSelectedDesignationId(pickAutoDesignationFee(designationOptions, false)?.id ?? '')
-    setBookingDetails(
-      createInitialBookingDetails({
-        customer: selectedCustomer,
-        staffName: currentStaff?.name ?? '',
-        selectedTime,
-        businessHoursStartLabel: businessHours.startLabel,
-        marketingChannel: marketingChannels[0] ?? DEFAULT_MARKETING_CHANNELS[0] ?? 'WEB',
-      })
-    )
+    const initialDetails = createInitialBookingDetails({
+      customer: selectedCustomer,
+      staffName: currentStaff?.name ?? '',
+      selectedTime,
+      businessHoursStartLabel: businessHours.startLabel,
+      marketingChannel: marketingChannels[0] ?? DEFAULT_MARKETING_CHANNELS[0] ?? 'WEB',
+    })
+    const defaultLocation = resolveDefaultBookingLocation(areas, stations)
+    const defaultStation = defaultLocation
+      ? stations.find((station) => station.id === defaultLocation.stationId)
+      : null
+    setBookingDetails({
+      ...initialDetails,
+      ...(defaultLocation ?? {}),
+      stationTravelTime: defaultStation?.travelTime ?? 0,
+    })
     setDesignationType('none')
   }, [
     open,
@@ -1114,12 +1178,14 @@ export function QuickBookingDialog({
     businessHours.startLabel,
     marketingChannels,
     selectedStaff?.id,
+    areas,
+    stations,
   ])
 
   return (
     <>
       <Dialog open={open} onOpenChange={handleDialogOpenChange}>
-        <DialogContent className="flex max-h-[90vh] max-w-6xl flex-col overflow-hidden">
+        <DialogContent className="flex max-h-[94vh] w-[96vw] max-w-[1600px] flex-col overflow-hidden p-4">
           <DialogDescription className="sr-only">
             基本情報から確認内容までを一画面で入力し、予約を確定します。
           </DialogDescription>
@@ -1196,7 +1262,7 @@ export function QuickBookingDialog({
                         <TimeSlotPicker
                           castId={currentStaff.id}
                           date={bookingDetails.date}
-                          duration={selectedCourse.duration}
+                          duration={selectedCourseSummary.duration}
                           selectedTime={selectedTimeIso}
                           onTimeSelect={(time) => {
                             const zoned = utcToZonedTime(new Date(time), JST_TIMEZONE)
@@ -1225,6 +1291,7 @@ export function QuickBookingDialog({
                       <Select
                         value={bookingDetails.areaId || UNASSIGNED_VALUE}
                         onValueChange={(value) => {
+                          locationTouchedRef.current = true
                           const nextAreaId = value === UNASSIGNED_VALUE ? '' : value
                           setBookingDetails((prev) => ({
                             ...prev,
@@ -1252,6 +1319,7 @@ export function QuickBookingDialog({
                       <Select
                         value={bookingDetails.stationId || UNASSIGNED_VALUE}
                         onValueChange={(value) => {
+                          locationTouchedRef.current = true
                           const nextStation =
                             value === UNASSIGNED_VALUE
                               ? null
@@ -1284,72 +1352,28 @@ export function QuickBookingDialog({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="quick-booking-hotel-name">ホテル名</Label>
-                      <Input
-                        id="quick-booking-hotel-name"
-                        name="hotelName"
-                        value={bookingDetails.hotelName}
-                        onChange={handleTextChange}
-                        placeholder="例: 池袋ホテル"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="quick-booking-room-number">部屋番号</Label>
-                      <Input
-                        id="quick-booking-room-number"
-                        name="roomNumber"
-                        value={bookingDetails.roomNumber}
-                        onChange={handleTextChange}
-                        placeholder="例: 1203"
-                      />
-                    </div>
-                  </div>
+                  <QuickBookingVisitDetails
+                    hotelName={bookingDetails.hotelName}
+                    roomNumber={bookingDetails.roomNumber}
+                    locationMemo={bookingDetails.locationMemo}
+                    onChange={(field, value) =>
+                      setBookingDetails((prev) => ({ ...prev, [field]: value }))
+                    }
+                  />
 
-                  <div>
-                    <Label htmlFor="quick-booking-location-memo">訪問先メモ</Label>
-                    <Textarea
-                      id="quick-booking-location-memo"
-                      name="locationMemo"
-                      value={bookingDetails.locationMemo}
-                      onChange={handleTextChange}
-                      placeholder="訪問先の目印や注意事項"
-                      rows={2}
-                      className="max-h-24 overflow-y-auto"
-                    />
-                  </div>
-
-                  <div>
-                    <Label>コース選択</Label>
-                    {pricingLoading ? (
-                      <div className="rounded-lg bg-gray-50 p-4 text-center text-sm text-gray-500">
-                        読み込み中...
-                      </div>
-                    ) : courseCatalog.length === 0 ? (
-                      <div className="rounded-lg bg-gray-50 p-4 text-center text-sm text-gray-500">
-                        利用可能なコースがありません
-                      </div>
-                    ) : (
-                      <div className="grid max-h-48 grid-cols-3 gap-2 overflow-y-auto">
-                        {courseCatalog.map((course) => {
-                          const selected = course.id === selectedCourseId
-                          const label = `${course.name} ${course.duration}分 ${course.price.toLocaleString()}円`
-                          return (
-                            <Button
-                              key={course.id}
-                              type="button"
-                              variant={selected ? 'default' : 'outline'}
-                              className="h-auto whitespace-normal px-2 py-2 text-left text-xs leading-4"
-                              onClick={() => setSelectedCourseId(course.id)}
-                            >
-                              {label}
-                            </Button>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </div>
+                  <QuickBookingCourseSelector
+                    loading={pricingLoading}
+                    courses={courseCatalog}
+                    selectedIds={selectedCourseIds}
+                    onSelectionChange={(index, nextValue) => {
+                      setSelectedCourseIds((prev) => {
+                        const next = [...prev] as [string, string, string]
+                        next[index] = nextValue
+                        if (index === 0 && !nextValue) next[0] = courseCatalog[0]?.id ?? ''
+                        return next
+                      })
+                    }}
+                  />
 
                   <div>
                     <Label htmlFor="quick-booking-staff">担当キャスト</Label>

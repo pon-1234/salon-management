@@ -28,6 +28,37 @@ const ALLOWED_PAYMENT_METHODS = new Set<PaymentMethod>(
   Object.values(PAYMENT_METHODS) as PaymentMethod[]
 )
 const RESERVATION_PRIVATE_CAST_FIELDS = ['loginEmail', 'lineUserId', 'welfareExpenseRate']
+const REVENUE_UPDATE_FIELDS = [
+  'price',
+  'designationFee',
+  'transportationFee',
+  'additionalFee',
+  'discountAmount',
+  'pointsUsed',
+  'storeRevenue',
+  'staffRevenue',
+  'welfareExpense',
+] as const
+
+export function hasReservationRevenueUpdate(
+  updates: Record<string, unknown>,
+  current: Record<string, unknown>,
+  structuralChange: boolean
+): boolean {
+  if (structuralChange) return true
+  if (
+    Object.prototype.hasOwnProperty.call(updates, 'designationType') &&
+    (updates.designationType ?? null) !== (current.designationType ?? null)
+  ) {
+    return true
+  }
+  return REVENUE_UPDATE_FIELDS.some((field) => {
+    const value = updates[field]
+    return (
+      typeof value === 'number' && Number.isFinite(value) && value !== Number(current[field] ?? 0)
+    )
+  })
+}
 
 export function sanitizeReservationResponse<T>(value: T): T {
   return sanitizeResponseData(value, RESERVATION_PRIVATE_CAST_FIELDS)

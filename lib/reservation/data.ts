@@ -78,6 +78,7 @@ function normalizeReservation(entry: any): Reservation {
     welfareExpense: entry.welfareExpense ?? undefined,
     paymentMethod: entry.paymentMethod ?? undefined,
     paymentReference: entry.paymentReference ?? null,
+    creditCardFee: entry.creditCardFee ?? 0,
     marketingChannel: entry.marketingChannel ?? undefined,
     storeRevenue: entry.storeRevenue ?? undefined,
     staffRevenue: entry.staffRevenue ?? undefined,
@@ -103,6 +104,8 @@ function normalizeReservation(entry: any): Reservation {
     castCheckedOutAt: entry.castCheckedOutAt ? new Date(entry.castCheckedOutAt) : undefined,
     cancellationSource: entry.cancellationSource ?? null,
     cancellationReason: entry.cancellationReason ?? null,
+    pointsUsed: entry.pointsUsed ?? 0,
+    courseItems: Array.isArray(entry.courseItems) ? entry.courseItems : undefined,
     options: Array.isArray(entry.options) ? entry.options : undefined,
   }
 }

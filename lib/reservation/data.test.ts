@@ -98,7 +98,7 @@ describe('reservation data (API-backed)', () => {
     expect(result[0].startTime).toBeInstanceOf(Date)
   })
 
-  it('preserves payment and cancellation audit fields from the API', async () => {
+  it('preserves payment, point, course-item, and cancellation fields from the API', async () => {
     const fetchMock = vi.mocked(fetch)
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
       const url = input.toString()
@@ -108,6 +108,12 @@ describe('reservation data (API-backed)', () => {
             ...mockReservations[0],
             paymentMethod: 'クレジットカード',
             paymentReference: 'IK-2026-00421',
+            creditCardFee: 1_800,
+            pointsUsed: 2_000,
+            courseItems: [
+              { id: 'course-190', name: '190分', duration: 190, price: 30_000, sortOrder: 0 },
+              { id: 'extension-30', name: '30分延長', duration: 30, price: 5_000, sortOrder: 1 },
+            ],
             cancellationSource: 'store',
             cancellationReason: '店舗設備不良のため',
           },
@@ -124,6 +130,12 @@ describe('reservation data (API-backed)', () => {
     expect(result).toMatchObject({
       paymentMethod: 'クレジットカード',
       paymentReference: 'IK-2026-00421',
+      creditCardFee: 1_800,
+      pointsUsed: 2_000,
+      courseItems: [
+        { id: 'course-190', name: '190分', duration: 190, price: 30_000, sortOrder: 0 },
+        { id: 'extension-30', name: '30分延長', duration: 30, price: 5_000, sortOrder: 1 },
+      ],
       cancellationSource: 'store',
       cancellationReason: '店舗設備不良のため',
     })

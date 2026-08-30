@@ -21,6 +21,7 @@ interface ReservationPriceBreakdownInput {
   additionalFee?: unknown
   discountAmount?: unknown
   pointsUsed?: unknown
+  creditCardFee?: unknown
   designationFee?: unknown
   designation?: {
     storeShare?: number | null
@@ -39,6 +40,7 @@ export function calculateReservationPriceBreakdown(input: ReservationPriceBreakd
   const additional = toNumber(input.additionalFee, 0)
   const discount = Math.max(toNumber(input.discountAmount, 0), 0)
   const pointsUsed = Math.max(toNumber(input.pointsUsed, 0), 0)
+  const creditCardFee = Math.max(toNumber(input.creditCardFee, 0), 0)
   const designation = Math.max(toNumber(input.designationFee, 0), 0)
 
   const revenue = calculateReservationRevenue({
@@ -70,8 +72,9 @@ export function calculateReservationPriceBreakdown(input: ReservationPriceBreakd
     designation,
     discount,
     pointsUsed,
-    total: revenue.total,
-    storeRevenue: revenue.storeRevenue,
+    creditCardFee,
+    total: revenue.total + creditCardFee,
+    storeRevenue: revenue.storeRevenue + creditCardFee,
     staffRevenue: revenue.staffRevenue,
     welfareExpense: revenue.welfareExpense,
     welfareRate: revenue.welfareRate,

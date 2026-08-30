@@ -85,6 +85,7 @@ type ReservationPrimarySummaryProps = {
     additional: number
     discount: number
     pointsUsed: number
+    creditCardFee: number
     designation?: number
     total: number
     storeRevenue: number
@@ -649,6 +650,14 @@ export function ReservationPrimarySummary({
                 <span>ポイント利用</span>
                 <span>-{formatCurrency(priceBreakdown?.pointsUsed ?? reservation.pointsUsed)}</span>
               </div>
+              {(priceBreakdown?.creditCardFee ?? reservation.creditCardFee ?? 0) > 0 ? (
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span>クレジット手数料</span>
+                  <span>
+                    {formatCurrency(priceBreakdown?.creditCardFee ?? reservation.creditCardFee)}
+                  </span>
+                </div>
+              ) : null}
             </>
           )}
           {canViewFinancialDetails ? (
@@ -943,6 +952,12 @@ export function ReservationEditPricePreview({
               <div className="flex items-center justify-between text-red-600">
                 <dt>ポイント利用</dt>
                 <dd>-{formatCurrency(priceBreakdown.pointsUsed)}</dd>
+              </div>
+            ) : null}
+            {priceBreakdown.creditCardFee > 0 ? (
+              <div className="flex items-center justify-between">
+                <dt>クレジット手数料</dt>
+                <dd>{formatCurrency(priceBreakdown.creditCardFee)}</dd>
               </div>
             ) : null}
           </dl>

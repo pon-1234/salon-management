@@ -191,6 +191,7 @@ model Reservation {
   castCheckedInAt     DateTime?
   castCheckedOutAt    DateTime?
   pointsUsed          Int                            @default(0)
+  courseItems         Json?
   cancellationSource  CancellationSource?
   cancellationReason  String?
   createdAt           DateTime                       @default(now())

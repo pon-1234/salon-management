@@ -51,13 +51,40 @@ export function uniqueResolvedOptionIds(ids: readonly string[]): string[] {
   return Array.from(new Set(ids.map((id) => resolveOptionId(id))))
 }
 
+export function normalizeRequestedOptionIds(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null
+  return Array.from(
+    new Set(
+      value
+        .filter(
+          (optionId): optionId is string =>
+            typeof optionId === 'string' && optionId.trim().length > 0
+        )
+        .map((optionId) => optionId.trim())
+    )
+  )
+}
+
+export function hasOptionSelectionChanged(
+  requestedIds: readonly string[] | null,
+  attached: readonly AttachedReservationOption[]
+): boolean {
+  if (requestedIds === null) return false
+  const requested = [...requestedIds].sort()
+  const existing = Array.from(new Set(attachedOptionIds(attached))).sort()
+  return (
+    requested.length !== existing.length ||
+    requested.some((optionId, index) => optionId !== existing[index])
+  )
+}
+
 export type AttachedReservationOption = {
   optionId?: string | null
   optionName?: string | null
   optionPrice?: number | null
   storeShare?: number | null
   castShare?: number | null
-  option?: { name?: string | null; price?: number | null } | null
+  option?: { id?: string | null; name?: string | null; price?: number | null } | null
 }
 
 export type ReservationOptionRecord = {
@@ -70,7 +97,7 @@ export type ReservationOptionRecord = {
 
 export function attachedOptionIds(attached: readonly AttachedReservationOption[]): string[] {
   return attached
-    .map((option) => option.optionId)
+    .map((option) => option.optionId ?? option.option?.id)
     .filter((optionId): optionId is string => typeof optionId === 'string')
 }
 

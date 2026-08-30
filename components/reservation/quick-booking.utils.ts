@@ -23,10 +23,26 @@ export type PriceBreakdown = {
   total: number
   subtotal: number
   pointsApplied: number
+  creditCardFee: number
   storeRevenue: number
   staffRevenue: number
   welfareExpense: number
   welfareRate: number
+}
+
+export function resolveDefaultBookingLocation<
+  TArea extends { id: string; name: string; city?: string | null },
+  TStation extends { id: string; name: string; areaId?: string | null },
+>(areas: readonly TArea[], stations: readonly TStation[]) {
+  const area = areas.find((candidate) => candidate.city === '豊島区' || candidate.name === '豊島区')
+  if (!area) return null
+  const areaStations = stations.filter((station) => station.areaId === area.id)
+  const station =
+    areaStations.find(
+      (candidate) => candidate.name.includes('池袋') && candidate.name.includes('北口')
+    ) ?? areaStations.find((candidate) => candidate.name.includes('池袋'))
+  if (!station) return null
+  return { areaId: area.id, stationId: station.id, stationName: station.name }
 }
 
 export interface BookingDetails {

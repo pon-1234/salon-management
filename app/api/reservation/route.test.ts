@@ -46,6 +46,7 @@ vi.mock('@/lib/db', () => ({
     },
     coursePrice: {
       findFirst: vi.fn(),
+      findMany: vi.fn(),
     },
     areaInfo: {
       findFirst: vi.fn(),
@@ -214,6 +215,7 @@ describe('Reservation API - Modifiable Status', () => {
       id: 'course-123',
       price: 30000,
     } as any)
+    vi.mocked(db.coursePrice.findMany).mockResolvedValue([])
     vi.mocked(db.areaInfo.findFirst).mockResolvedValue(null)
     vi.mocked(db.stationInfo.findFirst).mockResolvedValue(null)
     vi.mocked(db.hotelSettings.findFirst).mockResolvedValue(null)
@@ -719,6 +721,82 @@ describe('Reservation API - Modifiable Status', () => {
   })
 
   describe('POST endpoint validation and conflicts', () => {
+    it('persists and prices three ordered course selections including duplicate extensions', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          id: 'admin-1',
+          role: 'admin',
+          permissions: ['reservation:create', 'customer:read'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+      vi.mocked(db.coursePrice.findFirst).mockResolvedValue({
+        id: 'course-190',
+        name: '190分',
+        duration: 190,
+        price: 30_000,
+        storeShare: 10_000,
+        castShare: 20_000,
+      } as any)
+      vi.mocked(db.coursePrice.findMany).mockResolvedValue([
+        {
+          id: 'extension-30',
+          name: '30分延長',
+          duration: 30,
+          price: 5_000,
+          storeShare: 2_000,
+          castShare: 3_000,
+        },
+      ] as any)
+      const createReservation = vi.fn().mockImplementation(async ({ data }) => ({
+        id: 'reservation-three-courses',
+        ...data,
+        customer: { id: 'cust-123', name: 'Test Customer' },
+        cast: { id: 'cast-123', name: 'Test Cast' },
+        course: { id: 'course-190', name: '190分' },
+        options: [],
+      }))
+      vi.mocked(db.$transaction).mockImplementation(async (callback) =>
+        callback({
+          reservation: {
+            findMany: vi.fn().mockResolvedValue([]),
+            create: createReservation,
+          },
+        } as any)
+      )
+
+      const response = await POST(
+        new NextRequest('http://localhost/api/reservation?storeId=ikebukuro', {
+          method: 'POST',
+          body: JSON.stringify({
+            customerId: 'cust-123',
+            castId: 'cast-123',
+            courseId: 'course-190',
+            courseIds: ['course-190', 'extension-30', 'extension-30'],
+            startTime: '2099-07-04T18:00:00+09:00',
+            endTime: '2099-07-04T22:10:00+09:00',
+          }),
+        })
+      )
+
+      expect(response.status).toBe(201)
+      expect(createReservation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            courseId: 'course-190',
+            price: 40_000,
+            storeRevenue: 14_000,
+            staffRevenue: 26_000,
+            courseItems: [
+              expect.objectContaining({ id: 'course-190', sortOrder: 0 }),
+              expect.objectContaining({ id: 'extension-30', sortOrder: 1 }),
+              expect.objectContaining({ id: 'extension-30', sortOrder: 2 }),
+            ],
+          }),
+        })
+      )
+    })
+
     it('validates and persists the selected same-store reception staff member', async () => {
       vi.mocked(getServerSession).mockResolvedValue({
         user: {
@@ -2386,6 +2464,93 @@ describe('Reservation API - Modifiable Status', () => {
             price: 30_000,
             storeRevenue: 12_000,
             staffRevenue: 18_000,
+          }),
+        })
+      )
+    })
+
+    it('replaces and reprices ordered course snapshots when an admin updates all three slots', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: {
+          role: 'admin',
+          adminRole: 'manager',
+          permissions: ['reservation:update'],
+          storeIds: ['ikebukuro'],
+        },
+      } as any)
+      const existingReservation = {
+        ...mockReservation,
+        price: 30_000,
+        designationType: null,
+        designationFee: 0,
+        transportationFee: 0,
+        additionalFee: 0,
+        discountAmount: 0,
+        pointsUsed: 0,
+        paymentMethod: '現金',
+        courseItems: [],
+        course: {
+          id: 'course-123',
+          name: 'Test Course',
+          duration: 60,
+          price: 30_000,
+          storeShare: 12_000,
+          castShare: 18_000,
+        },
+        options: [],
+      }
+      vi.mocked(db.reservation.findUnique).mockResolvedValue(existingReservation as any)
+      const transactionContext = buildTransactionContext(existingReservation, {
+        coursePrice: {
+          findFirst: vi.fn(),
+          findMany: vi.fn().mockResolvedValue([
+            {
+              id: 'course-190',
+              name: '190分',
+              duration: 190,
+              price: 30_000,
+              storeShare: 10_000,
+              castShare: 20_000,
+            },
+            {
+              id: 'extension-30',
+              name: '30分延長',
+              duration: 30,
+              price: 5_000,
+              storeShare: 2_000,
+              castShare: 3_000,
+            },
+          ]),
+        },
+      })
+      vi.mocked(db.$transaction).mockImplementation(async (callback) =>
+        callback(transactionContext as any)
+      )
+
+      const response = await PUT(
+        new NextRequest('http://localhost/api/reservation', {
+          method: 'PUT',
+          body: JSON.stringify({
+            id: mockReservation.id,
+            courseId: 'course-190',
+            courseIds: ['course-190', 'extension-30', 'extension-30'],
+          }),
+        })
+      )
+
+      expect(response.status).toBe(200)
+      expect(transactionContext.reservation.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            courseId: 'course-190',
+            price: 40_000,
+            storeRevenue: 14_000,
+            staffRevenue: 26_000,
+            courseItems: [
+              expect.objectContaining({ id: 'course-190', sortOrder: 0 }),
+              expect.objectContaining({ id: 'extension-30', sortOrder: 1 }),
+              expect.objectContaining({ id: 'extension-30', sortOrder: 2 }),
+            ],
           }),
         })
       )

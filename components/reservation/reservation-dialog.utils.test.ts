@@ -43,11 +43,30 @@ describe('reservation-dialog utils', () => {
         designation: 1_000,
         discount: 100,
         pointsUsed: 400,
+        creditCardFee: 0,
         total: 13_300,
         storeRevenue: 1_800,
         staffRevenue: 11_500,
         welfareExpense: 1_000,
         welfareRate: 10,
+      })
+    })
+
+    it('shows persisted credit-card fees without dropping redeemed points', () => {
+      expect(
+        calculateReservationPriceBreakdown({
+          selectedCoursePrice: 20_000,
+          options: [],
+          discountAmount: 2_000,
+          pointsUsed: 2_000,
+          creditCardFee: 1_600,
+        })
+      ).toMatchObject({
+        basePrice: 20_000,
+        discount: 2_000,
+        pointsUsed: 2_000,
+        creditCardFee: 1_600,
+        total: 17_600,
       })
     })
   })

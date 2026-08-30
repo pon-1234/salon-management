@@ -431,6 +431,24 @@ export function ReservationDialog({
     return courseOptions.find((course) => course.id === courseId) ?? null
   }, [courseOptions, formState.courseId, reservation?.serviceId])
 
+  const persistedCoursePrice = useMemo(
+    () =>
+      (reservation?.courseItems ?? []).reduce(
+        (sum, course) => sum + Math.max(0, toNumber(course.price, 0)),
+        0
+      ),
+    [reservation?.courseItems]
+  )
+
+  const persistedCourseDuration = useMemo(
+    () =>
+      (reservation?.courseItems ?? []).reduce(
+        (sum, course) => sum + Math.max(0, toNumber(course.duration, 0)),
+        0
+      ),
+    [reservation?.courseItems]
+  )
+
   const selectedOptionDetails = useMemo(
     () => optionChoices.filter((option) => formState.optionIds.includes(option.id)),
     [optionChoices, formState.optionIds]
@@ -783,6 +801,13 @@ export function ReservationDialog({
   )
 
   const effectiveDurationMinutes = useMemo(() => {
+    const usesPersistedCourses =
+      persistedCourseDuration > 0 &&
+      (formState.courseId || reservation?.serviceId || '') === (reservation?.serviceId || '')
+    if (usesPersistedCourses) {
+      return persistedCourseDuration + selectedOptionDurationTotal
+    }
+
     const courseDuration = toNumber(selectedCourse?.duration, 0)
     if (courseDuration > 0) {
       return courseDuration + selectedOptionDurationTotal
@@ -799,6 +824,9 @@ export function ReservationDialog({
     selectedOptionDurationTotal,
     reservationDurationMinutes,
     initialOptionDurationTotal,
+    persistedCourseDuration,
+    formState.courseId,
+    reservation?.serviceId,
   ])
 
   const computedEndTime = useMemo(() => {
@@ -1106,26 +1134,36 @@ export function ReservationDialog({
   ])
 
   const priceBreakdown = useMemo(() => {
+    const usesPersistedCourses =
+      persistedCoursePrice > 0 &&
+      (formState.courseId || reservation?.serviceId || '') === (reservation?.serviceId || '')
     return calculateReservationPriceBreakdown({
-      selectedCoursePrice: selectedCourse?.price,
+      selectedCoursePrice: usesPersistedCourses ? persistedCoursePrice : selectedCourse?.price,
       fallbackCoursePrice: reservation?.price,
       options: selectedOptionDetails,
       transportationFee: formState.transportationFee,
       additionalFee: formState.additionalFee,
       discountAmount: formState.discountAmount,
       pointsUsed: formState.pointsUsed,
+      creditCardFee:
+        formState.paymentMethod === PAYMENT_METHODS.CARD ? reservation?.creditCardFee : 0,
       designationFee: formState.designationFee,
       designation: selectedDesignation || reservationDesignation,
       welfareRate,
     })
   }, [
     selectedCourse,
+    persistedCoursePrice,
     reservation?.price,
+    reservation?.serviceId,
+    reservation?.creditCardFee,
     selectedOptionDetails,
     formState.transportationFee,
     formState.additionalFee,
     formState.discountAmount,
     formState.pointsUsed,
+    formState.courseId,
+    formState.paymentMethod,
     formState.designationFee,
     selectedDesignation,
     reservationDesignation,
