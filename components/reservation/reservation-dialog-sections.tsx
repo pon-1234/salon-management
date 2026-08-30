@@ -39,6 +39,7 @@ import {
   toNumber,
 } from './reservation-dialog.utils'
 import { RESERVATION_START_STEP_SECONDS } from '@/lib/reservation/time-boundary'
+import { QuickBookingCourseSelector } from './quick-booking-panels'
 
 const UNASSIGNED_VALUE = '__unassigned__'
 
@@ -75,8 +76,8 @@ type ReservationPrimarySummaryProps = {
   onNotifyEntryInfo: () => void
   isEditing?: boolean
   courseOptions?: SummaryCourseOption[]
-  selectedCourseId?: string | null
-  onCourseChange?: (courseId: string) => void
+  selectedCourseIds?: [string, string, string]
+  onCourseSelectionChange?: (index: number, courseId: string) => void
   optionChoices?: SummaryOptionChoice[]
   selectedOptionIds?: string[]
   onOptionIdsChange?: (optionIds: string[]) => void
@@ -146,8 +147,8 @@ export function ReservationPrimarySummary({
   onNotifyEntryInfo,
   isEditing = false,
   courseOptions = [],
-  selectedCourseId = null,
-  onCourseChange,
+  selectedCourseIds = ['', '', ''],
+  onCourseSelectionChange,
   optionChoices = [],
   selectedOptionIds = [],
   onOptionIdsChange,
@@ -413,25 +414,13 @@ export function ReservationPrimarySummary({
         </CardHeader>
         <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
           <div>
-            {isEditing && onCourseChange ? (
-              <>
-                <Label htmlFor="summary-course">コース</Label>
-                <Select
-                  value={selectedCourseId ?? undefined}
-                  onValueChange={(value) => onCourseChange(value)}
-                >
-                  <SelectTrigger id="summary-course">
-                    <SelectValue placeholder="コースを選択" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {courseOptions.map((course) => (
-                      <SelectItem key={course.id} value={course.id}>
-                        {course.name}（{course.duration}分 / ¥{course.price.toLocaleString()}）
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </>
+            {isEditing && onCourseSelectionChange ? (
+              <QuickBookingCourseSelector
+                loading={false}
+                courses={courseOptions}
+                selectedIds={selectedCourseIds}
+                onSelectionChange={onCourseSelectionChange}
+              />
             ) : (
               <>
                 <div className="text-muted-foreground">コース</div>

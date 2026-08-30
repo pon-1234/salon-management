@@ -331,6 +331,10 @@ describe('QuickBookingDialog', () => {
     const panelGrid = screen.getByTestId('quick-booking-panel-grid')
     expect(panelGrid).toHaveClass('xl:grid-cols-4')
 
+    const optionGrid = screen.getByTestId('quick-booking-option-grid')
+    expect(optionGrid).toHaveClass('grid-cols-1')
+    expect(optionGrid).not.toHaveClass('sm:grid-cols-2')
+
     const submit = screen.getByRole('button', { name: '事前確認として保存' })
     const stickyFooter = screen.getByTestId('quick-booking-sticky-footer')
     expect(stickyFooter).toHaveClass('sticky', 'bottom-0')
@@ -537,13 +541,14 @@ describe('QuickBookingDialog', () => {
     expect(checkbox).not.toBeChecked()
   })
 
-  it('keeps options compact in a two-column grid', async () => {
+  it('keeps options readable in a single-column list', async () => {
     vi.stubGlobal('fetch', createFetchMock())
     render(dialogElement())
 
     await waitForOnePageBookingForm()
 
-    expect(screen.getByTestId('quick-booking-option-grid')).toHaveClass('sm:grid-cols-2')
+    expect(screen.getByTestId('quick-booking-option-grid')).toHaveClass('grid-cols-1')
+    expect(screen.getByTestId('quick-booking-option-grid')).not.toHaveClass('sm:grid-cols-2')
   })
 
   it('merges required intake channels with the store-specific list', async () => {
@@ -965,6 +970,29 @@ describe('QuickBookingDialog', () => {
 
     expect(getPostedReservation(fetchMock)).toEqual(
       expect.objectContaining({ receptionStaffId: 'admin-2', castId: 'cast-1' })
+    )
+  })
+
+  it('persists the booking panel store memo as the reservation store memo', async () => {
+    const user = userEvent.setup()
+    const fetchMock = createFetchMock()
+    vi.stubGlobal('fetch', fetchMock)
+    render(dialogElement())
+
+    await waitForOnePageBookingForm()
+    await user.type(
+      screen.getByPlaceholderText('店舗用メモがあれば記載してください'),
+      '電話受付時の共有事項'
+    )
+    await submitConfirmed(user)
+
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(true)
+    )
+    expect(getPostedReservation(fetchMock)).toEqual(
+      expect.objectContaining({
+        storeMemo: '電話受付時の共有事項',
+      })
     )
   })
 

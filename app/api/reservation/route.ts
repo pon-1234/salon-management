@@ -827,6 +827,7 @@ export async function POST(request: NextRequest) {
             roomNumber: reservationData.roomNumber ?? null,
             locationMemo: reservationData.locationMemo ?? null,
             notes: reservationData.notes ?? null,
+            storeMemo: reservationData.storeMemo ?? null,
             welfareExpense: revenueWithCardFee.welfareExpense,
             creditCardFee: revenueWithCardFee.creditCardFee,
             storeRevenue: revenueWithCardFee.storeRevenue,

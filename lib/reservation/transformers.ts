@@ -120,6 +120,7 @@ export function mapReservationToReservationData(
     specificLocation: reservation.locationMemo || (reservation as any).specificLocation || '',
     staff: normalizedStaffName,
     staffId: castId,
+    receptionStaffId: reservation.receptionStaffId ?? null,
     storeId: reservation.storeId,
     marketingChannel:
       reservation.marketingChannel || (reservation as any).marketingChannel || '未設定',

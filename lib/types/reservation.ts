@@ -12,6 +12,7 @@ export interface Reservation extends BaseEntity {
   castId?: string
   serviceId: string
   courseId?: string
+  receptionStaffId?: string | null
   optionIds?: string[]
   startTime: Date
   endTime: Date
@@ -104,6 +105,7 @@ export interface ReservationData {
   specificLocation: string
   staff: string
   staffId?: string
+  receptionStaffId?: string | null
   storeId?: string
   marketingChannel: string
   date: string
@@ -163,6 +165,7 @@ export interface ReservationUpdatePayload {
   startTime: Date
   endTime: Date
   castId: string
+  receptionStaffId?: string | null
   courseId?: string
   courseIds?: string[]
   status?: ReservationStatus

@@ -92,6 +92,16 @@ vi.mock('@/hooks/use-pricing', () => {
         createdAt: new Date('2024-01-01'),
         updatedAt: new Date('2024-01-01'),
       },
+      {
+        id: 'course-extension-30',
+        name: '30分延長',
+        duration: 30,
+        price: 5000,
+        isActive: true,
+        enableWebBooking: true,
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
+      },
     ],
     optionPrices: [
       {
@@ -1105,6 +1115,9 @@ describe('ReservationDialog Edit Mode', () => {
     )
 
     const summaryGrid = screen.getByTestId('reservation-primary-summary-grid')
+    expect(within(summaryGrid).getByText('コース').parentElement).toHaveTextContent(
+      '190分 + 30分延長'
+    )
     expect(within(summaryGrid).getByText('コース料金')).toBeInTheDocument()
     expect(within(summaryGrid).getByText('¥13,000')).toBeInTheDocument()
     expect(within(summaryGrid).getByText('割引')).toBeInTheDocument()
@@ -1129,10 +1142,120 @@ describe('ReservationDialog Edit Mode', () => {
     fireEvent.click(screen.getByRole('button', { name: /編集/i }))
 
     const summaryGrid = screen.getByTestId('reservation-primary-summary-grid')
-    expect(within(summaryGrid).getByRole('combobox', { name: 'コース' })).toBeInTheDocument()
+    expect(within(summaryGrid).getByRole('combobox', { name: 'コース1' })).toBeInTheDocument()
     expect(
       within(summaryGrid).getByRole('checkbox', { name: /ネックトリートメント/ })
     ).toBeInTheDocument()
+  })
+
+  it('keeps all added courses editable and saves the same ordered selection', async () => {
+    const user = userEvent.setup()
+    mockOnSave.mockResolvedValue(undefined)
+    render(
+      <ReservationDialog
+        open
+        onOpenChange={mockOnOpenChange}
+        reservation={{
+          ...mockReservation,
+          serviceId: 'course-1',
+          courseItems: [
+            {
+              id: 'course-1',
+              name: 'スタンダードコース',
+              duration: 120,
+              price: 13_000,
+              sortOrder: 0,
+            },
+            {
+              id: 'course-extension-30',
+              name: '30分延長',
+              duration: 30,
+              price: 5_000,
+              sortOrder: 1,
+            },
+          ],
+        }}
+        onSave={mockOnSave}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: /編集/i }))
+
+    const summaryGrid = screen.getByTestId('reservation-primary-summary-grid')
+    const course1 = within(summaryGrid).getByRole('combobox', { name: 'コース1' })
+    const course2 = within(summaryGrid).getByRole('combobox', { name: 'コース2' })
+    const course3 = within(summaryGrid).getByRole('combobox', { name: 'コース3' })
+    expect(course1).toHaveValue('course-1')
+    expect(course2).toHaveValue('course-extension-30')
+    expect(course3).toHaveValue('')
+
+    await user.selectOptions(course3, 'course-extension-30')
+    await user.click(screen.getByRole('button', { name: '保存' }))
+
+    await waitFor(() =>
+      expect(mockOnSave).toHaveBeenCalledWith(
+        '1',
+        expect.objectContaining({
+          courseId: 'course-1',
+          courseIds: ['course-1', 'course-extension-30', 'course-extension-30'],
+        })
+      )
+    )
+  })
+
+  it('shows and edits the same reception staff and store memo saved at booking creation', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      const payload = url.startsWith('/api/admin')
+        ? {
+            admins: [
+              { id: 'admin-1', name: '受付A', isActive: true },
+              { id: 'admin-2', name: '受付B', isActive: true },
+            ],
+          }
+        : url.startsWith('/api/cast')
+          ? []
+          : { ngCasts: [] }
+      return new Response(JSON.stringify(payload), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    mockOnSave.mockResolvedValue(undefined)
+
+    render(
+      <ReservationDialog
+        open
+        onOpenChange={mockOnOpenChange}
+        reservation={{
+          ...mockReservation,
+          receptionStaffId: 'admin-2',
+          storeMemo: '電話受付時の共有事項',
+        }}
+        onSave={mockOnSave}
+      />
+    )
+
+    expect(await screen.findByText('受付B')).toBeInTheDocument()
+    expect(screen.getByText('電話受付時の共有事項')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /編集/i }))
+    await user.selectOptions(screen.getByLabelText('受付担当者'), 'admin-1')
+    await user.clear(screen.getByLabelText('店舗メモ'))
+    await user.type(screen.getByLabelText('店舗メモ'), '編集後の共有事項')
+    await user.click(screen.getByRole('button', { name: '保存' }))
+
+    await waitFor(() =>
+      expect(mockOnSave).toHaveBeenCalledWith(
+        '1',
+        expect.objectContaining({
+          receptionStaffId: 'admin-1',
+          storeMemo: '編集後の共有事項',
+        })
+      )
+    )
   })
 
   it('lets the operator edit visit memo and hotel on the surface and keeps entry info in sync', async () => {

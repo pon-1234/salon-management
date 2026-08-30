@@ -833,6 +833,7 @@ describe('Reservation API - Modifiable Status', () => {
             castId: 'cast-123',
             courseId: 'course-123',
             receptionStaffId: 'admin-2',
+            storeMemo: '電話受付時の共有事項',
             startTime: '2099-07-04T18:00:00+09:00',
             endTime: '2099-07-04T19:00:00+09:00',
           }),
@@ -847,7 +848,10 @@ describe('Reservation API - Modifiable Status', () => {
       )
       expect(createReservation).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ receptionStaffId: 'admin-2' }),
+          data: expect.objectContaining({
+            receptionStaffId: 'admin-2',
+            storeMemo: '電話受付時の共有事項',
+          }),
         })
       )
     })

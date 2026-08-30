@@ -44,7 +44,7 @@ import { Edit, X, Check, Phone, Loader2, AlertCircle, ChevronDown } from 'lucide
 import type { LucideIcon } from 'lucide-react'
 import { differenceInMinutes, addMinutes, format, parseISO } from 'date-fns'
 import { buildModificationAlerts, getModificationHistory } from '@/lib/modification-history/data'
-import { ReservationUpdatePayload } from '@/lib/types/reservation'
+import type { ReservationData, ReservationUpdatePayload } from '@/lib/types/reservation'
 import { ModificationAlert, ModificationHistory } from '@/lib/types/modification-history'
 import { cn } from '@/lib/utils'
 import { Cast } from '@/lib/cast/types'
@@ -124,10 +124,31 @@ import {
   ensureBookingDesignationOptions,
   getCastAvailableOptions,
 } from '@/components/reservation/quick-booking.utils'
+import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 
 const MAX_LINE_MESSAGE_LENGTH = 1000
 
 const DEFAULT_MARKETING_CHANNELS = [...MARKETING_CHANNELS]
+
+type ReceptionStaffOption = {
+  id: string
+  name: string
+}
+
+function reservationCourseSlots(
+  reservation: Pick<ReservationData, 'courseItems' | 'serviceId'> | null | undefined
+): [string, string, string] {
+  const itemIds = [...(reservation?.courseItems ?? [])]
+    .sort((left, right) => left.sortOrder - right.sortOrder)
+    .map((course) => course.id)
+    .filter(Boolean)
+  const ids = itemIds.length > 0 ? itemIds : reservation?.serviceId ? [reservation.serviceId] : []
+  return [ids[0] ?? '', ids[1] ?? '', ids[2] ?? '']
+}
+
+function sameCourseSelection(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((courseId, index) => courseId === right[index])
+}
 
 export function ReservationDialog({
   open,
@@ -149,7 +170,9 @@ export function ReservationDialog({
     date: '',
     startTime: '',
     castId: '',
+    receptionStaffId: '',
     courseId: null,
+    courseIds: ['', '', ''],
     designationId: '',
     storeMemo: '',
     notes: '',
@@ -195,6 +218,7 @@ export function ReservationDialog({
     }
     return Array.from(seed)
   })
+  const [receptionStaffOptions, setReceptionStaffOptions] = useState<ReceptionStaffOption[]>([])
   const partitionedMarketingChannels = useMemo(
     () => partitionMarketingChannels(marketingChannelOptions),
     [marketingChannelOptions]
@@ -313,6 +337,41 @@ export function ReservationDialog({
     })
   }, [marketingChannelOptions])
 
+  useEffect(() => {
+    if (!open || !currentStore?.id) return
+    let ignore = false
+    const controller = new AbortController()
+
+    const loadReceptionStaff = async () => {
+      try {
+        const response = await fetch(buildStoreScopedEndpoint('/api/admin', currentStore.id), {
+          cache: 'no-store',
+          credentials: 'include',
+          signal: controller.signal,
+        })
+        if (!response.ok) return
+        const payload = await response.json().catch(() => null)
+        const admins = Array.isArray(payload?.admins) ? payload.admins : []
+        const options = admins
+          .filter(
+            (admin: ReceptionStaffOption & { isActive?: boolean }) => admin.isActive !== false
+          )
+          .map((admin: ReceptionStaffOption) => ({ id: admin.id, name: admin.name }))
+        if (!ignore) setReceptionStaffOptions(options)
+      } catch (error) {
+        if (!ignore && !(error instanceof DOMException && error.name === 'AbortError')) {
+          console.warn('[ReservationDialog] Failed to load reception staff', error)
+        }
+      }
+    }
+
+    void loadReceptionStaff()
+    return () => {
+      ignore = true
+      controller.abort()
+    }
+  }, [currentStore?.id, open])
+
   const reservationDurationMinutes = useMemo(() => {
     if (!reservation) return 0
     const diff = differenceInMinutes(reservation.endTime, reservation.startTime)
@@ -410,18 +469,31 @@ export function ReservationDialog({
     return activeOptions
   }, [designationOptions, reservationDesignation, selectedCast?.specialDesignationFee])
 
-  const courseOptions = useMemo(
-    () =>
-      (coursePrices.length > 0 ? coursePrices : courses).map((course: any) => ({
-        id: String(course.id),
-        name: course.name,
-        duration: toNumber(course.duration, 0),
-        price: toNumber(course.price, 0),
-        storeShare: toNullableNumber(course.storeShare),
-        castShare: toNullableNumber(course.castShare),
-      })),
-    [coursePrices, courses]
-  )
+  const courseOptions = useMemo(() => {
+    const activeCourses = (coursePrices.length > 0 ? coursePrices : courses).map((course: any) => ({
+      id: String(course.id),
+      name: course.name,
+      duration: toNumber(course.duration, 0),
+      price: toNumber(course.price, 0),
+      storeShare: toNullableNumber(course.storeShare),
+      castShare: toNullableNumber(course.castShare),
+    }))
+    const activeIds = new Set(activeCourses.map((course) => course.id))
+    const persistedCourseMap = new Map(
+      (reservation?.courseItems ?? [])
+        .filter((course) => !activeIds.has(course.id))
+        .map((course) => [course.id, course])
+    )
+    const persistedCourses = Array.from(persistedCourseMap.values()).map((course) => ({
+      id: course.id,
+      name: course.name,
+      duration: toNumber(course.duration, 0),
+      price: toNumber(course.price, 0),
+      storeShare: toNullableNumber(course.storeShare),
+      castShare: toNullableNumber(course.castShare),
+    }))
+    return [...activeCourses, ...persistedCourses]
+  }, [coursePrices, courses, reservation?.courseItems])
 
   const optionCatalog = useMemo(
     () =>
@@ -443,9 +515,50 @@ export function ReservationDialog({
   )
 
   const selectedCourse = useMemo(() => {
-    const courseId = formState.courseId || reservation?.serviceId || ''
+    const courseId = formState.courseIds[0] || formState.courseId || reservation?.serviceId || ''
     return courseOptions.find((course) => course.id === courseId) ?? null
-  }, [courseOptions, formState.courseId, reservation?.serviceId])
+  }, [courseOptions, formState.courseId, formState.courseIds, reservation?.serviceId])
+
+  const selectedCourses = useMemo(
+    () =>
+      formState.courseIds
+        .filter(Boolean)
+        .map((courseId) => courseOptions.find((course) => course.id === courseId))
+        .filter((course): course is (typeof courseOptions)[number] => Boolean(course)),
+    [courseOptions, formState.courseIds]
+  )
+
+  const selectedCoursePrice = useMemo(
+    () => selectedCourses.reduce((sum, course) => sum + Math.max(0, course.price), 0),
+    [selectedCourses]
+  )
+
+  const selectedCourseDuration = useMemo(
+    () => selectedCourses.reduce((sum, course) => sum + Math.max(0, course.duration), 0),
+    [selectedCourses]
+  )
+
+  const usesPersistedCourseSelection = useMemo(() => {
+    const persistedIds = reservationCourseSlots(reservation).filter(Boolean)
+    const selectedIds = formState.courseIds.filter(Boolean)
+    return (
+      (reservation?.courseItems?.length ?? 0) > 0 && sameCourseSelection(selectedIds, persistedIds)
+    )
+  }, [formState.courseIds, reservation])
+
+  const selectedCourseName = useMemo(
+    () =>
+      usesPersistedCourseSelection
+        ? (reservation?.courseItems ?? [])
+            .slice()
+            .sort((left, right) => left.sortOrder - right.sortOrder)
+            .map((course) => course.name)
+            .join(' + ')
+        : selectedCourses.length > 0
+          ? selectedCourses.map((course) => course.name).join(' + ')
+          : (reservation?.courseItems ?? []).map((course) => course.name).join(' + '),
+    [reservation?.courseItems, selectedCourses, usesPersistedCourseSelection]
+  )
 
   const persistedCoursePrice = useMemo(
     () =>
@@ -810,10 +923,13 @@ export function ReservationDialog({
   )
 
   const effectiveDurationMinutes = useMemo(() => {
-    const usesPersistedCourses =
-      persistedCourseDuration > 0 &&
-      (formState.courseId || reservation?.serviceId || '') === (reservation?.serviceId || '')
-    if (usesPersistedCourses) {
+    if (usesPersistedCourseSelection && persistedCourseDuration > 0) {
+      return persistedCourseDuration + selectedOptionDurationTotal
+    }
+    if (selectedCourseDuration > 0) {
+      return selectedCourseDuration + selectedOptionDurationTotal
+    }
+    if (persistedCourseDuration > 0) {
       return persistedCourseDuration + selectedOptionDurationTotal
     }
 
@@ -830,12 +946,12 @@ export function ReservationDialog({
     return normalizedBase + selectedOptionDurationTotal
   }, [
     selectedCourse,
+    selectedCourseDuration,
     selectedOptionDurationTotal,
     reservationDurationMinutes,
     initialOptionDurationTotal,
     persistedCourseDuration,
-    formState.courseId,
-    reservation?.serviceId,
+    usesPersistedCourseSelection,
   ])
 
   const computedEndTime = useMemo(() => {
@@ -1143,11 +1259,15 @@ export function ReservationDialog({
   ])
 
   const priceBreakdown = useMemo(() => {
-    const usesPersistedCourses =
-      persistedCoursePrice > 0 &&
-      (formState.courseId || reservation?.serviceId || '') === (reservation?.serviceId || '')
     return calculateReservationPriceBreakdown({
-      selectedCoursePrice: usesPersistedCourses ? persistedCoursePrice : selectedCourse?.price,
+      selectedCoursePrice:
+        usesPersistedCourseSelection && persistedCoursePrice > 0
+          ? persistedCoursePrice
+          : selectedCoursePrice > 0
+            ? selectedCoursePrice
+            : persistedCoursePrice > 0
+              ? persistedCoursePrice
+              : selectedCourse?.price,
       fallbackCoursePrice: reservation?.price,
       options: selectedOptionDetails,
       transportationFee: formState.transportationFee,
@@ -1162,16 +1282,16 @@ export function ReservationDialog({
     })
   }, [
     selectedCourse,
+    selectedCoursePrice,
+    usesPersistedCourseSelection,
     persistedCoursePrice,
     reservation?.price,
-    reservation?.serviceId,
     reservation?.creditCardFee,
     selectedOptionDetails,
     formState.transportationFee,
     formState.additionalFee,
     formState.discountAmount,
     formState.pointsUsed,
-    formState.courseId,
     formState.paymentMethod,
     formState.designationFee,
     selectedDesignation,
@@ -1188,7 +1308,9 @@ export function ReservationDialog({
         date: format(reservation.startTime, 'yyyy-MM-dd'),
         startTime: format(reservation.startTime, 'HH:mm'),
         castId: reservation.staffId || '',
+        receptionStaffId: reservation.receptionStaffId || '',
         courseId: reservation.serviceId || null,
+        courseIds: reservationCourseSlots(reservation),
         designationId: reservationDesignation?.id || '',
         storeMemo: reservation.storeMemo || '',
         notes: reservation.notes || '',
@@ -1305,7 +1427,9 @@ export function ReservationDialog({
       date: format(reservation.startTime, 'yyyy-MM-dd'),
       startTime: format(reservation.startTime, 'HH:mm'),
       castId: reservation.staffId || '',
+      receptionStaffId: reservation.receptionStaffId || '',
       courseId: reservation.serviceId || null,
+      courseIds: reservationCourseSlots(reservation),
       designationId: reservationDesignation?.id || '',
       storeMemo: reservation.storeMemo || '',
       notes: reservation.notes || '',
@@ -1458,9 +1582,10 @@ export function ReservationDialog({
       return
     }
 
-    const courseIdToSave = formState.courseId ?? reservation.serviceId ?? ''
-    const originalCourseId = reservation.serviceId ?? ''
-    const courseChanged = courseIdToSave !== originalCourseId
+    const courseIdsToSave = formState.courseIds.filter(Boolean)
+    const originalCourseIds = reservationCourseSlots(reservation).filter(Boolean)
+    const courseIdToSave = courseIdsToSave[0] ?? formState.courseId ?? reservation.serviceId ?? ''
+    const courseSelectionChanged = !sameCourseSelection(courseIdsToSave, originalCourseIds)
     const originalOptionIds = [...normalizedInitialOptionIds].sort()
     const selectedOptionIds = Array.from(new Set(formState.optionIds)).sort()
     const optionsChanged =
@@ -1470,7 +1595,7 @@ export function ReservationDialog({
     const durationMinutes =
       effectiveDurationMinutes > 0 ? effectiveDurationMinutes : reservationDurationMinutes
     const end =
-      startInputChanged || courseChanged || optionsChanged
+      startInputChanged || courseSelectionChanged || optionsChanged
         ? addMinutes(start, durationMinutes)
         : new Date(reservation.endTime)
 
@@ -1512,6 +1637,7 @@ export function ReservationDialog({
         startTime: start,
         endTime: end,
         castId,
+        receptionStaffId: formState.receptionStaffId || null,
         storeMemo: formState.storeMemo,
         notes: formState.notes,
         designationType: designationTypeToSave,
@@ -1528,8 +1654,9 @@ export function ReservationDialog({
         locationMemo: formState.locationMemo,
       }
 
-      if (courseChanged && courseIdToSave) {
+      if (courseSelectionChanged && courseIdToSave) {
         updatePayload.courseId = courseIdToSave
+        updatePayload.courseIds = courseIdsToSave
       }
       if (paymentMethodChanged) {
         updatePayload.paymentMethod = formState.paymentMethod
@@ -1722,13 +1849,17 @@ export function ReservationDialog({
                 <ReservationPrimarySummary
                   reservation={reservation}
                   castWorkStatus={selectedCast?.workStatus}
-                  courseName={selectedCourse?.name || reservation.course || '未設定'}
+                  courseName={
+                    selectedCourseName || selectedCourse?.name || reservation.course || '未設定'
+                  }
                   coursePrice={
-                    persistedCoursePrice > 0 &&
-                    (formState.courseId || reservation.serviceId || '') ===
-                      (reservation.serviceId || '')
+                    usesPersistedCourseSelection && persistedCoursePrice > 0
                       ? persistedCoursePrice
-                      : selectedCourse?.price
+                      : selectedCoursePrice > 0
+                        ? selectedCoursePrice
+                        : persistedCoursePrice > 0
+                          ? persistedCoursePrice
+                          : selectedCourse?.price
                   }
                   designationName={designationForDisplay?.name || reservation.designation || 'なし'}
                   optionNames={displayOptionNames}
@@ -1753,8 +1884,18 @@ export function ReservationDialog({
                   onNotifyEntryInfo={() => void handleSaveEntryInfo('notify')}
                   isEditing={isEditMode}
                   courseOptions={courseOptions}
-                  selectedCourseId={formState.courseId}
-                  onCourseChange={(courseId) => setFormState((prev) => ({ ...prev, courseId }))}
+                  selectedCourseIds={formState.courseIds}
+                  onCourseSelectionChange={(index, courseId) =>
+                    setFormState((prev) => {
+                      const courseIds = [...prev.courseIds] as [string, string, string]
+                      courseIds[index] = courseId
+                      return {
+                        ...prev,
+                        courseId: courseIds[0] || null,
+                        courseIds,
+                      }
+                    })
+                  }
                   optionChoices={optionChoices}
                   selectedOptionIds={formState.optionIds}
                   onOptionIdsChange={(optionIds) =>
@@ -1848,72 +1989,119 @@ export function ReservationDialog({
                   locationsLoading={locationsLoading}
                 />
 
-                {isEditMode ? (
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium">集客</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
-                      <div>
-                        <Label htmlFor="reservation-acquisition-method">集客手段</Label>
-                        <Select
-                          value={
-                            parseMarketingChannel(formState.marketingChannel).method || undefined
-                          }
-                          onValueChange={(value) =>
-                            setFormState((prev) => ({
-                              ...prev,
-                              marketingChannel: composeMarketingChannel(
-                                value,
-                                parseMarketingChannel(prev.marketingChannel).site
-                              ),
-                            }))
-                          }
-                        >
-                          <SelectTrigger id="reservation-acquisition-method">
-                            <SelectValue placeholder="手段を選択" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {partitionedMarketingChannels.methods.map((channel) => (
-                              <SelectItem key={channel} value={channel}>
-                                {channel}
-                              </SelectItem>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">集客・受付情報</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid gap-3 text-sm sm:grid-cols-3">
+                    {isEditMode ? (
+                      <>
+                        <div>
+                          <Label htmlFor="reservation-acquisition-method">集客手段</Label>
+                          <Select
+                            value={
+                              parseMarketingChannel(formState.marketingChannel).method || undefined
+                            }
+                            onValueChange={(value) =>
+                              setFormState((prev) => ({
+                                ...prev,
+                                marketingChannel: composeMarketingChannel(
+                                  value,
+                                  parseMarketingChannel(prev.marketingChannel).site
+                                ),
+                              }))
+                            }
+                          >
+                            <SelectTrigger id="reservation-acquisition-method">
+                              <SelectValue placeholder="手段を選択" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {partitionedMarketingChannels.methods.map((channel) => (
+                                <SelectItem key={channel} value={channel}>
+                                  {channel}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="reservation-channel">集客チャンネル</Label>
+                          <Select
+                            value={
+                              parseMarketingChannel(formState.marketingChannel).site ?? '__none__'
+                            }
+                            onValueChange={(value) =>
+                              setFormState((prev) => ({
+                                ...prev,
+                                marketingChannel: composeMarketingChannel(
+                                  parseMarketingChannel(prev.marketingChannel).method,
+                                  value === '__none__' ? null : value
+                                ),
+                              }))
+                            }
+                          >
+                            <SelectTrigger id="reservation-channel">
+                              <SelectValue placeholder="チャンネルを選択" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">なし</SelectItem>
+                              {partitionedMarketingChannels.sites.map((channel) => (
+                                <SelectItem key={channel} value={channel}>
+                                  {channel}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="reservation-reception-staff">受付担当者</Label>
+                          <select
+                            id="reservation-reception-staff"
+                            aria-label="受付担当者"
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            value={formState.receptionStaffId}
+                            onChange={(event) =>
+                              setFormState((prev) => ({
+                                ...prev,
+                                receptionStaffId: event.target.value,
+                              }))
+                            }
+                          >
+                            <option value="">未選択</option>
+                            {receptionStaffOptions.map((staff) => (
+                              <option key={staff.id} value={staff.id}>
+                                {staff.name}
+                              </option>
                             ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="reservation-channel">集客チャンネル</Label>
-                        <Select
-                          value={
-                            parseMarketingChannel(formState.marketingChannel).site ?? '__none__'
-                          }
-                          onValueChange={(value) =>
-                            setFormState((prev) => ({
-                              ...prev,
-                              marketingChannel: composeMarketingChannel(
-                                parseMarketingChannel(prev.marketingChannel).method,
-                                value === '__none__' ? null : value
-                              ),
-                            }))
-                          }
-                        >
-                          <SelectTrigger id="reservation-channel">
-                            <SelectValue placeholder="チャンネルを選択" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__none__">なし</SelectItem>
-                            {partitionedMarketingChannels.sites.map((channel) => (
-                              <SelectItem key={channel} value={channel}>
-                                {channel}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : null}
+                          </select>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <div className="text-muted-foreground">集客手段</div>
+                          <div className="font-medium">
+                            {parseMarketingChannel(formState.marketingChannel).method || '未設定'}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">集客チャンネル</div>
+                          <div className="font-medium">
+                            {parseMarketingChannel(formState.marketingChannel).site || 'なし'}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">受付担当者</div>
+                          <div className="font-medium">
+                            {receptionStaffOptions.find(
+                              (staff) => staff.id === formState.receptionStaffId
+                            )?.name || '未設定'}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
 
                 {isEditMode ? (
                   <div>
@@ -1923,7 +2111,11 @@ export function ReservationDialog({
                         <AlertCircle className="h-4 w-4 text-muted-foreground" />
                       </CardHeader>
                       <CardContent>
+                        <Label htmlFor="reservation-store-memo" className="sr-only">
+                          店舗メモ
+                        </Label>
                         <Textarea
+                          id="reservation-store-memo"
                           value={formState.storeMemo}
                           onChange={(event) =>
                             setFormState((prev) => ({ ...prev, storeMemo: event.target.value }))
@@ -1957,6 +2149,12 @@ export function ReservationDialog({
                         <div className="text-muted-foreground">料金</div>
                         <div className="font-medium">
                           {formatCurrency(reservation.totalPayment)}
+                        </div>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <div className="text-muted-foreground">店舗メモ</div>
+                        <div className="whitespace-pre-wrap font-medium">
+                          {formState.storeMemo || 'なし'}
                         </div>
                       </div>
                     </CardContent>

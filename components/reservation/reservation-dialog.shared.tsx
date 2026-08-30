@@ -25,7 +25,9 @@ export type EditFormState = {
   date: string
   startTime: string
   castId: string
+  receptionStaffId: string
   courseId: string | null
+  courseIds: [string, string, string]
   designationId: string
   storeMemo: string
   notes: string

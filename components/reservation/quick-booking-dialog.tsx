@@ -1034,7 +1034,7 @@ export function QuickBookingDialog({
         hotelName: bookingDetails.hotelName.trim() || null,
         roomNumber: bookingDetails.roomNumber.trim() || null,
         locationMemo: bookingDetails.locationMemo.trim(),
-        notes: bookingDetails.notes,
+        storeMemo: bookingDetails.notes,
         storeRevenue: priceBreakdown.storeRevenue,
         staffRevenue: priceBreakdown.staffRevenue,
         welfareExpense: priceBreakdown.welfareExpense,
@@ -1438,12 +1438,9 @@ export function QuickBookingDialog({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div
-                    data-testid="quick-booking-option-grid"
-                    className="grid gap-3 sm:grid-cols-2"
-                  >
+                  <div data-testid="quick-booking-option-grid" className="grid grid-cols-1 gap-3">
                     {availableOptions.length === 0 ? (
-                      <div className="rounded-lg bg-gray-50 p-4 text-center text-gray-500 sm:col-span-2">
+                      <div className="rounded-lg bg-gray-50 p-4 text-center text-gray-500">
                         利用可能なオプションがありません
                       </div>
                     ) : (
