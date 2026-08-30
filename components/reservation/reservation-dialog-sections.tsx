@@ -12,7 +12,6 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -39,7 +38,7 @@ import {
   toNumber,
 } from './reservation-dialog.utils'
 import { RESERVATION_START_STEP_SECONDS } from '@/lib/reservation/time-boundary'
-import { QuickBookingCourseSelector } from './quick-booking-panels'
+import { QuickBookingCourseSelector, QuickBookingOptionSelector } from './quick-booking-panels'
 
 const UNASSIGNED_VALUE = '__unassigned__'
 
@@ -464,40 +463,21 @@ export function ReservationPrimarySummary({
           <div className="sm:col-span-2">
             <div className="text-muted-foreground">オプション</div>
             {isEditing && onOptionIdsChange ? (
-              optionChoices.length === 0 ? (
-                <span className="font-medium">なし</span>
-              ) : (
-                <div className="mt-1 space-y-2">
-                  {optionChoices.map((option) => {
-                    const checked = selectedOptionIds.includes(option.id)
-                    const optionId = `summary-option-${option.id}`
-                    return (
-                      <label key={option.id} htmlFor={optionId} className="flex items-center gap-2">
-                        <Checkbox
-                          id={optionId}
-                          checked={checked}
-                          onCheckedChange={(next) => {
-                            const selected = next === true
-                            const nextIds = new Set(selectedOptionIds)
-                            if (selected) {
-                              nextIds.add(option.id)
-                            } else {
-                              nextIds.delete(option.id)
-                            }
-                            onOptionIdsChange(Array.from(nextIds))
-                          }}
-                        />
-                        <span>
-                          {option.name}
-                          {typeof option.price === 'number'
-                            ? `（¥${option.price.toLocaleString()}）`
-                            : ''}
-                        </span>
-                      </label>
-                    )
-                  })}
-                </div>
-              )
+              <div className="mt-1">
+                <QuickBookingOptionSelector
+                  options={optionChoices}
+                  selectedIds={selectedOptionIds}
+                  onOptionChange={(optionId, selected) => {
+                    const nextIds = new Set(selectedOptionIds)
+                    if (selected) {
+                      nextIds.add(optionId)
+                    } else {
+                      nextIds.delete(optionId)
+                    }
+                    onOptionIdsChange(Array.from(nextIds))
+                  }}
+                />
+              </div>
             ) : (
               <div className="mt-1 flex flex-wrap gap-1">
                 {optionNames.length > 0 ? (

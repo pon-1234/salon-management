@@ -50,8 +50,8 @@ describe('pickAutoDesignationFee', () => {
     expect(pickAutoDesignationFee(catalog, true)?.id).toBe('fee-repeat')
   })
 
-  it('selects the active free fee for a first visit with that cast', () => {
-    expect(pickAutoDesignationFee(catalog, false)?.id).toBe('fee-free')
+  it('selects the active panel fee for a first visit with that cast', () => {
+    expect(pickAutoDesignationFee(catalog, false)?.id).toBe('fee-panel')
   })
 
   it('ignores inactive fees and falls back to the lowest sortOrder of the target kind', () => {
@@ -67,7 +67,7 @@ describe('pickAutoDesignationFee', () => {
       fee({ id: 'legacy-free', name: 'フリー指名' }),
       fee({ id: 'legacy-repeat', name: '本指名', price: 2000, sortOrder: 2 }),
     ]
-    expect(pickAutoDesignationFee(unnamed, false)?.id).toBe('legacy-free')
+    expect(pickAutoDesignationFee(unnamed, false)?.id).toBeUndefined()
     expect(pickAutoDesignationFee(unnamed, true)?.id).toBe('legacy-repeat')
   })
 })

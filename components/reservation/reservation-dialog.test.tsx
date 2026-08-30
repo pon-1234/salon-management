@@ -1146,6 +1146,8 @@ describe('ReservationDialog Edit Mode', () => {
     expect(
       within(summaryGrid).getByRole('checkbox', { name: /ネックトリートメント/ })
     ).toBeInTheDocument()
+    expect(within(summaryGrid).getByTestId('option-row-option-neck')).toBeInTheDocument()
+    expect(within(summaryGrid).getByTestId('reservation-option-grid')).toHaveClass('grid-cols-1')
   })
 
   it('keeps all added courses editable and saves the same ordered selection', async () => {

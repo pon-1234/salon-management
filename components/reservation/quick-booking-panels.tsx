@@ -1,13 +1,15 @@
 /**
  * @design_doc   Notion #280 one-page reservation reception layout
  * @related_to   QuickBookingDialog supplies reservation state and pricing calculations
- * @known_issues Four-column layout intentionally activates only on extra-wide admin screens
+ * @known_issues None currently
  */
 'use client'
 
 import type { ReactNode } from 'react'
 import { CreditCard } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -38,9 +40,77 @@ export function QuickBookingPanelGrid({ children }: { children: ReactNode }) {
   return (
     <div
       data-testid="quick-booking-panel-grid"
-      className="grid gap-3 pb-4 md:grid-cols-2 xl:grid-cols-4 xl:items-start"
+      className="grid gap-3 pb-4 lg:grid-cols-2 lg:items-start"
     >
       {children}
+    </div>
+  )
+}
+
+type BookingOptionChoice = {
+  id: string
+  name: string
+  price?: number
+  note?: string | null
+}
+
+type OptionSelectorProps = {
+  options: BookingOptionChoice[]
+  selectedIds: string[]
+  onOptionChange: (optionId: string, selected: boolean) => void
+  testId?: string
+}
+
+export function QuickBookingOptionSelector({
+  options,
+  selectedIds,
+  onOptionChange,
+  testId = 'reservation-option-grid',
+}: OptionSelectorProps) {
+  return (
+    <div data-testid={testId} className="grid grid-cols-1 gap-3">
+      {options.length === 0 ? (
+        <div className="rounded-lg bg-gray-50 p-4 text-center text-gray-500">
+          利用可能なオプションがありません
+        </div>
+      ) : (
+        options.map((option) => {
+          const optionCheckboxId = `${testId}-${option.id}`
+          const isSelected = selectedIds.includes(option.id)
+
+          return (
+            <Label
+              key={option.id}
+              htmlFor={optionCheckboxId}
+              data-testid={`option-row-${option.id}`}
+              className={`flex w-full cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors ${
+                isSelected
+                  ? 'border-primary bg-primary/5'
+                  : 'hover:border-gray-400 hover:bg-gray-50'
+              }`}
+            >
+              <span className="flex min-w-0 items-center">
+                <Checkbox
+                  id={optionCheckboxId}
+                  checked={isSelected}
+                  onCheckedChange={(checked) => onOptionChange(option.id, Boolean(checked))}
+                />
+                <span className="ml-3 min-w-0 font-medium">
+                  {option.name}
+                  {option.note ? (
+                    <span className="ml-2 text-xs text-gray-500">({option.note})</span>
+                  ) : null}
+                </span>
+              </span>
+              {typeof option.price === 'number' ? (
+                <Badge variant="secondary" className="ml-3 shrink-0">
+                  {option.price === 0 ? '無料' : `+${option.price.toLocaleString()}円`}
+                </Badge>
+              ) : null}
+            </Label>
+          )
+        })
+      )}
     </div>
   )
 }

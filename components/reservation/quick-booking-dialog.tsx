@@ -26,7 +26,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -91,6 +90,7 @@ import {
 } from './quick-booking.utils'
 import {
   QuickBookingCourseSelector,
+  QuickBookingOptionSelector,
   QuickBookingPanelGrid,
   QuickBookingPricePanel,
   QuickBookingReceptionPanel,
@@ -356,8 +356,12 @@ export function QuickBookingDialog({
     [stations, bookingDetails.areaId]
   )
   const designationOptions = useMemo(
-    () => ensureBookingDesignationOptions(designationFees, currentStaff?.specialDesignationFee),
-    [designationFees, currentStaff?.specialDesignationFee]
+    () =>
+      ensureBookingDesignationOptions(
+        designationFees,
+        currentStaff?.specialDesignationFee ?? assignedStaff?.specialDesignationFee
+      ),
+    [designationFees, currentStaff?.specialDesignationFee, assignedStaff?.specialDesignationFee]
   )
 
   useEffect(() => {
@@ -1185,7 +1189,7 @@ export function QuickBookingDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={handleDialogOpenChange}>
-        <DialogContent className="flex max-h-[94vh] w-[96vw] max-w-[1600px] flex-col overflow-hidden p-4">
+        <DialogContent className="flex max-h-[94vh] w-[96vw] max-w-6xl flex-col overflow-hidden p-4">
           <DialogDescription className="sr-only">
             基本情報から確認内容までを一画面で入力し、予約を確定します。
           </DialogDescription>
@@ -1438,52 +1442,12 @@ export function QuickBookingDialog({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div data-testid="quick-booking-option-grid" className="grid grid-cols-1 gap-3">
-                    {availableOptions.length === 0 ? (
-                      <div className="rounded-lg bg-gray-50 p-4 text-center text-gray-500">
-                        利用可能なオプションがありません
-                      </div>
-                    ) : (
-                      availableOptions.map((option) => {
-                        const optionCheckboxId = `quick-booking-option-${option.id}`
-                        const isSelected = Boolean(bookingDetails.options[option.id])
-
-                        return (
-                          <Label
-                            key={option.id}
-                            htmlFor={optionCheckboxId}
-                            data-testid={`option-row-${option.id}`}
-                            className={`flex w-full cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors ${
-                              isSelected
-                                ? 'border-primary bg-primary/5'
-                                : 'hover:border-gray-400 hover:bg-gray-50'
-                            }`}
-                          >
-                            <span className="flex items-center">
-                              <Checkbox
-                                id={optionCheckboxId}
-                                checked={isSelected}
-                                onCheckedChange={(checked) =>
-                                  handleCheckboxChange(option.id, Boolean(checked))
-                                }
-                              />
-                              <span className="ml-3 font-medium">
-                                {option.name}
-                                {option.note ? (
-                                  <span className="ml-2 text-xs text-gray-500">
-                                    ({option.note})
-                                  </span>
-                                ) : null}
-                              </span>
-                            </span>
-                            <Badge variant="secondary">
-                              {option.price === 0 ? '無料' : `+${option.price.toLocaleString()}円`}
-                            </Badge>
-                          </Label>
-                        )
-                      })
-                    )}
-                  </div>
+                  <QuickBookingOptionSelector
+                    options={availableOptions}
+                    selectedIds={optionSelections}
+                    onOptionChange={handleCheckboxChange}
+                    testId="quick-booking-option-grid"
+                  />
 
                   <div>
                     <Label htmlFor="quick-booking-payment-method">支払い方法</Label>

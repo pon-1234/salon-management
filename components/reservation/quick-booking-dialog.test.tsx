@@ -231,16 +231,18 @@ function dialogElement({
   open = true,
   time = selectedTime,
   onOpenChange = vi.fn(),
+  selectedStaff: dialogStaff = selectedStaff,
 }: {
   open?: boolean
   time?: Date | null
   onOpenChange?: (open: boolean) => void
+  selectedStaff?: Cast
 } = {}) {
   return (
     <QuickBookingDialog
       open={open}
       onOpenChange={onOpenChange}
-      selectedStaff={selectedStaff}
+      selectedStaff={dialogStaff}
       selectedTime={time ?? undefined}
       selectedSlot={null}
       selectedCustomer={selectedCustomer}
@@ -329,7 +331,8 @@ describe('QuickBookingDialog', () => {
     expect(screen.queryByRole('button', { name: '戻る' })).not.toBeInTheDocument()
 
     const panelGrid = screen.getByTestId('quick-booking-panel-grid')
-    expect(panelGrid).toHaveClass('xl:grid-cols-4')
+    expect(panelGrid).toHaveClass('lg:grid-cols-2')
+    expect(panelGrid).not.toHaveClass('xl:grid-cols-4')
 
     const optionGrid = screen.getByTestId('quick-booking-option-grid')
     expect(optionGrid).toHaveClass('grid-cols-1')
@@ -473,7 +476,7 @@ describe('QuickBookingDialog', () => {
     expect(screen.getByRole('option', { name: /おすすめパネル指名/ })).toBeInTheDocument()
   })
 
-  it('auto-selects フリー for a first visit and リピート指名 when the customer already used that cast', async () => {
+  it('auto-selects the cast panel fee for a first visit and リピート指名 for a repeat visit', async () => {
     const catalog = [
       {
         id: 'fee-free',
@@ -495,14 +498,28 @@ describe('QuickBookingDialog', () => {
         isActive: true,
         kind: 'repeat' as const,
       },
+      {
+        id: 'fee-panel',
+        name: 'おすすめパネル指名',
+        price: 2_000,
+        storeShare: 0,
+        castShare: 2_000,
+        sortOrder: 3,
+        isActive: true,
+        kind: 'panel' as const,
+      },
     ]
     mocks.getDesignationFees.mockResolvedValue(catalog)
     vi.stubGlobal('fetch', createFetchMock())
-    const { unmount } = render(dialogElement())
+    const { unmount } = render(
+      dialogElement({ selectedStaff: { ...selectedStaff, specialDesignationFee: 5_000 } })
+    )
 
     await waitForOnePageBookingForm()
     await waitFor(() => {
-      expect(screen.getByRole('combobox', { name: '指名設定' })).toHaveTextContent('フリー')
+      expect(screen.getByRole('combobox', { name: '指名設定' })).toHaveTextContent(
+        'おすすめパネル指名（5,000円）'
+      )
     })
     unmount()
 
@@ -513,6 +530,23 @@ describe('QuickBookingDialog', () => {
     await waitFor(() => {
       expect(screen.getByRole('combobox', { name: '指名設定' })).toHaveTextContent('リピート指名')
     })
+  })
+
+  it('persists used points so the confirmed order can display the same deduction', async () => {
+    const user = userEvent.setup()
+    const fetchMock = createFetchMock()
+    vi.stubGlobal('fetch', fetchMock)
+    render(dialogElement())
+
+    await waitForOnePageBookingForm()
+    await user.click(screen.getByRole('switch', { name: 'ポイントを利用' }))
+    await user.clear(screen.getByLabelText('利用ポイント数'))
+    await user.type(screen.getByLabelText('利用ポイント数'), '100')
+    await submitConfirmed(user)
+
+    await waitFor(() => expect(getPostedReservation(fetchMock)).toBeDefined())
+    expect(getPostedReservation(fetchMock)).toEqual(expect.objectContaining({ pointsUsed: 100 }))
+    expect(screen.getByText('ポイント利用').parentElement).toHaveTextContent('-100円')
   })
 
   it('does not label any amount as welfare expense in the booking price breakdown', async () => {

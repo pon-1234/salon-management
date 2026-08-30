@@ -803,6 +803,7 @@ describe('Timeline appointment cards', () => {
     )
 
     expect(screen.getByTestId('timeline-time-header')).toHaveTextContent('08:00')
+    expect(screen.getByTestId('timeline-time-header').parentElement).toHaveClass('sticky', 'top-0')
     expect(screen.getByRole('button', { name: '08:00から予約' })).toBeVisible()
     expect(screen.queryByRole('button', { name: '07:30から予約' })).not.toBeInTheDocument()
   })

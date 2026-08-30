@@ -55,7 +55,7 @@ export function pickAutoDesignationFee(
   fees: DesignationFee[],
   hadCompletedVisitWithCast: boolean
 ): DesignationFee | undefined {
-  const targetKind: DesignationFeeKind = hadCompletedVisitWithCast ? 'repeat' : 'free'
+  const targetKind: DesignationFeeKind = hadCompletedVisitWithCast ? 'repeat' : 'panel'
   return fees
     .filter((fee) => fee.isActive && resolveDesignationKind(fee) === targetKind)
     .sort(

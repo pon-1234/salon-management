@@ -522,7 +522,7 @@ export function Timeline({
           </div>
           <div
             ref={timelineHeaderRef}
-            className="overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="sticky top-0 z-30 overflow-x-auto overflow-y-hidden bg-gray-50 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             onScroll={() => syncHorizontalScroll('header')}
           >
             <div
