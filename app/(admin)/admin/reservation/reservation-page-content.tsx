@@ -718,8 +718,8 @@ export function ReservationPageContent() {
   const allAppointments = getActiveReservationData(currentDayReservations)
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="sticky top-0 z-30 border-b bg-white">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
+      <div className="sticky top-0 z-30 shrink-0 border-b bg-white">
         <div className="flex flex-wrap items-center justify-between gap-1">
           <DateNavigation selectedDate={selectedDate} onSelectDate={setSelectedDate} />
           <div className="flex flex-wrap items-center">

@@ -474,8 +474,11 @@ export function Timeline({
   ))
 
   return (
-    <div className="relative bg-gray-50">
-      <div className="flex items-center justify-end gap-1 border-b bg-white px-2 py-1">
+    <div
+      data-testid="reservation-timeline"
+      className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-gray-50"
+    >
+      <div className="flex shrink-0 items-center justify-end gap-1 border-b bg-white px-2 py-1">
         <Button
           variant={zoomLevel === 0.75 ? 'default' : 'outline'}
           size="sm"
@@ -502,7 +505,7 @@ export function Timeline({
         </Button>
       </div>
 
-      <div className="relative h-[calc(100vh-8rem)] min-h-[28rem] w-full">
+      <div data-testid="reservation-timeline-viewport" className="relative min-h-0 w-full flex-1">
         <div
           className="absolute inset-x-0 top-0 grid"
           style={{
@@ -576,6 +579,16 @@ export function Timeline({
                   const serviceName =
                     appointment.serviceName ||
                     (appointment.serviceId ? getCourseById(appointment.serviceId)?.name : '')
+                  const courseItems = sourceReservation?.courseItems ?? []
+                  const courseName =
+                    courseItems.length > 0
+                      ? courseItems.map((item) => item.name).join(' + ')
+                      : sourceReservation?.course || serviceName || 'コース未設定'
+                  const courseAmount =
+                    courseItems.length > 0
+                      ? courseItems.reduce((sum, item) => sum + item.price, 0)
+                      : Number(sourceReservation?.totalPayment ?? appointment.price ?? 0)
+                  const courseLabel = `${courseName}（${courseAmount.toLocaleString('ja-JP')}円）`
                   const hotelLabel = [sourceReservation?.hotelName, sourceReservation?.roomNumber]
                     .filter(Boolean)
                     .join(' ')
@@ -600,57 +613,60 @@ export function Timeline({
                       }}
                       onClick={() => handleAppointmentClick(appointment)}
                     >
-                      <div className="flex shrink-0 flex-col justify-center border-r border-black/10 pr-0.5 text-[10px] font-semibold leading-3 text-gray-800">
+                      <div
+                        data-timeline-field="time"
+                        className="flex shrink-0 flex-col justify-center border-r border-black/10 pr-1 text-[10px] font-semibold leading-3 text-gray-800"
+                      >
                         <span data-testid="timeline-appointment-in">{startLabel}</span>
                         <span data-testid="timeline-appointment-out">{endLabel}</span>
                       </div>
-                      <div className="flex min-w-0 flex-1 flex-col justify-center">
+                      <div className="flex min-w-0 flex-1 flex-col justify-center gap-px">
+                        <div className="flex min-w-0 items-center gap-1">
+                          <Badge
+                            data-timeline-field="status"
+                            variant={isTentative ? 'secondary' : 'default'}
+                            className={cn(
+                              'h-4 shrink-0 px-1 py-0 text-[9px] leading-none',
+                              isTentative && 'bg-orange-500 text-white',
+                              displayStatus === 'modifiable' && 'bg-amber-600 text-white',
+                              displayStatus === 'preconfirmed' && 'bg-sky-600 text-white',
+                              displayStatus === 'completed' && 'bg-slate-600 text-white',
+                              displayStatus === 'confirmed' && 'bg-emerald-600 text-white'
+                            )}
+                          >
+                            {statusLabel}
+                          </Badge>
+                          {(appointment.designationType === 'special' ||
+                            appointment.designationType === '特別指名') && (
+                            <Badge
+                              className="h-4 min-w-0 shrink truncate border border-slate-300 bg-slate-200 px-1 py-0 text-[9px] leading-none text-slate-800"
+                              aria-label="特別指名"
+                            >
+                              特別指名
+                            </Badge>
+                          )}
+                        </div>
                         <div
+                          data-timeline-field="course"
+                          className="w-full min-w-0 truncate text-[10px] font-medium leading-3 text-gray-800"
+                          title={courseLabel}
+                        >
+                          {courseLabel}
+                        </div>
+                        <div
+                          data-timeline-field="customer"
                           className="w-full min-w-0 shrink-0 truncate text-[11px] font-semibold leading-4 text-gray-900"
                           title={`${appointment.customerName} 様`}
                         >
                           {appointment.customerName} 様
                         </div>
-                        {serviceName ? (
-                          <div
-                            className="w-full min-w-0 truncate text-[10px] leading-3 text-gray-700"
-                            title={serviceName}
-                          >
-                            {serviceName}
-                          </div>
-                        ) : null}
-                        {hotelLabel ? (
-                          <div
-                            className="w-full min-w-0 truncate text-[10px] leading-3 text-gray-500"
-                            title={hotelLabel}
-                          >
-                            {hotelLabel}
-                          </div>
-                        ) : null}
-                      </div>
-                      <div className="flex shrink-0 flex-col items-end justify-between py-0.5">
-                        <Badge
-                          variant={isTentative ? 'secondary' : 'default'}
-                          className={cn(
-                            'shrink-0 px-1 py-0 text-[10px]',
-                            isTentative && 'bg-orange-500 text-white',
-                            displayStatus === 'modifiable' && 'bg-amber-600 text-white',
-                            displayStatus === 'preconfirmed' && 'bg-sky-600 text-white',
-                            displayStatus === 'completed' && 'bg-slate-600 text-white',
-                            displayStatus === 'confirmed' && 'bg-emerald-600 text-white'
-                          )}
+                        <div
+                          data-timeline-field="hotel"
+                          className="w-full min-w-0 truncate text-[10px] leading-3 text-gray-500"
+                          title={hotelLabel || 'ホテル・部屋番号 未設定'}
                         >
-                          {statusLabel}
-                        </Badge>
-                        {(appointment.designationType === 'special' ||
-                          appointment.designationType === '特別指名') && (
-                          <Badge
-                            className="shrink-0 border border-slate-300 bg-slate-200 px-1 py-0 text-[9px] text-slate-800"
-                            aria-label="特別指名"
-                          >
-                            特別指名
-                          </Badge>
-                        )}
+                          {hotelLabel || 'ホテル・部屋番号 未設定'}
+                        </div>
                       </div>
                     </button>
                   )

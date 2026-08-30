@@ -145,6 +145,14 @@ describe('Timeline appointment cards', () => {
       />
     )
 
+    expect(screen.getByTestId('reservation-timeline')).toHaveClass(
+      'flex',
+      'min-h-0',
+      'flex-1',
+      'overflow-hidden'
+    )
+    expect(screen.getByTestId('reservation-timeline-viewport')).toHaveClass('min-h-0', 'flex-1')
+    expect(screen.getByTestId('reservation-timeline-viewport')).not.toHaveClass('min-h-[28rem]')
     expect(screen.getByTestId('reservation-timeline-scroll')).toHaveClass('overflow-y-auto')
     expect(screen.getByTestId('timeline-horizontal-scrollbar')).toHaveClass('overflow-x-scroll')
     expect(screen.getByTestId('reservation-timeline-scroll')).not.toContainElement(
@@ -686,6 +694,16 @@ describe('Timeline appointment cards', () => {
       hotelName: '池袋ホテル',
       roomNumber: '1203',
       course: hourAppointment.serviceName,
+      totalPayment: 21_000,
+      courseItems: [
+        {
+          id: 'legacy-course-90',
+          name: '旧90分コース',
+          duration: 90,
+          price: 18_000,
+          sortOrder: 0,
+        },
+      ],
     }
 
     render(
@@ -715,6 +733,12 @@ describe('Timeline appointment cards', () => {
     expect(card).toHaveTextContent('池袋ホテル')
     expect(card).toHaveTextContent('1203')
     expect(card).toHaveTextContent('仮予約')
+    expect(card).toHaveTextContent('旧90分コース（18,000円）')
+    expect(
+      Array.from(card.querySelectorAll('[data-timeline-field]')).map((element) =>
+        element.getAttribute('data-timeline-field')
+      )
+    ).toEqual(['time', 'status', 'course', 'customer', 'hotel'])
   })
 
   it('keeps a reservation visible when it starts before store opening', () => {
