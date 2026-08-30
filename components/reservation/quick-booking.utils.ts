@@ -145,10 +145,10 @@ export function getDesignationLabel(type: DesignationType, cast?: Cast): string 
   return 'フリー'
 }
 
-export function getCastAvailableOptions(
+export function getCastAvailableOptions<TOption extends NormalizedOption>(
   cast: Cast | null | undefined,
-  options: NormalizedOption[]
-): NormalizedOption[] {
+  options: TOption[]
+): TOption[] {
   if (!cast) {
     return []
   }

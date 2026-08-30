@@ -5,9 +5,11 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { ReservationDialog } from './reservation-dialog'
 import { STATUS_OPTIONS } from './reservation-dialog.shared'
 import { ReservationData } from '@/lib/types/reservation'
+import { normalizeCast } from '@/lib/cast/mapper'
 
 // Mock the modification history data
 vi.mock('@/lib/modification-history/data', () => ({
@@ -344,6 +346,86 @@ describe('ReservationDialog Edit Mode', () => {
     expect(within(summaryGrid).getByLabelText('部屋番号')).toBeVisible()
     expect(within(summaryGrid).getByRole('button', { name: '更新' })).toBeVisible()
     expect(within(summaryGrid).getByRole('button', { name: '女性に通知' })).toBeVisible()
+  })
+
+  it('shows the course fee beside the course name in the order details', () => {
+    render(
+      <ReservationDialog
+        open
+        onOpenChange={mockOnOpenChange}
+        reservation={{ ...mockReservation, serviceId: 'course-1' }}
+        onSave={mockOnSave}
+      />
+    )
+
+    const summaryGrid = screen.getByTestId('reservation-primary-summary-grid')
+    expect(within(summaryGrid).getByText('スタンダードコース（¥13,000）')).toBeVisible()
+  })
+
+  it('matches order creation by offering panel designation and only the selected cast options', async () => {
+    const user = userEvent.setup()
+    const selectedCast = normalizeCast({
+      id: 'cast-1',
+      name: '山田花子',
+      specialDesignationFee: 5_000,
+      availableOptions: ['option-neck'],
+    })
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      const payload = url.startsWith('/api/designation-fee') ? [] : { data: [] }
+      return new Response(JSON.stringify(payload), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(
+      <ReservationDialog
+        open
+        onOpenChange={mockOnOpenChange}
+        reservation={{ ...mockReservation, serviceId: 'course-1' }}
+        onSave={mockOnSave}
+        casts={[selectedCast]}
+      />
+    )
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/designation-fee?includeInactive=true&storeId=ikebukuro',
+        expect.any(Object)
+      )
+    })
+    fireEvent.click(screen.getByRole('button', { name: /編集/i }))
+
+    const summaryGrid = screen.getByTestId('reservation-primary-summary-grid')
+    expect(
+      within(summaryGrid).getByRole('checkbox', { name: /ネックトリートメント/ })
+    ).toBeInTheDocument()
+    expect(
+      within(summaryGrid).queryByRole('checkbox', { name: /ホットストーン/ })
+    ).not.toBeInTheDocument()
+
+    const designation = within(summaryGrid).getByRole('combobox', { name: '指名' })
+    Element.prototype.scrollIntoView = vi.fn()
+    Object.assign(designation, {
+      hasPointerCapture: () => false,
+      setPointerCapture: () => undefined,
+      releasePointerCapture: () => undefined,
+    })
+    await user.click(designation)
+    await user.click(await screen.findByRole('option', { name: /おすすめパネル指名/ }))
+    fireEvent.click(screen.getByRole('button', { name: '保存' }))
+
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalledWith(
+        mockReservation.id,
+        expect.objectContaining({
+          designationType: 'おすすめパネル指名',
+          designationFee: 5_000,
+        })
+      )
+    })
   })
 
   it('should display editable fields in edit mode', async () => {

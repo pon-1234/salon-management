@@ -59,6 +59,7 @@ type ReservationPrimarySummaryProps = {
   reservation: ReservationData
   castWorkStatus?: string | null
   courseName: string
+  coursePrice?: number
   designationName: string
   optionNames: string[]
   canViewFinancialDetails: boolean
@@ -129,6 +130,7 @@ export function ReservationPrimarySummary({
   reservation,
   castWorkStatus,
   courseName,
+  coursePrice,
   designationName,
   optionNames,
   canViewFinancialDetails,
@@ -433,7 +435,12 @@ export function ReservationPrimarySummary({
             ) : (
               <>
                 <div className="text-muted-foreground">コース</div>
-                <div className="font-medium">{courseName}</div>
+                <div className="font-medium">
+                  {courseName}
+                  {canViewFinancialDetails && typeof coursePrice === 'number'
+                    ? `（${formatCurrency(coursePrice)}）`
+                    : ''}
+                </div>
               </>
             )}
           </div>

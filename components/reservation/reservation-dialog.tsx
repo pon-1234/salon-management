@@ -120,6 +120,10 @@ import {
   ReservationNotesAndConfirmation,
   ReservationPrimarySummary,
 } from '@/components/reservation/reservation-dialog-sections'
+import {
+  ensureBookingDesignationOptions,
+  getCastAvailableOptions,
+} from '@/components/reservation/quick-booking.utils'
 
 const MAX_LINE_MESSAGE_LENGTH = 1000
 
@@ -170,6 +174,11 @@ export function ReservationDialog({
   const [validationError, setValidationError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [remainingTime, setRemainingTime] = useState<number | null>(null)
+  const activeCastId = formState.castId || reservation?.staffId || ''
+  const selectedCast = useMemo(
+    () => castOptions.find((cast) => cast.id === activeCastId),
+    [castOptions, activeCastId]
+  )
   const { data: session } = useSession()
   const canViewFinancialDetails = hasPermission(session?.user?.permissions ?? [], 'analytics:read')
   const { coursePrices, courses, optionPrices, options } = usePricing(currentStore.id)
@@ -382,8 +391,10 @@ export function ReservationDialog({
   }, [reservation, designationOptions])
 
   const selectableDesignationOptions = useMemo(() => {
-    // Filter to show only active fees
-    const activeOptions = designationOptions.filter((fee) => fee.isActive)
+    const activeOptions = ensureBookingDesignationOptions(
+      designationOptions,
+      selectedCast?.specialDesignationFee
+    )
 
     // If editing an existing reservation with an inactive designation,
     // include it in the options so it can still be selected
@@ -397,7 +408,7 @@ export function ReservationDialog({
     }
 
     return activeOptions
-  }, [designationOptions, reservationDesignation])
+  }, [designationOptions, reservationDesignation, selectedCast?.specialDesignationFee])
 
   const courseOptions = useMemo(
     () =>
@@ -412,7 +423,7 @@ export function ReservationDialog({
     [coursePrices, courses]
   )
 
-  const optionChoices = useMemo(
+  const optionCatalog = useMemo(
     () =>
       (optionPrices.length > 0 ? optionPrices : options).map((option: any) => ({
         id: String(option.id),
@@ -424,6 +435,11 @@ export function ReservationDialog({
         castShare: toNullableNumber(option.castShare),
       })),
     [optionPrices, options]
+  )
+
+  const optionChoices = useMemo(
+    () => (selectedCast ? getCastAvailableOptions(selectedCast, optionCatalog) : optionCatalog),
+    [optionCatalog, selectedCast]
   )
 
   const selectedCourse = useMemo(() => {
@@ -694,13 +710,6 @@ export function ReservationDialog({
       controller.abort()
     }
   }, [currentStore.id, open, reservation?.customerId])
-
-  const activeCastId = formState.castId || reservation?.staffId || ''
-
-  const selectedCast = useMemo(
-    () => castOptions.find((cast) => cast.id === activeCastId),
-    [castOptions, activeCastId]
-  )
 
   const timelineInitialDate = useMemo(() => {
     if (formState.date) {
@@ -1714,6 +1723,13 @@ export function ReservationDialog({
                   reservation={reservation}
                   castWorkStatus={selectedCast?.workStatus}
                   courseName={selectedCourse?.name || reservation.course || '未設定'}
+                  coursePrice={
+                    persistedCoursePrice > 0 &&
+                    (formState.courseId || reservation.serviceId || '') ===
+                      (reservation.serviceId || '')
+                      ? persistedCoursePrice
+                      : selectedCourse?.price
+                  }
                   designationName={designationForDisplay?.name || reservation.designation || 'なし'}
                   optionNames={displayOptionNames}
                   canViewFinancialDetails={canViewFinancialDetails}
