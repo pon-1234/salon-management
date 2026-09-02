@@ -15,10 +15,13 @@ export interface Cast extends BaseEntity {
   netReservation: boolean
   requestAttendanceEnabled?: boolean
   specialDesignationFee: number | null
+  specialDesignationFeeId?: string | null
+  specialDesignationFeeLabel?: string | null
   regularDesignationFee: number | null
   panelDesignationRank: number
   regularDesignationRank: number
   workStatus: '出勤' | '未出勤' | '休日'
+  employmentStatus?: 'provisional' | 'active' | 'retired'
   lineUserId?: string | null
   welfareExpenseRate?: number | null
   loginEmail?: string | null

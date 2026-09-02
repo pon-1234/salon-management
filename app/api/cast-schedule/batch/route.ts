@@ -29,6 +29,8 @@ const batchScheduleSchema = z.object({
         status: z.enum(['working', 'holiday']),
         startTime: scheduleTimeSchema.optional(),
         endTime: scheduleTimeSchema.optional(),
+        isAvailable: z.boolean().optional(),
+        note: z.string().trim().max(1000).optional(),
       })
       .superRefine((schedule, context) => {
         if (schedule.status !== 'working') return
@@ -107,7 +109,8 @@ export async function POST(request: NextRequest) {
               data: {
                 startTime,
                 endTime,
-                isAvailable: true,
+                isAvailable: schedule.isAvailable ?? true,
+                notes: schedule.note || null,
               },
             })
             updatedSchedules.push(updated)
@@ -119,7 +122,8 @@ export async function POST(request: NextRequest) {
                 date,
                 startTime,
                 endTime,
-                isAvailable: true,
+                isAvailable: schedule.isAvailable ?? true,
+                notes: schedule.note || null,
               },
             })
             updatedSchedules.push(created)

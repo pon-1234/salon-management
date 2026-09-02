@@ -111,7 +111,7 @@ describe('GET /api/option', () => {
     expect(data.name).toBe('Extended Service')
     expect(data.price).toBe(2000)
     expect(vi.mocked(db.optionPrice.findFirst)).toHaveBeenCalledWith({
-      where: { id: 'option1', storeId: 'ikebukuro' },
+      where: { id: 'option1', storeId: 'ikebukuro', archivedAt: null },
       include: {
         reservations: {
           include: {
@@ -205,7 +205,7 @@ describe('GET /api/option', () => {
     expect(data[0].name).toBe('Basic Add-on')
     expect(data[1].name).toBe('Premium Add-on')
     expect(vi.mocked(db.optionPrice.findMany)).toHaveBeenCalledWith({
-      where: { storeId: 'ikebukuro' },
+      where: { storeId: 'ikebukuro', archivedAt: null },
       include: {
         reservations: {
           include: {

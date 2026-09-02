@@ -21,6 +21,8 @@ export interface PublicCastSummary {
   images: string[]
   panelDesignationRank: number
   regularDesignationRank: number
+  specialDesignationFee?: number
+  specialDesignationFeeLabel?: string | null
   netReservation: boolean
   workStatus: string | null
   sizeLabel: string

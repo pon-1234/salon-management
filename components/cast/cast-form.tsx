@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { Plus, Loader2, Eye, EyeOff } from 'lucide-react'
+import { ArrowDown, ArrowUp, Plus, Loader2, Eye, EyeOff } from 'lucide-react'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { SafeImage } from '@/components/ui/safe-image'
 import { FormSection } from '@/components/cast/form-section'
@@ -29,6 +29,10 @@ import { cn } from '@/lib/utils'
 import { usePricing } from '@/hooks/use-pricing'
 import { resolveOptionId } from '@/lib/options/data'
 import { useUnsavedChangesWarning } from '@/hooks/use-unsaved-changes-warning'
+import { moveGalleryImage } from '@/lib/cast/gallery-order'
+import { getDesignationFees } from '@/lib/designation/data'
+import type { DesignationFee } from '@/lib/designation/types'
+import { resolveDesignationKind } from '@/lib/designation/kind'
 
 type OptionChoice = {
   id: string
@@ -109,10 +113,12 @@ const buildInitialFormState = (cast?: Cast | null) => ({
   mediaSyncExcluded: cast?.mediaSyncExcluded ?? false,
   netReservation: cast?.netReservation ?? true,
   specialDesignationFee: cast?.specialDesignationFee ?? '',
+  specialDesignationFeeId: cast?.specialDesignationFeeId ?? '',
   regularDesignationFee: cast?.regularDesignationFee ?? '',
   panelDesignationRank: cast?.panelDesignationRank ?? '',
   regularDesignationRank: cast?.regularDesignationRank ?? '',
   workStatus: cast?.workStatus || '出勤',
+  employmentStatus: cast?.employmentStatus || 'provisional',
   availableOptions: cast?.availableOptions ? [...cast.availableOptions] : [],
   availableOptionVisibility: (() => {
     const visibilityMap: Record<string, 'public' | 'internal'> = {}
@@ -146,6 +152,14 @@ const PROFILE_TYPES = [
 ]
 
 const WORK_STATUS_OPTIONS: Cast['workStatus'][] = ['出勤', '未出勤', '休日']
+const EMPLOYMENT_STATUS_OPTIONS: Array<{
+  value: 'provisional' | 'active' | 'retired'
+  label: string
+}> = [
+  { value: 'provisional', label: '仮登録' },
+  { value: 'active', label: '在籍' },
+  { value: 'retired', label: '退店' },
+]
 
 const OptionPill = ({
   label,
@@ -242,6 +256,7 @@ export function CastForm({
   isSubmitting = false,
 }: CastFormProps) {
   const [formData, setFormData] = useState(() => buildInitialFormState(cast))
+  const [designationFees, setDesignationFees] = useState<DesignationFee[]>([])
   const initialFormData = useMemo(() => buildInitialFormState(cast), [cast])
   const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [showLoginPasswordConfirm, setShowLoginPasswordConfirm] = useState(false)
@@ -252,6 +267,37 @@ export function CastForm({
   } = useForm<CastFormValidationValues>()
   const fieldId = (suffix: string) => `cast-${suffix}`
   const { optionPrices, options: legacyOptions, loading: optionsLoading } = usePricing(storeId)
+  useEffect(() => {
+    let active = true
+    getDesignationFees({ storeId })
+      .then((fees) => {
+        if (active) setDesignationFees(fees.filter((fee) => fee.isActive))
+      })
+      .catch((error) => console.error('Failed to load designation fee master:', error))
+    return () => {
+      active = false
+    }
+  }, [storeId])
+
+  const specialDesignationOptions = useMemo(() => {
+    const options = designationFees.filter(
+      (fee) => resolveDesignationKind(fee) !== 'repeat' && fee.price > 0
+    )
+    const currentValue = Number(formData.specialDesignationFee || 0)
+    if (currentValue > 0 && !options.some((fee) => fee.price === currentValue)) {
+      options.push({
+        id: `legacy-${currentValue}`,
+        name: '現在の設定',
+        price: currentValue,
+        storeShare: 0,
+        castShare: currentValue,
+        sortOrder: Number.MAX_SAFE_INTEGER,
+        isActive: true,
+        kind: 'other',
+      })
+    }
+    return options.sort((left, right) => left.sortOrder - right.sortOrder)
+  }, [designationFees, formData.specialDesignationFee])
   const isDirty = useMemo(
     () => JSON.stringify(formData) !== JSON.stringify(initialFormData),
     [formData, initialFormData]
@@ -394,6 +440,8 @@ export function CastForm({
       netReservation: formData.netReservation,
       images: sanitizedImages,
       workStatus: formData.workStatus,
+      employmentStatus: formData.employmentStatus,
+      specialDesignationFeeId: formData.specialDesignationFeeId || null,
       availableOptions: formData.availableOptions,
       availableOptionSettings: normalizedOptionSettings,
     }
@@ -530,6 +578,13 @@ export function CastForm({
         image: nextMain ?? '',
       }
     })
+  }
+
+  const moveImage = (index: number, offset: -1 | 1) => {
+    setFormData((prev) => ({
+      ...prev,
+      images: moveGalleryImage(prev.images, index, offset),
+    }))
   }
 
   const handleCancel = () => {
@@ -856,6 +911,29 @@ export function CastForm({
             </Select>
           </div>
           <div className="space-y-2">
+            <Label htmlFor={fieldId('employmentStatus')}>在籍ステータス</Label>
+            <Select
+              value={formData.employmentStatus}
+              onValueChange={(value) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  employmentStatus: value as 'provisional' | 'active' | 'retired',
+                }))
+              }
+            >
+              <SelectTrigger id={fieldId('employmentStatus')}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {EMPLOYMENT_STATUS_OPTIONS.map((status) => (
+                  <SelectItem key={status.value} value={status.value}>
+                    {status.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
             <Label htmlFor={fieldId('welfareExpenseRate')}>厚生費率 (%)</Label>
             <Input
               id={fieldId('welfareExpenseRate')}
@@ -875,16 +953,39 @@ export function CastForm({
         </div>
         <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor={fieldId('specialDesignationFee')}>特別指名料 (円)</Label>
-            <Input
-              id={fieldId('specialDesignationFee')}
-              name="specialDesignationFee"
-              type="number"
-              min={0}
-              value={formData.specialDesignationFee}
-              onChange={handleInputChange}
-              placeholder="8000"
-            />
+            <Label htmlFor={fieldId('specialDesignationFee')}>特別指名料ランク</Label>
+            <Select
+              value={
+                formData.specialDesignationFeeId ||
+                specialDesignationOptions.find(
+                  (fee) => fee.price === Number(formData.specialDesignationFee || 0)
+                )?.id ||
+                'none'
+              }
+              onValueChange={(value) => {
+                const selected = specialDesignationOptions.find((fee) => fee.id === value)
+                setFormData((previous) => ({
+                  ...previous,
+                  specialDesignationFeeId: selected?.id ?? '',
+                  specialDesignationFee: selected?.price ?? 0,
+                }))
+              }}
+            >
+              <SelectTrigger id={fieldId('specialDesignationFee')}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">なし（0円）</SelectItem>
+                {specialDesignationOptions.map((fee) => (
+                  <SelectItem key={fee.id} value={fee.id}>
+                    {fee.name}（{fee.price.toLocaleString()}円）
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              指名料設定で作成した名称・金額から選択します。
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor={fieldId('regularDesignationFee')}>本指名料 (円)</Label>
@@ -959,13 +1060,36 @@ export function CastForm({
             </p>
           )}
           {formData.images.map((image, index) => (
-            <ImageUpload
-              key={index}
-              value={image}
-              onChange={(url) => handleImageChange(index, url)}
-              onRemove={() => removeImage(index)}
-              index={index}
-            />
+            <div key={index} className="space-y-2">
+              <ImageUpload
+                value={image}
+                onChange={(url) => handleImageChange(index, url)}
+                onRemove={() => removeImage(index)}
+                index={index}
+              />
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  aria-label={`画像${index + 1}を前へ`}
+                  disabled={index === 0}
+                  onClick={() => moveImage(index, -1)}
+                >
+                  <ArrowUp className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  aria-label={`画像${index + 1}を後ろへ`}
+                  disabled={index === formData.images.length - 1}
+                  onClick={() => moveImage(index, 1)}
+                >
+                  <ArrowDown className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           ))}
         </div>
         {formData.images.length < 10 && (

@@ -151,4 +151,67 @@ describe('HotelInfoPage', () => {
     expect(await screen.findByText('新規ホテル')).toBeInTheDocument()
     expect(fetch).toHaveBeenCalledTimes(2)
   })
+
+  it('edits an existing hotel through the store-scoped PUT endpoint', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [
+            {
+              id: 'hotel-a',
+              hotelName: '旧ホテル名',
+              area: '池袋北口',
+              station: '池袋（北口）',
+              roomCount: null,
+              hourlyRate: null,
+              address: null,
+              phone: null,
+              checkInTime: null,
+              checkOutTime: null,
+              amenities: [],
+              notes: null,
+            },
+          ],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 'hotel-a',
+            hotelName: '池袋グランドホテル',
+            area: '池袋北口',
+            station: '池袋（北口）',
+            roomCount: null,
+            hourlyRate: null,
+            address: null,
+            phone: null,
+            checkInTime: null,
+            checkOutTime: null,
+            amenities: [],
+            notes: null,
+          },
+        }),
+      } as Response)
+
+    render(<HotelInfoPage />)
+
+    fireEvent.click(await screen.findByRole('button', { name: '旧ホテル名を編集' }))
+    fireEvent.change(screen.getByLabelText('ホテル名 *'), {
+      target: { value: '池袋グランドホテル' },
+    })
+    expect(screen.getByLabelText('最寄り駅・出口')).toHaveValue('池袋（北口）')
+    fireEvent.click(screen.getByRole('button', { name: 'ホテルを更新' }))
+
+    await waitFor(() =>
+      expect(fetch).toHaveBeenLastCalledWith('/api/settings/hotel?storeId=store-a', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: expect.stringContaining('池袋グランドホテル'),
+      })
+    )
+    expect(await screen.findByText('池袋グランドホテル')).toBeInTheDocument()
+  })
 })

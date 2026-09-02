@@ -24,6 +24,8 @@ interface CastRecord {
   netReservation: boolean | null
   panelDesignationRank: number | null
   regularDesignationRank: number | null
+  specialDesignationFee: number | null
+  specialDesignationFeeTier?: { name: string } | null
   workStatus: string | null
   createdAt: Date
   publicProfile: any | null
@@ -78,6 +80,8 @@ export async function getPublicCastProfiles(storeId: string): Promise<PublicCast
         netReservation: true,
         panelDesignationRank: true,
         regularDesignationRank: true,
+        specialDesignationFee: true,
+        specialDesignationFeeTier: { select: { name: true } },
         workStatus: true,
         createdAt: true,
         publicProfile: true,
@@ -118,6 +122,8 @@ export async function getPublicCastProfiles(storeId: string): Promise<PublicCast
       images: all,
       panelDesignationRank: record.panelDesignationRank ?? 0,
       regularDesignationRank: record.regularDesignationRank ?? 0,
+      specialDesignationFee: record.specialDesignationFee ?? 0,
+      specialDesignationFeeLabel: record.specialDesignationFeeTier?.name ?? null,
       netReservation: Boolean(record.netReservation ?? true),
       workStatus: record.workStatus ?? null,
       sizeLabel: buildSizeLabel(record),
@@ -284,6 +290,8 @@ export interface PublicCastDetail {
   requestAttendanceEnabled: boolean
   panelDesignationRank: number
   regularDesignationRank: number
+  specialDesignationFee: number
+  specialDesignationFeeLabel: string | null
   workStatus: string
   workStart?: Date
   workEnd?: Date
@@ -350,6 +358,8 @@ export async function getPublicCastDetail(
       requestAttendanceEnabled: true,
       panelDesignationRank: true,
       regularDesignationRank: true,
+      specialDesignationFee: true,
+      specialDesignationFeeTier: { select: { name: true } },
       workStatus: true,
       availableOptions: true,
       publicProfile: true,
@@ -432,6 +442,8 @@ export async function getPublicCastDetail(
     requestAttendanceEnabled: record.requestAttendanceEnabled,
     panelDesignationRank: record.panelDesignationRank,
     regularDesignationRank: record.regularDesignationRank,
+    specialDesignationFee: record.specialDesignationFee ?? 0,
+    specialDesignationFeeLabel: record.specialDesignationFeeTier?.name ?? null,
     workStatus: record.workStatus,
     workStart: undefined,
     workEnd: undefined,

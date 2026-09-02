@@ -3,7 +3,7 @@
  * @related_to   ScheduleEditDialog per-day template buttons
  * @known_issues None
  */
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ScheduleEditDialog } from './schedule-edit-dialog'
 
@@ -54,7 +54,7 @@ describe('ScheduleEditDialog day templates', () => {
     } as Response)
   })
 
-  it('applies 昼勤 and 夜勤 to the clicked date only', () => {
+  it('shows save at the top and does not inject generic shift templates', () => {
     render(
       <ScheduleEditDialog
         open
@@ -67,23 +67,9 @@ describe('ScheduleEditDialog day templates', () => {
       />
     )
 
-    const dayCards = [...document.querySelectorAll('[id^="schedule-edit-day-"]')]
-    expect(dayCards.length).toBeGreaterThan(2)
-
-    fireEvent.click(
-      within(dayCards[0] as HTMLElement).getByRole('button', { name: '昼勤 12:00-22:00 を適用' })
-    )
-    fireEvent.click(
-      within(dayCards[1] as HTMLElement).getByRole('button', { name: '夜勤 18:00-02:30 を適用' })
-    )
-
-    expect(within(dayCards[0] as HTMLElement).getByText('12:00')).toBeInTheDocument()
-    expect(within(dayCards[0] as HTMLElement).getByText('22:00')).toBeInTheDocument()
-    expect(within(dayCards[1] as HTMLElement).getByText('18:00')).toBeInTheDocument()
-    expect(within(dayCards[1] as HTMLElement).getByText('02:30')).toBeInTheDocument()
-    expect(within(dayCards[2] as HTMLElement).queryByText('出勤予定')).not.toBeInTheDocument()
-    expect(within(dayCards[2] as HTMLElement).queryByText('12:00')).not.toBeInTheDocument()
-    expect(within(dayCards[2] as HTMLElement).queryByText('18:00')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: '保存' }).length).toBeGreaterThanOrEqual(2)
+    expect(screen.queryByRole('button', { name: /昼勤/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /夜勤/ })).not.toBeInTheDocument()
   })
 
   it('keeps 休みを適用 as the only holiday shortcut', () => {
@@ -121,9 +107,104 @@ describe('ScheduleEditDialog day templates', () => {
     )
 
     const dayCard = document.querySelector('[id^="schedule-edit-day-"]') as HTMLElement
-    fireEvent.click(within(dayCard).getByRole('button', { name: '昼勤 12:00-22:00 を適用' }))
     fireEvent.click(within(dayCard).getByRole('button', { name: '休みを適用' }))
 
     expect(within(dayCard).getByRole('combobox')).toHaveTextContent('休日')
+  })
+
+  it('includes reservation reception state in the saved schedule', () => {
+    const onSave = vi.fn()
+    render(
+      <ScheduleEditDialog
+        open
+        onOpenChange={vi.fn()}
+        castName="明里"
+        castId="cast-1"
+        startDate={new Date('2026-08-10T00:00:00+09:00')}
+        initialSchedule={{
+          '2026-08-10': {
+            type: '出勤予定',
+            startTime: '12:00',
+            endTime: '22:00',
+            isAvailable: false,
+          },
+        }}
+        onSave={onSave}
+      />
+    )
+
+    const firstCard = document.querySelector('[id^="schedule-edit-day-"]') as HTMLElement
+    expect(within(firstCard).getByText('予約受付停止')).toBeInTheDocument()
+    fireEvent.click(screen.getAllByRole('button', { name: '保存' })[0])
+    expect(onSave).toHaveBeenCalledWith(
+      'cast-1',
+      expect.objectContaining({
+        '2026-08-10': expect.objectContaining({ isAvailable: false }),
+      })
+    )
+  })
+
+  it('loads the complete four-week range before editing it', async () => {
+    render(
+      <ScheduleEditDialog
+        open
+        onOpenChange={vi.fn()}
+        castName="明里"
+        castId="cast-1"
+        startDate={new Date('2026-08-10T00:00:00+09:00')}
+        initialSchedule={{}}
+        onSave={vi.fn()}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: '4週間をまとめて入力' }))
+
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining(
+          '/api/cast-schedule?castId=cast-1&startDate=2026-08-10&endDate=2026-09-06&storeId=store-ikebukuro'
+        ),
+        expect.objectContaining({ credentials: 'include', cache: 'no-store' })
+      )
+    )
+  })
+
+  it('shows each saved template delete control once instead of repeating it for every day', async () => {
+    global.fetch = vi.fn().mockImplementation((url: string) =>
+      Promise.resolve({
+        ok: true,
+        json: async () =>
+          url.startsWith('/api/cast?')
+            ? {
+                scheduleTemplates: [
+                  {
+                    id: 'custom-day',
+                    name: '昼番',
+                    startTime: '12:00',
+                    endTime: '20:00',
+                    isHoliday: false,
+                  },
+                  { id: 'holiday', name: '休み', startTime: '', endTime: '', isHoliday: true },
+                ],
+              }
+            : { data: {} },
+      } as Response)
+    )
+
+    render(
+      <ScheduleEditDialog
+        open
+        onOpenChange={vi.fn()}
+        castName="明里"
+        castId="cast-1"
+        startDate={new Date('2026-08-10T00:00:00+09:00')}
+        initialSchedule={{}}
+        onSave={vi.fn()}
+      />
+    )
+
+    await waitFor(() =>
+      expect(screen.getAllByRole('button', { name: '昼番を削除' })).toHaveLength(1)
+    )
   })
 })

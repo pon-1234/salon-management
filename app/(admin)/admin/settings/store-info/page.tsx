@@ -17,10 +17,11 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { MARKETING_CHANNELS } from '@/lib/constants'
 import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
+import { mergeMarketingCatalog, splitMarketingCatalog } from '@/lib/settings/marketing-catalog'
 import { ArrowLeft, Store, MapPin, Phone, Mail, Clock, Globe } from 'lucide-react'
 import Link from 'next/link'
 
-const DEFAULT_MARKETING_CHANNEL_INPUT = MARKETING_CHANNELS.join('\n')
+const DEFAULT_MARKETING_CATALOG = splitMarketingCatalog(MARKETING_CHANNELS)
 
 export default function StoreInfoPage() {
   const { currentStore } = useStore()
@@ -42,7 +43,8 @@ export default function StoreInfoPage() {
     welfareExpenseRate: '10',
     creditCardFeeRate: '10',
     mediaCommentOverwrite: false,
-    marketingChannelsInput: DEFAULT_MARKETING_CHANNEL_INPUT,
+    marketingMethodsInput: DEFAULT_MARKETING_CATALOG.methods.join('\n'),
+    marketingChannelsInput: DEFAULT_MARKETING_CATALOG.channels.join('\n'),
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -54,6 +56,11 @@ export default function StoreInfoPage() {
 
       const payload = await response.json()
       const settings = payload?.data ?? payload
+      const marketingCatalog = splitMarketingCatalog(
+        Array.isArray(settings?.marketingChannels) && settings.marketingChannels.length > 0
+          ? settings.marketingChannels
+          : MARKETING_CHANNELS
+      )
       setFormData((prev) => ({
         ...prev,
         ...settings,
@@ -63,10 +70,8 @@ export default function StoreInfoPage() {
             : prev.welfareExpenseRate,
         creditCardFeeRate: Number(settings?.creditCardFeeRate) === 0 ? '0' : '10',
         mediaCommentOverwrite: Boolean(settings?.mediaCommentOverwrite),
-        marketingChannelsInput:
-          Array.isArray(settings?.marketingChannels) && settings.marketingChannels.length > 0
-            ? settings.marketingChannels.join('\n')
-            : prev.marketingChannelsInput,
+        marketingMethodsInput: marketingCatalog.methods.join('\n'),
+        marketingChannelsInput: marketingCatalog.channels.join('\n'),
       }))
     } catch (error) {
       console.error('Error fetching store settings:', error)
@@ -91,11 +96,8 @@ export default function StoreInfoPage() {
   const handleSave = async () => {
     setSaving(true)
     try {
-      const { marketingChannelsInput, ...restForm } = formData
-      const marketingChannels = String(marketingChannelsInput || '')
-        .split(/\r?\n/)
-        .map((channel) => channel.trim())
-        .filter((channel, index, array) => channel.length > 0 && array.indexOf(channel) === index)
+      const { marketingMethodsInput, marketingChannelsInput, ...restForm } = formData
+      const marketingChannels = mergeMarketingCatalog(marketingMethodsInput, marketingChannelsInput)
 
       const payload = {
         ...restForm,
@@ -120,6 +122,11 @@ export default function StoreInfoPage() {
       const payloadData = await response.json().catch(() => null)
       const updated = payloadData?.data ?? payloadData
       if (updated && typeof updated === 'object') {
+        const marketingCatalog = splitMarketingCatalog(
+          Array.isArray(updated?.marketingChannels) && updated.marketingChannels.length > 0
+            ? updated.marketingChannels
+            : marketingChannels
+        )
         setFormData((prev) => ({
           ...prev,
           ...updated,
@@ -127,10 +134,8 @@ export default function StoreInfoPage() {
             updated?.welfareExpenseRate !== undefined
               ? String(Number(updated.welfareExpenseRate))
               : prev.welfareExpenseRate,
-          marketingChannelsInput:
-            Array.isArray(updated?.marketingChannels) && updated.marketingChannels.length > 0
-              ? updated.marketingChannels.join('\n')
-              : prev.marketingChannelsInput,
+          marketingMethodsInput: marketingCatalog.methods.join('\n'),
+          marketingChannelsInput: marketingCatalog.channels.join('\n'),
         }))
       }
 
@@ -307,26 +312,39 @@ export default function StoreInfoPage() {
               </CardContent>
             </Card>
 
-            {/* 集客チャネル設定 */}
+            {/* 集客手段・チャネル設定 */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Store className="h-5 w-5 text-emerald-600" />
-                  集客チャネル（マスタ）
+                  集客手段・集客チャンネル（マスタ）
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="marketingChannelsInput">利用チャネル一覧</Label>
+                  <Label htmlFor="marketingMethodsInput">集客手段</Label>
+                  <Textarea
+                    id="marketingMethodsInput"
+                    value={formData.marketingMethodsInput}
+                    onChange={(e) => handleInputChange('marketingMethodsInput', e.target.value)}
+                    rows={7}
+                    placeholder="例）&#10;店リピート&#10;電話&#10;紹介&#10;SNS&#10;WEB"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    予約の受付経路を1行につき1つ入力します。
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="marketingChannelsInput">集客チャンネル</Label>
                   <Textarea
                     id="marketingChannelsInput"
                     value={formData.marketingChannelsInput}
                     onChange={(e) => handleInputChange('marketingChannelsInput', e.target.value)}
-                    rows={6}
-                    placeholder="例）&#10;店リピート&#10;電話&#10;紹介&#10;SNS&#10;WEB&#10;Heaven"
+                    rows={7}
+                    placeholder="例）&#10;Heaven&#10;サイト関連：駅ちか"
                   />
                   <p className="text-xs text-muted-foreground">
-                    1行につき1つのチャネル名を入力してください。保存後は予約画面などで選択肢として利用できます。
+                    媒体・掲載サイト名を1行につき1つ入力します。保存後は予約画面の選択肢に反映されます。
                   </p>
                 </div>
               </CardContent>

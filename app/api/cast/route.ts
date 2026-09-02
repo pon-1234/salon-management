@@ -60,10 +60,12 @@ const castSchema = z.object({
   publicProfile: z.any().optional(), // JSON field for public profile data
   netReservation: z.boolean().optional().default(true),
   specialDesignationFee: z.union([z.null(), z.coerce.number().int().min(0)]).optional(),
+  specialDesignationFeeId: z.union([z.null(), z.string().min(1)]).optional(),
   regularDesignationFee: z.union([z.null(), z.coerce.number().int().min(0)]).optional(),
   panelDesignationRank: z.coerce.number().int().min(0).optional().default(0),
   regularDesignationRank: z.coerce.number().int().min(0).optional().default(0),
   workStatus: z.string().optional().default('出勤'),
+  employmentStatus: z.enum(['provisional', 'active', 'retired']).optional().default('provisional'),
   availableOptions: z.array(z.string()).optional().default([]),
   availableOptionSettings: z
     .array(
@@ -308,10 +310,13 @@ async function fetchCastListWithRelations(
         netReservation: true,
         requestAttendanceEnabled: true,
         specialDesignationFee: true,
+        specialDesignationFeeId: true,
+        specialDesignationFeeTier: { select: { name: true, price: true } },
         regularDesignationFee: true,
         panelDesignationRank: true,
         regularDesignationRank: true,
         workStatus: true,
+        employmentStatus: true,
         availableOptions: true,
         welfareExpenseRate: true,
         storeId: true,

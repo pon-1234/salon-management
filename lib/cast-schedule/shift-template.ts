@@ -28,23 +28,7 @@ export function createHolidayTemplate(): CastShiftTemplate {
   }
 }
 
-export const DEFAULT_SHIFT_TEMPLATES: CastShiftTemplate[] = [
-  {
-    id: 'day',
-    name: '昼勤',
-    startTime: '12:00',
-    endTime: '22:00',
-    isHoliday: false,
-  },
-  {
-    id: 'night',
-    name: '夜勤',
-    startTime: '18:00',
-    endTime: '02:30',
-    isHoliday: false,
-  },
-  createHolidayTemplate(),
-]
+export const DEFAULT_SHIFT_TEMPLATES: CastShiftTemplate[] = [createHolidayTemplate()]
 
 export function mergeCastShiftTemplates(saved?: CastShiftTemplate[] | null): CastShiftTemplate[] {
   if (!saved || saved.length === 0) {

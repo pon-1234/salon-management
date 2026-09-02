@@ -34,6 +34,41 @@ describe('Prisma schema', () => {
     expect(migration).toContain('ADD COLUMN "nameKana" TEXT')
   })
 
+  it('persists a cast employment lifecycle independently from daily attendance', () => {
+    expect(schemaContent).toMatch(/employmentStatus\s+String\s+@default\("provisional"\)/)
+    const migration = readFileSync(
+      join(
+        process.cwd(),
+        'prisma',
+        'migrations',
+        '20260902090000_add_cast_employment_status',
+        'migration.sql'
+      ),
+      'utf8'
+    )
+    expect(migration).toContain(
+      'ADD COLUMN "employmentStatus" TEXT NOT NULL DEFAULT \'provisional\''
+    )
+    expect(migration).toContain('SET "employmentStatus" = \'active\'')
+  })
+
+  it('links a cast special designation selection to the store master entry', () => {
+    expect(schemaContent).toMatch(/specialDesignationFeeId\s+String\?/)
+    expect(schemaContent).toContain('CastSpecialDesignationFee')
+    const migration = readFileSync(
+      join(
+        process.cwd(),
+        'prisma',
+        'migrations',
+        '20260902090000_add_cast_employment_status',
+        'migration.sql'
+      ),
+      'utf8'
+    )
+    expect(migration).toContain('ADD COLUMN "specialDesignationFeeId" TEXT')
+    expect(migration).toContain('Cast_specialDesignationFeeId_fkey')
+  })
+
   it('should have Customer model defined', () => {
     expect(schemaContent).toContain('model Customer {')
   })

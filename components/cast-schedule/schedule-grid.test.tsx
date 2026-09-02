@@ -85,6 +85,7 @@ describe('ScheduleGrid', () => {
       expect(screen.getByTestId('schedule-scrollport')).toHaveClass('h-full', 'overflow-auto')
       expect(screen.getByTestId('schedule-scrollport')).not.toHaveClass('max-h-[calc(100vh-12rem)]')
       expect(dateHeader.closest('[data-testid="schedule-date-header"]')).toHaveClass('sticky')
+      expect(screen.getByRole('rowheader')).toHaveClass('min-w-[240px]')
 
       fireEvent.click(dateHeader)
       expect(scrollIntoView).toHaveBeenCalled()

@@ -3,6 +3,7 @@ export interface CastScheduleStatus {
   startTime?: string
   endTime?: string
   note?: string
+  isAvailable?: boolean
 }
 
 export interface CastScheduleEntry {

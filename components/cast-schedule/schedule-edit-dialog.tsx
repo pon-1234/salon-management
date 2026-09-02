@@ -49,6 +49,7 @@ export interface DaySchedule {
   startTime?: string // HH:mm format
   endTime?: string // HH:mm format
   note?: string
+  isAvailable?: boolean
 }
 
 export interface WeeklyScheduleEdit {
@@ -93,13 +94,14 @@ export function ScheduleEditDialog({
         startTime: status.startTime,
         endTime: status.endTime,
         note: status.note,
+        isAvailable: status.isAvailable !== false,
       }
     })
     return converted
   })
 
   // Generate 7 days starting from the given start date
-  const weekStart = startOfWeek(startDate, { weekStartsOn: 1 }) // Monday start
+  const weekStart = useMemo(() => startOfWeek(startDate, { weekStartsOn: 1 }), [startDate]) // Monday start
   const visibleDays = getDateRange(weekStart, scheduleEditDayCount(editSpan))
 
   const statusOptions: { value: '休日' | '出勤予定' | '未入力'; label: string; color: string }[] = [
@@ -179,6 +181,75 @@ export function ScheduleEditDialog({
       ignore = true
     }
   }, [open, castId, currentStore.id])
+
+  useEffect(() => {
+    if (!open || editSpan !== 'fourWeeks') return
+    let ignore = false
+
+    const loadFourWeekSchedule = async () => {
+      const range = getDateRange(weekStart, 28)
+      const startDateKey = format(range[0], 'yyyy-MM-dd')
+      const endDateKey = format(range[range.length - 1], 'yyyy-MM-dd')
+      const params = new URLSearchParams({
+        castId,
+        startDate: startDateKey,
+        endDate: endDateKey,
+        storeId: currentStore.id,
+      })
+
+      try {
+        const response = await fetch(`/api/cast-schedule?${params.toString()}`, {
+          credentials: 'include',
+          cache: 'no-store',
+        })
+        if (!response.ok) throw new Error(`Failed to fetch four-week schedule: ${response.status}`)
+        const payload = await response.json()
+        const records = Array.isArray(payload?.data)
+          ? payload.data
+          : Array.isArray(payload)
+            ? payload
+            : []
+        if (ignore) return
+
+        setSchedule((previous) => {
+          const next = { ...previous }
+          for (const date of range) {
+            const dateKey = format(date, 'yyyy-MM-dd')
+            const record = records.find(
+              (item: { date?: string }) =>
+                item.date &&
+                formatInTimeZone(new Date(item.date), timeZone, 'yyyy-MM-dd') === dateKey
+            )
+            if (record) {
+              next[dateKey] = {
+                date: dateKey,
+                status: '出勤予定',
+                startTime: formatInTimeZone(new Date(record.startTime), timeZone, 'HH:mm'),
+                endTime: formatInTimeZone(new Date(record.endTime), timeZone, 'HH:mm'),
+                note: record.notes ?? undefined,
+                isAvailable: record.isAvailable !== false,
+              }
+            } else if (!next[dateKey]) {
+              next[dateKey] = { date: dateKey, status: '休日' }
+            }
+          }
+          return next
+        })
+      } catch (error) {
+        console.error('Failed to load four-week schedule:', error)
+        toast({
+          title: '4週間分の出勤表を取得できませんでした',
+          description: '通信状態を確認して、もう一度お試しください。',
+          variant: 'destructive',
+        })
+      }
+    }
+
+    void loadFourWeekSchedule()
+    return () => {
+      ignore = true
+    }
+  }, [castId, currentStore.id, editSpan, open, weekStart])
 
   const timeOptions = useMemo(() => {
     const options: string[] = []
@@ -292,6 +363,15 @@ export function ScheduleEditDialog({
       })
       return
     }
+    const customTemplates = templates.filter((template) => !template.isHoliday)
+    if (customTemplates.length >= 4) {
+      toast({
+        title: 'テンプレートは4つまでです',
+        description: '不要なテンプレートを削除してから保存してください。',
+        variant: 'destructive',
+      })
+      return
+    }
     const next: CastShiftTemplate[] = [
       ...templates.filter((template) => template.id !== 'holiday'),
       {
@@ -305,6 +385,10 @@ export function ScheduleEditDialog({
     ]
     setNewTemplateName('')
     void persistTemplates(next)
+  }
+
+  const removeTemplate = (templateId: string) => {
+    void persistTemplates(templates.filter((template) => template.id !== templateId))
   }
 
   useEffect(() => {
@@ -340,6 +424,12 @@ export function ScheduleEditDialog({
         </DialogHeader>
 
         <div className="space-y-2">
+          <div className="sticky top-0 z-30 flex justify-end border-b bg-background py-2">
+            <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700">
+              <Save className="mr-2 h-4 w-4" />
+              保存
+            </Button>
+          </div>
           <Button
             type="button"
             variant={editSpan === 'fourWeeks' ? 'default' : 'outline'}
@@ -362,6 +452,29 @@ export function ScheduleEditDialog({
             <Button type="button" variant="secondary" size="sm" onClick={saveCurrentDayAsTemplate}>
               表示中の出勤時間をテンプレート保存
             </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {templates
+              .filter((template) => !template.isHoliday)
+              .map((template) => (
+                <div
+                  key={`saved-${template.id}`}
+                  className="flex items-center gap-1 rounded-md border px-2 py-1 text-sm"
+                >
+                  <span>
+                    {template.name} {template.startTime}-{template.endTime}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`${template.name}を削除`}
+                    onClick={() => removeTemplate(template.id)}
+                  >
+                    ×
+                  </Button>
+                </div>
+              ))}
           </div>
         </div>
 
@@ -481,6 +594,23 @@ export function ScheduleEditDialog({
                                 {time}
                               </SelectItem>
                             ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="mb-2 block text-sm font-medium">予約受付</Label>
+                        <Select
+                          value={daySchedule.isAvailable === false ? 'unavailable' : 'available'}
+                          onValueChange={(value) =>
+                            handleScheduleChange(dateKey, 'isAvailable', value === 'available')
+                          }
+                        >
+                          <SelectTrigger aria-label="予約受付">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="available">予約受付可能</SelectItem>
+                            <SelectItem value="unavailable">予約受付停止</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

@@ -12,13 +12,14 @@ import { SuccessResponses } from '@/lib/api/responses'
 import { db } from '@/lib/db'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
 import { shouldUseMockFallbacks } from '@/lib/config/feature-flags'
+import { normalizeOptionalUrl } from '@/lib/settings/store-input'
 // Validation schema
 const storeSettingsSchema = z.object({
   storeName: z.string().min(1),
   address: z.string().min(1),
   phone: z.string().min(1),
   email: z.string().email(),
-  website: z.string().url().optional(),
+  website: z.preprocess(normalizeOptionalUrl, z.string().url().optional()),
   businessHours: z.string(),
   description: z.string(),
   zipCode: z.string(),

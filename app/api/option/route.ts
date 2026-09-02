@@ -291,7 +291,9 @@ export async function GET(request: NextRequest) {
         where: {
           id,
           storeId,
-          ...(isAdmin ? {} : { visibility: 'public', isActive: true, archivedAt: null }),
+          ...(isAdmin
+            ? { archivedAt: null }
+            : { visibility: 'public', isActive: true, archivedAt: null }),
         },
         include: {
           reservations: {
@@ -325,7 +327,9 @@ export async function GET(request: NextRequest) {
     const options = await db.optionPrice.findMany({
       where: {
         storeId,
-        ...(isAdmin ? {} : { visibility: 'public', isActive: true, archivedAt: null }),
+        ...(isAdmin
+          ? { archivedAt: null }
+          : { visibility: 'public', isActive: true, archivedAt: null }),
       },
       include: {
         reservations: {

@@ -588,6 +588,7 @@ describe('CastScheduleUseCases', () => {
           startTime: '2024-01-15T01:00:00.000Z',
           endTime: '2024-01-15T09:00:00.000Z',
           isAvailable: true,
+          notes: '媒体掲載テキスト',
         },
         {
           id: 'sched2',
@@ -625,6 +626,10 @@ describe('CastScheduleUseCases', () => {
         storeId: 'store-a',
       })
 
+      expect(result.entries[0]?.schedule['2024-01-15']).toEqual(
+        expect.objectContaining({ isAvailable: true, note: '媒体掲載テキスト' })
+      )
+
       // Verify API calls
       expect(fetch).toHaveBeenCalledTimes(2)
       expect(fetch).toHaveBeenCalledWith(
@@ -656,12 +661,16 @@ describe('CastScheduleUseCases', () => {
         type: '出勤予定',
         startTime: '10:00',
         endTime: '18:00',
+        isAvailable: true,
+        note: '媒体掲載テキスト',
       })
       expect(cast1Entry?.schedule['2024-01-16']).toEqual({ type: '休日' })
       expect(cast1Entry?.schedule['2024-01-17']).toEqual({
         type: '出勤予定',
         startTime: '14:00',
         endTime: '22:00',
+        isAvailable: true,
+        note: undefined,
       })
 
       // Verify stats

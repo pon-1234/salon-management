@@ -349,6 +349,8 @@ export class CastScheduleUseCases {
             type: '出勤予定',
             startTime: startTimeStr,
             endTime: endTimeStr,
+            note: daySchedule.notes ?? undefined,
+            isAvailable: daySchedule.isAvailable !== false,
           }
         } else {
           // No schedule means holiday

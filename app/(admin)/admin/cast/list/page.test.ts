@@ -35,4 +35,10 @@ describe('CastListPage filters', () => {
     expect(actionsSource).toContain('名前・ひらがなで検索')
     expect(actionsSource).toContain('aria-label="キャスト名・ひらがな検索"')
   })
+
+  it('keeps the view and search controls visible while the cast list scrolls', () => {
+    expect(pageSource).toContain('sticky top-0 z-20')
+    expect(pageSource).toContain('<CastListViewToggle')
+    expect(pageSource).toContain('<CastListActionButtons')
+  })
 })

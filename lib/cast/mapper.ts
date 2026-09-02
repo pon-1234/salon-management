@@ -164,6 +164,8 @@ export const normalizeCast = (raw: any): Cast => {
       raw.specialDesignationFee === null || raw.specialDesignationFee === undefined
         ? null
         : Number(raw.specialDesignationFee),
+    specialDesignationFeeId: raw.specialDesignationFeeId ?? null,
+    specialDesignationFeeLabel: raw.specialDesignationFeeTier?.name ?? null,
     regularDesignationFee:
       raw.regularDesignationFee === null || raw.regularDesignationFee === undefined
         ? null
@@ -171,6 +173,7 @@ export const normalizeCast = (raw: any): Cast => {
     panelDesignationRank: Number(raw.panelDesignationRank ?? 0),
     regularDesignationRank: Number(raw.regularDesignationRank ?? 0),
     workStatus: raw.workStatus ?? '出勤',
+    employmentStatus: raw.employmentStatus ?? 'active',
     lineUserId: raw.lineUserId ?? null,
     welfareExpenseRate:
       raw.welfareExpenseRate === null || raw.welfareExpenseRate === undefined

@@ -28,7 +28,18 @@ import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { getPricingUseCases } from '@/lib/pricing'
 import type { CoursePrice } from '@/lib/pricing/types'
 import { useStore } from '@/contexts/store-context'
-import { ArrowLeft, BookOpen, Clock, DollarSign, Edit, Plus, Trash2 } from 'lucide-react'
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowUp,
+  BookOpen,
+  Clock,
+  DollarSign,
+  Edit,
+  Plus,
+  Trash2,
+} from 'lucide-react'
+import { moveCatalogItem, nextCatalogDisplayOrder } from '@/lib/pricing/display-order'
 
 const DEFAULT_STORE_RATIO = 0.6
 
@@ -206,7 +217,10 @@ export default function CourseInfoPage() {
           description: 'コース情報が更新されました',
         })
       } else {
-        const created = await pricingUseCases.createCourse(payload, currentStore.id)
+        const created = await pricingUseCases.createCourse(
+          { ...payload, displayOrder: nextCatalogDisplayOrder(courses) },
+          currentStore.id
+        )
         setCourses((prev) => [...prev, normalizeCourse(created)])
         toast({
           title: '追加完了',
@@ -240,8 +254,38 @@ export default function CourseInfoPage() {
     }
   }
 
+  const handleMoveCourse = async (id: string, direction: 'up' | 'down') => {
+    const next = moveCatalogItem(sortedCourses, id, direction)
+    if (next.every((course, index) => course.id === sortedCourses[index]?.id)) return
+    setCourses(next)
+    try {
+      await Promise.all(
+        next.map((course) =>
+          pricingUseCases.updateCourse(
+            course.id,
+            { displayOrder: course.displayOrder },
+            currentStore.id
+          )
+        )
+      )
+      toast({ title: '更新完了', description: 'コースの表示順を更新しました' })
+    } catch {
+      await loadCourses()
+      toast({ title: 'エラー', description: '表示順の更新に失敗しました', variant: 'destructive' })
+    }
+  }
+
   const sortedCourses = useMemo(
-    () => courses.slice().sort((a, b) => a.duration - b.duration || a.price - b.price),
+    () =>
+      courses
+        .slice()
+        .sort(
+          (a, b) =>
+            (a.displayOrder ?? Number.MAX_SAFE_INTEGER) -
+              (b.displayOrder ?? Number.MAX_SAFE_INTEGER) ||
+            a.duration - b.duration ||
+            a.price - b.price
+        ),
     [courses]
   )
 
@@ -330,7 +374,7 @@ export default function CourseInfoPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sortedCourses.map((course) => (
+                  {sortedCourses.map((course, index) => (
                     <TableRow key={course.id}>
                       <TableCell className="whitespace-nowrap font-medium">{course.name}</TableCell>
                       <TableCell className="whitespace-nowrap">{course.duration}分</TableCell>
@@ -356,6 +400,24 @@ export default function CourseInfoPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={index === 0}
+                            onClick={() => handleMoveCourse(course.id, 'up')}
+                            aria-label={`${course.name}を上へ移動`}
+                          >
+                            <ArrowUp className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={index === sortedCourses.length - 1}
+                            onClick={() => handleMoveCourse(course.id, 'down')}
+                            aria-label={`${course.name}を下へ移動`}
+                          >
+                            <ArrowDown className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"

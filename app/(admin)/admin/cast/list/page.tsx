@@ -124,15 +124,17 @@ export default function CastListPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <CastListViewToggle view={view} onViewChange={setView} />
-      <CastListActionButtons
-        onRefresh={handleRefresh}
-        onFilterCharacter={handleFilterCharacter}
-        nameSearch={nameSearch}
-        onNameSearchChange={setNameSearch}
-        workStatus={workStatus}
-        onWorkStatusChange={setWorkStatus}
-      />
+      <div className="sticky top-0 z-20 bg-white shadow-sm">
+        <CastListViewToggle view={view} onViewChange={setView} />
+        <CastListActionButtons
+          onRefresh={handleRefresh}
+          onFilterCharacter={handleFilterCharacter}
+          nameSearch={nameSearch}
+          onNameSearchChange={setNameSearch}
+          workStatus={workStatus}
+          onWorkStatusChange={setWorkStatus}
+        />
+      </div>
 
       <main className="p-4">
         {loading ? (

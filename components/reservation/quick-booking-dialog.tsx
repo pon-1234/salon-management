@@ -59,6 +59,7 @@ import { normalizeOptionalPaymentReference } from '@/lib/reservation/financial-r
 import { buildStoreCastEndpoint, buildStoreReservationEndpoint } from '@/lib/reservation/endpoints'
 import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import { MARKETING_CHANNELS, PAYMENT_METHODS } from '@/lib/constants'
+import { useHotelOptions } from './use-hotel-options'
 import {
   RESERVATION_START_STEP_MINUTES,
   RESERVATION_START_STEP_SECONDS,
@@ -189,6 +190,7 @@ export function QuickBookingDialog({
       : null
   )
   const [marketingChannels, setMarketingChannels] = useState<string[]>(DEFAULT_MARKETING_CHANNELS)
+  const hotels = useHotelOptions(open, currentStore?.id)
   const [receptionStaffOptions, setReceptionStaffOptions] = useState<ReceptionStaffOption[]>([])
   const [customerHistory, setCustomerHistory] = useState<
     Array<{ id: string; startTime?: string; staffName?: string; serviceName?: string }>
@@ -1360,6 +1362,7 @@ export function QuickBookingDialog({
                     hotelName={bookingDetails.hotelName}
                     roomNumber={bookingDetails.roomNumber}
                     locationMemo={bookingDetails.locationMemo}
+                    hotels={hotels}
                     onChange={(field, value) =>
                       setBookingDetails((prev) => ({ ...prev, [field]: value }))
                     }

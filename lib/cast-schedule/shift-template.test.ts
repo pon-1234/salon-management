@@ -43,12 +43,8 @@ describe('applyShiftTemplate', () => {
 })
 
 describe('mergeCastShiftTemplates', () => {
-  it('falls back to default templates when none are saved', () => {
-    expect(mergeCastShiftTemplates(null).map((template) => template.id)).toEqual([
-      'day',
-      'night',
-      'holiday',
-    ])
+  it('does not inject generic work templates when none are saved', () => {
+    expect(mergeCastShiftTemplates(null).map((template) => template.id)).toEqual(['holiday'])
     expect(
       mergeCastShiftTemplates([
         { id: 'custom', name: 'A勤', startTime: '10:00', endTime: '18:00', isHoliday: false },

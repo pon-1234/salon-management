@@ -21,6 +21,7 @@ import { toast } from '@/hooks/use-toast'
 import { useStore } from '@/contexts/store-context'
 import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import { formatScheduleDate, getWeekDates } from '@/lib/cast-schedule/utils'
+import { buildScheduleBatchPayload } from '@/lib/cast-schedule/batch-payload'
 
 const castScheduleUseCases = new CastScheduleUseCases()
 
@@ -176,6 +177,7 @@ export default function WeeklySchedulePage() {
             startTime: daySchedule.startTime,
             endTime: daySchedule.endTime,
             note: daySchedule.note,
+            isAvailable: daySchedule.isAvailable,
           },
         ])
       )
@@ -189,21 +191,7 @@ export default function WeeklySchedulePage() {
     })
 
     try {
-      const schedules = Object.entries(editedSchedule).map(([dateKey, daySchedule]) => {
-        if (daySchedule.status === '出勤予定' && daySchedule.startTime && daySchedule.endTime) {
-          return {
-            date: dateKey,
-            status: 'working' as const,
-            startTime: daySchedule.startTime,
-            endTime: daySchedule.endTime,
-          }
-        }
-
-        return {
-          date: dateKey,
-          status: 'holiday' as const,
-        }
-      })
+      const schedules = buildScheduleBatchPayload(editedSchedule)
 
       const response = await fetch(
         buildStoreScopedEndpoint('/api/cast-schedule/batch', currentStore.id),

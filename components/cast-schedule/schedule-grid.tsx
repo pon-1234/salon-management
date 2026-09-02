@@ -119,6 +119,9 @@ export function ScheduleGrid({
             <Badge className="bg-emerald-500 text-xs text-white hover:bg-emerald-600">
               出勤予定
             </Badge>
+            <Badge variant={status.isAvailable === false ? 'destructive' : 'outline'}>
+              {status.isAvailable === false ? '予約受付停止' : '予約受付可能'}
+            </Badge>
             {status.startTime && status.endTime && (
               <div className="flex items-center gap-1 text-xs text-emerald-700">
                 <Clock className="h-3 w-3" />
@@ -270,9 +273,12 @@ export function ScheduleGrid({
         >
           <Card className="bg-white shadow-sm">
             <CardContent className="p-4">
-              <div className="grid min-w-[1000px] grid-cols-8 gap-4" role="row">
+              <div
+                className="grid min-w-[1160px] grid-cols-[240px_repeat(7,minmax(110px,1fr))] gap-4"
+                role="row"
+              >
                 <div
-                  className="sticky left-0 z-10 flex min-w-[180px] items-center justify-center bg-white"
+                  className="sticky left-0 z-10 flex min-w-[240px] items-center justify-center bg-white"
                   role="columnheader"
                 >
                   <span className="text-sm font-medium text-gray-600">キャスト</span>
@@ -321,10 +327,10 @@ export function ScheduleGrid({
               className="bg-white shadow-sm transition-shadow duration-200 hover:shadow-md"
             >
               <CardContent className="p-4">
-                <div className="grid min-w-[1000px] grid-cols-8 items-center gap-4">
+                <div className="grid min-w-[1160px] grid-cols-[240px_repeat(7,minmax(110px,1fr))] items-center gap-4">
                   {/* Cast Info */}
                   <div
-                    className="sticky left-0 z-10 flex min-w-[180px] items-center gap-3 bg-white"
+                    className="sticky left-0 z-10 flex min-w-[240px] items-center gap-3 bg-white"
                     role="rowheader"
                   >
                     <Avatar className="h-12 w-12">

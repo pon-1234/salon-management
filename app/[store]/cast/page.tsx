@@ -180,6 +180,15 @@ export default async function CastListPage({
                           <h3 className="text-lg font-semibold text-luxury-gold-cream">
                             {cast.name}
                           </h3>
+                          {(cast.specialDesignationFee ?? 0) > 0 && (
+                            <p className="text-xs font-medium text-luxury-gold-heading">
+                              特別指名料
+                              {cast.specialDesignationFeeLabel
+                                ? ` ${cast.specialDesignationFeeLabel}`
+                                : ''}{' '}
+                              {cast.specialDesignationFee?.toLocaleString()}円
+                            </p>
+                          )}
                           <p className="text-sm text-muted-foreground">
                             {cast.age ? `${cast.age}歳` : '年齢非公開'} {measurement}
                           </p>

@@ -45,6 +45,7 @@ describe('getPublicCastDetail', () => {
       images: ['/alice.jpg'],
       description: 'Profile',
       netReservation: true,
+      specialDesignationFee: 3000,
       requestAttendanceEnabled: true,
       panelDesignationRank: 1,
       regularDesignationRank: 2,
@@ -88,6 +89,7 @@ describe('getPublicCastDetail', () => {
       expect.objectContaining({
         id: 'cast-1',
         name: 'Alice',
+        specialDesignationFee: 3000,
         availableOptions: ['option-public'],
         availableOptionSettings: [{ optionId: 'option-public', visibility: 'public' }],
         availableOptionDetails: [

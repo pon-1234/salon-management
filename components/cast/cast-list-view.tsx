@@ -17,6 +17,8 @@ interface CastListViewProps {
 }
 
 export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
+  const employmentLabel = (status: Cast['employmentStatus'] | undefined) =>
+    status === 'provisional' ? '仮登録' : status === 'retired' ? '退店' : '在籍'
   if (view === 'grid') {
     return (
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
@@ -40,7 +42,7 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
                     />
                   </Link>
                   <Badge className="absolute right-2 top-2 bg-emerald-600">
-                    {member.workStatus}
+                    {employmentLabel(member.employmentStatus)}
                   </Badge>
                 </div>
                 <div className="p-4">
@@ -101,6 +103,9 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
                 <div className="text-gray-500">
                   {member.age}歳 | {member.height}cm | {member.type}
                 </div>
+                <Badge variant={member.employmentStatus === 'retired' ? 'secondary' : 'outline'}>
+                  {employmentLabel(member.employmentStatus)}
+                </Badge>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button size="sm" variant="outline" className="h-8" asChild>

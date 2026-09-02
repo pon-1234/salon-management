@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Building, MapPin, Phone, Trash2, Plus } from 'lucide-react'
+import { ArrowLeft, Building, Edit, MapPin, Phone, Trash2, Plus } from 'lucide-react'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { useStore } from '@/contexts/store-context'
 import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
@@ -24,6 +24,7 @@ interface Hotel {
   id: string
   hotelName: string
   area: string | null
+  station: string | null
   roomCount: number | null
   hourlyRate: number | null
   address: string | null
@@ -47,6 +48,7 @@ export default function HotelInfoPage() {
   const [newHotel, setNewHotel] = useState<Partial<Hotel>>({
     hotelName: '',
     area: '',
+    station: '',
     roomCount: null,
     hourlyRate: null,
     address: '',
@@ -58,6 +60,7 @@ export default function HotelInfoPage() {
   })
 
   const [showAddForm, setShowAddForm] = useState(false)
+  const [editingHotelId, setEditingHotelId] = useState<string | null>(null)
   const [amenityInput, setAmenityInput] = useState('')
 
   const fetchHotels = useCallback(async () => {
@@ -87,6 +90,31 @@ export default function HotelInfoPage() {
     fetchHotels()
   }, [fetchHotels])
 
+  const resetHotelForm = () => {
+    setNewHotel({
+      hotelName: '',
+      area: '',
+      station: '',
+      roomCount: null,
+      hourlyRate: null,
+      address: '',
+      phone: '',
+      checkInTime: null,
+      checkOutTime: null,
+      amenities: [],
+      notes: '',
+    })
+    setAmenityInput('')
+    setEditingHotelId(null)
+    setShowAddForm(false)
+  }
+
+  const openEditForm = (hotel: Hotel) => {
+    setNewHotel({ ...hotel, amenities: [...hotel.amenities] })
+    setEditingHotelId(hotel.id)
+    setShowAddForm(true)
+  }
+
   const handleAddHotel = async () => {
     if (newHotel.hotelName?.trim()) {
       setSaving(true)
@@ -94,43 +122,37 @@ export default function HotelInfoPage() {
         const response = await fetch(
           buildStoreScopedEndpoint('/api/settings/hotel', currentStore.id),
           {
-            method: 'POST',
+            method: editingHotelId ? 'PUT' : 'POST',
             credentials: 'include',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify(newHotel),
+            body: JSON.stringify(editingHotelId ? { ...newHotel, id: editingHotelId } : newHotel),
           }
         )
 
         if (!response.ok) throw new Error('Failed to add hotel')
 
         const responseBody = (await response.json()) as ApiResponse<Hotel>
-        setHotels((current) => [...current, responseBody.data])
-
-        setNewHotel({
-          hotelName: '',
-          area: '',
-          roomCount: null,
-          hourlyRate: null,
-          address: '',
-          phone: '',
-          checkInTime: null,
-          checkOutTime: null,
-          amenities: [],
-          notes: '',
-        })
-        setShowAddForm(false)
+        setHotels((current) =>
+          editingHotelId
+            ? current.map((hotel) => (hotel.id === editingHotelId ? responseBody.data : hotel))
+            : [...current, responseBody.data]
+        )
+        const wasEditing = Boolean(editingHotelId)
+        resetHotelForm()
 
         toast({
           title: '成功',
-          description: 'ホテル情報を追加しました',
+          description: wasEditing ? 'ホテル情報を更新しました' : 'ホテル情報を追加しました',
         })
       } catch (error) {
         console.error('Error adding hotel:', error)
         toast({
           title: 'エラー',
-          description: 'ホテル情報の追加に失敗しました',
+          description: editingHotelId
+            ? 'ホテル情報の更新に失敗しました'
+            : 'ホテル情報の追加に失敗しました',
           variant: 'destructive',
         })
       } finally {
@@ -250,6 +272,9 @@ export default function HotelInfoPage() {
                             {hotel.area && (
                               <Badge variant="outline">旧表示グループ: {hotel.area}</Badge>
                             )}
+                            {hotel.station && (
+                              <Badge variant="outline">最寄り駅: {hotel.station}</Badge>
+                            )}
                             {hotel.roomCount !== null && (
                               <Badge variant="secondary">{hotel.roomCount}室</Badge>
                             )}
@@ -293,6 +318,14 @@ export default function HotelInfoPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditForm(hotel)}
+                            aria-label={`${hotel.hotelName}を編集`}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
                           <ConfirmDialog
                             title="ホテル情報を非表示にしますか？"
                             description={`「${hotel.hotelName}」を一覧から非表示にします。予約履歴は保持されます。`}
@@ -322,7 +355,7 @@ export default function HotelInfoPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Plus className="h-5 w-5 text-emerald-600" />
-                    新規ホテル追加
+                    {editingHotelId ? 'ホテル情報編集' : '新規ホテル追加'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -343,6 +376,15 @@ export default function HotelInfoPage() {
                         value={newHotel.area || ''}
                         onChange={(e) => setNewHotel({ ...newHotel, area: e.target.value })}
                         placeholder="池袋、新宿など"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="station">最寄り駅・出口</Label>
+                      <Input
+                        id="station"
+                        value={newHotel.station || ''}
+                        onChange={(e) => setNewHotel({ ...newHotel, station: e.target.value })}
+                        placeholder="池袋（北口）"
                       />
                     </div>
                     <div className="space-y-2">
@@ -464,7 +506,7 @@ export default function HotelInfoPage() {
                     />
                   </div>
                   <div className="flex justify-end gap-4">
-                    <Button variant="outline" onClick={() => setShowAddForm(false)}>
+                    <Button variant="outline" onClick={resetHotelForm}>
                       キャンセル
                     </Button>
                     <Button
@@ -472,7 +514,13 @@ export default function HotelInfoPage() {
                       className="bg-emerald-600 hover:bg-emerald-700"
                       disabled={saving}
                     >
-                      {saving ? '追加中...' : 'ホテルを追加'}
+                      {saving
+                        ? editingHotelId
+                          ? '更新中...'
+                          : '追加中...'
+                        : editingHotelId
+                          ? 'ホテルを更新'
+                          : 'ホテルを追加'}
                     </Button>
                   </div>
                 </CardContent>

@@ -77,52 +77,56 @@ model Store {
 }
 
 model Cast {
-  id                       String                         @id @default(cuid())
-  name                     String
-  nameKana                 String?
-  age                      Int
-  height                   Int
-  bust                     String
-  waist                    Int
-  hip                      Int
-  type                     String
-  image                    String
-  images                   String[]
-  description              String
-  publicProfile            Json?
-  netReservation           Boolean
-  requestAttendanceEnabled Boolean                        @default(false)
-  specialDesignationFee    Int?
-  regularDesignationFee    Int?
-  panelDesignationRank     Int
-  regularDesignationRank   Int
-  workStatus               String
-  availableOptions         String[]                       @default([])
-  castOptionSettings       CastOptionSetting[]
-  lineUserId               String?                        @unique
-  welfareExpenseRate       Decimal?
-  mediaComment             String?
-  mediaCommentSource       String?                        @default("manual")
-  mediaSyncExcluded        Boolean                        @default(false)
-  scheduleTemplates        Json                           @default("[]")
-  loginEmail               String?                        @unique
-  passwordHash             String?
-  storeId                  String
-  createdAt                DateTime                       @default(now())
-  updatedAt                DateTime                       @updatedAt
-  schedules                CastSchedule[]
-  ngByCustomers            NgCastEntry[]
-  reservations             Reservation[]
-  reviews                  Review[]
-  messages                 Message[]
-  lineLogs                 ReservationLineLog[]
-  attendanceRequests       ReservationAttendanceRequest[]
-  settlementPayments       SettlementPayment[]
-  ledgerEntries            CastLedgerEntry[]
-  lineRegistrationToken    CastLineRegistrationToken?
-  store                    Store                          @relation(fields: [storeId], references: [id])
+  id                        String                         @id @default(cuid())
+  name                      String
+  nameKana                  String?
+  age                       Int
+  height                    Int
+  bust                      String
+  waist                     Int
+  hip                       Int
+  type                      String
+  image                     String
+  images                    String[]
+  description               String
+  publicProfile             Json?
+  netReservation            Boolean
+  requestAttendanceEnabled  Boolean                        @default(false)
+  specialDesignationFee     Int?
+  specialDesignationFeeId   String?
+  regularDesignationFee     Int?
+  panelDesignationRank      Int
+  regularDesignationRank    Int
+  workStatus                String
+  employmentStatus          String                         @default("provisional")
+  availableOptions          String[]                       @default([])
+  castOptionSettings        CastOptionSetting[]
+  lineUserId                String?                        @unique
+  welfareExpenseRate        Decimal?
+  mediaComment              String?
+  mediaCommentSource        String?                        @default("manual")
+  mediaSyncExcluded         Boolean                        @default(false)
+  scheduleTemplates         Json                           @default("[]")
+  loginEmail                String?                        @unique
+  passwordHash              String?
+  storeId                   String
+  createdAt                 DateTime                       @default(now())
+  updatedAt                 DateTime                       @updatedAt
+  schedules                 CastSchedule[]
+  ngByCustomers             NgCastEntry[]
+  reservations              Reservation[]
+  reviews                   Review[]
+  messages                  Message[]
+  lineLogs                  ReservationLineLog[]
+  attendanceRequests        ReservationAttendanceRequest[]
+  settlementPayments        SettlementPayment[]
+  ledgerEntries             CastLedgerEntry[]
+  lineRegistrationToken     CastLineRegistrationToken?
+  specialDesignationFeeTier DesignationFee?                @relation("CastSpecialDesignationFee", fields: [specialDesignationFeeId], references: [id], onDelete: SetNull)
+  store                     Store                          @relation(fields: [storeId], references: [id])
 
   @@index([storeId])
+  @@index([specialDesignationFeeId])
 }
 
 enum NgAssignmentSource {
@@ -411,19 +415,20 @@ enum DesignationFeeKind {
 }
 
 model DesignationFee {
-  id          String             @id @default(cuid())
-  name        String
-  price       Int                @default(0)
-  storeShare  Int                @default(0)
-  castShare   Int                @default(0)
-  description String?
-  sortOrder   Int                @default(0)
-  isActive    Boolean            @default(true)
-  kind        DesignationFeeKind @default(other)
-  storeId     String
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-  store       Store              @relation(fields: [storeId], references: [id])
+  id                      String             @id @default(cuid())
+  name                    String
+  price                   Int                @default(0)
+  storeShare              Int                @default(0)
+  castShare               Int                @default(0)
+  description             String?
+  sortOrder               Int                @default(0)
+  isActive                Boolean            @default(true)
+  kind                    DesignationFeeKind @default(other)
+  storeId                 String
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+  store                   Store              @relation(fields: [storeId], references: [id])
+  specialDesignationCasts Cast[]             @relation("CastSpecialDesignationFee")
 
   @@index([storeId])
 }
@@ -460,6 +465,7 @@ model CastSchedule {
   startTime   DateTime
   endTime     DateTime
   isAvailable Boolean
+  notes       String?
   cast        Cast     @relation(fields: [castId], references: [id])
 
   @@unique([castId, date])

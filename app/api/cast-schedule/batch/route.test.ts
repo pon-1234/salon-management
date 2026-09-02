@@ -99,6 +99,50 @@ describe('POST /api/cast-schedule/batch', () => {
     expect(capturedCreateData.endTime.toISOString()).toBe('2026-08-14T15:00:00.000Z')
   })
 
+  it('persists reservation reception availability and the media note', async () => {
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { id: 'admin-1', role: 'admin', permissions: ['*'] },
+    } as any)
+
+    let capturedCreateData: any
+    vi.mocked(db.$transaction).mockImplementation(async (callback: any) =>
+      callback({
+        castSchedule: {
+          findUnique: vi.fn().mockResolvedValue(null),
+          create: vi.fn(async ({ data }) => {
+            capturedCreateData = data
+            return { id: 'new-1', ...data }
+          }),
+          update: vi.fn(),
+          delete: vi.fn(),
+        },
+      })
+    )
+
+    await POST(
+      new NextRequest('http://localhost:3000/api/cast-schedule/batch?storeId=store-a', {
+        method: 'POST',
+        body: JSON.stringify({
+          castId: 'cast-1',
+          schedules: [
+            {
+              date: '2026-08-14',
+              status: 'working',
+              startTime: '14:00',
+              endTime: '22:00',
+              isAvailable: false,
+              note: '媒体掲載テキスト',
+            },
+          ],
+        }),
+      })
+    )
+
+    expect(capturedCreateData).toEqual(
+      expect.objectContaining({ isAvailable: false, notes: '媒体掲載テキスト' })
+    )
+  })
+
   it('should create and update schedules in batch', async () => {
     const mockSession = {
       user: { id: 'admin-1', role: 'admin', permissions: ['*'] },
