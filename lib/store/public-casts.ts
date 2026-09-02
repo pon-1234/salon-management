@@ -26,6 +26,8 @@ interface CastRecord {
   regularDesignationRank: number | null
   specialDesignationFee: number | null
   specialDesignationFeeTier?: { name: string } | null
+  panelTakeHomeBonusTier?: { name: string; price: number } | null
+  regularTakeHomeBonusTier?: { name: string; price: number } | null
   workStatus: string | null
   createdAt: Date
   publicProfile: any | null
@@ -82,6 +84,8 @@ export async function getPublicCastProfiles(storeId: string): Promise<PublicCast
         regularDesignationRank: true,
         specialDesignationFee: true,
         specialDesignationFeeTier: { select: { name: true } },
+        panelTakeHomeBonusTier: { select: { name: true, price: true } },
+        regularTakeHomeBonusTier: { select: { name: true, price: true } },
         workStatus: true,
         createdAt: true,
         publicProfile: true,
@@ -124,6 +128,10 @@ export async function getPublicCastProfiles(storeId: string): Promise<PublicCast
       regularDesignationRank: record.regularDesignationRank ?? 0,
       specialDesignationFee: record.specialDesignationFee ?? 0,
       specialDesignationFeeLabel: record.specialDesignationFeeTier?.name ?? null,
+      panelTakeHomeBonus: record.panelTakeHomeBonusTier?.price ?? 0,
+      panelTakeHomeBonusLabel: record.panelTakeHomeBonusTier?.name ?? null,
+      regularTakeHomeBonus: record.regularTakeHomeBonusTier?.price ?? 0,
+      regularTakeHomeBonusLabel: record.regularTakeHomeBonusTier?.name ?? null,
       netReservation: Boolean(record.netReservation ?? true),
       workStatus: record.workStatus ?? null,
       sizeLabel: buildSizeLabel(record),
@@ -292,6 +300,10 @@ export interface PublicCastDetail {
   regularDesignationRank: number
   specialDesignationFee: number
   specialDesignationFeeLabel: string | null
+  panelTakeHomeBonus: number
+  panelTakeHomeBonusLabel: string | null
+  regularTakeHomeBonus: number
+  regularTakeHomeBonusLabel: string | null
   workStatus: string
   workStart?: Date
   workEnd?: Date
@@ -360,6 +372,8 @@ export async function getPublicCastDetail(
       regularDesignationRank: true,
       specialDesignationFee: true,
       specialDesignationFeeTier: { select: { name: true } },
+      panelTakeHomeBonusTier: { select: { name: true, price: true } },
+      regularTakeHomeBonusTier: { select: { name: true, price: true } },
       workStatus: true,
       availableOptions: true,
       publicProfile: true,
@@ -444,6 +458,10 @@ export async function getPublicCastDetail(
     regularDesignationRank: record.regularDesignationRank,
     specialDesignationFee: record.specialDesignationFee ?? 0,
     specialDesignationFeeLabel: record.specialDesignationFeeTier?.name ?? null,
+    panelTakeHomeBonus: record.panelTakeHomeBonusTier?.price ?? 0,
+    panelTakeHomeBonusLabel: record.panelTakeHomeBonusTier?.name ?? null,
+    regularTakeHomeBonus: record.regularTakeHomeBonusTier?.price ?? 0,
+    regularTakeHomeBonusLabel: record.regularTakeHomeBonusTier?.name ?? null,
     workStatus: record.workStatus,
     workStart: undefined,
     workEnd: undefined,

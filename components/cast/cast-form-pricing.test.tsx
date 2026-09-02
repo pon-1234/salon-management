@@ -33,6 +33,26 @@ const getDesignationFeesMock = vi.hoisted(() =>
       isActive: true,
       kind: 'other',
     },
+    {
+      id: 'panel-up-1000',
+      name: 'パネルUP A',
+      price: 1000,
+      storeShare: 0,
+      castShare: 1000,
+      sortOrder: 2,
+      isActive: true,
+      kind: 'panel',
+    },
+    {
+      id: 'repeat-up-2000',
+      name: '本指名UP B',
+      price: 2000,
+      storeShare: 0,
+      castShare: 2000,
+      sortOrder: 3,
+      isActive: true,
+      kind: 'repeat',
+    },
   ])
 )
 
@@ -72,5 +92,14 @@ describe('CastForm pricing scope', () => {
     fireEvent.click(screen.getByLabelText('特別指名料ランク'))
     expect(await screen.findByRole('option', { name: 'なし（0円）' })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'ブロンズ（1,000円）' })).toBeInTheDocument()
+  })
+
+  it('selects panel and repeat take-home bonuses from the same store master', async () => {
+    render(<CastForm storeId="uat-ikebukuro" cast={null} onSubmit={vi.fn()} isSubmitting={false} />)
+
+    fireEvent.click(await screen.findByLabelText('パネル指名手取UP'))
+    expect(await screen.findByRole('option', { name: 'パネルUP A（1,000円）' })).toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText('本指名手取UP'))
+    expect(await screen.findByRole('option', { name: '本指名UP B（2,000円）' })).toBeInTheDocument()
   })
 })

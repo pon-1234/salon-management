@@ -114,6 +114,8 @@ const buildInitialFormState = (cast?: Cast | null) => ({
   netReservation: cast?.netReservation ?? true,
   specialDesignationFee: cast?.specialDesignationFee ?? '',
   specialDesignationFeeId: cast?.specialDesignationFeeId ?? '',
+  panelTakeHomeBonusId: cast?.panelTakeHomeBonusId ?? '',
+  regularTakeHomeBonusId: cast?.regularTakeHomeBonusId ?? '',
   regularDesignationFee: cast?.regularDesignationFee ?? '',
   panelDesignationRank: cast?.panelDesignationRank ?? '',
   regularDesignationRank: cast?.regularDesignationRank ?? '',
@@ -281,7 +283,7 @@ export function CastForm({
 
   const specialDesignationOptions = useMemo(() => {
     const options = designationFees.filter(
-      (fee) => resolveDesignationKind(fee) !== 'repeat' && fee.price > 0
+      (fee) => resolveDesignationKind(fee) === 'other' && fee.price > 0
     )
     const currentValue = Number(formData.specialDesignationFee || 0)
     if (currentValue > 0 && !options.some((fee) => fee.price === currentValue)) {
@@ -298,6 +300,15 @@ export function CastForm({
     }
     return options.sort((left, right) => left.sortOrder - right.sortOrder)
   }, [designationFees, formData.specialDesignationFee])
+  const panelTakeHomeOptions = useMemo(
+    () => designationFees.filter((fee) => resolveDesignationKind(fee) === 'panel' && fee.price > 0),
+    [designationFees]
+  )
+  const regularTakeHomeOptions = useMemo(
+    () =>
+      designationFees.filter((fee) => resolveDesignationKind(fee) === 'repeat' && fee.price > 0),
+    [designationFees]
+  )
   const isDirty = useMemo(
     () => JSON.stringify(formData) !== JSON.stringify(initialFormData),
     [formData, initialFormData]
@@ -442,6 +453,8 @@ export function CastForm({
       workStatus: formData.workStatus,
       employmentStatus: formData.employmentStatus,
       specialDesignationFeeId: formData.specialDesignationFeeId || null,
+      panelTakeHomeBonusId: formData.panelTakeHomeBonusId || null,
+      regularTakeHomeBonusId: formData.regularTakeHomeBonusId || null,
       availableOptions: formData.availableOptions,
       availableOptionSettings: normalizedOptionSettings,
     }
@@ -966,7 +979,8 @@ export function CastForm({
                 const selected = specialDesignationOptions.find((fee) => fee.id === value)
                 setFormData((previous) => ({
                   ...previous,
-                  specialDesignationFeeId: selected?.id ?? '',
+                  specialDesignationFeeId:
+                    selected && !selected.id.startsWith('legacy-') ? selected.id : '',
                   specialDesignationFee: selected?.price ?? 0,
                 }))
               }}
@@ -1000,26 +1014,52 @@ export function CastForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={fieldId('panelDesignationRank')}>パネル指名ランク</Label>
-            <Input
-              id={fieldId('panelDesignationRank')}
-              name="panelDesignationRank"
-              type="number"
-              min={0}
-              value={formData.panelDesignationRank}
-              onChange={handleInputChange}
-            />
+            <Label htmlFor={fieldId('panelTakeHomeBonus')}>パネル指名手取UP</Label>
+            <Select
+              value={formData.panelTakeHomeBonusId || 'none'}
+              onValueChange={(value) =>
+                setFormData((previous) => ({
+                  ...previous,
+                  panelTakeHomeBonusId: value === 'none' ? '' : value,
+                }))
+              }
+            >
+              <SelectTrigger id={fieldId('panelTakeHomeBonus')}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">なし（0円）</SelectItem>
+                {panelTakeHomeOptions.map((fee) => (
+                  <SelectItem key={fee.id} value={fee.id}>
+                    {fee.name}（{fee.price.toLocaleString()}円）
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor={fieldId('regularDesignationRank')}>本指名ランク</Label>
-            <Input
-              id={fieldId('regularDesignationRank')}
-              name="regularDesignationRank"
-              type="number"
-              min={0}
-              value={formData.regularDesignationRank}
-              onChange={handleInputChange}
-            />
+            <Label htmlFor={fieldId('regularTakeHomeBonus')}>本指名手取UP</Label>
+            <Select
+              value={formData.regularTakeHomeBonusId || 'none'}
+              onValueChange={(value) =>
+                setFormData((previous) => ({
+                  ...previous,
+                  regularTakeHomeBonusId: value === 'none' ? '' : value,
+                }))
+              }
+            >
+              <SelectTrigger id={fieldId('regularTakeHomeBonus')}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">なし（0円）</SelectItem>
+                {regularTakeHomeOptions.map((fee) => (
+                  <SelectItem key={fee.id} value={fee.id}>
+                    {fee.name}（{fee.price.toLocaleString()}円）
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </FormSection>

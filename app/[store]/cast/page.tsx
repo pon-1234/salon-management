@@ -189,6 +189,18 @@ export default async function CastListPage({
                               {cast.specialDesignationFee?.toLocaleString()}円
                             </p>
                           )}
+                          {(cast.panelTakeHomeBonus ?? 0) > 0 && (
+                            <p className="text-xs text-luxury-gold-muted">
+                              パネル指名手取UP {cast.panelTakeHomeBonusLabel}{' '}
+                              {cast.panelTakeHomeBonus?.toLocaleString()}円
+                            </p>
+                          )}
+                          {(cast.regularTakeHomeBonus ?? 0) > 0 && (
+                            <p className="text-xs text-luxury-gold-muted">
+                              本指名手取UP {cast.regularTakeHomeBonusLabel}{' '}
+                              {cast.regularTakeHomeBonus?.toLocaleString()}円
+                            </p>
+                          )}
                           <p className="text-sm text-muted-foreground">
                             {cast.age ? `${cast.age}歳` : '年齢非公開'} {measurement}
                           </p>

@@ -48,7 +48,11 @@ import { TimeSlotPicker } from './time-slot-picker'
 import { toast } from '@/hooks/use-toast'
 import { isVipMember } from '@/lib/utils'
 import { getDesignationFees } from '@/lib/designation/data'
-import { pickAutoDesignationFee, payloadHasCompletedVisit } from '@/lib/designation/kind'
+import {
+  pickAutoDesignationFee,
+  payloadHasCompletedVisit,
+  resolveDesignationKind,
+} from '@/lib/designation/kind'
 import type { DesignationFee } from '@/lib/designation/types'
 import { BusinessHoursRange } from '@/lib/settings/business-hours'
 import { useStore } from '@/contexts/store-context'
@@ -795,6 +799,15 @@ export function QuickBookingDialog({
     const transportationFee = bookingDetails.transportationFee || 0
     const additionalFee = bookingDetails.additionalFee || 0
     const discountAmount = Math.max(bookingDetails.discountAmount || 0, 0)
+    const selectedDesignationKind = selectedDesignationFee
+      ? resolveDesignationKind(selectedDesignationFee)
+      : null
+    const castTakeHomeBonus =
+      selectedDesignationKind === 'repeat'
+        ? (currentStaff?.regularTakeHomeBonus ?? 0)
+        : selectedDesignationKind === 'panel' || selectedDesignationKind === 'other'
+          ? (currentStaff?.panelTakeHomeBonus ?? 0)
+          : 0
 
     const revenueInput = {
       basePrice,
@@ -819,6 +832,7 @@ export function QuickBookingDialog({
       additionalFee,
       discountAmount,
       welfareRate,
+      castTakeHomeBonus,
     }
     const revenue = calculateReservationRevenue(revenueInput)
 

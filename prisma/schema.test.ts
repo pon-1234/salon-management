@@ -69,6 +69,25 @@ describe('Prisma schema', () => {
     expect(migration).toContain('Cast_specialDesignationFeeId_fkey')
   })
 
+  it('links panel and repeat take-home bonuses to named store master entries', () => {
+    expect(schemaContent).toMatch(/panelTakeHomeBonusId\s+String\?/)
+    expect(schemaContent).toMatch(/regularTakeHomeBonusId\s+String\?/)
+    expect(schemaContent).toContain('CastPanelTakeHomeBonus')
+    expect(schemaContent).toContain('CastRegularTakeHomeBonus')
+    const migration = readFileSync(
+      join(
+        process.cwd(),
+        'prisma',
+        'migrations',
+        '20260902100000_add_cast_take_home_bonus_tiers',
+        'migration.sql'
+      ),
+      'utf8'
+    )
+    expect(migration).toContain('ADD COLUMN "panelTakeHomeBonusId" TEXT')
+    expect(migration).toContain('ADD COLUMN "regularTakeHomeBonusId" TEXT')
+  })
+
   it('should have Customer model defined', () => {
     expect(schemaContent).toContain('model Customer {')
   })

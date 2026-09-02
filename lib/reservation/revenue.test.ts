@@ -23,6 +23,20 @@ describe('calculateReservationRevenue', () => {
     })
   })
 
+  it('moves a cast-specific take-home bonus from store revenue without charging the customer', () => {
+    expect(
+      calculateReservationRevenue({
+        basePrice: 20_000,
+        course: { storeShare: 8_000, castShare: 12_000 },
+        castTakeHomeBonus: 1_000,
+      })
+    ).toMatchObject({
+      total: 20_000,
+      storeRevenue: 7_000,
+      staffRevenue: 13_000,
+    })
+  })
+
   it('preserves the current course, option, designation, and fee breakdown', () => {
     expect(
       calculateReservationRevenue({

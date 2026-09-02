@@ -532,6 +532,52 @@ describe('QuickBookingDialog', () => {
     })
   })
 
+  it('uses the selected designation category for the cast take-home bonus', async () => {
+    mocks.getDesignationFees.mockResolvedValue([
+      {
+        id: 'fee-free',
+        name: 'フリー',
+        price: 0,
+        storeShare: 0,
+        castShare: 0,
+        sortOrder: 1,
+        isActive: true,
+        kind: 'free',
+      },
+      {
+        id: 'fee-panel',
+        name: 'おすすめパネル指名',
+        price: 2_000,
+        storeShare: 0,
+        castShare: 2_000,
+        sortOrder: 2,
+        isActive: true,
+        kind: 'panel',
+      },
+    ])
+    vi.stubGlobal('fetch', createFetchMock())
+    render(
+      dialogElement({
+        selectedStaff: {
+          ...selectedStaff,
+          specialDesignationFee: 2_000,
+          regularDesignationFee: 3_000,
+          panelTakeHomeBonus: 1_000,
+          regularTakeHomeBonus: 2_000,
+        },
+      })
+    )
+
+    await waitForOnePageBookingForm()
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', { name: '指名設定' })).toHaveTextContent(
+        'おすすめパネル指名'
+      )
+    )
+    expect(screen.getByText(/店舗売上:/)).toHaveTextContent('店舗売上: 2,000円')
+    expect(screen.getByText(/キャスト売上:/)).toHaveTextContent('キャスト売上: 10,000円')
+  })
+
   it('persists used points so the confirmed order can display the same deduction', async () => {
     const user = userEvent.setup()
     const fetchMock = createFetchMock()

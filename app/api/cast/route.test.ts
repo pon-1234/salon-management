@@ -361,6 +361,46 @@ describe('Cast API endpoints', () => {
       })
       expect(mockedDb.cast.create).not.toHaveBeenCalled()
     })
+
+    it('rejects take-home bonus tiers from the wrong store or designation category', async () => {
+      mockedDb.designationFee = { findMany: vi.fn() }
+      mockedDb.designationFee.findMany.mockResolvedValueOnce([
+        { id: 'panel-up', kind: 'panel' },
+        { id: 'repeat-up', kind: 'other' },
+      ])
+
+      const response = await POST(
+        new NextRequest('http://localhost:3000/api/cast?storeId=store-a', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: 'Test Cast',
+            age: 25,
+            height: 165,
+            bust: 'B',
+            waist: 58,
+            hip: 85,
+            type: 'カワイイ系',
+            image: 'https://example.com/test-cast.jpg',
+            panelTakeHomeBonusId: 'panel-up',
+            regularTakeHomeBonusId: 'repeat-up',
+          }),
+        })
+      )
+
+      expect(response.status).toBe(400)
+      await expect(response.json()).resolves.toEqual({
+        error: 'One or more designation tiers are unavailable for this store or category',
+      })
+      expect(mockedDb.designationFee.findMany).toHaveBeenCalledWith({
+        where: {
+          id: { in: ['panel-up', 'repeat-up'] },
+          storeId: 'store-a',
+          isActive: true,
+        },
+        select: { id: true, kind: true },
+      })
+      expect(mockedDb.cast.create).not.toHaveBeenCalled()
+    })
   })
 
   describe('PUT /api/cast', () => {

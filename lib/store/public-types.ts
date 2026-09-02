@@ -23,6 +23,10 @@ export interface PublicCastSummary {
   regularDesignationRank: number
   specialDesignationFee?: number
   specialDesignationFeeLabel?: string | null
+  panelTakeHomeBonus?: number
+  panelTakeHomeBonusLabel?: string | null
+  regularTakeHomeBonus?: number
+  regularTakeHomeBonusLabel?: string | null
   netReservation: boolean
   workStatus: string | null
   sizeLabel: string

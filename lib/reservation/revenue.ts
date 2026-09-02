@@ -29,6 +29,7 @@ export interface ReservationRevenueInput {
   additionalFee?: number
   discountAmount?: number
   welfareRate?: number | null
+  castTakeHomeBonus?: number
 }
 
 export interface ReservationRevenueResult {
@@ -134,6 +135,7 @@ export function calculateReservationRevenue(
   const transportationFee = Math.max(0, Math.round(toNumber(input.transportationFee)))
   const additionalFee = Math.max(0, Math.round(toNumber(input.additionalFee)))
   const discountAmount = Math.max(0, Math.round(toNumber(input.discountAmount)))
+  const castTakeHomeBonus = Math.max(0, Math.round(toNumber(input.castTakeHomeBonus)))
 
   const total =
     basePrice +
@@ -149,11 +151,15 @@ export function calculateReservationRevenue(
       designationStoreShare +
       transportationFee +
       additionalFee -
-      discountAmount,
+      discountAmount -
+      castTakeHomeBonus,
     welfareExpense
   )
 
-  const staffRevenue = Math.max(courseCastShare + optionCastShare + designationCastShare, 0)
+  const staffRevenue = Math.max(
+    courseCastShare + optionCastShare + designationCastShare + castTakeHomeBonus,
+    0
+  )
 
   return {
     total: Math.max(total, 0),

@@ -17,6 +17,12 @@ export interface Cast extends BaseEntity {
   specialDesignationFee: number | null
   specialDesignationFeeId?: string | null
   specialDesignationFeeLabel?: string | null
+  panelTakeHomeBonusId?: string | null
+  panelTakeHomeBonus?: number
+  panelTakeHomeBonusLabel?: string | null
+  regularTakeHomeBonusId?: string | null
+  regularTakeHomeBonus?: number
+  regularTakeHomeBonusLabel?: string | null
   regularDesignationFee: number | null
   panelDesignationRank: number
   regularDesignationRank: number

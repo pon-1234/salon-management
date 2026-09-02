@@ -166,6 +166,12 @@ export const normalizeCast = (raw: any): Cast => {
         : Number(raw.specialDesignationFee),
     specialDesignationFeeId: raw.specialDesignationFeeId ?? null,
     specialDesignationFeeLabel: raw.specialDesignationFeeTier?.name ?? null,
+    panelTakeHomeBonusId: raw.panelTakeHomeBonusId ?? null,
+    panelTakeHomeBonus: Number(raw.panelTakeHomeBonusTier?.price ?? 0),
+    panelTakeHomeBonusLabel: raw.panelTakeHomeBonusTier?.name ?? null,
+    regularTakeHomeBonusId: raw.regularTakeHomeBonusId ?? null,
+    regularTakeHomeBonus: Number(raw.regularTakeHomeBonusTier?.price ?? 0),
+    regularTakeHomeBonusLabel: raw.regularTakeHomeBonusTier?.name ?? null,
     regularDesignationFee:
       raw.regularDesignationFee === null || raw.regularDesignationFee === undefined
         ? null

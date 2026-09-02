@@ -60,6 +60,7 @@ import {
   type ReservationOptionRecord,
 } from '@/lib/reservation/resolve-selected-options'
 import { applyStoreCreditCardFee } from '@/lib/reservation/credit-card-fee'
+import { resolveDesignationRevenueContext } from '@/lib/reservation/cast-take-home-bonus'
 import {
   resolveCourseRevenueSource,
   resolveCourseSelectionPersistence,
@@ -737,20 +738,15 @@ export async function POST(request: NextRequest) {
           ? requestedDesignationAmount
           : Math.max(Number(castDesignationAmount ?? 0), 0)
 
-        let designationShare: { storeShare: number | null; castShare: number | null } | null = null
-        if (designationAmount > 0 && reservationData.designationType) {
-          designationShare = await tx.designationFee.findFirst({
-            where: { storeId, name: reservationData.designationType },
-            select: {
-              storeShare: true,
-              castShare: true,
-            },
-          })
-        }
-
         const pointsToUse = requestedPointsValue
         const manualDiscountAmount =
           typeof reservationData.discountAmount === 'number' ? reservationData.discountAmount : 0
+        const designationRevenue = await resolveDesignationRevenueContext(tx, {
+          storeId,
+          designationType: reservationData.designationType,
+          designationAmount,
+          cast: castRecord,
+        })
 
         const revenueInputBase = {
           basePrice: courseSummary.price,
@@ -767,14 +763,15 @@ export async function POST(request: NextRequest) {
             designationAmount > 0
               ? {
                   amount: designationAmount,
-                  storeShare: designationShare?.storeShare ?? 0,
-                  castShare: designationShare?.castShare ?? designationAmount,
+                  storeShare: designationRevenue.designationShare?.storeShare ?? 0,
+                  castShare: designationRevenue.designationShare?.castShare ?? designationAmount,
                 }
               : null,
           transportationFee: reservationData.transportationFee ?? 0,
           additionalFee: reservationData.additionalFee ?? 0,
           discountAmount: manualDiscountAmount,
           welfareRate: normalizedWelfareRate,
+          castTakeHomeBonus: designationRevenue.castTakeHomeBonus,
         }
 
         const baseRevenue = calculateReservationRevenue(revenueInputBase)
@@ -1409,14 +1406,6 @@ export async function PUT(request: NextRequest) {
             ? updates.designationFee
             : (previousReservation.designationFee ?? 0)
 
-        let designationShare: { storeShare: number | null; castShare: number | null } | null = null
-        if (designationAmount > 0 && nextDesignationType) {
-          designationShare = await tx.designationFee.findFirst({
-            where: { storeId, name: nextDesignationType },
-            select: { storeShare: true, castShare: true },
-          })
-        }
-
         const rawWelfareRate =
           effectiveCast?.welfareExpenseRate ?? storeSettings?.welfareExpenseRate ?? 10
         const normalizedWelfareRate =
@@ -1430,6 +1419,12 @@ export async function PUT(request: NextRequest) {
           previousReservation.course,
           previousReservation.price
         )
+        const designationRevenue = await resolveDesignationRevenueContext(tx, {
+          storeId,
+          designationType: nextDesignationType,
+          designationAmount,
+          cast: effectiveCast,
+        })
 
         const revenueInputBase = {
           basePrice: courseRevenue.price,
@@ -1442,14 +1437,15 @@ export async function PUT(request: NextRequest) {
             designationAmount > 0
               ? {
                   amount: designationAmount,
-                  storeShare: designationShare?.storeShare ?? 0,
-                  castShare: designationShare?.castShare ?? designationAmount,
+                  storeShare: designationRevenue.designationShare?.storeShare ?? 0,
+                  castShare: designationRevenue.designationShare?.castShare ?? designationAmount,
                 }
               : null,
           transportationFee: transportFee,
           additionalFee,
           discountAmount,
           welfareRate: normalizedWelfareRate,
+          castTakeHomeBonus: designationRevenue.castTakeHomeBonus,
         }
 
         const pricedRevenue = calculateRevenueWithPointUsage(revenueInputBase, existingPointsUsed)

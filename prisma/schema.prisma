@@ -94,6 +94,8 @@ model Cast {
   requestAttendanceEnabled  Boolean                        @default(false)
   specialDesignationFee     Int?
   specialDesignationFeeId   String?
+  panelTakeHomeBonusId      String?
+  regularTakeHomeBonusId    String?
   regularDesignationFee     Int?
   panelDesignationRank      Int
   regularDesignationRank    Int
@@ -123,10 +125,14 @@ model Cast {
   ledgerEntries             CastLedgerEntry[]
   lineRegistrationToken     CastLineRegistrationToken?
   specialDesignationFeeTier DesignationFee?                @relation("CastSpecialDesignationFee", fields: [specialDesignationFeeId], references: [id], onDelete: SetNull)
+  panelTakeHomeBonusTier    DesignationFee?                @relation("CastPanelTakeHomeBonus", fields: [panelTakeHomeBonusId], references: [id], onDelete: SetNull)
+  regularTakeHomeBonusTier  DesignationFee?                @relation("CastRegularTakeHomeBonus", fields: [regularTakeHomeBonusId], references: [id], onDelete: SetNull)
   store                     Store                          @relation(fields: [storeId], references: [id])
 
   @@index([storeId])
   @@index([specialDesignationFeeId])
+  @@index([panelTakeHomeBonusId])
+  @@index([regularTakeHomeBonusId])
 }
 
 enum NgAssignmentSource {
@@ -415,20 +421,22 @@ enum DesignationFeeKind {
 }
 
 model DesignationFee {
-  id                      String             @id @default(cuid())
-  name                    String
-  price                   Int                @default(0)
-  storeShare              Int                @default(0)
-  castShare               Int                @default(0)
-  description             String?
-  sortOrder               Int                @default(0)
-  isActive                Boolean            @default(true)
-  kind                    DesignationFeeKind @default(other)
-  storeId                 String
-  createdAt               DateTime           @default(now())
-  updatedAt               DateTime           @updatedAt
-  store                   Store              @relation(fields: [storeId], references: [id])
-  specialDesignationCasts Cast[]             @relation("CastSpecialDesignationFee")
+  id                        String             @id @default(cuid())
+  name                      String
+  price                     Int                @default(0)
+  storeShare                Int                @default(0)
+  castShare                 Int                @default(0)
+  description               String?
+  sortOrder                 Int                @default(0)
+  isActive                  Boolean            @default(true)
+  kind                      DesignationFeeKind @default(other)
+  storeId                   String
+  createdAt                 DateTime           @default(now())
+  updatedAt                 DateTime           @updatedAt
+  store                     Store              @relation(fields: [storeId], references: [id])
+  specialDesignationCasts   Cast[]             @relation("CastSpecialDesignationFee")
+  panelTakeHomeBonusCasts   Cast[]             @relation("CastPanelTakeHomeBonus")
+  regularTakeHomeBonusCasts Cast[]             @relation("CastRegularTakeHomeBonus")
 
   @@index([storeId])
 }

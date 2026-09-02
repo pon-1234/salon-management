@@ -61,6 +61,8 @@ const castSchema = z.object({
   netReservation: z.boolean().optional().default(true),
   specialDesignationFee: z.union([z.null(), z.coerce.number().int().min(0)]).optional(),
   specialDesignationFeeId: z.union([z.null(), z.string().min(1)]).optional(),
+  panelTakeHomeBonusId: z.union([z.null(), z.string().min(1)]).optional(),
+  regularTakeHomeBonusId: z.union([z.null(), z.string().min(1)]).optional(),
   regularDesignationFee: z.union([z.null(), z.coerce.number().int().min(0)]).optional(),
   panelDesignationRank: z.coerce.number().int().min(0).optional().default(0),
   regularDesignationRank: z.coerce.number().int().min(0).optional().default(0),
@@ -191,9 +193,55 @@ async function optionsBelongToStore(optionIds: string[], storeId: string): Promi
   return uniqueOptionIds.every((optionId) => availableOptionIds.has(optionId))
 }
 
+type CastDesignationTierSelection = {
+  specialDesignationFeeId?: string | null
+  panelTakeHomeBonusId?: string | null
+  regularTakeHomeBonusId?: string | null
+}
+
+async function designationTiersBelongToStore(
+  selection: CastDesignationTierSelection,
+  storeId: string
+): Promise<boolean> {
+  const expectedKinds = new Map<string, 'other' | 'panel' | 'repeat'>()
+  if (selection.specialDesignationFeeId) {
+    expectedKinds.set(selection.specialDesignationFeeId, 'other')
+  }
+  if (selection.panelTakeHomeBonusId) {
+    expectedKinds.set(selection.panelTakeHomeBonusId, 'panel')
+  }
+  if (selection.regularTakeHomeBonusId) {
+    expectedKinds.set(selection.regularTakeHomeBonusId, 'repeat')
+  }
+  if (expectedKinds.size === 0) {
+    return true
+  }
+
+  const tiers = await db.designationFee.findMany({
+    where: {
+      id: { in: Array.from(expectedKinds.keys()) },
+      storeId,
+      isActive: true,
+    },
+    select: { id: true, kind: true },
+  })
+
+  return (
+    tiers.length === expectedKinds.size &&
+    tiers.every((tier) => expectedKinds.get(tier.id) === tier.kind)
+  )
+}
+
 function invalidStoreOptionResponse() {
   return NextResponse.json(
     { error: 'One or more options are unavailable for this store' },
+    { status: 400 }
+  )
+}
+
+function invalidDesignationTierResponse() {
+  return NextResponse.json(
+    { error: 'One or more designation tiers are unavailable for this store or category' },
     { status: 400 }
   )
 }
@@ -312,6 +360,10 @@ async function fetchCastListWithRelations(
         specialDesignationFee: true,
         specialDesignationFeeId: true,
         specialDesignationFeeTier: { select: { name: true, price: true } },
+        panelTakeHomeBonusId: true,
+        panelTakeHomeBonusTier: { select: { name: true, price: true } },
+        regularTakeHomeBonusId: true,
+        regularTakeHomeBonusTier: { select: { name: true, price: true } },
         regularDesignationFee: true,
         panelDesignationRank: true,
         regularDesignationRank: true,
@@ -438,6 +490,10 @@ export async function POST(request: NextRequest) {
       return invalidStoreOptionResponse()
     }
 
+    if (!(await designationTiersBelongToStore(validatedData, storeId))) {
+      return invalidDesignationTierResponse()
+    }
+
     const images = Array.isArray(imageList) ? imageList : []
     const normalizedWelfare =
       welfareExpenseRate === null || welfareExpenseRate === undefined
@@ -560,6 +616,10 @@ export async function PUT(request: NextRequest) {
       }
 
       updatePayload.availableOptions = normalizedOptionSettings.map((entry) => entry.optionId)
+    }
+
+    if (!(await designationTiersBelongToStore(validatedData, storeId))) {
+      return invalidDesignationTierResponse()
     }
 
     if (welfareExpenseRate !== undefined) {
