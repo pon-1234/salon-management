@@ -171,6 +171,16 @@ type VisitDetailsProps = {
   onChange: (field: 'hotelName' | 'roomNumber' | 'locationMemo', value: string) => void
 }
 
+export function formatHotelOptionLabel(hotel: NonNullable<VisitDetailsProps['hotels']>[number]) {
+  const area = hotel.area?.trim()
+  const parts = [
+    area && !hotel.hotelName.includes(area) ? area : null,
+    hotel.station,
+    hotel.hotelName,
+  ]
+  return parts.filter(Boolean).join(' ＞ ')
+}
+
 export function QuickBookingVisitDetails({
   hotelName,
   roomNumber,
@@ -196,7 +206,7 @@ export function QuickBookingVisitDetails({
             <option value="">直接入力</option>
             {hotels.map((hotel) => (
               <option key={hotel.id} value={hotel.id}>
-                {[hotel.area, hotel.station, hotel.hotelName].filter(Boolean).join(' ＞ ')}
+                {formatHotelOptionLabel(hotel)}
               </option>
             ))}
           </select>

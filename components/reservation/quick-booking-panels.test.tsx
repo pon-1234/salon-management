@@ -37,4 +37,25 @@ describe('QuickBookingVisitDetails', () => {
     ).toBeInTheDocument()
     expect(screen.getByLabelText('ホテル名')).toBeInTheDocument()
   })
+
+  it('does not repeat an obsolete legacy group already contained in the hotel name', () => {
+    render(
+      <QuickBookingVisitDetails
+        hotelName=""
+        roomNumber=""
+        locationMemo=""
+        hotels={[
+          {
+            id: 'hotel-legacy',
+            hotelName: '池袋グランドホテル',
+            area: 'グランドホテル',
+          },
+        ]}
+        onChange={vi.fn()}
+      />
+    )
+
+    expect(screen.getByRole('option', { name: '池袋グランドホテル' })).toBeInTheDocument()
+    expect(screen.queryByText('グランドホテル ＞ 池袋グランドホテル')).not.toBeInTheDocument()
+  })
 })

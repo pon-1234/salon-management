@@ -26,6 +26,10 @@
 
 2026-07-21の池袋V3 snapshotでは、ホテル2件を `HotelSettings` へ変換しました。両ホテルの `city_no` / `city_no2` は0、`price1`〜`price4` は空であったため、`HotelServiceArea` と `HotelRate` は各0件です。これは欠落ではなく、旧値を推測補完しない変換結果です。ホテル表示グループは1件取得でき、対応する表示グループがない `area_no` では `HotelSettings.area = null` とし、元の値を `HotelSettings.rawText.legacyAreaNo` に保持します。
 
+## 管理画面での扱い
+
+`HotelSettings.area` は旧移行データの出典確認にだけ残し、管理画面では表示・編集しません。ホテルを追加または更新するときは `area = null` とし、予約画面では有効なホテルマスタから選び直せます。マスタにないホテルは手入力でき、保存時点の名称を `Reservation.hotelName` に保持します。
+
 ## 2026-07-21 preview投入検証
 
 初期化後の池袋preview DBで、`HotelSettings` 2件、`HotelServiceArea` 0件、`HotelRate` 0件を確認しました。予約の `hotelId` 参照と `hotelExpense` も0件で、旧snapshotの値と一致します。管理画面でホテル一覧、追加、非表示の代表操作を確認し、その後preview DBを再初期化・再投入したため、操作確認用ホテルは残っていません。この結果は今回の限定snapshotに対する確認であり、最終本番移行の承認ではありません。

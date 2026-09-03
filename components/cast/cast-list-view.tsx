@@ -21,7 +21,7 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
     status === 'provisional' ? '仮登録' : status === 'retired' ? '退店' : '在籍'
   if (view === 'grid') {
     return (
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8">
         {casts.map((member) => {
           const memberImage = member.image?.trim() ? member.image : FALLBACK_IMAGE
 
@@ -38,22 +38,22 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
                     <SafeImage
                       src={memberImage}
                       alt={member.name}
-                      className="aspect-[7/10] w-full object-cover"
+                      className="aspect-[4/5] w-full object-cover"
                     />
                   </Link>
                   <Badge className="absolute right-2 top-2 bg-emerald-600">
                     {employmentLabel(member.employmentStatus)}
                   </Badge>
                 </div>
-                <div className="p-4">
+                <div className="p-2">
                   <Link
                     href={`/admin/cast/manage/${member.id}`}
-                    className="text-lg font-semibold hover:text-emerald-600"
+                    className="text-sm font-semibold hover:text-emerald-600"
                   >
                     {member.name}
                   </Link>
                   <p className="text-sm text-gray-500">{member.nameKana}</p>
-                  <div className="mt-2 text-sm">
+                  <div className="mt-1 text-xs">
                     <p>
                       {member.age}歳 / {member.height}cm
                     </p>
@@ -72,12 +72,12 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="divide-y rounded-lg border bg-white">
       {casts.map((member) => {
         const memberImage = member.image?.trim() ? member.image : FALLBACK_IMAGE
 
         return (
-          <div key={member.id} className="flex items-start gap-4 rounded-lg bg-white p-4 shadow">
+          <div key={member.id} className="flex items-center gap-3 p-2">
             <Link
               href={`/admin/cast/manage/${member.id}`}
               aria-label={`${member.name}の詳細`}
@@ -87,7 +87,7 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
               <SafeImage
                 src={memberImage}
                 alt={member.name}
-                className="aspect-[7/10] w-20 rounded object-cover"
+                className="aspect-[4/5] w-14 rounded object-cover"
               />
             </Link>
 
@@ -118,10 +118,6 @@ export function CastListView({ casts, view = 'grid' }: CastListViewProps) {
                   <Link href={`/admin/cast/manage/${member.id}?tab=performance`}>就業成績</Link>
                 </Button>
               </div>
-            </div>
-
-            <div className="shrink-0 text-sm text-gray-500">
-              {member.workStatus === '出勤' ? '出勤中' : '未出勤'}
             </div>
           </div>
         )

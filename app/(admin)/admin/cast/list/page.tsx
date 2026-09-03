@@ -60,7 +60,7 @@ export default function CastListPage() {
   const { currentStore } = useStore()
   const [allCasts, setAllCasts] = useState<Cast[]>([])
   const [view, setView] = useState<'grid' | 'list'>('grid')
-  const [workStatus, setWorkStatus] = useState('all')
+  const [employmentStatus, setEmploymentStatus] = useState('all')
   const [kanaFilter, setKanaFilter] = useState('全')
   const [nameSearch, setNameSearch] = useState('')
   const [loading, setLoading] = useState(true)
@@ -108,7 +108,8 @@ export default function CastListPage() {
   const filteredCasts = sortCastsByGojuon(
     allCasts.filter((cast) => {
       const matchesName = matchesCastNameSearch(cast, nameSearch)
-      const matchesWorkStatus = workStatus === 'all' || cast.workStatus === workStatus
+      const matchesWorkStatus =
+        employmentStatus === 'all' || cast.employmentStatus === employmentStatus
 
       return matchesName && matchesWorkStatus && matchesKanaFilter(cast.nameKana, kanaFilter)
     })
@@ -131,8 +132,8 @@ export default function CastListPage() {
           onFilterCharacter={handleFilterCharacter}
           nameSearch={nameSearch}
           onNameSearchChange={setNameSearch}
-          workStatus={workStatus}
-          onWorkStatusChange={setWorkStatus}
+          employmentStatus={employmentStatus}
+          onEmploymentStatusChange={setEmploymentStatus}
         />
       </div>
 

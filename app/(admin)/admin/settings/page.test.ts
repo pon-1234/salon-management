@@ -21,7 +21,7 @@ describe('settings hub navigation', () => {
     expect(source).not.toContain('console.log')
   })
 
-  it.each(['business-qa', 'faq', 'media-info', 'mutual-links', 'templates', 'newsletter'])(
+  it.each(['business-qa', 'faq', 'mutual-links', 'templates', 'newsletter'])(
     'does not expose the unavailable %s setting to staff',
     async (id) => {
       const source = await readSettingsPage()
@@ -29,6 +29,14 @@ describe('settings hub navigation', () => {
       expect(source).not.toContain(`id: '${id}'`)
     }
   )
+
+  it('routes media management to its persisted settings screen', async () => {
+    const source = await readSettingsPage()
+    const item = source.match(/id: 'media-info'[\s\S]*?\n    },/)?.[0]
+
+    expect(item).toContain("href: '/admin/settings/media-info'")
+    expect(item).toContain("status: 'available'")
+  })
 
   it('routes HP pricing to the persisted course and option sources', async () => {
     const source = await readSettingsPage()

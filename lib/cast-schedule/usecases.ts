@@ -346,7 +346,7 @@ export class CastScheduleUseCases {
           const endTimeStr = parseTimeFromISO(daySchedule.endTime)
 
           weekSchedule[dateStr] = {
-            type: '出勤予定',
+            type: daySchedule.status ?? '出勤予定',
             startTime: startTimeStr,
             endTime: endTimeStr,
             note: daySchedule.notes ?? undefined,
@@ -384,7 +384,7 @@ export class CastScheduleUseCases {
 
     entries.forEach((entry) => {
       Object.entries(entry.schedule).forEach(([dateStr, schedule], dayIndex) => {
-        if (schedule.type === '出勤予定' && schedule.startTime && schedule.endTime) {
+        if (!['未入力', '休日'].includes(schedule.type) && schedule.startTime && schedule.endTime) {
           // Count working day
           totalWorkingDays++
           dailyWorkingCasts[dayIndex]++
@@ -405,7 +405,7 @@ export class CastScheduleUseCases {
     })
 
     const workingCast = entries.filter((entry) =>
-      Object.values(entry.schedule).some((s) => s.type === '出勤予定')
+      Object.values(entry.schedule).some((s) => !['未入力', '休日'].includes(s.type))
     ).length
 
     const averageWorkingCast = dailyWorkingCasts.reduce((a, b) => a + b, 0) / 7

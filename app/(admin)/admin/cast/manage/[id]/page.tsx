@@ -12,14 +12,13 @@ import { CastDashboard } from '@/components/cast/cast-dashboard'
 import { Cast } from '@/lib/cast/types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   ArrowLeft,
   FileText,
   Settings,
   DollarSign,
-  CreditCard,
+  UserRound,
   Calculator,
   BarChart3,
   AlertTriangle,
@@ -36,7 +35,14 @@ import { CastLineRegistrationPanel } from '@/components/cast/cast-line-registrat
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useStore } from '@/contexts/store-context'
 
-const CAST_MANAGE_TABS = new Set(['overview', 'edit', 'sales', 'settlement', 'performance'])
+const CAST_MANAGE_TABS = new Set([
+  'overview',
+  'edit',
+  'profile',
+  'sales',
+  'settlement',
+  'performance',
+])
 
 function resolveCastManageTab(tab: string | null): string {
   if (tab === 'payment') return 'settlement'
@@ -207,7 +213,11 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
             {!isNewCast && cast && (
               <div className="mt-3 flex items-center gap-3">
                 <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
-                  {cast.workStatus}
+                  {cast.employmentStatus === 'provisional'
+                    ? '仮登録'
+                    : cast.employmentStatus === 'retired'
+                      ? '退店'
+                      : '在籍'}
                 </Badge>
                 <Badge variant="outline" className="bg-gray-50 text-gray-600">
                   {cast.type}
@@ -246,6 +256,10 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
                   <TabsTrigger value="edit" className="data-[state=active]:bg-emerald-50">
                     <Settings className="mr-2 h-4 w-4" />
                     プロフィール編集
+                  </TabsTrigger>
+                  <TabsTrigger value="profile" className="data-[state=active]:bg-emerald-50">
+                    <UserRound className="mr-2 h-4 w-4" />
+                    公開プロフィール
                   </TabsTrigger>
                   <TabsTrigger value="sales" className="data-[state=active]:bg-emerald-50">
                     <DollarSign className="mr-2 h-4 w-4" />
@@ -291,9 +305,9 @@ export default function CastManagePage({ params }: { params: Promise<{ id: strin
                       isSubmitting={isSaving}
                     />
                   </section>
+                </TabsContent>
 
-                  <Separator />
-
+                <TabsContent value="profile" className="space-y-4">
                   <section className="space-y-4">
                     <div>
                       <h2 className="text-xl font-semibold">公開プロフィール</h2>

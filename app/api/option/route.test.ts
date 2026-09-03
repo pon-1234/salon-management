@@ -51,6 +51,37 @@ vi.mock('@/lib/logger', () => ({
 }))
 
 describe('GET /api/option', () => {
+  it('hides the obsolete legacy free option from selectable results', async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce(null)
+    vi.mocked(db.optionPrice.findMany).mockResolvedValueOnce([
+      {
+        id: 'legacy-free-1',
+        storeId: 'store-1',
+        name: '旧システム無料系オプション #1',
+        price: 0,
+        visibility: 'public',
+        isActive: true,
+        archivedAt: null,
+        reservations: [],
+      },
+      {
+        id: 'current',
+        storeId: 'store-1',
+        name: '延長30分',
+        price: 3000,
+        visibility: 'public',
+        isActive: true,
+        archivedAt: null,
+        reservations: [],
+      },
+    ] as any)
+
+    const response = await GET(new NextRequest('http://localhost:3000/api/option?storeId=store-1'))
+    const data = await response.json()
+
+    expect(data.map((option: { name: string }) => option.name)).toEqual(['延長30分'])
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(db.$transaction).mockImplementation(async (cb: any) => cb(db as any))

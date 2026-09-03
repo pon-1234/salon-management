@@ -26,10 +26,34 @@ describe('buildScheduleBatchPayload', () => {
       {
         date: '2026-09-03',
         status: 'working',
+        workStatus: '出勤予定',
         startTime: '12:00',
         endTime: '20:00',
         isAvailable: false,
         note: '媒体用',
+      },
+    ])
+  })
+
+  it('preserves all six shared work states in the batch transport', () => {
+    expect(
+      buildScheduleBatchPayload({
+        '2026-09-04': {
+          date: '2026-09-04',
+          status: '遅刻',
+          startTime: '13:00',
+          endTime: '20:00',
+        },
+      })
+    ).toEqual([
+      {
+        date: '2026-09-04',
+        status: 'working',
+        workStatus: '遅刻',
+        startTime: '13:00',
+        endTime: '20:00',
+        isAvailable: undefined,
+        note: undefined,
       },
     ])
   })

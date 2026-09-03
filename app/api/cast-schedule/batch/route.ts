@@ -15,6 +15,7 @@ import { parseScheduleDateTimeInJst } from '@/lib/cast-schedule/date-time'
 
 const dateKeySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 const scheduleTimeSchema = z.string().regex(/^(?:(?:[01]\d|2[0-3]):[0-5]\d|24:00)$/)
+const workingStatusSchema = z.enum(['出勤予定', '出勤中', '早退', '遅刻'])
 
 const normalizeScheduleEndTime = (startTime: string, endTime: string): string =>
   endTime === '00:00' && startTime !== '00:00' ? '24:00' : endTime
@@ -27,6 +28,7 @@ const batchScheduleSchema = z.object({
       .object({
         date: dateKeySchema,
         status: z.enum(['working', 'holiday']),
+        workStatus: workingStatusSchema.optional(),
         startTime: scheduleTimeSchema.optional(),
         endTime: scheduleTimeSchema.optional(),
         isAvailable: z.boolean().optional(),
@@ -111,6 +113,7 @@ export async function POST(request: NextRequest) {
                 endTime,
                 isAvailable: schedule.isAvailable ?? true,
                 notes: schedule.note || null,
+                status: schedule.workStatus ?? '出勤予定',
               },
             })
             updatedSchedules.push(updated)
@@ -124,6 +127,7 @@ export async function POST(request: NextRequest) {
                 endTime,
                 isAvailable: schedule.isAvailable ?? true,
                 notes: schedule.note || null,
+                status: schedule.workStatus ?? '出勤予定',
               },
             })
             updatedSchedules.push(created)

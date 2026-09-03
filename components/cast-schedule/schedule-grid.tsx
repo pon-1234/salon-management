@@ -105,19 +105,28 @@ export function ScheduleGrid({
       )
     }
 
-    if (status.type === '出勤予定') {
+    if (status.type !== '未入力') {
+      const isAttentionStatus = status.type === '遅刻' || status.type === '早退'
       return (
         <div
           className={`group relative h-20 cursor-pointer rounded-lg border p-3 transition-all duration-200 hover:shadow-md ${
             isToday
               ? 'border-emerald-300 bg-emerald-50'
-              : 'border-emerald-200 bg-emerald-50 hover:border-emerald-300'
+              : isAttentionStatus
+                ? 'border-amber-200 bg-amber-50 hover:border-amber-300'
+                : 'border-emerald-200 bg-emerald-50 hover:border-emerald-300'
           }`}
           onClick={() => handleCellClick(entry, date)}
         >
           <div className="space-y-1">
-            <Badge className="bg-emerald-500 text-xs text-white hover:bg-emerald-600">
-              出勤予定
+            <Badge
+              className={
+                isAttentionStatus
+                  ? 'bg-amber-500 text-xs text-white hover:bg-amber-600'
+                  : 'bg-emerald-500 text-xs text-white hover:bg-emerald-600'
+              }
+            >
+              {status.type}
             </Badge>
             <Badge variant={status.isAvailable === false ? 'destructive' : 'outline'}>
               {status.isAvailable === false ? '予約受付停止' : '予約受付可能'}
@@ -158,17 +167,16 @@ export function ScheduleGrid({
 
   const renderListStatus = (status: CastScheduleStatus | undefined) => {
     const statusType = status?.type ?? '未入力'
-    const statusStyle =
-      statusType === '出勤予定'
-        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-        : statusType === '休日'
-          ? 'border-red-200 bg-red-50 text-red-700'
-          : 'border-gray-200 bg-gray-50 text-gray-500'
+    const statusStyle = !['未入力', '休日'].includes(statusType)
+      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+      : statusType === '休日'
+        ? 'border-red-200 bg-red-50 text-red-700'
+        : 'border-gray-200 bg-gray-50 text-gray-500'
 
     return (
       <div className={`rounded-md border px-2 py-2 text-center ${statusStyle}`}>
         <div className="text-xs font-medium">{statusType}</div>
-        {statusType === '出勤予定' && status?.startTime && status.endTime && (
+        {!['未入力', '休日'].includes(statusType) && status?.startTime && status.endTime && (
           <div className="mt-1 text-xs">
             {status.startTime}～{status.endTime}
           </div>
@@ -274,11 +282,11 @@ export function ScheduleGrid({
           <Card className="bg-white shadow-sm">
             <CardContent className="p-4">
               <div
-                className="grid min-w-[1160px] grid-cols-[240px_repeat(7,minmax(110px,1fr))] gap-4"
+                className="grid min-w-[1240px] grid-cols-[320px_repeat(7,minmax(110px,1fr))] gap-4"
                 role="row"
               >
                 <div
-                  className="sticky left-0 z-10 flex min-w-[240px] items-center justify-center bg-white"
+                  className="sticky left-0 z-10 flex min-w-[320px] items-center justify-center bg-white"
                   role="columnheader"
                 >
                   <span className="text-sm font-medium text-gray-600">キャスト</span>
@@ -289,6 +297,10 @@ export function ScheduleGrid({
                   const weekday = Number(formatInTimeZone(date, timeZone, 'i'))
                   const isWeekend = weekday === 6 || weekday === 7
                   const dateLabel = `${formatDisplayDate(date)}${formatDayOfWeek(date)}`
+                  const workingCount = entries.filter((entry) => {
+                    const type = entry.schedule[dateKey]?.type
+                    return type && !['未入力', '休日'].includes(type)
+                  }).length
 
                   return (
                     <div
@@ -310,6 +322,7 @@ export function ScheduleGrid({
                       >
                         <div className="text-lg font-semibold">{formatDisplayDate(date)}</div>
                         <div className="text-sm">{formatDayOfWeek(date)}</div>
+                        <div className="text-xs">出勤 {workingCount}名</div>
                       </button>
                     </div>
                   )
@@ -327,10 +340,10 @@ export function ScheduleGrid({
               className="bg-white shadow-sm transition-shadow duration-200 hover:shadow-md"
             >
               <CardContent className="p-4">
-                <div className="grid min-w-[1160px] grid-cols-[240px_repeat(7,minmax(110px,1fr))] items-center gap-4">
+                <div className="grid min-w-[1240px] grid-cols-[320px_repeat(7,minmax(110px,1fr))] items-center gap-4">
                   {/* Cast Info */}
                   <div
-                    className="sticky left-0 z-10 flex min-w-[240px] items-center gap-3 bg-white"
+                    className="sticky left-0 z-10 flex min-w-[320px] items-center gap-3 bg-white"
                     role="rowheader"
                   >
                     <Avatar className="h-12 w-12">

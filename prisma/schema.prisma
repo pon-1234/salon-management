@@ -474,6 +474,7 @@ model CastSchedule {
   endTime     DateTime
   isAvailable Boolean
   notes       String?
+  status      String   @default("出勤予定")
   cast        Cast     @relation(fields: [castId], references: [id])
 
   @@unique([castId, date])
@@ -621,6 +622,7 @@ model StoreSettings {
   mediaCommentOverwrite Boolean  @default(false)
   hourlyGuaranteeAmount Int      @default(0)
   marketingChannels     String[] @default(["店リピート", "電話", "紹介", "SNS", "WEB", "Heaven"])
+  mediaAccounts         Json     @default("[]")
   pointEarnRate         Decimal  @default(1.0)
   pointExpirationMonths Int      @default(12)
   pointMinUsage         Int      @default(100)

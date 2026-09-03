@@ -5,6 +5,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import type { Prisma } from '@prisma/client'
 import { requireAdmin } from '@/lib/auth/utils'
 import { handleApiError } from '@/lib/api/errors'
 import { SuccessResponses } from '@/lib/api/responses'
@@ -13,33 +14,52 @@ import { db } from '@/lib/db'
 import { resolveStoreId, ensureStoreId } from '@/lib/store/server'
 import { shouldUseMockFallbacks } from '@/lib/config/feature-flags'
 import { normalizeOptionalUrl } from '@/lib/settings/store-input'
+import { loadEnv } from '@/lib/config/env'
+import {
+  decryptMediaAccounts,
+  encryptMediaAccounts,
+  mergeMediaNamesIntoMarketingCatalog,
+} from '@/lib/settings/media-accounts'
 // Validation schema
-const storeSettingsSchema = z.object({
-  storeName: z.string().min(1),
-  address: z.string().min(1),
-  phone: z.string().min(1),
-  email: z.string().email(),
-  website: z.preprocess(normalizeOptionalUrl, z.string().url().optional()),
-  businessHours: z.string(),
-  description: z.string(),
-  zipCode: z.string(),
-  prefecture: z.string(),
-  city: z.string(),
-  building: z.string().optional(),
-  businessDays: z.string(),
-  lastOrder: z.string(),
-  parkingInfo: z.string().optional(),
-  welfareExpenseRate: z.coerce.number().min(0).max(100).optional(),
-  creditCardFeeRate: z.coerce
-    .number()
-    .refine((value) => value === 0 || value === 10)
-    .optional(),
-  mediaCommentOverwrite: z.boolean().optional(),
-  marketingChannels: z.array(z.string().trim().min(1)).min(1).optional(),
-  pointEarnRate: z.coerce.number().min(0).max(100).optional(),
-  pointExpirationMonths: z.coerce.number().min(1).max(36).optional(),
-  pointMinUsage: z.coerce.number().min(0).optional(),
+const mediaAccountSchema = z.object({
+  id: z.string().trim().min(1),
+  name: z.string().trim().min(1),
+  category: z.enum(['sales', 'recruitment']),
+  publicUrl: z.preprocess(normalizeOptionalUrl, z.string().url().optional()),
+  adminUrl: z.preprocess(normalizeOptionalUrl, z.string().url().optional()),
+  loginId: z.string().optional(),
+  password: z.string().optional(),
 })
+
+const storeSettingsSchema = z
+  .object({
+    storeName: z.string().min(1),
+    address: z.string().min(1),
+    phone: z.string().min(1),
+    email: z.string().email(),
+    website: z.preprocess(normalizeOptionalUrl, z.string().url().optional()),
+    businessHours: z.string(),
+    description: z.string(),
+    zipCode: z.string(),
+    prefecture: z.string(),
+    city: z.string(),
+    building: z.string().optional(),
+    businessDays: z.string(),
+    lastOrder: z.string(),
+    parkingInfo: z.string().optional(),
+    welfareExpenseRate: z.coerce.number().min(0).max(100).optional(),
+    creditCardFeeRate: z.coerce
+      .number()
+      .refine((value) => value === 0 || value === 10)
+      .optional(),
+    mediaCommentOverwrite: z.boolean().optional(),
+    marketingChannels: z.array(z.string().trim().min(1)).min(1).optional(),
+    pointEarnRate: z.coerce.number().min(0).max(100).optional(),
+    pointExpirationMonths: z.coerce.number().min(1).max(36).optional(),
+    pointMinUsage: z.coerce.number().min(0).optional(),
+    mediaAccounts: z.array(mediaAccountSchema).optional(),
+  })
+  .partial()
 
 const DEFAULT_MARKETING_CHANNELS = ['店リピート', '電話', '紹介', 'SNS', 'WEB', 'Heaven']
 
@@ -96,6 +116,10 @@ export async function GET(request: NextRequest) {
       pointEarnRate: Number(settings.pointEarnRate ?? 1),
       pointExpirationMonths: Number(settings.pointExpirationMonths ?? 12),
       pointMinUsage: Number(settings.pointMinUsage ?? 100),
+      mediaAccounts: decryptMediaAccounts(
+        (settings as typeof settings & { mediaAccounts?: unknown }).mediaAccounts,
+        loadEnv().nextAuth.secret
+      ),
     })
   } catch (error) {
     return handleApiError(error)
@@ -112,54 +136,69 @@ export async function PUT(request: NextRequest) {
 
     // Validate request body
     const validatedData = storeSettingsSchema.parse(body)
-    const welfareExpenseRate = validatedData.welfareExpenseRate ?? 10
-    const creditCardFeeRate = validatedData.creditCardFeeRate === 0 ? 0 : 10
-    const mediaCommentOverwrite = validatedData.mediaCommentOverwrite ?? false
-    const marketingChannels =
-      validatedData.marketingChannels?.map((channel) => channel.trim()).filter(Boolean) ??
-      DEFAULT_MARKETING_CHANNELS
-    const pointEarnRate = validatedData.pointEarnRate ?? 1
-    const pointExpirationMonths = validatedData.pointExpirationMonths ?? 12
-    const pointMinUsage = validatedData.pointMinUsage ?? 100
-
     // Find existing settings or create new one
     const existingSettings = await db.storeSettings.findUnique({ where: { storeId } })
+    const mediaAccounts = validatedData.mediaAccounts
+      ? encryptMediaAccounts(validatedData.mediaAccounts, loadEnv().nextAuth.secret)
+      : undefined
+    const baseChannels =
+      validatedData.marketingChannels?.map((channel) => channel.trim()).filter(Boolean) ??
+      (Array.isArray(existingSettings?.marketingChannels)
+        ? existingSettings.marketingChannels
+        : DEFAULT_MARKETING_CHANNELS)
+    const marketingChannels = validatedData.mediaAccounts
+      ? mergeMediaNamesIntoMarketingCatalog(baseChannels, validatedData.mediaAccounts)
+      : validatedData.marketingChannels
+        ? baseChannels
+        : undefined
+    const { mediaAccounts: _inputMediaAccounts, ...plainValidatedData } = validatedData
+    const updateData: Prisma.StoreSettingsUpdateInput = {
+      ...plainValidatedData,
+      ...(validatedData.website !== undefined ? { website: validatedData.website || '' } : {}),
+      ...(validatedData.building !== undefined ? { building: validatedData.building || '' } : {}),
+      ...(validatedData.parkingInfo !== undefined
+        ? { parkingInfo: validatedData.parkingInfo || '' }
+        : {}),
+      ...(marketingChannels ? { marketingChannels } : {}),
+      ...(mediaAccounts
+        ? { mediaAccounts: mediaAccounts as unknown as Prisma.InputJsonValue }
+        : {}),
+    }
 
     let updatedSettings
     if (existingSettings) {
       // Update existing settings
       updatedSettings = await db.storeSettings.update({
         where: { id: existingSettings.id, storeId },
-        data: {
-          ...validatedData,
-          website: validatedData.website || '',
-          building: validatedData.building || '',
-          parkingInfo: validatedData.parkingInfo || '',
-          welfareExpenseRate,
-          creditCardFeeRate,
-          mediaCommentOverwrite,
-          marketingChannels,
-          pointEarnRate,
-          pointExpirationMonths,
-          pointMinUsage,
-        },
+        data: updateData,
       })
     } else {
       // Create new settings
       updatedSettings = await db.storeSettings.create({
         data: {
           storeId,
-          ...validatedData,
+          storeName: validatedData.storeName ?? '',
+          address: validatedData.address ?? '',
+          phone: validatedData.phone ?? '',
+          email: validatedData.email ?? '',
+          businessHours: validatedData.businessHours ?? '',
+          description: validatedData.description ?? '',
+          zipCode: validatedData.zipCode ?? '',
+          prefecture: validatedData.prefecture ?? '',
+          city: validatedData.city ?? '',
+          businessDays: validatedData.businessDays ?? '',
+          lastOrder: validatedData.lastOrder ?? '',
           website: validatedData.website || '',
           building: validatedData.building || '',
           parkingInfo: validatedData.parkingInfo || '',
-          welfareExpenseRate,
-          creditCardFeeRate,
-          mediaCommentOverwrite,
-          marketingChannels,
-          pointEarnRate,
-          pointExpirationMonths,
-          pointMinUsage,
+          welfareExpenseRate: validatedData.welfareExpenseRate ?? 10,
+          creditCardFeeRate: validatedData.creditCardFeeRate === 0 ? 0 : 10,
+          mediaCommentOverwrite: validatedData.mediaCommentOverwrite ?? false,
+          marketingChannels: marketingChannels ?? DEFAULT_MARKETING_CHANNELS,
+          mediaAccounts: (mediaAccounts ?? []) as unknown as Prisma.InputJsonValue,
+          pointEarnRate: validatedData.pointEarnRate ?? 1,
+          pointExpirationMonths: validatedData.pointExpirationMonths ?? 12,
+          pointMinUsage: validatedData.pointMinUsage ?? 100,
         },
       })
     }
@@ -177,6 +216,10 @@ export async function PUT(request: NextRequest) {
       pointEarnRate: Number(updatedSettings.pointEarnRate ?? 1),
       pointExpirationMonths: Number(updatedSettings.pointExpirationMonths ?? 12),
       pointMinUsage: Number(updatedSettings.pointMinUsage ?? 100),
+      mediaAccounts: decryptMediaAccounts(
+        (updatedSettings as typeof updatedSettings & { mediaAccounts?: unknown }).mediaAccounts,
+        loadEnv().nextAuth.secret
+      ),
     })
   } catch (error) {
     return handleApiError(error)

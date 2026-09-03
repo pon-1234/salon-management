@@ -125,6 +125,7 @@ import {
   getCastAvailableOptions,
 } from '@/components/reservation/quick-booking.utils'
 import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
+import { useHotelOptions } from '@/components/reservation/use-hotel-options'
 
 const MAX_LINE_MESSAGE_LENGTH = 1000
 
@@ -206,6 +207,7 @@ export function ReservationDialog({
   const canViewFinancialDetails = hasPermission(session?.user?.permissions ?? [], 'analytics:read')
   const { coursePrices, courses, optionPrices, options } = usePricing(currentStore.id)
   const { areas, stations, loading: locationsLoading } = useLocations()
+  const hotelOptions = useHotelOptions(open, currentStore.id)
 
   const [modificationHistory, setModificationHistory] = useState<ModificationHistory[]>([])
   const [modificationAlerts, setModificationAlerts] = useState<ModificationAlert[]>([])
@@ -1865,6 +1867,7 @@ export function ReservationDialog({
                   optionNames={displayOptionNames}
                   canViewFinancialDetails={canViewFinancialDetails}
                   hotelName={formState.hotelName}
+                  hotelChoices={hotelOptions}
                   roomNumber={formState.roomNumber}
                   locationMemo={formState.locationMemo}
                   entrySending={entrySending}

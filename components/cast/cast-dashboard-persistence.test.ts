@@ -36,4 +36,11 @@ describe('cast dashboard persistence contract', () => {
     expect(dashboardSource).toContain('castId: cast.id')
     expect(dashboardSource).toContain('while (page.length === pageSize)')
   })
+
+  it('uses the same schedule editor and batch payload as the weekly schedule page', () => {
+    expect(dashboardSource).toContain("from '@/components/cast-schedule/schedule-edit-dialog'")
+    expect(dashboardSource).toContain("from '@/lib/cast-schedule/batch-payload'")
+    expect(dashboardSource).toContain("'/api/cast-schedule/batch'")
+    expect(dashboardSource).not.toContain("from '@/components/cast/schedule-edit-dialog'")
+  })
 })

@@ -4,6 +4,7 @@
  * @known_issues None
  */
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ScheduleEditDialog } from './schedule-edit-dialog'
 
@@ -157,7 +158,7 @@ describe('ScheduleEditDialog day templates', () => {
       />
     )
 
-    fireEvent.click(screen.getByRole('button', { name: '4週間をまとめて入力' }))
+    fireEvent.click(screen.getByRole('button', { name: '4週間をカレンダー入力' }))
 
     await waitFor(() =>
       expect(fetch).toHaveBeenCalledWith(
@@ -206,5 +207,79 @@ describe('ScheduleEditDialog day templates', () => {
     await waitFor(() =>
       expect(screen.getAllByRole('button', { name: '昼番を削除' })).toHaveLength(1)
     )
+  })
+
+  it('uses the same six work states as the cast profile schedule', async () => {
+    const user = userEvent.setup()
+    render(
+      <ScheduleEditDialog
+        open
+        onOpenChange={vi.fn()}
+        castName="明里"
+        castId="cast-1"
+        startDate={new Date('2026-08-10T00:00:00+09:00')}
+        initialSchedule={{}}
+        onSave={vi.fn()}
+      />
+    )
+
+    const firstCard = document.querySelector('[id^="schedule-edit-day-"]') as HTMLElement
+    await user.click(within(firstCard).getByRole('combobox', { name: '勤務状況' }))
+    for (const label of ['未入力', '出勤予定', '出勤中', '休日', '早退', '遅刻']) {
+      expect(await screen.findByRole('option', { name: label })).toBeInTheDocument()
+    }
+  })
+
+  it('renders four weeks as a calendar and resets that choice for another cast', async () => {
+    const { rerender } = render(
+      <ScheduleEditDialog
+        open
+        onOpenChange={vi.fn()}
+        castName="明里"
+        castId="cast-1"
+        startDate={new Date('2026-08-10T00:00:00+09:00')}
+        initialSchedule={{}}
+        onSave={vi.fn()}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: '4週間をカレンダー入力' }))
+    expect(await screen.findByRole('grid', { name: '4週間出勤カレンダー' })).toBeInTheDocument()
+
+    rerender(
+      <ScheduleEditDialog
+        open
+        onOpenChange={vi.fn()}
+        castName="楓"
+        castId="cast-2"
+        startDate={new Date('2026-08-10T00:00:00+09:00')}
+        initialSchedule={{}}
+        onSave={vi.fn()}
+      />
+    )
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '4週間をカレンダー入力' })).toHaveAttribute(
+        'aria-pressed',
+        'false'
+      )
+    )
+  })
+
+  it('creates a template from explicit start and end time selectors', () => {
+    render(
+      <ScheduleEditDialog
+        open
+        onOpenChange={vi.fn()}
+        castName="明里"
+        castId="cast-1"
+        startDate={new Date('2026-08-10T00:00:00+09:00')}
+        initialSchedule={{}}
+        onSave={vi.fn()}
+      />
+    )
+
+    expect(screen.getByRole('combobox', { name: 'テンプレート開始時間' })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'テンプレート終了時間' })).toBeInTheDocument()
   })
 })

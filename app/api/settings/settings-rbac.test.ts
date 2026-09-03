@@ -274,6 +274,53 @@ describe('settings route authorization', () => {
     )
   })
 
+  it('updates the marketing catalog without requiring legacy blank contact fields', async () => {
+    mocks.requireAdmin.mockResolvedValue(null)
+    mocks.storeSettingsFindUnique.mockResolvedValue({
+      id: 'settings-a',
+      storeId: 'store-a',
+      storeName: '',
+      address: '',
+      phone: '',
+      email: '',
+      website: '',
+      businessHours: '',
+      description: '',
+      zipCode: '',
+      prefecture: '',
+      city: '',
+      building: '',
+      businessDays: '',
+      lastOrder: '',
+      parkingInfo: '',
+      marketingChannels: ['電話'],
+      welfareExpenseRate: 10,
+      creditCardFeeRate: 10,
+      mediaCommentOverwrite: false,
+      mediaAccounts: [],
+    } as any)
+    mocks.storeSettingsUpdate.mockResolvedValue({
+      id: 'settings-a',
+      storeId: 'store-a',
+      marketingChannels: ['電話', 'Heaven'],
+      mediaAccounts: [],
+    } as any)
+
+    const response = await updateStore(
+      jsonRequest('/api/settings/store?storeId=store-a', {
+        marketingChannels: ['電話', 'Heaven'],
+      })
+    )
+
+    expect(response.status).toBe(200)
+    expect(mocks.storeSettingsUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'settings-a', storeId: 'store-a' },
+        data: expect.objectContaining({ marketingChannels: ['電話', 'Heaven'] }),
+      })
+    )
+  })
+
   it('does not write demo settings when production fallbacks are disabled', async () => {
     mocks.requireAdmin.mockResolvedValue(null)
     mocks.areaFindMany.mockResolvedValue([])

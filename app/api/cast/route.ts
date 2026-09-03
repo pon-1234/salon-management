@@ -203,15 +203,15 @@ async function designationTiersBelongToStore(
   selection: CastDesignationTierSelection,
   storeId: string
 ): Promise<boolean> {
-  const expectedKinds = new Map<string, 'other' | 'panel' | 'repeat'>()
+  const expectedKinds = new Map<string, ReadonlySet<string>>()
   if (selection.specialDesignationFeeId) {
-    expectedKinds.set(selection.specialDesignationFeeId, 'other')
+    expectedKinds.set(selection.specialDesignationFeeId, new Set(['other']))
   }
   if (selection.panelTakeHomeBonusId) {
-    expectedKinds.set(selection.panelTakeHomeBonusId, 'panel')
+    expectedKinds.set(selection.panelTakeHomeBonusId, new Set(['panel', 'free']))
   }
   if (selection.regularTakeHomeBonusId) {
-    expectedKinds.set(selection.regularTakeHomeBonusId, 'repeat')
+    expectedKinds.set(selection.regularTakeHomeBonusId, new Set(['repeat']))
   }
   if (expectedKinds.size === 0) {
     return true
@@ -228,7 +228,7 @@ async function designationTiersBelongToStore(
 
   return (
     tiers.length === expectedKinds.size &&
-    tiers.every((tier) => expectedKinds.get(tier.id) === tier.kind)
+    tiers.every((tier) => expectedKinds.get(tier.id)?.has(tier.kind))
   )
 }
 

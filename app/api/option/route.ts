@@ -21,6 +21,11 @@ import { toPublicOption } from '@/lib/pricing/public'
 
 const PRICING_PRIVATE_CAST_FIELDS = ['loginEmail', 'lineUserId', 'welfareExpenseRate']
 const OPTION_VISIBILITIES = ['public', 'internal'] as const
+const OBSOLETE_OPTION_NAMES = new Set(['旧システム無料系オプション #1'])
+
+function isObsoleteOption(option: { name?: string | null }): boolean {
+  return Boolean(option.name && OBSOLETE_OPTION_NAMES.has(option.name.trim()))
+}
 
 type OptionVisibility = (typeof OPTION_VISIBILITIES)[number]
 
@@ -309,7 +314,7 @@ export async function GET(request: NextRequest) {
         },
       })
 
-      if (!option) {
+      if (!option || isObsoleteOption(option)) {
         return NextResponse.json({ error: 'Option not found' }, { status: 404 })
       }
 
@@ -353,11 +358,13 @@ export async function GET(request: NextRequest) {
       ],
     })
 
+    const selectableOptions = options.filter((option) => !isObsoleteOption(option))
+
     if (isAdmin) {
-      return NextResponse.json(sanitizePricingResponse(options))
+      return NextResponse.json(sanitizePricingResponse(selectableOptions))
     }
 
-    return NextResponse.json(options.map(toPublicOption))
+    return NextResponse.json(selectableOptions.map(toPublicOption))
   } catch (error) {
     logger.error({ err: error }, 'Error fetching option data')
     if (isUnknownStoreError(error)) {

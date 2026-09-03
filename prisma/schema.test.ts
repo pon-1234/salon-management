@@ -52,6 +52,27 @@ describe('Prisma schema', () => {
     expect(migration).toContain('SET "employmentStatus" = \'active\'')
   })
 
+  it('persists the shared six-state schedule status and encrypted media accounts', () => {
+    expect(schemaContent).toMatch(
+      /model CastSchedule[\s\S]*status\s+String\s+@default\("出勤予定"\)/
+    )
+    expect(schemaContent).toMatch(
+      /model StoreSettings[\s\S]*mediaAccounts\s+Json\s+@default\("\[\]"\)/
+    )
+    const migration = readFileSync(
+      join(
+        process.cwd(),
+        'prisma',
+        'migrations',
+        '20260903090000_final_revision_schedule_and_media',
+        'migration.sql'
+      ),
+      'utf8'
+    )
+    expect(migration).toContain('ADD COLUMN "status" TEXT NOT NULL DEFAULT \'出勤予定\'')
+    expect(migration).toContain('ADD COLUMN "mediaAccounts" JSONB NOT NULL DEFAULT \'[]\'')
+  })
+
   it('links a cast special designation selection to the store master entry', () => {
     expect(schemaContent).toMatch(/specialDesignationFeeId\s+String\?/)
     expect(schemaContent).toContain('CastSpecialDesignationFee')

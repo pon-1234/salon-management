@@ -153,7 +153,6 @@ const PROFILE_TYPES = [
   'おっとり系',
 ]
 
-const WORK_STATUS_OPTIONS: Cast['workStatus'][] = ['出勤', '未出勤', '休日']
 const EMPLOYMENT_STATUS_OPTIONS: Array<{
   value: 'provisional' | 'active' | 'retired'
   label: string
@@ -301,7 +300,10 @@ export function CastForm({
     return options.sort((left, right) => left.sortOrder - right.sortOrder)
   }, [designationFees, formData.specialDesignationFee])
   const panelTakeHomeOptions = useMemo(
-    () => designationFees.filter((fee) => resolveDesignationKind(fee) === 'panel' && fee.price > 0),
+    () =>
+      designationFees.filter(
+        (fee) => ['panel', 'free'].includes(resolveDesignationKind(fee)) && fee.price > 0
+      ),
     [designationFees]
   )
   const regularTakeHomeOptions = useMemo(
@@ -512,12 +514,6 @@ export function CastForm({
 
   const handleSwitchChange = (name: string, checked: boolean) => {
     setFormData((prev) => ({ ...prev, [name]: checked }))
-  }
-
-  const handleWorkStatusChange = (value: string) => {
-    if (WORK_STATUS_OPTIONS.includes(value as Cast['workStatus'])) {
-      setFormData((prev) => ({ ...prev, workStatus: value as Cast['workStatus'] }))
-    }
   }
 
   const handleOptionChange = (optionId: string, checked: boolean) => {
@@ -909,21 +905,6 @@ export function CastForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={fieldId('workStatus')}>稼働ステータス</Label>
-            <Select value={formData.workStatus} onValueChange={handleWorkStatusChange}>
-              <SelectTrigger id={fieldId('workStatus')}>
-                <SelectValue placeholder="稼働ステータスを選択" />
-              </SelectTrigger>
-              <SelectContent>
-                {WORK_STATUS_OPTIONS.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {status}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
             <Label htmlFor={fieldId('employmentStatus')}>在籍ステータス</Label>
             <Select
               value={formData.employmentStatus}
@@ -1014,7 +995,9 @@ export function CastForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={fieldId('panelTakeHomeBonus')}>パネル指名手取UP</Label>
+            <Label htmlFor={fieldId('panelTakeHomeBonus')}>
+              パネル・おすすめ・フリー指名手取UP
+            </Label>
             <Select
               value={formData.panelTakeHomeBonusId || 'none'}
               onValueChange={(value) =>

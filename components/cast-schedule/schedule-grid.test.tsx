@@ -85,7 +85,8 @@ describe('ScheduleGrid', () => {
       expect(screen.getByTestId('schedule-scrollport')).toHaveClass('h-full', 'overflow-auto')
       expect(screen.getByTestId('schedule-scrollport')).not.toHaveClass('max-h-[calc(100vh-12rem)]')
       expect(dateHeader.closest('[data-testid="schedule-date-header"]')).toHaveClass('sticky')
-      expect(screen.getByRole('rowheader')).toHaveClass('min-w-[240px]')
+      expect(screen.getByRole('rowheader')).toHaveClass('min-w-[320px]')
+      expect(screen.getByRole('columnheader', { name: /08\/10/ })).toHaveTextContent('出勤 1名')
 
       fireEvent.click(dateHeader)
       expect(scrollIntoView).toHaveBeenCalled()

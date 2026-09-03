@@ -24,7 +24,11 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Calendar, Save, X, Clock, User } from 'lucide-react'
-import { CastScheduleStatus } from '@/lib/cast-schedule/old-types'
+import {
+  SCHEDULE_WORK_STATUSES,
+  type CastScheduleStatus,
+  type ScheduleWorkStatus,
+} from '@/lib/cast-schedule/old-types'
 import { getDateRange } from '@/lib/cast-schedule/utils'
 import { scheduleEditDayCount, type ScheduleEditSpan } from '@/lib/cast-schedule/edit-span'
 import { useStore } from '@/contexts/store-context'
@@ -45,7 +49,7 @@ import {
 
 export interface DaySchedule {
   date: string // yyyy-mm-dd format
-  status: '休日' | '出勤予定' | '未入力'
+  status: ScheduleWorkStatus
   startTime?: string // HH:mm format
   endTime?: string // HH:mm format
   note?: string
@@ -63,7 +67,7 @@ interface ScheduleEditDialogProps {
   castId: string
   initialSchedule: { [date: string]: CastScheduleStatus }
   startDate: Date
-  onSave: (castId: string, schedule: WeeklyScheduleEdit) => void
+  onSave: (castId: string, schedule: WeeklyScheduleEdit) => void | Promise<void>
   focusDate?: string | null
 }
 
@@ -84,6 +88,8 @@ export function ScheduleEditDialog({
     mergeCastShiftTemplates(null)
   )
   const [newTemplateName, setNewTemplateName] = useState('')
+  const [templateStartTime, setTemplateStartTime] = useState('')
+  const [templateEndTime, setTemplateEndTime] = useState('')
   const [editSpan, setEditSpan] = useState<ScheduleEditSpan>('week')
   const [schedule, setSchedule] = useState<WeeklyScheduleEdit>(() => {
     const converted: WeeklyScheduleEdit = {}
@@ -104,11 +110,39 @@ export function ScheduleEditDialog({
   const weekStart = useMemo(() => startOfWeek(startDate, { weekStartsOn: 1 }), [startDate]) // Monday start
   const visibleDays = getDateRange(weekStart, scheduleEditDayCount(editSpan))
 
-  const statusOptions: { value: '休日' | '出勤予定' | '未入力'; label: string; color: string }[] = [
-    { value: '未入力', label: '未入力', color: 'bg-gray-100 text-gray-600' },
-    { value: '出勤予定', label: '出勤予定', color: 'bg-green-100 text-green-700' },
-    { value: '休日', label: '休日', color: 'bg-red-100 text-red-700' },
-  ]
+  const statusOptions: { value: ScheduleWorkStatus; label: string; color: string }[] =
+    SCHEDULE_WORK_STATUSES.map((value) => ({
+      value,
+      label: value,
+      color:
+        value === '休日'
+          ? 'bg-red-100 text-red-700'
+          : value === '未入力'
+            ? 'bg-gray-100 text-gray-600'
+            : value === '遅刻' || value === '早退'
+              ? 'bg-amber-100 text-amber-700'
+              : 'bg-green-100 text-green-700',
+    }))
+
+  useEffect(() => {
+    if (!open) return
+    const converted: WeeklyScheduleEdit = {}
+    Object.entries(initialSchedule).forEach(([date, status]) => {
+      converted[date] = {
+        date,
+        status: status.type,
+        startTime: status.startTime,
+        endTime: status.endTime,
+        note: status.note,
+        isAvailable: status.isAvailable !== false,
+      }
+    })
+    setSchedule(converted)
+    setEditSpan('week')
+    setNewTemplateName('')
+    setTemplateStartTime('')
+    setTemplateEndTime('')
+  }, [castId, open, initialSchedule])
 
   useEffect(() => {
     let ignore = false
@@ -223,7 +257,7 @@ export function ScheduleEditDialog({
             if (record) {
               next[dateKey] = {
                 date: dateKey,
-                status: '出勤予定',
+                status: (record.status as ScheduleWorkStatus | undefined) ?? '出勤予定',
                 startTime: formatInTimeZone(new Date(record.startTime), timeZone, 'HH:mm'),
                 endTime: formatInTimeZone(new Date(record.endTime), timeZone, 'HH:mm'),
                 note: record.notes ?? undefined,
@@ -280,10 +314,14 @@ export function ScheduleEditDialog({
   }
 
   const handleSave = () => {
-    const validationError = findScheduleValidationError(schedule, ['出勤予定'], (dateKey) => {
-      const dateInJst = zonedTimeToUtc(`${dateKey}T00:00:00`, timeZone)
-      return formatInTimeZone(dateInJst, timeZone, 'M月d日(E)', { locale: ja })
-    })
+    const validationError = findScheduleValidationError(
+      schedule,
+      ['出勤予定', '出勤中', '早退', '遅刻'],
+      (dateKey) => {
+        const dateInJst = zonedTimeToUtc(`${dateKey}T00:00:00`, timeZone)
+        return formatInTimeZone(dateInJst, timeZone, 'M月d日(E)', { locale: ja })
+      }
+    )
     if (validationError) {
       toast({
         title: '入力内容を確認してください',
@@ -307,7 +345,7 @@ export function ScheduleEditDialog({
     )
   }
 
-  const getStatusColor = (status: '休日' | '出勤予定' | '未入力') => {
+  const getStatusColor = (status: ScheduleWorkStatus) => {
     return statusOptions.find((opt) => opt.value === status)?.color || 'bg-gray-100 text-gray-600'
   }
 
@@ -352,13 +390,10 @@ export function ScheduleEditDialog({
   }
 
   const saveCurrentDayAsTemplate = () => {
-    const firstWorkDay = visibleDays
-      .map((date) => getDaySchedule(format(date, 'yyyy-MM-dd')))
-      .find((day) => day.status === '出勤予定' && day.startTime && day.endTime)
-    if (!firstWorkDay?.startTime || !firstWorkDay.endTime || !newTemplateName.trim()) {
+    if (!templateStartTime || !templateEndTime || !newTemplateName.trim()) {
       toast({
         title: 'テンプレート名と出勤時間を確認してください',
-        description: '出勤予定の日付がある状態で、テンプレート名を入力してください。',
+        description: 'テンプレート名と開始・終了時間を入力してください。',
         variant: 'destructive',
       })
       return
@@ -377,13 +412,15 @@ export function ScheduleEditDialog({
       {
         id: `custom-${Date.now()}`,
         name: newTemplateName.trim(),
-        startTime: firstWorkDay.startTime,
-        endTime: firstWorkDay.endTime,
+        startTime: templateStartTime,
+        endTime: templateEndTime,
         isHoliday: false,
       },
       createHolidayTemplate(),
     ]
     setNewTemplateName('')
+    setTemplateStartTime('')
+    setTemplateEndTime('')
     void persistTemplates(next)
   }
 
@@ -437,7 +474,7 @@ export function ScheduleEditDialog({
             aria-pressed={editSpan === 'fourWeeks'}
             onClick={() => setEditSpan((span) => (span === 'week' ? 'fourWeeks' : 'week'))}
           >
-            4週間をまとめて入力
+            4週間をカレンダー入力
           </Button>
           <div className="flex flex-wrap items-end gap-2">
             <div className="min-w-[12rem] flex-1">
@@ -449,8 +486,46 @@ export function ScheduleEditDialog({
                 placeholder="例: 昼勤 12:00-22:00"
               />
             </div>
+            <div>
+              <Label htmlFor="shift-template-start-time">テンプレート開始時間</Label>
+              <Select value={templateStartTime} onValueChange={setTemplateStartTime}>
+                <SelectTrigger
+                  id="shift-template-start-time"
+                  aria-label="テンプレート開始時間"
+                  className="w-40"
+                >
+                  <SelectValue placeholder="開始時間" />
+                </SelectTrigger>
+                <SelectContent>
+                  {timeOptions.map((time) => (
+                    <SelectItem key={`template-start-${time}`} value={time}>
+                      {time}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="shift-template-end-time">テンプレート終了時間</Label>
+              <Select value={templateEndTime} onValueChange={setTemplateEndTime}>
+                <SelectTrigger
+                  id="shift-template-end-time"
+                  aria-label="テンプレート終了時間"
+                  className="w-40"
+                >
+                  <SelectValue placeholder="終了時間" />
+                </SelectTrigger>
+                <SelectContent>
+                  {timeOptions.map((time) => (
+                    <SelectItem key={`template-end-${time}`} value={time}>
+                      {time}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Button type="button" variant="secondary" size="sm" onClick={saveCurrentDayAsTemplate}>
-              表示中の出勤時間をテンプレート保存
+              この時間をテンプレート保存
             </Button>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -478,11 +553,19 @@ export function ScheduleEditDialog({
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div
+          className={
+            editSpan === 'fourWeeks'
+              ? 'grid grid-cols-1 gap-3 md:grid-cols-4 xl:grid-cols-7'
+              : 'space-y-4'
+          }
+          role={editSpan === 'fourWeeks' ? 'grid' : undefined}
+          aria-label={editSpan === 'fourWeeks' ? '4週間出勤カレンダー' : undefined}
+        >
           {visibleDays.map((date) => {
             const dateKey = format(date, 'yyyy-MM-dd')
             const daySchedule = getDaySchedule(dateKey)
-            const isWorkDay = daySchedule.status === '出勤予定'
+            const isWorkDay = !['未入力', '休日'].includes(daySchedule.status)
 
             return (
               <Card
@@ -519,14 +602,23 @@ export function ScheduleEditDialog({
                 <CardContent className="space-y-4">
                   {/* ステータス選択 */}
                   <div>
-                    <Label className="mb-2 block text-sm font-medium">勤務状況</Label>
+                    <Label
+                      htmlFor={`schedule-status-${dateKey}`}
+                      className="mb-2 block text-sm font-medium"
+                    >
+                      勤務状況
+                    </Label>
                     <Select
                       value={daySchedule.status}
-                      onValueChange={(value: '休日' | '出勤予定' | '未入力') =>
+                      onValueChange={(value: ScheduleWorkStatus) =>
                         handleScheduleChange(dateKey, 'status', value)
                       }
                     >
-                      <SelectTrigger className="w-48">
+                      <SelectTrigger
+                        id={`schedule-status-${dateKey}`}
+                        aria-label="勤務状況"
+                        className="w-48"
+                      >
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -619,7 +711,7 @@ export function ScheduleEditDialog({
 
                   {/* 備考 */}
                   <div>
-                    <Label className="mb-2 block text-sm font-medium">備考</Label>
+                    <Label className="mb-2 block text-sm font-medium">媒体用テキスト・備考</Label>
                     <Textarea
                       value={daySchedule.note || ''}
                       onChange={(e) => handleScheduleChange(dateKey, 'note', e.target.value)}
@@ -633,7 +725,7 @@ export function ScheduleEditDialog({
           })}
         </div>
 
-        <div className="flex justify-end gap-4 border-t pt-4">
+        <div className="sticky bottom-0 z-30 flex justify-end gap-4 border-t bg-background py-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             <X className="mr-2 h-4 w-4" />
             キャンセル

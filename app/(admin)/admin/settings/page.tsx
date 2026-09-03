@@ -25,6 +25,7 @@ import {
   BookOpen,
   Receipt,
   Coins,
+  Globe2,
 } from 'lucide-react'
 
 interface SettingItem {
@@ -41,6 +42,15 @@ export default function SettingsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 
   const settingsItems: SettingItem[] = [
+    {
+      id: 'media-info',
+      title: '媒体・ログイン情報',
+      description: '営業媒体と求人媒体のURL・ログイン情報を一元管理',
+      icon: <Globe2 className="h-5 w-5" />,
+      status: 'available',
+      category: 'コンテンツ管理',
+      href: '/admin/settings/media-info',
+    },
     {
       id: 'store-info',
       title: '店舗情報',
@@ -142,8 +152,8 @@ export default function SettingsPage() {
     },
     {
       id: 'designation-fees',
-      title: '指名料設定',
-      description: 'フリー・リピート指名などの指名料と売上配分を管理',
+      title: '指名料・手取UP設定',
+      description: 'ブロンズ～ブラックの特別指名料とパネル・リピートの手取UPを管理',
       icon: <Receipt className="h-5 w-5" />,
       status: 'available',
       category: 'サービス管理',

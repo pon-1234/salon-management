@@ -14,15 +14,18 @@ const actionsSource = readFileSync(
 )
 
 describe('CastListPage filters', () => {
-  it('uses the real work-status values and removes the no-op filter action', () => {
+  it('filters by employment lifecycle instead of mixing it with daily attendance', () => {
     expect(actionsSource).toContain('<SelectItem value="all">すべて</SelectItem>')
-    expect(actionsSource).toContain('<SelectItem value="出勤">出勤</SelectItem>')
-    expect(actionsSource).toContain('<SelectItem value="未出勤">未出勤</SelectItem>')
-    expect(actionsSource).toContain('<SelectItem value="休日">休日</SelectItem>')
+    expect(actionsSource).toContain('<SelectItem value="provisional">仮登録</SelectItem>')
+    expect(actionsSource).toContain('<SelectItem value="active">在籍</SelectItem>')
+    expect(actionsSource).toContain('<SelectItem value="retired">退店</SelectItem>')
+    expect(actionsSource).not.toContain('<SelectItem value="出勤">出勤</SelectItem>')
     expect(actionsSource).not.toContain('就業中(公開)')
     expect(actionsSource).not.toContain('onFilter: () => void')
     expect(pageSource).not.toContain('onFilter={handleFilter}')
-    expect(pageSource).toContain("workStatus === 'all' || cast.workStatus === workStatus")
+    expect(pageSource).toContain(
+      "employmentStatus === 'all' || cast.employmentStatus === employmentStatus"
+    )
   })
 
   it('loads all cast pages before applying name and kana filters', () => {
@@ -40,5 +43,16 @@ describe('CastListPage filters', () => {
     expect(pageSource).toContain('sticky top-0 z-20')
     expect(pageSource).toContain('<CastListViewToggle')
     expect(pageSource).toContain('<CastListActionButtons')
+  })
+
+  it('uses a dense list viewport for operational review', () => {
+    const listSource = readFileSync(
+      join(process.cwd(), 'components', 'cast', 'cast-list-view.tsx'),
+      'utf8'
+    )
+
+    expect(listSource).toContain('2xl:grid-cols-8')
+    expect(listSource).toContain('gap-2')
+    expect(listSource).toContain('divide-y')
   })
 })

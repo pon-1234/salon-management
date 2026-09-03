@@ -47,7 +47,7 @@ export default function HotelInfoPage() {
 
   const [newHotel, setNewHotel] = useState<Partial<Hotel>>({
     hotelName: '',
-    area: '',
+    area: null,
     station: '',
     roomCount: null,
     hourlyRate: null,
@@ -93,7 +93,7 @@ export default function HotelInfoPage() {
   const resetHotelForm = () => {
     setNewHotel({
       hotelName: '',
-      area: '',
+      area: null,
       station: '',
       roomCount: null,
       hourlyRate: null,
@@ -110,7 +110,7 @@ export default function HotelInfoPage() {
   }
 
   const openEditForm = (hotel: Hotel) => {
-    setNewHotel({ ...hotel, amenities: [...hotel.amenities] })
+    setNewHotel({ ...hotel, area: null, amenities: [...hotel.amenities] })
     setEditingHotelId(hotel.id)
     setShowAddForm(true)
   }
@@ -127,7 +127,11 @@ export default function HotelInfoPage() {
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify(editingHotelId ? { ...newHotel, id: editingHotelId } : newHotel),
+            body: JSON.stringify(
+              editingHotelId
+                ? { ...newHotel, area: null, id: editingHotelId }
+                : { ...newHotel, area: null }
+            ),
           }
         )
 
@@ -269,9 +273,6 @@ export default function HotelInfoPage() {
                         <div className="flex-1">
                           <div className="mb-2 flex items-center gap-3">
                             <h3 className="text-lg font-semibold">{hotel.hotelName}</h3>
-                            {hotel.area && (
-                              <Badge variant="outline">旧表示グループ: {hotel.area}</Badge>
-                            )}
                             {hotel.station && (
                               <Badge variant="outline">最寄り駅: {hotel.station}</Badge>
                             )}
@@ -367,15 +368,6 @@ export default function HotelInfoPage() {
                         value={newHotel.hotelName || ''}
                         onChange={(e) => setNewHotel({ ...newHotel, hotelName: e.target.value })}
                         placeholder="ホテル名を入力"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="area">エリア（旧データ表示用）</Label>
-                      <Input
-                        id="area"
-                        value={newHotel.area || ''}
-                        onChange={(e) => setNewHotel({ ...newHotel, area: e.target.value })}
-                        placeholder="池袋、新宿など"
                       />
                     </div>
                     <div className="space-y-2">

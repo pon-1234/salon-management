@@ -20,8 +20,8 @@ interface CastListActionButtonsProps {
   onFilterCharacter: (char: string) => void
   nameSearch: string
   onNameSearchChange: (value: string) => void
-  workStatus: string
-  onWorkStatusChange: (value: string) => void
+  employmentStatus: string
+  onEmploymentStatusChange: (value: string) => void
 }
 
 export function CastListActionButtons({
@@ -29,8 +29,8 @@ export function CastListActionButtons({
   onFilterCharacter,
   nameSearch,
   onNameSearchChange,
-  workStatus,
-  onWorkStatusChange,
+  employmentStatus,
+  onEmploymentStatusChange,
 }: CastListActionButtonsProps) {
   const characters = ['全', 'あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ', 'その他']
 
@@ -50,15 +50,15 @@ export function CastListActionButtons({
       </div>
 
       <div className="flex items-center gap-4">
-        <Select value={workStatus} onValueChange={onWorkStatusChange}>
+        <Select value={employmentStatus} onValueChange={onEmploymentStatusChange}>
           <SelectTrigger className="w-[200px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">すべて</SelectItem>
-            <SelectItem value="出勤">出勤</SelectItem>
-            <SelectItem value="未出勤">未出勤</SelectItem>
-            <SelectItem value="休日">休日</SelectItem>
+            <SelectItem value="provisional">仮登録</SelectItem>
+            <SelectItem value="active">在籍</SelectItem>
+            <SelectItem value="retired">退店</SelectItem>
           </SelectContent>
         </Select>
 

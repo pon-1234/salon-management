@@ -46,9 +46,17 @@ import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 const KIND_LABELS: Record<DesignationFeeKind, string> = {
   free: 'フリー',
   repeat: 'リピート指名',
-  panel: 'パネル',
+  panel: 'パネル・おすすめ',
   other: 'その他',
 }
+
+const STANDARD_RANK_PRESETS = [
+  { name: 'ブロンズ', price: 1000 },
+  { name: 'シルバー', price: 2000 },
+  { name: 'ゴールド', price: 3000 },
+  { name: 'プラチナ', price: 4000 },
+  { name: 'ブラック', price: 5000 },
+] as const
 
 export default function DesignationFeesPage() {
   const { toast } = useToast()
@@ -236,18 +244,55 @@ export default function DesignationFeesPage() {
     [currentStore.id, toast]
   )
 
+  const addStandardRanks = useCallback(async () => {
+    const existingNames = new Set(fees.map(({ name }) => name))
+    const missing = STANDARD_RANK_PRESETS.filter(({ name }) => !existingNames.has(name))
+    if (missing.length === 0) {
+      toast({ title: '標準ランクは登録済みです' })
+      return
+    }
+    try {
+      await Promise.all(
+        missing.map((preset, index) =>
+          createDesignationFee(
+            {
+              ...preset,
+              storeShare: 0,
+              castShare: preset.price,
+              description: 'キャスト別の特別指名料ランク',
+              sortOrder: fees.length + index + 1,
+              isActive: true,
+              kind: 'other',
+            },
+            currentStore.id
+          )
+        )
+      )
+      await loadFees()
+      toast({ title: '標準ランクを追加しました' })
+    } catch (error) {
+      console.error('Failed to add standard designation ranks:', error)
+      toast({ title: '標準ランクを追加できませんでした', variant: 'destructive' })
+    }
+  }, [currentStore.id, fees, loadFees, toast])
+
   return (
     <div className="flex min-h-screen flex-col">
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 pb-12 pt-8">
         <PageHeader
-          title="指名料設定"
-          description="フリーやリピート指名などの料金と種別、キャスト・店舗それぞれの売上配分を設定できます。"
+          title="指名料・手取UP設定"
+          description="特別指名料ランク、おすすめ・フリー・パネル指名、リピート指名の手取UPを一元管理します。"
           backHref="/admin/settings"
           backIcon={ArrowLeft}
           actions={
-            <Button onClick={openCreateDialog}>
-              <Plus className="mr-2 h-4 w-4" /> 新規項目追加
-            </Button>
+            <>
+              <Button variant="outline" onClick={() => void addStandardRanks()}>
+                標準ランクを一括追加
+              </Button>
+              <Button onClick={openCreateDialog}>
+                <Plus className="mr-2 h-4 w-4" /> 新規項目追加
+              </Button>
+            </>
           }
         />
 

@@ -18,16 +18,16 @@ import { ReservationDialog } from '@/components/reservation/reservation-dialog'
 import { ReservationData, Reservation, ReservationSavePayload } from '@/lib/types/reservation'
 import { getAllReservations } from '@/lib/reservation/data'
 import { ReservationRepositoryImpl } from '@/lib/reservation/repository-impl'
-import { format, addDays, startOfDay } from 'date-fns'
+import { format, addDays, startOfWeek } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { useToast } from '@/hooks/use-toast'
 import {
   ScheduleEditDialog,
-  WeeklySchedule,
-  WorkStatus,
-} from '@/components/cast/schedule-edit-dialog'
+  type WeeklyScheduleEdit,
+} from '@/components/cast-schedule/schedule-edit-dialog'
+import type { CastScheduleStatus, ScheduleWorkStatus } from '@/lib/cast-schedule/old-types'
+import { buildScheduleBatchPayload } from '@/lib/cast-schedule/batch-payload'
 import { useStore } from '@/contexts/store-context'
-import { buildStoreScopedEndpoint } from '@/lib/store/endpoints'
 import { mapReservationToReservationData } from '@/lib/reservation/transformers'
 interface CastDashboardProps {
   cast: Cast
@@ -40,7 +40,8 @@ export function CastDashboard({ cast, onUpdate, onRequestEdit }: CastDashboardPr
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
   const [scheduleMap, setScheduleMap] = useState<Record<string, CastSchedule>>({})
-  const weekStart = useMemo(() => startOfDay(new Date()), [])
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false)
+  const weekStart = useMemo(() => startOfWeek(new Date(), { weekStartsOn: 1 }), [])
   const weekEnd = useMemo(() => addDays(weekStart, 6), [weekStart])
   const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
@@ -149,6 +150,8 @@ export function CastDashboard({ cast, onUpdate, onRequestEdit }: CastDashboardPr
             startTime: new Date(item.startTime),
             endTime: new Date(item.endTime),
             isAvailable: item.isAvailable,
+            note: item.notes ?? undefined,
+            status: item.status ?? '出勤予定',
           }
         })
       }
@@ -168,97 +171,20 @@ export function CastDashboard({ cast, onUpdate, onRequestEdit }: CastDashboardPr
     fetchSchedule()
   }, [fetchSchedule])
 
-  const dialogInitialSchedule = useMemo(() => {
-    const initial: WeeklySchedule = {}
-    weekDays.forEach((date) => {
-      const key = format(date, 'yyyy-MM-dd')
-      const record = scheduleMap[key]
-      if (record) {
-        const status: WorkStatus = record.isAvailable === false ? '休日' : '出勤予定'
-        initial[key] = {
-          date: key,
-          status,
-          startTime: format(record.startTime, 'HH:mm'),
-          endTime: format(record.endTime, 'HH:mm'),
-          isAvailableForBooking: record.isAvailable ?? true,
-        }
-      }
-    })
-    return initial
-  }, [scheduleMap, weekDays])
-
   const handleScheduleSave = useCallback(
-    async (updated: WeeklySchedule) => {
+    async (_castId: string, updated: WeeklyScheduleEdit) => {
       try {
-        const operations: Promise<Response>[] = []
-        const activeStatuses: WorkStatus[] = ['出勤予定', '出勤中', '早退', '遅刻']
-
-        for (const [dateKey, daySchedule] of Object.entries(updated)) {
-          const existing = scheduleMap[dateKey]
-          const shouldPersist = activeStatuses.includes(daySchedule.status)
-
-          if (!shouldPersist) {
-            if (existing?.id) {
-              operations.push(
-                fetch(
-                  buildStoreScopedEndpoint(
-                    `/api/cast-schedule?id=${encodeURIComponent(existing.id)}`,
-                    currentStore.id
-                  ),
-                  {
-                    method: 'DELETE',
-                  }
-                )
-              )
-            }
-            continue
-          }
-
-          if (!daySchedule.startTime || !daySchedule.endTime) {
-            throw new Error('勤務予定の時間を入力してください')
-          }
-
-          const startDateTime = new Date(`${dateKey}T${daySchedule.startTime}:00`)
-          const endDateTime = new Date(`${dateKey}T${daySchedule.endTime}:00`)
-          const payload = {
-            startTime: startDateTime.toISOString(),
-            endTime: endDateTime.toISOString(),
-            isAvailable: daySchedule.isAvailableForBooking ?? true,
-          }
-
-          if (existing?.id) {
-            operations.push(
-              fetch(buildStoreScopedEndpoint('/api/cast-schedule', currentStore.id), {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  id: existing.id,
-                  ...payload,
-                }),
-              })
-            )
-          } else {
-            operations.push(
-              fetch(buildStoreScopedEndpoint('/api/cast-schedule', currentStore.id), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  castId: cast.id,
-                  date: startDateTime.toISOString(),
-                  ...payload,
-                }),
-              })
-            )
-          }
-        }
-
-        if (operations.length > 0) {
-          const responses = await Promise.all(operations)
-          const failed = responses.find((res) => !res.ok)
-          if (failed) {
-            throw new Error('スケジュールの更新に失敗しました')
-          }
-        }
+        const response = await fetch('/api/cast-schedule/batch', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            castId: cast.id,
+            storeId: currentStore.id,
+            schedules: buildScheduleBatchPayload(updated),
+          }),
+        })
+        if (!response.ok) throw new Error('スケジュールの更新に失敗しました')
 
         await fetchSchedule()
 
@@ -275,7 +201,7 @@ export function CastDashboard({ cast, onUpdate, onRequestEdit }: CastDashboardPr
         throw error
       }
     },
-    [cast.id, currentStore.id, fetchSchedule, scheduleMap, toast]
+    [cast.id, currentStore.id, fetchSchedule, toast]
   )
 
   const scheduleDisplay = useMemo(() => {
@@ -303,24 +229,21 @@ export function CastDashboard({ cast, onUpdate, onRequestEdit }: CastDashboardPr
     })
   }, [scheduleMap, weekDays])
 
-  const initialWeeklySchedule = useMemo<WeeklySchedule>(() => {
-    const schedule: WeeklySchedule = {}
+  const initialWeeklySchedule = useMemo<Record<string, CastScheduleStatus>>(() => {
+    const schedule: Record<string, CastScheduleStatus> = {}
     weekDays.forEach((date) => {
       const key = format(date, 'yyyy-MM-dd')
       const record = scheduleMap[key]
       if (!record) return
 
-      const status =
-        (record.status as WorkStatus | undefined) ??
-        (record.isAvailable !== false ? '出勤予定' : '休日')
+      const status = (record.status as ScheduleWorkStatus | undefined) ?? '出勤予定'
 
       schedule[key] = {
-        date: key,
-        status,
+        type: status,
         startTime: record.startTime ? format(record.startTime, 'HH:mm') : undefined,
         endTime: record.endTime ? format(record.endTime, 'HH:mm') : undefined,
         note: record.note,
-        isAvailableForBooking: record.isAvailable ?? true,
+        isAvailable: record.isAvailable ?? true,
       }
     })
     return schedule
@@ -471,12 +394,10 @@ export function CastDashboard({ cast, onUpdate, onRequestEdit }: CastDashboardPr
                 <Clock className="h-5 w-5" />
                 今週のスケジュール
               </CardTitle>
-              <ScheduleEditDialog
-                castName={cast.name}
-                initialSchedule={initialWeeklySchedule}
-                startDate={weekStart}
-                onSave={handleScheduleSave}
-              />
+              <Button variant="outline" size="sm" onClick={() => setScheduleDialogOpen(true)}>
+                <Edit className="mr-2 h-4 w-4" />
+                編集
+              </Button>
             </div>
           </CardHeader>
           <CardContent>
@@ -512,6 +433,15 @@ export function CastDashboard({ cast, onUpdate, onRequestEdit }: CastDashboardPr
             </div>
           </CardContent>
         </Card>
+        <ScheduleEditDialog
+          open={scheduleDialogOpen}
+          onOpenChange={setScheduleDialogOpen}
+          castName={cast.name}
+          castId={cast.id}
+          initialSchedule={initialWeeklySchedule}
+          startDate={weekStart}
+          onSave={handleScheduleSave}
+        />
 
         {/* 予約状況 */}
         <Card>

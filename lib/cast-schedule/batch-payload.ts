@@ -3,9 +3,11 @@
  * @related_to   WeeklySchedulePage sends only explicit edits to the batch schedule API
  * @known_issues None
  */
+import type { ScheduleWorkStatus } from './old-types'
+
 type EditableDay = {
   date?: string
-  status: '休日' | '出勤予定' | '未入力'
+  status: ScheduleWorkStatus
   startTime?: string
   endTime?: string
   isAvailable?: boolean
@@ -17,6 +19,7 @@ export type ScheduleBatchItem =
   | {
       date: string
       status: 'working'
+      workStatus: Exclude<ScheduleWorkStatus, '未入力' | '休日'>
       startTime: string
       endTime: string
       isAvailable?: boolean
@@ -34,6 +37,7 @@ export function buildScheduleBatchPayload(
       {
         date,
         status: 'working' as const,
+        workStatus: day.status,
         startTime: day.startTime,
         endTime: day.endTime,
         isAvailable: day.isAvailable,

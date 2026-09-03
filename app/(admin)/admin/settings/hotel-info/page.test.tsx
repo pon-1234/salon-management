@@ -71,7 +71,7 @@ describe('HotelInfoPage', () => {
     expect(toast).not.toHaveBeenCalled()
   })
 
-  it('renders every active hotel and labels the legacy display group separately from its name', async () => {
+  it('renders every active hotel without exposing the obsolete legacy display group', async () => {
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -110,7 +110,8 @@ describe('HotelInfoPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'グランドホテル' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '池袋グランドホテル' })).toBeInTheDocument()
-    expect(screen.getByText('旧表示グループ: グランドホテル')).toBeInTheDocument()
+    expect(screen.queryByText('旧表示グループ: グランドホテル')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('エリア（旧データ表示用）')).not.toBeInTheDocument()
   })
 
   it('accepts a name-only hotel and unwraps the created response envelope', async () => {

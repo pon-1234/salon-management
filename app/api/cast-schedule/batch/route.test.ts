@@ -128,6 +128,7 @@ describe('POST /api/cast-schedule/batch', () => {
             {
               date: '2026-08-14',
               status: 'working',
+              workStatus: '遅刻',
               startTime: '14:00',
               endTime: '22:00',
               isAvailable: false,
@@ -139,7 +140,11 @@ describe('POST /api/cast-schedule/batch', () => {
     )
 
     expect(capturedCreateData).toEqual(
-      expect.objectContaining({ isAvailable: false, notes: '媒体掲載テキスト' })
+      expect.objectContaining({
+        status: '遅刻',
+        isAvailable: false,
+        notes: '媒体掲載テキスト',
+      })
     )
   })
 

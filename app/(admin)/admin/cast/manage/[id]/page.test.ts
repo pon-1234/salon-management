@@ -24,4 +24,11 @@ describe('CastManagePage LINE registration integration', () => {
     expect(source).toContain('value={activeTab}')
     expect(source).toContain('onValueChange={setActiveTab}')
   })
+
+  it('exposes the complete legacy-compatible profile fields as a first-class tab', () => {
+    expect(source).toContain("'profile'")
+    expect(source).toContain('<TabsTrigger value="profile"')
+    expect(source).toContain('<TabsContent value="profile"')
+    expect(source).toContain('<PublicProfileForm')
+  })
 })
