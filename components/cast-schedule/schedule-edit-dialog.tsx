@@ -6,7 +6,7 @@
  * @known_issues None
  */
 import { useEffect, useMemo, useState } from 'react'
-import { format, startOfWeek } from 'date-fns'
+import { subDays } from 'date-fns'
 import { formatInTimeZone, zonedTimeToUtc } from 'date-fns-tz'
 import { ja } from 'date-fns/locale'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -60,6 +60,15 @@ export interface WeeklyScheduleEdit {
   [date: string]: DaySchedule
 }
 
+const startOfTokyoWeek = (date: Date): Date => {
+  const [year, month, day] = formatInTimeZone(date, 'Asia/Tokyo', 'yyyy-MM-dd')
+    .split('-')
+    .map(Number)
+  const calendarDate = new Date(Date.UTC(year, month - 1, day))
+  const daysSinceMonday = (calendarDate.getUTCDay() + 6) % 7
+  return subDays(calendarDate, daysSinceMonday)
+}
+
 interface ScheduleEditDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -107,7 +116,7 @@ export function ScheduleEditDialog({
   })
 
   // Generate 7 days starting from the given start date
-  const weekStart = useMemo(() => startOfWeek(startDate, { weekStartsOn: 1 }), [startDate]) // Monday start
+  const weekStart = useMemo(() => startOfTokyoWeek(startDate), [startDate])
   const visibleDays = getDateRange(weekStart, scheduleEditDayCount(editSpan))
 
   const statusOptions: { value: ScheduleWorkStatus; label: string; color: string }[] =
@@ -222,8 +231,8 @@ export function ScheduleEditDialog({
 
     const loadFourWeekSchedule = async () => {
       const range = getDateRange(weekStart, 28)
-      const startDateKey = format(range[0], 'yyyy-MM-dd')
-      const endDateKey = format(range[range.length - 1], 'yyyy-MM-dd')
+      const startDateKey = formatInTimeZone(range[0], 'UTC', 'yyyy-MM-dd')
+      const endDateKey = formatInTimeZone(range[range.length - 1], 'UTC', 'yyyy-MM-dd')
       const params = new URLSearchParams({
         castId,
         startDate: startDateKey,
@@ -248,7 +257,7 @@ export function ScheduleEditDialog({
         setSchedule((previous) => {
           const next = { ...previous }
           for (const date of range) {
-            const dateKey = format(date, 'yyyy-MM-dd')
+            const dateKey = formatInTimeZone(date, 'UTC', 'yyyy-MM-dd')
             const record = records.find(
               (item: { date?: string }) =>
                 item.date &&
@@ -563,7 +572,7 @@ export function ScheduleEditDialog({
           aria-label={editSpan === 'fourWeeks' ? '4週間出勤カレンダー' : undefined}
         >
           {visibleDays.map((date) => {
-            const dateKey = format(date, 'yyyy-MM-dd')
+            const dateKey = formatInTimeZone(date, 'UTC', 'yyyy-MM-dd')
             const daySchedule = getDaySchedule(dateKey)
             const isWorkDay = !['未入力', '休日'].includes(daySchedule.status)
 
